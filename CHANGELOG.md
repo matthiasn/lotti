@@ -31,9 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   those facts expires the outdated copy and wakes the agent to write a
   replacement, and the standing report gains an out-of-date badge when new
   data arrives after it was written.
-- **Health dimension headers quote the latest reading.** Blood pressure and
-  weight show the most recent measurement instead of a seven-day average; the
-  on-track verdict still follows the goal's rolling-average target.
+- **Health dimensions distinguish today's result from the rolling trend.**
+  Blood pressure and weight show the most recent measurement, and an on-target
+  reading today gets positive feedback even when the rolling average still
+  needs recovery. An over-target average still needs attention when today has
+  not been measured.
 - **Rolling-week cards are better balanced.** Weekday labels now sit directly
   above their day squares and scroll with them, and the reliability tail
   shares a line with the legend.
@@ -46,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at-least or at-most direction.
 
 ### Fixed
+- **Goal agents receive exact health readings.** Their context now includes
+  every timestamped blood-pressure and weight observation in the goal window,
+  alongside the rolling aggregate, so reports can cite the latest value and
+  improving trend instead of presenting an averaged value as a measurement.
 - **Goal agents can choose an inference profile from Agent internals.** The AI
   setup row now opens a profile picker even though goal agents have no linked
   task.

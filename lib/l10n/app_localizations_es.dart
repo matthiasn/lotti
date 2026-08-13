@@ -6361,6 +6361,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no hay datos suficientes para juzgar esta dimensión.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'La lectura más reciente de hoy está dentro del objetivo; sigue así.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'En el objetivo hoy';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Esta dimensión está actualmente en camino.';
 

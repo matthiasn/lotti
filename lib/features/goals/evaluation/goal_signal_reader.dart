@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -72,6 +73,7 @@ class GoalSignalReader {
         : rangeEnd;
 
     final quantitative = <String, Map<DateTime, num>>{};
+    final quantitativeObservations = <String, List<GoalMetricObservation>>{};
     for (final dataType in needs.quantitativeTypes) {
       final entities = await _journalDb.getQuantitativeByType(
         type: dataType,
@@ -79,6 +81,12 @@ class GoalSignalReader {
         rangeEnd: rangeEnd,
       );
       quantitative[dataType] = _bucketQuantitative(entities, dataType);
+      if (GoalHealthDataTypes.supported.contains(dataType)) {
+        quantitativeObservations[dataType] = _rawQuantitativeObservations(
+          entities,
+          dataType,
+        );
+      }
     }
 
     final habits = <String, Map<DateTime, int>>{};
@@ -217,6 +225,7 @@ class GoalSignalReader {
 
     return GoalSignalWindow(
       quantitativeDailySums: quantitative,
+      quantitativeObservationsByType: quantitativeObservations,
       habitSuccessesByDay: habits,
       habitCompletionsByDay: habitCompletions,
       measurableDailySums: measurables,
@@ -411,6 +420,36 @@ class GoalSignalReader {
         }
     }
     return byDay;
+  }
+
+  /// Preserves every quantitative journal sample before daily aggregation.
+  /// Values use the same display normalization as [_bucketQuantitative], and
+  /// ordering matches its equal-timestamp entity-id tie break.
+  List<GoalMetricObservation> _rawQuantitativeObservations(
+    List<JournalEntity> entities,
+    String dataType,
+  ) {
+    final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
+    final observations = <GoalMetricObservation>[];
+    for (final entity in entities) {
+      entity.maybeMap(
+        quantitative: (quant) {
+          observations.add(
+            GoalMetricObservation(
+              recordedAt: quant.data.dateFrom,
+              value: quant.data.value * multiplier,
+              tieBreaker: quant.meta.id,
+            ),
+          );
+        },
+        orElse: () {},
+      );
+    }
+    observations.sort((a, b) {
+      final byTime = a.recordedAt.compareTo(b.recordedAt);
+      return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
+    });
+    return observations;
   }
 
   /// Earliest day any leaf's period (or the short-term lookback, or the

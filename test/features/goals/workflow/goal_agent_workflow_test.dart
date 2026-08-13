@@ -19,6 +19,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -190,7 +191,7 @@ void main() {
           )
           as AiConfigModel;
 
-  void stubSpec({DateTime? startDate}) {
+  void stubSpec({DateTime? startDate, GoalCriterion? criteria}) {
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -209,13 +210,15 @@ void main() {
         authoredBy: 'user',
         title: 'Steps',
         statement: 'Average 10,000 steps per day.',
-        criteria: const GoalCriterion.metric(
-          criterionId: 'steps',
-          dataType: 'cumulative_step_count',
-          window: GoalWindow.rollingDays(count: 7),
-          aggregation: GoalAggregation.dailySumThenAverage,
-          target: 10000,
-        ),
+        criteria:
+            criteria ??
+            const GoalCriterion.metric(
+              criterionId: 'steps',
+              dataType: 'cumulative_step_count',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.dailySumThenAverage,
+              target: 10000,
+            ),
         createdAt: DateTime(2026),
         vectorClock: null,
         startDate: startDate,
@@ -624,6 +627,100 @@ void main() {
     expect(usage.modelId, 'glm-5.2');
     expect(usage.inputTokens, 900);
   });
+
+  test(
+    'the workflow sends exact health series through the final FACTS copy',
+    () async {
+      const weight = GoalCriterion.metric(
+        criterionId: 'health-weight',
+        dataType: GoalHealthDataTypes.weight,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 88,
+        direction: GoalDirection.atMost,
+      );
+      stubSpec(criteria: weight);
+      stubGlmResolution();
+      workflow = GoalAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(
+            GoalSignalWindow(
+              quantitativeDailySums: {
+                GoalHealthDataTypes.weight: {
+                  DateTime.utc(2026, 8, 8): 90,
+                  DateTime.utc(2026, 8, 9): 88,
+                },
+              },
+              quantitativeObservationsByType: {
+                GoalHealthDataTypes.weight: [
+                  GoalMetricObservation(
+                    recordedAt: DateTime(2026, 8, 8, 8),
+                    value: 90,
+                  ),
+                  GoalMetricObservation(
+                    recordedAt: DateTime(2026, 8, 9, 8),
+                    value: 88,
+                  ),
+                ],
+              },
+            ),
+          ),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+      );
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            expect(message, contains('"actual": 89.0'));
+            expect(message, contains('"healthSeries"'));
+            expect(
+              message,
+              contains('"recordedAt": "2026-08-08T08:00:00.000"'),
+            );
+            expect(
+              message,
+              contains('"recordedAt": "2026-08-09T08:00:00.000"'),
+            );
+            expect(message, contains('"onTarget": true'));
+            expect(message, contains('"isToday": true'));
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'Today is on target; the week is still sparse.',
+                  'tldr':
+                      'The latest weight is on target with only two samples.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return const InferenceUsage(inputTokens: 400, outputTokens: 80);
+          };
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(
+        upserts.whereType<AgentReportEntity>().single.tldr,
+        'The latest weight is on target with only two samples.',
+      );
+    },
+  );
 
   test('a contextual yes-now banner request overrides dismissal cooldown '
       'and cannot retire the requested banner', () async {

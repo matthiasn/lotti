@@ -305,6 +305,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
               : derivation.priors.firstOrNull?.trackStatus),
       evaluation: derivation.facts.evaluation,
       shortTermAttainment: derivation.facts.shortTermAttainment,
+      quantitativeObservationsByType:
+          derivation.facts.quantitativeObservationsByType,
       categoryTimeSessionsByCategory:
           derivation.facts.categoryTimeSessionsByCategory,
       categoryTimeEvidenceStart: derivation.facts.categoryTimeEvidenceStart,

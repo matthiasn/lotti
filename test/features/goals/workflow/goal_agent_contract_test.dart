@@ -20,6 +20,10 @@ void main() {
         'For an unrelated request (coding, trivia, etc.), do not answer',
       ),
     );
+    expect(
+      goalAgentSystemPrompt,
+      contains('latest health reading is on target today'),
+    );
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '

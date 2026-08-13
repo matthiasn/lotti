@@ -6338,6 +6338,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não existem dados suficientes para avaliar esta dimensão.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'A leitura mais recente de hoje está dentro da meta; continua assim.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'Dentro da meta hoje';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Esta dimensão está atualmente no bom caminho.';
 

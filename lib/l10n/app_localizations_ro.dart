@@ -6385,6 +6385,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există încă suficiente date pentru a judeca această dimensiune.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Cea mai recentă măsurătoare de astăzi este în intervalul țintă; continuați tot așa.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'În țintă astăzi';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Această dimensiune este în prezent pe drumul cel bun.';
 

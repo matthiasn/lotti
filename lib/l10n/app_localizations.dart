@@ -10735,6 +10735,18 @@ abstract class AppLocalizations {
   /// **'There is not enough data to judge this dimension yet.'**
   String get goalDimensionNoDataNote;
 
+  /// Positive health-dimension note when the latest reading recorded today meets its target even if the rolling aggregate does not.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s latest reading is on target; keep it going.'**
+  String get goalDimensionOnTargetTodayNote;
+
+  /// Positive health-dimension status when the latest reading recorded today meets its target.
+  ///
+  /// In en, this message translates to:
+  /// **'On target today'**
+  String get goalDimensionOnTargetTodayStatus;
+
   /// No description provided for @goalDimensionOnTrackNote.
   ///
   /// In en, this message translates to:

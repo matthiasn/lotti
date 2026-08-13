@@ -172,6 +172,14 @@ void main() {
       );
       final signals = GoalSignalWindow(
         quantitativeDailySums: onTrackSignals().quantitativeDailySums,
+        quantitativeObservationsByType: {
+          'cumulative_step_count': [
+            GoalMetricObservation(
+              recordedAt: DateTime(2026, 8, 8, 8),
+              value: 10680,
+            ),
+          ],
+        },
         categoryTimeSessionsByCategory: {
           'vibe-coding': [session],
         },
@@ -195,6 +203,14 @@ void main() {
       );
       expect(derivation.facts.categoryTimeEvidenceStart, DateTime(2026, 8, 2));
       expect(derivation.facts.categoryTimeEvidenceEnd, DateTime(2026, 8, 9));
+      expect(
+        derivation
+            .facts
+            .quantitativeObservationsByType['cumulative_step_count']
+            ?.single
+            .value,
+        10680,
+      );
     },
   );
 

@@ -1,6 +1,23 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 
+/// One exact quantitative observation before any daily or rolling aggregate.
+///
+/// [tieBreaker] is the journal entity id. It is retained only so replicas
+/// order equal-timestamp samples identically; model-facing payloads expose
+/// timestamp and value only.
+class GoalMetricObservation {
+  const GoalMetricObservation({
+    required this.recordedAt,
+    required this.value,
+    this.tieBreaker = '',
+  });
+
+  final DateTime recordedAt;
+  final num value;
+  final String tieBreaker;
+}
+
 /// One category-attributed tracked-time session exposed as evidence to the
 /// goal agent. It is deliberately not a success verdict: the deterministic
 /// evaluator and, later, a user-approved daily assessment own that decision.
@@ -32,6 +49,7 @@ class GoalCategoryTimeSession {
 class GoalSignalWindow {
   const GoalSignalWindow({
     this.quantitativeDailySums = const {},
+    this.quantitativeObservationsByType = const {},
     this.habitSuccessesByDay = const {},
     this.habitCompletionsByDay = const {},
     this.measurableDailySums = const {},
@@ -46,6 +64,13 @@ class GoalSignalWindow {
   /// Journal quantitative data: data type string → day key → sum of that
   /// day's values (e.g. `cumulative_step_count` → 2026-08-08 → 6414).
   final Map<String, Map<DateTime, num>> quantitativeDailySums;
+
+  /// Exact supported health samples, ordered oldest-first per data type.
+  /// Evaluation continues to use [quantitativeDailySums]; this parallel raw
+  /// series gives the model timestamps, latest values, and sparse-data shape
+  /// without asking it to reverse an aggregate. High-volume cumulative types
+  /// such as steps deliberately remain daily aggregates only.
+  final Map<String, List<GoalMetricObservation>> quantitativeObservationsByType;
 
   /// Habit completions: habit id → day key → number of *successful*
   /// completions that day. Skips and fails are not successes and must not

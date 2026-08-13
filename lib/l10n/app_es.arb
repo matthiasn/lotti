@@ -2619,6 +2619,8 @@
   "goalDimensionNeedsAttentionNote": "Esta dimensión necesita atención; su propia evidencia sigue siendo visible.",
   "goalDimensionNeedsAttentionStatus": "necesita atencion",
   "goalDimensionNoDataNote": "Aún no hay datos suficientes para juzgar esta dimensión.",
+  "goalDimensionOnTargetTodayNote": "La lectura más reciente de hoy está dentro del objetivo; sigue así.",
+  "goalDimensionOnTargetTodayStatus": "En el objetivo hoy",
   "goalDimensionOnTrackNote": "Esta dimensión está actualmente en camino.",
   "goalDimensionOnTrackStatus": "En camino",
   "goalDimensionRecordedByAgent": "Dicho por ti y registrado tras tu aprobación.",

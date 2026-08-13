@@ -85,6 +85,7 @@ class GoalWakeFacts {
     required this.evaluation,
     this.previousStatus,
     this.shortTermAttainment,
+    this.quantitativeObservationsByType = const {},
     this.categoryTimeSessionsByCategory = const {},
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
@@ -100,6 +101,10 @@ class GoalWakeFacts {
 
   final GoalEvaluation evaluation;
   final double? shortTermAttainment;
+
+  /// Exact quantitative samples retained for Phase B evidence. Deterministic
+  /// policy still reads [evaluation], never this model-facing series.
+  final Map<String, List<GoalMetricObservation>> quantitativeObservationsByType;
 
   /// Session-level evidence for model pattern analysis. These observations do
   /// not override [evaluation]; a future governed daily assessment can turn a

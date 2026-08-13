@@ -279,6 +279,22 @@ void main() {
       )],
       79.4,
     );
+    final observations =
+        window.quantitativeObservationsByType['HealthDataType.WEIGHT']!;
+    expect(
+      observations.map((observation) => observation.recordedAt),
+      [DateTime(2026, 8, 8, 7), DateTime(2026, 8, 8, 21)],
+      reason: 'the agent needs every ordered raw sample, not the daily fold',
+    );
+    expect(observations.map((observation) => observation.value), [81.2, 79.4]);
+    expect(
+      observations.map((observation) => observation.tieBreaker),
+      [
+        'e-${DateTime(2026, 8, 8, 7).millisecondsSinceEpoch}',
+        'e-${DateTime(2026, 8, 8, 21).millisecondsSinceEpoch}',
+      ],
+      reason: 'equal timestamps need a stable replica-independent ordering',
+    );
   });
 
   test('identical point-sample timestamps break the tie by entity id, '
@@ -371,6 +387,11 @@ void main() {
         8,
       )],
       18,
+    );
+    expect(
+      window.quantitativeObservationsByType,
+      isEmpty,
+      reason: 'only goal-supported health series add model-facing raw data',
     );
   });
 

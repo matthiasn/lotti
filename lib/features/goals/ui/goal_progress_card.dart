@@ -148,9 +148,12 @@ class GoalProgressCard extends StatelessWidget {
         for (final metric in progress.metrics)
           if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
             if (bloodPressure != null && metric == bloodPressure.systolic)
-              _BloodPressureDimensionCard(metrics: bloodPressure)
+              _BloodPressureDimensionCard(
+                metrics: bloodPressure,
+                today: progress.today,
+              )
             else
-              _MetricDimensionCard(metric: metric),
+              _MetricDimensionCard(metric: metric, today: progress.today),
             SizedBox(height: tokens.spacing.step3),
           ],
         for (final patternMetric in patternMetrics) ...[
@@ -332,7 +335,13 @@ typedef _BloodPressureMetrics = ({
   GoalMetricProgressView diastolic,
 });
 
-typedef _MetricSummary = ({num current, num latest, bool hasData, bool met});
+typedef _MetricSummary = ({
+  num current,
+  num latest,
+  bool hasData,
+  bool latestOnTargetToday,
+  bool met,
+});
 
 _BloodPressureMetrics? _bloodPressureMetrics(
   List<GoalMetricProgressView> metrics,
@@ -365,8 +374,12 @@ _BloodPressureMetrics? _bloodPressureMetrics(
   return (systolic: systolic, diastolic: diastolic);
 }
 
-_MetricSummary _metricSummary(GoalMetricProgressView metric) {
-  final observed = metric.days.where((day) => day.isObserved).toList();
+_MetricSummary _metricSummary(
+  GoalMetricProgressView metric, {
+  required DateTime today,
+}) {
+  final observed = metric.days.where((day) => day.isObserved).toList()
+    ..sort((a, b) => a.day.compareTo(b.day));
   final current = switch (metric.aggregation) {
     GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
       observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
@@ -381,16 +394,37 @@ _MetricSummary _metricSummary(GoalMetricProgressView metric) {
     GoalDirection.atLeast => current >= metric.target,
     GoalDirection.atMost => current <= metric.target,
   };
+  final latestDay = observed.lastOrNull;
+  final isSupportedHealth = GoalHealthDataTypes.supported.contains(
+    metric.sourceId,
+  );
+  final latestOnTargetToday =
+      isSupportedHealth &&
+      latestDay != null &&
+      DateUtils.isSameDay(latestDay.day, today) &&
+      _valueMeetsTarget(latestDay.value, metric.target, metric.direction);
   return (
     current: current,
     // The most recent observation. Point-sample vitals display this instead
-    // of the period aggregate: the header must show the reading the user
-    // just took, while the met verdict stays on the evaluator's basis.
+    // of the period aggregate. An on-target reading recorded today also gets
+    // a positive daily presentation without changing the persisted rolling
+    // evaluation result.
     latest: observed.isEmpty ? 0 : observed.last.value,
     hasData: observed.isNotEmpty,
-    met: observed.isNotEmpty && (meetsPeriodTarget || metric.projectedOnTrack),
+    latestOnTargetToday: latestOnTargetToday,
+    met:
+        observed.isNotEmpty &&
+        (meetsPeriodTarget ||
+            (!isSupportedHealth && metric.projectedOnTrack) ||
+            latestOnTargetToday),
   );
 }
+
+bool _valueMeetsTarget(num value, num target, GoalDirection direction) =>
+    switch (direction) {
+      GoalDirection.atLeast => value >= target,
+      GoalDirection.atMost => value <= target,
+    };
 
 /// What the dimension header quotes as "current": the latest sample for
 /// point-sample health vitals (blood pressure, weight), the period aggregate
@@ -404,19 +438,25 @@ num _metricDisplayValue(
     : summary.current;
 
 class _BloodPressureDimensionCard extends StatelessWidget {
-  const _BloodPressureDimensionCard({required this.metrics});
+  const _BloodPressureDimensionCard({
+    required this.metrics,
+    required this.today,
+  });
 
   final _BloodPressureMetrics metrics;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
-    final systolic = _metricSummary(metrics.systolic);
-    final diastolic = _metricSummary(metrics.diastolic);
+    final systolic = _metricSummary(metrics.systolic, today: today);
+    final diastolic = _metricSummary(metrics.diastolic, today: today);
     final hasData = systolic.hasData && diastolic.hasData;
     final met = hasData && systolic.met && diastolic.met;
+    final onTargetToday =
+        systolic.latestOnTargetToday && diastolic.latestOnTargetToday;
     final systolicColor = tokens.colors.alert.error.defaultColor;
     final diastolicColor = tokens.colors.alert.info.defaultColor;
     final range = _metricDateRange([metrics.systolic, metrics.diastolic]);
@@ -448,6 +488,7 @@ class _BloodPressureDimensionCard extends StatelessWidget {
             reading: reading,
             met: met,
             hasData: hasData,
+            onTargetToday: onTargetToday,
           ),
           if (range != null) ...[
             SizedBox(height: tokens.spacing.step4),
@@ -507,6 +548,8 @@ class _BloodPressureDimensionCard extends StatelessWidget {
           Text(
             !hasData
                 ? context.messages.goalDimensionNoDataNote
+                : onTargetToday
+                ? context.messages.goalDimensionOnTargetTodayNote
                 : met
                 ? context.messages.goalDimensionOnTrackNote
                 : context.messages.goalDimensionNeedsAttentionNote,
@@ -586,14 +629,15 @@ List<Observation> _metricObservations(GoalMetricProgressView metric) {
 }
 
 class _MetricDimensionCard extends StatelessWidget {
-  const _MetricDimensionCard({required this.metric});
+  const _MetricDimensionCard({required this.metric, required this.today});
 
   final GoalMetricProgressView metric;
+  final DateTime today;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final summary = _metricSummary(metric);
+    final summary = _metricSummary(metric, today: today);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
     final unit = metric.unitName?.trim();
@@ -619,6 +663,7 @@ class _MetricDimensionCard extends StatelessWidget {
             reading: reading,
             met: summary.met,
             hasData: summary.hasData,
+            onTargetToday: summary.latestOnTargetToday,
           ),
           SizedBox(height: tokens.spacing.step4),
           if (metric.kind == GoalDimensionKind.categoryTime &&
@@ -632,6 +677,8 @@ class _MetricDimensionCard extends StatelessWidget {
           Text(
             !summary.hasData
                 ? context.messages.goalDimensionNoDataNote
+                : summary.latestOnTargetToday
+                ? context.messages.goalDimensionOnTargetTodayNote
                 : summary.met
                 ? context.messages.goalDimensionOnTrackNote
                 : context.messages.goalDimensionNeedsAttentionNote,
@@ -653,6 +700,7 @@ class _DimensionHeader extends StatelessWidget {
     required this.reading,
     required this.met,
     required this.hasData,
+    this.onTargetToday = false,
   });
 
   final GoalDimensionKind kind;
@@ -661,6 +709,7 @@ class _DimensionHeader extends StatelessWidget {
   final String reading;
   final bool met;
   final bool hasData;
+  final bool onTargetToday;
 
   @override
   Widget build(BuildContext context) {
@@ -709,6 +758,8 @@ class _DimensionHeader extends StatelessWidget {
         Text(
           !hasData
               ? context.messages.goalCoarseHealthNotEnoughData
+              : onTargetToday
+              ? context.messages.goalDimensionOnTargetTodayStatus
               : met
               ? context.messages.goalDimensionOnTrackStatus
               : context.messages.goalDimensionNeedsAttentionStatus,

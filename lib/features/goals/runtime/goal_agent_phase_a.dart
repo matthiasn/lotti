@@ -348,6 +348,7 @@ class GoalAgentPhaseA {
         previousStatus: previousStatus,
         evaluation: evaluation,
         shortTermAttainment: shortTerm,
+        quantitativeObservationsByType: signals.quantitativeObservationsByType,
         categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
         categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
         categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,

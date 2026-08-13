@@ -6280,6 +6280,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Der er ikke nok data til at bedømme denne dimension endnu.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Dagens seneste måling er inden for målet; fortsæt sådan.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'På målet i dag';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Denne dimension er i øjeblikket på vej.';
 
