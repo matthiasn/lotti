@@ -8,7 +8,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -108,10 +107,6 @@ class ProjectAgentService {
       final now = clock.now();
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(activeProjectId: projectId),
-        scheduledWakeAt: nextLocalDayAtTime(
-          now,
-          hour: AgentSchedules.projectDailyDigestHour,
-        ),
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);
@@ -253,7 +248,9 @@ class ProjectAgentService {
     for (final agent in projectAgents) {
       try {
         final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
-        final state = statesByAgentId[agent.agentId];
+        final state = await _retireDormantDailySchedule(
+          statesByAgentId[agent.agentId],
+        );
         _hydrateThrottleDeadlineFromState(agent.agentId, state);
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
@@ -296,6 +293,37 @@ class ProjectAgentService {
         matchEntityIds: {projectEntityUpdateNotification(projectId)},
       ),
     );
+  }
+
+  /// Removes the legacy always-on daily digest from an idle project agent.
+  ///
+  /// Project updates already persist an event-driven subscription wake in
+  /// `nextWakeAt`. Retaining a separate `scheduledWakeAt` when there is no
+  /// pending project activity only keeps a meaningless 06:00 row alive in the
+  /// Wake tab. A schedule that still has pending activity is left intact as a
+  /// one-time migration safety net and is retired by the next successful wake.
+  Future<AgentStateEntity?> _retireDormantDailySchedule(
+    AgentStateEntity? state,
+  ) async {
+    if (state == null ||
+        state.scheduledWakeAt == null ||
+        state.slots.pendingProjectActivityAt != null) {
+      return state;
+    }
+
+    final updatedState = state.copyWith(
+      scheduledWakeAt: null,
+      updatedAt: clock.now(),
+    );
+    await syncService.upsertEntity(updatedState);
+    onPersistedStateChanged?.call(state.agentId);
+    domainLogger?.log(
+      LogDomain.agentRuntime,
+      'retired dormant daily schedule for '
+      '${DomainLogger.sanitizeId(state.agentId)}',
+      subDomain: 'restore',
+    );
+    return updatedState;
   }
 
   void _hydrateThrottleDeadlineFromState(

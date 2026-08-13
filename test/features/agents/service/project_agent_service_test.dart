@@ -389,7 +389,7 @@ void main() {
         );
         expect(
           updatedState.scheduledWakeAt,
-          DateTime(2026, 3, 21, 6),
+          isNull,
           reason: '$scenario',
         );
 
@@ -528,7 +528,7 @@ void main() {
       });
 
       test(
-        'initializes the next daily digest at 06:00 on the next day',
+        'starts stale without a recurring daily digest schedule',
         () async {
           final identity = makeIdentity();
           final template = makeTestTemplate(
@@ -577,7 +577,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.scheduledWakeAt, isNull);
         },
       );
 
@@ -1034,6 +1034,116 @@ void main() {
                   as List<String>;
           expect(requestedAgentIds, ['pa-1']);
           verifyNever(() => mockRepository.getAgentState('pa-1'));
+        },
+      );
+
+      test(
+        'clears a legacy daily schedule when no project activity is pending',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-dormant');
+          final link = AgentLink.agentProject(
+            id: 'link-dormant',
+            fromId: 'pa-dormant',
+            toId: 'project-dormant',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final legacySchedule = DateTime(2026, 3, 23, 6);
+          final state = makeState(
+            id: 'state-pa-dormant',
+            agentId: 'pa-dormant',
+            activeProjectId: 'project-dormant',
+          ).copyWith(scheduledWakeAt: legacySchedule);
+
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-dormant']),
+          ).thenAnswer((_) async => {'pa-dormant': state});
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-dormant'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-dormant': [link],
+            },
+          );
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 22, 10)), () {
+            return service.restoreSubscriptions();
+          });
+
+          final repaired =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(repaired.scheduledWakeAt, isNull);
+          expect(repaired.slots.pendingProjectActivityAt, isNull);
+          expect(repaired.updatedAt, DateTime(2026, 3, 22, 10));
+          expect(notifiedAgentIds, ['pa-dormant']);
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'retains a legacy schedule while project activity is pending',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-active');
+          final link = AgentLink.agentProject(
+            id: 'link-active',
+            fromId: 'pa-active',
+            toId: 'project-active',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final pendingAt = DateTime(2026, 3, 22, 9);
+          final state =
+              makeState(
+                id: 'state-pa-active',
+                agentId: 'pa-active',
+                activeProjectId: 'project-active',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-active',
+                  pendingProjectActivityAt: pendingAt,
+                ),
+                scheduledWakeAt: DateTime(2026, 3, 23, 6),
+              );
+
+          when(
+            () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-active']),
+          ).thenAnswer((_) async => {'pa-active': state});
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-active'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-active': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
         },
       );
 

@@ -686,7 +686,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.single as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.scheduledWakeAt, isNull);
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           // The dormant skip is a successful no-op wake — the failure
           // streak must reset alongside the reschedule.
@@ -751,7 +751,7 @@ void main() {
       );
 
       test(
-        'rolls forward the daily digest schedule when the scheduled wake is due',
+        'retires the legacy daily digest schedule after processing activity',
         () async {
           final testDate = DateTime(2026, 3, 20, 6, 30);
           final dueState = makeTestState(
@@ -781,7 +781,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.scheduledWakeAt, isNull);
           expect(updatedState.slots.lastDailyWakeAt, testDate);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
           // A due scheduled wake advances both watermarks → exactly those two
@@ -797,7 +797,7 @@ void main() {
       );
 
       test(
-        'keeps the future digest schedule and clears pending activity on non-due wakes',
+        'retires a future legacy digest schedule after a non-due wake',
         () async {
           final testDate = DateTime(2026, 3, 20, 9);
           final futureSchedule = DateTime(2026, 3, 21, 6);
@@ -828,7 +828,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = captured.whereType<AgentStateEntity>().last;
-          expect(updatedState.scheduledWakeAt, futureSchedule);
+          expect(updatedState.scheduledWakeAt, isNull);
           expect(updatedState.slots.lastDailyWakeAt, isNull);
           expect(updatedState.slots.pendingProjectActivityAt, isNull);
           // A non-due wake advances lastWakeAt but not lastDailyWakeAt →

@@ -382,8 +382,8 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
   return manager;
 }
 
-/// Tracks local project/task changes and marks project reports stale without
-/// waking the project agent immediately.
+/// Tracks local project/task changes and marks project reports stale while the
+/// project subscription chooses the appropriate short or morning wake delay.
 final projectActivityMonitorProvider = Provider<ProjectActivityMonitor>(
   projectActivityMonitor,
   name: 'projectActivityMonitorProvider',

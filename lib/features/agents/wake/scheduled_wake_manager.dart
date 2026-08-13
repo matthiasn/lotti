@@ -21,12 +21,12 @@ class _HandledCheckSequence {
 }
 
 /// Manages scheduled wakes for agents that need to wake on a time-based
-/// schedule (e.g., daily project digests, weekly one-on-one rituals).
+/// schedule (e.g., weekly one-on-one rituals).
 ///
 /// On startup and then hourly, queries for agents with overdue
-/// `scheduledWakeAt`. Dormant project agents (no pending activity since
-/// last report) are fast-forwarded to the next future time slot without
-/// executing, avoiding unnecessary LLM calls after prolonged app absence.
+/// `scheduledWakeAt`. Legacy project schedules with no pending activity are
+/// retired instead of advanced, because project work is now scheduled by
+/// update-driven subscription wakes.
 /// Non-project agents (e.g., improver agents) are always enqueued.
 class ScheduledWakeManager with AgentErrorLogging {
   ScheduledWakeManager({
@@ -237,7 +237,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       if (generation != _generation) return;
 
       var enqueued = 0;
-      var fastForwarded = 0;
+      var retired = 0;
       var skippedArchived = 0;
 
       for (final state in dueStates) {
@@ -264,9 +264,9 @@ class ScheduledWakeManager with AgentErrorLogging {
             continue;
           }
 
-          if (_canFastForward(state)) {
-            await _fastForwardSchedule(state, now);
-            fastForwarded++;
+          if (_shouldRetireDormantProjectSchedule(state)) {
+            await _retireDormantProjectSchedule(state, now);
+            retired++;
             continue;
           }
 
@@ -293,7 +293,7 @@ class ScheduledWakeManager with AgentErrorLogging {
       if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
           'processed ${dueStates.length} due agents: '
-          '$enqueued enqueued, $fastForwarded fast-forwarded, '
+          '$enqueued enqueued, $retired dormant schedules retired, '
           '$skippedArchived archived skipped; '
           '$recordsEnqueued scheduled-wake record(s) fired',
         );
@@ -570,53 +570,31 @@ class ScheduledWakeManager with AgentErrorLogging {
     );
   }
 
-  /// Whether this agent can be fast-forwarded instead of fully woken.
-  /// Only applies to project agents (identified by `activeProjectId`)
-  /// that have been woken before and have no pending activity.
-  bool _canFastForward(AgentStateEntity state) {
+  /// Whether this legacy project schedule should be retired without a wake.
+  bool _shouldRetireDormantProjectSchedule(AgentStateEntity state) {
     final isProjectAgent = state.slots.activeProjectId != null;
     if (!isProjectAgent) return false;
 
     final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
-    return !hasPendingActivity && state.lastWakeAt != null;
+    return !hasPendingActivity;
   }
 
-  /// Advance `scheduledWakeAt` to the next future time slot without
-  /// executing a full wake cycle. Used for dormant project agents with
-  /// no pending activity — avoids unnecessary LLM calls.
-  Future<void> _fastForwardSchedule(
+  /// Clear an obsolete project `scheduledWakeAt` without executing a wake.
+  Future<void> _retireDormantProjectSchedule(
     AgentStateEntity state,
     DateTime now,
   ) async {
-    final scheduled = state.scheduledWakeAt!;
-    var nextWake = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      scheduled.hour,
-      scheduled.minute,
-    );
-    if (!nextWake.isAfter(now)) {
-      nextWake = DateTime(
-        now.year,
-        now.month,
-        now.day + 1,
-        scheduled.hour,
-        scheduled.minute,
-      );
-    }
-
     await _syncService.upsertEntity(
       state.copyWith(
-        scheduledWakeAt: nextWake,
+        scheduledWakeAt: null,
         updatedAt: now,
       ),
     );
     onPersistedStateChanged?.call(state.agentId);
 
     _log(
-      'fast-forwarded ${DomainLogger.sanitizeId(state.agentId)} '
-      'to $nextWake (no pending activity)',
+      'retired dormant project schedule for '
+      '${DomainLogger.sanitizeId(state.agentId)}',
     );
   }
 

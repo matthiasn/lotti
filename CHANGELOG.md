@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   across app restarts, and durable snooze and dismissal timing history gives
   the goal agent evidence for choosing better initial display times.
 
+### Fixed
+- **Project agents no longer keep an empty daily 06:00 wake alive.** Their
+  digest wake is now scheduled only after relevant project or linked-task
+  activity, while direct edits and manual refreshes still wake them promptly.
+  Existing dormant schedules are removed from the Wake tab on startup.
+
 ## [1.0.9]
 ### Added
 - **An explicit goal-name field in the goal editor.** The goal's name is a

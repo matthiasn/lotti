@@ -74,7 +74,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
     final scheduledWakeWasDue =
         state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
-    final shouldInitializeSchedule = state.scheduledWakeAt == null;
 
     // 2a. Capture this wake's project-linked journal entries into the log
     // (ADR 0020) — same substrate and renderer as the task agent (only
@@ -463,13 +462,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         }
 
         // Update state.
-        final nextScheduledWakeAt =
-            scheduledWakeWasDue || shouldInitializeSchedule
-            ? nextLocalDayAtTime(
-                now,
-                hour: AgentSchedules.projectDailyDigestHour,
-              )
-            : latestState.scheduledWakeAt;
         final latestPendingActivityAt =
             latestState.slots.pendingProjectActivityAt;
         final nextPendingActivityAt =
@@ -487,7 +479,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
             lastWakeAt: now,
-            scheduledWakeAt: nextScheduledWakeAt,
+            // Project work is scheduled by update-driven subscription wakes.
+            // Any state-level daily schedule is legacy and must not recur.
+            scheduledWakeAt: null,
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
