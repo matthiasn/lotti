@@ -7,6 +7,7 @@ GoalNudgeEntity makeGoalNudge({
   Map<String, String> provenance = const {},
   DateTime? snoozedUntil,
   DateTime? dismissedForDayAt,
+  DateTime? staleAt,
 }) =>
     AgentDomainEntity.goalNudge(
           id: 'ad-1',
@@ -24,6 +25,7 @@ GoalNudgeEntity makeGoalNudge({
           provenance: provenance,
           snoozedUntil: snoozedUntil,
           dismissedForDayAt: dismissedForDayAt,
+          staleAt: staleAt,
         )
         as GoalNudgeEntity;
 
@@ -96,5 +98,48 @@ void main() {
       goalBannerNextLocalMidnight(DateTime(2026, 3, 29, 20)),
       DateTime(2026, 3, 30),
     );
+  });
+
+  test(
+    'snoozing appends timing evidence and removes legacy quiet metadata',
+    () {
+      final now = DateTime.utc(2026, 8, 11, 10);
+      final until = DateTime.utc(2026, 8, 11, 13);
+      final snoozed = snoozeGoalBannerEntity(
+        nudge: makeGoalNudge(
+          staleAt: DateTime.utc(2026, 8, 12),
+          provenance: const {
+            goalBannerSnoozedUntilKey: '2026-08-11T11:00:00.000Z',
+            'snoozeReason': 'legacy',
+            'snoozedAt': '2026-08-11T09:00:00.000Z',
+            'specVersionId': 'spec-1',
+          },
+        ),
+        now: now,
+        until: until,
+        eventId: 'snooze-1',
+      );
+
+      expect(snoozed.snoozedUntil, until);
+      expect(snoozed.lastSnoozeDuration, GoalBannerSnoozeDuration.threeHours);
+      expect(snoozed.snoozeHistory.single.durationMinutes, 180);
+      expect(snoozed.staleAt, DateTime.utc(2026, 8, 14, 13));
+      expect(snoozed.provenance, {'specVersionId': 'spec-1'});
+    },
+  );
+
+  test('a zero or negative snooze interval is rejected', () {
+    final now = DateTime.utc(2026, 8, 11, 10);
+    for (final until in [now, now.subtract(const Duration(minutes: 1))]) {
+      expect(
+        () => snoozeGoalBannerEntity(
+          nudge: makeGoalNudge(),
+          now: now,
+          until: until,
+          eventId: 'invalid',
+        ),
+        throwsArgumentError,
+      );
+    }
   });
 }

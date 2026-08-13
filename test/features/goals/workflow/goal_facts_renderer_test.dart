@@ -866,6 +866,7 @@ void main() {
           snoozeHistory: [
             event('s1', startHourUtc: 8, durationHours: 3),
             event('s2', startHourUtc: 9, durationHours: 1),
+            event('s3', startHourUtc: 12, durationHours: 3),
           ],
         ),
       ],
@@ -874,18 +875,20 @@ void main() {
     final behavior =
         (json['ads'] as Map<String, dynamic>)['snoozeBehavior']
             as Map<String, dynamic>;
-    expect(behavior['totalCount'], 2);
-    expect(behavior['countByDurationMinutes'], {'60': 1, '180': 1});
+    expect(behavior['totalCount'], 3);
+    expect(behavior['countByDurationMinutes'], {'60': 1, '180': 2});
     final startHours = behavior['countByStartLocalHour'] as List<dynamic>;
     expect(startHours[10], 1);
     expect(startHours[11], 1);
+    expect(startHours[14], 1);
     final returnHours =
         behavior['countByRequestedReturnLocalHour'] as List<dynamic>;
     expect(returnHours[12], 1);
     expect(returnHours[13], 1);
+    expect(returnHours[17], 1);
     final recent = (behavior['recent'] as List<dynamic>)
         .cast<Map<String, dynamic>>();
-    expect(recent.last['requestedReturnLocal'], '2026-08-10T12:00:00');
+    expect(recent.last['requestedReturnLocal'], '2026-08-10T17:00:00');
   });
 
   test('a dismissal quiets the rest of ITS calendar day; yesterday does '

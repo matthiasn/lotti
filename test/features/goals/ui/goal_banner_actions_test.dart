@@ -184,6 +184,36 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('a stale rejected snooze never hides the banner locally', (
+      tester,
+    ) async {
+      when(
+        () => interactions.snooze(
+          any(),
+          duration: any(named: 'duration'),
+          forActivation: any(named: 'forActivation'),
+        ),
+      ).thenAnswer((_) async => false);
+      final (ctx, ref) = await host(tester);
+      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('6 hours'));
+      await tester.pumpAndSettle();
+
+      expect(await resultFuture, isFalse);
+      expect(
+        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider),
+        isNot(contains('ad-1')),
+      );
+      verify(
+        () => interactions.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.sixHours,
+          forActivation: 1,
+        ),
+      ).called(1);
+    });
   });
 
   group('showGoalBannerRatingSheet', () {

@@ -57,6 +57,28 @@ void main() {
     expect(decoded.snoozedUntilLocal, DateTime.utc(2026, 8, 13, 15));
   });
 
+  test('GoalNudgeSnooze rejects invalid duration and timezone evidence', () {
+    final valid = GoalNudgeSnooze(
+      id: 'snooze-1',
+      activation: 1,
+      snoozedAt: DateTime.utc(2026, 8, 13, 10),
+      snoozedUntil: DateTime.utc(2026, 8, 13, 11),
+      duration: GoalBannerSnoozeDuration.oneHour,
+      durationMinutes: 60,
+      utcOffsetMinutes: 120,
+    ).toJson();
+
+    for (final invalid in [
+      {...valid, 'durationMinutes': 0},
+      {...valid, 'utcOffsetMinutes': 841},
+    ]) {
+      expect(
+        () => GoalNudgeSnooze.fromJson(invalid),
+        throwsFormatException,
+      );
+    }
+  });
+
   group('GoalNudgeRating contract', () {
     Map<String, dynamic> json({
       Object? rating = 4,

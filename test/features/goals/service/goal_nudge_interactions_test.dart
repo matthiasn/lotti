@@ -123,6 +123,35 @@ void main() {
         3,
       );
     });
+
+    test('a durable snooze survives a failed sync enqueue without asking the '
+        'user to retry', () async {
+      var persisted = nudge();
+      final throwing = _CommitThenThrowSyncService();
+      when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
+        persisted = invocation.positionalArguments.first as GoalNudgeEntity;
+      });
+      when(
+        () => repository.getEntity('ad-1'),
+      ).thenAnswer((_) async => persisted);
+      final reconciling = GoalNudgeInteractions(
+        repository: repository,
+        syncService: throwing,
+        newId: () => 'durable-snooze',
+      );
+
+      final saved = await withClock(
+        fixedClock,
+        () => reconciling.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.oneHour,
+        ),
+      );
+
+      expect(saved, isTrue);
+      expect(persisted.snoozeHistory.single.id, 'durable-snooze');
+      expect(persisted.snoozedUntil, now.add(const Duration(hours: 1)).toUtc());
+    });
   });
 
   group('dismissForDay', () {
@@ -143,6 +172,30 @@ void main() {
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => null);
       await interactions.dismissForDay('ad-1');
       expect(upserts, isEmpty);
+    });
+
+    test('a durable day dismissal survives a failed sync enqueue without '
+        'asking the user to retry', () async {
+      var persisted = nudge();
+      final throwing = _CommitThenThrowSyncService();
+      when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
+        persisted = invocation.positionalArguments.first as GoalNudgeEntity;
+      });
+      when(
+        () => repository.getEntity('ad-1'),
+      ).thenAnswer((_) async => persisted);
+      final reconciling = GoalNudgeInteractions(
+        repository: repository,
+        syncService: throwing,
+      );
+
+      final saved = await withClock(
+        fixedClock,
+        () => reconciling.dismissForDay('ad-1'),
+      );
+
+      expect(saved, isTrue);
+      expect(persisted.dismissedForDayAt, now.toUtc());
     });
   });
 

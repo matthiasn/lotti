@@ -840,5 +840,55 @@ void main() {
         expect(ab.snoozedUntil, ba.snoozedUntil);
       },
     );
+
+    test('same-id snooze conflicts use every field as a deterministic '
+        'tie-breaker', () {
+      final baseline = snooze('same-id', hour: 10, durationHours: 3);
+
+      GoalNudgeSnooze selected(
+        GoalNudgeSnooze a,
+        GoalNudgeSnooze b,
+      ) {
+        final local = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozeHistory: [a],
+        );
+        final incoming = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozeHistory: [b],
+        );
+        return mergeGoalNudgeAccumulators(
+          winner: local,
+          local: local,
+          incoming: incoming,
+        ).snoozeHistory.single;
+      }
+
+      final earlierStart = baseline.copyWith(
+        snoozedAt: baseline.snoozedAt.subtract(const Duration(minutes: 1)),
+      );
+      expect(selected(baseline, earlierStart), earlierStart);
+
+      final earlierReturn = baseline.copyWith(
+        snoozedUntil: baseline.snoozedUntil.subtract(
+          const Duration(minutes: 1),
+        ),
+      );
+      expect(selected(baseline, earlierReturn), earlierReturn);
+
+      final laterActivation = baseline.copyWith(activation: 2);
+      expect(selected(laterActivation, baseline), baseline);
+
+      final laterPreset = baseline.copyWith(
+        duration: GoalBannerSnoozeDuration.sixHours,
+      );
+      expect(selected(laterPreset, baseline), baseline);
+
+      final longerMinutes = baseline.copyWith(durationMinutes: 181);
+      expect(selected(longerMinutes, baseline), baseline);
+
+      final laterOffset = baseline.copyWith(utcOffsetMinutes: 180);
+      expect(selected(laterOffset, baseline), baseline);
+    });
   });
 }
