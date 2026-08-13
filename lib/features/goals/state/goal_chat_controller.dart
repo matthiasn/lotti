@@ -146,7 +146,7 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
         if (nudge.status == GoalNudgeStatus.active &&
             until != null &&
             until.isAfter(now)) {
-          local.add(nudge.id, until);
+          local.add(nudge.id, nudge.activationCount, until);
         }
       }
     } on Object {

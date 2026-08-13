@@ -10397,12 +10397,6 @@ abstract class AppLocalizations {
   /// **'Dismiss for today'**
   String get goalBannerDismissForDay;
 
-  /// Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get goalBannerDismissTooltip;
-
   /// No description provided for @goalBannerRateTooltip.
   ///
   /// In en, this message translates to:

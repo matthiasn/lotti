@@ -131,7 +131,7 @@ void main() {
       expect(result, isTrue);
       expect(
         containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider)['ad-1'],
-        persistedDeadline,
+        (activation: 1, until: persistedDeadline),
       );
       verify(
         () => interactions.snooze(
@@ -154,7 +154,7 @@ void main() {
       expect(await resultFuture, isTrue);
       expect(
         containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider)['ad-1'],
-        persistedDeadline,
+        (activation: 1, until: persistedDeadline),
       );
       verify(
         () => interactions.dismissForDay('ad-1', forActivation: 1),

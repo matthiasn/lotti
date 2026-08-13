@@ -844,6 +844,7 @@ void main() {
       String id, {
       required int startHourUtc,
       required int durationHours,
+      int returnUtcOffsetMinutes = 120,
     }) => GoalNudgeSnooze(
       id: id,
       activation: 1,
@@ -859,6 +860,7 @@ void main() {
       ),
       durationMinutes: durationHours * 60,
       utcOffsetMinutes: 120,
+      returnUtcOffsetMinutes: returnUtcOffsetMinutes,
     );
     final json = renderedJson(
       nudges: [
@@ -866,7 +868,12 @@ void main() {
           id: 'ad-history',
           status: GoalNudgeStatus.retired,
           snoozeHistory: [
-            event('s1', startHourUtc: 8, durationHours: 3),
+            event(
+              's1',
+              startHourUtc: 8,
+              durationHours: 3,
+              returnUtcOffsetMinutes: 180,
+            ),
             event('s2', startHourUtc: 9, durationHours: 1),
             event('s3', startHourUtc: 12, durationHours: 3),
           ],
@@ -886,7 +893,7 @@ void main() {
     final returnHours =
         behavior['countByRequestedReturnLocalHour'] as List<dynamic>;
     expect(returnHours[12], 1);
-    expect(returnHours[13], 1);
+    expect(returnHours[14], 1);
     expect(returnHours[17], 1);
     final recent = (behavior['recent'] as List<dynamic>)
         .cast<Map<String, dynamic>>();

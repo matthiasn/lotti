@@ -138,6 +138,10 @@ void main() {
       expect(snoozed.snoozedUntil, until);
       expect(snoozed.lastSnoozeDuration, GoalBannerSnoozeDuration.threeHours);
       expect(snoozed.snoozeHistory.single.durationMinutes, 180);
+      expect(
+        snoozed.snoozeHistory.single.returnUtcOffsetMinutes,
+        until.timeZoneOffset.inMinutes,
+      );
       expect(snoozed.staleAt, DateTime.utc(2026, 8, 14, 13));
       expect(snoozed.provenance, {
         'specVersionId': 'spec-1',

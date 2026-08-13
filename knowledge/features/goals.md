@@ -503,6 +503,11 @@ flowchart TD
   watermarks merge losslessly on concurrent sync — the labeled ad library and
   its timing evidence must survive whole-row LWW. Concurrent snoozes for the
   same activation keep the later quiet deadline while retaining both events;
+  their staleness extensions merge by the later deadline so the selected
+  reveal cannot immediately disappear as stale. Successive snooze requests in
+  one model turn fold over the just-written row rather than the turn's initial
+  snapshot. Both the choice-time and requested-return offsets are retained, so
+  a daylight-saving transition cannot shift learned return-hour evidence;
   interaction-event ids deterministically de-duplicate the append-only
   histories across peers.
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
@@ -557,7 +562,10 @@ flowchart TD
   boundary, so expiry while the app is closed is handled without trusting a
   timer that did not run. Interaction writes return the exact persisted quiet
   deadline to optimistic local suppression, so a transaction crossing midnight
-  cannot extend a day dismissal into the following day. Synchronized snooze
+  cannot extend a day dismissal into the following day. That temporary local
+  suppression is activation-scoped: a concurrent re-run of the same row id is
+  immediately visible instead of inheriting the prior activation's quiet
+  interval. Synchronized snooze
   and day-dismissal histories accept only timestamps with explicit UTC markers
   or numeric offsets, keeping expiry and learned local-hour evidence
   replica-independent. `GoalFactsRenderer` summarizes duration, local start,

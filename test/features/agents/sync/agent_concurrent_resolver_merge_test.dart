@@ -18,6 +18,7 @@ void main() {
     int activationCount = 1,
     DateTime? firstShownAt,
     DateTime? lastShownAt,
+    DateTime? staleAt,
     DateTime? snoozedUntil,
     GoalBannerSnoozeDuration? lastSnoozeDuration,
     List<GoalNudgeSnooze> snoozeHistory = const [],
@@ -43,6 +44,7 @@ void main() {
             activationCount: activationCount,
             firstShownAt: firstShownAt,
             lastShownAt: lastShownAt,
+            staleAt: staleAt,
             snoozedUntil: snoozedUntil,
             lastSnoozeDuration: lastSnoozeDuration,
             snoozeHistory: snoozeHistory,
@@ -822,6 +824,7 @@ void main() {
           snoozedUntil: short.snoozedUntil,
           lastSnoozeDuration: short.duration,
           snoozeHistory: [short],
+          staleAt: DateTime.utc(2026, 8, 14, 11),
         );
         final incoming = goalNudge(
           status: GoalNudgeStatus.active,
@@ -829,6 +832,7 @@ void main() {
           lastSnoozeDuration: long.duration,
           snoozeHistory: [long],
           dismissedForDayAt: DateTime.utc(2026, 8, 13, 11),
+          staleAt: DateTime.utc(2026, 8, 16, 17),
         );
 
         final ab = mergeGoalNudgeAccumulators(
@@ -849,6 +853,11 @@ void main() {
         expect(ab.snoozedUntil, long.snoozedUntil);
         expect(ab.lastSnoozeDuration, GoalBannerSnoozeDuration.eightHours);
         expect(ab.dismissedForDayAt, DateTime.utc(2026, 8, 13, 11));
+        expect(
+          ab.staleAt,
+          DateTime.utc(2026, 8, 16, 17),
+          reason: 'the selected later reveal keeps its branch lifetime',
+        );
         expect(ab.snoozeHistory, ba.snoozeHistory);
         expect(ab.snoozedUntil, ba.snoozedUntil);
       },
@@ -902,6 +911,11 @@ void main() {
 
       final laterOffset = baseline.copyWith(utcOffsetMinutes: 180);
       expect(selected(laterOffset, baseline), baseline);
+
+      final laterReturnOffset = baseline.copyWith(
+        returnUtcOffsetMinutes: 180,
+      );
+      expect(selected(laterReturnOffset, baseline), baseline);
     });
 
     test('unions day-dismissal history by id and converges on conflicting '

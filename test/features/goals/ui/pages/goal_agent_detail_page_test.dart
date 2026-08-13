@@ -512,7 +512,11 @@ void main() {
     );
     container
         .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-        .add('ad-goal-1-The stairs filed a complaint.', DateTime.utc(2099));
+        .add(
+          'ad-goal-1-The stairs filed a complaint.',
+          1,
+          DateTime.utc(2099),
+        );
     await tester.pump();
 
     expect(find.byType(GoalBannerCard), findsNWidgets(2));

@@ -132,7 +132,7 @@ Future<bool> showGoalBannerSnoozeSheet(
 
   container
       .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-      .add(entry.nudge.id, hiddenUntil);
+      .add(entry.nudge.id, entry.nudge.activationCount, hiddenUntil);
   container.invalidate(activeGoalNudgesProvider);
   return true;
 }

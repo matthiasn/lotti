@@ -2821,7 +2821,6 @@
   "goalAttainmentLabel": "{percent} % af målet",
   "goalBannerActionFailed": "Det blev ikke gemt — prøv venligst igen.",
   "goalBannerDismissForDay": "Skjul resten af dagen",
-  "goalBannerDismissTooltip": "Afvis",
   "goalBannerRateTooltip": "Bedøm dette banner",
   "goalBannerRatingSkip": "Spring over",
   "goalBannerRatingTitle": "Hvordan var dette banner?",

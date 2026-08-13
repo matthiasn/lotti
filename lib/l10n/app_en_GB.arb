@@ -60,7 +60,6 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "goalAttainmentLabel": "{percent}% of target",
-  "goalBannerDismissTooltip": "Dismiss",
   "goalBannerRatingSkip": "Skip",
   "goalBannerRatingTitle": "How was this banner?",
   "goalBannerSemanticLabel": "Goal banner for {goalTitle}",

@@ -1397,7 +1397,7 @@ void main() {
         final container = ProviderScope.containerOf(pageContext, listen: false);
         container
             .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-            .add(nudge.id, DateTime.utc(2099));
+            .add(nudge.id, nudge.activationCount, DateTime.utc(2099));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 

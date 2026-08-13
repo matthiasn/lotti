@@ -3305,10 +3305,6 @@
   "@goalBannerDismissForDay": {
     "description": "De-emphasized action that hides a goal-agent banner until the next local day."
   },
-  "goalBannerDismissTooltip": "Dismiss",
-  "@goalBannerDismissTooltip": {
-    "description": "Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window."
-  },
   "goalBannerRateTooltip": "Rate this banner",
   "goalBannerRatingSkip": "Skip",
   "@goalBannerRatingSkip": {

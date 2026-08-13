@@ -1200,18 +1200,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
       for (final action in strategy.snoozeRequests) {
         final nudge = byId[action.adId];
         if (nudge == null || nudge.status != GoalNudgeStatus.active) continue;
-        await _syncService.upsertEntity(
-          snoozeGoalBannerEntity(
-            nudge: nudge,
-            now: now,
-            until: action.until,
-            eventId: const Uuid().v5(
-              Namespace.url.value,
-              'lotti://goal-agent/${nudge.id}/snooze/$runKey/'
-              '${action.until.toUtc().toIso8601String()}',
-            ),
+        final updated = snoozeGoalBannerEntity(
+          nudge: nudge,
+          now: now,
+          until: action.until,
+          returnUtcOffsetMinutes: action.returnUtcOffsetMinutes,
+          eventId: const Uuid().v5(
+            Namespace.url.value,
+            'lotti://goal-agent/${nudge.id}/snooze/$runKey/'
+            '${action.until.toUtc().toIso8601String()}',
           ),
         );
+        await _syncService.upsertEntity(updated);
+        // A single model turn may request several successive quiet deadlines
+        // for one banner. Fold each write into the next so no append-only event
+        // is overwritten by the transaction's original snapshot.
+        byId[action.adId] = updated;
       }
 
       // Interactive replies are explicit reply_to_user action rows so the

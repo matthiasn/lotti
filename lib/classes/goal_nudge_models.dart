@@ -115,8 +115,9 @@ abstract class GoalNudgeRating with _$GoalNudgeRating {
 ///
 /// The UTC instants preserve ordering and expiry semantics across devices.
 /// [utcOffsetMinutes] preserves the wall-clock context in which the user made
-/// the choice, so future timing analysis does not reinterpret an old snooze in
-/// the device's current timezone after travel or a daylight-saving change.
+/// the choice. [returnUtcOffsetMinutes] separately preserves the requested
+/// return wall time when the snooze crosses a daylight-saving boundary or was
+/// requested with another explicit offset.
 @freezed
 abstract class GoalNudgeSnooze with _$GoalNudgeSnooze {
   const factory GoalNudgeSnooze({
@@ -127,6 +128,8 @@ abstract class GoalNudgeSnooze with _$GoalNudgeSnooze {
     required GoalBannerSnoozeDuration duration,
     @JsonKey(fromJson: _decodePositiveMinutes) required int durationMinutes,
     @JsonKey(fromJson: _decodeUtcOffsetMinutes) required int utcOffsetMinutes,
+    @JsonKey(fromJson: _decodeOptionalUtcOffsetMinutes)
+    int? returnUtcOffsetMinutes,
   }) = _GoalNudgeSnooze;
 
   const GoalNudgeSnooze._();
@@ -141,9 +144,10 @@ abstract class GoalNudgeSnooze with _$GoalNudgeSnooze {
       snoozedAt.toUtc().add(Duration(minutes: utcOffsetMinutes));
 
   /// The requested return time in the same recorded wall-clock convention as
-  /// [snoozedAtLocal].
-  DateTime get snoozedUntilLocal =>
-      snoozedUntil.toUtc().add(Duration(minutes: utcOffsetMinutes));
+  /// [snoozedAtLocal]. Older events fall back to the action-time offset.
+  DateTime get snoozedUntilLocal => snoozedUntil.toUtc().add(
+    Duration(minutes: returnUtcOffsetMinutes ?? utcOffsetMinutes),
+  );
 }
 
 /// One durable "dismiss for today" interaction for one banner activation.
@@ -195,6 +199,9 @@ int _decodeUtcOffsetMinutes(Object? raw) {
   }
   throw FormatException('utcOffsetMinutes outside -840..840: $raw');
 }
+
+int? _decodeOptionalUtcOffsetMinutes(Object? raw) =>
+    raw == null ? null : _decodeUtcOffsetMinutes(raw);
 
 /// Cross-field issues in a raw rating payload — what the per-field
 /// converters cannot see. Constructor assertions are deliberately NOT the
