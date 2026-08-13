@@ -5,7 +5,7 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T15:42:59Z }
+generated: { by: claude-code/opus-5, at: 2026-08-13T00:10:42Z }
 stale_after: 2026-10-12
 sources:
   - id: ui
@@ -430,7 +430,9 @@ thinking-model overrides remain hidden on that profile-only path. Because goal
 agents have no template assignment, their Stats row resolves the persisted
 identity profile directly through `goalAgentResolvedSetupProvider`; saving a
 profile invalidates that resolver together with the identity so the effective
-route is shown immediately.
+route is shown immediately. With no profile override, the same resolver shows
+the built-in GLM 5.2 route used by `GoalAgentWorkflow` rather than describing a
+runnable goal agent as having no AI setup.
 
 # Settings surfaces
 

@@ -187,6 +187,31 @@ void main() {
       expect(item.children!.first.toPlainText(), contains('42'));
       expect(item.children!.first.toPlainText(), contains('bpm'));
     });
+
+    testWidgets('date-only tooltip preserves a canonical UTC day key', (
+      tester,
+    ) async {
+      final obsTime = DateTime.utc(2024, 3, 15);
+      final xMs = obsTime.millisecondsSinceEpoch.toDouble();
+      final bar = makeBarData([(xMs, 7)]);
+      await hPumpChart(
+        tester,
+        lineBarsData: [bar],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        dateOnly: true,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final spot = FlSpot(xMs, 7);
+      final barData = LineChartBarData(spots: [spot]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 0, spot),
+      ]);
+
+      expect(items.single!.children![1].toPlainText(), 'Mar 15');
+    });
   });
 
   group('TimeSeriesMultiLineChart — axis configuration', () {

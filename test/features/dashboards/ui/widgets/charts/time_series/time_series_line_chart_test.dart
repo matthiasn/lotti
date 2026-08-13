@@ -358,5 +358,28 @@ void main() {
       final items = tooltipData.getTooltipItems([]);
       expect(items, isEmpty);
     });
+
+    testWidgets('date-only tooltip preserves a canonical UTC day key', (
+      tester,
+    ) async {
+      final obsTime = DateTime.utc(2024, 3, 15);
+      await hPumpChart(
+        tester,
+        data: [Observation(obsTime, 7)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        dateOnly: true,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final spot = FlSpot(obsTime.millisecondsSinceEpoch.toDouble(), 7);
+      final barData = LineChartBarData(spots: [spot]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 0, spot),
+      ]);
+
+      expect(items.single!.children![1].toPlainText(), 'Mar 15');
+    });
   });
 }

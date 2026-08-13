@@ -7,6 +7,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -235,6 +237,14 @@ void main() {
       );
       expect(find.text('Systolic ≤ 125'), findsOneWidget);
       expect(find.text('Diastolic ≤ 85'), findsOneWidget);
+      expect(
+        tester
+            .widget<TimeSeriesMultiLineChart>(
+              find.byType(TimeSeriesMultiLineChart),
+            )
+            .dateOnly,
+        isTrue,
+      );
     },
   );
 
@@ -472,6 +482,12 @@ void main() {
       94.2,
       95,
     ]);
+    expect(
+      tester
+          .widget<TimeSeriesLineChart>(find.byType(TimeSeriesLineChart))
+          .dateOnly,
+      isTrue,
+    );
   });
 
   testWidgets('metric bars expose localized date, value, target, and state', (

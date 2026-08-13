@@ -442,6 +442,7 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 minVal: yValues.reduce(math.min),
                 maxVal: yValues.reduce(math.max),
                 unit: unit,
+                dateOnly: true,
                 horizontalLines: [
                   _targetLine(metrics.systolic.target, systolicColor),
                   _targetLine(metrics.diastolic.target, diastolicColor),
@@ -451,6 +452,7 @@ class _BloodPressureDimensionCard extends StatelessWidget {
             DashboardChartDateAxis(
               rangeStart: range.start,
               rangeEnd: range.end,
+              dateOnly: true,
             ),
             SizedBox(height: tokens.spacing.step3),
             DashboardChartLegend(
@@ -1291,6 +1293,7 @@ class _MetricTrendSeries extends StatelessWidget {
             rangeStart: range.start,
             rangeEnd: range.end,
             unit: metric.unitName ?? '',
+            dateOnly: true,
             horizontalLines: [
               _targetLine(
                 metric.target,
@@ -1302,6 +1305,7 @@ class _MetricTrendSeries extends StatelessWidget {
         DashboardChartDateAxis(
           rangeStart: range.start,
           rangeEnd: range.end,
+          dateOnly: true,
         ),
       ],
     );

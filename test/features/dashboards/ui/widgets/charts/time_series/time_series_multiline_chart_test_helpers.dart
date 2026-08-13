@@ -20,6 +20,7 @@ Future<void> hPumpChart(
   num minVal = 0,
   num maxVal = 100,
   String unit = '',
+  bool dateOnly = false,
   List<HorizontalLine> horizontalLines = const [],
   Size physicalSize = const Size(800, 600),
 }) async {
@@ -40,6 +41,7 @@ Future<void> hPumpChart(
             minVal: minVal,
             maxVal: maxVal,
             unit: unit,
+            dateOnly: dateOnly,
             horizontalLines: horizontalLines,
           ),
         ),

@@ -21,6 +21,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     required this.minVal,
     required this.maxVal,
     this.unit = '',
+    this.dateOnly = false,
     this.horizontalLines = const [],
     super.key,
   });
@@ -31,6 +32,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   final num minVal;
   final num maxVal;
   final String unit;
+  final bool dateOnly;
   final List<HorizontalLine> horizontalLines;
 
   @override
@@ -74,7 +76,9 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
-                        text: chartDateFormatterFull(context, spot.x),
+                        text: dateOnly
+                            ? chartDateFormatterDateOnlyUtc(context, spot.x)
+                            : chartDateFormatterFull(context, spot.x),
                         style: chartTooltipStyle,
                       ),
                     ],

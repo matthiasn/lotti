@@ -342,6 +342,26 @@ void main() {
       expect(label, startsWith('15. März'));
       expect(label, endsWith('09:05'));
     });
+
+    testWidgets('date-only UTC formatter preserves the canonical day key', (
+      tester,
+    ) async {
+      final dayKeyMillis = DateTime.utc(2024, 3, 15).millisecondsSinceEpoch;
+      late String label;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Builder(
+            builder: (context) {
+              label = chartDateFormatterDateOnlyUtc(context, dayKeyMillis);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(label, 'Mar 15');
+      expect(label, isNot(contains(':')));
+    });
   });
 
   group('aggregateSumByDay', () {

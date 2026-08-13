@@ -19,6 +19,7 @@ Future<void> hPumpChart(
   required DateTime rangeStart,
   required DateTime rangeEnd,
   String unit = '',
+  bool dateOnly = false,
   List<HorizontalLine> horizontalLines = const [],
   Size physicalSize = const Size(800, 600),
 }) async {
@@ -37,6 +38,7 @@ Future<void> hPumpChart(
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             unit: unit,
+            dateOnly: dateOnly,
             horizontalLines: horizontalLines,
           ),
         ),

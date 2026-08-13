@@ -75,6 +75,13 @@ String chartDateFormatterMmDd(num millis) {
   return DateFormat('MMM dd').format(day);
 }
 
+/// Formats a canonical midnight-UTC day key for a compact date axis without
+/// converting it into the device timezone.
+String chartDateFormatterMmDdUtc(num millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt(), isUtc: true);
+  return DateFormat('MMM dd').format(day);
+}
+
 String chartDateFormatterYMD(num millis) {
   final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
   return DateFormat.yMMMd().format(day);
@@ -97,6 +104,14 @@ String chartDateFormatterFull(BuildContext context, num millis) {
   final locale = Localizations.localeOf(context).toString();
   final date = DateFormat.MMMd(locale).format(day);
   return '$date, ${TimeOfDay.fromDateTime(day).format(context)}';
+}
+
+/// Formats a canonical midnight-UTC day key without converting it into the
+/// device timezone and without adding a clock label.
+String chartDateFormatterDateOnlyUtc(BuildContext context, num millis) {
+  final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt(), isUtc: true);
+  final locale = Localizations.localeOf(context).toString();
+  return DateFormat.MMMd(locale).format(day);
 }
 
 List<Observation> aggregateSumByHour(

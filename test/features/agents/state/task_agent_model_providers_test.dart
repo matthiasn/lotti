@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -276,21 +277,62 @@ void main() {
   );
 
   test(
-    'goal-agent profile resolver reports disabled and broken setups',
+    'goal-agent resolver reports its built-in route and broken setups',
     () async {
-      final disabledContainer = ProviderContainer(
+      final repository = MockAiConfigRepository();
+      final provider = AiConfigInferenceProvider(
+        id: 'provider',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        name: 'Provider',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.melious,
+      );
+      final builtInModel = model().copyWith(
+        providerModelId: meliousGlm52ModelId,
+      );
+      when(
+        () => repository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [builtInModel]);
+      when(
+        () => repository.getConfigById('provider'),
+      ).thenAnswer((_) async => provider);
+      final builtInContainer = ProviderContainer(
         overrides: [
           agentIdentityProvider.overrideWith(
             (ref, id) async => makeTestIdentity(kind: AgentKinds.goalAgent),
           ),
+          aiConfigRepositoryProvider.overrideWithValue(repository),
         ],
       );
-      addTearDown(disabledContainer.dispose);
+      addTearDown(builtInContainer.dispose);
+      final builtIn = await builtInContainer.read(
+        goalAgentResolvedSetupProvider('agent').future,
+      );
+      expect(builtIn?.status, AgentSetupResolutionStatus.resolved);
+      expect(builtIn?.source, AgentSetupResolutionSource.directModel);
+      expect(builtIn?.profile?.thinkingModelId, meliousGlm52ModelId);
+      expect(builtIn?.profile?.thinkingProvider, provider);
+      expect(builtIn?.profile?.thinkingModel, builtInModel);
+
+      final unavailableRepository = MockAiConfigRepository();
+      when(
+        () => unavailableRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => const []);
+      final unavailableContainer = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(kind: AgentKinds.goalAgent),
+          ),
+          aiConfigRepositoryProvider.overrideWithValue(unavailableRepository),
+        ],
+      );
+      addTearDown(unavailableContainer.dispose);
       expect(
-        (await disabledContainer.read(
+        (await unavailableContainer.read(
           goalAgentResolvedSetupProvider('agent').future,
         ))?.status,
-        AgentSetupResolutionStatus.disabled,
+        AgentSetupResolutionStatus.broken,
       );
 
       final resolver = MockProfileResolver();

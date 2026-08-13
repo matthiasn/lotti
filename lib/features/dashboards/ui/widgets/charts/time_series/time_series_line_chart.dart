@@ -22,6 +22,7 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
+    this.dateOnly = false,
     this.horizontalLines = const [],
     super.key,
   });
@@ -30,6 +31,7 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final bool dateOnly;
   final List<HorizontalLine> horizontalLines;
 
   @override
@@ -94,7 +96,9 @@ class TimeSeriesLineChart extends StatelessWidget {
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
-                        text: chartDateFormatterFull(context, spot.x),
+                        text: dateOnly
+                            ? chartDateFormatterDateOnlyUtc(context, spot.x)
+                            : chartDateFormatterFull(context, spot.x),
                         style: chartTooltipStyle,
                       ),
                     ],

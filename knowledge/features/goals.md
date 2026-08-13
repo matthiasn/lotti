@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-12T20:40:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-13T00:10:42Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -478,8 +478,10 @@ flowchart TD
   render as one dual-line blood-pressure chart with both authored targets;
   a partial blood-pressure import remains two separate cards so the available
   component is not hidden. Singleton health series render a visible point until
-  a second observation can form a line. Other numeric dimensions retain the
-  progress-bar series. Rolling habit projections keep the
+  a second observation can form a line. These daily health charts format their
+  canonical midnight-UTC keys as date-only values, so devices west of UTC do
+  not shift a goal day backward in tooltips or the shared date axis. Other
+  numeric dimensions retain the progress-bar series. Rolling habit projections keep the
   immediately preceding slipped day separate from active-period arithmetic,
   and periods longer than seven days scroll horizontally instead of being
   relabelled as a trailing week. Metric satisfaction is folded with the same

@@ -199,5 +199,28 @@ void main() {
         kChartLeftAxisWidth,
       );
     });
+
+    testWidgets('date-only axis preserves canonical UTC day keys', (
+      tester,
+    ) async {
+      final utcStart = DateTime.utc(2024, 3);
+      final utcEnd = DateTime.utc(2024, 3, 31);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: DashboardChartDateAxis(
+              rangeStart: utcStart,
+              rangeEnd: utcEnd,
+              dateOnly: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final labels = tester.widgetList<ChartLabel>(find.byType(ChartLabel));
+      expect(labels.first.text, 'Mar 01');
+      expect(labels.last.text, 'Mar 31');
+    });
   });
 }

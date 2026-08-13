@@ -4,10 +4,12 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
+import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 
 /// Shared detailed inference resolution used by the task-agent header.
 final FutureProviderFamily<ResolvedAgentSetup?, String>
@@ -24,7 +26,8 @@ taskAgentResolvedSetupProvider = FutureProvider.autoDispose
 final FutureProviderFamily<ResolvedAgentSetup?, String>
 agentResolvedSetupProvider = taskAgentResolvedSetupProvider;
 
-/// Resolves a goal agent's persisted profile without requiring a template.
+/// Resolves a goal agent's persisted profile or built-in runtime route without
+/// requiring a template.
 final FutureProviderFamily<ResolvedAgentSetup?, String>
 goalAgentResolvedSetupProvider = FutureProvider.autoDispose
     .family<ResolvedAgentSetup?, String>(
@@ -42,8 +45,25 @@ Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
 
   final profileId = identity.config.profileId;
   if (profileId == null) {
+    final direct = await resolveInferenceProviderWithModel(
+      modelId: meliousGlm52ModelId,
+      aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+      logTag: 'GoalAgentResolvedSetup',
+    );
+    if (direct != null) {
+      return ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: ResolvedProfile(
+          thinkingModelId: direct.model.providerModelId,
+          thinkingProvider: direct.provider,
+          thinkingModel: direct.model,
+        ),
+        source: AgentSetupResolutionSource.directModel,
+        setupOrigin: identity.config.inferenceSetup?.origin,
+      );
+    }
     return ResolvedAgentSetup(
-      status: AgentSetupResolutionStatus.disabled,
+      status: AgentSetupResolutionStatus.broken,
       setupOrigin: identity.config.inferenceSetup?.origin,
     );
   }
