@@ -43,6 +43,10 @@
     <release version="1.0.8" date="2026-08-12">
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
+        <p>Added: rolling-week charts show partial successes in a lighter green when the habit was completed but the window target was not yet met, habit cards offer a one-tap check-off when matching data was recorded today, and each day square shows its concrete date on hover and at the top of the Success/Missed menu.</p>
+        <p>Changed: the Agents tab is now called Goal Agents, and the goal detail page leads with the standing report and banners directly under the goal definition, with habit cards and charts below.</p>
+        <p>Changed: banners refresh when their evidence changes. A new measurement or habit check-off that changes the facts a banner quotes expires the outdated copy and wakes the agent for a replacement, and the standing report gains an out-of-date badge when new data arrives after it was written.</p>
+        <p>Changed: blood pressure and weight headers quote the latest reading instead of a seven-day average, while the on-track verdict still follows the goal's rolling-average target.</p>
         <p>Changed: goal health trends now use charts that fit the data. Systolic and diastolic blood pressure share one dual-line chart with separate target lines, while weight uses a line chart that makes small day-to-day changes visible. Other measurable dimensions keep their existing progress bars.</p>
         <p>Changed: goal setup can monitor time spent in active categories, with a rolling seven-day hour target and an at-least or at-most direction.</p>
         <p>Fixed: goal agents can choose an inference profile from Agent internals. Their AI setup row now opens the profile picker even though goal agents have no linked task.</p>

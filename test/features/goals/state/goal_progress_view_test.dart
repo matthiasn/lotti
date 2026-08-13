@@ -720,10 +720,9 @@ void main() {
     );
     // No observation today: no evidence to suggest from.
     expect(
-      build(systolicDays: {day(1): 127})
-          .habits
-          .single
-          .suggestedFromDimensionName,
+      build(
+        systolicDays: {day(1): 127},
+      ).habits.single.suggestedFromDimensionName,
       isNull,
     );
     // No distinctive word overlap ("BP" is not "blood pressure"): the

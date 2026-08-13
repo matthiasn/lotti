@@ -1023,7 +1023,9 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')));
+    await tester.tap(
+      find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
+    );
     await tester.pumpAndSettle();
 
     expect(

@@ -70,7 +70,8 @@ without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake
 ids, so a transaction that commits before its deferred outbox flush fails is
 recognized as complete instead of rerunning inference. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
-and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
+and habits pages (`ui/goal_banner_*`), and a Goal Agents tab (`ui/pages/`;
+the `/agents` route path is unchanged)
 with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
 pushed phone page or desktop peer pane. Agent replies retain their Markdown
@@ -81,9 +82,18 @@ lifetime through the normal habit-completion path while the goal remains active;
 current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report, while future calendar cells remain
-read-only. On desktop the rolling-seven-day rows share one localized weekday
-header; desktop and phone use the handoff's compact day-cell rhythm, while the
+read-only. The detail page leads with the standing report and this goal's active
+banners directly under the goal definition, with the habit cards and charts
+below. Rolling-seven-day rows keep their localized weekday labels glued
+directly above the day squares in one shared horizontal scroller; desktop and
+phone use the handoff's compact day-cell rhythm, while the
 phone layout keeps each habit name and cadence together above its strip.
+A completed day whose window target was not yet met renders as a lighter
+partial-success wash, each square carries its concrete date in tooltip and
+outcome-menu header, and a blank habit day with a name-matching data
+observation recorded today offers a one-tap check-off. Blood-pressure and
+weight headers quote the latest reading while their verdicts stay on the
+rolling-average target.
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
@@ -129,9 +139,11 @@ follow-up wake retiring it, including positive or recovery copy when the goal
 is not behind. Localized requests use the model's typed banner action as the
 language-independent authorization at persistence. A new at-risk goal receives
 its first banner without waiting for a multi-day decline. When an active banner
-ages out while the goal still qualifies for automatic copy, the next
-deterministic tick expires it and re-arms Phase B for a replacement; healthy
-expiry remains model-free. The desktop banner tenant fills the dock's available
+ages out — or its stamped evidence fingerprint no longer matches the current
+derivation because new data arrived — while the goal still qualifies for
+automatic copy, the next deterministic tick expires it and re-arms Phase B
+for a replacement; healthy expiry remains model-free, and new evidence after
+today's earlier tick also marks the standing report out of date. The desktop banner tenant fills the dock's available
 width.
 Voice input in the goal chat composer lets the user record, transcribe,
 and fill the text field from speech. Paging beyond the newest fifty visible

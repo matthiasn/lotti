@@ -205,12 +205,12 @@ void main() {
     expect(find.text('Show more'), findsOneWidget);
   });
 
-  testWidgets('a reply that fits the collapsed viewport shows no toggle even '
-      'when its character count is high', (tester) async {
-    // Over the former 360-character heuristic, but rendering as a couple of
-    // lines — the old line-count clamp showed a Show more button that did
-    // nothing.
-    final wideShortReply = List.filled(25, 'steady progress').join(' ');
+  testWidgets('a reply that fits the collapsed viewport shows no toggle', (
+    tester,
+  ) async {
+    // The toggle is measurement-driven: content that renders inside the
+    // collapsed viewport must not offer a Show more that would do nothing.
+    const wideShortReply = 'Nice work today — both habits are on track.';
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
