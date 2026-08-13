@@ -245,7 +245,7 @@ SPEC CHECKSUMS:
   flutter_onnxruntime: fb7bede79ac00a8e129c95d7e6b99c0f4e960d98
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: fd2ea9cb3e2a37beaac883a369811fbfe042fc53
-  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
   gal: baecd024ebfd13c441269ca7404792a7152fde89
   irondash_engine_context: 893c7d96d20ce361d7e996f39d360c4c2f9869ba
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
@@ -276,4 +276,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 481248ab00d30452d8c6bfe642a8daa6f28d838c
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0
