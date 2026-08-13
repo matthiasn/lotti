@@ -108,6 +108,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   /// Mapping entities whose target failed validation, keyed
   /// `steps` / `health:{type}` / `measurable:{id}` / `category:{id}`.
   final _targetErrors = <String>{};
+
+  /// The signals card's row order, frozen on each entry to the mapping step
+  /// so a tapped row stays under the user's finger — regrouping happens on
+  /// re-entry, never mid-interaction. Descriptors: `habit:{id}`,
+  /// `blood-pressure`, `weight`, `steps`.
+  var _chosenSignalOrder = <String>[];
+  var _suggestedSignalOrder = <String>[];
   final _errorAnchors = <String, GlobalKey>{};
   String? _personaError;
   String? _titleError;
@@ -196,6 +203,21 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     return distinctiveLabelWords.intersection(_words(intention)).isNotEmpty;
   }
 
+  /// Whether this habit's name names one of the intention-matched health
+  /// capabilities (e.g. a "Measure Blood Pressure" habit next to the
+  /// blood-pressure readings signal).
+  bool _overlapsMatchedHealthLabel(String habitName) {
+    if (_matchedHealthTypes.isEmpty) return false;
+    final habitWords = _words(
+      _plainName(habitName),
+    ).difference(_genericIntentionWords);
+    for (final dataType in _matchedHealthTypes) {
+      final label = _healthDimensionName(context, dataType);
+      if (_words(label).intersection(habitWords).isNotEmpty) return true;
+    }
+    return false;
+  }
+
   String _habitsFingerprint(List<HabitDefinition> habits) =>
       habits.map((habit) => '${habit.id}\u0000${habit.name}').join('\u0001');
 
@@ -203,6 +225,35 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       categories
           .map((category) => '${category.id}\u0000${category.name}')
           .join('\u0001');
+
+  void _snapshotSignalGroups() {
+    final selectedHabitIds = _habitTargets.keys.toList();
+    final bloodPressureSelected =
+        _healthTargets.containsKey(GoalHealthDataTypes.bloodPressureSystolic) ||
+        _healthTargets.containsKey(GoalHealthDataTypes.bloodPressureDiastolic);
+    final bloodPressureMatched = _matchedHealthTypes.contains(
+      GoalHealthDataTypes.bloodPressureSystolic,
+    );
+    final weightSelected = _healthTargets.containsKey(
+      GoalHealthDataTypes.weight,
+    );
+    final weightMatched = _matchedHealthTypes.contains(
+      GoalHealthDataTypes.weight,
+    );
+    _chosenSignalOrder = [
+      for (final id in selectedHabitIds) 'habit:$id',
+      if (bloodPressureSelected) 'blood-pressure',
+      if (weightSelected) 'weight',
+      if (_watchesSteps) 'steps',
+    ];
+    _suggestedSignalOrder = [
+      for (final id in _matchedHabitIds)
+        if (!_habitTargets.containsKey(id)) 'habit:$id',
+      if (!bloodPressureSelected && bloodPressureMatched) 'blood-pressure',
+      if (!weightSelected && weightMatched) 'weight',
+      if (!_watchesSteps) 'steps',
+    ];
+  }
 
   void _mapIntention(List<HabitDefinition> habits) {
     final statement = _statement.text.trim();
@@ -256,8 +307,22 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           ..add(GoalHealthDataTypes.bloodPressureSystolic)
           ..add(GoalHealthDataTypes.bloodPressureDiastolic);
       }
+      // The substance arrives selected: a blood-pressure intention watches
+      // blood-pressure readings from the first render, not a checkbox.
+      for (final dataType in _matchedHealthTypes) {
+        _healthTargets.putIfAbsent(
+          dataType,
+          () => _defaultHealthTarget(dataType),
+        );
+        _healthDirections.putIfAbsent(dataType, () => GoalDirection.atMost);
+      }
       for (final habit in matchedHabits) {
-        _habitTargets.putIfAbsent(habit.id, () => 3);
+        // A habit that merely names a matched health capability is its
+        // bookkeeping twin: it stays visible as the unchecked sibling while
+        // the readings signal carries the goal.
+        if (!_overlapsMatchedHealthLabel(habit.name)) {
+          _habitTargets.putIfAbsent(habit.id, () => 3);
+        }
       }
       for (final measurable in _knownMeasurables) {
         if (_matchesIntention(measurable.displayName)) {
@@ -299,6 +364,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _derivedCategoriesFingerprint = categoriesFingerprint;
     }
 
+    _snapshotSignalGroups();
     setState(() {
       _validation = null;
       _targetErrors.clear();
@@ -742,8 +808,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     if (_saving) return;
 
     if (_step.index > _GoalFormStep.intention.index) {
+      final target = _GoalFormStep.values[_step.index - 1];
+      if (target == _GoalFormStep.mapping) _snapshotSignalGroups();
       setState(() {
-        _step = _GoalFormStep.values[_step.index - 1];
+        _step = target;
         _validation = null;
         _targetErrors.clear();
       });
@@ -822,9 +890,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final pageTitle = _editing
         ? messages.goalFormEditTitle
         : messages.agentsCreateGoal;
-    final desktop = isDesktopLayout(context);
-    // On wide layouts the CTA lives in the reading column, below the last
-    // card; the bottom-pinned bar is a phone pattern only.
     final primaryAction = DesignSystemButton(
       key: const ValueKey('goal-form-primary-action'),
       label: switch (_step) {
@@ -842,7 +907,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       },
       isLoading: _saving,
       size: DesignSystemButtonSize.large,
-      fullWidth: !desktop,
+      fullWidth: true,
     );
     return PopScope(
       canPop: _step == _GoalFormStep.intention,
@@ -918,6 +983,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               stepsTarget: _stepsTarget,
                               matchedHabitIds: _matchedHabitIds,
                               matchedHealthTypes: _matchedHealthTypes,
+                              chosenSignalOrder: _chosenSignalOrder,
+                              suggestedSignalOrder: _suggestedSignalOrder,
                               targetErrors: _targetErrors,
                               anchorFor: _anchorFor,
                               titleError: _titleError,
@@ -1077,19 +1144,24 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               enabled: !_saving,
                             ),
                           },
-                          if (desktop) ...[
-                            SizedBox(height: tokens.spacing.sectionGap),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: primaryAction,
-                            ),
-                          ],
                         ],
                       ),
                     ),
-                    if (!desktop)
-                      Padding(
+                    // The primary action is always on screen, on an opaque
+                    // band — scrolling content ends at a hairline instead of
+                    // being guillotined behind a floating pill.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        border: Border(
+                          top: BorderSide(
+                            color: tokens.colors.decorative.level01,
+                          ),
+                        ),
+                      ),
+                      child: Padding(
                         padding: EdgeInsets.only(
+                          top: tokens.spacing.step4,
                           bottom:
                               tokens.spacing.step4 +
                               DesignSystemBottomNavigationBar.occupiedHeight(
@@ -1098,6 +1170,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                         ),
                         child: primaryAction,
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -1120,26 +1193,42 @@ class _StepProgress extends StatelessWidget {
     return Semantics(
       label: context.messages.goalFormProgress(step.index + 1),
       child: ExcludeSemantics(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
           children: [
-            for (final candidate in _GoalFormStep.values) ...[
-              AnimatedContainer(
-                duration: MotionDurations.short4,
-                width: candidate == step
-                    ? tokens.spacing.step5
-                    : tokens.spacing.step2,
-                height: tokens.spacing.step2,
-                decoration: BoxDecoration(
-                  color: candidate.index <= step.index
-                      ? tokens.colors.interactive.enabled
-                      : tokens.colors.decorative.level02,
-                  borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-                ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (final candidate in _GoalFormStep.values) ...[
+                  AnimatedContainer(
+                    duration: MotionDurations.short4,
+                    width: candidate == step
+                        ? tokens.spacing.step5
+                        : tokens.spacing.step2,
+                    height: tokens.spacing.step2,
+                    decoration: BoxDecoration(
+                      // lowEmphasis ink, not a decorative hairline tone:
+                      // the promise of three steps must survive the dark
+                      // canvas.
+                      color: candidate.index <= step.index
+                          ? tokens.colors.interactive.enabled
+                          : tokens.colors.text.lowEmphasis,
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
+                    ),
+                  ),
+                  if (candidate != _GoalFormStep.values.last)
+                    SizedBox(width: tokens.spacing.step2),
+                ],
+              ],
+            ),
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              context.messages.goalFormProgress(step.index + 1),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
-              if (candidate != _GoalFormStep.values.last)
-                SizedBox(width: tokens.spacing.step2),
-            ],
+            ),
           ],
         ),
       ),
@@ -1163,6 +1252,7 @@ class _IntentionStep extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final examples = [
+      messages.goalFormExampleHealth,
       messages.goalFormExampleGym,
       messages.goalFormExampleWalk,
       messages.goalFormExampleRead,
@@ -1252,6 +1342,8 @@ class _MappingStep extends StatelessWidget {
     required this.stepsTarget,
     required this.matchedHabitIds,
     required this.matchedHealthTypes,
+    required this.chosenSignalOrder,
+    required this.suggestedSignalOrder,
     required this.targetErrors,
     required this.anchorFor,
     required this.titleError,
@@ -1293,6 +1385,10 @@ class _MappingStep extends StatelessWidget {
   final Set<String> matchedHabitIds;
   final Set<String> matchedHealthTypes;
 
+  /// Frozen row order for the signals card; see the page state's snapshot.
+  final List<String> chosenSignalOrder;
+  final List<String> suggestedSignalOrder;
+
   /// Keys of mapping entities whose target failed validation; each renders
   /// as an error on its own input rather than one message mid-page.
   final Set<String> targetErrors;
@@ -1322,6 +1418,281 @@ class _MappingStep extends StatelessWidget {
   onCategoryTimeDirectionChanged;
   final void Function(GoalFormCompositeRule rule, int requiredSuccesses)
   onCompositeRuleChanged;
+
+  /// One habit signal band: provenance glyph, emoji-free name, cadence
+  /// stepper trailing on wide rows or on the secondary line on compact ones.
+  Widget _habitSignalRow(
+    BuildContext context,
+    ({String id, String name}) habit,
+  ) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final selected = habitTargets.containsKey(habit.id);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < kRowInlineControlMinWidth;
+        final stepper = selected
+            ? _HabitTargetStepper(
+                habitId: habit.id,
+                value: habitTargets[habit.id]!,
+                onChanged: (value) => onTargetChanged(habit.id, value),
+              )
+            : null;
+        final row = DesignSystemSelectionRow(
+          key: ValueKey('goal-form-habit-${habit.id}'),
+          title: _CreateGoalAgentPageState._plainName(habit.name),
+          subtitle: messages.goalFormHabitSignal,
+          titleMaxLines: 2,
+          leading: Icon(
+            Icons.task_alt_rounded,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: selected,
+          showSelectedBackground: false,
+          trailing: compact || stepper == null
+              ? null
+              : Padding(
+                  padding: EdgeInsets.only(right: tokens.spacing.step1),
+                  child: stepper,
+                ),
+          secondaryLine: compact ? stepper : null,
+          onTap: () => onHabitChanged(habitId: habit.id, selected: !selected),
+        );
+        return Column(children: [row, _signalRowDivider(tokens)]);
+      },
+    );
+  }
+
+  /// The always-available automatic step count, with its target input on the
+  /// secondary line while selected.
+  Widget _stepsRow(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Column(
+      children: [
+        DesignSystemSelectionRow(
+          key: const ValueKey('goal-form-steps-row'),
+          title: messages.goalCreateStepsTargetLabel,
+          subtitle: messages.goalFormStepsSignal,
+          leading: Icon(
+            Icons.directions_walk_rounded,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: watchesSteps,
+          showSelectedBackground: false,
+          secondaryLine: watchesSteps
+              ? KeyedSubtree(
+                  key: anchorFor('steps'),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: kInlineTargetInputWidth,
+                    ),
+                    child: DesignSystemTextInput(
+                      key: const ValueKey('goal-form-steps-target'),
+                      controller: stepsTarget,
+                      label: messages.goalCreateStepsTargetLabel,
+                      keyboardType: TextInputType.number,
+                      errorText: targetErrors.contains('steps')
+                          ? messages.goalFormValidationTarget
+                          : null,
+                      onChanged: (_) => onStepsTargetChanged(),
+                    ),
+                  ),
+                )
+              : null,
+          onTap: () => onStepsChanged(!watchesSteps),
+        ),
+        _signalRowDivider(tokens),
+      ],
+    );
+  }
+
+  /// Blood pressure as ONE row: checked with paired systolic/diastolic
+  /// targets and a shared direction while selected, an offer otherwise.
+  Widget _bloodPressureRow(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    const types = [
+      GoalHealthDataTypes.bloodPressureSystolic,
+      GoalHealthDataTypes.bloodPressureDiastolic,
+    ];
+    final selected = healthTargets.containsKey(types.first);
+    return Column(
+      children: [
+        DesignSystemSelectionRow(
+          key: const ValueKey('goal-form-health-row-blood-pressure'),
+          title: messages.dashboardHealthBloodPressure,
+          subtitle: messages.goalFormHealthReadingsSignal,
+          leading: Icon(
+            Icons.monitor_heart_outlined,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: selected,
+          showSelectedBackground: false,
+          secondaryLine: selected ? _bloodPressureControls(context) : null,
+          onTap: () {
+            if (selected) {
+              types.forEach(onHealthRemoved);
+            } else {
+              onHealthSelected(types);
+            }
+          },
+        ),
+        _signalRowDivider(tokens),
+      ],
+    );
+  }
+
+  Widget _bloodPressureControls(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    const systolic = GoalHealthDataTypes.bloodPressureSystolic;
+    const diastolic = GoalHealthDataTypes.bloodPressureDiastolic;
+    final direction = healthDirections[systolic] ?? GoalDirection.atMost;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: kInlineTargetInputWidth),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _HealthTargetInput(
+                  dataType: systolic,
+                  value: healthTargets[systolic],
+                  unit: 'mmHg',
+                  label: messages.goalFormSystolicTarget,
+                  errorText: targetErrors.contains('health:$systolic')
+                      ? messages.goalFormValidationTarget
+                      : null,
+                  anchorKey: anchorFor('health:$systolic'),
+                  onChanged: (value) => onHealthTargetChanged(systolic, value),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: _HealthTargetInput(
+                  dataType: diastolic,
+                  value: healthTargets[diastolic],
+                  unit: 'mmHg',
+                  label: messages.goalFormDiastolicTarget,
+                  errorText: targetErrors.contains('health:$diastolic')
+                      ? messages.goalFormValidationTarget
+                      : null,
+                  anchorKey: anchorFor('health:$diastolic'),
+                  onChanged: (value) => onHealthTargetChanged(diastolic, value),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DsSegmentedToggle<GoalDirection>(
+            key: const ValueKey('goal-form-health-direction-blood-pressure'),
+            segments: [
+              DsSegment(
+                GoalDirection.atMost,
+                messages.goalFormDirectionAtMost,
+              ),
+              DsSegment(
+                GoalDirection.atLeast,
+                messages.goalFormDirectionAtLeast,
+              ),
+            ],
+            selected: direction,
+            onChanged: (value) {
+              onHealthDirectionChanged(systolic, value);
+              onHealthDirectionChanged(diastolic, value);
+            },
+            expand: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Weight as one row with its target and direction on the secondary line.
+  Widget _weightRow(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    const weight = GoalHealthDataTypes.weight;
+    final selected = healthTargets.containsKey(weight);
+    return Column(
+      children: [
+        DesignSystemSelectionRow(
+          key: const ValueKey('goal-form-health-row-weight'),
+          title: messages.goalFormHealthWeight,
+          subtitle: messages.goalFormHealthReadingsSignal,
+          leading: Icon(
+            Icons.monitor_weight_outlined,
+            size: IconSizes.s,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          type: DesignSystemSelectionRowType.multiSelect,
+          selected: selected,
+          showSelectedBackground: false,
+          secondaryLine: selected
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: kInlineTargetInputWidth,
+                      ),
+                      child: _HealthTargetInput(
+                        dataType: weight,
+                        value: healthTargets[weight],
+                        unit: 'kg',
+                        errorText: targetErrors.contains('health:$weight')
+                            ? messages.goalFormValidationTarget
+                            : null,
+                        anchorKey: anchorFor('health:$weight'),
+                        onChanged: (value) =>
+                            onHealthTargetChanged(weight, value),
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step3),
+                    DsSegmentedToggle<GoalDirection>(
+                      key: const ValueKey('goal-form-health-direction-weight'),
+                      segments: [
+                        DsSegment(
+                          GoalDirection.atMost,
+                          messages.goalFormDirectionAtMost,
+                        ),
+                        DsSegment(
+                          GoalDirection.atLeast,
+                          messages.goalFormDirectionAtLeast,
+                        ),
+                      ],
+                      selected:
+                          healthDirections[weight] ?? GoalDirection.atMost,
+                      onChanged: (value) =>
+                          onHealthDirectionChanged(weight, value),
+                      expand: true,
+                    ),
+                  ],
+                )
+              : null,
+          onTap: () {
+            if (selected) {
+              onHealthRemoved(weight);
+            } else {
+              onHealthSelected(const [weight]);
+            }
+          },
+        ),
+        _signalRowDivider(tokens),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1367,16 +1738,41 @@ class _MappingStep extends StatelessWidget {
         healthTargets.length +
         categoryTimeTargets.length +
         (watchesSteps ? 1 : 0);
-    // Intention-matched health capabilities surface as unchecked offer rows
-    // in the signals card until picked, like the steps offer.
-    final offersBloodPressure =
-        matchedHealthTypes.contains(
-          GoalHealthDataTypes.bloodPressureSystolic,
-        ) &&
-        !healthTargets.containsKey(GoalHealthDataTypes.bloodPressureSystolic);
-    final offersWeight =
-        matchedHealthTypes.contains(GoalHealthDataTypes.weight) &&
-        !healthTargets.containsKey(GoalHealthDataTypes.weight);
+    // Rows render in the order frozen at step entry — a tapped row stays
+    // put. Signals selected after the snapshot (via the picker) append to
+    // the chosen group.
+    final bloodPressureSelected =
+        healthTargets.containsKey(GoalHealthDataTypes.bloodPressureSystolic) ||
+        healthTargets.containsKey(GoalHealthDataTypes.bloodPressureDiastolic);
+    final weightSelected = healthTargets.containsKey(
+      GoalHealthDataTypes.weight,
+    );
+    Widget? signalRowFor(String descriptor) {
+      if (descriptor == 'blood-pressure') return _bloodPressureRow(context);
+      if (descriptor == 'weight') return _weightRow(context);
+      if (descriptor == 'steps') return _stepsRow(context);
+      final habitId = descriptor.substring('habit:'.length);
+      final known = visibleHabits.where((habit) => habit.id == habitId);
+      if (known.isEmpty) return null;
+      return _habitSignalRow(context, known.first);
+    }
+
+    final knownDescriptors = {...chosenSignalOrder, ...suggestedSignalOrder};
+    final appendedSignals = <String>[
+      for (final habit in visibleHabits)
+        if (!knownDescriptors.contains('habit:${habit.id}'))
+          'habit:${habit.id}',
+      if (bloodPressureSelected && !knownDescriptors.contains('blood-pressure'))
+        'blood-pressure',
+      if (weightSelected && !knownDescriptors.contains('weight')) 'weight',
+    ];
+    final chosenSignals = <Widget>[
+      for (final descriptor in [...chosenSignalOrder, ...appendedSignals])
+        ?signalRowFor(descriptor),
+    ];
+    final suggestedSignals = <Widget>[
+      for (final descriptor in suggestedSignalOrder) ?signalRowFor(descriptor),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1409,107 +1805,29 @@ class _MappingStep extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                for (final habit in visibleHabits)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final selected = selectedIds.contains(habit.id);
-                      // Compact widths give the title its full measure and
-                      // drop the cadence stepper to the row's secondary
-                      // line; the trailing slot returns where the width
-                      // earns it.
-                      final compact =
-                          constraints.maxWidth < kRowInlineControlMinWidth;
-                      final stepper = selected
-                          ? _HabitTargetStepper(
-                              habitId: habit.id,
-                              value: habitTargets[habit.id]!,
-                              onChanged: (value) =>
-                                  onTargetChanged(habit.id, value),
-                            )
-                          : null;
-                      final row = DesignSystemSelectionRow(
-                        key: ValueKey('goal-form-habit-${habit.id}'),
-                        title: _CreateGoalAgentPageState._plainName(
-                          habit.name,
+                ...chosenSignals,
+                if (suggestedSignals.isNotEmpty) ...[
+                  // The card tells one true story: rows above this caption
+                  // are the goal's signals, rows below are offers.
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: tokens.spacing.step5,
+                      right: tokens.spacing.step5,
+                      top: tokens.spacing.step3,
+                      bottom: tokens.spacing.step1,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        messages.goalFormSuggestedSignals,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
                         ),
-                        subtitle: messages.goalFormHabitSignal,
-                        titleMaxLines: 2,
-                        type: DesignSystemSelectionRowType.multiSelect,
-                        selected: selected,
-                        showSelectedBackground: false,
-                        trailing: compact || stepper == null
-                            ? null
-                            : Padding(
-                                padding: EdgeInsets.only(
-                                  right: tokens.spacing.step1,
-                                ),
-                                child: stepper,
-                              ),
-                        secondaryLine: compact ? stepper : null,
-                        onTap: () => onHabitChanged(
-                          habitId: habit.id,
-                          selected: !selected,
-                        ),
-                      );
-                      return Column(
-                        children: [row, _signalRowDivider(tokens)],
-                      );
-                    },
-                  ),
-                // The steps offer trails the user's own signals.
-                DesignSystemSelectionRow(
-                  key: const ValueKey('goal-form-steps-row'),
-                  title: messages.goalCreateStepsTargetLabel,
-                  subtitle: messages.goalFormStepsSignal,
-                  type: DesignSystemSelectionRowType.multiSelect,
-                  selected: watchesSteps,
-                  showSelectedBackground: false,
-                  secondaryLine: watchesSteps
-                      ? KeyedSubtree(
-                          key: anchorFor('steps'),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: kInlineTargetInputWidth,
-                            ),
-                            child: DesignSystemTextInput(
-                              key: const ValueKey('goal-form-steps-target'),
-                              controller: stepsTarget,
-                              label: messages.goalCreateStepsTargetLabel,
-                              leadingIcon: Icons.directions_walk_rounded,
-                              keyboardType: TextInputType.number,
-                              errorText: targetErrors.contains('steps')
-                                  ? messages.goalFormValidationTarget
-                                  : null,
-                              onChanged: (_) => onStepsTargetChanged(),
-                            ),
-                          ),
-                        )
-                      : null,
-                  onTap: () => onStepsChanged(!watchesSteps),
-                ),
-                if (offersBloodPressure)
-                  DesignSystemSelectionRow(
-                    key: const ValueKey('goal-form-offer-blood-pressure'),
-                    title: messages.dashboardHealthBloodPressure,
-                    subtitle: messages.goalFormBloodPressureSource,
-                    type: DesignSystemSelectionRowType.multiSelect,
-                    showSelectedBackground: false,
-                    onTap: () => onHealthSelected(const [
-                      GoalHealthDataTypes.bloodPressureSystolic,
-                      GoalHealthDataTypes.bloodPressureDiastolic,
-                    ]),
-                  ),
-                if (offersWeight)
-                  DesignSystemSelectionRow(
-                    key: const ValueKey('goal-form-offer-weight'),
-                    title: messages.goalFormHealthWeight,
-                    subtitle: messages.goalFormHealthSource('kg'),
-                    type: DesignSystemSelectionRowType.multiSelect,
-                    showSelectedBackground: false,
-                    onTap: () => onHealthSelected(
-                      const [GoalHealthDataTypes.weight],
+                      ),
                     ),
                   ),
+                  ...suggestedSignals,
+                ],
               ],
             ),
           ),
@@ -1572,24 +1890,6 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
-          for (final entry in healthTargets.entries) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
-            _HealthTargetCard(
-              key: ValueKey('goal-form-health-card-${entry.key}'),
-              dataType: entry.key,
-              value: entry.value,
-              direction: healthDirections[entry.key] ?? GoalDirection.atMost,
-              errorText: targetErrors.contains('health:${entry.key}')
-                  ? messages.goalFormValidationTarget
-                  : null,
-              anchorKey: anchorFor('health:${entry.key}'),
-              onTargetChanged: (target) =>
-                  onHealthTargetChanged(entry.key, target),
-              onDirectionChanged: (direction) =>
-                  onHealthDirectionChanged(entry.key, direction),
-              onRemove: () => onHealthRemoved(entry.key),
-            ),
-          ],
           for (final category in selectedCategories) ...[
             SizedBox(height: tokens.spacing.cardItemSpacing),
             _CategoryTimeTargetCard(
@@ -1620,6 +1920,8 @@ class _MappingStep extends StatelessWidget {
             ),
           ],
           SizedBox(height: tokens.spacing.cardItemSpacing),
+          // On desktop the commit action must be the heaviest object in the
+          // column, so the add affordance drops to an intrinsic tertiary.
           DesignSystemButton(
             key: const ValueKey('goal-form-add-signal'),
             label: context.messages.goalFormAddSignal,
@@ -1635,6 +1937,8 @@ class _MappingStep extends StatelessWidget {
                 selectedMeasurableIds: measurableTargets.keys.toSet(),
                 selectedHealthDataTypes: healthTargets.keys.toSet(),
                 selectedCategoryIds: categoryTimeTargets.keys.toSet(),
+                watchesSteps: watchesSteps,
+                onStepsChanged: onStepsChanged,
                 onHabitChanged: onHabitChanged,
                 onMeasurableChanged: onMeasurableChanged,
                 onHealthSelected: onHealthSelected,
@@ -1644,8 +1948,10 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
             leadingIcon: Icons.add_rounded,
-            variant: DesignSystemButtonVariant.secondary,
-            fullWidth: true,
+            variant: isDesktopLayout(context)
+                ? DesignSystemButtonVariant.tertiary
+                : DesignSystemButtonVariant.secondary,
+            fullWidth: !isDesktopLayout(context),
           ),
           if (dimensionCount > 1) ...[
             SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -1830,101 +2136,6 @@ class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
   }
 }
 
-class _HealthTargetCard extends StatelessWidget {
-  const _HealthTargetCard({
-    required this.dataType,
-    required this.value,
-    required this.direction,
-    required this.errorText,
-    required this.anchorKey,
-    required this.onTargetChanged,
-    required this.onDirectionChanged,
-    required this.onRemove,
-    super.key,
-  });
-
-  final String dataType;
-  final num? value;
-  final GoalDirection direction;
-  final String? errorText;
-  final Key anchorKey;
-  final ValueChanged<num?> onTargetChanged;
-  final ValueChanged<GoalDirection> onDirectionChanged;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final unit = _healthDimensionUnit(dataType);
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.monitor_heart_outlined,
-                color: GoalAccentHues.aurora(
-                  Theme.of(context).brightness,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _healthDimensionName(context, dataType),
-                      style: tokens.typography.styles.subtitle.subtitle2,
-                    ),
-                    Text(
-                      context.messages.goalFormHealthSource(unit),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              DesignSystemIconAction(
-                icon: Icons.close_rounded,
-                tooltip: context.messages.aiCardProposalKindRemove,
-                onPressed: onRemove,
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          DsSegmentedToggle<GoalDirection>(
-            key: ValueKey('goal-form-health-direction-$dataType'),
-            segments: [
-              DsSegment(
-                GoalDirection.atMost,
-                context.messages.goalFormDirectionAtMost,
-              ),
-              DsSegment(
-                GoalDirection.atLeast,
-                context.messages.goalFormDirectionAtLeast,
-              ),
-            ],
-            selected: direction,
-            onChanged: onDirectionChanged,
-            expand: true,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          _HealthTargetInput(
-            dataType: dataType,
-            value: value,
-            unit: unit,
-            errorText: errorText,
-            anchorKey: anchorKey,
-            onChanged: onTargetChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _HealthTargetInput extends StatefulWidget {
   const _HealthTargetInput({
     required this.dataType,
@@ -1933,11 +2144,16 @@ class _HealthTargetInput extends StatefulWidget {
     required this.errorText,
     required this.anchorKey,
     required this.onChanged,
+    this.label,
   });
 
   final String dataType;
   final num? value;
   final String unit;
+
+  /// Overrides the generic "Target (unit)" label — the paired blood-pressure
+  /// inputs need to say which half of the reading they are.
+  final String? label;
   final String? errorText;
   final Key anchorKey;
   final ValueChanged<num?> onChanged;
@@ -1963,7 +2179,7 @@ class _HealthTargetInputState extends State<_HealthTargetInput> {
     child: DesignSystemTextInput(
       key: ValueKey('goal-form-health-target-${widget.dataType}'),
       controller: _controller,
-      label: context.messages.goalFormHealthTarget(widget.unit),
+      label: widget.label ?? context.messages.goalFormHealthTarget(widget.unit),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       errorText: widget.errorText,
       onChanged: (raw) => widget.onChanged(
@@ -2123,6 +2339,8 @@ class _DimensionSourcePicker extends StatefulWidget {
     required this.selectedMeasurableIds,
     required this.selectedHealthDataTypes,
     required this.selectedCategoryIds,
+    required this.watchesSteps,
+    required this.onStepsChanged,
     required this.onHabitChanged,
     required this.onMeasurableChanged,
     required this.onHealthSelected,
@@ -2139,6 +2357,8 @@ class _DimensionSourcePicker extends StatefulWidget {
   final Set<String> selectedMeasurableIds;
   final Set<String> selectedHealthDataTypes;
   final Set<String> selectedCategoryIds;
+  final bool watchesSteps;
+  final ValueChanged<bool> onStepsChanged;
   final void Function({required String habitId, required bool selected})
   onHabitChanged;
   final void Function({required String measurableId, required bool selected})
@@ -2152,10 +2372,10 @@ class _DimensionSourcePicker extends StatefulWidget {
   State<_DimensionSourcePicker> createState() => _DimensionSourcePickerState();
 }
 
-/// The ONE place every watchable signal lives — habits, steps aside (it has
-/// its own always-visible row), weight, blood pressure, measurables and
-/// tracked time — searchable in plain language, multi-select, and it stays
-/// open until Done so composing a goal is one visit, not four.
+/// The ONE place every watchable signal lives — habits, steps, weight,
+/// blood pressure, measurables and tracked time — searchable in plain
+/// language, multi-select, and it stays open until Done so composing a goal
+/// is one visit, not four.
 class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   final _search = TextEditingController();
   var _query = '';
@@ -2167,6 +2387,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   late final Set<String> _measurableIds = {...widget.selectedMeasurableIds};
   late final Set<String> _healthTypes = {...widget.selectedHealthDataTypes};
   late final Set<String> _categoryIds = {...widget.selectedCategoryIds};
+  late bool _watchesSteps = widget.watchesSteps;
 
   @override
   void dispose() {
@@ -2190,6 +2411,10 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
     final visibleCategories = widget.categories.where((category) {
       return query.isEmpty || category.name.toLowerCase().contains(query);
     }).toList();
+    final stepsMatches =
+        query.isEmpty ||
+        messages.goalCreateStepsTargetLabel.toLowerCase().contains(query) ||
+        messages.goalFormStepsSignal.toLowerCase().contains(query);
     final weightMatches =
         query.isEmpty ||
         messages.goalFormHealthWeight.toLowerCase().contains(query) ||
@@ -2287,12 +2512,25 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                     ],
                     SizedBox(height: tokens.spacing.step4),
                   ],
-                  if (showsHealth) ...[
+                  if (stepsMatches || showsHealth) ...[
                     Text(
                       messages.goalFormHealthData,
                       style: tokens.typography.styles.subtitle.subtitle2,
                     ),
                     SizedBox(height: tokens.spacing.step2),
+                    if (stepsMatches)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey('goal-form-picker-steps'),
+                        title: messages.goalCreateStepsTargetLabel,
+                        subtitle: messages.goalFormStepsSignal,
+                        selected: _watchesSteps,
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          final selected = !_watchesSteps;
+                          setState(() => _watchesSteps = selected);
+                          widget.onStepsChanged(selected);
+                        },
+                      ),
                     if (weightMatches)
                       DesignSystemSelectionRow(
                         key: const ValueKey(
@@ -2581,6 +2819,12 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
     final messages = context.messages;
     // A validation error re-opens the field so the fix is one tap closer.
     final editingTitle = _editingTitle || widget.titleError != null;
+    // "Meet your agent" leads with the agent; the recap reads as prose in
+    // which only the signals carry weight, and the goal name closes the
+    // card as a read-only record.
+    final restatementParts = messages
+        .goalFormRestatement('\u0000')
+        .split('\u0000');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2589,17 +2833,48 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
           style: tokens.typography.styles.heading.heading3,
         ),
         SizedBox(height: tokens.spacing.step5),
+        DesignSystemTextInput(
+          key: const ValueKey('goal-form-persona'),
+          controller: widget.persona,
+          label: messages.goalFormPersonaLabel,
+          leadingIcon: Icons.auto_awesome_rounded,
+          errorText: widget.personaError,
+          enabled: widget.enabled,
+          onChanged: (_) => widget.onPersonaChanged(),
+        ),
+        SizedBox(height: tokens.spacing.step4),
         DesignSystemSectionCard(
           padding: EdgeInsets.all(tokens.spacing.step4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.preservesCriteria
-                    ? messages.goalFormPreservedCriteriaSummary
-                    : messages.goalFormRestatement(widget.signalDescription),
-                style: tokens.typography.styles.subtitle.subtitle1,
-              ),
+              if (widget.preservesCriteria)
+                Text(
+                  messages.goalFormPreservedCriteriaSummary,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                )
+              else
+                Text.rich(
+                  TextSpan(
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    children: [
+                      TextSpan(text: restatementParts.first),
+                      TextSpan(
+                        text: widget.signalDescription,
+                        style: TextStyle(
+                          color: tokens.colors.text.highEmphasis,
+                          fontWeight: tokens.typography.weight.semiBold,
+                        ),
+                      ),
+                      for (final part in restatementParts.skip(1))
+                        TextSpan(text: part),
+                    ],
+                  ),
+                ),
               SizedBox(height: tokens.spacing.step4),
               // ONE field grammar across steps: the same labelled input as
               // the mapping step, read-only until the pencil (or a
@@ -2624,16 +2899,6 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
               ),
             ],
           ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        DesignSystemTextInput(
-          key: const ValueKey('goal-form-persona'),
-          controller: widget.persona,
-          label: messages.goalFormPersonaLabel,
-          leadingIcon: Icons.auto_awesome_rounded,
-          errorText: widget.personaError,
-          enabled: widget.enabled,
-          onChanged: (_) => widget.onPersonaChanged(),
         ),
         SizedBox(height: tokens.spacing.step4),
         Row(
@@ -2677,7 +2942,7 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
         Text(
           messages.goalFormFooter,
           style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],

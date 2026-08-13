@@ -19,6 +19,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
@@ -232,6 +234,11 @@ void main() {
   testWidgets('an example fills the intention and back returns one step', (
     tester,
   ) async {
+    // The example pills wrap to more lines since the health example landed
+    // first; keep them above the fold.
+    tester.view.physicalSize = const Size(900, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const CreateGoalAgentPage(),
@@ -240,6 +247,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.text('Step 1 of 3'), findsOneWidget);
     await tester.tap(find.text('gym twice a week'));
     await tester.pump();
     expect(
@@ -253,6 +261,9 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Here’s what I can watch'), findsOneWidget);
+    // The progress dots now carry a visible caption.
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.text('Step 1 of 3'), findsNothing);
 
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
@@ -313,6 +324,10 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
+    // With steps chosen and nothing else matched, there is nothing to
+    // suggest — the caption only renders when suggestions exist.
+    expect(find.text('Suggested'), findsNothing);
+
     await tester.tap(find.text('Average steps per day').first);
     await tester.pumpAndSettle();
 
@@ -320,6 +335,9 @@ void main() {
       find.byKey(const ValueKey('goal-form-steps-target')),
       findsNothing,
     );
+    // Stable order: the deselected steps row stays where it was — no
+    // Suggested caption materialises mid-interaction.
+    expect(find.text('Suggested'), findsNothing);
     expect(find.textContaining('I can’t see this intention'), findsOneWidget);
 
     // With nothing mapped at all, Continue falls back to the generic
@@ -407,6 +425,10 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    // With everything the intention matched selected, nothing is suggested
+    // yet except the steps offer.
+    expect(find.text('Suggested'), findsOneWidget);
+
     // Tap the row title rather than the row center: a selected row's center
     // can coincide with the cadence stepper in the trailing slot.
     await tester.tap(find.text('Run'));
@@ -1441,20 +1463,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Here’s what I can watch'), findsOneWidget);
-    expect(find.text('3× / 7 days', skipOffstage: false), findsNWidgets(2));
+    expect(find.text('3×/week', skipOffstage: false), findsNWidgets(2));
     await tester.tap(find.byKey(const ValueKey('goal-form-decrease-gym')));
     await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
     await tester.pumpAndSettle();
-    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
-    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('2×/week', skipOffstage: false), findsOneWidget);
+    expect(find.text('5×/week', skipOffstage: false), findsOneWidget);
 
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.text('Meet your agent'), findsOneWidget);
     expect(
-      find.textContaining('Gym (2× a week) · Run (5× a week)'),
+      find.textContaining('Gym (2×/week) · Run (5×/week)'),
       findsOneWidget,
     );
     await tester.enterText(
@@ -1517,8 +1539,8 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
-    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
-    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('2×/week', skipOffstage: false), findsOneWidget);
+    expect(find.text('5×/week', skipOffstage: false), findsOneWidget);
     expect(
       tester
           .widget<DesignSystemSelectionRow>(
@@ -1777,7 +1799,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
     await tester.pumpAndSettle();
-    expect(find.text('3× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('3×/week', skipOffstage: false), findsOneWidget);
     // Tap the row's leading edge: its center coincides with the cadence
     // stepper, which would decrement instead of deselect.
     final gymRow = find.byKey(const ValueKey('goal-form-habit-gym'));
@@ -1786,7 +1808,7 @@ void main() {
     await tester.pump();
     // An unmatched habit's row disappears entirely on deselection.
     expect(gymRow, findsNothing);
-    expect(find.text('3× / 7 days', skipOffstage: false), findsNothing);
+    expect(find.text('3×/week', skipOffstage: false), findsNothing);
   });
 
   testWidgets('an empty habit source links to habit setup', (tester) async {
@@ -1951,6 +1973,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
     await tester.pumpAndSettle();
     expect(find.text('Health data'), findsOneWidget);
+    // Weight before blood pressure: the order that once reparented the live
+    // weight input onto a disposed controller — kept natural now that the
+    // input rebinds in didUpdateWidget.
     await tester.tap(
       find.byKey(const ValueKey('goal-form-health-source-weight')),
     );
@@ -1976,9 +2001,7 @@ void main() {
       find
           .descendant(
             of: find.byKey(
-              const ValueKey(
-                'goal-form-health-direction-HealthDataType.WEIGHT',
-              ),
+              const ValueKey('goal-form-health-direction-weight'),
             ),
             matching: find.text('At least'),
           )
@@ -2351,14 +2374,9 @@ void main() {
       );
     }
 
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(
-          const ValueKey('goal-form-health-card-HealthDataType.WEIGHT'),
-        ),
-        matching: find.byIcon(Icons.close_rounded),
-      ),
-    );
+    // Health rows have no remove button anymore: tapping the selected
+    // weight row's title deselects it.
+    await tester.tap(find.text('Weight'));
     await tester.pump();
 
     String targetText(String dataType) => tester
@@ -2460,8 +2478,8 @@ void main() {
     expect(find.text('Gym and run every week'), findsOneWidget);
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
-    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('2×/week', skipOffstage: false), findsOneWidget);
+    expect(find.text('5×/week', skipOffstage: false), findsOneWidget);
 
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -3492,7 +3510,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('goal-form-increase-gym')));
     await tester.pump();
-    expect(find.text('5× / 7 days'), findsOneWidget);
+    expect(find.text('5×/week'), findsOneWidget);
 
     // Deselect via the row's leading edge — the row center hosts the
     // cadence stepper.
@@ -3500,17 +3518,18 @@ void main() {
     final gymRect = tester.getRect(gymRow);
     await tester.tapAt(Offset(gymRect.left + 40, gymRect.center.dy));
     await tester.pump();
-    expect(find.text('5× / 7 days'), findsNothing);
+    expect(find.text('5×/week'), findsNothing);
 
     // Re-checking restores the shaped 5× cadence, not the 3× default.
     await tester.tap(gymRow);
     await tester.pump();
-    expect(find.text('5× / 7 days'), findsOneWidget);
-    expect(find.text('3× / 7 days'), findsNothing);
+    expect(find.text('5×/week'), findsOneWidget);
+    expect(find.text('3×/week'), findsNothing);
   });
 
   testWidgets(
-    'a blood-pressure intention surfaces an offer row that seeds targets',
+    'a blood-pressure intention arrives pre-selected with seeded paired '
+    'targets sharing one direction',
     (tester) async {
       tester.view.physicalSize = const Size(900, 1800);
       tester.view.devicePixelRatio = 1;
@@ -3529,21 +3548,16 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
-      final offer = find.byKey(
-        const ValueKey('goal-form-offer-blood-pressure'),
+      // The substance arrives selected: the single blood-pressure row is
+      // already checked, with paired targets seeded 130/80.
+      final row = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
       );
-      expect(offer, findsOneWidget);
+      expect(row, findsOneWidget);
       expect(
-        tester.widget<DesignSystemSelectionRow>(offer).selected,
-        isFalse,
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
       );
-
-      await tester.tap(offer);
-      await tester.pumpAndSettle();
-
-      // Once picked the offer disappears and both dimensions arrive as
-      // cards with seeded defaults instead of empty rejected values.
-      expect(offer, findsNothing);
       String targetText(String dataType) => tester
           .widget<EditableText>(
             find.descendant(
@@ -3555,13 +3569,131 @@ void main() {
           .text;
       expect(targetText(GoalHealthDataTypes.bloodPressureSystolic), '130');
       expect(targetText(GoalHealthDataTypes.bloodPressureDiastolic), '80');
+      expect(find.text('Systolic (mmHg)'), findsOneWidget);
+      expect(find.text('Diastolic (mmHg)'), findsOneWidget);
+      // The paired controls stay within the inline target measure.
+      expect(
+        tester
+            .getSize(
+              find.byKey(
+                const ValueKey('goal-form-health-direction-blood-pressure'),
+              ),
+            )
+            .width,
+        lessThanOrEqualTo(kInlineTargetInputWidth),
+      );
+
+      // The row carries ONE direction toggle that drives both readings.
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byKey(
+                const ValueKey('goal-form-health-direction-blood-pressure'),
+              ),
+              matching: find.text('At least'),
+            )
+            .last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          'Systolic blood pressure: 7-day average At least 130 mmHg',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          'Diastolic blood pressure: 7-day average At least 80 mmHg',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'the blood-pressure row toggles in place and re-selecting re-seeds it',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      final row = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
+      );
+      // Checked on arrival: the row sits in the chosen group, above the
+      // Suggested caption (which holds the steps offer).
+      expect(
+        tester.getRect(row).top,
+        lessThan(tester.getRect(find.text('Suggested')).top),
+      );
+
+      // Tapping the checked row's title removes both readings, but the row
+      // does NOT move: the order is frozen for this step entry, so it stays
+      // above the Suggested caption, merely unchecked.
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isFalse,
+      );
+      expect(
+        find.byKey(
+          const ValueKey(
+            'goal-form-health-target-HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        tester.getRect(row).top,
+        lessThan(tester.getRect(find.text('Suggested')).top),
+      );
+
+      // Re-selecting seeds the defaults again instead of empty targets.
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey(
+                    'goal-form-health-target-'
+                    'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                  ),
+                ),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '130',
+      );
     },
   );
 
   testWidgets(
     'a missing health target errors inline and is scrolled into view',
     (tester) async {
-      tester.view.physicalSize = const Size(900, 1000);
+      tester.view.physicalSize = const Size(900, 700);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -3578,15 +3710,9 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.byKey(const ValueKey('goal-form-offer-blood-pressure')),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('goal-form-offer-weight')));
-      await tester.pumpAndSettle();
-
-      // Weight seeds no target; its card trails the seeded blood-pressure
-      // cards, below the fold at this height.
+      // Both health rows arrive pre-selected; weight seeds no target, and
+      // its row trails the seeded blood-pressure controls below the fold
+      // at this height.
       final weightInput = find.byKey(
         const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
       );
@@ -3622,7 +3748,7 @@ void main() {
       expect(scrollable.position.pixels, greaterThan(0));
       final revealed = tester.getRect(weightInput);
       expect(revealed.top, greaterThanOrEqualTo(0));
-      expect(revealed.bottom, lessThanOrEqualTo(1000));
+      expect(revealed.bottom, lessThanOrEqualTo(700));
     },
   );
 
@@ -3725,12 +3851,22 @@ void main() {
       await tester.pumpAndSettle();
 
       final action = find.byKey(const ValueKey('goal-form-primary-action'));
-      // Above the desktop breakpoint the CTA scrolls with the content
-      // instead of pinning above the bottom navigation.
+      // One pinned bottom band on every form factor: the CTA never scrolls
+      // with the content, and it sits on an opaque strip closed by a top
+      // hairline.
       expect(
         find.ancestor(of: action, matching: find.byType(ListView)),
-        findsOneWidget,
+        findsNothing,
       );
+      final band = tester.widget<DecoratedBox>(
+        find.ancestor(of: action, matching: find.byType(DecoratedBox)).first,
+      );
+      final bandDecoration = band.decoration as BoxDecoration;
+      expect(
+        (bandDecoration.border! as Border).top.color,
+        dsTokensLight.colors.decorative.level01,
+      );
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
 
       await tester.enterText(
         find.byKey(const ValueKey('goal-form-intention')),
@@ -3739,6 +3875,15 @@ void main() {
       await tester.tap(action);
       await tester.pumpAndSettle();
       expect(find.text('Here’s what I can watch'), findsOneWidget);
+
+      // Desktop demotes the add affordance to an intrinsic tertiary while
+      // the commit action keeps the full column width.
+      final addSignal = tester.widget<DesignSystemButton>(
+        find.byKey(const ValueKey('goal-form-add-signal')),
+      );
+      expect(addSignal.variant, DesignSystemButtonVariant.tertiary);
+      expect(addSignal.fullWidth, isFalse);
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
     },
   );
 
@@ -3897,9 +4042,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
     await tester.pumpAndSettle();
     expect(
-      find.byKey(
-        const ValueKey('goal-form-health-card-HealthDataType.WEIGHT'),
-      ),
+      find.byKey(const ValueKey('goal-form-health-row-weight')),
       findsNothing,
     );
   });
@@ -4153,9 +4296,7 @@ void main() {
       // Every toggled-off dimension left no card behind on the page.
       expect(
         find.byKey(
-          const ValueKey(
-            'goal-form-health-card-HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-          ),
+          const ValueKey('goal-form-health-row-blood-pressure'),
         ),
         findsNothing,
       );
@@ -4168,6 +4309,529 @@ void main() {
       expect(
         find.byKey(const ValueKey('goal-form-measurable-card-water')),
         findsNothing,
+      );
+    },
+  );
+
+  testWidgets('blank paired blood-pressure targets error inline', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Keep my blood pressure under control',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Clearing both paired inputs flags each reading on its own field.
+    for (final dataType in [
+      GoalHealthDataTypes.bloodPressureSystolic,
+      GoalHealthDataTypes.bloodPressureDiastolic,
+    ]) {
+      await tester.enterText(
+        find.byKey(ValueKey('goal-form-health-target-$dataType')),
+        '',
+      );
+    }
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set a target to continue.'), findsNWidgets(2));
+    expect(find.text('Meet your agent'), findsNothing);
+  });
+
+  testWidgets(
+    'a deselected weight row regroups under Suggested only on re-entry',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Watch my weight and gym',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The matched weight row arrives checked, with no seeded target.
+      final row = find.byKey(const ValueKey('goal-form-health-row-weight'));
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+      final weightInput = find.byKey(
+        const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+      );
+      expect(weightInput, findsOneWidget);
+
+      // Deselecting keeps the row in place for this step entry.
+      await tester.tap(find.text('Weight'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isFalse,
+      );
+      expect(weightInput, findsNothing);
+      expect(
+        tester.getRect(row).top,
+        lessThan(tester.getRect(find.text('Suggested')).top),
+      );
+
+      // Re-entering the step regroups: the unchecked weight row now waits
+      // under the Suggested caption.
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Meet your agent'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(find.text('Suggested')).top,
+        lessThan(tester.getRect(row).top),
+      );
+
+      // Re-selecting from the suggestion restores its target input.
+      await tester.tap(find.text('Weight'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+      expect(weightInput, findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a habit naming a matched health capability is demoted to unchecked',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(habitsRepository.watchHabitDefinitions).thenAnswer(
+        (_) => Stream.value([
+          _habit('bp-log', 'Measure Blood Pressure'),
+          _habit('gym', 'Gym'),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control and go to the gym',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The readings signal carries the goal…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(
+                const ValueKey('goal-form-health-row-blood-pressure'),
+              ),
+            )
+            .selected,
+        isTrue,
+      );
+      // …its bookkeeping twin stays visible but unchecked…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-bp-log')),
+            )
+            .selected,
+        isFalse,
+      );
+      // …while a matched habit with no health overlap arrives checked.
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-gym')),
+            )
+            .selected,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'the signals card groups chosen rows above the Suggested caption',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Chosen: the checked gym habit. Suggested: the unselected steps row.
+      final gymTop = tester
+          .getRect(find.byKey(const ValueKey('goal-form-habit-gym')))
+          .top;
+      final captionTop = tester.getRect(find.text('Suggested')).top;
+      final stepsTop = tester
+          .getRect(find.byKey(const ValueKey('goal-form-steps-row')))
+          .top;
+      expect(gymTop, lessThan(captionTop));
+      expect(captionTop, lessThan(stepsTop));
+    },
+  );
+
+  testWidgets('the picker offers a steps row that toggles immediately', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Walk more often',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    final pickerSteps = find.byKey(const ValueKey('goal-form-picker-steps'));
+    expect(pickerSteps, findsOneWidget);
+    expect(
+      tester.widget<DesignSystemSelectionRow>(pickerSteps).selected,
+      isFalse,
+    );
+
+    // Toggles apply immediately and can be reversed within the same visit.
+    await tester.tap(pickerSteps);
+    await tester.pump();
+    expect(
+      tester.widget<DesignSystemSelectionRow>(pickerSteps).selected,
+      isTrue,
+    );
+    await tester.tap(pickerSteps);
+    await tester.pump();
+    expect(
+      tester.widget<DesignSystemSelectionRow>(pickerSteps).selected,
+      isFalse,
+    );
+    await tester.tap(pickerSteps);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+
+    // The page reflects the picker's final steps state.
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-steps-row')),
+          )
+          .selected,
+      isTrue,
+    );
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'REGRESSION: weight then blood pressure in one picker visit accepts a '
+    'typed weight target',
+    (tester) async {
+      // Selecting weight first meant the blood-pressure row inserted above
+      // it, reparenting the anchored weight input while its old controller
+      // was disposed — typing then threw. Fixed by rebinding the input's
+      // controller in didUpdateWidget.
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Track my health baseline',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('goal-form-health-source-weight')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(
+          const ValueKey('goal-form-health-source-blood-pressure'),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+      await tester.pumpAndSettle();
+
+      final weightInput = find.byKey(
+        const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+      );
+      await tester.enterText(weightInput, '75');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: weightInput,
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '75',
+      );
+    },
+  );
+
+  testWidgets(
+    'a suggested habit checked in place regroups only on step re-entry',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(habitsRepository.watchHabitDefinitions).thenAnswer(
+        (_) => Stream.value([
+          _habit('bp-log', 'Measure Blood Pressure'),
+          _habit('gym', 'Gym'),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control and go to the gym',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The demoted BP-twin habit waits under Suggested; checking it keeps
+      // it there — with its cadence stepper — until the step is re-entered.
+      final twinRow = find.byKey(const ValueKey('goal-form-habit-bp-log'));
+      final caption = find.text('Suggested');
+      expect(
+        tester.getRect(caption).top,
+        lessThan(tester.getRect(twinRow).top),
+      );
+      await tester.tap(find.text('Measure Blood Pressure'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(twinRow).selected,
+        isTrue,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-form-increase-bp-log')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getRect(caption).top,
+        lessThan(tester.getRect(twinRow).top),
+      );
+
+      // Re-entering the mapping step promotes the checked habit above the
+      // caption.
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Meet your agent'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(twinRow).top,
+        lessThan(tester.getRect(find.text('Suggested')).top),
+      );
+    },
+  );
+
+  testWidgets('a picker-added habit appends to the chosen group', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-habit-run')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+
+    // The newly picked habit lands at the end of the chosen group: after
+    // the matched gym row, above the Suggested caption.
+    final gymTop = tester
+        .getRect(find.byKey(const ValueKey('goal-form-habit-gym')))
+        .top;
+    final runTop = tester
+        .getRect(find.byKey(const ValueKey('goal-form-habit-run')))
+        .top;
+    final captionTop = tester.getRect(find.text('Suggested')).top;
+    expect(gymTop, lessThan(runTop));
+    expect(runTop, lessThan(captionTop));
+  });
+
+  testWidgets(
+    'a deselected blood-pressure row regroups under Suggested on re-entry',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control and go to the gym',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Meet your agent'), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      // The re-entry snapshot files the matched-but-unselected reading
+      // under Suggested.
+      final row = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
+      );
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isFalse,
+      );
+      expect(
+        tester.getRect(find.text('Suggested')).top,
+        lessThan(tester.getRect(row).top),
+      );
+    },
+  );
+
+  testWidgets(
+    'the confirmation leads with the agent name and bolds only the recap '
+    'signals',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The agent's name comes first; the goal name closes the recap card.
+      expect(
+        tester.getRect(find.byKey(const ValueKey('goal-form-persona'))).top,
+        lessThan(
+          tester.getRect(find.byKey(const ValueKey('goal-form-title'))).top,
+        ),
+      );
+
+      // The recap is prose in which only the signals carry weight.
+      final recap = tester.widget<Text>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              widget.textSpan != null &&
+              widget.textSpan!.toPlainText().contains('I’ll watch'),
+        ),
+      );
+      final rootSpan = recap.textSpan! as TextSpan;
+      final semiBold = dsTokensLight.typography.weight.semiBold;
+      expect(rootSpan.style?.fontWeight, isNot(semiBold));
+      expect(
+        rootSpan.style?.color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+      final signalSpan = rootSpan.children!.whereType<TextSpan>().firstWhere(
+        (span) => span.text == 'Gym (3×/week)',
+      );
+      expect(signalSpan.style?.fontWeight, semiBold);
+      expect(
+        signalSpan.style?.color,
+        dsTokensLight.colors.text.highEmphasis,
       );
     },
   );

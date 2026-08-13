@@ -14,7 +14,7 @@ void main() {
       await _pump(
         tester,
         DesignSystemStepper(
-          label: '3× / 7 days',
+          label: '3×/week',
           decrementTooltip: 'Decrease',
           incrementTooltip: 'Increase',
           onDecrement: () {},
@@ -22,14 +22,88 @@ void main() {
         ),
       );
 
-      final text = tester.widget<Text>(find.text('3× / 7 days'));
+      final text = tester.widget<Text>(find.text('3×/week'));
       expect(
         text.style?.fontFeatures,
         contains(const FontFeature.tabularFigures()),
       );
       expect(text.style?.color, dsTokensLight.colors.text.highEmphasis);
+      // One level below a selection-row title: bodySmall, not bodyMedium.
+      expect(
+        text.style?.fontSize,
+        dsTokensLight.typography.styles.body.bodySmall.fontSize,
+      );
       expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    });
+
+    testWidgets('each glyph sits in a circular level02 container', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        DesignSystemStepper(
+          label: '3×/week',
+          decrementTooltip: 'Decrease',
+          incrementTooltip: 'Increase',
+          decrementKey: const Key('stepper-decrease'),
+          incrementKey: const Key('stepper-increase'),
+          onDecrement: () {},
+          onIncrement: () {},
+        ),
+      );
+
+      for (final key in const [
+        Key('stepper-decrease'),
+        Key('stepper-increase'),
+      ]) {
+        final container = tester.widget<Container>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byType(Container),
+          ),
+        );
+        final decoration = container.decoration! as BoxDecoration;
+        expect(decoration.shape, BoxShape.circle);
+        expect(decoration.color, dsTokensLight.colors.background.level02);
+        expect(
+          container.constraints,
+          BoxConstraints.tight(
+            Size.square(dsTokensLight.spacing.step7),
+          ),
+        );
+      }
+    });
+
+    testWidgets('the band absorbs taps that miss the glyphs', (tester) async {
+      var rowTaps = 0;
+      var increments = 0;
+      await _pump(
+        tester,
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => rowTaps++,
+          child: DesignSystemStepper(
+            label: '3×/week',
+            decrementTooltip: 'Decrease',
+            incrementTooltip: 'Increase',
+            incrementKey: const Key('stepper-increase'),
+            onDecrement: () {},
+            onIncrement: () => increments++,
+          ),
+        ),
+      );
+
+      // A tap on the band's label lands inside the stepper but outside any
+      // glyph — it must not fall through to the hosting row.
+      await tester.tap(find.text('3×/week'));
+      await tester.pump();
+      expect(rowTaps, 0);
+
+      // The glyphs themselves still work.
+      await tester.tap(find.byKey(const Key('stepper-increase')));
+      await tester.pump();
+      expect(increments, 1);
     });
 
     testWidgets('fires the callbacks through the keyed glyphs', (tester) async {
@@ -38,7 +112,7 @@ void main() {
       await _pump(
         tester,
         DesignSystemStepper(
-          label: '3× / 7 days',
+          label: '3×/week',
           decrementTooltip: 'Decrease',
           incrementTooltip: 'Increase',
           decrementKey: const Key('stepper-decrease'),
@@ -63,7 +137,7 @@ void main() {
       await _pump(
         tester,
         DesignSystemStepper(
-          label: '1× / 7 days',
+          label: '1×/week',
           decrementTooltip: 'Decrease',
           incrementTooltip: 'Increase',
           decrementKey: const Key('stepper-decrease'),
@@ -116,7 +190,7 @@ void main() {
       await _pump(
         tester,
         DesignSystemStepper(
-          label: '3× / 7 days',
+          label: '3×/week',
           decrementTooltip: 'Decrease',
           incrementTooltip: 'Increase',
           decrementKey: const Key('stepper-decrease'),

@@ -6416,13 +6416,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Använder din konfigurerade AI-leverantör. Den faktiska förbrukningen visas i målets livstidsmätare.';
+      'Använder din konfigurerade AI-leverantör. Du kan när som helst se vad det har kostat på det här målets sida.';
 
   @override
   String get goalFormDecreaseTarget => 'Sänk veckomålet';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastoliskt (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'Minst';
@@ -6442,6 +6445,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormExampleGym => 'gymma två gånger i veckan';
 
   @override
+  String get goalFormExampleHealth => 'hålla mitt blodtryck under kontroll';
+
+  @override
   String get goalFormExampleRead => 'läsa före läggdags';
 
   @override
@@ -6456,11 +6462,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× i veckan)';
+    return '$habit ($count×/vecka)';
   }
 
   @override
-  String get goalFormHabitSignal => 'vanemarkering';
+  String get goalFormHabitSignal => 'räknas när du bockar av vanan';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
@@ -6480,6 +6486,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Hälsodata';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'använder dina uppmätta värden';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6576,6 +6585,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormStepsSignal => 'automatisk stegräkning';
 
   @override
+  String get goalFormSuggestedSignals => 'Föreslagna';
+
+  @override
+  String get goalFormSystolicTarget => 'Systoliskt (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Målet använder en koppling som redigeraren inte säkert kan ändra. Du kan fortfarande byta namn på målet, avsikten och agenten.';
 
@@ -6601,7 +6616,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 dagar';
+    return '$count×/vecka';
   }
 
   @override

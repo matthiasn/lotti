@@ -38,37 +38,46 @@ class DesignSystemStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
-        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepperGlyph(
-            key: decrementKey,
-            icon: Icons.remove_rounded,
-            tooltip: decrementTooltip,
-            onPressed: onDecrement,
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
-            child: Text(
-              label,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.highEmphasis,
-                fontFeatures: const [FontFeature.tabularFigures()],
+    // The band swallows stray taps: a near-miss beside a glyph must not
+    // fall through to whatever row hosts the stepper.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      excludeFromSemantics: true,
+      onTap: () {},
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level01,
+          borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _StepperGlyph(
+              key: decrementKey,
+              icon: Icons.remove_rounded,
+              tooltip: decrementTooltip,
+              onPressed: onDecrement,
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+              child: Text(
+                label,
+                // One level below a selection-row title, so the row's name
+                // outranks its cadence.
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
-          ),
-          _StepperGlyph(
-            key: incrementKey,
-            icon: Icons.add_rounded,
-            tooltip: incrementTooltip,
-            onPressed: onIncrement,
-          ),
-        ],
+            _StepperGlyph(
+              key: incrementKey,
+              icon: Icons.add_rounded,
+              tooltip: incrementTooltip,
+              onPressed: onIncrement,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -120,12 +129,22 @@ class _StepperGlyph extends StatelessWidget {
                 child: Center(
                   widthFactor: 1,
                   heightFactor: 1,
-                  child: Icon(
-                    icon,
-                    size: IconSizes.s,
-                    color: enabled
-                        ? tokens.colors.interactive.enabled
-                        : tokens.colors.text.lowEmphasis,
+                  // A circular container carries "tappable" by shape, so the
+                  // accent glyph does not have to do it alone.
+                  child: Container(
+                    width: tokens.spacing.step7,
+                    height: tokens.spacing.step7,
+                    decoration: BoxDecoration(
+                      color: tokens.colors.background.level02,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: IconSizes.s,
+                      color: enabled
+                          ? tokens.colors.interactive.enabled
+                          : tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
               ),

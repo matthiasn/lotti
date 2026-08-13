@@ -6480,13 +6480,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Používá tvého nastaveného poskytovatele AI. Skutečnou spotřebu uvidíš v přehledu celoživotní spotřeby tohoto cíle.';
+      'Používá tvého nastaveného poskytovatele AI. Kolik to stálo, uvidíš kdykoli na stránce tohoto cíle.';
 
   @override
   String get goalFormDecreaseTarget => 'Snížit týdenní cíl';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastolický (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'Alespoň';
@@ -6506,6 +6509,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormExampleGym => 'dvakrát týdně do posilovny';
 
   @override
+  String get goalFormExampleHealth => 'udržet krevní tlak pod kontrolou';
+
+  @override
   String get goalFormExampleRead => 'číst před spaním';
 
   @override
@@ -6520,11 +6526,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× týdně)';
+    return '$habit ($count×/týden)';
   }
 
   @override
-  String get goalFormHabitSignal => 'odškrtnutí návyku';
+  String get goalFormHabitSignal => 'počítá se, když návyk odškrtneš';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolický krevní tlak';
@@ -6544,6 +6550,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Zdravotní data';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'používá tvoje naměřené hodnoty';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6641,6 +6650,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormStepsSignal => 'automatický počet kroků';
 
   @override
+  String get goalFormSuggestedSignals => 'Navrhované';
+
+  @override
+  String get goalFormSystolicTarget => 'Systolický (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Tento cíl používá mapování, které editor nedokáže bezpečně změnit. Stále můžeš přejmenovat cíl, záměr a agenta.';
 
@@ -6667,7 +6682,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 dní';
+    return '$count×/týden';
   }
 
   @override

@@ -6529,13 +6529,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Folosește furnizorul de IA configurat de dvs. Consumul real apare în indicatorii de consum total ai acestui obiectiv.';
+      'Folosește furnizorul de IA configurat de dvs. Puteți vedea oricând cât a costat pe pagina acestui obiectiv.';
 
   @override
   String get goalFormDecreaseTarget => 'Reduceți ținta săptămânală';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastolică (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'Cel puțin';
@@ -6555,6 +6558,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormExampleGym => 'sală de două ori pe săptămână';
 
   @override
+  String get goalFormExampleHealth => 'tensiunea arterială sub control';
+
+  @override
   String get goalFormExampleRead => 'citit înainte de culcare';
 
   @override
@@ -6569,11 +6575,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× pe săptămână)';
+    return '$habit ($count×/săptămână)';
   }
 
   @override
-  String get goalFormHabitSignal => 'bifarea obiceiului';
+  String get goalFormHabitSignal => 'contează când bifați obiceiul';
 
   @override
   String get goalFormHealthBloodPressureDiastolic =>
@@ -6595,6 +6601,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Date de sănătate';
+
+  @override
+  String get goalFormHealthReadingsSignal =>
+      'folosește valorile măsurate de dvs.';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6691,6 +6701,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormStepsSignal => 'numărarea automată a pașilor';
 
   @override
+  String get goalFormSuggestedSignals => 'Sugerate';
+
+  @override
+  String get goalFormSystolicTarget => 'Sistolică (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Acest obiectiv folosește o asociere pe care editorul nu o poate modifica în siguranță. Puteți totuși redenumi obiectivul, intenția și agentul.';
 
@@ -6717,7 +6733,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 zile';
+    return '$count×/săptămână';
   }
 
   @override

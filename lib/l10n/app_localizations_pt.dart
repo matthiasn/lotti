@@ -6474,13 +6474,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Usa o teu fornecedor de IA configurado. O consumo real aparece nos indicadores de consumo total deste objetivo.';
+      'Usa o teu fornecedor de IA configurado. Podes ver a qualquer momento quanto custou na página deste objetivo.';
 
   @override
   String get goalFormDecreaseTarget => 'Diminuir a meta semanal';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastólica (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'No mínimo';
@@ -6500,6 +6503,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormExampleGym => 'ginásio duas vezes por semana';
 
   @override
+  String get goalFormExampleHealth =>
+      'manter a minha pressão arterial sob controlo';
+
+  @override
   String get goalFormExampleRead => 'ler antes de dormir';
 
   @override
@@ -6514,11 +6521,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× por semana)';
+    return '$habit ($count×/semana)';
   }
 
   @override
-  String get goalFormHabitSignal => 'registo do hábito';
+  String get goalFormHabitSignal => 'conta quando marcas o hábito';
 
   @override
   String get goalFormHealthBloodPressureDiastolic =>
@@ -6540,6 +6547,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Dados de saúde';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'usa os teus valores medidos';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6636,6 +6646,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormStepsSignal => 'contagem automática de passos';
 
   @override
+  String get goalFormSuggestedSignals => 'Sugeridos';
+
+  @override
+  String get goalFormSystolicTarget => 'Sistólica (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Esta meta usa um mapeamento que este editor não consegue alterar em segurança. Ainda podes renomear a meta, a intenção e o agente.';
 
@@ -6661,7 +6677,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 dias';
+    return '$count×/semana';
   }
 
   @override

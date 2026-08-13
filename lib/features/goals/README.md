@@ -137,13 +137,21 @@ selected, until the user types their own — and reappears on the
 confirmation step as the same field rendered read-only behind a pencil
 affordance. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
-intention that names a health capability (blood pressure, weight) surfaces it
-as an offer row directly in the signals card. Picked health and tracked-time
-signals seed sensible default targets, a missing target errors inline on its
-own input and scrolls into view, back-edits of the intention only add matched
-signals (never clearing shaped targets, and a re-checked habit restores its
-remembered cadence), and every signal is added through one multi-select
-picker. The same flow edits an active goal from its
+intention that names a health capability (blood pressure, weight) arrives
+with that signal pre-selected and seeded (130/80 mmHg, at-most), while a
+habit that merely names the same reading is demoted to an unchecked
+suggestion. Every signal is one kind of row in one signals card — provenance
+icon, plain-language subtitle, targets on the row's secondary line (blood
+pressure is a single row with paired systolic/diastolic inputs sharing one
+direction) — grouped as the user's signals above a Suggested caption, with
+the row order frozen per step entry so toggling never reorders under the
+finger. Picked health and tracked-time signals seed sensible default
+targets, a missing target errors inline on its own input and scrolls into
+view, back-edits of the intention only add matched signals (never clearing
+shaped targets, and a re-checked habit restores its remembered cadence), and
+every signal is added through one multi-select picker (steps included). The
+confirmation step leads with the agent's name and restates the goal as prose
+in which only the signals carry emphasis. The same flow edits an active goal from its
 detail menu. Owner edits preserve criterion identities where possible, retain
 unsupported or out-of-range criterion trees read-only, keep already-authored
 habit criteria when privacy hides them from the picker, and mint a new

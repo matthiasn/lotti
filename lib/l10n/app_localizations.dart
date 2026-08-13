@@ -10943,7 +10943,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormCostHonesty.
   ///
   /// In en, this message translates to:
-  /// **'Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.'**
+  /// **'Uses your configured AI provider. You can see what it has cost anytime on this goal\'s page.'**
   String get goalFormCostHonesty;
 
   /// No description provided for @goalFormDecreaseTarget.
@@ -10957,6 +10957,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Juno'**
   String get goalFormDefaultPersonaName;
+
+  /// Label of the diastolic target input on the blood-pressure signal row
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic (mmHg)'**
+  String get goalFormDiastolicTarget;
 
   /// No description provided for @goalFormDirectionAtLeast.
   ///
@@ -10988,6 +10994,12 @@ abstract class AppLocalizations {
   /// **'gym twice a week'**
   String get goalFormExampleGym;
 
+  /// Example intention pill on the goal creation intention step
+  ///
+  /// In en, this message translates to:
+  /// **'keep my blood pressure under control'**
+  String get goalFormExampleHealth;
+
   /// No description provided for @goalFormExampleRead.
   ///
   /// In en, this message translates to:
@@ -11015,13 +11027,13 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormHabitCadence.
   ///
   /// In en, this message translates to:
-  /// **'{habit} ({count}× a week)'**
+  /// **'{habit} ({count}×/week)'**
   String goalFormHabitCadence(String habit, int count);
 
   /// No description provided for @goalFormHabitSignal.
   ///
   /// In en, this message translates to:
-  /// **'habit check‑off'**
+  /// **'counts when you tick the habit'**
   String get goalFormHabitSignal;
 
   /// No description provided for @goalFormHealthBloodPressureDiastolic.
@@ -11052,6 +11064,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Health data'**
   String get goalFormHealthData;
+
+  /// Subtitle of a health signal row in the goal mapping card, contrasting measured readings with habit check-offs
+  ///
+  /// In en, this message translates to:
+  /// **'uses your measured readings'**
+  String get goalFormHealthReadingsSignal;
 
   /// No description provided for @goalFormHealthSource.
   ///
@@ -11197,6 +11215,18 @@ abstract class AppLocalizations {
   /// **'automatic step count'**
   String get goalFormStepsSignal;
 
+  /// Caption dividing the user's chosen signals from intention-matched suggestions in the goal mapping card
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get goalFormSuggestedSignals;
+
+  /// Label of the systolic target input on the blood-pressure signal row
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic (mmHg)'**
+  String get goalFormSystolicTarget;
+
   /// No description provided for @goalFormUnsupportedCriteria.
   ///
   /// In en, this message translates to:
@@ -11242,7 +11272,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormWeeklyTarget.
   ///
   /// In en, this message translates to:
-  /// **'{count}× / 7 days'**
+  /// **'{count}×/week'**
   String goalFormWeeklyTarget(int count);
 
   /// No description provided for @goalFormYourMeasurables.
