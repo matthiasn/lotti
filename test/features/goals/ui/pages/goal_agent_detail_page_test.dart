@@ -24,6 +24,7 @@ import 'package:lotti/features/goals/service/goal_habit_completion_service.dart'
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
+import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
@@ -646,6 +647,205 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('goal-detail-chat-action')));
     await tester.pump();
     expect(navigated, ['/agents/details/goal-1/chat']);
+  });
+
+  testWidgets('a habit-less goal falls back to the anchor scroll and the '
+      'reflect row opens the day assessment sheet', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Average 10,000 steps.',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    final banner =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-goal-1',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Two averages left to move.',
+                cta: 'Log today',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Averages need work.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                name: 'Daily steps',
+                target: 10000,
+                days: [
+                  for (var day = 5; day <= 11; day++)
+                    GoalProgressDay(
+                      day: DateTime.utc(2026, 8, day),
+                      value: day.isEven ? 11000 : 7000,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith(
+            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+          ),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No habit dimensions: the CTA anchors to the evidence instead of
+    // opening the logging sheet — and never navigates.
+    final scrollable = tester.state<ScrollableState>(
+      find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    expect(scrollable.position.pixels, 0);
+    await tester.tap(find.text('Log today'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalLogTodaySheet), findsNothing);
+    expect(navigated, isEmpty);
+    expect(scrollable.position.pixels, greaterThan(0));
+
+    // The reflect row opens the day assessment sheet for today.
+    await tester.scrollUntilVisible(
+      find.text('Reflect on today'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(find.text('Reflect on today'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
+  });
+
+  testWidgets('the banner CTA never self-navigates while progress is still '
+      'resolving', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final banner =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-goal-1',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Still warming up.',
+                cta: 'Log today',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Loading evidence.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          // Progress never resolves: the first load is still in flight.
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) => Completer<GoalProgressView?>().future,
+          ),
+          activeGoalNudgesProvider.overrideWith(
+            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+          ),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Log today'));
+    await tester.pump();
+
+    // Neither a navigation to the route we are on, nor a sheet for
+    // evidence that has not resolved — the CTA heals once progress lands.
+    expect(navigated, isEmpty);
+    expect(find.byType(GoalLogTodaySheet), findsNothing);
   });
 
   testWidgets('a banner past its staleAt is filtered out at render time even '

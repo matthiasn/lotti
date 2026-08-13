@@ -254,6 +254,43 @@ void main() {
     );
   });
 
+  testWidgets('the sheet closes itself when the local day rolls over — a '
+      'stale snapshot must not keep offering yesterday', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  builder: (context) => GoalLogTodaySheet(
+                    agentId: 'goal-1',
+                    progress: progress(),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          goalHabitCompletionServiceProvider.overrideWithValue(
+            completionService,
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalLogTodaySheet), findsOneWidget);
+
+    // Cross the midnight boundary in fake-async time: the sheet pops.
+    await tester.pump(const Duration(hours: 25));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalLogTodaySheet), findsNothing);
+  });
+
   testWidgets('a habit already completed today opens as done', (tester) async {
     await pumpSheet(tester, measureValueToday: 1);
 

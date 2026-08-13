@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +36,27 @@ class GoalLogTodaySheet extends ConsumerStatefulWidget {
 class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
   final Set<String> _saving = {};
   final Set<String> _recorded = {};
+  Timer? _midnightTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // The sheet is a snapshot of ONE day. When the local day rolls over,
+    // its rows, date label and recorded set all describe yesterday — close
+    // it rather than let a stale surface offer misleading state (the detail
+    // page behind it refreshes at the same boundary).
+    final now = clock.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer = Timer(nextMidnight.difference(now), () {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
 
   bool _doneToday(GoalHabitProgressView habit) {
     final today = widget.progress.today;

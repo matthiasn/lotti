@@ -252,7 +252,18 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           reportIsStale:
               agentState is AgentStateEntity && agentState.isReportStale,
           canRefresh: isActive,
-          onBannerCta: progress == null ? null : () => _logToday(progress),
+          // Always non-null: a null callback would fall back to the card's
+          // default navigate-to-detail — a self-navigation no-op on this
+          // page. While the evidence is still resolving the CTA anchors
+          // (or quietly no-ops) and heals when progress lands.
+          onBannerCta: () {
+            final resolved = progress;
+            if (resolved != null) {
+              _logToday(resolved);
+            } else {
+              _scrollToProgress();
+            }
+          },
         ),
         if (progress != null) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),

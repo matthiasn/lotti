@@ -167,7 +167,7 @@ void main() {
         onSeek: seeks.add,
       );
 
-      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+      await withClock(tester.binding.clock, () async {
         final detector = _getGestureDetector(tester);
         detector.onHorizontalDragStart?.call(
           DragStartDetails(
@@ -214,11 +214,11 @@ void main() {
         onSeek: seeks.add,
       );
 
-      // Fixed clock: the widget throttles on clock.now(), so wall time
-      // elapsing between the direct callback invocations (a slow CI runner)
-      // can never open the 60ms window early and turn the pending second
-      // update into an immediate emit.
-      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+      // The test binding's clock advances ONLY via tester.pump, so wall
+      // time elapsing between the direct callback invocations (a slow CI
+      // runner) can never open the 60ms window early and turn the pending
+      // second update into an immediate emit.
+      await withClock(tester.binding.clock, () async {
         final detector = _getGestureDetector(tester);
         detector.onHorizontalDragStart?.call(
           DragStartDetails(
@@ -264,7 +264,7 @@ void main() {
 
       // Fixed clock: only the pumped fake-async timers may open the
       // throttle window, never wall time between direct invocations.
-      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+      await withClock(tester.binding.clock, () async {
         final detector = _getGestureDetector(tester);
         detector.onHorizontalDragStart?.call(
           DragStartDetails(
