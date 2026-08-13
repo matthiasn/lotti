@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.8]
 ### Added
+- **Relationships (foundation).** New journal entity types for a personal
+  CRM: one relationship entity per person you deliberately track, plus
+  structured check-ins (interaction type, sentiment, topics, narrative)
+  linked to it. Includes cascade deletion (removing a relationship removes
+  its check-ins), sync, categories, and the private flag. Data layer only —
+  the People UI, cadence nudges, and executive briefings ship in later
+  increments.
 - **Goal-agent chat supports voice input.** The composer now has a microphone
   button that records, transcribes, and fills the text field.
 - **Rolling-week charts show partial successes.** A day where the habit was

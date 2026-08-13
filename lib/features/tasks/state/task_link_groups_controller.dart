@@ -200,6 +200,9 @@ class TaskLinkGroupsController extends AsyncNotifier<TaskLinkGroups> {
         project: (_) => throw StateError(
           'unexpected ProjectLink from a task-relationship link query',
         ),
+        relationship: (_) => throw StateError(
+          'unexpected RelationshipLink from a task-relationship link query',
+        ),
         blocks: (_) => TaskLinkKind.blocks,
         followsUp: (_) => TaskLinkKind.followsUp,
         duplicates: (_) => TaskLinkKind.duplicates,

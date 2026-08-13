@@ -5876,6 +5876,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Réponse IA';
 
   @override
+  String get entryTypeLabelCheckIn => 'Échange';
+
+  @override
   String get entryTypeLabelChecklist => 'Liste de contrôle';
 
   @override

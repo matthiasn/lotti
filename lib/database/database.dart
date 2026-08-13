@@ -32,6 +32,7 @@ part 'database_insights_queries.dart';
 part 'database_journal_queries.dart';
 part 'database_links_ratings.dart';
 part 'database_project_queries.dart';
+part 'database_relationship_queries.dart';
 part 'database_task_due_queries.dart';
 part 'database_task_queries.dart';
 part 'database_task_query_builders.dart';
@@ -117,6 +118,7 @@ class JournalDb extends _$JournalDb
         _JournalDbTaskQueries,
         _JournalDbTaskDueQueries,
         _JournalDbProjectQueries,
+        _JournalDbRelationshipQueries,
         _JournalDbLinksRatings,
         _JournalDbDataQueries,
         _JournalDbDefinitions,

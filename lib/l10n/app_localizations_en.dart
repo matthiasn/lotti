@@ -5755,6 +5755,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'AI Response';
 
   @override
+  String get entryTypeLabelCheckIn => 'Check-in';
+
+  @override
   String get entryTypeLabelChecklist => 'Checklist';
 
   @override

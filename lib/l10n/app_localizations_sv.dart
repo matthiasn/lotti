@@ -5787,6 +5787,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'AI-respons';
 
   @override
+  String get entryTypeLabelCheckIn => 'Avstämning';
+
+  @override
   String get entryTypeLabelChecklist => 'Checklista';
 
   @override

@@ -5844,6 +5844,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Odpověď AI';
 
   @override
+  String get entryTypeLabelCheckIn => 'Kontakt';
+
+  @override
   String get entryTypeLabelChecklist => 'Kontrolní seznam';
 
   @override

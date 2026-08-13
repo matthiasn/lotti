@@ -2484,6 +2484,7 @@
   "entryLabelsHeaderTitle": "Etichete",
   "entryLabelsNoLabels": "Nicio etichetă atribuită",
   "entryTypeLabelAiResponse": "Răspuns AI",
+  "entryTypeLabelCheckIn": "Contact",
   "entryTypeLabelChecklist": "Listă de verificare",
   "entryTypeLabelChecklistItem": "Element de verificare",
   "entryTypeLabelHabitCompletionEntry": "Obicei",

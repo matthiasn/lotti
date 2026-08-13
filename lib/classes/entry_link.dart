@@ -112,6 +112,20 @@ abstract class EntryLink with _$EntryLink {
     DateTime? deletedAt,
   }) = SupersedesLink;
 
+  /// `fromId` is a relationship; `toId` is a check-in or task belonging to
+  /// it, mirroring [ProjectLink]'s direction. Granted by ADR 0038 decision 3.
+  const factory EntryLink.relationship({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    bool? hidden,
+    bool? collapsed,
+    DateTime? deletedAt,
+  }) = RelationshipLink;
+
   factory EntryLink.fromJson(Map<String, dynamic> json) =>
       _$EntryLinkFromJson(json);
 }
@@ -128,6 +142,7 @@ enum EntryLinkType {
   duplicates,
   fixes,
   supersedes,
+  relationship,
 }
 
 /// Builds the [EntryLink] union member matching this [EntryLinkType], so
@@ -242,6 +257,18 @@ extension EntryLinkTypeFactory on EntryLinkType {
           collapsed: collapsed,
           deletedAt: deletedAt,
         );
+      case EntryLinkType.relationship:
+        return EntryLink.relationship(
+          id: id,
+          fromId: fromId,
+          toId: toId,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          hidden: hidden,
+          collapsed: collapsed,
+          deletedAt: deletedAt,
+        );
     }
   }
 }
@@ -259,6 +286,7 @@ String entryLinkTypeDbName(EntryLinkType type) => switch (type) {
   EntryLinkType.duplicates => 'DuplicatesLink',
   EntryLinkType.fixes => 'FixesLink',
   EntryLinkType.supersedes => 'SupersedesLink',
+  EntryLinkType.relationship => 'RelationshipLink',
 };
 
 /// The [EntryLinkType] of [link]'s union variant — the inverse of
@@ -274,6 +302,7 @@ EntryLinkType entryLinkTypeOf(EntryLink link) => link.map(
   duplicates: (_) => EntryLinkType.duplicates,
   fixes: (_) => EntryLinkType.fixes,
   supersedes: (_) => EntryLinkType.supersedes,
+  relationship: (_) => EntryLinkType.relationship,
 );
 
 /// The `linked_entries.type` column value for [link]'s union variant. Shared
@@ -288,4 +317,5 @@ String entryLinkTypeName(EntryLink link) => link.map(
   duplicates: (_) => 'DuplicatesLink',
   fixes: (_) => 'FixesLink',
   supersedes: (_) => 'SupersedesLink',
+  relationship: (_) => 'RelationshipLink',
 );

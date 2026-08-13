@@ -5861,6 +5861,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Respuesta de IA';
 
   @override
+  String get entryTypeLabelCheckIn => 'Contacto';
+
+  @override
   String get entryTypeLabelChecklist => 'Lista de verificación';
 
   @override

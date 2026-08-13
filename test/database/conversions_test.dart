@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_audio_context.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -237,6 +239,24 @@ void main() {
           dateTo: _baseTime,
         ),
       ),
+      'Relationship': JournalEntity.relationship(
+        meta: _meta('relationship'),
+        data: RelationshipData(
+          title: 'Anna Example',
+          status: RelationshipStatus.active(
+            id: 'rs-1',
+            createdAt: _baseTime,
+            utcOffset: 0,
+          ),
+        ),
+      ),
+      'CheckIn': JournalEntity.checkIn(
+        meta: _meta('check-in'),
+        data: const CheckInData(
+          relationshipId: 'rel-001',
+          interactionType: CheckInInteractionType.call,
+        ),
+      ),
     };
 
     entries.forEach((expectedType, entity) {
@@ -283,6 +303,18 @@ void main() {
     );
     final dbEntity = toDbEntity(entry);
     expect(dbEntity.subtype, AiResponseType.imageAnalysis.name);
+  });
+
+  test('toDbEntity sets subtype to the relationship id for CheckInEntry', () {
+    final entry = JournalEntity.checkIn(
+      meta: _meta('check-in-subtype'),
+      data: const CheckInData(
+        relationshipId: 'rel-042',
+        interactionType: CheckInInteractionType.message,
+      ),
+    );
+    final dbEntity = toDbEntity(entry);
+    expect(dbEntity.subtype, 'rel-042');
   });
 
   test('toDbEntity sets task flag for task entries', () {
@@ -412,6 +444,8 @@ void main() {
         dayPlan: (_) => throw StateError('unexpected variant'),
         rating: (_) => throw StateError('unexpected variant'),
         project: (_) => throw StateError('unexpected variant'),
+        relationship: (_) => throw StateError('unexpected variant'),
+        checkIn: (_) => throw StateError('unexpected variant'),
       );
     }
 

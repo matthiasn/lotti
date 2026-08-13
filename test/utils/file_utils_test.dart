@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -138,6 +140,40 @@ void main() {
 
       final path = entityPath(testEntity, Directory(''));
       expect(path, '/projects/2021-11-30/test-id.project.json');
+    });
+
+    test('JSON file name for relationship entry should be correct', () async {
+      final testEntity = JournalEntity.relationship(
+        meta: testMeta,
+        data: RelationshipData(
+          title: 'Anna Example',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: dt,
+            utcOffset: 60,
+          ),
+        ),
+      );
+
+      // Exercises folderForJournalEntity ('relationships') and typeSuffix
+      // ('relationship') via the orElse branch.
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/relationships/2021-11-30/test-id.relationship.json');
+    });
+
+    test('JSON file name for check-in entry should be correct', () async {
+      final testEntity = JournalEntity.checkIn(
+        meta: testMeta,
+        data: const CheckInData(
+          relationshipId: 'rel-001',
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
+
+      // Exercises folderForJournalEntity ('check_ins') and typeSuffix
+      // ('check_in') via the orElse branch.
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/check_ins/2021-11-30/test-id.check_in.json');
     });
 
     test('JSON file name for audio entry should be correct', () async {

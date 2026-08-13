@@ -5820,6 +5820,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'AI-Antwort';
 
   @override
+  String get entryTypeLabelCheckIn => 'Check-in';
+
+  @override
   String get entryTypeLabelChecklist => 'Checkliste';
 
   @override
