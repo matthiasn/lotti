@@ -6454,13 +6454,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Verwendet deinen konfigurierten KI-Anbieter. Die tatsächliche Nutzung siehst du in den Verbrauchsanzeigen für die gesamte Laufzeit dieses Ziels.';
+      'Verwendet deinen konfigurierten KI-Anbieter. Was es gekostet hat, siehst du jederzeit auf der Seite dieses Ziels.';
 
   @override
   String get goalFormDecreaseTarget => 'Wochenziel verringern';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastolisch (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'Mindestens';
@@ -6480,6 +6483,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormExampleGym => 'zweimal pro Woche ins Fitnessstudio';
 
   @override
+  String get goalFormExampleHealth => 'meinen Blutdruck im Griff behalten';
+
+  @override
   String get goalFormExampleRead => 'vor dem Schlafengehen lesen';
 
   @override
@@ -6494,11 +6500,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× pro Woche)';
+    return '$habit ($count×/Woche)';
   }
 
   @override
-  String get goalFormHabitSignal => 'Gewohnheits‑Check‑in';
+  String get goalFormHabitSignal => 'zählt, wenn du die Gewohnheit abhakst';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolischer Blutdruck';
@@ -6518,6 +6524,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Gesundheitsdaten';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'nutzt deine gemessenen Werte';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6614,6 +6623,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormStepsSignal => 'automatische Schrittzählung';
 
   @override
+  String get goalFormSuggestedSignals => 'Vorgeschlagen';
+
+  @override
+  String get goalFormSystolicTarget => 'Systolisch (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Dieses Ziel verwendet eine Zuordnung, die dieser Editor nicht sicher ändern kann. Namen, Vorhaben und Agent kannst du trotzdem umbenennen.';
 
@@ -6640,7 +6655,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 Tage';
+    return '$count×/Woche';
   }
 
   @override

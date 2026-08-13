@@ -3643,9 +3643,13 @@
   "goalFormCompositeRule": "How this goal comes together",
   "goalFormConfirmTitle": "Meet your agent",
   "goalFormContinue": "Continue",
-  "goalFormCostHonesty": "Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.",
+  "goalFormCostHonesty": "Uses your configured AI provider. You can see what it has cost anytime on this goal's page.",
   "goalFormDecreaseTarget": "Decrease weekly target",
   "goalFormDefaultPersonaName": "Juno",
+  "goalFormDiastolicTarget": "Diastolic (mmHg)",
+  "@goalFormDiastolicTarget": {
+    "description": "Label of the diastolic target input on the blood-pressure signal row"
+  },
   "goalFormDirectionAtLeast": "At least",
   "goalFormDirectionAtMost": "No more than",
   "goalFormEditTitle": "Edit goal",
@@ -3658,6 +3662,10 @@
     }
   },
   "goalFormExampleGym": "gym twice a week",
+  "goalFormExampleHealth": "keep my blood pressure under control",
+  "@goalFormExampleHealth": {
+    "description": "Example intention pill on the goal creation intention step"
+  },
   "goalFormExampleRead": "read before bed",
   "goalFormExampleWalk": "walk more",
   "goalFormFooter": "You can rename, retarget, pause or delete this agent anytime.",
@@ -3665,7 +3673,7 @@
   "@goalFormGoalNameLabel": {
     "description": "Label of the goal's editable name field on the mapping and confirmation steps."
   },
-  "goalFormHabitCadence": "{habit} ({count}× a week)",
+  "goalFormHabitCadence": "{habit} ({count}×/week)",
   "@goalFormHabitCadence": {
     "placeholders": {
       "habit": {
@@ -3676,7 +3684,7 @@
       }
     }
   },
-  "goalFormHabitSignal": "habit check‑off",
+  "goalFormHabitSignal": "counts when you tick the habit",
   "goalFormHealthBloodPressureDiastolic": "Diastolic blood pressure",
   "goalFormHealthBloodPressureSystolic": "Systolic blood pressure",
   "goalFormHealthCadence": "{healthName}: 7-day average {direction} {target} {unitName}",
@@ -3697,6 +3705,10 @@
     }
   },
   "goalFormHealthData": "Health data",
+  "goalFormHealthReadingsSignal": "uses your measured readings",
+  "@goalFormHealthReadingsSignal": {
+    "description": "Subtitle of a health signal row in the goal mapping card, contrasting measured readings with habit check-offs"
+  },
   "goalFormHealthSource": "Health data · {unitName} · 7-day average",
   "@goalFormHealthSource": {
     "placeholders": {
@@ -3773,6 +3785,14 @@
     }
   },
   "goalFormStepsSignal": "automatic step count",
+  "goalFormSuggestedSignals": "Suggested",
+  "@goalFormSuggestedSignals": {
+    "description": "Caption dividing the user's chosen signals from intention-matched suggestions in the goal mapping card"
+  },
+  "goalFormSystolicTarget": "Systolic (mmHg)",
+  "@goalFormSystolicTarget": {
+    "description": "Label of the systolic target input on the blood-pressure signal row"
+  },
   "goalFormUnsupportedCriteria": "This goal uses a mapping this editor can’t safely rewrite. You can still rename the goal, its intention and its agent.",
   "goalFormValidationIdentity": "Give the goal and its agent a name.",
   "goalFormValidationIntention": "Describe what you want to work toward first.",
@@ -3789,7 +3809,7 @@
   "@goalFormValidationTitle": {
     "description": "Validation anchored to the goal name field."
   },
-  "goalFormWeeklyTarget": "{count}× / 7 days",
+  "goalFormWeeklyTarget": "{count}×/week",
   "@goalFormWeeklyTarget": {
     "placeholders": {
       "count": {

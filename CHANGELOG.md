@@ -23,8 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Steps and matching health signals are offered directly.** The automatic
   step count is always available as a signal row instead of appearing only
   when the intention mentioned it, and an intention that names blood
-  pressure or weight surfaces that health signal as an offer row right in
-  the signals card.
+  pressure or weight arrives with that health signal already selected and
+  sensible targets filled in (130/80 mmHg), while a habit that merely tracks
+  the same reading waits unchecked under a "Suggested" caption.
 
 ### Changed
 - **Goal-agent reports now wait behind a visible refresh countdown.** New goal
@@ -32,15 +33,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   immediately, then coalesces report inference for two minutes instead of
   spending it at once. The same controls as Task Agents let you update now,
   skip one pending run, or turn automatic report updates off.
-- **A design-panel pass over the goal create/edit flow.** All signals are
-  added through one multi-select picker that stays open until Done; cadence
-  steppers read as bounded controls bound to their row; picked health and
-  tracked-time signals start from sensible default targets; a missing target
-  errors on its own input and scrolls into view instead of one generic
-  message mid-page; re-checking a habit restores its remembered cadence; the
-  desktop layout caps the form at a reading column with the continue button
-  in flow; and the flow speaks one vocabulary ("signal"), with the mapping
-  step's button now reading "Continue".
+- **A design-panel pass over the goal create/edit flow.** Every signal —
+  habits, blood pressure, weight, steps — lives as one kind of row in one
+  signals card, with a provenance icon, a plain-language subtitle, and its
+  targets right on the row (blood pressure is a single row with paired
+  systolic/diastolic inputs and one direction); rows keep their position
+  while you toggle them; all signals are added through one multi-select
+  picker (steps included) that stays open until Done; a missing target
+  errors on its own input and scrolls into view; re-checking a habit
+  restores its remembered cadence; the continue button is always on screen
+  on an opaque band on both form factors; the confirmation step leads with
+  the agent and recaps the goal as readable prose with only the signals
+  emphasized; cadences read "3×/week"; a "Step N of 3" caption sits under
+  the progress dots; and the flow speaks one vocabulary ("signal"), with
+  the mapping step's button now reading "Continue".
 - **A design-panel polish pass across the goal-agent surfaces.** The banner's
   "Log today" opens a one-tap logging sheet on the goal page instead of
   navigating to itself; day cells wear a dedicated success green (with an

@@ -72,11 +72,13 @@ class DesignSystemTextInput extends StatefulWidget {
   final Key? trailingIconKey;
   final bool enabled;
 
-  /// Renders the field as a display value rather than an editable input:
-  /// full-emphasis text on a quiet fill with no outline, no cursor, and no
-  /// focus/hover border states. Unlike `enabled: false` the field is not
-  /// dimmed and an actionable [trailingIcon] stays live — the slot for the
-  /// affordance that flips the field back to editable.
+  /// Renders the field as a display value rather than an editable input.
+  /// The chrome is identical to the editable state — same label, fill and
+  /// outline — so the field keeps one grammar; only the value drops to
+  /// medium emphasis, the cursor disappears, and focus/hover states stay
+  /// quiet. Unlike `enabled: false` the field is not dimmed and an
+  /// actionable [trailingIcon] stays live — the slot for the affordance
+  /// that flips the field back to editable.
   final bool readOnly;
   final bool obscureText;
   final bool autofocus;
@@ -93,7 +95,7 @@ class DesignSystemTextInput extends StatefulWidget {
 class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
   static const InputBorder _noBorder = InputBorder.none;
 
-  late final TextEditingController _controller;
+  late TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _ownsController = false;
   bool _focused = false;
@@ -104,11 +106,30 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
     super.initState();
     _focusNode = FocusNode();
     _focusNode.addListener(_onFocusChanged);
-    if (widget.controller != null) {
-      _controller = widget.controller!;
+    _bindController();
+  }
+
+  void _bindController() {
+    if (widget.controller case final controller?) {
+      _controller = controller;
+      _ownsController = false;
     } else {
       _controller = TextEditingController();
       _ownsController = true;
+    }
+  }
+
+  // A reparented element (GlobalKey moves, list reorders) keeps this State
+  // but hands it a new widget whose controller may differ — or whose old
+  // controller was disposed by its previous owner. Rebind instead of
+  // trusting the initState-era reference.
+  @override
+  void didUpdateWidget(covariant DesignSystemTextInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      final previousOwned = _ownsController ? _controller : null;
+      _bindController();
+      previousOwned?.dispose();
     }
   }
 
@@ -166,15 +187,21 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
               : null,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: widget.readOnly ? tokens.colors.background.level01 : null,
+              // Every input sits on the level01 fill so "where do I type"
+              // survives the dark canvas.
+              color: tokens.colors.background.level01,
               borderRadius: BorderRadius.circular(spec.borderRadius),
               border: Border.all(
                 color: borderColor,
                 width: _focused && !widget.readOnly ? 2 : 1,
               ),
             ),
-            child: SizedBox(
-              height: spec.fieldHeight,
+            child: ConstrainedBox(
+              // Editable fields keep their fixed height; a read-only display
+              // value may wrap rather than clip what it is confirming.
+              constraints: widget.readOnly
+                  ? BoxConstraints(minHeight: spec.fieldHeight)
+                  : BoxConstraints.tightFor(height: spec.fieldHeight),
               child: Center(
                 child: Semantics(
                   label: accessibleFieldLabel,
@@ -184,13 +211,18 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     enabled: widget.enabled,
                     readOnly: widget.readOnly,
                     showCursor: !widget.readOnly,
+                    maxLines: widget.readOnly && !widget.obscureText ? null : 1,
                     obscureText: widget.obscureText,
                     autofocus: widget.autofocus,
                     keyboardType: widget.keyboardType,
                     textCapitalization: widget.textCapitalization,
                     onChanged: widget.onChanged,
                     onSubmitted: widget.onSubmitted,
-                    style: spec.textStyle,
+                    style: widget.readOnly
+                        ? spec.textStyle.copyWith(
+                            color: tokens.colors.text.mediumEmphasis,
+                          )
+                        : spec.textStyle,
                     cursorColor: tokens.colors.text.mediumEmphasis,
                     textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
@@ -292,9 +324,12 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
 
   Color _resolveBorderColor(DsTokens tokens, bool hasError) {
     if (hasError) return tokens.colors.alert.error.defaultColor;
-    if (widget.readOnly) return Colors.transparent;
-    if (_focused) return tokens.colors.interactive.enabled;
-    if (_hovered) return tokens.colors.text.mediumEmphasis;
+    if (_focused && !widget.readOnly) {
+      return tokens.colors.interactive.enabled;
+    }
+    if (_hovered && !widget.readOnly) {
+      return tokens.colors.text.mediumEmphasis;
+    }
     return tokens.colors.text.highEmphasis.withValues(
       alpha: _kDefaultBorderAlpha,
     );

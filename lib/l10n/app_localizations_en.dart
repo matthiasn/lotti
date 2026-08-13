@@ -6382,13 +6382,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.';
+      'Uses your configured AI provider. You can see what it has cost anytime on this goal\'s page.';
 
   @override
   String get goalFormDecreaseTarget => 'Decrease weekly target';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastolic (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'At least';
@@ -6408,6 +6411,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormExampleGym => 'gym twice a week';
 
   @override
+  String get goalFormExampleHealth => 'keep my blood pressure under control';
+
+  @override
   String get goalFormExampleRead => 'read before bed';
 
   @override
@@ -6422,11 +6428,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× a week)';
+    return '$habit ($count×/week)';
   }
 
   @override
-  String get goalFormHabitSignal => 'habit check‑off';
+  String get goalFormHabitSignal => 'counts when you tick the habit';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolic blood pressure';
@@ -6446,6 +6452,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Health data';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'uses your measured readings';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6542,6 +6551,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormStepsSignal => 'automatic step count';
 
   @override
+  String get goalFormSuggestedSignals => 'Suggested';
+
+  @override
+  String get goalFormSystolicTarget => 'Systolic (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'This goal uses a mapping this editor can’t safely rewrite. You can still rename the goal, its intention and its agent.';
 
@@ -6568,7 +6583,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 days';
+    return '$count×/week';
   }
 
   @override

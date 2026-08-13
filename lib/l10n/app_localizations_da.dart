@@ -6409,13 +6409,16 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormCostHonesty =>
-      'Bruger din valgte AI-udbyder. Det faktiske forbrug vises i målets samlede forbrugsmærker.';
+      'Bruger din valgte AI-udbyder. Du kan altid se, hvad det har kostet, på siden for dette mål.';
 
   @override
   String get goalFormDecreaseTarget => 'Sænk ugemålet';
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDiastolicTarget => 'Diastolisk (mmHg)';
 
   @override
   String get goalFormDirectionAtLeast => 'Mindst';
@@ -6435,6 +6438,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormExampleGym => 'træn to gange om ugen';
 
   @override
+  String get goalFormExampleHealth => 'holde mit blodtryk under kontrol';
+
+  @override
   String get goalFormExampleRead => 'læs før sengetid';
 
   @override
@@ -6449,11 +6455,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String goalFormHabitCadence(String habit, int count) {
-    return '$habit ($count× om ugen)';
+    return '$habit ($count×/uge)';
   }
 
   @override
-  String get goalFormHabitSignal => 'vaneafkrydsning';
+  String get goalFormHabitSignal => 'tæller, når du krydser vanen af';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolisk blodtryk';
@@ -6473,6 +6479,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormHealthData => 'Sundhedsdata';
+
+  @override
+  String get goalFormHealthReadingsSignal => 'bruger dine målte værdier';
 
   @override
   String goalFormHealthSource(String unitName) {
@@ -6569,6 +6578,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormStepsSignal => 'automatisk skridttælling';
 
   @override
+  String get goalFormSuggestedSignals => 'Foreslåede';
+
+  @override
+  String get goalFormSystolicTarget => 'Systolisk (mmHg)';
+
+  @override
   String get goalFormUnsupportedCriteria =>
       'Dette mål bruger en kobling, som editoren ikke sikkert kan ændre. Du kan stadig omdøbe målet, intentionen og agenten.';
 
@@ -6594,7 +6609,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String goalFormWeeklyTarget(int count) {
-    return '$count× / 7 dage';
+    return '$count×/uge';
   }
 
   @override

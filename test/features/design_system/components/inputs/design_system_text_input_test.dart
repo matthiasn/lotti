@@ -400,18 +400,20 @@ void main() {
         ),
       );
 
-      final sizedBox = tester.widget<SizedBox>(
+      expect(
         find.descendant(
           of: find.byKey(key),
           matching: find.byWidgetPredicate(
             (widget) =>
-                widget is SizedBox &&
-                widget.height == dsTokensLight.spacing.step9,
+                widget is ConstrainedBox &&
+                widget.constraints ==
+                    BoxConstraints.tightFor(
+                      height: dsTokensLight.spacing.step9,
+                    ),
           ),
         ),
+        findsOneWidget,
       );
-
-      expect(sizedBox.height, dsTokensLight.spacing.step9);
     });
 
     testWidgets('small field height uses step8', (tester) async {
@@ -426,18 +428,20 @@ void main() {
         ),
       );
 
-      final sizedBox = tester.widget<SizedBox>(
+      expect(
         find.descendant(
           of: find.byKey(key),
           matching: find.byWidgetPredicate(
             (widget) =>
-                widget is SizedBox &&
-                widget.height == dsTokensLight.spacing.step8,
+                widget is ConstrainedBox &&
+                widget.constraints ==
+                    BoxConstraints.tightFor(
+                      height: dsTokensLight.spacing.step8,
+                    ),
           ),
         ),
+        findsOneWidget,
       );
-
-      expect(sizedBox.height, dsTokensLight.spacing.step8);
     });
 
     testWidgets('readOnly renders a quiet display field, not a disabled one', (
@@ -461,7 +465,8 @@ void main() {
       expect(textField.readOnly, isTrue);
       expect(textField.showCursor, isFalse);
 
-      // Quiet fill, no outline — a display value, not an input at rest.
+      // Same chrome as an editable field — fill AND resting outline — with
+      // only the value dropped to medium emphasis.
       final decoratedBox = tester.widget<DecoratedBox>(
         find.descendant(
           of: find.byKey(key),
@@ -475,7 +480,14 @@ void main() {
       );
       final decoration = decoratedBox.decoration as BoxDecoration;
       expect(decoration.color, dsTokensLight.colors.background.level01);
-      expect((decoration.border! as Border).top.color, Colors.transparent);
+      expect(
+        (decoration.border! as Border).top.color,
+        dsTokensLight.colors.text.highEmphasis.withValues(alpha: 0.12),
+      );
+      expect(
+        textField.style?.color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
 
       // Unlike enabled: false, the field is not dimmed.
       expect(
@@ -484,6 +496,38 @@ void main() {
           matching: find.byType(Opacity),
         ),
         findsNothing,
+      );
+    });
+
+    testWidgets('an editable input carries the level01 fill too', (
+      tester,
+    ) async {
+      const key = Key('filled-input');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(key: key, label: 'Goal name'),
+      );
+
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DecoratedBox &&
+                widget.decoration is BoxDecoration &&
+                (widget.decoration as BoxDecoration).border != null,
+          ),
+        ),
+      );
+      expect(
+        (decoratedBox.decoration as BoxDecoration).color,
+        dsTokensLight.colors.background.level01,
+      );
+      // An editable value keeps full emphasis.
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).style?.color,
+        dsTokensLight.colors.text.highEmphasis,
       );
     });
 
@@ -518,7 +562,10 @@ void main() {
             .color;
       }
 
-      expect(currentBorderColor(), Colors.transparent);
+      final restingColor = dsTokensLight.colors.text.highEmphasis.withValues(
+        alpha: 0.12,
+      );
+      expect(currentBorderColor(), restingColor);
 
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
@@ -527,7 +574,8 @@ void main() {
       await gesture.moveTo(tester.getCenter(find.byType(TextField)));
       await tester.pump();
 
-      expect(currentBorderColor(), Colors.transparent);
+      // Hover never promotes a readOnly field's border.
+      expect(currentBorderColor(), restingColor);
     });
 
     testWidgets('a readOnly field keeps its trailing icon action live', (
@@ -568,6 +616,159 @@ void main() {
       // A decorative icon has no affordance to key.
       expect(find.byKey(const Key('decorative-trailing')), findsNothing);
       expect(find.byIcon(Icons.clear), findsOneWidget);
+    });
+
+    testWidgets('a swapped external controller drives the field', (
+      tester,
+    ) async {
+      final first = TextEditingController(text: 'first');
+      addTearDown(first.dispose);
+      final second = TextEditingController(text: 'second');
+      addTearDown(second.dispose);
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(controller: first, label: 'Value'),
+      );
+      expect(find.text('first'), findsOneWidget);
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(controller: second, label: 'Value'),
+      );
+      expect(find.text('second'), findsOneWidget);
+      expect(find.text('first'), findsNothing);
+
+      // Edits land on the new controller, not the initState-era one.
+      await tester.enterText(find.byType(TextField), 'typed');
+      expect(second.text, 'typed');
+      expect(first.text, 'first');
+    });
+
+    testWidgets('dropping the external controller falls back to an internal '
+        'one', (tester) async {
+      final external = TextEditingController(text: 'external');
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(controller: external, label: 'Value'),
+      );
+      expect(find.text('external'), findsOneWidget);
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(label: 'Value'),
+      );
+      external.dispose();
+
+      // A fresh internal controller: empty, editable, and detached from the
+      // disposed external one.
+      expect(find.text('external'), findsNothing);
+      await tester.enterText(find.byType(TextField), 'internal edit');
+      expect(find.text('internal edit'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('gaining an external controller replaces the owned internal '
+        'one without error', (tester) async {
+      final external = TextEditingController(text: 'adopted');
+      addTearDown(external.dispose);
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(label: 'Value'),
+      );
+      await tester.enterText(find.byType(TextField), 'scratch');
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(controller: external, label: 'Value'),
+      );
+
+      expect(find.text('adopted'), findsOneWidget);
+      expect(find.text('scratch'), findsNothing);
+      await tester.enterText(find.byType(TextField), 'kept');
+      expect(external.text, 'kept');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'a reparented input survives its old controller being disposed',
+      (tester) async {
+        // Regression: a GlobalKey-preserved element used to keep its
+        // initState-era controller, so a reorder that disposed the old
+        // owner's controller made the next keystroke throw.
+        final anchor = GlobalKey();
+        final first = TextEditingController(text: 'one');
+        final second = TextEditingController(text: 'two');
+        addTearDown(second.dispose);
+
+        Widget anchoredInput(TextEditingController controller) => KeyedSubtree(
+          key: anchor,
+          child: DesignSystemTextInput(controller: controller, label: 'Value'),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SizedBox(
+              width: 401,
+              child: Column(
+                children: [anchoredInput(first), const SizedBox(height: 8)],
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            SizedBox(
+              width: 401,
+              child: Column(
+                children: [const SizedBox(height: 8), anchoredInput(second)],
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+        first.dispose();
+
+        await tester.enterText(find.byType(TextField), 'typed');
+        expect(second.text, 'typed');
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a long read-only value wraps instead of clipping', (
+      tester,
+    ) async {
+      const longValue =
+          'Gym (3×/week) · Run (5×/week) · Average steps per day '
+          '(8,000 steps a day) · Deep work (no more than 12 hours)';
+      final controller = TextEditingController(text: longValue);
+      addTearDown(controller.dispose);
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          controller: controller,
+          label: 'Goal name',
+          readOnly: true,
+        ),
+      );
+      final readOnlyField = tester.widget<TextField>(find.byType(TextField));
+      expect(readOnlyField.maxLines, isNull);
+      final readOnlyHeight = tester.getSize(find.byType(TextField)).height;
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(controller: controller, label: 'Goal name'),
+      );
+      final editableField = tester.widget<TextField>(find.byType(TextField));
+      expect(editableField.maxLines, 1);
+      final editableHeight = tester.getSize(find.byType(TextField)).height;
+
+      // The same value wraps to multiple lines only in the read-only field.
+      expect(readOnlyHeight, greaterThan(editableHeight * 1.5));
     });
 
     testWidgets('text is vertically centered with icons', (tester) async {
