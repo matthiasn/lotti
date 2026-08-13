@@ -3116,6 +3116,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de l\'enregistrement. Réessaie.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Aucun modèle de transcription n\'est configuré. Ajoute un modèle compatible audio dans les paramètres IA.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti ne peut pas utiliser le microphone. Autorise l\'accès au microphone pour Lotti dans les réglages système.';
+
+  @override
   String get chatInputRecordVoice => 'Enregistrer un message vocal';
 
   @override
@@ -3126,6 +3134,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Arrêter et transcrire';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'L\'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.';
 
   @override
   String get checklistAddItem => 'Ajouter un nouvel élément';
@@ -6553,6 +6565,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu peux renommer, réajuster, mettre en pause ou supprimer cet agent à tout moment.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'et,constant,constante,régulier,régulière,quotidien,quotidienne,jour,jours,chaque,objectif,habitude,mois,mensuel,mensuelle,par,routine,temps,fois,semaine,hebdomadaire,semaines,année,annuel,an,ans,années';
+
+  @override
   String get goalFormGoalNameLabel => 'Nom de l\'objectif';
 
   @override
@@ -6633,7 +6649,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'mesurer,mesure,mesures,mesuré,suivre,suivi,suivis,noter,note,notes,noté,enregistrer,enregistre,enregistré,contrôler,contrôle,contrôlé,vérifier,vérifie,vérifié,surveiller,surveille,surveillé,relever,relevé';
+      'mesurer,mesure,mesures,mesuré,suivre,suivi,suivis,noter,note,notes,noté,enregistrer,enregistre,enregistré,contrôler,contrôle,contrôlé,vérifier,vérifie,vérifié,surveiller,surveille,surveillé,relever,relevé,mesurée,mesurées,suivie,suivies,notée,notées,enregistrée,enregistrées,contrôlée,contrôlées,vérifiée,vérifiées,surveillée,surveillées,relevée,relevées,relevés,mesurés,notés,enregistrés,contrôlés,vérifiés,surveillés';
 
   @override
   String get goalFormNoHabits =>

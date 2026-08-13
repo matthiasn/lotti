@@ -178,6 +178,8 @@ void main() {
     await controller.start();
     final state = container.read(chatRecorderControllerProvider);
     expect(state.error, contains('Microphone permission denied'));
+    // The kind is what the UI localizes; the message above stays diagnostic.
+    expect(state.errorKind, ChatRecorderErrorKind.permissionDenied);
   });
 
   test('concurrent start attempts are rejected', () async {
@@ -412,8 +414,69 @@ void main() {
     await controller.stopAndTranscribe();
     final state = container.read(chatRecorderControllerProvider);
     expect(state.error, contains('network down'));
+    // A failed request is not a setup problem: it stays the generic
+    // transcription failure rather than the missing-model kind.
+    expect(state.errorKind, ChatRecorderErrorKind.transcriptionFailed);
     sub.close();
     container.dispose();
+  });
+
+  test('a missing audio model is its own error kind', () async {
+    // The user can fix this one in settings, so it must not be reported as
+    // a failed transcription request.
+    final mockRecorder = MockAudioRecorder();
+    when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+    when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+    when(
+      () => mockRecorder.start(
+        any<record.RecordConfig>(),
+        path: any(named: 'path'),
+      ),
+    ).thenAnswer((invocation) async {
+      final path = invocation.namedArguments[#path] as String?;
+      if (path != null) {
+        final file = await File(path).create(recursive: true);
+        await file.writeAsBytes(<int>[1, 2, 3]);
+      }
+    });
+    when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+    when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+      (_) => Stream<record.Amplitude>.fromIterable(
+        List.filled(5, record.Amplitude(current: -40, max: -30)),
+      ),
+    );
+
+    final mockTranscriptionService = MockAudioTranscriptionService();
+    when(() => mockTranscriptionService.transcribeStream(any())).thenAnswer(
+      (_) => Stream<String>.error(
+        Exception('No audio-capable models configured'),
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => _InMemoryAiConfigRepo()),
+        chatRecorderControllerProvider.overrideWith(
+          () => ChatRecorderController(
+            recorderFactory: () => mockRecorder,
+            tempDirectoryProvider: () async => Directory.systemTemp,
+            config: const ChatRecorderConfig(maxSeconds: 2),
+            transcriptionService: mockTranscriptionService,
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+    addTearDown(sub.close);
+
+    final controller = container.read(chatRecorderControllerProvider.notifier);
+    await controller.start();
+    await controller.stopAndTranscribe();
+
+    final state = container.read(chatRecorderControllerProvider);
+    expect(state.error, contains('No audio-capable models'));
+    expect(state.errorKind, ChatRecorderErrorKind.noAudioModel);
   });
 
   test('dispose cleans files, cancels timer, clears amplitudes', () async {

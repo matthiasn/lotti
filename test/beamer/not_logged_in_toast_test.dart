@@ -92,11 +92,14 @@ Future<MockNavService> _stubNavService() async {
   when(() => mockNav.tasksDelegate).thenReturn(
     await _createEmptyDelegate('/tasks'),
   );
-  // The mobile shell's merged route listenable subscribes to the projects
-  // delegate unconditionally (see _routeChangeListenable in beamer_app.dart),
-  // so it must be stubbed even with the Projects page disabled.
+  // The mobile shell's merged route listenable subscribes to the projects and
+  // agents delegates unconditionally (see _routeChangeListenable in
+  // beamer_app.dart), so both must be stubbed even with those pages disabled.
   when(() => mockNav.projectsDelegate).thenReturn(
     await _createEmptyDelegate('/projects'),
+  );
+  when(() => mockNav.agentsDelegate).thenReturn(
+    await _createEmptyDelegate('/agents'),
   );
   when(() => mockNav.calendarDelegate).thenReturn(
     await _createEmptyDelegate('/calendar'),

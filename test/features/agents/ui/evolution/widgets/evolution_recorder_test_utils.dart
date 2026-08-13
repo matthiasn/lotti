@@ -84,10 +84,11 @@ class TranscriptEmittingController extends ChatRecorderController {
     );
   }
 
-  void emitError(String error) {
+  void emitError(String error, {ChatRecorderErrorKind? kind}) {
     state = state.copyWith(
       status: ChatRecorderStatus.idle,
       error: error,
+      errorKind: kind,
     );
   }
 

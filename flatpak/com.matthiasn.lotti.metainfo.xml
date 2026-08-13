@@ -43,6 +43,7 @@
     <release version="1.0.10" date="2026-08-13">
       <description>
         <p>Changed: goal-agent banners now make Snooze the primary action, with 1, 3, 6, and 8 hour choices. Dismiss for today is a secondary option, banners return automatically after the chosen deadline or on the next local day even after an app restart, and durable snooze and dismissal timing history gives the goal agent evidence for choosing better initial display times.</p>
+        <p>Changed: goal agent pages get the whole screen on phones. The bottom navigation bar slides away on a goal's detail page, its chat, and the create and edit wizards, the way it already does for project details, so the day sheet's record button and the wizard's Continue band dock at the bottom edge instead of sitting under the bar.</p>
       </description>
     </release>
     <release version="1.0.9" date="2026-08-13">

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_recorder_error_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -55,6 +56,19 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   String? _lastMessageId;
   bool _wasSending = false;
 
+  /// Laid-out reply heights, keyed by message id, owned by the LIST rather
+  /// than by the item.
+  ///
+  /// `ListView.builder` disposes an item's State once it scrolls past the
+  /// cache extent. A collapsible reply that lost its measurement renders at
+  /// FULL height for the frame before the measurement lands, so every
+  /// re-entry of a long reply grew the content above the viewport and the
+  /// scroll machinery yanked the offset to compensate — the flashing and
+  /// bouncing seen while scrolling a chat that contains a long reply.
+  /// Surviving the item, the measurement lets a rebuilt reply lay out
+  /// collapsed on its first frame.
+  final _measuredHeights = <String, double>{};
+
   @override
   void initState() {
     super.initState();
@@ -71,7 +85,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           context.showToast(
             tone: DesignSystemToastTone.error,
             title: context.messages.commonError,
-            description: context.messages.chatInputRecordingFailed,
+            description: chatRecorderErrorMessage(context, next.errorKind),
             duration: const Duration(seconds: 8),
             replaceCurrent: true,
           );
@@ -201,6 +215,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                 ),
                                 message: message,
                                 agentName: widget.agentName,
+                                measuredHeights: _measuredHeights,
                               ),
                               if (attachment != null) ...[
                                 SizedBox(height: tokens.spacing.step2),
@@ -531,11 +546,15 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.agentName,
+    required this.measuredHeights,
     super.key,
   });
 
   final AgentChatMessage message;
   final String agentName;
+
+  /// List-owned reply heights; see [_AgentChatViewState._measuredHeights].
+  final Map<String, double> measuredHeights;
 
   @override
   Widget build(BuildContext context) {
@@ -587,6 +606,8 @@ class _MessageBubble extends StatelessWidget {
                   else
                     ExcludeSemantics(
                       child: _CollapsibleAgentMarkdown(
+                        cacheKey: message.id,
+                        measuredHeights: measuredHeights,
                         text: message.text,
                         style: tokens.typography.styles.body.bodyMedium
                             .copyWith(
@@ -625,10 +646,20 @@ class _MessageBubble extends StatelessWidget {
 /// content overflows the collapsed viewport.
 class _CollapsibleAgentMarkdown extends StatefulWidget {
   const _CollapsibleAgentMarkdown({
+    required this.cacheKey,
+    required this.measuredHeights,
     required this.text,
     required this.style,
     required this.fadeColor,
   });
+
+  /// Identifies this reply in [measuredHeights] — the message id, stable
+  /// across the item's disposal and rebuild.
+  final String cacheKey;
+
+  /// List-owned measurements that outlive this item; see
+  /// [_AgentChatViewState._measuredHeights].
+  final Map<String, double> measuredHeights;
 
   final String text;
   final TextStyle style;
@@ -647,12 +678,23 @@ class _CollapsibleAgentMarkdownState extends State<_CollapsibleAgentMarkdown> {
   bool _expanded = false;
   double? _contentHeight;
 
+  @override
+  void initState() {
+    super.initState();
+    // A rebuilt item starts from the height the list already knows, so its
+    // first frame is the collapsed one. A stale value (the pane was resized
+    // while this reply was off screen) is corrected by the next measurement
+    // — one settling rebuild, never a repeating one.
+    _contentHeight = widget.measuredHeights[widget.cacheKey];
+  }
+
   double get _collapsedHeight {
     final fontSize = widget.style.fontSize ?? 14;
     return fontSize * (widget.style.height ?? 1.4) * _collapsedLines;
   }
 
   void _handleHeight(double height) {
+    widget.measuredHeights[widget.cacheKey] = height;
     if (_contentHeight == height) return;
     // Reported during layout — defer the rebuild to the next frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -3079,6 +3079,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen misslyckades. Försök igen.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Ingen transkriberingsmodell är uppsatt än. Lägg till en modell med ljudstöd i AI-inställningarna.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti kan inte använda mikrofonen. Ge Lotti åtkomst till mikrofonen i systeminställningarna.';
+
+  @override
   String get chatInputRecordVoice => 'Spela in röstmeddelande';
 
   @override
@@ -3089,6 +3097,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Stoppa och transkribera';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
@@ -6453,6 +6465,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalFormFooter =>
       'Du kan när som helst byta namn, justera, pausa eller ta bort agenten.';
+
+  @override
+  String get goalFormGenericIntentionWords =>
+      'och,konsekvent,dagligen,daglig,dag,dagar,varje,mål,vana,månad,månatlig,månader,per,regelbunden,rutin,tid,gång,gånger,vecka,veckovis,veckor,år,årlig';
 
   @override
   String get goalFormGoalNameLabel => 'Målets namn';

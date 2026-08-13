@@ -3080,6 +3080,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputRecordingFailed => 'Opname mislukt. Probeer het opnieuw.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Er is nog geen transcriptiemodel ingesteld. Voeg een model met audio-ondersteuning toe in de AI-instellingen.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti kan de microfoon niet gebruiken. Geef Lotti toegang tot de microfoon in je systeeminstellingen.';
+
+  @override
   String get chatInputRecordVoice => 'Voicemail opnemen';
 
   @override
@@ -3090,6 +3098,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Stoppen en transcriberen';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
 
   @override
   String get checklistAddItem => 'Een nieuw item toevoegen';
@@ -6461,6 +6473,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalFormFooter =>
       'Je kunt deze agent altijd hernoemen, bijstellen, pauzeren of verwijderen.';
+
+  @override
+  String get goalFormGenericIntentionWords =>
+      'en,consistent,consequent,dagelijks,dag,dagen,elke,elk,doel,gewoonte,maand,maandelijks,maanden,per,regelmatig,routine,tijd,keer,week,wekelijks,weken,jaar,jaarlijks,jaren';
 
   @override
   String get goalFormGoalNameLabel => 'Naam van het doel';

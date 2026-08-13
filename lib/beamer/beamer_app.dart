@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
@@ -209,6 +210,36 @@ bool projectsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   return segments[1] != 'create';
 }
 
+/// True when the agents beamer location points at a goal agent's own pages —
+/// the detail page, its chat, its edit wizard (`/agents/details/{id}/...`) or
+/// the create wizard (`/agents/create`).
+///
+/// Every one of them is a terminal page that owns its bottom edge: the detail
+/// page's day-assessment sheet docks its `Record for <day>` CTA there, and
+/// both wizards pin their Continue band there. With the bar in place the
+/// blurred pill sits on top of that CTA. They slide the bar away for the same
+/// reason as [projectsRouteHidesBottomNav]. Pure function of router state.
+///
+/// The `/agents` list root keeps the bar — it is a tab you navigate *from*.
+///
+/// The shapes are matched exactly, not by prefix: [AgentsLocation.buildPages]
+/// renders the plain list for anything malformed (`/agents/details` with no
+/// id, an unknown trailing segment), and that list must keep its tab bar.
+bool agentsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
+  if (location is! AgentsLocation) return false;
+  final segments = location.state.uri.pathSegments;
+  if (segments.isEmpty || segments.first != 'agents') return false;
+  return switch (segments.length) {
+    2 => segments[1] == 'create',
+    3 => segments[1] == 'details' && segments[2].isNotEmpty,
+    4 =>
+      segments[1] == 'details' &&
+          segments[2].isNotEmpty &&
+          (segments[3] == 'chat' || segments[3] == 'edit'),
+    _ => false,
+  };
+}
+
 /// Clamps a raw navigation index into `[0, itemCount - 1]` so a stale index
 /// from the nav stream cannot go out of bounds when feature flags shrink the
 /// destinations list.
@@ -323,6 +354,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.tasksDelegate,
     navService.projectsDelegate,
     navService.settingsDelegate,
+    navService.agentsDelegate,
   ]);
 
   bool _notLoggedInToastShown = false;
@@ -592,12 +624,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, projects, and settings delegates so the
-        // mobile shell rebuilds when their routes change (push to / pop
-        // from task or project details, into / out of settings entity
-        // editors). That's how we know whether to hide the mobile bottom
-        // nav. See [_isTaskDetailRoute], [projectsRouteHidesBottomNav],
-        // and [settingsRouteHidesBottomNav].
+        // Listen to the tasks, projects, settings and agents delegates so
+        // the mobile shell rebuilds when their routes change (push to / pop
+        // from task, project or goal agent details, into / out of settings
+        // entity editors). That's how we know whether to hide the mobile
+        // bottom nav. See [_isTaskDetailRoute], [projectsRouteHidesBottomNav],
+        // [settingsRouteHidesBottomNav] and [agentsRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => isWide
@@ -809,6 +841,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         (destinations[index].kind == _AppNavigationDestinationKind.projects &&
             projectsRouteHidesBottomNav(
               navService.projectsDelegate.currentBeamLocation,
+            )) ||
+        (destinations[index].kind == _AppNavigationDestinationKind.agents &&
+            agentsRouteHidesBottomNav(
+              navService.agentsDelegate.currentBeamLocation,
             ));
 
     // The bar fills with as many destinations as fit comfortably at the
@@ -947,6 +983,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // indicators never cover scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
+            // A slid-away bar reserves nothing: the goal agent pages, project
+            // details and settings details dock their own pinned surfaces at
+            // the bottom edge and must not pad around a bar that is gone.
+            barDocked: showBottomNav && !slideNavAway,
             // The goal-agent dock rides in the same bottom overlay on the
             // main working tabs; reserve its lane so page content and FABs
             // clear it when a goal is speaking.
@@ -1173,11 +1213,16 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
+    required this.barDocked,
     required this.goalDockAllowed,
     required this.child,
   });
 
   final bool navBarVisible;
+
+  /// Whether the bar is docked at the bottom edge rather than slid away;
+  /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
+  final bool barDocked;
 
   /// Whether the goal-agent dock may mount on this tab (a main working tab
   /// with the bar visible). Its lane is reserved only when it is ALSO
@@ -1254,6 +1299,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
+          barDocked: barDocked,
           child: child,
         );
       },
@@ -1280,18 +1326,24 @@ class _SlideAwayBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return ExcludeSemantics(
+    return ExcludeFocus(
       excluding: hidden,
-      child: IgnorePointer(
-        ignoring: hidden,
-        child: AnimatedSlide(
-          // Offset is in multiples of the child's own size, so (0, 1)
-          // moves the bar down by exactly its rendered height — flush
-          // off-screen, since it docks at the bottom edge.
-          offset: hidden ? const Offset(0, 1) : Offset.zero,
-          duration: reduceMotion ? Duration.zero : slideDuration,
-          curve: slideCurve,
-          child: child,
+      // A bar translated off-screen must leave keyboard traversal too, or
+      // Tab still reaches its slots and Enter navigates away from the page
+      // the user is on.
+      child: ExcludeSemantics(
+        excluding: hidden,
+        child: IgnorePointer(
+          ignoring: hidden,
+          child: AnimatedSlide(
+            // Offset is in multiples of the child's own size, so (0, 1)
+            // moves the bar down by exactly its rendered height — flush
+            // off-screen, since it docks at the bottom edge.
+            offset: hidden ? const Offset(0, 1) : Offset.zero,
+            duration: reduceMotion ? Duration.zero : slideDuration,
+            curve: slideCurve,
+            child: child,
+          ),
         ),
       ),
     );

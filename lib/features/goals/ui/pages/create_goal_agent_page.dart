@@ -51,34 +51,6 @@ class CreateGoalAgentPage extends ConsumerStatefulWidget {
 enum _GoalFormStep { intention, mapping, confirmation }
 
 class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
-  static const _genericIntentionWords = {
-    'and',
-    'consistent',
-    'consistently',
-    'daily',
-    'day',
-    'days',
-    'each',
-    'every',
-    'goal',
-    'habit',
-    'month',
-    'monthly',
-    'months',
-    'per',
-    'regular',
-    'regularly',
-    'routine',
-    'time',
-    'times',
-    'week',
-    'weekly',
-    'weeks',
-    'year',
-    'yearly',
-    'years',
-  };
-
   final _statement = TextEditingController();
   final _title = TextEditingController();
   final _persona = TextEditingController();
@@ -196,6 +168,46 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       .where((word) => word.length >= 3)
       .toSet();
 
+  /// Gives a newly filled half of the blood-pressure pair the direction the
+  /// shared toggle is already showing.
+  ///
+  /// One toggle drives both readings, so typing into the blank systolic
+  /// input of an edited diastolic-only "at least" goal must not persist a
+  /// systolic leaf as the default "at most" — the row would claim one
+  /// direction while the saved criterion carried the other.
+  void _adoptSharedBloodPressureDirection(String dataType) {
+    const systolic = GoalHealthDataTypes.bloodPressureSystolic;
+    const diastolic = GoalHealthDataTypes.bloodPressureDiastolic;
+    if (dataType != systolic && dataType != diastolic) return;
+    if (_healthDirections.containsKey(dataType)) return;
+    final counterpart = dataType == systolic ? diastolic : systolic;
+    final shared = _healthDirections[counterpart];
+    if (shared == null) return;
+    _healthDirections[dataType] = shared;
+  }
+
+  /// Parses one of the matcher's comma-separated catalog word lists.
+  ///
+  /// Both lists are matched against words the *user* wrote — a goal
+  /// statement, a habit name — so they have to be in the user's language.
+  /// A hardcoded English list silently disables the matcher everywhere
+  /// else, which is why the forms live in the catalogs.
+  Set<String> _catalogWords(String value) => value
+      .toLowerCase()
+      .split(',')
+      .map((word) => word.trim())
+      .where((word) => word.isNotEmpty)
+      .toSet();
+
+  /// Words too common to make a label distinctive ("daily", "routine").
+  Set<String> _genericIntentionWords(BuildContext context) =>
+      _catalogWords(context.messages.goalFormGenericIntentionWords);
+
+  /// Bookkeeping verbs that don't make a habit more than a record of the
+  /// measurement it names ("Measure Blood Pressure", "Gewicht messen").
+  Set<String> _measurementVerbs(BuildContext context) =>
+      _catalogWords(context.messages.goalFormMeasurementVerbs);
+
   bool _matchesIntention(String label) {
     final intention = _statement.text.trim().toLowerCase();
     final normalizedLabel = label.trim().toLowerCase();
@@ -203,25 +215,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     if (intention == normalizedLabel) return true;
     final distinctiveLabelWords = _words(
       normalizedLabel,
-    ).difference(_genericIntentionWords);
+    ).difference(_genericIntentionWords(context));
     return distinctiveLabelWords.intersection(_words(intention)).isNotEmpty;
   }
-
-  /// Bookkeeping verbs that don't make a habit more than a record of the
-  /// measurement it names ("Measure Blood Pressure", "Gewicht messen").
-  ///
-  /// Habit names are written in the user's own language, so the forms come
-  /// from the catalog rather than a hardcoded English set: a German habit
-  /// has to be recognisable by German verbs. Each catalog carries the
-  /// inflections its language needs, comma-separated.
-  Set<String> _measurementVerbs(BuildContext context) => context
-      .messages
-      .goalFormMeasurementVerbs
-      .toLowerCase()
-      .split(',')
-      .map((verb) => verb.trim())
-      .where((verb) => verb.isNotEmpty)
-      .toSet();
 
   /// Whether this habit is a bookkeeping twin of an intention-matched
   /// health capability: every distinctive word in its name is either part
@@ -233,7 +229,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     if (_matchedHealthTypes.isEmpty) return false;
     final habitWords = _words(
       _plainName(habitName),
-    ).difference(_genericIntentionWords);
+    ).difference(_genericIntentionWords(context));
     if (habitWords.isEmpty) return false;
     final measurementVerbs = _measurementVerbs(context);
     for (final dataType in _matchedHealthTypes) {
@@ -1140,6 +1136,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               onHealthTargetChanged: (dataType, target) =>
                                   setState(() {
                                     _healthTargets[dataType] = target;
+                                    _adoptSharedBloodPressureDirection(
+                                      dataType,
+                                    );
                                     _validation = null;
                                     _targetErrors.remove('health:$dataType');
                                   }),

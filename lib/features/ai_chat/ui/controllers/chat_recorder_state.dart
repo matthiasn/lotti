@@ -4,12 +4,38 @@
 /// transcription.
 enum ChatRecorderStatus { idle, recording, processing }
 
+/// Why a voice capture ended in [ChatRecorderState.error].
+///
+/// The message beside it is diagnostic English written for the log; the kind
+/// is what the UI localizes. A toast that says only "Recording failed" leaves
+/// the user no way to tell a denied microphone from a missing transcription
+/// model, so every failure path names its kind.
+enum ChatRecorderErrorKind {
+  /// The OS refused microphone access.
+  permissionDenied,
+
+  /// Another start/stop is already running.
+  busy,
+
+  /// The recorder itself could not start.
+  startFailed,
+
+  /// Recording stopped with no audio file to transcribe.
+  noAudioFile,
+
+  /// No audio-capable model is configured to transcribe with.
+  noAudioModel,
+
+  /// The transcription request itself failed or came back empty.
+  transcriptionFailed,
+}
+
 /// Immutable snapshot of the shared voice recorder for the UI.
 ///
 /// Carries the [status], the rolling dBFS [amplitudeHistory] for the waveform,
 /// and at most one of [transcript] (finished, awaiting consumption) /
-/// [partialTranscript] (in-progress streaming text) / [error]. Produced by
-/// `ChatRecorderController`.
+/// [partialTranscript] (in-progress streaming text) / [error] plus its
+/// [errorKind]. Produced by `ChatRecorderController`.
 class ChatRecorderState {
   // Constructors first per lint
   const ChatRecorderState({
@@ -18,6 +44,7 @@ class ChatRecorderState {
     this.transcript,
     this.partialTranscript,
     this.error,
+    this.errorKind,
   });
 
   const ChatRecorderState.initial()
@@ -25,7 +52,8 @@ class ChatRecorderState {
       amplitudeHistory = const <double>[],
       transcript = null,
       partialTranscript = null,
-      error = null;
+      error = null,
+      errorKind = null;
 
   // Fields
   final ChatRecorderStatus status;
@@ -33,6 +61,9 @@ class ChatRecorderState {
   final String? transcript; // last finished transcript waiting to be consumed
   final String? partialTranscript; // in-progress transcript during streaming
   final String? error;
+
+  /// The localizable reason behind [error]; null whenever [error] is null.
+  final ChatRecorderErrorKind? errorKind;
 
   // Methods
   /// Footgun: [transcript], [partialTranscript], and [error] are
@@ -47,6 +78,7 @@ class ChatRecorderState {
     String? transcript,
     String? partialTranscript,
     String? error,
+    ChatRecorderErrorKind? errorKind,
   }) {
     return ChatRecorderState(
       status: status ?? this.status,
@@ -54,6 +86,7 @@ class ChatRecorderState {
       transcript: transcript,
       partialTranscript: partialTranscript,
       error: error,
+      errorKind: errorKind,
     );
   }
 }

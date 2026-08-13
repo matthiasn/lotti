@@ -3111,6 +3111,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputRecordingFailed => 'Nahrávání selhalo. Zkus to znovu.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Zatím není nastavený žádný přepisovací model. Přidej v nastavení AI model podporující zvuk.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti nemůže použít mikrofon. Povol Lotti přístup k mikrofonu v nastavení systému.';
+
+  @override
   String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
 
   @override
@@ -3121,6 +3129,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Zastavit a přepsat';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';
@@ -6517,6 +6529,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalFormFooter =>
       'Agenta můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.';
+
+  @override
+  String get goalFormGenericIntentionWords =>
+      'konzistentní,pravidelně,denně,den,dny,dní,každý,každá,cíl,návyk,zvyk,měsíc,měsíčně,měsíce,pravidelný,rutina,čas,krát,týden,týdně,týdny,rok,ročně,roky,let,každé,denní,týdenní,měsíční,roční,dnů,týdnů,měsíců';
 
   @override
   String get goalFormGoalNameLabel => 'Název cíle';
