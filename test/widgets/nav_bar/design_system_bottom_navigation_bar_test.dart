@@ -260,5 +260,154 @@ void main() {
       await pump(0);
       expect(bottomPadding(), barOnly);
     });
+
+    testWidgets('occupiedHeight counts the bar only while it is docked', (
+      tester,
+    ) async {
+      const noInset = MediaQueryData(size: Size(390, 844));
+      const scopedChildKey = ValueKey('scoped-child');
+
+      Future<void> pump({required bool barDocked}) {
+        return tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemBottomNavigationOverlayHeight(
+              height: 24,
+              barDocked: barDocked,
+              child: const SizedBox.shrink(key: scopedChildKey),
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: noInset,
+          ),
+        );
+      }
+
+      double occupied() => DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byKey(scopedChildKey)),
+      );
+
+      await pump(barDocked: true);
+      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
+        tester.element(find.byKey(scopedChildKey)),
+      );
+      // Guards the arithmetic below from passing on a zero-height bar.
+      expect(barHeight, greaterThan(0));
+      expect(
+        DesignSystemBottomNavigationOverlayHeight.barDockedOf(
+          tester.element(find.byKey(scopedChildKey)),
+        ),
+        isTrue,
+      );
+      final docked = occupied();
+      expect(docked, barHeight + 24);
+
+      // The bar has slid off-screen: it occupies nothing, so only the
+      // indicator row riding above it still counts. A page padding by this
+      // number must be left with no bar-sized gutter where its own pinned
+      // surface docks.
+      await pump(barDocked: false);
+      expect(
+        DesignSystemBottomNavigationOverlayHeight.barDockedOf(
+          tester.element(find.byKey(scopedChildKey)),
+        ),
+        isFalse,
+      );
+      final slidAway = occupied();
+      expect(slidAway, 24);
+      expect(docked - slidAway, barHeight);
+    });
+
+    testWidgets('reserves the bar where no scope publishes a docked state', (
+      tester,
+    ) async {
+      // Previews and widget tests render pages without the app shell, so
+      // `barDockedOf` defaults to docked and they reserve room exactly as
+      // they did before the flag existed.
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox.shrink(),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        ),
+      );
+
+      final context = tester.element(find.byType(Scaffold));
+      expect(
+        DesignSystemBottomNavigationOverlayHeight.barDockedOf(context),
+        isTrue,
+      );
+      expect(
+        DesignSystemBottomNavigationBar.occupiedHeight(context),
+        DesignSystemFiveSlotNavBar.barHeight(context),
+      );
+    });
+
+    testWidgets('FabPadding drops the bar gutter when the bar slides away', (
+      tester,
+    ) async {
+      Future<void> pump({required bool barDocked}) {
+        return tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemBottomNavigationOverlayHeight(
+              height: 24,
+              barDocked: barDocked,
+              child: const DesignSystemBottomNavigationFabPadding(
+                child: SizedBox.square(dimension: 56),
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+      }
+
+      double bottomPadding() {
+        final padding = tester.widget<Padding>(
+          find.descendant(
+            of: find.byType(DesignSystemBottomNavigationFabPadding),
+            matching: find.byType(Padding),
+          ),
+        );
+        return (padding.padding as EdgeInsets).bottom;
+      }
+
+      await pump(barDocked: true);
+      final barHeight = DesignSystemFiveSlotNavBar.barHeight(
+        tester.element(find.byType(DesignSystemBottomNavigationFabPadding)),
+      );
+      final docked = bottomPadding();
+      expect(docked, barHeight + 24);
+
+      // Flipping only the docked flag must reach dependents (it is the
+      // second half of updateShouldNotify) and shed exactly the bar.
+      await pump(barDocked: false);
+      expect(bottomPadding(), 24);
+      expect(docked - bottomPadding(), barHeight);
+    });
+
+    test('updateShouldNotify fires when only the docked flag flips', () {
+      const child = SizedBox.shrink();
+      const docked = DesignSystemBottomNavigationOverlayHeight(
+        height: 24,
+        child: child,
+      );
+      const slidAway = DesignSystemBottomNavigationOverlayHeight(
+        height: 24,
+        barDocked: false,
+        child: child,
+      );
+
+      expect(slidAway.updateShouldNotify(docked), isTrue);
+      expect(docked.updateShouldNotify(slidAway), isTrue);
+      // Neither field moved: dependents must not be rebuilt.
+      expect(
+        docked.updateShouldNotify(
+          const DesignSystemBottomNavigationOverlayHeight(
+            height: 24,
+            child: child,
+          ),
+        ),
+        isFalse,
+      );
+    });
   });
 }

@@ -97,6 +97,13 @@ concrete date in tooltip and outcome-menu header, and a blank habit day with
 a name-matching data observation recorded today offers a one-tap check-off.
 On the detail page the banner CTA opens a one-tap logging sheet
 (`GoalLogTodaySheet`) instead of navigating to the page it is on.
+On phones a goal's own pages — detail, chat, and the create and edit wizards —
+take the whole screen: the bottom navigation bar slides away, so the day
+sheet's record button and the wizards' Continue band dock at the bottom edge
+instead of sitting under it.
+Asking the agent in chat to change its report — shorter, sectioned, less
+repetitive — rewrites the standing report itself rather than only answering in
+chat, and an explicit refusal to change it is respected.
 Blood-pressure and weight headers quote the latest reading while their
 verdicts stay on the rolling-average target. When today's latest sample meets
 its target, the card celebrates that today's logging is on target even if the

@@ -2655,9 +2655,23 @@ void main() {
               .first,
         );
 
+        // The bar's own ExcludeFocus, not the IndexedStack's per-tab one:
+        // `find.ancestor` walks outwards from the bar, and the tab barrier
+        // sits on a sibling subtree of the Positioned holding the bar.
+        ExcludeFocus excludeFocus() => tester.widget<ExcludeFocus>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(ExcludeFocus),
+              )
+              .first,
+        );
+
         // The /agents list is a tab you navigate from, so it keeps the bar.
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
+        // A docked bar is a real destination: Tab must still reach its slots.
+        expect(excludeFocus().excluding, isFalse);
 
         // A goal's own page owns its bottom edge: the bar stays mounted so
         // the move can animate, but slides down and goes inert.
@@ -2666,6 +2680,9 @@ void main() {
         expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
         expect(slide().offset, const Offset(0, 1));
         expect(ignorePointer().ignoring, isTrue);
+        // Off-screen means out of keyboard traversal too, or Tab still lands
+        // on a slot and Enter navigates away from the page the user is on.
+        expect(excludeFocus().excluding, isTrue);
         await tester.pump(const Duration(milliseconds: 450));
 
         // The create wizard pins its own Continue band there too.
@@ -2673,6 +2690,7 @@ void main() {
         await tester.pump();
         expect(slide().offset, const Offset(0, 1));
         expect(ignorePointer().ignoring, isTrue);
+        expect(excludeFocus().excluding, isTrue);
         await tester.pump(const Duration(milliseconds: 450));
 
         // Popping back to the list slides the bar into place.
@@ -2680,6 +2698,7 @@ void main() {
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
+        expect(excludeFocus().excluding, isFalse);
         await tester.pump(const Duration(milliseconds: 450));
 
         await tester.pumpWidget(const SizedBox.shrink());
