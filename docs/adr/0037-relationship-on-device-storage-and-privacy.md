@@ -87,4 +87,5 @@ data, and any cloud AI use must be an explicit, user-configured choice.
 - [ADR 0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md)
 - [ADR 0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md)
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
+  (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))
 - `PRIVACY.md`
