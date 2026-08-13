@@ -5279,7 +5279,7 @@
   "taskAgentThisReportHeader": "Dit verslag",
   "taskAgentTurnOffSetup": "Zet AI uit voor deze agent.",
   "taskAgentUpdateNow": "Nu bijwerken",
-  "taskAgentUpdatesOnChange": "Werkt bij wanneer deze taak verandert",
+  "taskAgentUpdatesOnChange": "Werkt bij na wijzigingen",
   "taskAgentUseCategoryDefault": "Standaard categorie kopiëren",
   "taskAgentUseCategoryDefaultDescription": "Kopieert de categorie . Huidige setup. Latere categorie wijzigingen zal dit agent niet beïnvloeden.",
   "taskAgentUseProfileDefault": "Standaardprofiel gebruiken",

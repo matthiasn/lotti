@@ -4691,7 +4691,7 @@
   "taskAgentThisReportHeader": "Dieser Bericht",
   "taskAgentTurnOffSetup": "KI für diesen Agenten ausschalten",
   "taskAgentUpdateNow": "Jetzt aktualisieren",
-  "taskAgentUpdatesOnChange": "Aktualisiert sich, wenn sich die Aufgabe ändert",
+  "taskAgentUpdatesOnChange": "Aktualisiert bei Änderungen",
   "taskAgentUseCategoryDefault": "Kategorie-Standard kopieren",
   "taskAgentUseCategoryDefaultDescription": "Kopiert das aktuelle Setup der Kategorie. Spätere Kategorieänderungen wirken sich nicht auf diesen Agenten aus.",
   "taskAgentUseProfileDefault": "Profilstandard verwenden",

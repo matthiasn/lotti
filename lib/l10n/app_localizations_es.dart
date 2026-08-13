@@ -12275,8 +12275,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskAgentUpdateNow => 'Actualizar ahora';
 
   @override
-  String get taskAgentUpdatesOnChange =>
-      'Se actualiza cuando cambia esta tarea';
+  String get taskAgentUpdatesOnChange => 'Se actualiza con los cambios';
 
   @override
   String get taskAgentUseCategoryDefault =>

@@ -12241,7 +12241,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskAgentUpdateNow => 'Aktualizovat nyní';
 
   @override
-  String get taskAgentUpdatesOnChange => 'Aktualizuje se při změně úkolu';
+  String get taskAgentUpdatesOnChange => 'Aktualizace při změnách';
 
   @override
   String get taskAgentUseCategoryDefault =>

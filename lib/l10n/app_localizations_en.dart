@@ -12017,7 +12017,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskAgentUpdateNow => 'Update now';
 
   @override
-  String get taskAgentUpdatesOnChange => 'Updates when this task changes';
+  String get taskAgentUpdatesOnChange => 'Updates on changes';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copy category default';

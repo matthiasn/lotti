@@ -28,10 +28,9 @@ const goalPriorLookbackDays = 3;
 ///
 /// One execution: load the spec head → re-arm the cadence wake → read
 /// signals → evaluate → derive the track status → upsert the day's
-/// `goalProgress` register row → arm an escalation wake if (and only if)
-/// something is LLM-worthy. Phase B (PR 3) consumes the escalation; until
-/// it lands, an escalation wake firing re-runs this tier, which is a
-/// harmless no-op thanks to the keyed register.
+/// `goalProgress` register row → mark the report stale and queue a coalesced
+/// refresh if something is LLM-worthy. The deferred refresh re-enters this
+/// tier to arm the synced, lease-elected Phase B wake.
 class GoalAgentPhaseA {
   const GoalAgentPhaseA({
     required this._repository,
@@ -41,6 +40,7 @@ class GoalAgentPhaseA {
     this._policy = const GoalTrackPolicy(),
     this._onEscalationArmed,
     this._onReportStale,
+    this._onReportRefreshNeeded,
   });
 
   /// Nudges the scheduled-wake manager after an escalation is armed, so a
@@ -52,7 +52,11 @@ class GoalAgentPhaseA {
   /// materially differs from today's already-persisted register — new
   /// evidence arrived after the standing report was written, so the agent
   /// is dirty even when the coarse status did not transition.
-  final void Function(String agentId)? _onReportStale;
+  final Future<void> Function(String agentId)? _onReportStale;
+
+  /// Queues the expensive report refresh behind the shared agent countdown.
+  /// Phase A has already persisted current progress when this fires.
+  final Future<void> Function(String agentId)? _onReportRefreshNeeded;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -69,6 +73,9 @@ class GoalAgentPhaseA {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
+    final deferredReportRefresh =
+        goalDeferredReportRefreshRequested(triggerTokens) &&
+        (agentIdentity.config.automaticUpdatesEnabled ?? true);
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
@@ -139,17 +146,21 @@ class GoalAgentPhaseA {
         goalRegisterDigest(derivation.existingToday!) !=
             goalAggregateFactsDigest(facts);
 
+    final shouldRefreshReport = needsEscalation || registerChanged;
     final persisted = await persistDerivation(
       agentId: agentId,
       derivation: derivation,
       now: now,
-      armEscalation: needsEscalation,
+      armEscalation: deferredReportRefresh,
+      forceReportRefresh: deferredReportRefresh,
     );
-    if (persisted && registerChanged) {
-      _onReportStale?.call(agentId);
+    if (persisted && shouldRefreshReport) {
+      await _onReportStale?.call(agentId);
     }
-    if (needsEscalation && persisted) {
+    if (deferredReportRefresh && persisted) {
       _onEscalationArmed?.call();
+    } else if (shouldRefreshReport && persisted) {
+      await _onReportRefreshNeeded?.call(agentId);
     }
 
     return const WakeResult(success: true);
@@ -166,6 +177,7 @@ class GoalAgentPhaseA {
     required GoalWakeDerivation derivation,
     required DateTime now,
     bool armEscalation = false,
+    bool forceReportRefresh = false,
   }) async {
     var fenced = false;
     await _syncService.runInTransaction(() async {
@@ -193,6 +205,7 @@ class GoalAgentPhaseA {
           now,
           derivation.periodKey,
           derivation.facts.previousStatus,
+          forceReportRefresh: forceReportRefresh,
         );
       }
     });
@@ -379,9 +392,16 @@ class GoalAgentPhaseA {
     String agentId,
     DateTime now,
     String periodKey,
-    GoalTrackStatus? previousStatus,
-  ) => _syncService.upsertEntity(
-    goalEscalationWake(agentId, now, periodKey, baseline: previousStatus),
+    GoalTrackStatus? previousStatus, {
+    bool forceReportRefresh = false,
+  }) => _syncService.upsertEntity(
+    goalEscalationWake(
+      agentId,
+      now,
+      periodKey,
+      baseline: previousStatus,
+      forceReportRefresh: forceReportRefresh,
+    ),
   );
 
   /// Most-recent-first register rows for the trailing
@@ -499,6 +519,7 @@ AgentDomainEntity goalEscalationWake(
   DateTime now,
   String periodKey, {
   GoalTrackStatus? baseline,
+  bool forceReportRefresh = false,
 }) => AgentDomainEntity.scheduledWake(
   id: scheduledWakeRecordId(
     agentId,
@@ -519,5 +540,6 @@ AgentDomainEntity goalEscalationWake(
   triggerTokens: [
     goalEscalationWorkspaceKey(periodKey),
     if (baseline != null) goalEscalationBaselineToken(baseline.name),
+    if (forceReportRefresh) goalReportRefreshTriggerToken,
   ],
 );

@@ -385,7 +385,7 @@ void main() {
         // saying what happens next — skipping one update is not the same as
         // turning automation off.
         expect(find.textContaining('0:30'), findsNothing);
-        expect(find.text('Updates when this task changes'), findsOneWidget);
+        expect(find.text('Updates on changes'), findsOneWidget);
         expect(
           tester
               .widget<DesignSystemToggle>(

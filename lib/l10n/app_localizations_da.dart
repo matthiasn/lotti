@@ -12095,7 +12095,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskAgentUpdateNow => 'Opdater nu';
 
   @override
-  String get taskAgentUpdatesOnChange => 'Opdateres, når opgaven ændres';
+  String get taskAgentUpdatesOnChange => 'Opdateres ved ændringer';
 
   @override
   String get taskAgentUseCategoryDefault => 'Kopier kategori standard';

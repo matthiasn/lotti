@@ -101,17 +101,20 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late List<AgentDomainEntity> upserts;
+  late List<String> refreshRequests;
 
   GoalAgentPhaseA phaseA(GoalSignalWindow signals) => GoalAgentPhaseA(
     repository: repository,
     syncService: syncService,
     signalReader: _FakeSignalReader(signals),
+    onReportRefreshNeeded: (id) async => refreshRequests.add(id),
   );
 
   setUp(() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     upserts = [];
+    refreshRequests = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => repository.getEntitiesByAgentId(
@@ -319,11 +322,9 @@ void main() {
       GoalNudgeStatus.expired,
     );
     expect(
-      upserts.whereType<ScheduledWakeEntity>().where(
-        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
-      ),
-      hasLength(1),
-      reason: 'Phase B must now create or reuse the replacement banner',
+      refreshRequests,
+      [agentId],
+      reason: 'one coalesced refresh must replace the expired banner',
     );
   });
 
@@ -438,11 +439,9 @@ void main() {
       reason: 'data-stale expiry records the sweep that observed the change',
     );
     expect(
-      upserts.whereType<ScheduledWakeEntity>().where(
-        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
-      ),
-      hasLength(1),
-      reason: 'Phase B must re-mint the banner from the changed evidence',
+      refreshRequests,
+      [agentId],
+      reason: 'one coalesced refresh must re-mint from changed evidence',
     );
   });
 
@@ -510,7 +509,7 @@ void main() {
           repository: repository,
           syncService: syncService,
           signalReader: _FakeSignalReader(signals),
-          onReportStale: staleCalls.add,
+          onReportStale: (id) async => staleCalls.add(id),
         ).execute(
           agentIdentity: identity,
           runKey: 'run-1',
@@ -532,14 +531,14 @@ void main() {
     expect(staleCalls, [agentId]);
   });
 
-  test('the first tick of a day does not mark the report stale — the window '
-      'sliding is not new data', () async {
+  test('a first tick that needs a report marks it stale before the deferred '
+      'refresh', () async {
     stubSpec();
     final staleCalls = <String>[];
 
     await runWithStaleCallback(badWeek(), staleCalls);
 
-    expect(staleCalls, isEmpty);
+    expect(staleCalls, [agentId]);
   });
 
   test('an identical recomputation leaves the report fresh', () async {
@@ -729,15 +728,17 @@ void main() {
   );
 
   test(
-    'the first-ever evaluation escalates (a new fact where none was)',
+    'the first-ever evaluation requests a deferred refresh without arming '
+    'Phase B immediately',
     () async {
       stubSpec();
       await run(onTrackSignals());
+      expect(refreshRequests, [agentId]);
       expect(
         upserts.whereType<ScheduledWakeEntity>().where(
-          (w) => isGoalEscalationWorkspace(w.workspaceKey),
+          (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
         ),
-        hasLength(1),
+        isEmpty,
       );
     },
   );
@@ -768,6 +769,7 @@ void main() {
       ),
       isEmpty,
     );
+    expect(refreshRequests, isEmpty);
   });
 
   test('prior bad register rows feed the grace check into offTrack', () async {
@@ -863,7 +865,15 @@ void main() {
   test('escalation wakes are period-scoped, lease-recognizable, and carry '
       'a UTC deadline', () async {
     stubSpec();
-    await run(onTrackSignals());
+    await withClock(
+      fixedClock,
+      () => phaseA(onTrackSignals()).execute(
+        agentIdentity: identity,
+        runKey: 'run-deferred',
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        threadId: 'thread-1',
+      ),
+    );
     final escalation = upserts.whereType<ScheduledWakeEntity>().singleWhere(
       (w) => isGoalEscalationWorkspace(w.workspaceKey),
     );
@@ -876,7 +886,10 @@ void main() {
     // The wake-runner signature has no workspaceKey, so the router keys
     // Phase B entry on this token (the day agent's digest: precedent).
     // First-ever evaluation: no baseline token (nothing preceded it).
-    expect(escalation.triggerTokens, ['goal-escalation:2026-08-08']);
+    expect(
+      escalation.triggerTokens,
+      ['goal-escalation:2026-08-08', goalReportRefreshTriggerToken],
+    );
   });
 
   test(
@@ -901,7 +914,15 @@ void main() {
           vectorClock: null,
         ),
       );
-      await run(onTrackSignals());
+      await withClock(
+        fixedClock,
+        () => phaseA(onTrackSignals()).execute(
+          agentIdentity: identity,
+          runKey: 'run-deferred',
+          triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+          threadId: 'thread-1',
+        ),
+      );
       final escalation = upserts.whereType<ScheduledWakeEntity>().singleWhere(
         (w) => isGoalEscalationWorkspace(w.workspaceKey),
       );
@@ -937,14 +958,14 @@ void main() {
         () => atomic.execute(
           agentIdentity: identity,
           runKey: 'run-1',
-          triggerTokens: const {},
+          triggerTokens: const {goalDeferredReportRefreshTriggerToken},
           threadId: 'thread-1',
         ),
       );
       expect(
         order,
-        // The first transaction is the (empty) staleness sweep; the
-        // register and its escalation share the SECOND.
+        // The first transaction is the (empty) staleness sweep; the deferred
+        // arm writes the register and escalation together in the SECOND.
         ['transaction', 'transaction', 'register', 'escalation'],
         reason: 'both writes must happen inside the same transaction',
       );
@@ -966,7 +987,7 @@ void main() {
       () => nudging.execute(
         agentIdentity: identity,
         runKey: 'run-1',
-        triggerTokens: const {},
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
         threadId: 'thread-1',
       ),
     );

@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
     last_modified: 2026-07-25
+  - id: automation-row
+    resource: ../../../lib/features/agents/ui/agent_automation_row.dart
+    title: Shared agent report automation controls
+    last_modified: 2026-08-13
   - id: motion
     resource: ../../../lib/features/design_system/theme/motion_tokens.dart
     title: Motion tokens
@@ -64,8 +68,14 @@ Contents:
   distinct change sets.
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags and a strikethrough.
-- **The controls footer** — a composition root over `TaskAgentAutomationRow` and
+- **The controls footer** — a composition root over `AgentAutomationRow` and
   `TaskAgentIdentityRegion`.
+
+`AgentAutomationRow` is also the goal detail report control. Task and goal
+agents therefore share the same freshness, manual update, countdown, Skip once,
+and automatic-update interaction rather than maintaining parallel responsive
+implementations. Each feature supplies its own scheduling service and state;
+the widget owns only the presentation and countdown expiry callback.
 
 ## Reading column and information grouping
 
@@ -172,7 +182,7 @@ trigger sets `alignsLabelToLeadingEdge` to cancel it.
 
 ## Prose degrades before payloads do
 
-`TaskAgentAutomationRow` measures its localized labels with a `TextPainter` at
+`AgentAutomationRow` measures its localized labels with a `TextPainter` at
 the live `MediaQuery.textScalerOf` rather than branching on a pixel breakpoint —
 no constant can know whether "Automatische Aktualisierungen" fits beside a
 trigger at 1.3× text scale.
@@ -196,7 +206,8 @@ The schedule wording steps down `Next update in 1:30` → `in 1:30` → `1:30`; 
 no rung fits the row stacks onto the shared leading edge, and at the narrowest
 measures **the state pair and the schedule pair each split onto their own lines
 too**. **The countdown value, the trigger and the switch never degrade**; the
-automatic-updates label wraps to two lines rather than truncating.
+automatic-updates label and the idle helper prose wrap to two lines rather than
+truncating.
 
 **Ticking digits move nothing.** The schedule label reserves the width of the
 wording captured when the deadline was latched, and the fit decision is taken
@@ -207,7 +218,7 @@ measuring without them clips the payload.
 
 Freshness is a glyph **and** a word, never colour alone; the full sentence lives
 in the tooltip. With automation on and nothing pending the line reads "Updates
-when this task changes", so flipping the switch never leaves a hole that resizes
+on changes", so flipping the switch never leaves a hole that resizes
 the card. The whole switch row is the interaction target — tapping the label
 toggles the setting — on the band's shared `spacing.step8` minimum; the switch's
 own 40×24 track is too short in one dimension to be the target by itself. When

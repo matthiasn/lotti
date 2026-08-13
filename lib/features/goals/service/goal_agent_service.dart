@@ -2,10 +2,12 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -75,7 +77,7 @@ class GoalAgentService {
           displayName: displayName?.trim().isNotEmpty ?? false
               ? displayName!.trim()
               : title,
-          config: const AgentConfig(),
+          config: const AgentConfig(automaticUpdatesEnabled: true),
           agentId: agentId,
         );
         final versionId = '${identity.agentId}:spec-v1';
@@ -162,6 +164,105 @@ class GoalAgentService {
   /// stop waking on signals; a re-activation re-registers).
   void removeSignalSubscriptions(String agentId) =>
       _orchestrator.removeSubscriptions(agentId);
+
+  /// Goal agents shipped with automatic report refreshes before the setting
+  /// was persisted. Preserve that behavior for legacy null configs while new
+  /// identities and every user edit write an explicit value.
+  static bool automaticUpdatesEnabled(AgentIdentityEntity identity) =>
+      identity.config.automaticUpdatesEnabled ?? true;
+
+  /// Queue one report refresh behind the shared two-minute agent countdown.
+  ///
+  /// The local wake only runs deterministic Phase A. Phase A then writes the
+  /// period-scoped synced wake whose lease elects exactly one inference device.
+  Future<void> scheduleAutomaticReportRefresh(String agentId) async {
+    final entity = await _repository.getEntity(agentId);
+    if (entity is! AgentIdentityEntity ||
+        entity.lifecycle != AgentLifecycle.active ||
+        !automaticUpdatesEnabled(entity)) {
+      return;
+    }
+    await _orchestrator.enqueueDeferredAutomaticWake(
+      agentId: agentId,
+      reason: WakeReason.subscription.name,
+      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+      workspaceKey: goalReportRefreshTriggerToken,
+    );
+  }
+
+  /// Enable or disable coalesced automatic standing-report refreshes.
+  ///
+  /// Deterministic progress subscriptions stay live in both states. Turning
+  /// automation off only removes the pending inference arm; evidence can keep
+  /// updating the goal and marking its report stale. Turning it back on queues
+  /// one catch-up refresh when no current report exists or the report is stale.
+  Future<void> updateAutomaticUpdates({
+    required String agentId,
+    required bool enabled,
+  }) async {
+    var catchUpNeeded = false;
+    await _syncService.runInTransaction(() async {
+      final current = await _repository.getEntity(agentId);
+      if (current is! AgentIdentityEntity ||
+          current.kind != AgentKinds.goalAgent) {
+        throw StateError('Goal agent $agentId not found');
+      }
+      final now = clock.now();
+      await _syncService.upsertEntity(
+        current.copyWith(
+          config: current.config.copyWith(
+            automaticUpdatesEnabled: enabled,
+          ),
+          updatedAt: now,
+        ),
+      );
+      if (enabled) {
+        final state = await _repository.getAgentState(agentId);
+        catchUpNeeded =
+            state == null || state.reportFreshAt == null || state.isReportStale;
+      }
+    });
+
+    if (!enabled) {
+      skipPendingReportRefresh(agentId);
+    } else if (catchUpNeeded) {
+      await scheduleAutomaticReportRefresh(agentId);
+    }
+  }
+
+  /// Restores the goal-specific deferred arm after restart. The trigger token
+  /// is essential: a generic empty-token restore would only recompute Phase A
+  /// and never advance to the lease-elected report refresh.
+  void restorePendingReportRefresh({
+    required AgentIdentityEntity identity,
+    required AgentStateEntity? state,
+  }) {
+    final dueAt = state?.nextWakeAt;
+    if (dueAt == null) return;
+    if (!automaticUpdatesEnabled(identity)) {
+      skipPendingReportRefresh(identity.agentId);
+      return;
+    }
+    _orchestrator.restorePendingWake(
+      agentId: identity.agentId,
+      dueAt: dueAt,
+      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+      workspaceKey: goalReportRefreshTriggerToken,
+      reasonId: goalDeferredReportRefreshTriggerToken,
+    );
+  }
+
+  /// Cancels only the currently pending automatic refresh. The preference
+  /// stays enabled, so the next meaningful evidence change can schedule a new
+  /// countdown.
+  void skipPendingReportRefresh(String agentId) {
+    _orchestrator
+      ..clearThrottle(agentId)
+      ..cancelPendingWakes(
+        agentId,
+        workspaceKey: goalReportRefreshTriggerToken,
+      );
+  }
 
   /// Rebinds the runtime to an owner- or agent-authored spec revision and
   /// evaluates it immediately against the evidence that already exists.

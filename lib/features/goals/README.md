@@ -79,10 +79,12 @@ structure, while long replies start compact and can be expanded in place.
 The detail grid follows each habit's authored day, rolling, week, or month
 window and can record success or a miss on any day inside the habit's active
 lifetime through the normal habit-completion path while the goal remains active;
-current and past edits wake the
-deterministic evaluator and queue a standing-report refresh, with an Update now
-fallback visible beside the report, while future calendar cells remain
-read-only. The detail page leads with the standing report and this goal's active
+  current and past edits wake the deterministic evaluator, mark the standing
+  report out of date, and start a visible two-minute refresh countdown. Further
+  edits join that countdown without postponing it. The shared agent controls let
+  the user update immediately, skip the pending run once, or turn automatic
+  report updates off, while future calendar cells remain read-only. The detail
+  page leads with the standing report and this goal's active
 banners directly under the goal definition, with the habit cards and charts
 below. Rolling-seven-day rows keep their localized weekday labels glued
 directly above the day squares in one shared horizontal scroller; desktop and

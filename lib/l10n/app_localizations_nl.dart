@@ -12133,8 +12133,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskAgentUpdateNow => 'Nu bijwerken';
 
   @override
-  String get taskAgentUpdatesOnChange =>
-      'Werkt bij wanneer deze taak verandert';
+  String get taskAgentUpdatesOnChange => 'Werkt bij na wijzigingen';
 
   @override
   String get taskAgentUseCategoryDefault => 'Standaard categorie kopiëren';

@@ -4691,7 +4691,7 @@
   "taskAgentThisReportHeader": "Acest raport",
   "taskAgentTurnOffSetup": "Dezactivați AI pentru acest agent",
   "taskAgentUpdateNow": "Actualizați acum",
-  "taskAgentUpdatesOnChange": "Se actualizează când sarcina se modifică",
+  "taskAgentUpdatesOnChange": "Se actualizează la modificări",
   "taskAgentUseCategoryDefault": "Copiați configurarea implicită a categoriei",
   "taskAgentUseCategoryDefaultDescription": "Copiați configurarea curentă a categoriei. Modificările ulterioare ale categoriei nu vor afecta acest agent.",
   "taskAgentUseProfileDefault": "Folosiți modelul implicit al profilului",

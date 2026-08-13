@@ -244,6 +244,104 @@ void main() {
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
+  testWidgets('a stale goal report uses the shared countdown, skip, toggle, '
+      'and manual refresh controls', (tester) async {
+    final now = DateTime(2026, 8, 13, 12);
+    final completionService = MockGoalHabitCompletionService();
+    final goalService = MockGoalAgentService();
+    when(
+      () => completionService.requestReportRefresh('goal-1'),
+    ).thenReturn('refresh-run');
+    when(
+      () => goalService.updateAutomaticUpdates(
+        agentId: 'goal-1',
+        enabled: false,
+      ),
+    ).thenAnswer((_) async {});
+    when(() => goalService.skipPendingReportRefresh('goal-1')).thenReturn(null);
+
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            agentIdentityProvider('goal-1').overrideWith(
+              (ref) async => goalIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            ),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven. Keep coasting.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            agentStateProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentState(
+                        id: 'goal-1:state',
+                        agentId: 'goal-1',
+                        slots: const AgentSlots(),
+                        updatedAt: now,
+                        vectorClock: null,
+                        nextWakeAt: now.add(
+                          const Duration(minutes: 1, seconds: 30),
+                        ),
+                        reportFreshAt: now.subtract(const Duration(hours: 1)),
+                        reportStaleAt: now,
+                      )
+                      as AgentStateEntity,
+            ),
+            goalHabitCompletionServiceProvider.overrideWithValue(
+              completionService,
+            ),
+            goalAgentServiceProvider.overrideWithValue(goalService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Out of date'), findsOneWidget);
+      expect(find.textContaining('1:30'), findsOneWidget);
+      expect(find.text('Skip once'), findsOneWidget);
+      expect(find.text('Automatic updates'), findsOneWidget);
+
+      await tester.tap(find.text('Update now'));
+      verify(
+        () => completionService.requestReportRefresh('goal-1'),
+      ).called(1);
+
+      await tester.tap(find.text('Skip once'));
+      await tester.pump();
+      verify(() => goalService.skipPendingReportRefresh('goal-1')).called(1);
+      expect(find.textContaining('1:30'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
+      );
+      await tester.pump();
+      verify(
+        () => goalService.updateAutomaticUpdates(
+          agentId: 'goal-1',
+          enabled: false,
+        ),
+      ).called(1);
+    });
+  });
+
   testWidgets('the initial health load shows a spinner, not the no-report '
       'hint', (tester) async {
     final never = Completer<GoalAgentHealth>();

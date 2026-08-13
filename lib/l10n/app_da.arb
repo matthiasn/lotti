@@ -5280,7 +5280,7 @@
   "taskAgentThisReportHeader": "Denne rapport",
   "taskAgentTurnOffSetup": "Sluk AI for denne agent",
   "taskAgentUpdateNow": "Opdater nu",
-  "taskAgentUpdatesOnChange": "Opdateres, når opgaven ændres",
+  "taskAgentUpdatesOnChange": "Opdateres ved ændringer",
   "taskAgentUseCategoryDefault": "Kopier kategori standard",
   "taskAgentUseCategoryDefaultDescription": "Kopierer kategoriens nuværende opsætning. Senere kategoriændringer vil ikke påvirke denne agent.",
   "taskAgentUseProfileDefault": "Brug profilstandard",

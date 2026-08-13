@@ -20431,7 +20431,7 @@ abstract class AppLocalizations {
   /// Schedule line in the task-agent card footer when automatic updates are on but no wake is currently pending. Keeps the line reserved so toggling automation does not resize the card.
   ///
   /// In en, this message translates to:
-  /// **'Updates when this task changes'**
+  /// **'Updates on changes'**
   String get taskAgentUpdatesOnChange;
 
   /// No description provided for @taskAgentUseCategoryDefault.

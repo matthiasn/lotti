@@ -12103,7 +12103,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskAgentUpdateNow => 'Uppdatera nu';
 
   @override
-  String get taskAgentUpdatesOnChange => 'Uppdateras när uppgiften ändras';
+  String get taskAgentUpdatesOnChange => 'Uppdateras vid ändringar';
 
   @override
   String get taskAgentUseCategoryDefault => 'Kopiera kategori standard';

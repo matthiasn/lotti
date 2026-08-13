@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the signals card.
 
 ### Changed
+- **Goal-agent reports now wait behind a visible refresh countdown.** New goal
+  evidence updates progress and marks the standing report out of date
+  immediately, then coalesces report inference for two minutes instead of
+  spending it at once. The same controls as Task Agents let you update now,
+  skip one pending run, or turn automatic report updates off.
 - **A design-panel pass over the goal create/edit flow.** All signals are
   added through one multi-select picker that stays open until Done; cadence
   steppers read as bounded controls bound to their row; picked health and

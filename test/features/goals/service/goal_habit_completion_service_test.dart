@@ -124,6 +124,19 @@ void main() {
     expect(captured.dateFrom, now);
     expect(captured.dateTo, now);
     expect(captured.completionType, HabitCompletionType.success);
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+  });
+
+  test('the explicit refresh action still wakes Phase B immediately', () {
+    service.requestReportRefresh('goal-1');
+
     verify(
       () => orchestrator.enqueueManualWake(
         agentId: 'goal-1',

@@ -12215,7 +12215,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskAgentUpdateNow => 'Atualizar agora';
 
   @override
-  String get taskAgentUpdatesOnChange => 'Atualiza quando esta tarefa muda';
+  String get taskAgentUpdatesOnChange => 'Atualiza com alterações';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copiar categoria padrão';
