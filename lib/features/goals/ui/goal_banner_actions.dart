@@ -2,13 +2,11 @@
 /// per-activation rating prompt.
 library;
 
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -111,9 +109,9 @@ Future<bool> showGoalBannerSnoozeSheet(
   );
   if (action == null) return false;
 
-  bool persisted;
+  DateTime? hiddenUntil;
   try {
-    persisted = action == _GoalBannerVisibilityAction.dismissForDay
+    hiddenUntil = action == _GoalBannerVisibilityAction.dismissForDay
         ? await interactions.dismissForDay(
             entry.nudge.id,
             forActivation: entry.nudge.activationCount,
@@ -127,15 +125,11 @@ Future<bool> showGoalBannerSnoozeSheet(
     messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
     return false;
   }
-  if (!persisted) {
+  if (hiddenUntil == null) {
     container.invalidate(activeGoalNudgesProvider);
     return false;
   }
 
-  final now = clock.now();
-  final hiddenUntil = action.duration?.duration == null
-      ? goalBannerNextLocalMidnight(now)
-      : now.add(action.duration!.duration!);
   container
       .read(locallySnoozedNudgeDeadlinesProvider.notifier)
       .add(entry.nudge.id, hiddenUntil);

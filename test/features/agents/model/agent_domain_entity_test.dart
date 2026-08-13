@@ -1450,6 +1450,13 @@ void main() {
       durationMinutes: 180,
       utcOffsetMinutes: 120,
     );
+    final dismissal = GoalNudgeDayDismissal(
+      id: 'dismiss-1',
+      activation: 2,
+      dismissedAt: DateTime.utc(2026, 8, 12, 18),
+      dismissedUntil: DateTime.utc(2026, 8, 12, 22),
+      utcOffsetMinutes: 120,
+    );
     final entity = AgentDomainEntity.goalNudge(
       id: 'nudge-1',
       agentId: 'goal-1',
@@ -1468,6 +1475,7 @@ void main() {
       lastSnoozeDuration: snooze.duration,
       snoozeHistory: [snooze],
       dismissedForDayAt: DateTime.utc(2026, 8, 12, 18),
+      dismissalHistory: [dismissal],
     );
 
     test('roundtrips current visibility state and timing history', () {
@@ -1487,6 +1495,44 @@ void main() {
             (error) => error.message,
             'message',
             contains('durationMinutes must match'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects zone-free snooze history timestamps', () {
+      final json =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
+      final history = json['snoozeHistory']! as List<dynamic>;
+      (history.single as Map<String, dynamic>)['snoozedAt'] =
+          '2026-08-13T08:00:00';
+
+      expect(
+        () => AgentDomainEntity.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('explicit UTC offset'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects malformed day-dismissal history', () {
+      final json =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
+      final history = json['dismissalHistory']! as List<dynamic>;
+      (history.single as Map<String, dynamic>)['dismissedUntil'] =
+          '2026-08-12T17:00:00Z';
+
+      expect(
+        () => AgentDomainEntity.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('dismissedUntil must be after'),
           ),
         ),
       );

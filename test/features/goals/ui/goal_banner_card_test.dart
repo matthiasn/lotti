@@ -50,13 +50,13 @@ void main() {
         duration: any(named: 'duration'),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => DateTime.utc(2030));
     when(
       () => interactions.dismissForDay(
         any(),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => DateTime.utc(2030));
     when(
       () => interactions.recordRating(
         any(),

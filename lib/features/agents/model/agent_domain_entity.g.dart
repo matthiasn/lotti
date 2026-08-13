@@ -1915,6 +1915,14 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
       dismissedForDayAt: json['dismissedForDayAt'] == null
           ? null
           : DateTime.parse(json['dismissedForDayAt'] as String),
+      dismissalHistory:
+          (json['dismissalHistory'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    GoalNudgeDayDismissal.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <GoalNudgeDayDismissal>[],
       activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
       ratings:
           (json['ratings'] as List<dynamic>?)
@@ -1973,6 +1981,7 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
           _$GoalBannerSnoozeDurationEnumMap[instance.lastSnoozeDuration],
       'snoozeHistory': instance.snoozeHistory,
       'dismissedForDayAt': instance.dismissedForDayAt?.toIso8601String(),
+      'dismissalHistory': instance.dismissalHistory,
       'activationCount': instance.activationCount,
       'ratings': instance.ratings,
       'totalVisibleMsByHost': instance.totalVisibleMs,

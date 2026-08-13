@@ -402,10 +402,12 @@ flowchart TD
   when the active-banner provider reaches the deadline or reloads after it.
   Snooze extends the
   activation's `staleAt` past that reveal instant so the hidden interval cannot
-  consume its remaining visible lifetime. A re-run clears current snooze and
+  consume its remaining visible lifetime. A day dismissal likewise extends
+  staleness past the next local midnight. A re-run clears current snooze and
   day-dismissal state but retains the historical timing evidence. Legacy
-  provenance deadlines remain readable and are removed on the next snooze or
-  re-run. After a chat wake commits, the controller reads the persisted
+  provenance deadlines remain readable and are dual-written with typed snooze
+  and day-dismissal state so mixed-version devices preserve the quiet period;
+  a re-run clears that compatibility deadline. After a chat wake commits, the controller reads the persisted
   snooze deadlines into a short-lived local suppression map before invalidating
   the async projection; retained stale-while-revalidate data therefore cannot
   flash the hidden banner, and unrelated active banners remain visible.
@@ -479,12 +481,14 @@ flowchart TD
   or removed habit cannot be minted into a dead criterion. After a minted edit,
   the runtime re-registers the new signal set and enqueues an immediate `goal
   revised` wake so the report and health do not describe the old spec.
-- **Nudge accumulators are CRDTs.** Dismissal is terminal in the
+- **Nudge accumulators are CRDTs.** Terminal retirement is monotonic in the
   concurrent resolver, and exposure counters (per-host G-counters),
-  rating histories, append-only snooze histories and shown-at watermarks merge
-  losslessly on concurrent sync — the labeled ad library and its timing
-  evidence must survive whole-row LWW. Concurrent snoozes for the same
-  activation keep the later quiet deadline while retaining both events.
+  rating histories, append-only snooze and day-dismissal histories, and shown-at
+  watermarks merge losslessly on concurrent sync — the labeled ad library and
+  its timing evidence must survive whole-row LWW. Concurrent snoozes for the
+  same activation keep the later quiet deadline while retaining both events;
+  interaction-event ids deterministically de-duplicate the append-only
+  histories across peers.
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
@@ -527,15 +531,25 @@ flowchart TD
 
   Every visibility choice persists on the `GoalNudgeEntity`: the effective
   `snoozedUntil`, `lastSnoozeDuration`, and `dismissedForDayAt` drive current
-  projection state. Each snooze also appends a `GoalNudgeSnooze` carrying its
+  projection state. Each snooze appends a `GoalNudgeSnooze` carrying its
   activation, start/deadline, exact duration in minutes, and the offset at the
-  time of the choice. The provider checks persisted state on every load and app
+  time of the choice. Each day dismissal likewise appends a
+  `GoalNudgeDayDismissal` with its activation, start, local-midnight deadline,
+  and local offset. Both histories are stable-id, append-only sync
+  accumulators. The provider checks persisted state on every load and app
   resume, and also invalidates itself at the next snooze or local-midnight
   boundary, so expiry while the app is closed is handled without trusting a
-  timer that did not run. `GoalFactsRenderer` summarizes duration, local start,
+  timer that did not run. Interaction writes return the exact persisted quiet
+  deadline to optimistic local suppression, so a transaction crossing midnight
+  cannot extend a day dismissal into the following day. Synchronized snooze
+  and day-dismissal histories accept only timestamps with explicit UTC markers
+  or numeric offsets, keeping expiry and learned local-hour evidence
+  replica-independent. `GoalFactsRenderer` summarizes duration, local start,
   requested-return hour, weekday, and recent choices under
-  `ads.snoozeBehavior`; repeated requested-return hours are evidence for future
-  initial display timing, not an automatic scheduling command.
+  `ads.snoozeBehavior`, and summarizes day-dismissal local hours, weekdays, and
+  recent quiet intervals under `ads.dismissalBehavior`. Repeated interaction
+  hours are evidence for future initial display timing, not an automatic
+  scheduling command.
   Exposure is measured in visibility episodes by
   `GoalBannerExposureTracker` gated on THREE signals — the tracker's
   stopwatch runs only while the app lifecycle is `resumed`, `TickerMode`

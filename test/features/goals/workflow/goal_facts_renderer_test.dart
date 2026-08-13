@@ -90,6 +90,7 @@ void main() {
     DateTime? staleAt,
     int activationCount = 1,
     List<GoalNudgeSnooze> snoozeHistory = const [],
+    List<GoalNudgeDayDismissal> dismissalHistory = const [],
   }) =>
       AgentDomainEntity.goalNudge(
             id: id,
@@ -111,6 +112,7 @@ void main() {
             staleAt: staleAt,
             activationCount: activationCount,
             snoozeHistory: snoozeHistory,
+            dismissalHistory: dismissalHistory,
           )
           as GoalNudgeEntity;
 
@@ -889,6 +891,48 @@ void main() {
     final recent = (behavior['recent'] as List<dynamic>)
         .cast<Map<String, dynamic>>();
     expect(recent.last['requestedReturnLocal'], '2026-08-10T17:00:00');
+  });
+
+  test('dismissal behavior gives the model durable local timing patterns', () {
+    GoalNudgeDayDismissal event(
+      String id, {
+      required int day,
+      required int hourUtc,
+      required int quietHours,
+    }) => GoalNudgeDayDismissal(
+      id: id,
+      activation: 1,
+      dismissedAt: DateTime.utc(2026, 8, day, hourUtc),
+      dismissedUntil: DateTime.utc(2026, 8, day, hourUtc + quietHours),
+      utcOffsetMinutes: 120,
+    );
+    final json = renderedJson(
+      nudges: [
+        nudge(
+          id: 'ad-dismissal-history',
+          status: GoalNudgeStatus.retired,
+          dismissalHistory: [
+            event('d1', day: 10, hourUtc: 18, quietHours: 4),
+            event('d2', day: 11, hourUtc: 19, quietHours: 3),
+          ],
+        ),
+      ],
+    );
+
+    final behavior =
+        (json['ads'] as Map<String, dynamic>)['dismissalBehavior']
+            as Map<String, dynamic>;
+    expect(behavior['totalCount'], 2);
+    final startHours = behavior['countByStartLocalHour'] as List<dynamic>;
+    expect(startHours[20], 1);
+    expect(startHours[21], 1);
+    final weekdays = behavior['countByStartLocalWeekday'] as List<dynamic>;
+    expect(weekdays[DateTime.monday - DateTime.monday], 1);
+    expect(weekdays[DateTime.tuesday - DateTime.monday], 1);
+    final recent = (behavior['recent'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    expect(recent.last['dismissedAtLocal'], '2026-08-11T21:00:00');
+    expect(recent.last['quietMinutes'], 180);
   });
 
   test('a dismissal quiets the rest of ITS calendar day; yesterday does '

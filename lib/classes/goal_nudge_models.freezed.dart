@@ -846,4 +846,279 @@ as int,
 
 }
 
+
+/// @nodoc
+mixin _$GoalNudgeDayDismissal {
+
+ String get id;@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get dismissedAt; DateTime get dismissedUntil;@JsonKey(fromJson: _decodeUtcOffsetMinutes) int get utcOffsetMinutes;
+/// Create a copy of GoalNudgeDayDismissal
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalNudgeDayDismissalCopyWith<GoalNudgeDayDismissal> get copyWith => _$GoalNudgeDayDismissalCopyWithImpl<GoalNudgeDayDismissal>(this as GoalNudgeDayDismissal, _$identity);
+
+  /// Serializes this GoalNudgeDayDismissal to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeDayDismissal&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.dismissedAt, dismissedAt) || other.dismissedAt == dismissedAt)&&(identical(other.dismissedUntil, dismissedUntil) || other.dismissedUntil == dismissedUntil)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,activation,dismissedAt,dismissedUntil,utcOffsetMinutes);
+
+@override
+String toString() {
+  return 'GoalNudgeDayDismissal(id: $id, activation: $activation, dismissedAt: $dismissedAt, dismissedUntil: $dismissedUntil, utcOffsetMinutes: $utcOffsetMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalNudgeDayDismissalCopyWith<$Res>  {
+  factory $GoalNudgeDayDismissalCopyWith(GoalNudgeDayDismissal value, $Res Function(GoalNudgeDayDismissal) _then) = _$GoalNudgeDayDismissalCopyWithImpl;
+@useResult
+$Res call({
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime dismissedAt, DateTime dismissedUntil,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalNudgeDayDismissalCopyWithImpl<$Res>
+    implements $GoalNudgeDayDismissalCopyWith<$Res> {
+  _$GoalNudgeDayDismissalCopyWithImpl(this._self, this._then);
+
+  final GoalNudgeDayDismissal _self;
+  final $Res Function(GoalNudgeDayDismissal) _then;
+
+/// Create a copy of GoalNudgeDayDismissal
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activation = null,Object? dismissedAt = null,Object? dismissedUntil = null,Object? utcOffsetMinutes = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,dismissedAt: null == dismissedAt ? _self.dismissedAt : dismissedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,dismissedUntil: null == dismissedUntil ? _self.dismissedUntil : dismissedUntil // ignore: cast_nullable_to_non_nullable
+as DateTime,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalNudgeDayDismissal].
+extension GoalNudgeDayDismissalPatterns on GoalNudgeDayDismissal {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalNudgeDayDismissal value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalNudgeDayDismissal value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalNudgeDayDismissal value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime dismissedAt,  DateTime dismissedUntil, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal() when $default != null:
+return $default(_that.id,_that.activation,_that.dismissedAt,_that.dismissedUntil,_that.utcOffsetMinutes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime dismissedAt,  DateTime dismissedUntil, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal():
+return $default(_that.id,_that.activation,_that.dismissedAt,_that.dismissedUntil,_that.utcOffsetMinutes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime dismissedAt,  DateTime dismissedUntil, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeDayDismissal() when $default != null:
+return $default(_that.id,_that.activation,_that.dismissedAt,_that.dismissedUntil,_that.utcOffsetMinutes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalNudgeDayDismissal extends GoalNudgeDayDismissal {
+  const _GoalNudgeDayDismissal({required this.id, @JsonKey(fromJson: _decodeActivation) required this.activation, required this.dismissedAt, required this.dismissedUntil, @JsonKey(fromJson: _decodeUtcOffsetMinutes) required this.utcOffsetMinutes}): super._();
+  factory _GoalNudgeDayDismissal.fromJson(Map<String, dynamic> json) => _$GoalNudgeDayDismissalFromJson(json);
+
+@override final  String id;
+@override@JsonKey(fromJson: _decodeActivation) final  int activation;
+@override final  DateTime dismissedAt;
+@override final  DateTime dismissedUntil;
+@override@JsonKey(fromJson: _decodeUtcOffsetMinutes) final  int utcOffsetMinutes;
+
+/// Create a copy of GoalNudgeDayDismissal
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalNudgeDayDismissalCopyWith<_GoalNudgeDayDismissal> get copyWith => __$GoalNudgeDayDismissalCopyWithImpl<_GoalNudgeDayDismissal>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalNudgeDayDismissalToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeDayDismissal&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.dismissedAt, dismissedAt) || other.dismissedAt == dismissedAt)&&(identical(other.dismissedUntil, dismissedUntil) || other.dismissedUntil == dismissedUntil)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,activation,dismissedAt,dismissedUntil,utcOffsetMinutes);
+
+@override
+String toString() {
+  return 'GoalNudgeDayDismissal(id: $id, activation: $activation, dismissedAt: $dismissedAt, dismissedUntil: $dismissedUntil, utcOffsetMinutes: $utcOffsetMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalNudgeDayDismissalCopyWith<$Res> implements $GoalNudgeDayDismissalCopyWith<$Res> {
+  factory _$GoalNudgeDayDismissalCopyWith(_GoalNudgeDayDismissal value, $Res Function(_GoalNudgeDayDismissal) _then) = __$GoalNudgeDayDismissalCopyWithImpl;
+@override @useResult
+$Res call({
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime dismissedAt, DateTime dismissedUntil,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalNudgeDayDismissalCopyWithImpl<$Res>
+    implements _$GoalNudgeDayDismissalCopyWith<$Res> {
+  __$GoalNudgeDayDismissalCopyWithImpl(this._self, this._then);
+
+  final _GoalNudgeDayDismissal _self;
+  final $Res Function(_GoalNudgeDayDismissal) _then;
+
+/// Create a copy of GoalNudgeDayDismissal
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activation = null,Object? dismissedAt = null,Object? dismissedUntil = null,Object? utcOffsetMinutes = null,}) {
+  return _then(_GoalNudgeDayDismissal(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,dismissedAt: null == dismissedAt ? _self.dismissedAt : dismissedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,dismissedUntil: null == dismissedUntil ? _self.dismissedUntil : dismissedUntil // ignore: cast_nullable_to_non_nullable
+as DateTime,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
 // dart format on

@@ -1000,6 +1000,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// local calendar day.
     DateTime? dismissedForDayAt,
 
+    /// Append-only day-dismissal evidence. Current visibility reads the latest
+    /// day-dismissal instant above; future timing analysis reads this history.
+    @Default(<GoalNudgeDayDismissal>[])
+    List<GoalNudgeDayDismissal> dismissalHistory,
+
     /// How many times this ad has been activated (1-based; a reuse
     /// re-entry increments it). Rating prompts key off this: one outcome
     /// per activation in the ratings history.
@@ -1120,6 +1125,18 @@ void _validateGoalNudgeJson(Map<String, dynamic> json) {
       if (issues.isNotEmpty) {
         throw FormatException(
           'Invalid goal nudge snooze: ${issues.join('; ')}',
+        );
+      }
+    }
+  }
+  final dismissalHistory = json['dismissalHistory'];
+  if (dismissalHistory is List) {
+    for (final entry in dismissalHistory) {
+      if (entry is! Map<String, dynamic>) continue;
+      final issues = goalNudgeDayDismissalJsonIssues(entry);
+      if (issues.isNotEmpty) {
+        throw FormatException(
+          'Invalid goal nudge day dismissal: ${issues.join('; ')}',
         );
       }
     }

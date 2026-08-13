@@ -60,7 +60,7 @@ class GoalNudgeInteractions {
 
   /// Temporarily hides an active banner and appends the timing choice used by
   /// future goal-agent wakes to learn better initial display windows.
-  Future<bool> snooze(
+  Future<DateTime?> snooze(
     String nudgeId, {
     required GoalBannerSnoozeDuration duration,
     int? forActivation,
@@ -74,7 +74,7 @@ class GoalNudgeInteractions {
       );
     }
     final eventId = _newId();
-    var persisted = false;
+    DateTime? persistedUntil;
     await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
@@ -85,34 +85,38 @@ class GoalNudgeInteractions {
             return;
           }
           final now = clock.now();
-          await _syncService.upsertEntity(
-            snoozeGoalBannerEntity(
-              nudge: nudge,
-              now: now,
-              until: now.add(exactDuration),
-              eventId: eventId,
-            ),
+          final updated = snoozeGoalBannerEntity(
+            nudge: nudge,
+            now: now,
+            until: now.add(exactDuration),
+            eventId: eventId,
           );
-          persisted = true;
+          await _syncService.upsertEntity(updated);
+          persistedUntil = updated.snoozedUntil;
         });
       } catch (error) {
         final fresh = await _repository.getEntity(nudgeId);
         if (fresh is GoalNudgeEntity &&
             fresh.snoozeHistory.any((event) => event.id == eventId)) {
-          persisted = true;
+          persistedUntil = fresh.snoozeHistory
+              .firstWhere((event) => event.id == eventId)
+              .snoozedUntil;
           return;
         }
         rethrow;
       }
     });
-    return persisted;
+    return persistedUntil;
   }
 
   /// Hides an active banner for the rest of the current local calendar day.
   /// The nudge stays active so it becomes eligible again after midnight.
-  Future<bool> dismissForDay(String nudgeId, {int? forActivation}) async {
-    var persisted = false;
-    DateTime? writtenAt;
+  Future<DateTime?> dismissForDay(
+    String nudgeId, {
+    int? forActivation,
+  }) async {
+    final eventId = _newId();
+    DateTime? persistedUntil;
     await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
@@ -125,28 +129,27 @@ class GoalNudgeInteractions {
             return;
           }
           final now = clock.now();
-          writtenAt = now.toUtc();
-          await _syncService.upsertEntity(
-            nudge.copyWith(
-              snoozedUntil: null,
-              dismissedForDayAt: writtenAt,
-              updatedAt: now,
-            ),
+          final updated = dismissGoalBannerForDayEntity(
+            nudge: nudge,
+            now: now,
+            eventId: eventId,
           );
-          persisted = true;
+          await _syncService.upsertEntity(updated);
+          persistedUntil = updated.dismissalHistory.last.dismissedUntil;
         });
       } catch (error) {
         final fresh = await _repository.getEntity(nudgeId);
         if (fresh is GoalNudgeEntity &&
-            writtenAt != null &&
-            fresh.dismissedForDayAt == writtenAt) {
-          persisted = true;
+            fresh.dismissalHistory.any((event) => event.id == eventId)) {
+          persistedUntil = fresh.dismissalHistory
+              .firstWhere((event) => event.id == eventId)
+              .dismissedUntil;
           return;
         }
         rethrow;
       }
     });
-    return persisted;
+    return persistedUntil;
   }
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for

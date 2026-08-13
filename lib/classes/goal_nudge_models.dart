@@ -146,6 +146,30 @@ abstract class GoalNudgeSnooze with _$GoalNudgeSnooze {
       snoozedUntil.toUtc().add(Duration(minutes: utcOffsetMinutes));
 }
 
+/// One durable "dismiss for today" interaction for one banner activation.
+///
+/// The current visibility gate remains on `GoalNudgeEntity`; this append-only
+/// event preserves how often and at which local times the user chooses the
+/// day-scoped escape hatch so future agent wakes can learn from the pattern.
+@freezed
+abstract class GoalNudgeDayDismissal with _$GoalNudgeDayDismissal {
+  const factory GoalNudgeDayDismissal({
+    required String id,
+    @JsonKey(fromJson: _decodeActivation) required int activation,
+    required DateTime dismissedAt,
+    required DateTime dismissedUntil,
+    @JsonKey(fromJson: _decodeUtcOffsetMinutes) required int utcOffsetMinutes,
+  }) = _GoalNudgeDayDismissal;
+
+  const GoalNudgeDayDismissal._();
+
+  factory GoalNudgeDayDismissal.fromJson(Map<String, dynamic> json) =>
+      _$GoalNudgeDayDismissalFromJson(json);
+
+  DateTime get dismissedAtLocal =>
+      dismissedAt.toUtc().add(Duration(minutes: utcOffsetMinutes));
+}
+
 /// Range- and integrality-enforcing decoder: the generated decoder would
 /// truncate `4.9` to 4 and store a lie in the permanent rating history;
 /// out-of-contract values must fail the decode instead.
@@ -189,13 +213,24 @@ List<String> goalNudgeRatingJsonIssues(Map<String, dynamic> json) {
   return const [];
 }
 
+final _explicitIso8601Offset = RegExp(r'(?:[zZ]|[+-]\d{2}:?\d{2})$');
+
+bool _hasExplicitIso8601Offset(String value) =>
+    _explicitIso8601Offset.hasMatch(value);
+
 /// Cross-field issues in a raw snooze event payload.
 List<String> goalNudgeSnoozeJsonIssues(Map<String, dynamic> json) {
-  final snoozedAt = DateTime.tryParse(json['snoozedAt']?.toString() ?? '');
-  final snoozedUntil = DateTime.tryParse(
-    json['snoozedUntil']?.toString() ?? '',
-  );
-  if (snoozedAt == null || snoozedUntil == null) return const [];
+  final snoozedAtRaw = json['snoozedAt']?.toString() ?? '';
+  final snoozedUntilRaw = json['snoozedUntil']?.toString() ?? '';
+  if (!_hasExplicitIso8601Offset(snoozedAtRaw) ||
+      !_hasExplicitIso8601Offset(snoozedUntilRaw)) {
+    return const ['snooze timestamps must include an explicit UTC offset'];
+  }
+  final snoozedAt = DateTime.tryParse(snoozedAtRaw);
+  final snoozedUntil = DateTime.tryParse(snoozedUntilRaw);
+  if (snoozedAt == null || snoozedUntil == null) {
+    return const ['snooze timestamps must be valid ISO-8601 instants'];
+  }
   final exact = snoozedUntil.toUtc().difference(snoozedAt.toUtc());
   if (exact <= Duration.zero) {
     return const ['snoozedUntil must be after snoozedAt'];
@@ -206,6 +241,29 @@ List<String> goalNudgeSnoozeJsonIssues(Map<String, dynamic> json) {
     if (durationMinutes.toInt() != expectedMinutes) {
       return const ['durationMinutes must match the snooze interval'];
     }
+  }
+  return const [];
+}
+
+/// Cross-field issues in a raw day-dismissal event payload.
+List<String> goalNudgeDayDismissalJsonIssues(Map<String, dynamic> json) {
+  final dismissedAtRaw = json['dismissedAt']?.toString() ?? '';
+  final dismissedUntilRaw = json['dismissedUntil']?.toString() ?? '';
+  if (!_hasExplicitIso8601Offset(dismissedAtRaw) ||
+      !_hasExplicitIso8601Offset(dismissedUntilRaw)) {
+    return const [
+      'day-dismissal timestamps must include an explicit UTC offset',
+    ];
+  }
+  final dismissedAt = DateTime.tryParse(dismissedAtRaw);
+  final dismissedUntil = DateTime.tryParse(dismissedUntilRaw);
+  if (dismissedAt == null || dismissedUntil == null) {
+    return const [
+      'day-dismissal timestamps must be valid ISO-8601 instants',
+    ];
+  }
+  if (!dismissedUntil.toUtc().isAfter(dismissedAt.toUtc())) {
+    return const ['dismissedUntil must be after dismissedAt'];
   }
   return const [];
 }
