@@ -6320,6 +6320,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormAddDimension => 'Tilføj dimension';
 
   @override
+  String get goalFormAddSignal => 'Tilføj et signal';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolisk og diastolisk · mmHg · 7-dages gennemsnit';
 
@@ -6415,7 +6418,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Du kan når som helst omdøbe, justere, sætte på pause eller slette dette mål.';
+      'Du kan når som helst omdøbe, justere, sætte på pause eller slette denne agent.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Målets navn';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6472,11 +6478,8 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Hvad vil du arbejde hen imod?';
 
   @override
-  String get goalFormLooksRight => 'Det ser rigtigt ud';
-
-  @override
   String get goalFormMappingIntro =>
-      'Jeg kan kun coache det, jeg kan se. Disse afkrydsninger er mine øjne:';
+      'Jeg kan kun coache det, jeg kan se. Disse signaler er mine øjne.';
 
   @override
   String get goalFormMappingTitle => 'Her er det, jeg kan følge';
@@ -6528,7 +6531,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Rullende uge — altid de seneste 7 dage. Antal gælder pr. vane; ingen døde weekender, ingen tabte uger.';
+      'Rullende uge — altid de seneste 7 dage. Antal gælder pr. signal; ingen døde weekender, ingen tabte uger.';
 
   @override
   String get goalFormSaveChanges => 'Gem ny version';
@@ -6555,6 +6558,15 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Vælg mindst ét signal, som agenten faktisk kan observere.';
+
+  @override
+  String get goalFormValidationPersona => 'Giv din agent et navn.';
+
+  @override
+  String get goalFormValidationTarget => 'Angiv et mål for at fortsætte.';
+
+  @override
+  String get goalFormValidationTitle => 'Giv dit mål et navn.';
 
   @override
   String goalFormWeeklyTarget(int count) {

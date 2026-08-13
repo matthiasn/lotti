@@ -6439,6 +6439,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormAddDimension => 'Adaugă dimensiune';
 
   @override
+  String get goalFormAddSignal => 'Adăugați un semnal';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Sistolică și diastolică · mmHg · medie pe 7 zile';
 
@@ -6535,7 +6538,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Puteți redenumi, reajusta, întrerupe sau șterge oricând acest obiectiv.';
+      'Puteți redenumi, reajusta, întrerupe sau șterge oricând acest agent.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Numele obiectivului';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6594,11 +6600,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Spre ce doriți să lucrați?';
 
   @override
-  String get goalFormLooksRight => 'Arată bine';
-
-  @override
   String get goalFormMappingIntro =>
-      'Pot oferi coaching doar pentru ce pot vedea. Aceste bifări sunt ochii mei:';
+      'Pot antrena doar ce văd. Aceste semnale sunt ochii mei.';
 
   @override
   String get goalFormMappingTitle => 'Iată ce pot urmări';
@@ -6650,7 +6653,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Săptămână glisantă — mereu ultimele 7 zile. Numărătoarea este separată pentru fiecare obicei; fără weekenduri moarte sau săptămâni pierdute.';
+      'Săptămână glisantă — mereu ultimele 7 zile. Numărătoarea este separată pentru fiecare semnal; fără weekenduri moarte sau săptămâni pierdute.';
 
   @override
   String get goalFormSaveChanges => 'Salvați versiunea nouă';
@@ -6678,6 +6681,15 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Alegeți cel puțin un semnal pe care agentul îl poate observa cu adevărat.';
+
+  @override
+  String get goalFormValidationPersona => 'Dați un nume agentului dvs.';
+
+  @override
+  String get goalFormValidationTarget => 'Setați o țintă pentru a continua.';
+
+  @override
+  String get goalFormValidationTitle => 'Dați un nume obiectivului dvs.';
 
   @override
   String goalFormWeeklyTarget(int count) {

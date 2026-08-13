@@ -10798,6 +10798,12 @@ abstract class AppLocalizations {
   /// **'Add dimension'**
   String get goalFormAddDimension;
 
+  /// Button opening the unified signal picker on the mapping step.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a signal'**
+  String get goalFormAddSignal;
+
   /// No description provided for @goalFormBloodPressureSource.
   ///
   /// In en, this message translates to:
@@ -10949,8 +10955,14 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormFooter.
   ///
   /// In en, this message translates to:
-  /// **'You can rename, retarget, pause or delete this goal anytime.'**
+  /// **'You can rename, retarget, pause or delete this agent anytime.'**
   String get goalFormFooter;
+
+  /// Label of the goal's editable name field on the mapping and confirmation steps.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal name'**
+  String get goalFormGoalNameLabel;
 
   /// No description provided for @goalFormHabitCadence.
   ///
@@ -10961,7 +10973,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormHabitSignal.
   ///
   /// In en, this message translates to:
-  /// **'habit check-off'**
+  /// **'habit check‑off'**
   String get goalFormHabitSignal;
 
   /// No description provided for @goalFormHealthBloodPressureDiastolic.
@@ -11035,16 +11047,10 @@ abstract class AppLocalizations {
   /// **'What do you want to work toward?'**
   String get goalFormIntentionPrompt;
 
-  /// No description provided for @goalFormLooksRight.
-  ///
-  /// In en, this message translates to:
-  /// **'Looks right'**
-  String get goalFormLooksRight;
-
   /// No description provided for @goalFormMappingIntro.
   ///
   /// In en, this message translates to:
-  /// **'I can only coach what I can see. These check-offs are my eyes:'**
+  /// **'I can only coach what I can see. These signals are my eyes.'**
   String get goalFormMappingIntro;
 
   /// No description provided for @goalFormMappingTitle.
@@ -11122,7 +11128,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormRollingNote.
   ///
   /// In en, this message translates to:
-  /// **'Rolling week — the trailing 7 days, always. Counts are per habit; no dead weekends, no lost weeks.'**
+  /// **'Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.'**
   String get goalFormRollingNote;
 
   /// No description provided for @goalFormSaveChanges.
@@ -11166,6 +11172,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose at least one signal the agent can actually observe.'**
   String get goalFormValidationMapping;
+
+  /// Validation anchored to the agent persona field.
+  ///
+  /// In en, this message translates to:
+  /// **'Give your agent a name.'**
+  String get goalFormValidationPersona;
+
+  /// Inline error on a mapping signal's target input when the target is missing or not positive
+  ///
+  /// In en, this message translates to:
+  /// **'Set a target to continue.'**
+  String get goalFormValidationTarget;
+
+  /// Validation anchored to the goal name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Give your goal a name.'**
+  String get goalFormValidationTitle;
 
   /// No description provided for @goalFormWeeklyTarget.
   ///

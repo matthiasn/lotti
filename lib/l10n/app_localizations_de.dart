@@ -6364,6 +6364,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormAddDimension => 'Dimension hinzufügen';
 
   @override
+  String get goalFormAddSignal => 'Signal hinzufügen';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolisch und diastolisch · mmHg · 7-Tage-Durchschnitt';
 
@@ -6460,7 +6463,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Du kannst dieses Ziel jederzeit umbenennen, neu ausrichten, pausieren oder löschen.';
+      'Du kannst diesen Agenten jederzeit umbenennen, neu ausrichten, pausieren oder löschen.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Name des Ziels';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6468,7 +6474,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get goalFormHabitSignal => 'Gewohnheits-Check-in';
+  String get goalFormHabitSignal => 'Gewohnheits‑Check‑in';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolischer Blutdruck';
@@ -6517,11 +6523,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Worauf möchtest du hinarbeiten?';
 
   @override
-  String get goalFormLooksRight => 'Passt so';
-
-  @override
   String get goalFormMappingIntro =>
-      'Ich kann nur coachen, was ich sehen kann. Diese Check-ins sind meine Augen:';
+      'Ich kann nur coachen, was ich sehe. Diese Signale sind meine Augen.';
 
   @override
   String get goalFormMappingTitle => 'Das kann ich beobachten';
@@ -6573,7 +6576,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Rollierende Woche — immer die letzten 7 Tage. Die Häufigkeit gilt je Gewohnheit; keine toten Wochenenden, keine verlorenen Wochen.';
+      'Rollierende Woche — immer die letzten 7 Tage. Die Häufigkeit gilt je Signal; keine toten Wochenenden, keine verlorenen Wochen.';
 
   @override
   String get goalFormSaveChanges => 'Neue Version speichern';
@@ -6601,6 +6604,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Wähl mindestens ein Signal, das der Agent wirklich beobachten kann.';
+
+  @override
+  String get goalFormValidationPersona => 'Gib deinem Agenten einen Namen.';
+
+  @override
+  String get goalFormValidationTarget => 'Leg ein Ziel fest, um fortzufahren.';
+
+  @override
+  String get goalFormValidationTitle => 'Gib deinem Ziel einen Namen.';
 
   @override
   String goalFormWeeklyTarget(int count) {

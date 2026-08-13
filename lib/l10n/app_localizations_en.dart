@@ -6292,6 +6292,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormAddDimension => 'Add dimension';
 
   @override
+  String get goalFormAddSignal => 'Add a signal';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolic and diastolic · mmHg · 7-day average';
 
@@ -6388,7 +6391,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'You can rename, retarget, pause or delete this goal anytime.';
+      'You can rename, retarget, pause or delete this agent anytime.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Goal name';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6396,7 +6402,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get goalFormHabitSignal => 'habit check-off';
+  String get goalFormHabitSignal => 'habit check‑off';
 
   @override
   String get goalFormHealthBloodPressureDiastolic => 'Diastolic blood pressure';
@@ -6445,11 +6451,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormIntentionPrompt => 'What do you want to work toward?';
 
   @override
-  String get goalFormLooksRight => 'Looks right';
-
-  @override
   String get goalFormMappingIntro =>
-      'I can only coach what I can see. These check-offs are my eyes:';
+      'I can only coach what I can see. These signals are my eyes.';
 
   @override
   String get goalFormMappingTitle => 'Here’s what I can watch';
@@ -6501,7 +6504,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Rolling week — the trailing 7 days, always. Counts are per habit; no dead weekends, no lost weeks.';
+      'Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.';
 
   @override
   String get goalFormSaveChanges => 'Save new version';
@@ -6529,6 +6532,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Choose at least one signal the agent can actually observe.';
+
+  @override
+  String get goalFormValidationPersona => 'Give your agent a name.';
+
+  @override
+  String get goalFormValidationTarget => 'Set a target to continue.';
+
+  @override
+  String get goalFormValidationTitle => 'Give your goal a name.';
 
   @override
   String goalFormWeeklyTarget(int count) {

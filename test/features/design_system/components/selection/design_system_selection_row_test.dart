@@ -228,6 +228,106 @@ void main() {
     expect(text.maxLines, isNull);
     expect(text.overflow, TextOverflow.clip);
   });
+
+  testWidgets('secondaryLine renders below the row at the title inset', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      DesignSystemSelectionRow(
+        title: 'Steps',
+        type: DesignSystemSelectionRowType.multiSelect,
+        secondaryLine: const SizedBox(
+          key: Key('secondary-line'),
+          width: 40,
+          height: 10,
+        ),
+        onTap: () {},
+      ),
+    );
+
+    final itemRect = tester.getRect(find.byType(DesignSystemListItem));
+    final lineRect = tester.getRect(find.byKey(const Key('secondary-line')));
+    expect(lineRect.top, greaterThanOrEqualTo(itemRect.bottom));
+    expect(lineRect.left - itemRect.left, dsTokensLight.spacing.step5);
+  });
+
+  testWidgets('a leading rail widens the secondaryLine title inset', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      DesignSystemSelectionRow(
+        title: 'Steps',
+        leading: const Icon(Icons.flag_outlined),
+        type: DesignSystemSelectionRowType.multiSelect,
+        secondaryLine: const SizedBox(
+          key: Key('secondary-line'),
+          width: 40,
+          height: 10,
+        ),
+        onTap: () {},
+      ),
+    );
+
+    final itemRect = tester.getRect(find.byType(DesignSystemListItem));
+    final lineRect = tester.getRect(find.byKey(const Key('secondary-line')));
+    expect(
+      lineRect.left - itemRect.left,
+      dsTokensLight.spacing.step5 +
+          dsTokensLight.spacing.step8 +
+          dsTokensLight.spacing.step3,
+    );
+  });
+
+  testWidgets(
+    'secondaryLine content sits outside the row tap target and keeps its '
+    'own semantics',
+    (tester) async {
+      var rowTaps = 0;
+      var adjustTaps = 0;
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        DesignSystemSelectionRow(
+          title: 'Steps',
+          type: DesignSystemSelectionRowType.multiSelect,
+          secondaryLine: TextButton(
+            onPressed: () => adjustTaps++,
+            child: const Text('Adjust'),
+          ),
+          onTap: () => rowTaps++,
+        ),
+      );
+
+      // Tapping the secondary line activates its own control, never the row.
+      await tester.tap(find.text('Adjust'));
+      await tester.pump();
+      expect(adjustTaps, 1);
+      expect(rowTaps, 0);
+
+      // The embedded control is its own semantic button, not merged into
+      // the row's semantics container.
+      expect(
+        tester.getSemantics(find.text('Adjust')),
+        matchesSemantics(
+          label: 'Adjust',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          isFocusable: true,
+          hasFocusAction: true,
+        ),
+      );
+
+      await tester.tap(find.text('Steps'));
+      await tester.pump();
+      expect(rowTaps, 1);
+      expect(adjustTaps, 1);
+      handle.dispose();
+    },
+  );
 }
 
 Future<void> _pump(WidgetTester tester, Widget child) async {

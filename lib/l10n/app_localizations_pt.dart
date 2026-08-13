@@ -6384,6 +6384,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormAddDimension => 'Adicionar dimensão';
 
   @override
+  String get goalFormAddSignal => 'Adicionar um sinal';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Sistólica e diastólica · mmHg · média de 7 dias';
 
@@ -6480,7 +6483,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Podes renomear, reajustar, pausar ou eliminar esta meta a qualquer momento.';
+      'Podes renomear, reajustar, pausar ou eliminar este agente a qualquer momento.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Nome da meta';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6539,11 +6545,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Para que objetivo queres trabalhar?';
 
   @override
-  String get goalFormLooksRight => 'Está certo';
-
-  @override
   String get goalFormMappingIntro =>
-      'Só te posso acompanhar no que consigo ver. Estes registos são os meus olhos:';
+      'Só posso treinar o que vejo. Esses sinais são meus olhos.';
 
   @override
   String get goalFormMappingTitle => 'Eis o que consigo observar';
@@ -6595,7 +6598,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Semana móvel — sempre os últimos 7 dias. As contagens são por hábito; sem fins de semana mortos nem semanas perdidas.';
+      'Semana móvel — sempre os últimos 7 dias. As contagens são por sinal; sem fins de semana mortos nem semanas perdidas.';
 
   @override
   String get goalFormSaveChanges => 'Guardar nova versão';
@@ -6622,6 +6625,15 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Escolhe pelo menos um sinal que o agente consiga realmente observar.';
+
+  @override
+  String get goalFormValidationPersona => 'Dá um nome ao teu agente.';
+
+  @override
+  String get goalFormValidationTarget => 'Define uma meta para continuar.';
+
+  @override
+  String get goalFormValidationTitle => 'Dá um nome à tua meta.';
 
   @override
   String goalFormWeeklyTarget(int count) {

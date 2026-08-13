@@ -6403,6 +6403,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalFormAddDimension => 'Aggiungi dimensione';
 
   @override
+  String get goalFormAddSignal => 'Aggiungi un segnale';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Sistolica e diastolica · mmHg · media su 7 giorni';
 
@@ -6499,7 +6502,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Puoi rinominare, ricalibrare, mettere in pausa o eliminare questo obiettivo in qualsiasi momento.';
+      'Puoi rinominare, ricalibrare, mettere in pausa o eliminare questo agente in qualsiasi momento.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Nome dell\'obiettivo';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6558,11 +6564,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Verso cosa vuoi lavorare?';
 
   @override
-  String get goalFormLooksRight => 'Va bene';
-
-  @override
   String get goalFormMappingIntro =>
-      'Posso seguirti solo su ciò che vedo. Queste spunte sono i miei occhi:';
+      'Posso allenare solo ciò che vedo. Questi segnali sono i miei occhi.';
 
   @override
   String get goalFormMappingTitle => 'Ecco cosa posso osservare';
@@ -6614,7 +6617,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Settimana mobile — sempre gli ultimi 7 giorni. I conteggi sono per abitudine; niente fine settimana morti, niente settimane perse.';
+      'Settimana mobile — sempre gli ultimi 7 giorni. I conteggi sono per segnale; niente fine settimana morti, niente settimane perse.';
 
   @override
   String get goalFormSaveChanges => 'Salva la nuova versione';
@@ -6642,6 +6645,15 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Scegli almeno un segnale che l’agente possa osservare davvero.';
+
+  @override
+  String get goalFormValidationPersona => 'Dai un nome al tuo agente.';
+
+  @override
+  String get goalFormValidationTarget => 'Imposta un obiettivo per continuare.';
+
+  @override
+  String get goalFormValidationTitle => 'Dai un nome al tuo obiettivo.';
 
   @override
   String goalFormWeeklyTarget(int count) {

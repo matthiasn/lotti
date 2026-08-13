@@ -34,4 +34,17 @@ void main() {
       expect(await resolveAtWidth(tester, kDesktopBreakpoint + 400), isTrue);
     });
   });
+
+  group('inline control measures', () {
+    test('the inline-control threshold fits the action-list measure', () {
+      // The goal form caps its column at kActionListContentMaxWidth; the
+      // threshold must sit below it or inline steppers could never render
+      // on the widest supported column.
+      expect(kRowInlineControlMinWidth, lessThan(kActionListContentMaxWidth));
+    });
+
+    test('an inline target input leaves room beside a row title', () {
+      expect(kInlineTargetInputWidth, lessThan(kRowInlineControlMinWidth));
+    });
+  });
 }

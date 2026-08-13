@@ -5,7 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.9]
+### Added
+- **An explicit goal-name field in the goal editor.** The goal's name is a
+  labelled field on the mapping step — pre-filled from the selected habits'
+  names (emoji-free; the steps label or your intention when no habit is
+  selected) until you type your own — and the confirmation step shows the
+  same field read-only with a pencil that unlocks it. Previously the title
+  was silently assembled from habit names.
+- **Steps and matching health signals are offered directly.** The automatic
+  step count is always available as a signal row instead of appearing only
+  when the intention mentioned it, and an intention that names blood
+  pressure or weight surfaces that health signal as an offer row right in
+  the signals card.
+
 ### Changed
+- **A design-panel pass over the goal create/edit flow.** All signals are
+  added through one multi-select picker that stays open until Done; cadence
+  steppers read as bounded controls bound to their row; picked health and
+  tracked-time signals start from sensible default targets; a missing target
+  errors on its own input and scrolls into view instead of one generic
+  message mid-page; re-checking a habit restores its remembered cadence; the
+  desktop layout caps the form at a reading column with the continue button
+  in flow; and the flow speaks one vocabulary ("signal"), with the mapping
+  step's button now reading "Continue".
 - **A design-panel polish pass across the goal-agent surfaces.** The banner's
   "Log today" opens a one-tap logging sheet on the goal page instead of
   navigating to itself; day cells wear a dedicated success green (with an
