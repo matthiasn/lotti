@@ -71,8 +71,8 @@ class GoalAgentStrategy extends ConversationStrategy
   final Set<String> _activeAdIds;
 
   /// Criterion ids deterministic FACTS explicitly mark actionable at the
-  /// evaluation reference. Other model-authored current actions are dropped
-  /// before the report becomes user-visible.
+  /// evaluation reference. Explicit structured current-action items with any
+  /// other id are dropped before the report becomes user-visible.
   final Set<String> _allowedCurrentActionCriterionIds;
 
   /// The deterministic track status of this wake's FACTS. The contract
@@ -438,54 +438,9 @@ class GoalAgentStrategy extends ConversationStrategy
   }
 
   String? _composeStructuredReport(Object? value) {
-    if (value is! Map<String, dynamic>) return null;
-    final paragraphKeys = [
-      GoalReportSectionKeys.currentPeriod,
-      GoalReportSectionKeys.rollingWindow,
-      GoalReportSectionKeys.latestChange,
-      GoalReportSectionKeys.coverage,
-    ];
-    if (paragraphKeys.any((key) => value[key] is! String)) return null;
-    final rawActions = value[GoalReportSectionKeys.nextActions];
-    if (rawActions is! Map<String, dynamic>) {
-      return null;
-    }
-    final now = _currentActionList(rawActions[GoalReportActionKeys.now]);
-    final later = _stringList(rawActions[GoalReportActionKeys.later]);
-    if (now == null || later == null) return null;
-
-    final paragraphs = [
-      for (final key in paragraphKeys)
-        if (_trimmed(value[key]).isNotEmpty) _trimmed(value[key]),
-    ];
-    if (now.isNotEmpty) paragraphs.add('Now: ${now.join(' ')}');
-    if (later.isNotEmpty) paragraphs.add('Next: ${later.join(' ')}');
-    return paragraphs.join('\n\n');
-  }
-
-  List<String>? _stringList(Object? value) {
-    if (value is! List<dynamic> || value.any((item) => item is! String)) {
-      return null;
-    }
-    return [
-      for (final item in value)
-        if (_trimmed(item).isNotEmpty) _trimmed(item),
-    ];
-  }
-
-  List<String>? _currentActionList(Object? value) {
-    if (value is! List<dynamic>) return null;
-    final actions = <String>[];
-    for (final item in value) {
-      if (item is! Map<String, dynamic>) return null;
-      final criterionId = _trimmed(item['criterionId']);
-      final action = _trimmed(item['action']);
-      if (criterionId.isEmpty || action.isEmpty) return null;
-      if (_allowedCurrentActionCriterionIds.contains(criterionId)) {
-        actions.add(action);
-      }
-    }
-    return actions;
+    return GoalStructuredReport.tryParse(value)?.visibleSummary(
+      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
+    );
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

@@ -132,4 +132,78 @@ void main() {
       [for (final v in GoalNudgeTone.values) v.name],
     );
   });
+
+  group('GoalStructuredReport', () {
+    Map<String, Object?> validReport() => {
+      'currentPeriod': 'Logging is complete today.',
+      'rollingWindow': 'The rolling average remains above target.',
+      'latestChange': '',
+      'coverage': '',
+      'nextActions': {
+        'now': [
+          {'criterionId': 'health-weight', 'action': 'Log weight.'},
+        ],
+        'later': ['Keep the weekly habit moving.'],
+      },
+    };
+
+    test(
+      'parses complete reports and gates current actions when composing',
+      () {
+        final report = GoalStructuredReport.tryParse(validReport());
+
+        expect(report, isNotNull);
+        expect(
+          report!.visibleSummary(
+            allowedCurrentActionCriterionIds: const {'health-weight'},
+          ),
+          'Logging is complete today.\n\n'
+          'The rolling average remains above target.\n\n'
+          'Log weight.\n\n'
+          'Keep the weekly habit moving.',
+        );
+        expect(
+          report.visibleSummary(
+            allowedCurrentActionCriterionIds: const {},
+          ),
+          isNot(contains('Log weight.')),
+        );
+      },
+    );
+
+    test('rejects empty required standing sections', () {
+      for (final key in ['currentPeriod', 'rollingWindow']) {
+        final value = validReport()..[key] = '  ';
+        expect(
+          GoalStructuredReport.tryParse(value),
+          isNull,
+          reason: key,
+        );
+      }
+    });
+
+    test('rejects missing, mistyped, and empty action fields', () {
+      final malformed = [
+        validReport()..remove('coverage'),
+        validReport()..['latestChange'] = 7,
+        validReport()..['nextActions'] = 'later',
+        validReport()
+          ..['nextActions'] = {
+            'now': [
+              {'criterionId': '', 'action': 'Log weight.'},
+            ],
+            'later': <Object?>[],
+          },
+        validReport()
+          ..['nextActions'] = {
+            'now': <Object?>[],
+            'later': [''],
+          },
+      ];
+
+      for (final value in malformed) {
+        expect(GoalStructuredReport.tryParse(value), isNull, reason: '$value');
+      }
+    });
+  });
 }

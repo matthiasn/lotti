@@ -120,19 +120,35 @@ instruction.
 
 Fresh five-sample confirmation runs across P16 and P17 produced:
 
-| Structured-report model | Strict pass | Due-now violations | Mean input | Mean output | Credits | Wh |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `glm-5.2` | 10/10 | 0/10 | 4,261 | 797 | 0.0428 | 17.25 |
-| `muse-glimmer` | 10/10 | 0/10 | 4,583 | 2,182 | 0.0252 | 168.26 |
+| Structured-report model | Machine checks | Session semantic review | Due-now violations | Mean input | Mean output | Credits | Wh |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 9/10 | 9/10 | 0/10 | 4,295 | 851 | 0.0448 | 20.67 |
+| `muse-glimmer` | 10/10 | 10/10 | 0/10 | 4,618 | 2,252 | 0.0254 | 171.20 |
 
-This moves Muse Glimmer from 1/10 to 10/10 on the complete complex-health
-contract, not merely the daily-action subset. It consistently bound 94 kg to
-weight, described the 129/94 → 125/84 improvement, called out sparse coverage,
-kept completed logging out of `now`, and isolated the 6/7 medication habit as
-future/ongoing focus. It is now adequate for these health scenarios. It is not
-yet a general Goal Agent default: its mean output remained about 2.7× GLM's and
-its provider-reported energy was about 9.8× higher, while the small scenario
-set says nothing about ads, revisions, dialogue, or no-op discipline.
+The two scores deliberately measure different things. Machine checks require
+the complete production report shape, exact values in the correct slots,
+sample counts, an empty `now` list, and absence of captured fabricated or
+current-action claims. They do not require mechanistic wording such as one of
+several synonyms for "on target" or "improving". The session review reads the
+captured prose for the actual conclusion, trend interpretation, and tone.
+
+Muse Glimmer reached the correct conclusion in all ten reviewed reports. It
+consistently bound 94 kg to weight, understood the 129/94 → 125/84 improvement,
+called out sparse coverage, kept completed logging out of `now`, and isolated
+the 6/7 medication habit as future or ongoing focus. GLM did the same in nine
+reports; one otherwise-correct report invented that a missed medication day
+"resets the full 7-day recovery window", although FACTS only supplied
+`daysToRecover: 1`. This is a factual overreach, not a harmless wording variant,
+so the captured claim is also retained as a deterministic regression check.
+
+Earlier strict iterations also caught one GLM report that encoded the report
+object as a JSON string and one that invented "Take BP medication today".
+Tightening the schema description and separating facts from typed actions
+removed both from the final sample, but the small run does not prove they are
+impossible. Muse is therefore adequate for these health scenarios, not yet a
+general Goal Agent default: its mean output remained about 2.6× GLM's and its
+provider-reported energy about 8.3× higher, while the small scenario set says
+nothing about ads, revisions, dialogue, or no-op discipline.
 
 The richer GLM input is about 7% larger than its baseline input. Follow-up
 token-saving experiments should preserve the winning semantics while testing:
@@ -145,7 +161,10 @@ token-saving experiments should preserve the winning semantics while testing:
 - whether summary fields such as `ratio` and `sampleCount` can be omitted when
   the exact series and deterministic status already carry the needed evidence.
 
-Raw run artifacts stay local under ignored `eval_artifacts/`; the scenario
+Raw run artifacts stay local under ignored `eval_artifacts/`. The final GLM
+sample came from the joint run ending `210834`; Muse's came from the Muse-only
+run ending `211212`. GLM's table result includes reclassification of the captured
+recovery-window fabrication against the committed regression check. The scenario
 catalog, objective classifier, and this run record are the reproducible source
 of truth committed to the repository.
 
@@ -227,11 +246,14 @@ fvm dart run tool/goal_agent_eval_report.dart eval_artifacts/goal_agent_*.json
 
 - **Samples are small.** 3 samples per cell is noise-level for anything but
   gross differences; treat single-cell flips as anecdotes, not signal.
-- **Objective checks only rank.** The classifier is deterministic
-  (tool calls, argument subsets, term groups, negation-aware claims from
-  the shared `eval_text_matchers.dart`). There is no LLM judge wired in
-  yet; if one is added, it is diagnostic only, never part of the pass/fail
-  gate (task-agent eval rule).
+- **Machine checks and prose review are separate.** The classifier is
+  deterministic (tool calls, complete shared report parsing, argument subsets,
+  values pinned to structured slots, and negation-aware forbidden claims from
+  `eval_text_matchers.dart`). It does not approximate semantic quality with an
+  expanding synonym list. Captured prose is reviewed separately for conclusions,
+  tone, and unsupported implications. There is no LLM judge wired in; if one is
+  added, it is diagnostic only, never part of the pass/fail gate (task-agent
+  eval rule).
 - **Be suspicious of scenarios all models pass or all models fail** — they
   usually measure the harness, not the model.
 - **Assert mutations via expected tool calls,** never by trusting report

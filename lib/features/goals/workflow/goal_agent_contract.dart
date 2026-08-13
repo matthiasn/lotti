@@ -73,6 +73,115 @@ abstract final class GoalReportActionKeys {
   static const List<String> values = [now, later];
 }
 
+/// One model-authored action whose current-period visibility is gated by
+/// deterministic FACTS before persistence.
+class GoalReportCurrentAction {
+  const GoalReportCurrentAction({
+    required this.criterionId,
+    required this.action,
+  });
+
+  final String criterionId;
+  final String action;
+}
+
+/// Parsed form of the structured standing report shared by production and
+/// the inference eval classifier, so provider schema compliance is tested
+/// against the same completeness rules the runtime enforces.
+class GoalStructuredReport {
+  const GoalStructuredReport({
+    required this.currentPeriod,
+    required this.rollingWindow,
+    required this.latestChange,
+    required this.coverage,
+    required this.now,
+    required this.later,
+  });
+
+  final String currentPeriod;
+  final String rollingWindow;
+  final String latestChange;
+  final String coverage;
+  final List<GoalReportCurrentAction> now;
+  final List<String> later;
+
+  static GoalStructuredReport? tryParse(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    final currentPeriod = _requiredReportString(
+      value[GoalReportSectionKeys.currentPeriod],
+    );
+    final rollingWindow = _requiredReportString(
+      value[GoalReportSectionKeys.rollingWindow],
+    );
+    final latestChange = _optionalReportString(
+      value[GoalReportSectionKeys.latestChange],
+    );
+    final coverage = _optionalReportString(
+      value[GoalReportSectionKeys.coverage],
+    );
+    final actions = value[GoalReportSectionKeys.nextActions];
+    if (currentPeriod == null ||
+        rollingWindow == null ||
+        latestChange == null ||
+        coverage == null ||
+        actions is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final rawNow = actions[GoalReportActionKeys.now];
+    final rawLater = actions[GoalReportActionKeys.later];
+    if (rawNow is! List<dynamic> || rawLater is! List<dynamic>) return null;
+    final now = <GoalReportCurrentAction>[];
+    for (final item in rawNow) {
+      if (item is! Map<String, dynamic>) return null;
+      final criterionId = _requiredReportString(item['criterionId']);
+      final action = _requiredReportString(item['action']);
+      if (criterionId == null || action == null) return null;
+      now.add(
+        GoalReportCurrentAction(criterionId: criterionId, action: action),
+      );
+    }
+    final later = <String>[];
+    for (final item in rawLater) {
+      final action = _requiredReportString(item);
+      if (action == null) return null;
+      later.add(action);
+    }
+
+    return GoalStructuredReport(
+      currentPeriod: currentPeriod,
+      rollingWindow: rollingWindow,
+      latestChange: latestChange,
+      coverage: coverage,
+      now: now,
+      later: later,
+    );
+  }
+
+  /// Composes model-authored localized sentences without injecting English
+  /// headings. Only explicitly authorized current actions are included.
+  String visibleSummary({
+    required Set<String> allowedCurrentActionCriterionIds,
+  }) => [
+    currentPeriod,
+    rollingWindow,
+    if (latestChange.isNotEmpty) latestChange,
+    if (coverage.isNotEmpty) coverage,
+    for (final item in now)
+      if (allowedCurrentActionCriterionIds.contains(item.criterionId))
+        item.action,
+    ...later,
+  ].join('\n\n');
+}
+
+String? _requiredReportString(Object? value) {
+  final trimmed = _optionalReportString(value);
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+String? _optionalReportString(Object? value) =>
+    value is String ? value.trim() : null;
+
 /// The system prompt. Deliberately lean (hard-capped at 3.2k chars by
 /// the offline test): the payload lesson from task-agent evals is that long
 /// prompts get skimmed, and every number the model needs arrives in the
@@ -95,8 +204,8 @@ Health checklist:
   nothing about the current day.
 - `latestChange` is previous-to-latest only. `towardTarget` means improvement
   since the previous reading, not a stable trend.
-- A rolling habit below target is behind, not proof today's completion is
-  missing. Never invent which day was missed.
+- Put current instructions only in authorized nextActions.now;
+  nextActions.later never says today/now.
 
 Act in this order of precedence:
 1. Unanswered user message: call reply_to_user exactly once first. When asked,
@@ -189,8 +298,10 @@ final List<AgentToolDefinition> goalAgentTools = [
           'type': 'object',
           'description':
               'Structured facts that the app assembles into the visible '
-              'standing summary. Keep each slot concise and do not repeat '
-              'the same fact across slots.',
+              'standing summary. Prose slots are facts only; put every '
+              'instruction in nextActions. Keep each slot concise and do '
+              'not repeat the same fact across slots. Return a JSON object, '
+              'never an encoded JSON string.',
           'properties': {
             GoalReportSectionKeys.currentPeriod: {
               'type': 'string',
@@ -248,7 +359,8 @@ final List<AgentToolDefinition> goalAgentTools = [
                   'type': 'array',
                   'description':
                       'Future or ongoing focus, worded without claiming it is '
-                      'missing today.',
+                      'missing today. Never say today or now, and never '
+                      'instruct current-period completion.',
                   'items': {'type': 'string'},
                 },
               },

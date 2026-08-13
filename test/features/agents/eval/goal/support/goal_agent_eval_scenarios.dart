@@ -37,6 +37,7 @@ class GoalAgentEvalScenario {
     this.forbiddenToolNames = const [],
     this.expectsNoToolCalls = false,
     this.requiredReportTermGroups = const [],
+    this.requiredStructuredReportTermGroups = const {},
     this.forbiddenReportTerms = const [],
     this.forbiddenReportClaims = const [],
     this.forbiddenReportPatterns = const [],
@@ -70,6 +71,12 @@ class GoalAgentEvalScenario {
   /// Term groups that must appear in the final `update_goal_report` call
   /// (any member of a group satisfies it).
   final List<List<String>> requiredReportTermGroups;
+
+  /// Machine-checkable term groups pinned to a specific structured report
+  /// slot. Semantic conclusions such as tone, improvement, and whether the
+  /// wording celebrates today's result are reviewed from captured outputs,
+  /// not approximated with an ever-growing synonym list.
+  final Map<String, List<List<String>>> requiredStructuredReportTermGroups;
   final List<String> forbiddenReportTerms;
 
   /// Claims that must not be *affirmatively asserted* in the report
@@ -840,58 +847,29 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
-    requiredReportTermGroups: const [
-      ['125'],
-      ['84'],
-      ['127'],
-      ['89'],
-      ['average', 'rolling'],
-      ['on target', 'in range', 'within target'],
-      [
-        'improv',
-        'downward',
-        'lower',
-        'declin',
-        'toward target',
-        'towardtarget',
-        'right direction',
-        'trending down',
-        'dropped',
-        'down from',
-        'moving toward',
-        'moved toward',
+    requiredStructuredReportTermGroups: const {
+      GoalReportSectionKeys.currentPeriod: [
+        ['125'],
+        ['84'],
+        ['94'],
       ],
-      [
-        'done for today',
-        'logging is complete',
-        'logging complete',
-        'logged today',
-        'today is logged',
-        'logged and done',
-        'nothing more',
+      GoalReportSectionKeys.rollingWindow: [
+        ['127'],
+        ['89'],
+        ['95'],
       ],
-      [
-        'weight 94',
-        '94 kg',
-        'weight was logged today at 94',
-        'weight was measured today at 94',
-        'weight today is 94',
-        'weight today at 94',
+      GoalReportSectionKeys.latestChange: [
+        ['129'],
+        ['125'],
+        ['94'],
+        ['84'],
+        ['95'],
       ],
-      ['95'],
-      ['weight'],
-      [
-        'sparse',
-        'limited data',
-        'low data',
-        'few readings',
-        'insufficient',
-        'two readings',
-        '2 readings',
-        'data coverage',
-        'too few',
+      GoalReportSectionKeys.coverage: [
+        ['2', 'two'],
+        ['3', 'three'],
       ],
-    ],
+    },
     forbiddenReportClaims: const [
       'latest systolic is 127',
       'systolic is at 127',
@@ -928,72 +906,31 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
-    requiredReportTermGroups: const [
-      ['125'],
-      ['84'],
-      ['127'],
-      ['89'],
-      ['average', 'rolling'],
-      ['on target', 'in range', 'within target'],
-      [
-        'done for today',
-        'logging is complete',
-        'logging complete',
-        'logged today',
-        'is logged',
-        'nothing more',
+    forbiddenReportTerms: const ['resets the full 7-day recovery window'],
+    requiredStructuredReportTermGroups: const {
+      GoalReportSectionKeys.currentPeriod: [
+        ['125'],
+        ['84'],
+        ['94'],
       ],
-      ['6/7', '6 of 7', 'six of seven'],
-      ['med', 'medication'],
-      [
-        'behind',
-        'missed',
-        'missing',
-        'short',
-        'not met',
-        "isn't met",
-        'not satisfied',
-        'lag',
-        'below target',
-        'need more',
-        'reach 7',
-        'reach the 7',
-        'rebuild',
-        'gap',
+      GoalReportSectionKeys.rollingWindow: [
+        ['127'],
+        ['89'],
+        ['95'],
+        ['6/7', '6 of 7', 'six of seven'],
       ],
-      [
-        'improv',
-        'downward',
-        'lower',
-        'declin',
-        'toward target',
-        'towardtarget',
-        'moving toward',
-        'moved toward',
-        'down from',
+      GoalReportSectionKeys.latestChange: [
+        ['129'],
+        ['125'],
+        ['94'],
+        ['84'],
+        ['95'],
       ],
-      [
-        'weight 94',
-        '94 kg',
-        'weight was logged today at 94',
-        'weight was measured today at 94',
-        'weight today is 94',
-        'weight today at 94',
+      GoalReportSectionKeys.coverage: [
+        ['2', 'two'],
+        ['3', 'three'],
       ],
-      ['95'],
-      ['weight'],
-      [
-        'sparse',
-        'limited data',
-        'low data',
-        'few readings',
-        'insufficient',
-        'two readings',
-        '2 readings',
-        'data coverage',
-        'too few',
-      ],
-    ],
+    },
     forbiddenReportClaims: const [
       'measure blood pressure again',
       'take another blood pressure reading',

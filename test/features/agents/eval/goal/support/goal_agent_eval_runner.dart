@@ -449,16 +449,36 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     }
     if (expected.expectedArgumentsSubset.isNotEmpty &&
         !matching.any(
-          (call) => _containsExpectedValues(
-            call.jsonObjectArguments ?? const {},
-            expected.expectedArgumentsSubset,
-          ),
+          (call) {
+            final arguments = call.jsonObjectArguments ?? const {};
+            if (!_containsExpectedValues(
+              arguments,
+              expected.expectedArgumentsSubset,
+            )) {
+              return false;
+            }
+            return expected.name != GoalAgentToolNames.updateGoalReport ||
+                !expected.expectedArgumentsSubset.containsKey('report') ||
+                GoalStructuredReport.tryParse(arguments['report']) != null;
+          },
         )) {
       return GoalAgentEvalFailureCategory.argumentMismatch;
     }
   }
 
-  final reportText = _latestReportArguments(toolCalls)?.toLowerCase() ?? '';
+  final structuredReport = _latestStructuredReport(toolCalls);
+  for (final entry in scenario.requiredStructuredReportTermGroups.entries) {
+    final sectionText = _structuredReportSectionText(
+      structuredReport,
+      entry.key,
+    );
+    if (sectionText == null ||
+        entry.value.any((group) => !containsAnyEvalTerm(sectionText, group))) {
+      return GoalAgentEvalFailureCategory.missingRequiredReportContent;
+    }
+  }
+
+  final reportText = _latestReportText(toolCalls).toLowerCase();
   if (scenario.requiredReportTermGroups.any(
     (group) => !containsAnyEvalTerm(reportText, group),
   )) {
@@ -513,14 +533,53 @@ String _argumentsFor(List<GoalAgentEvalToolCall> toolCalls, String name) =>
         .map((call) => call.argumentsJson)
         .join('\n');
 
-String? _latestReportArguments(List<GoalAgentEvalToolCall> toolCalls) {
+String _latestReportText(List<GoalAgentEvalToolCall> toolCalls) {
   for (final call in toolCalls.reversed) {
     if (call.name == GoalAgentToolNames.updateGoalReport) {
-      return call.argumentsJson;
+      final arguments = call.jsonObjectArguments;
+      final structured = GoalStructuredReport.tryParse(arguments?['report']);
+      if (structured == null) return call.argumentsJson;
+      final summary = structured.visibleSummary(
+        allowedCurrentActionCriterionIds: {
+          for (final action in structured.now) action.criterionId,
+        },
+      );
+      final oneLiner = arguments?['oneLiner'];
+      return oneLiner is String && oneLiner.trim().isNotEmpty
+          ? '${oneLiner.trim()}\n\n$summary'
+          : summary;
+    }
+  }
+  return '';
+}
+
+GoalStructuredReport? _latestStructuredReport(
+  List<GoalAgentEvalToolCall> toolCalls,
+) {
+  for (final call in toolCalls.reversed) {
+    if (call.name == GoalAgentToolNames.updateGoalReport) {
+      return GoalStructuredReport.tryParse(
+        call.jsonObjectArguments?['report'],
+      );
     }
   }
   return null;
 }
+
+String? _structuredReportSectionText(
+  GoalStructuredReport? report,
+  String key,
+) => switch ((report, key)) {
+  (final GoalStructuredReport value, GoalReportSectionKeys.currentPeriod) =>
+    value.currentPeriod,
+  (final GoalStructuredReport value, GoalReportSectionKeys.rollingWindow) =>
+    value.rollingWindow,
+  (final GoalStructuredReport value, GoalReportSectionKeys.latestChange) =>
+    value.latestChange,
+  (final GoalStructuredReport value, GoalReportSectionKeys.coverage) =>
+    value.coverage,
+  _ => null,
+};
 
 bool _containsExpectedValues(
   Map<String, dynamic> actual,

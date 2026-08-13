@@ -158,7 +158,7 @@ void main() {
         'Rolling averages remain above target at 127/89.\n\n'
         'Blood pressure improved from 129/94 to 125/84.\n\n'
         'Two readings make the series sparse.\n\n'
-        'Next: Keep taking the medication tomorrow.',
+        'Keep taking the medication tomorrow.',
       );
       expect(strategy.reportContent, isNull);
     },
@@ -207,10 +207,44 @@ void main() {
         manager: manager,
       );
 
-      expect(gated.reportTldr, contains('Now: Log weight today.'));
+      expect(gated.reportTldr, contains('Log weight today.'));
       expect(gated.reportTldr, isNot(contains('Take medication today.')));
     },
   );
+
+  test('structured report rejects empty current or rolling standing', () async {
+    for (final emptyKey in ['currentPeriod', 'rollingWindow']) {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'offTrack',
+              'oneLiner': 'Behind.',
+              'report': {
+                'currentPeriod': emptyKey == 'currentPeriod'
+                    ? ''
+                    : 'Nothing completed.',
+                'rollingWindow': emptyKey == 'rollingWindow'
+                    ? ''
+                    : 'The rolling window is behind.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': {
+                  'now': <Object>[],
+                  'later': ['Keep going.'],
+                },
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse, reason: emptyKey);
+      expect(rejection(), contains('structured report'));
+    }
+  });
 
   test(
     'structured report rejects malformed next actions without a fallback',
