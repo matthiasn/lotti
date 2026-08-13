@@ -86,3 +86,4 @@ notification, rather than a periodic job.
 - [ADR 0038: Relationship Domain Model](./0038-relationship-domain-model.md)
 - [ADR 0027: Wake Notification Propagation and Storm Prevention](./0027-wake-notification-propagation-and-storm-prevention.md)
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
+  (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))

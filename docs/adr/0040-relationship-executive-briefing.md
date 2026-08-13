@@ -90,3 +90,4 @@ inference profiles can pin capability slots to local models.
 - [ADR 0016: Agent-Derived State as a Projection of the Append-Only Log](./0016-agent-state-as-log-projection.md)
 - [ADR 0023: Durable Domain Agents and Time Negotiation](./0023-durable-domain-agents-and-time-negotiation.md)
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
+  (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))
