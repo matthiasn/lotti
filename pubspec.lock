@@ -1199,10 +1199,10 @@ packages:
     dependency: "direct main"
     description:
       name: formz
-      sha256: "382c7be452ff76833f9efa0b2333fec3a576393f6d2c7801725bed502f3d40c3"
+      sha256: e8dc647e0d5922bcd7cbfd95ec3a320d8a9015b0902c7c8e69eaafb753041ce7
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.0"
+    version: "0.8.1"
   freezed:
     dependency: "direct dev"
     description:
@@ -1340,10 +1340,10 @@ packages:
     dependency: transitive
     description:
       name: hooks
-      sha256: "9a62a50b50b769a737bc0a8ff381f333529df3ab746b2f6b02e83760231455ba"
+      sha256: "03a564c3704524ee0f7fc56fc621e8796cc2eb8c24d1f1a33b34979815b285c4"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.2"
+    version: "2.1.0"
   html:
     dependency: transitive
     description:
@@ -1769,10 +1769,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "9449c98ba2f8d5b72404ed41a03f3cb9942f691f2029b42b10f7fb86a570adfd"
+      sha256: "3d6c6b6dabbcca8e16a4ebfb19baddcd54a15654909d4b6a39fbc657f6727d01"
       url: "https://pub.dev"
     source: hosted
-    version: "10.0.0"
+    version: "10.0.1"
   media_kit:
     dependency: "direct main"
     description:
@@ -1897,10 +1897,10 @@ packages:
     dependency: transitive
     description:
       name: native_toolchain_c
-      sha256: f9c168717100ae6d9fee9ffb0be379bf1f8b26b0f6bcbd4fdddcd931993a6a72
+      sha256: a1c26117c48cebe5677b0cf0e33a980a79a7c5577effc86f52e5a0d309cdcb60
       url: "https://pub.dev"
     source: hosted
-    version: "0.19.2"
+    version: "0.19.3"
   nested:
     dependency: transitive
     description:
@@ -2073,10 +2073,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_apple
-      sha256: "11b7e94a9d2fbee23c27f0cae0105c6266c03fd83b9a2eda6cf09141fc82624b"
+      sha256: f49cb15a064ea9d974fc7fbb302099353b7b170d07284e86e264561579e5bcf8
       url: "https://pub.dev"
     source: hosted
-    version: "9.5.0"
+    version: "9.6.1"
   permission_handler_html:
     dependency: transitive
     description:
@@ -2401,10 +2401,10 @@ packages:
     dependency: transitive
     description:
       name: record_use
-      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      sha256: "3b4ab682aff40175afca6ff090cc5aa7ce9dafe8dfbae1537a6c678e6678baee"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "1.1.0"
   record_web:
     dependency: transitive
     description:
@@ -3119,10 +3119,10 @@ packages:
     dependency: transitive
     description:
       name: video_player
-      sha256: "20ef311160e2ced020a62f38e4cc399a1bf289e722fc5fe37c9d7b18e44c9e8d"
+      sha256: "8c837b570dccb9ae6ff73d2e0b03c7e708bfefd3bd1194faa7f3e7f200dfc399"
       url: "https://pub.dev"
     source: hosted
-    version: "2.13.0"
+    version: "2.14.0"
   video_player_android:
     dependency: transitive
     description:

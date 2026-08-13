@@ -91,7 +91,7 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.4.8):
     - Flutter
-  - photo_manager (3.11.0):
+  - photo_manager (3.12.0):
     - Flutter
     - FlutterMacOS
   - quill_native_bridge_ios (0.0.1):
@@ -287,7 +287,7 @@ SPEC CHECKSUMS:
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
   device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
   file_selector_ios: ec57ec07954363dd730b642e765e58f199bb621a
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_image_compress_common: 11d5dcfb36f4ded92320bfa896261813a073240e
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_lame: bee3d284f5ca264d3ab4c0c898ce219ddfeba03d
@@ -316,7 +316,7 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
-  photo_manager: 6ab48c2ce7ec21aa06d59e6cc049f0b6d9ba7f94
+  photo_manager: c303e4476f6c220274119f0212a7753e45edd4a2
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
   record_ios: 390a30c7caaf8b5d0fb1cb1d2fd5064b48b4520c
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
