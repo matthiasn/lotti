@@ -50,6 +50,9 @@ void main() {
       final affectedIds = invocation.positionalArguments.first as Set<String>;
       return affectedIds.where((id) => id.startsWith('project-')).toSet();
     });
+    when(
+      () => repository.getEntity(any()),
+    ).thenAnswer((_) async => makeTestIdentity(kind: AgentKinds.projectAgent));
 
     monitor = ProjectActivityMonitor(
       notifications: notifications,
@@ -268,6 +271,55 @@ void main() {
                 as AgentStateEntity;
         expect(captured.scheduledWakeAt, existingWake);
         expect(captured.slots.pendingProjectActivityAt, now);
+      },
+    );
+
+    test(
+      'marks activity stale without arming a wake when automation is off',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-automation-off',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final state = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(
+          () => repository.getEntity('agent-1'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            agentId: 'agent-1',
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          ),
+        );
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 2);
+
+        final captured =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(captured.slots.pendingProjectActivityAt, now);
+        expect(captured.scheduledWakeAt, isNull);
       },
     );
 

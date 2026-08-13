@@ -476,7 +476,7 @@ void main() {
           ).thenReturn(null);
           when(
             () => agentService.cancelScheduledWake(any()),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           final identity = makeTestIdentity(agentId: 'agent-project-1');
 

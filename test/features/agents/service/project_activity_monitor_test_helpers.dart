@@ -331,6 +331,9 @@ class GeneratedProjectActivityBench {
       ),
     ).thenAnswer((_) async => const <AgentLink>[]);
     when(() => repository.getAgentState(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntity(any()),
+    ).thenAnswer((_) async => makeTestIdentity(kind: AgentKinds.projectAgent));
 
     for (final (index, spec) in scenario.specs.indexed) {
       final projectId = spec.projectId(index);

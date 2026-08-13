@@ -252,6 +252,12 @@ void main() {
         initiator: any(named: 'initiator'),
       ),
     ).thenReturn('run-key-stub');
+    when(
+      () => orchestrator.hasPendingOrActiveWake(
+        any(),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenReturn(false);
   });
 
   ScheduledWakeManager createAndStart({
@@ -353,6 +359,22 @@ void main() {
             when(
               () => generatedRepository.getEntity(any()),
             ).thenAnswer((_) async => makeTestIdentity());
+            when(
+              () => generatedOrchestrator.hasPendingOrActiveWake(
+                any(),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            ).thenReturn(false);
+            when(
+              () => generatedOrchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+                supersede: any(named: 'supersede'),
+                initiator: any(named: 'initiator'),
+              ),
+            ).thenReturn('generated-run-key');
             when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
               invocation,
             ) async {
@@ -1970,6 +1992,45 @@ void main() {
                 reason: WakeReason.scheduled.name,
               ),
             ).called(1);
+
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
+      'does not enqueue a due fallback while equivalent work is active',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final activeState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 15, 6),
+          lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+          ),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [activeState],
+            );
+            when(
+              () => orchestrator.hasPendingOrActiveWake(kTestAgentId),
+            ).thenReturn(true);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
+            verifyNever(() => syncService.upsertEntity(any()));
 
             manager.stop();
           });

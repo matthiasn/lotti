@@ -136,10 +136,16 @@ Project agents never carry a recurring clock wake. Their subscription job uses
 state-level `scheduledWakeAt` whenever local project-linked work becomes
 pending. Creation uses the same one-shot field as a restart fallback for its
 immediate in-memory job, and a failed project wake re-arms it for the next local
-06:00. Direct project edits still use the shorter coalescing deadline and manual
-requests bypass throttling. The scheduled-wake manager clears completed dormant
-rows instead of rolling them forward, but preserves never-woken creation work
-and rows whose pending marker proves that work remains.
+06:00, advancing an already-overdue deadline instead of retrying every scan.
+The monitor does not arm this automatic fallback when the project agent has an
+explicit automation opt-out. Direct project edits still use the shorter
+coalescing deadline and manual requests bypass throttling. The scheduled-wake
+manager clears completed dormant rows instead of rolling them forward,
+preserves never-woken creation work and rows whose pending marker proves that
+work remains, and skips enqueue while equivalent work is already queued or
+running. A successful wake retains a future fallback when newer activity landed
+during the run; explicit cancellation removes both queued work and the persisted
+fallback.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the

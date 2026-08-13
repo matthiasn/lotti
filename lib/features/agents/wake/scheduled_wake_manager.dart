@@ -270,6 +270,14 @@ class ScheduledWakeManager with AgentErrorLogging {
             continue;
           }
 
+          // A subscription or explicit wake may already be processing the
+          // same pending project activity. Leave the durable fallback in
+          // place until that run succeeds instead of queueing a second paid
+          // inference behind it.
+          if (_orchestrator.hasPendingOrActiveWake(state.agentId)) {
+            continue;
+          }
+
           _orchestrator.enqueueManualWake(
             agentId: state.agentId,
             reason: WakeReason.scheduled.name,

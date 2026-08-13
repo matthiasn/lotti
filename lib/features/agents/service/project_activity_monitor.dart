@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -17,8 +19,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// listens to the local update stream, resolves whether an affected project has
 /// a provisioned agent, and persists both a pending activity marker and a
 /// one-shot morning fallback. Project subscriptions may still queue a sooner
-/// short-delay wake for direct edits; the first successful wake clears both
-/// paths, so the fallback never becomes a recurrence.
+/// short-delay wake for direct edits. A successful wake clears both paths when
+/// it consumed the newest activity; activity arriving mid-run retains the
+/// fallback, so it remains one-shot per pending batch rather than recurring.
 class ProjectActivityMonitor with AgentErrorLogging {
   ProjectActivityMonitor({
     required this._notifications,
@@ -90,6 +93,13 @@ class ProjectActivityMonitor with AgentErrorLogging {
       final agentId = links.selectPrimary().fromId;
       final state = await _agentRepository.getAgentState(agentId);
       if (state == null || state.deletedAt != null) return;
+      final identity = await _agentRepository.getEntity(agentId);
+      final automaticUpdatesAllowed =
+          identity is AgentIdentityEntity &&
+          identity.lifecycle == AgentLifecycle.active &&
+          identity.config.automaticUpdatesEnabled != false &&
+          identity.config.inferenceSetup?.mode !=
+              AgentInferenceSetupMode.disabled;
 
       final now = _clock.now();
       final pendingActivityAt = state.slots.pendingProjectActivityAt;
@@ -104,13 +114,17 @@ class ProjectActivityMonitor with AgentErrorLogging {
           ),
           // Project activity owns a single durable morning fallback. A
           // successful wake clears it; another activity update can arm a new
-          // one, but no workflow rolls it forward unconditionally.
+          // one, but no workflow rolls it forward unconditionally. Preserve
+          // an explicit existing schedule when automation is off, but do not
+          // create an automatic fallback against the user's opt-out.
           scheduledWakeAt:
               state.scheduledWakeAt ??
-              nextOccurrenceOf(
-                now,
-                hour: AgentSchedules.projectDailyDigestHour,
-              ),
+              (automaticUpdatesAllowed
+                  ? nextOccurrenceOf(
+                      now,
+                      hour: AgentSchedules.projectDailyDigestHour,
+                    )
+                  : null),
           updatedAt: now,
         ),
       );

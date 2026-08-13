@@ -97,9 +97,10 @@ stateDiagram-v2
 - **Linked-task churn** does not wake the agent immediately.
   `ProjectActivityMonitor` listens to `localUpdateStream`, resolves affected
   project ids, sets `slots.pendingProjectActivityAt`, and arms a one-shot
-  `scheduledWakeAt` for the next local 06:00. Project/link notifications also
-  use the subscription's persisted `nextWakeAt` path; either path survives a
-  restart and the first successful wake clears both.
+  `scheduledWakeAt` for the next local 06:00 when automatic updates are allowed.
+  With automation explicitly disabled, it still marks the report stale but does
+  not create the fallback. Project/link notifications also use the
+  subscription's persisted `nextWakeAt` path; either path survives a restart.
 - **Direct project edits** use the same subscription but take the short
   coalescing path, so an explicit project edit does not wait until morning.
 - **Explicit requests** (`creation` and manual `reanalysis`) bypass the
@@ -112,8 +113,10 @@ local activity may create a one-shot state schedule, and subscription routing
 may additionally persist `nextWakeAt` for its queued job. A successful wake
 clears the pending marker and both deadlines when no newer activity remains. A
 failed wake with pending activity re-arms the one-shot morning fallback instead
-of waiting for another edit. Consequently the Wake tab contains a project-agent
-row only while actual work or a retry is pending.
+of waiting for another edit; an overdue fallback advances to the next morning
+rather than remaining due on every hourly scan. Explicit cancellation clears
+both queued subscription work and the persisted fallback. Consequently the Wake
+tab contains a project-agent row only while actual work or a retry is pending.
 
 Older installations can still contain the former daily schedule. Startup
 restoration clears it when the agent has completed at least one wake and
@@ -121,12 +124,16 @@ restoration clears it when the agent has completed at least one wake and
 concurrent activity write cannot be overwritten. `ScheduledWakeManager` applies
 the same dormant cleanup to overdue rows. Never-woken agents and agents with
 pending activity retain the row as a one-shot safety net; every successful
-workflow run clears `scheduledWakeAt` instead of rolling it forward.
+workflow run clears `scheduledWakeAt` when it consumed the newest activity.
+Before enqueueing a due fallback, the manager checks for queued or running work
+for the same agent and leaves the fallback durable instead of stacking a second
+inference.
 
 During the final state transition, `pendingProjectActivityAt` is cleared **only
 when no newer activity arrived during the wake**. If fresh activity lands
-mid-run, the newer timestamp is retained so the next digest still knows the
-summary is stale again.
+mid-run, the newer timestamp and a future one-shot fallback are retained so the
+next digest still knows the summary is stale even if the in-memory follow-up is
+lost to suspension.
 
 ## Wake flow
 
@@ -136,8 +143,9 @@ entity and prior observations, resolves template/version and inference profile,
 builds linked-task context **including task-agent reports**, runs the
 conversation with `ProjectAgentStrategy`, and persists token usage, final
 thought, report, observations, deferred change set and updated state.
-Successful persistence clears the legacy `scheduledWakeAt` and clears
-`pendingProjectActivityAt` only when no newer activity arrived during the wake.
+Successful persistence clears `scheduledWakeAt` and
+`pendingProjectActivityAt` only when no newer activity arrived during the wake;
+otherwise it preserves a future fallback for the retained marker.
 
 Project reports follow the same inline task-link contract as task reports: when
 linked-task context includes a task id, the report may point at `/tasks/<taskId>`

@@ -924,17 +924,21 @@ void main() {
 
     group('cancelScheduledWake', () {
       test(
-        'delegates to AgentService.cancelPendingWake for the given agent so '
-        'the project AI Report cancel × clears the throttle and drops queued '
-        'subscription jobs',
-        () {
+        'clears both queued work and the persisted fallback',
+        () async {
           when(
             () => mockAgentService.cancelPendingWake(any()),
           ).thenReturn(null);
+          when(
+            () => mockAgentService.clearScheduledWake(any()),
+          ).thenAnswer((_) async {});
 
-          service.cancelScheduledWake('agent-1');
+          await service.cancelScheduledWake('agent-1');
 
           verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
+          verify(
+            () => mockAgentService.clearScheduledWake('agent-1'),
+          ).called(1);
         },
       );
     });

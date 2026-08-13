@@ -840,6 +840,50 @@ void main() {
         },
       );
 
+      test(
+        'retains a next-day fallback for activity arriving during a due wake',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final initialState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          final newerState = initialState.copyWith(
+            slots: initialState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 6, 31),
+            ),
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? initialState : newerState,
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(
+            updatedState.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 20, 6, 31),
+          );
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        },
+      );
+
       test('records template provenance on wake run', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1163,6 +1207,49 @@ void main() {
           stateUpdates.single.slots.pendingProjectActivityAt,
           DateTime(2026, 3, 20, 9),
         );
+      });
+
+      test('advances an overdue fallback after a failed wake', () async {
+        final overdueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => overdueState);
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error');
+            };
+
+        await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
+          (state) => state.consecutiveFailureCount > 0,
+        );
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
       test('includes linked task context in user message', () async {
         final linkedTask = _fakeTaskEntity(

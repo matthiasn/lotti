@@ -1,5 +1,25 @@
 part of 'project_agent_workflow.dart';
 
+/// Keeps a future one-shot deadline for pending project activity.
+///
+/// A due deadline has already spent its attempt, so retaining it would make
+/// every scheduler scan retry immediately. Advancing it to the next local
+/// digest window gives the pending batch a durable retry without recurrence.
+DateTime? _nextProjectActivityFallback({
+  required DateTime? currentSchedule,
+  required DateTime? pendingActivityAt,
+  required DateTime now,
+}) {
+  if (pendingActivityAt == null) return null;
+  if (currentSchedule != null && currentSchedule.isAfter(now)) {
+    return currentSchedule;
+  }
+  return nextOccurrenceOf(
+    now,
+    hour: AgentSchedules.projectDailyDigestHour,
+  );
+}
+
 /// The full wake-cycle execution of [ProjectAgentWorkflow]. Extracted into a
 /// part-file extension to keep the workflow under the size limit; the class
 /// keeps a thin public [ProjectAgentWorkflow.execute] delegator so mocks keep
@@ -479,9 +499,14 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
             lastWakeAt: now,
-            // Project work is scheduled by update-driven subscription wakes.
-            // Any state-level daily schedule is legacy and must not recur.
-            scheduledWakeAt: null,
+            // Activity newer than this run stays pending. Keep its durable
+            // one-shot fallback too; otherwise a suspension before the
+            // in-memory follow-up drains would strand the newer work.
+            scheduledWakeAt: _nextProjectActivityFallback(
+              currentSchedule: latestState.scheduledWakeAt,
+              pendingActivityAt: nextPendingActivityAt,
+              now: now,
+            ),
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
@@ -558,14 +583,13 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
             // A failed subscription wake has already left the in-memory
             // queue. Keep real pending work durable for a one-shot morning
             // retry instead of relying on another user edit to revive it.
-            scheduledWakeAt:
-                latestState.scheduledWakeAt ??
-                (hasPendingActivity
-                    ? nextOccurrenceOf(
-                        failureAt,
-                        hour: AgentSchedules.projectDailyDigestHour,
-                      )
-                    : null),
+            scheduledWakeAt: _nextProjectActivityFallback(
+              currentSchedule: latestState.scheduledWakeAt,
+              pendingActivityAt: hasPendingActivity
+                  ? latestState.slots.pendingProjectActivityAt
+                  : null,
+              now: failureAt,
+            ),
             updatedAt: failureAt,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
           ),
