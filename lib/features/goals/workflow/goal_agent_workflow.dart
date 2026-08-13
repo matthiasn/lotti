@@ -872,9 +872,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// The evaluation instant for an overdue period — LOCAL wall clock,
   /// unlike [_headTimestamp]: signal queries and day keys are local.
   DateTime? _periodEnd(String periodKey) {
-    final parts = _periodParts(periodKey);
-    if (parts == null) return null;
-    return DateTime(parts.$1, parts.$2, parts.$3, 23, 59, 59);
+    return _periodEndExclusive(periodKey)?.subtract(
+      const Duration(microseconds: 1),
+    );
   }
 
   /// Exclusive local end of an encoded day, preserving the final second.

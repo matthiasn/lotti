@@ -237,7 +237,10 @@ flowchart TD
   `latest` repeats the newest reading with deterministic `onTarget` and
   `isToday` flags relative to that evaluation day. Future samples and samples
   outside the criterion window are excluded. A delayed escalation therefore
-  cannot slide its raw evidence beyond the aggregate it explains. Phase B can
+  evaluates at the final representable microsecond before the encoded day's
+  next local midnight: fractional-second samples at the boundary remain in the
+  period, while its raw evidence cannot slide beyond the aggregate it explains.
+  Phase B can
   describe the latest reading, direction and sparsity without inventing an
   intermediate measured value or overflowing a provider context; high-volume
   quantitative types such as steps remain aggregate-only.
