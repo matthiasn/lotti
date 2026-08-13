@@ -6498,6 +6498,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking';
+
+  @override
   String get goalFormNoHabits => 'No active habits are available yet.';
 
   @override

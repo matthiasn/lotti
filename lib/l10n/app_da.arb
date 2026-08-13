@@ -2940,6 +2940,7 @@
   "goalFormMappingTitle": "Her er det, jeg kan følge",
   "goalFormMeasurableCadence": "{measurableName}: {target} pr. rullende uge",
   "goalFormMeasurableSource": "Din målbare · {unitName}",
+  "goalFormMeasurementVerbs": "måle,måler,målt,måling,registrere,registrerer,registreret,registrering,notere,noterer,noteret,notat,tjekke,tjekker,tjekket,følge,følger,fulgt,overvåge,overvåger,overvåget",
   "goalFormNoHabits": "Der er endnu ingen aktive vaner.",
   "goalFormOpenHabits": "Opret en vane først",
   "goalFormPersonaLabel": "Agentens navn",

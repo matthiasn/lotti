@@ -2690,6 +2690,7 @@
   "goalFormMappingTitle": "Tohle můžu sledovat",
   "goalFormMeasurableCadence": "{measurableName}: {target} za válcovaný týden",
   "goalFormMeasurableSource": "Tvoje měřitelná veličina · {unitName}",
+  "goalFormMeasurementVerbs": "měřit,měří,měření,zaznamenat,zaznamenává,záznam,zapisovat,zapisuje,zápis,sledovat,sleduje,sledování,kontrolovat,kontroluje,kontrola,evidovat,eviduje,evidence",
   "goalFormNoHabits": "Zatím nejsou k dispozici žádné aktivní návyky.",
   "goalFormOpenHabits": "Nejdřív vytvořit návyk",
   "goalFormPersonaLabel": "Jméno agenta",

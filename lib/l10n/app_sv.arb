@@ -2940,6 +2940,7 @@
   "goalFormMappingTitle": "Det här kan jag följa",
   "goalFormMeasurableCadence": "{measurableName}: {target} per rullande vecka",
   "goalFormMeasurableSource": "Din mätbara · {unitName}",
+  "goalFormMeasurementVerbs": "mäta,mäter,mätt,mätning,registrera,registrerar,registrerat,registrering,notera,noterar,noterat,anteckna,antecknar,antecknat,kolla,kollar,kollat,kontrollera,kontrollerar,kontrollerat,följa,följer,följt",
   "goalFormNoHabits": "Det finns inga aktiva vanor ännu.",
   "goalFormOpenHabits": "Skapa en vana först",
   "goalFormPersonaLabel": "Agentens namn",

@@ -6616,6 +6616,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'medir,mide,medido,medición,registrar,registra,registrado,registro,anotar,anota,anotado,controlar,controla,controlado,control,revisar,revisa,revisado,monitorear,monitorea,monitoreado,seguir,sigue,seguimiento,tomar,toma';
+
+  @override
   String get goalFormNoHabits => 'Aún no hay hábitos activos disponibles.';
 
   @override

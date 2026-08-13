@@ -2683,6 +2683,7 @@
   "goalFormMappingTitle": "Esto es lo que puedo observar",
   "goalFormMeasurableCadence": "{measurableName}: {target} por semana móvil",
   "goalFormMeasurableSource": "Tu medible · {unitName}",
+  "goalFormMeasurementVerbs": "medir,mide,medido,medición,registrar,registra,registrado,registro,anotar,anota,anotado,controlar,controla,controlado,control,revisar,revisa,revisado,monitorear,monitorea,monitoreado,seguir,sigue,seguimiento,tomar,toma",
   "goalFormNoHabits": "Aún no hay hábitos activos disponibles.",
   "goalFormOpenHabits": "Crear primero un hábito",
   "goalFormPersonaLabel": "Nombre del agente",

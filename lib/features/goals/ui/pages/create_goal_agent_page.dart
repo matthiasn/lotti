@@ -208,16 +208,20 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   /// Bookkeeping verbs that don't make a habit more than a record of the
-  /// measurement it names ("Measure Blood Pressure", "Log weight").
-  static final Set<String> _measurementVerbs = {
-    'measure',
-    'track',
-    'log',
-    'check',
-    'record',
-    'monitor',
-    'take',
-  };
+  /// measurement it names ("Measure Blood Pressure", "Gewicht messen").
+  ///
+  /// Habit names are written in the user's own language, so the forms come
+  /// from the catalog rather than a hardcoded English set: a German habit
+  /// has to be recognisable by German verbs. Each catalog carries the
+  /// inflections its language needs, comma-separated.
+  Set<String> _measurementVerbs(BuildContext context) => context
+      .messages
+      .goalFormMeasurementVerbs
+      .toLowerCase()
+      .split(',')
+      .map((verb) => verb.trim())
+      .where((verb) => verb.isNotEmpty)
+      .toSet();
 
   /// Whether this habit is a bookkeeping twin of an intention-matched
   /// health capability: every distinctive word in its name is either part
@@ -231,11 +235,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _plainName(habitName),
     ).difference(_genericIntentionWords);
     if (habitWords.isEmpty) return false;
+    final measurementVerbs = _measurementVerbs(context);
     for (final dataType in _matchedHealthTypes) {
       final labelWords = _words(_healthDimensionName(context, dataType));
       final leftover = habitWords
           .difference(labelWords)
-          .difference(_measurementVerbs);
+          .difference(measurementVerbs);
       if (leftover.isEmpty && habitWords.intersection(labelWords).isNotEmpty) {
         return true;
       }
@@ -1616,7 +1621,13 @@ class _MappingStep extends StatelessWidget {
     final messages = context.messages;
     const systolic = GoalHealthDataTypes.bloodPressureSystolic;
     const diastolic = GoalHealthDataTypes.bloodPressureDiastolic;
-    final direction = healthDirections[systolic] ?? GoalDirection.atMost;
+    // One toggle drives both readings, so it has to read from whichever
+    // half a partial pair actually carries — an edited diastolic-only "at
+    // least" goal must not render as the default "at most".
+    final direction =
+        healthDirections[systolic] ??
+        healthDirections[diastolic] ??
+        GoalDirection.atMost;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: kInlineTargetInputWidth),
       child: Column(
@@ -2504,9 +2515,10 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
       GoalHealthDataTypes.bloodPressureDiastolic,
     ];
     final weightSelected = _healthTypes.contains(GoalHealthDataTypes.weight);
-    final bloodPressureSelected = bloodPressureTypes.every(
-      _healthTypes.contains,
-    );
+    // The signal row treats a partial pair as selected; the picker has to
+    // agree, or tapping an apparently unchecked source would silently seed
+    // a default target for the reading the goal deliberately lacks.
+    final bloodPressureSelected = bloodPressureTypes.any(_healthTypes.contains);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step5),
