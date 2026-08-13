@@ -182,10 +182,16 @@ String? _requiredReportString(Object? value) {
 String? _optionalReportString(Object? value) =>
     value is String ? value.trim() : null;
 
-/// The system prompt. Deliberately lean (hard-capped at 3.2k chars by
+/// The system prompt. Deliberately lean (hard-capped at 3.6k chars by
 /// the offline test): the payload lesson from task-agent evals is that long
 /// prompts get skimmed, and every number the model needs arrives in the
 /// wake FACTS block, not here.
+///
+/// The ceiling is a discipline, not a model limit — it exists so growth is
+/// argued rather than accreted. It moved from 3.2k when the standing-report
+/// rule was added: the FACTS block can only carry a rule to the turns whose
+/// English heuristic fires, so a rule that must hold in every language and
+/// every turn belongs here.
 const goalAgentSystemPrompt = '''
 You are the dedicated coach for exactly one user goal, not a general assistant.
 Discuss only its evidence, progress, criteria, banners, and proposed changes.
@@ -235,6 +241,9 @@ Act in this order of precedence:
    images. Include no personal data: names, life numbers, locations, or health.
 4. Status reporting: when FACTS say the track status or period changed
    materially, call update_goal_report with the FACTS status.
+   The report is STORED: reply_to_user never changes it. When the user asks
+   for the report itself to change (shorter, sectioned, less repetitive), call
+   update_goal_report in the SAME turn with the full rewrite.
 5. Nothing material changed: call no tools and write nothing.
 
 Use record_goal_observation only for novel facts worth remembering for years,

@@ -360,9 +360,19 @@ flowchart TD
   results and context-shape experiments live in the goal-agent eval run book.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
-  with one pinned retry each: a transition/detail-refresh wake missing its
-  report, and policy row P5 (offTrack, no fresh ad, no cooldown) or an explicit
-  new-banner request missing its ad. A first evaluation that lands at risk is
+  with one pinned retry each: a wake missing its report where the status
+  transitioned, the detail page requested a refresh, **or the pending chat
+  message asked for the standing report itself to be rewritten**; and policy
+  row P5 (offTrack, no fresh ad, no cooldown) or an explicit new-banner
+  request missing its ad. The chat-rewrite path is deliberately NOT the
+  detail page's refresh token: that token also persists the derivation and
+  re-bases `previousStatus`, neither of which a rewrite of the standing text
+  may do. Its trigger mirrors the banner path — an English intent heuristic
+  over the pending message (plus a short affirmation following the agent's own
+  offer to rewrite), a matching FACTS-block instruction, and the model's own
+  tool call as the language-independent carrier — and an explicit refusal
+  ("don't make the report shorter") suppresses it, because forcing a rewrite
+  over a refusal destroys the report the user asked to keep. A first evaluation that lands at risk is
   also ad-eligible, so a newly created goal does not wait for a three-day trend
   before receiving its initial banner.
 - **Report freshness follows the durable standing head.** Producing report

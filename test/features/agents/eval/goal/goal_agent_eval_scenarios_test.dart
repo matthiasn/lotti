@@ -647,9 +647,10 @@ void main() {
 
     test('system prompt stays lean', () {
       // The payload lesson: a bloated prompt gets skimmed. Budget grew with
-      // the judgment tier (composite targeting, cooldown, roast bounds) —
-      // still a hard ceiling, revisit any growth past it.
-      expect(goalAgentSystemPrompt.length, lessThan(3200));
+      // the judgment tier (composite targeting, cooldown, roast bounds) and
+      // again with the standing-report rule — still a hard ceiling, revisit
+      // any growth past it.
+      expect(goalAgentSystemPrompt.length, lessThan(3600));
       expect(goalAgentSystemPrompt, contains('insufficientData'));
       expect(goalAgentSystemPrompt, contains('rerun_goal_ad'));
       expect(goalAgentSystemPrompt, contains('snooze_goal_ad'));

@@ -307,6 +307,158 @@ void main() {
     },
   );
 
+  test('a short affirmation counts only after an offer to rewrite the '
+      'report', () {
+    const offer = 'I can rewrite the report into sections if you like.';
+    const question = 'Want me to shorten the report?';
+    for (final affirmation in ['yes please', 'do it', 'go ahead', 'sure']) {
+      expect(
+        isExplicitGoalReportUpdateRequest(
+          affirmation,
+          previousAssistantMessage: offer,
+        ),
+        isTrue,
+        reason: '"$affirmation" after an offer is the same request',
+      );
+      expect(
+        isExplicitGoalReportUpdateRequest(
+          affirmation,
+          previousAssistantMessage: question,
+        ),
+        isTrue,
+      );
+      // With no prior turn the subject is simply unknown.
+      expect(isExplicitGoalReportUpdateRequest(affirmation), isFalse);
+    }
+
+    // An offer about the BANNER must not turn "yes" into a report rewrite.
+    expect(
+      isExplicitGoalReportUpdateRequest(
+        'yes please',
+        previousAssistantMessage:
+            "If you'd like a fresh banner right now, just say the word.",
+      ),
+      isFalse,
+    );
+    // Merely mentioning the report is not offering to change it.
+    expect(
+      isExplicitGoalReportUpdateRequest(
+        'yes',
+        previousAssistantMessage:
+            'Your report shows two walks logged this week.',
+      ),
+      isFalse,
+    );
+    // A non-affirmation with an offer standing still needs its own intent.
+    expect(
+      isExplicitGoalReportUpdateRequest(
+        'how did I do yesterday?',
+        previousAssistantMessage: offer,
+      ),
+      isFalse,
+    );
+  });
+
+  test('questions about the report are not requests to rewrite it', () {
+    for (final question in [
+      'how do I update the report?',
+      'what does the report say about steps?',
+      'why is the report so long?',
+      'when was the summary last updated?',
+      'which sections does the report have?',
+    ]) {
+      expect(
+        isExplicitGoalReportUpdateRequest(question),
+        isFalse,
+        reason: '"$question" asks about the report, it does not change it',
+      );
+    }
+
+    // Modal requests only LOOK like questions — they are instructions.
+    for (final request in [
+      'can you shorten the report?',
+      'could you restructure the summary?',
+      'would you split the report into sections?',
+    ]) {
+      expect(
+        isExplicitGoalReportUpdateRequest(request),
+        isTrue,
+        reason: '"$request" is a request, not a question',
+      );
+    }
+  });
+
+  test('an explicit refusal never forces a rewrite', () {
+    // The asymmetry that matters: forcing a rewrite over a refusal destroys
+    // the report the user asked to keep, while missing an implicit request
+    // only leaves them to ask again.
+    for (final decline in [
+      "I don't want you to change the report",
+      "please don't make the report shorter",
+      'leave the report as is',
+      'no need to rewrite the summary',
+      'do not touch the report',
+      "I'd rather not change the write-up",
+      'keep the report as is',
+    ]) {
+      expect(
+        isExplicitGoalReportUpdateRequest(decline),
+        isFalse,
+        reason: '"$decline" declines the rewrite',
+      );
+    }
+  });
+
+  test('report update intent needs a report noun AND a change intent', () {
+    // Positives: the wording the user actually reports with.
+    expect(
+      isExplicitGoalReportUpdateRequest(
+        'make the report less of a wall of text',
+      ),
+      isTrue,
+    );
+    expect(
+      isExplicitGoalReportUpdateRequest('can you shorten the summary'),
+      isTrue,
+    );
+    expect(
+      isExplicitGoalReportUpdateRequest(
+        'restructure the report into sections',
+      ),
+      isTrue,
+    );
+    expect(
+      isExplicitGoalReportUpdateRequest('please break the report up a bit'),
+      isTrue,
+    );
+    expect(
+      isExplicitGoalReportUpdateRequest('rewrite the write-up more concise'),
+      isTrue,
+    );
+
+    // A question about the report is not a request to change it.
+    expect(
+      isExplicitGoalReportUpdateRequest('how is the report looking?'),
+      isFalse,
+    );
+    // An explicit decline must never force a rewrite.
+    expect(
+      isExplicitGoalReportUpdateRequest("don't change the report"),
+      isFalse,
+    );
+    expect(
+      isExplicitGoalReportUpdateRequest('do not rewrite the summary'),
+      isFalse,
+    );
+    // Change intent aimed at something that is not the report.
+    expect(
+      isExplicitGoalReportUpdateRequest('shorten the banner'),
+      isFalse,
+    );
+    expect(isExplicitGoalReportUpdateRequest(null), isFalse);
+    expect(isExplicitGoalReportUpdateRequest('   '), isFalse);
+  });
+
   setUp(() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -4282,4 +4434,350 @@ void main() {
       reason: 'UTC, so period order is timezone-independent across devices',
     );
   });
+
+  test('a chat request to change the report forces one pinned '
+      'update_goal_report retry that names the chat rewrite', () async {
+    // The reported bug: the model answers in chat, promises a better report,
+    // and the stored report is never touched. Nothing but the detail page's
+    // refresh token used to force the tool call.
+    stubSpec();
+    stubGlmResolution();
+    // A chat wake re-bases previousStatus to the PRIOR DAY's row (only the
+    // detail-page refresh token reads today's), so the prior day is what has
+    // to match for `statusTransitioned` to be false — otherwise a missing
+    // baseline forces the report on its own and this test proves nothing.
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-08'),
+        agentId: agentId,
+        periodKey: '2026-08-08',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    conversationRepository.maxDelegateCalls = 2;
+    var calls = 0;
+    String? forcedInstruction;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          if (calls == 1) {
+            // The FACTS block spells the requirement out to the model.
+            expect(
+              message,
+              contains(
+                'USER EXPLICITLY ASKED FOR THE STANDING REPORT TO '
+                'CHANGE',
+              ),
+            );
+            // The model replies and forgets the tool — the whole bug.
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': "Sure — I'll tighten it up.",
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          }
+          forcedInstruction = message;
+          expect(
+            [for (final tool in tools!) tool.function.name],
+            [GoalAgentToolNames.updateGoalReport],
+          );
+          expect(toolChoice, isNotNull);
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'Three short sections instead of one block.',
+                'tldr': 'Rewritten shorter, as asked.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat',
+        pendingUserMessage: 'Please make the report less of a wall of text.',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(result.reportUpdated, isTrue);
+    expect(calls, 2, reason: 'primary turn plus exactly one forced retry');
+    // The retry must name the real reason: the old bool made a chat rewrite
+    // claim the user had edited a habit day.
+    expect(forcedInstruction, contains('asked in chat'));
+    expect(forcedInstruction, isNot(contains('editing a habit day')));
+    final report = upserts.whereType<AgentReportEntity>().single;
+    expect(report.oneLiner, 'Three short sections instead of one block.');
+  });
+
+  test('an ordinary chat question does not force a report', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-08'),
+        agentId: agentId,
+        periodKey: '2026-08-08',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    // Let a forced retry through if one fires — otherwise the fake caps
+    // delegate calls at one and this test could not see the bug it guards.
+    conversationRepository
+      ..maxDelegateCalls = 3
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            expect(
+              message,
+              isNot(contains('USER EXPLICITLY ASKED FOR THE STANDING REPORT')),
+            );
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'You are two walks in this week.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat',
+        pendingUserMessage: 'How is the report looking?',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(
+      conversationRepository.sendMessageDelegateCallCount,
+      1,
+      reason: 'a question must not force a standing-report rewrite',
+    );
+    expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+  });
+
+  test(
+    'a bare "yes" after the agent offers a rewrite forces the report',
+    () async {
+      // The most common form of the original bug: the agent offers, the user
+      // says "yes", and only the previous turn names the subject.
+      stubSpec();
+      stubGlmResolution();
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-08'),
+          agentId: agentId,
+          periodKey: '2026-08-08',
+          trackStatus: GoalTrackStatus.insufficientData,
+          attainment: 0,
+          dataCoverage: 0,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+      conversationRepository.maxDelegateCalls = 2;
+      var calls = 0;
+      String? forcedInstruction;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls += 1;
+            if (calls == 1) {
+              expect(
+                message,
+                contains(
+                  'USER EXPLICITLY ASKED FOR THE STANDING REPORT TO '
+                  'CHANGE',
+                ),
+              );
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.replyToUser, {
+                    'message': 'On it.',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            }
+            forcedInstruction = message;
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'Split into three short sections.',
+                  'tldr': 'Rewritten as offered.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+      final result = await withClock(
+        fixedClock,
+        () => workflow.execute(
+          agentIdentity: identity,
+          runKey: 'chat-run',
+          triggerTokens: const {},
+          threadId: 'chat',
+          pendingUserMessage: 'yes please',
+          previousAssistantMessage:
+              'I can rewrite the report into sections if you like.',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.reportUpdated, isTrue);
+      expect(calls, 2, reason: 'primary turn plus exactly one forced retry');
+      expect(forcedInstruction, contains('asked in chat'));
+      expect(
+        upserts.whereType<AgentReportEntity>().single.oneLiner,
+        'Split into three short sections.',
+      );
+    },
+  );
+
+  test(
+    'a bare "yes" with no standing offer does not force the report',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-08'),
+          agentId: agentId,
+          periodKey: '2026-08-08',
+          trackStatus: GoalTrackStatus.insufficientData,
+          attainment: 0,
+          dataCoverage: 0,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+      conversationRepository
+        ..maxDelegateCalls = 3
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              expect(
+                message,
+                isNot(
+                  contains('USER EXPLICITLY ASKED FOR THE STANDING REPORT'),
+                ),
+              );
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.replyToUser, {
+                    'message': 'Happy to help — what would you like?',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await withClock(
+        fixedClock,
+        () => workflow.execute(
+          agentIdentity: identity,
+          runKey: 'chat-run',
+          triggerTokens: const {},
+          threadId: 'chat',
+          pendingUserMessage: 'yes please',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.sendMessageDelegateCallCount,
+        1,
+        reason: 'an affirmation with no offer names no subject',
+      );
+      expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+    },
+  );
 }
