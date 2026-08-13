@@ -14,11 +14,12 @@ import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 /// Mutable entry source so tests can push new provider snapshots into the
-/// dock mid-flight (queue-jumps, dismissals, collapse).
+/// dock mid-flight (queue-jumps, snoozes, collapse).
 class _TestEntries extends Notifier<List<GoalBannerEntry>> {
   static List<GoalBannerEntry> initial = const [];
 
@@ -33,6 +34,8 @@ final _testEntriesProvider =
     NotifierProvider<_TestEntries, List<GoalBannerEntry>>(_TestEntries.new);
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   GoalBannerEntry entry({
     required String id,
     required String headline,
@@ -43,6 +46,8 @@ void main() {
     GoalNudgeTone tone = GoalNudgeTone.nudge,
     GoalBannerAnimation animation = GoalBannerAnimation.steady,
     DateTime? staleAt,
+    DateTime? snoozedUntil,
+    DateTime? dismissedForDayAt,
   }) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -59,6 +64,8 @@ void main() {
               briefDigest: id,
               activationCount: activationCount,
               staleAt: staleAt,
+              snoozedUntil: snoozedUntil,
+              dismissedForDayAt: dismissedForDayAt,
               createdAt: DateTime(2026, 8, 9),
               updatedAt: DateTime(2026, 8, 9),
               vectorClock: null,
@@ -72,7 +79,14 @@ void main() {
   setUp(() {
     interactions = MockGoalNudgeInteractions();
     when(
-      () => interactions.dismiss(
+      () => interactions.snooze(
+        any(),
+        duration: any(named: 'duration'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => interactions.dismissForDay(
         any(),
         forActivation: any(named: 'forActivation'),
       ),
@@ -138,13 +152,18 @@ void main() {
           headline: 'Stale voice',
           staleAt: now.subtract(const Duration(minutes: 1)),
         ),
-        entry(id: 'dismissed', headline: 'Dismissed voice'),
-        entry(id: 'snoozed', headline: 'Snoozed voice'),
+        entry(
+          id: 'dismissed',
+          headline: 'Dismissed voice',
+          dismissedForDayAt: now,
+        ),
+        entry(
+          id: 'snoozed',
+          headline: 'Snoozed voice',
+          snoozedUntil: now.add(const Duration(hours: 1)),
+        ),
       ],
-      locallyDismissedIds: const {'dismissed'},
-      locallySnoozedDeadlines: {
-        'snoozed': now.add(const Duration(hours: 1)),
-      },
+      locallySnoozedDeadlines: const {},
       now: now,
     );
 
@@ -270,16 +289,10 @@ void main() {
     final tenantRect = tester.getRect(tenant);
     expect(tenantRect.center.dx, frameRect.center.dx);
     expect(tenantRect.width, closeTo(frameRect.width, 2));
-    final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
-    expect(frameRect.right - dismissRect.right, lessThan(12));
-    final dismissButton = tester.widget<IconButton>(
-      find.ancestor(
-        of: find.byTooltip('Dismiss'),
-        matching: find.byType(IconButton),
-      ),
+    final snoozeRect = tester.getRect(
+      find.byKey(const ValueKey('goal-banner-dock-snooze')),
     );
-    expect(dismissButton.padding, EdgeInsets.zero);
-    expect(dismissButton.alignment, Alignment.centerRight);
+    expect(frameRect.right - snoozeRect.right, lessThan(20));
     expect(
       tester
           .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
@@ -694,27 +707,37 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
   });
 
-  testWidgets('dismissal advances immediately and the dot count shrinks; '
-      'the last dismissal collapses the dock entirely', (tester) async {
+  testWidgets('snooze advances immediately and the dot count shrinks; '
+      'the last snooze collapses the dock entirely', (tester) async {
     await pumpDock(tester, [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
     ]);
 
-    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.tap(find.text('Snooze'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('1 hour'));
     await tester.pump();
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
     verify(
-      () => interactions.dismiss('a', forActivation: 1),
+      () => interactions.snooze(
+        'a',
+        duration: GoalBannerSnoozeDuration.oneHour,
+        forActivation: 1,
+      ),
     ).called(1);
 
-    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.tap(find.text('Snooze'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('1 hour'));
     await tester.pump();
     await settleTransition(tester);
     // The quiet IS the feedback: nothing remains.
     expect(find.text('Second voice'), findsNothing);
-    expect(find.byTooltip('Dismiss'), findsNothing);
+    expect(find.text('Snooze'), findsNothing);
   });
 
   testWidgets('removing the middle tenant advances to its SUCCESSOR, not '
@@ -796,15 +819,29 @@ void main() {
     expect(navigated, ['/agents/details/goal-a']);
   });
 
-  testWidgets('swiping the compact dock dismisses the tenant', (tester) async {
+  testWidgets('compact dock has no swipe-dismiss and snoozes from its action', (
+    tester,
+  ) async {
     await pumpDock(
       tester,
       [entry(id: 'a', headline: 'First voice')],
       compact: true,
     );
-    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
-    await tester.pumpAndSettle();
-    verify(() => interactions.dismiss('a', forActivation: 1)).called(1);
+    expect(find.byType(Dismissible), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('3 hours'));
+    await tester.pump(const Duration(milliseconds: 400));
+    verify(
+      () => interactions.snooze(
+        'a',
+        duration: GoalBannerSnoozeDuration.threeHours,
+        forActivation: 1,
+      ),
+    ).called(1);
   });
 
   testWidgets('an entry past its staleAt never takes the slot', (
@@ -860,7 +897,10 @@ void main() {
 
   testWidgets('zero tenants render nothing at all', (tester) async {
     await pumpDock(tester, const []);
-    expect(find.byTooltip('Dismiss'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      findsNothing,
+    );
   });
 
   testWidgets('compact dock yields while the keyboard is up', (tester) async {
@@ -888,15 +928,19 @@ void main() {
     expect(find.text('First voice'), findsNothing);
   });
 
-  testWidgets('the compact dock shows no star even while a rating is due — '
-      'X only, per the mobile anatomy', (tester) async {
+  testWidgets('the compact dock shows no star and keeps its snooze action', (
+    tester,
+  ) async {
     await pumpDock(
       tester,
       [entry(id: 'a', headline: 'First voice')],
       compact: true,
     );
     expect(find.byTooltip('Rate this banner'), findsNothing);
-    expect(find.byTooltip('Dismiss'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('reduced motion: rotation still advances (only transitions '

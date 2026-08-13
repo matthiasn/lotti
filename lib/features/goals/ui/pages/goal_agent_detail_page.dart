@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -21,6 +20,7 @@ import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
@@ -188,19 +188,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     // Same render-time staleness contract as the strip: retained data
     // from a failed deadline reload keeps fresh banners (no-flash) but
     // never expired copy — whose tracker would keep counting exposure.
-    final bannerNow = clock.now();
-    final locallyDismissed = ref.watch(locallyDismissedNudgeIdsProvider);
     final locallySnoozed = ref.watch(locallySnoozedNudgeDeadlinesProvider);
     final nudges = [
-      for (final entry
-          in ref.watch(activeGoalNudgesProvider).value ??
-              const <GoalBannerEntry>[])
-        if (entry.nudge.agentId == agentId &&
-            (entry.nudge.staleAt == null ||
-                bannerNow.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id) &&
-            locallySnoozed[entry.nudge.id]?.isAfter(bannerNow) != true)
-          entry,
+      for (final entry in visibleGoalBannerEntries(
+        entries: ref.watch(activeGoalNudgesProvider).value,
+        locallySnoozedDeadlines: locallySnoozed,
+      ))
+        if (entry.nudge.agentId == agentId) entry,
     ];
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??

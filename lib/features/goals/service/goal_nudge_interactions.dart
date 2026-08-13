@@ -3,9 +3,11 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
+import 'package:uuid/uuid.dart';
 
-/// The user's side of the ad contract (ADR 0055): dismissal, the
-/// per-activation rating prompt, and exposure accounting.
+/// The user's side of the ad contract (ADR 0055): temporary visibility
+/// choices, the per-activation rating prompt, and exposure accounting.
 ///
 /// All writes go through the sync service so peers converge; the exposure
 /// counters are per-host G-counters incremented under this device's host
@@ -15,10 +17,12 @@ class GoalNudgeInteractions {
   GoalNudgeInteractions({
     required this._repository,
     required this._syncService,
-  });
+    String Function()? newId,
+  }) : _newId = newId ?? (() => const Uuid().v4());
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
+  final String Function() _newId;
 
   /// The host key is immutable for the install — cached so the exposure
   /// read-modify-write has NO await between reading the row and writing
@@ -54,50 +58,88 @@ class GoalNudgeInteractions {
       nudge.status == GoalNudgeStatus.active &&
       !nudge.ratings.any((r) => r.activation == nudge.activationCount);
 
-  /// Dismisses an active ad — the terminal user verdict (the resolver
-  /// keeps it terminal against concurrent writes) and the start of the
-  /// same-day quiet window Phase B enforces. [forActivation] is the
-  /// activation the user actually SAW: if sync re-ran the nudge while
-  /// the close tap was in flight, the write is discarded rather than
-  /// silencing a run the user never looked at (the rating path's guard).
-  /// Returns whether the dismissal verdict is on the row afterwards —
-  /// false means the guards declined (already terminal, or sync advanced
-  /// the activation mid-tap) and the banner must NOT be suppressed.
-  Future<bool> dismiss(String nudgeId, {int? forActivation}) async {
+  /// Temporarily hides an active banner and appends the timing choice used by
+  /// future goal-agent wakes to learn better initial display windows.
+  Future<bool> snooze(
+    String nudgeId, {
+    required GoalBannerSnoozeDuration duration,
+    int? forActivation,
+  }) async {
+    final exactDuration = duration.duration;
+    if (exactDuration == null) {
+      throw ArgumentError.value(
+        duration,
+        'duration',
+        'the UI action requires a fixed snooze preset',
+      );
+    }
+    final eventId = _newId();
     var persisted = false;
     await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
           final nudge = await _repository.getEntity(nudgeId);
           if (nudge is! GoalNudgeEntity) return;
-          if (nudge.status == GoalNudgeStatus.dismissed) {
-            persisted = true;
-            return;
-          }
           if (nudge.status != GoalNudgeStatus.active) return;
           if (forActivation != null && forActivation != nudge.activationCount) {
             return;
           }
           final now = clock.now();
           await _syncService.upsertEntity(
+            snoozeGoalBannerEntity(
+              nudge: nudge,
+              now: now,
+              until: now.add(exactDuration),
+              eventId: eventId,
+            ),
+          );
+          persisted = true;
+        });
+      } catch (error) {
+        final fresh = await _repository.getEntity(nudgeId);
+        if (fresh is GoalNudgeEntity &&
+            fresh.snoozeHistory.any((event) => event.id == eventId)) {
+          persisted = true;
+          return;
+        }
+        rethrow;
+      }
+    });
+    return persisted;
+  }
+
+  /// Hides an active banner for the rest of the current local calendar day.
+  /// The nudge stays active so it becomes eligible again after midnight.
+  Future<bool> dismissForDay(String nudgeId, {int? forActivation}) async {
+    var persisted = false;
+    DateTime? writtenAt;
+    await _serialized(nudgeId, () async {
+      try {
+        await _syncService.runInTransaction(() async {
+          final nudge = await _repository.getEntity(nudgeId);
+          if (nudge is! GoalNudgeEntity ||
+              nudge.status != GoalNudgeStatus.active) {
+            return;
+          }
+          if (forActivation != null && forActivation != nudge.activationCount) {
+            return;
+          }
+          final now = clock.now();
+          writtenAt = now.toUtc();
+          await _syncService.upsertEntity(
             nudge.copyWith(
-              status: GoalNudgeStatus.dismissed,
-              // UTC: a local wall-clock instant serialized without its
-              // offset would be reinterpreted in the peer's zone and
-              // quiet the wrong calendar day.
-              dismissedAt: now.toUtc(),
+              snoozedUntil: null,
+              dismissedForDayAt: writtenAt,
               updatedAt: now,
             ),
           );
           persisted = true;
         });
       } catch (error) {
-        // The database commit can be durable when a deferred outbox
-        // enqueue rethrows. An already-dismissed row IS the requested
-        // outcome — reporting failure would snap the banner back.
         final fresh = await _repository.getEntity(nudgeId);
         if (fresh is GoalNudgeEntity &&
-            fresh.status == GoalNudgeStatus.dismissed) {
+            writtenAt != null &&
+            fresh.dismissedForDayAt == writtenAt) {
           persisted = true;
           return;
         }

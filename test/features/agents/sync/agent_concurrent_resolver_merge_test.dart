@@ -18,6 +18,10 @@ void main() {
     int activationCount = 1,
     DateTime? firstShownAt,
     DateTime? lastShownAt,
+    DateTime? snoozedUntil,
+    GoalBannerSnoozeDuration? lastSnoozeDuration,
+    List<GoalNudgeSnooze> snoozeHistory = const [],
+    DateTime? dismissedForDayAt,
   }) =>
       AgentDomainEntity.goalNudge(
             id: id,
@@ -38,6 +42,10 @@ void main() {
             activationCount: activationCount,
             firstShownAt: firstShownAt,
             lastShownAt: lastShownAt,
+            snoozedUntil: snoozedUntil,
+            lastSnoozeDuration: lastSnoozeDuration,
+            snoozeHistory: snoozeHistory,
+            dismissedForDayAt: dismissedForDayAt,
           )
           as GoalNudgeEntity;
 
@@ -659,6 +667,27 @@ void main() {
   });
 
   group('mergeGoalNudgeAccumulators', () {
+    GoalNudgeSnooze snooze(
+      String id, {
+      required int hour,
+      required int durationHours,
+    }) => GoalNudgeSnooze(
+      id: id,
+      activation: 1,
+      snoozedAt: DateTime.utc(2026, 8, 13, hour),
+      snoozedUntil: DateTime.utc(
+        2026,
+        8,
+        13,
+        hour + durationHours,
+      ),
+      duration: goalBannerSnoozeDurationFor(
+        Duration(hours: durationHours),
+      ),
+      durationMinutes: durationHours * 60,
+      utcOffsetMinutes: 120,
+    );
+
     GoalNudgeRating rating(
       int activation, {
       int? value,
@@ -768,6 +797,98 @@ void main() {
       expect(ab.ratings, ba.ratings);
       expect(ab.activationCount, ba.activationCount);
       expect(ab.lastShownAt, ba.lastShownAt);
+    });
+
+    test(
+      'unions snooze history and keeps the later effective quiet deadline',
+      () {
+        final short = snooze('short', hour: 10, durationHours: 1);
+        final long = snooze('long', hour: 9, durationHours: 8);
+        final local = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozedUntil: short.snoozedUntil,
+          lastSnoozeDuration: short.duration,
+          snoozeHistory: [short],
+        );
+        final incoming = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozedUntil: long.snoozedUntil,
+          lastSnoozeDuration: long.duration,
+          snoozeHistory: [long],
+          dismissedForDayAt: DateTime.utc(2026, 8, 13, 11),
+        );
+
+        final ab = mergeGoalNudgeAccumulators(
+          winner: local,
+          local: local,
+          incoming: incoming,
+        );
+        final ba = mergeGoalNudgeAccumulators(
+          winner: local,
+          local: incoming,
+          incoming: local,
+        );
+
+        expect(
+          [for (final event in ab.snoozeHistory) event.id],
+          ['long', 'short'],
+        );
+        expect(ab.snoozedUntil, long.snoozedUntil);
+        expect(ab.lastSnoozeDuration, GoalBannerSnoozeDuration.eightHours);
+        expect(ab.dismissedForDayAt, DateTime.utc(2026, 8, 13, 11));
+        expect(ab.snoozeHistory, ba.snoozeHistory);
+        expect(ab.snoozedUntil, ba.snoozedUntil);
+      },
+    );
+
+    test('same-id snooze conflicts use every field as a deterministic '
+        'tie-breaker', () {
+      final baseline = snooze('same-id', hour: 10, durationHours: 3);
+
+      GoalNudgeSnooze selected(
+        GoalNudgeSnooze a,
+        GoalNudgeSnooze b,
+      ) {
+        final local = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozeHistory: [a],
+        );
+        final incoming = goalNudge(
+          status: GoalNudgeStatus.active,
+          snoozeHistory: [b],
+        );
+        return mergeGoalNudgeAccumulators(
+          winner: local,
+          local: local,
+          incoming: incoming,
+        ).snoozeHistory.single;
+      }
+
+      final earlierStart = baseline.copyWith(
+        snoozedAt: baseline.snoozedAt.subtract(const Duration(minutes: 1)),
+      );
+      expect(selected(baseline, earlierStart), earlierStart);
+
+      final earlierReturn = baseline.copyWith(
+        snoozedUntil: baseline.snoozedUntil.subtract(
+          const Duration(minutes: 1),
+        ),
+      );
+      expect(selected(baseline, earlierReturn), earlierReturn);
+
+      final laterActivation = baseline.copyWith(activation: 2);
+      expect(selected(laterActivation, baseline), baseline);
+
+      final laterPreset = baseline.copyWith(
+        duration: GoalBannerSnoozeDuration.sixHours,
+      );
+      expect(selected(laterPreset, baseline), baseline);
+
+      final longerMinutes = baseline.copyWith(durationMinutes: 181);
+      expect(selected(longerMinutes, baseline), baseline);
+
+      final laterOffset = baseline.copyWith(utcOffsetMinutes: 180);
+      expect(selected(laterOffset, baseline), baseline);
     });
   });
 }

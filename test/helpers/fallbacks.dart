@@ -7,6 +7,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -200,6 +201,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeLaunchOptions());
   registerFallbackValue(EntryLinkType.basic);
   registerFallbackValue(const Locale('en'));
+  registerFallbackValue(GoalBannerSnoozeDuration.oneHour);
 
   // Logging
   registerFallbackValue(LogDomain.general);

@@ -9,15 +9,18 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-/// The shared banner-action contract (`dismissGoalBanner`,
+/// The shared banner-action contract (`showGoalBannerSnoozeSheet`,
 /// `showGoalBannerRatingSheet`) used by BOTH the card and the dock — its
 /// own path-mirrored suite, so neither caller's widget test owns behaviour
 /// the other relies on. Caller-specific wiring (which button, which
 /// gesture) stays in each widget suite.
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   GoalBannerEntry entryFor({int activationCount = 1}) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -43,6 +46,19 @@ void main() {
 
   setUp(() {
     interactions = MockGoalNudgeInteractions();
+    when(
+      () => interactions.snooze(
+        any(),
+        duration: any(named: 'duration'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => interactions.dismissForDay(
+        any(),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => true);
     when(
       () => interactions.recordRating(
         any(),
@@ -81,66 +97,122 @@ void main() {
   ProviderContainer containerOf(BuildContext ctx) =>
       ProviderScope.containerOf(ctx, listen: false);
 
-  group('dismissGoalBanner', () {
-    testWidgets('a persisted dismissal suppresses the id and reports true', (
+  group('showGoalBannerSnoozeSheet', () {
+    testWidgets('snooze choices are prominent and day dismissal is last', (
+      tester,
+    ) async {
+      final (ctx, ref) = await host(tester);
+      unawaited(showGoalBannerSnoozeSheet(ctx, ref, entryFor()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Snooze banner'), findsOneWidget);
+      expect(find.text('When should it come back?'), findsOneWidget);
+      for (final label in ['1 hour', '3 hours', '6 hours', '8 hours']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      expect(
+        tester.getTopLeft(find.text('Dismiss for today')).dy,
+        greaterThan(tester.getBottomLeft(find.text('8 hours')).dy),
+      );
+    });
+
+    testWidgets('a persisted snooze suppresses retained data immediately', (
+      tester,
+    ) async {
+      final (ctx, ref) = await host(tester);
+      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('3 hours'));
+      await tester.pumpAndSettle();
+
+      final result = await resultFuture;
+      expect(result, isTrue);
+      expect(
+        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider),
+        contains('ad-1'),
+      );
+      verify(
+        () => interactions.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.threeHours,
+          forActivation: 1,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('day dismissal is the secondary path and never snoozes', (
+      tester,
+    ) async {
+      final (ctx, ref) = await host(tester);
+      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dismiss for today'));
+      await tester.pumpAndSettle();
+
+      expect(await resultFuture, isTrue);
+      verify(
+        () => interactions.dismissForDay('ad-1', forActivation: 1),
+      ).called(1);
+      verifyNever(
+        () => interactions.snooze(
+          any(),
+          duration: any(named: 'duration'),
+          forActivation: any(named: 'forActivation'),
+        ),
+      );
+    });
+
+    testWidgets('a failed snooze surfaces the retry notice and reports false', (
       tester,
     ) async {
       when(
-        () => interactions.dismiss(
+        () => interactions.snooze(
           any(),
-          forActivation: any(named: 'forActivation'),
-        ),
-      ).thenAnswer((_) async => true);
-      final (ctx, ref) = await host(tester);
-
-      final result = await dismissGoalBanner(ctx, ref, entryFor());
-      expect(result, isTrue);
-      expect(
-        containerOf(
-          ctx,
-        ).read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
-        isTrue,
-      );
-      verify(() => interactions.dismiss('ad-1', forActivation: 1)).called(1);
-    });
-
-    testWidgets('a declined dismissal (guards refused) reports false and '
-        'does NOT suppress the id', (tester) async {
-      when(
-        () => interactions.dismiss(
-          any(),
-          forActivation: any(named: 'forActivation'),
-        ),
-      ).thenAnswer((_) async => false);
-      final (ctx, ref) = await host(tester);
-
-      final result = await dismissGoalBanner(ctx, ref, entryFor());
-      expect(result, isFalse);
-      expect(
-        containerOf(
-          ctx,
-        ).read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
-        isFalse,
-      );
-    });
-
-    testWidgets('a thrown dismissal surfaces the retry notice and reports '
-        'false', (tester) async {
-      when(
-        () => interactions.dismiss(
-          any(),
+          duration: any(named: 'duration'),
           forActivation: any(named: 'forActivation'),
         ),
       ).thenAnswer((_) async => throw StateError('sync down'));
       final (ctx, ref) = await host(tester);
+      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('1 hour'));
+      await tester.pumpAndSettle();
 
-      final result = await dismissGoalBanner(ctx, ref, entryFor());
-      await tester.pump();
-      expect(result, isFalse);
+      expect(await resultFuture, isFalse);
       expect(
         find.text("That didn't save — please try again."),
         findsOneWidget,
       );
+    });
+
+    testWidgets('a stale rejected snooze never hides the banner locally', (
+      tester,
+    ) async {
+      when(
+        () => interactions.snooze(
+          any(),
+          duration: any(named: 'duration'),
+          forActivation: any(named: 'forActivation'),
+        ),
+      ).thenAnswer((_) async => false);
+      final (ctx, ref) = await host(tester);
+      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('6 hours'));
+      await tester.pumpAndSettle();
+
+      expect(await resultFuture, isFalse);
+      expect(
+        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider),
+        isNot(contains('ad-1')),
+      );
+      verify(
+        () => interactions.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.sixHours,
+          forActivation: 1,
+        ),
+      ).called(1);
     });
   });
 

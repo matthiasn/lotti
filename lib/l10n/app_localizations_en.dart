@@ -6028,6 +6028,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalBannerActionFailed => 'That didn\'t save — please try again.';
 
   @override
+  String get goalBannerDismissForDay => 'Dismiss for today';
+
+  @override
   String get goalBannerDismissTooltip => 'Dismiss';
 
   @override
@@ -6043,6 +6046,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Goal banner for $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 hours';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Snooze';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 hour';
+
+  @override
+  String get goalBannerSnoozePrompt => 'When should it come back?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 hours';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 hours';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Snooze banner';
 
   @override
   String goalBufferDays(int count) {

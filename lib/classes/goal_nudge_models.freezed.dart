@@ -565,4 +565,285 @@ as bool,
 
 }
 
+
+/// @nodoc
+mixin _$GoalNudgeSnooze {
+
+ String get id;@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get snoozedAt; DateTime get snoozedUntil; GoalBannerSnoozeDuration get duration;@JsonKey(fromJson: _decodePositiveMinutes) int get durationMinutes;@JsonKey(fromJson: _decodeUtcOffsetMinutes) int get utcOffsetMinutes;
+/// Create a copy of GoalNudgeSnooze
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalNudgeSnoozeCopyWith<GoalNudgeSnooze> get copyWith => _$GoalNudgeSnoozeCopyWithImpl<GoalNudgeSnooze>(this as GoalNudgeSnooze, _$identity);
+
+  /// Serializes this GoalNudgeSnooze to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes);
+
+@override
+String toString() {
+  return 'GoalNudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalNudgeSnoozeCopyWith<$Res>  {
+  factory $GoalNudgeSnoozeCopyWith(GoalNudgeSnooze value, $Res Function(GoalNudgeSnooze) _then) = _$GoalNudgeSnoozeCopyWithImpl;
+@useResult
+$Res call({
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, GoalBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalNudgeSnoozeCopyWithImpl<$Res>
+    implements $GoalNudgeSnoozeCopyWith<$Res> {
+  _$GoalNudgeSnoozeCopyWithImpl(this._self, this._then);
+
+  final GoalNudgeSnooze _self;
+  final $Res Function(GoalNudgeSnooze) _then;
+
+/// Create a copy of GoalNudgeSnooze
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,snoozedAt: null == snoozedAt ? _self.snoozedAt : snoozedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,snoozedUntil: null == snoozedUntil ? _self.snoozedUntil : snoozedUntil // ignore: cast_nullable_to_non_nullable
+as DateTime,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as GoalBannerSnoozeDuration,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
+as int,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalNudgeSnooze].
+extension GoalNudgeSnoozePatterns on GoalNudgeSnooze {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalNudgeSnooze value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalNudgeSnooze value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalNudgeSnooze value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  GoalBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze() when $default != null:
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  GoalBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze():
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(fromJson: _decodeActivation)  int activation,  DateTime snoozedAt,  DateTime snoozedUntil,  GoalBannerSnoozeDuration duration, @JsonKey(fromJson: _decodePositiveMinutes)  int durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes)  int utcOffsetMinutes)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeSnooze() when $default != null:
+return $default(_that.id,_that.activation,_that.snoozedAt,_that.snoozedUntil,_that.duration,_that.durationMinutes,_that.utcOffsetMinutes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalNudgeSnooze extends GoalNudgeSnooze {
+  const _GoalNudgeSnooze({required this.id, @JsonKey(fromJson: _decodeActivation) required this.activation, required this.snoozedAt, required this.snoozedUntil, required this.duration, @JsonKey(fromJson: _decodePositiveMinutes) required this.durationMinutes, @JsonKey(fromJson: _decodeUtcOffsetMinutes) required this.utcOffsetMinutes}): super._();
+  factory _GoalNudgeSnooze.fromJson(Map<String, dynamic> json) => _$GoalNudgeSnoozeFromJson(json);
+
+@override final  String id;
+@override@JsonKey(fromJson: _decodeActivation) final  int activation;
+@override final  DateTime snoozedAt;
+@override final  DateTime snoozedUntil;
+@override final  GoalBannerSnoozeDuration duration;
+@override@JsonKey(fromJson: _decodePositiveMinutes) final  int durationMinutes;
+@override@JsonKey(fromJson: _decodeUtcOffsetMinutes) final  int utcOffsetMinutes;
+
+/// Create a copy of GoalNudgeSnooze
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalNudgeSnoozeCopyWith<_GoalNudgeSnooze> get copyWith => __$GoalNudgeSnoozeCopyWithImpl<_GoalNudgeSnooze>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalNudgeSnoozeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeSnooze&&(identical(other.id, id) || other.id == id)&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.snoozedAt, snoozedAt) || other.snoozedAt == snoozedAt)&&(identical(other.snoozedUntil, snoozedUntil) || other.snoozedUntil == snoozedUntil)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.durationMinutes, durationMinutes) || other.durationMinutes == durationMinutes)&&(identical(other.utcOffsetMinutes, utcOffsetMinutes) || other.utcOffsetMinutes == utcOffsetMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,activation,snoozedAt,snoozedUntil,duration,durationMinutes,utcOffsetMinutes);
+
+@override
+String toString() {
+  return 'GoalNudgeSnooze(id: $id, activation: $activation, snoozedAt: $snoozedAt, snoozedUntil: $snoozedUntil, duration: $duration, durationMinutes: $durationMinutes, utcOffsetMinutes: $utcOffsetMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalNudgeSnoozeCopyWith<$Res> implements $GoalNudgeSnoozeCopyWith<$Res> {
+  factory _$GoalNudgeSnoozeCopyWith(_GoalNudgeSnooze value, $Res Function(_GoalNudgeSnooze) _then) = __$GoalNudgeSnoozeCopyWithImpl;
+@override @useResult
+$Res call({
+ String id,@JsonKey(fromJson: _decodeActivation) int activation, DateTime snoozedAt, DateTime snoozedUntil, GoalBannerSnoozeDuration duration,@JsonKey(fromJson: _decodePositiveMinutes) int durationMinutes,@JsonKey(fromJson: _decodeUtcOffsetMinutes) int utcOffsetMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalNudgeSnoozeCopyWithImpl<$Res>
+    implements _$GoalNudgeSnoozeCopyWith<$Res> {
+  __$GoalNudgeSnoozeCopyWithImpl(this._self, this._then);
+
+  final _GoalNudgeSnooze _self;
+  final $Res Function(_GoalNudgeSnooze) _then;
+
+/// Create a copy of GoalNudgeSnooze
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? activation = null,Object? snoozedAt = null,Object? snoozedUntil = null,Object? duration = null,Object? durationMinutes = null,Object? utcOffsetMinutes = null,}) {
+  return _then(_GoalNudgeSnooze(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,snoozedAt: null == snoozedAt ? _self.snoozedAt : snoozedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,snoozedUntil: null == snoozedUntil ? _self.snoozedUntil : snoozedUntil // ignore: cast_nullable_to_non_nullable
+as DateTime,duration: null == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
+as GoalBannerSnoozeDuration,durationMinutes: null == durationMinutes ? _self.durationMinutes : durationMinutes // ignore: cast_nullable_to_non_nullable
+as int,utcOffsetMinutes: null == utcOffsetMinutes ? _self.utcOffsetMinutes : utcOffsetMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
 // dart format on

@@ -294,6 +294,10 @@ AgentStateEntity mergeAgentStateCounters({
 /// losing device's visible-time, impressions and rating-prompt outcomes
 /// vanish — and those accumulate across YEARS of activations (ADR 0055's
 /// labeled library), so losing one side is permanent damage, not noise.
+/// Snooze histories receive the same append-only union. For concurrent quiet
+/// choices on the same activation, the later effective deadline wins current
+/// visibility state while both interactions remain available for timing
+/// analysis.
 ///
 /// Ratings converge to ONE OUTCOME PER ACTIVATION (the ADR 0055
 /// contract): the union is sorted by a total order (activation, ratedAt,
@@ -328,6 +332,29 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
       onePerActivation.add(rating);
     }
   }
+  final snoozes = <GoalNudgeSnooze>[
+    ...local.snoozeHistory,
+    ...incoming.snoozeHistory,
+  ]..sort(_compareGoalNudgeSnoozes);
+  final snoozesById = <String, GoalNudgeSnooze>{};
+  for (final snooze in snoozes) {
+    snoozesById.putIfAbsent(snooze.id, () => snooze);
+  }
+  final mergedSnoozes = snoozesById.values.toList()
+    ..sort((a, b) {
+      final byTime = a.snoozedAt.compareTo(b.snoozedAt);
+      return byTime != 0 ? byTime : a.id.compareTo(b.id);
+    });
+  final sameActivation = local.activationCount == incoming.activationCount;
+  final snoozedUntil = sameActivation
+      ? _latestInstant(local.snoozedUntil, incoming.snoozedUntil)
+      : winner.snoozedUntil;
+  GoalNudgeSnooze? effectiveSnooze;
+  if (snoozedUntil != null) {
+    for (final event in mergedSnoozes) {
+      if (event.snoozedUntil == snoozedUntil) effectiveSnooze = event;
+    }
+  }
   return winner.copyWith(
     // The merged row observed BOTH branches, so its clock must be their
     // join: keeping only the winner's clock would let that device's next
@@ -337,12 +364,37 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
     totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),
     impressionCount: local.impressionCount.merge(incoming.impressionCount),
     ratings: onePerActivation,
+    snoozeHistory: mergedSnoozes,
+    snoozedUntil: snoozedUntil,
+    lastSnoozeDuration: effectiveSnooze?.duration ?? winner.lastSnoozeDuration,
+    dismissedForDayAt: sameActivation
+        ? _latestInstant(
+            local.dismissedForDayAt,
+            incoming.dismissedForDayAt,
+          )
+        : winner.dismissedForDayAt,
     activationCount: local.activationCount > incoming.activationCount
         ? local.activationCount
         : incoming.activationCount,
     firstShownAt: _earliestInstant(local.firstShownAt, incoming.firstShownAt),
     lastShownAt: _latestInstant(local.lastShownAt, incoming.lastShownAt),
   );
+}
+
+int _compareGoalNudgeSnoozes(GoalNudgeSnooze a, GoalNudgeSnooze b) {
+  final byId = a.id.compareTo(b.id);
+  if (byId != 0) return byId;
+  final byStart = a.snoozedAt.compareTo(b.snoozedAt);
+  if (byStart != 0) return byStart;
+  final byUntil = a.snoozedUntil.compareTo(b.snoozedUntil);
+  if (byUntil != 0) return byUntil;
+  final byActivation = a.activation.compareTo(b.activation);
+  if (byActivation != 0) return byActivation;
+  final byDuration = a.duration.index.compareTo(b.duration.index);
+  if (byDuration != 0) return byDuration;
+  final byMinutes = a.durationMinutes.compareTo(b.durationMinutes);
+  if (byMinutes != 0) return byMinutes;
+  return a.utcOffsetMinutes.compareTo(b.utcOffsetMinutes);
 }
 
 DateTime? _earliestInstant(DateTime? a, DateTime? b) {

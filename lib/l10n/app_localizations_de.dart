@@ -6098,6 +6098,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das wurde nicht gespeichert — bitte versuch es noch einmal.';
 
   @override
+  String get goalBannerDismissForDay => 'Für heute ausblenden';
+
+  @override
   String get goalBannerDismissTooltip => 'Ausblenden';
 
   @override
@@ -6113,6 +6116,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Ziel-Banner für $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 Stunden';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Pausieren';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 Stunde';
+
+  @override
+  String get goalBannerSnoozePrompt => 'Wann soll es wieder erscheinen?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 Stunden';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 Stunden';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Banner pausieren';
 
   @override
   String goalBufferDays(int count) {

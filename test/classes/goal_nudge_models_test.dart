@@ -4,6 +4,81 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 
 void main() {
+  group('GoalBannerSnoozeDuration', () {
+    test('the user-facing presets map to their exact durations', () {
+      expect(
+        GoalBannerSnoozeDuration.oneHour.duration,
+        const Duration(hours: 1),
+      );
+      expect(
+        GoalBannerSnoozeDuration.threeHours.duration,
+        const Duration(hours: 3),
+      );
+      expect(
+        GoalBannerSnoozeDuration.sixHours.duration,
+        const Duration(hours: 6),
+      );
+      expect(
+        GoalBannerSnoozeDuration.eightHours.duration,
+        const Duration(hours: 8),
+      );
+      expect(GoalBannerSnoozeDuration.custom.duration, isNull);
+    });
+
+    test('exact presets are recognized; arbitrary chat snoozes are custom', () {
+      expect(
+        goalBannerSnoozeDurationFor(const Duration(hours: 3)),
+        GoalBannerSnoozeDuration.threeHours,
+      );
+      expect(
+        goalBannerSnoozeDurationFor(const Duration(minutes: 90)),
+        GoalBannerSnoozeDuration.custom,
+      );
+    });
+  });
+
+  test('GoalNudgeSnooze round-trips timing evidence and local offset', () {
+    final event = GoalNudgeSnooze(
+      id: 'snooze-1',
+      activation: 2,
+      snoozedAt: DateTime.utc(2026, 8, 13, 10),
+      snoozedUntil: DateTime.utc(2026, 8, 13, 13),
+      duration: GoalBannerSnoozeDuration.threeHours,
+      durationMinutes: 180,
+      utcOffsetMinutes: 120,
+    );
+
+    final decoded = GoalNudgeSnooze.fromJson(
+      jsonDecode(jsonEncode(event)) as Map<String, dynamic>,
+    );
+
+    expect(decoded, event);
+    expect(decoded.snoozedAtLocal, DateTime.utc(2026, 8, 13, 12));
+    expect(decoded.snoozedUntilLocal, DateTime.utc(2026, 8, 13, 15));
+  });
+
+  test('GoalNudgeSnooze rejects invalid duration and timezone evidence', () {
+    final valid = GoalNudgeSnooze(
+      id: 'snooze-1',
+      activation: 1,
+      snoozedAt: DateTime.utc(2026, 8, 13, 10),
+      snoozedUntil: DateTime.utc(2026, 8, 13, 11),
+      duration: GoalBannerSnoozeDuration.oneHour,
+      durationMinutes: 60,
+      utcOffsetMinutes: 120,
+    ).toJson();
+
+    for (final invalid in [
+      {...valid, 'durationMinutes': 0},
+      {...valid, 'utcOffsetMinutes': 841},
+    ]) {
+      expect(
+        () => GoalNudgeSnooze.fromJson(invalid),
+        throwsFormatException,
+      );
+    }
+  });
+
   group('GoalNudgeRating contract', () {
     Map<String, dynamic> json({
       Object? rating = 4,

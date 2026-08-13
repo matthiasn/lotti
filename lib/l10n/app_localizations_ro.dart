@@ -6156,6 +6156,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a salvat — vă rugăm să încercați din nou.';
 
   @override
+  String get goalBannerDismissForDay => 'Ascundeți pentru azi';
+
+  @override
   String get goalBannerDismissTooltip => 'Închideți';
 
   @override
@@ -6171,6 +6174,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Banner pentru obiectivul $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 ore';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Amânați';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 oră';
+
+  @override
+  String get goalBannerSnoozePrompt => 'Când doriți să reapară?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 ore';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 ore';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Amânați bannerul';
 
   @override
   String goalBufferDays(int count) {

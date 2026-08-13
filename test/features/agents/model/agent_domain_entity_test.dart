@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1436,6 +1437,59 @@ void main() {
       final link = makeTestSoulAssignmentLink();
       final json = link.toJson();
       expect(json['runtimeType'], 'soulAssignment');
+    });
+  });
+
+  group('GoalNudgeEntity snooze persistence', () {
+    final snooze = GoalNudgeSnooze(
+      id: 'snooze-1',
+      activation: 2,
+      snoozedAt: DateTime.utc(2026, 8, 13, 8),
+      snoozedUntil: DateTime.utc(2026, 8, 13, 11),
+      duration: GoalBannerSnoozeDuration.threeHours,
+      durationMinutes: 180,
+      utcOffsetMinutes: 120,
+    );
+    final entity = AgentDomainEntity.goalNudge(
+      id: 'nudge-1',
+      agentId: 'goal-1',
+      status: GoalNudgeStatus.active,
+      brief: const GoalNudgeBrief(
+        headline: 'Take a walk',
+        tone: GoalNudgeTone.nudge,
+        animation: GoalBannerAnimation.steady,
+      ),
+      briefDigest: 'digest',
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      vectorClock: vectorClock,
+      activationCount: 2,
+      snoozedUntil: snooze.snoozedUntil,
+      lastSnoozeDuration: snooze.duration,
+      snoozeHistory: [snooze],
+      dismissedForDayAt: DateTime.utc(2026, 8, 12, 18),
+    );
+
+    test('roundtrips current visibility state and timing history', () {
+      expect(roundtrip(entity), entity);
+    });
+
+    test('rejects a history event whose duration contradicts its interval', () {
+      final json =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
+      final history = json['snoozeHistory']! as List<dynamic>;
+      (history.single as Map<String, dynamic>)['durationMinutes'] = 60;
+
+      expect(
+        () => AgentDomainEntity.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('durationMinutes must match'),
+          ),
+        ),
+      );
     });
   });
 
