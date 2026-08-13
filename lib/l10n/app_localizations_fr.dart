@@ -6155,9 +6155,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalBannerDismissForDay => 'Masquer pour aujourd’hui';
 
   @override
-  String get goalBannerDismissTooltip => 'Ignorer';
-
-  @override
   String get goalBannerRateTooltip => 'Noter cette bannière';
 
   @override

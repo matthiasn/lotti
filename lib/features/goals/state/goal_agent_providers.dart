@@ -403,11 +403,14 @@ final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
 /// active-banner projection has reloaded. Banner surfaces subtract these ids
 /// from retained data, so a background refresh cannot flash the old active row
 /// throughout its quiet interval. Each deadline removes itself on time.
-class LocallySnoozedNudgeDeadlines extends Notifier<Map<String, DateTime>> {
+typedef GoalBannerLocalSuppression = ({int activation, DateTime until});
+
+class LocallySnoozedNudgeDeadlines
+    extends Notifier<Map<String, GoalBannerLocalSuppression>> {
   final _timers = <String, Timer>{};
 
   @override
-  Map<String, DateTime> build() {
+  Map<String, GoalBannerLocalSuppression> build() {
     ref.onDispose(() {
       for (final timer in _timers.values) {
         timer.cancel();
@@ -416,11 +419,11 @@ class LocallySnoozedNudgeDeadlines extends Notifier<Map<String, DateTime>> {
     return const {};
   }
 
-  void add(String id, DateTime until) {
+  void add(String id, int activation, DateTime until) {
     final now = clock.now();
     if (!until.isAfter(now)) return;
     _timers[id]?.cancel();
-    state = {...state, id: until};
+    state = {...state, id: (activation: activation, until: until)};
     _timers[id] = Timer(until.difference(now), () {
       _timers.remove(id);
       state = Map.of(state)..remove(id);
@@ -428,9 +431,15 @@ class LocallySnoozedNudgeDeadlines extends Notifier<Map<String, DateTime>> {
   }
 }
 
-final NotifierProvider<LocallySnoozedNudgeDeadlines, Map<String, DateTime>>
+final NotifierProvider<
+  LocallySnoozedNudgeDeadlines,
+  Map<String, GoalBannerLocalSuppression>
+>
 locallySnoozedNudgeDeadlinesProvider =
-    NotifierProvider<LocallySnoozedNudgeDeadlines, Map<String, DateTime>>(
+    NotifierProvider<
+      LocallySnoozedNudgeDeadlines,
+      Map<String, GoalBannerLocalSuppression>
+    >(
       LocallySnoozedNudgeDeadlines.new,
       name: 'locallySnoozedNudgeDeadlinesProvider',
     );

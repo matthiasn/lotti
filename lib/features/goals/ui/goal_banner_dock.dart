@@ -37,17 +37,24 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
 /// shell lane that reserves space for it.
 List<GoalBannerEntry> visibleGoalBannerEntries({
   required Iterable<GoalBannerEntry>? entries,
-  required Map<String, DateTime> locallySnoozedDeadlines,
+  required Map<String, GoalBannerLocalSuppression> locallySnoozedDeadlines,
   DateTime? now,
 }) {
   final instant = now ?? clock.now();
+  bool isLocallySuppressed(GoalBannerEntry entry) {
+    final suppression = locallySnoozedDeadlines[entry.nudge.id];
+    return suppression != null &&
+        suppression.activation == entry.nudge.activationCount &&
+        suppression.until.isAfter(instant);
+  }
+
   return [
     for (final entry in entries ?? const <GoalBannerEntry>[])
       if ((entry.nudge.staleAt == null ||
               instant.isBefore(entry.nudge.staleAt!)) &&
           !goalBannerIsSnoozed(entry.nudge, instant) &&
           !goalBannerIsDismissedForDay(entry.nudge, instant) &&
-          locallySnoozedDeadlines[entry.nudge.id]?.isAfter(instant) != true)
+          !isLocallySuppressed(entry))
         entry,
   ];
 }

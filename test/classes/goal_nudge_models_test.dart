@@ -46,6 +46,7 @@ void main() {
       duration: GoalBannerSnoozeDuration.threeHours,
       durationMinutes: 180,
       utcOffsetMinutes: 120,
+      returnUtcOffsetMinutes: 180,
     );
 
     final decoded = GoalNudgeSnooze.fromJson(
@@ -54,7 +55,12 @@ void main() {
 
     expect(decoded, event);
     expect(decoded.snoozedAtLocal, DateTime.utc(2026, 8, 13, 12));
-    expect(decoded.snoozedUntilLocal, DateTime.utc(2026, 8, 13, 15));
+    expect(decoded.snoozedUntilLocal, DateTime.utc(2026, 8, 13, 16));
+    expect(
+      decoded.copyWith(returnUtcOffsetMinutes: null).snoozedUntilLocal,
+      DateTime.utc(2026, 8, 13, 15),
+      reason: 'older events retain their action-offset interpretation',
+    );
   });
 
   test('GoalNudgeSnooze rejects invalid duration and timezone evidence', () {

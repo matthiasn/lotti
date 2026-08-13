@@ -6134,9 +6134,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalBannerDismissForDay => 'Nascondi per oggi';
 
   @override
-  String get goalBannerDismissTooltip => 'Ignora';
-
-  @override
   String get goalBannerRateTooltip => 'Valuta questo banner';
 
   @override

@@ -6159,9 +6159,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalBannerDismissForDay => 'Ascundeți pentru azi';
 
   @override
-  String get goalBannerDismissTooltip => 'Închideți';
-
-  @override
   String get goalBannerRateTooltip => 'Evaluați acest banner';
 
   @override

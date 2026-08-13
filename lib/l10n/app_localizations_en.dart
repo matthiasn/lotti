@@ -6031,9 +6031,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalBannerDismissForDay => 'Dismiss for today';
 
   @override
-  String get goalBannerDismissTooltip => 'Dismiss';
-
-  @override
   String get goalBannerRateTooltip => 'Rate this banner';
 
   @override
@@ -13002,9 +12999,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String goalAttainmentLabel(int percent) {
     return '$percent% of target';
   }
-
-  @override
-  String get goalBannerDismissTooltip => 'Dismiss';
 
   @override
   String get goalBannerRatingSkip => 'Skip';

@@ -184,7 +184,8 @@ restarts. Every snooze and day dismissal appends its activation, local offset,
 start, and requested return boundary; snoozes also preserve the selected or
 exact duration. The FACTS renderer gives the agent bounded timing summaries so
 repeated snooze-return and dismissal hours can inform future initial display
-times. Chat can also snooze the current banner until any requested future time;
+times without shifting a requested return across timezone or daylight-saving
+boundaries. Chat can also snooze the current banner until any requested future time;
 the just-committed snooze is suppressed locally while its durable projection
 reloads. Dismissal cooldown applies to automatic banners only: a direct request
 for a banner, a missing-banner report, or a short affirmative reply to the

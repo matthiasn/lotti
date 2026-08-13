@@ -80,6 +80,9 @@ _GoalNudgeSnooze _$GoalNudgeSnoozeFromJson(Map<String, dynamic> json) =>
       ),
       durationMinutes: _decodePositiveMinutes(json['durationMinutes']),
       utcOffsetMinutes: _decodeUtcOffsetMinutes(json['utcOffsetMinutes']),
+      returnUtcOffsetMinutes: _decodeOptionalUtcOffsetMinutes(
+        json['returnUtcOffsetMinutes'],
+      ),
     );
 
 Map<String, dynamic> _$GoalNudgeSnoozeToJson(_GoalNudgeSnooze instance) =>
@@ -91,6 +94,7 @@ Map<String, dynamic> _$GoalNudgeSnoozeToJson(_GoalNudgeSnooze instance) =>
       'duration': _$GoalBannerSnoozeDurationEnumMap[instance.duration]!,
       'durationMinutes': instance.durationMinutes,
       'utcOffsetMinutes': instance.utcOffsetMinutes,
+      'returnUtcOffsetMinutes': instance.returnUtcOffsetMinutes,
     };
 
 const _$GoalBannerSnoozeDurationEnumMap = {

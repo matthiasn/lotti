@@ -406,8 +406,34 @@ void main() {
     final request = strategy.snoozeRequests.single;
     expect(request.adId, 'ad-known');
     expect(request.until, DateTime.utc(2026, 8, 12, 6, 30));
+    expect(request.returnUtcOffsetMinutes, 120);
     expect(request.reason, 'user asked for tomorrow morning');
   });
+
+  test(
+    'snooze rejects offsets outside the DateTime timezone contract',
+    () async {
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+        () => strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-12T08:30:00+14:30',
+                'reason': 'invalid offset',
+              },
+            ),
+          ],
+          manager: manager,
+        ),
+      );
+
+      expect(strategy.snoozeRequests, isEmpty);
+      expect(rejection(), contains('ISO 8601'));
+    },
+  );
 
   test('snooze rejects future timestamps without an explicit offset', () async {
     await withClock(

@@ -6124,9 +6124,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalBannerDismissForDay => 'Skrýt na dnešek';
 
   @override
-  String get goalBannerDismissTooltip => 'Zavřít';
-
-  @override
   String get goalBannerRateTooltip => 'Ohodnotit tento banner';
 
   @override

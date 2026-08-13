@@ -4329,11 +4329,11 @@ class GoalNudgeEntity implements AgentDomainEntity {
 /// visible again when this instant is no longer on the reading device's
 /// local calendar day.
  final  DateTime? dismissedForDayAt;
-/// Append-only day-dismissal evidence. Current visibility reads
-/// [dismissedForDayAt]; future timing analysis reads this history.
+/// Append-only day-dismissal evidence. Current visibility reads the latest
+/// day-dismissal instant above; future timing analysis reads this history.
  final  List<GoalNudgeDayDismissal> _dismissalHistory;
-/// Append-only day-dismissal evidence. Current visibility reads
-/// [dismissedForDayAt]; future timing analysis reads this history.
+/// Append-only day-dismissal evidence. Current visibility reads the latest
+/// day-dismissal instant above; future timing analysis reads this history.
 @JsonKey() List<GoalNudgeDayDismissal> get dismissalHistory {
   if (_dismissalHistory is EqualUnmodifiableListView) return _dismissalHistory;
   // ignore: implicit_dynamic_type

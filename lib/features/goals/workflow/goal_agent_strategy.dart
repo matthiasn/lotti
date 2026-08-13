@@ -19,7 +19,12 @@ typedef GoalAdRequest = ({GoalNudgeBrief brief, String? reasonSummary});
 typedef GoalAdAction = ({String adId, String reason});
 
 /// A request to hide one active banner until an exact future instant.
-typedef GoalAdSnooze = ({String adId, DateTime until, String reason});
+typedef GoalAdSnooze = ({
+  String adId,
+  DateTime until,
+  int returnUtcOffsetMinutes,
+  String reason,
+});
 
 /// A revision proposal accumulated from `propose_goal_revision_v2`.
 typedef GoalRevisionProposal = ({
@@ -355,9 +360,13 @@ class GoalAgentStrategy extends ConversationStrategy
     final until = hasExplicitOffset
         ? DateTime.tryParse(untilText)?.toUtc()
         : null;
+    final returnUtcOffsetMinutes = hasExplicitOffset
+        ? _iso8601UtcOffsetMinutes(untilText)
+        : null;
     if (adId.isEmpty ||
         reason.isEmpty ||
         until == null ||
+        returnUtcOffsetMinutes == null ||
         !until.isAfter(clock.now().toUtc())) {
       await _reject(
         call: call,
@@ -378,12 +387,30 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _snoozeRequests.add((adId: adId, until: until, reason: reason));
+    _snoozeRequests.add((
+      adId: adId,
+      until: until,
+      returnUtcOffsetMinutes: returnUtcOffsetMinutes,
+      reason: reason,
+    ));
     await _accept(
       call,
       manager,
       'Ad snoozed until ${until.toIso8601String()}.',
     );
+  }
+
+  int? _iso8601UtcOffsetMinutes(String value) {
+    if (value.endsWith('Z') || value.endsWith('z')) return 0;
+    final match = RegExp(r'([+-])(\d{2}):?(\d{2})$').firstMatch(value);
+    if (match == null) return null;
+    final hours = int.parse(match.group(2)!);
+    final minutes = int.parse(match.group(3)!);
+    if (hours > 14 || minutes > 59 || (hours == 14 && minutes != 0)) {
+      return null;
+    }
+    final absolute = hours * 60 + minutes;
+    return match.group(1) == '-' ? -absolute : absolute;
   }
 
   Future<void> _handleProposeRevision(

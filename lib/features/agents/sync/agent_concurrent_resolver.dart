@@ -375,6 +375,12 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
       if (event.snoozedUntil == snoozedUntil) effectiveSnooze = event;
     }
   }
+  final activationCount = local.activationCount > incoming.activationCount
+      ? local.activationCount
+      : incoming.activationCount;
+  final mergedStaleAt = sameActivation
+      ? _latestInstant(local.staleAt, incoming.staleAt)
+      : winner.staleAt;
   return winner.copyWith(
     // The merged row observed BOTH branches, so its clock must be their
     // join: keeping only the winner's clock would let that device's next
@@ -388,15 +394,14 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
     snoozedUntil: snoozedUntil,
     lastSnoozeDuration: effectiveSnooze?.duration ?? winner.lastSnoozeDuration,
     dismissalHistory: mergedDismissals,
+    staleAt: mergedStaleAt,
     dismissedForDayAt: sameActivation
         ? _latestInstant(
             local.dismissedForDayAt,
             incoming.dismissedForDayAt,
           )
         : winner.dismissedForDayAt,
-    activationCount: local.activationCount > incoming.activationCount
-        ? local.activationCount
-        : incoming.activationCount,
+    activationCount: activationCount,
     firstShownAt: _earliestInstant(local.firstShownAt, incoming.firstShownAt),
     lastShownAt: _latestInstant(local.lastShownAt, incoming.lastShownAt),
   );
@@ -422,7 +427,11 @@ int _compareGoalNudgeSnoozes(GoalNudgeSnooze a, GoalNudgeSnooze b) {
   if (byDuration != 0) return byDuration;
   final byMinutes = a.durationMinutes.compareTo(b.durationMinutes);
   if (byMinutes != 0) return byMinutes;
-  return a.utcOffsetMinutes.compareTo(b.utcOffsetMinutes);
+  final byOffset = a.utcOffsetMinutes.compareTo(b.utcOffsetMinutes);
+  if (byOffset != 0) return byOffset;
+  return (a.returnUtcOffsetMinutes ?? a.utcOffsetMinutes).compareTo(
+    b.returnUtcOffsetMinutes ?? b.utcOffsetMinutes,
+  );
 }
 
 DateTime? _earliestInstant(DateTime? a, DateTime? b) {

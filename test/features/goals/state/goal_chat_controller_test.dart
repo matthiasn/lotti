@@ -308,7 +308,7 @@ void main() {
     await withClock(Clock.fixed(now), controller.send);
 
     expect(container.read(locallySnoozedNudgeDeadlinesProvider), {
-      'snoozed': until,
+      'snoozed': (activation: 1, until: until),
     });
   });
 }

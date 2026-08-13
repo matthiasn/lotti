@@ -6060,9 +6060,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalBannerDismissForDay => 'Skjul resten af dagen';
 
   @override
-  String get goalBannerDismissTooltip => 'Afvis';
-
-  @override
   String get goalBannerRateTooltip => 'Bedøm dette banner';
 
   @override

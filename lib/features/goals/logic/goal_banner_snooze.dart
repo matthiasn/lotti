@@ -64,6 +64,7 @@ GoalNudgeEntity snoozeGoalBannerEntity({
   required DateTime now,
   required DateTime until,
   required String eventId,
+  int? returnUtcOffsetMinutes,
 }) {
   final exactDuration = until.toUtc().difference(now.toUtc());
   if (exactDuration <= Duration.zero) {
@@ -78,6 +79,8 @@ GoalNudgeEntity snoozeGoalBannerEntity({
     duration: goalBannerSnoozeDurationFor(exactDuration),
     durationMinutes: durationMinutes,
     utcOffsetMinutes: now.timeZoneOffset.inMinutes,
+    returnUtcOffsetMinutes:
+        returnUtcOffsetMinutes ?? until.timeZoneOffset.inMinutes,
   );
   final staleAfterSnooze = _staleAtAfterQuietPeriod(until);
   return nudge.copyWith(

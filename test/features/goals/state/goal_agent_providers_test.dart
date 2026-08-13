@@ -1611,10 +1611,13 @@ void main() {
       withClock(Clock(() => start.add(async.elapsed)), () {
         container
             .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-            .add('ad-1', start.add(const Duration(minutes: 15)));
+            .add('ad-1', 1, start.add(const Duration(minutes: 15)));
 
         expect(container.read(locallySnoozedNudgeDeadlinesProvider), {
-          'ad-1': start.add(const Duration(minutes: 15)),
+          'ad-1': (
+            activation: 1,
+            until: start.add(const Duration(minutes: 15)),
+          ),
         });
         async.elapse(const Duration(minutes: 15));
         expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);

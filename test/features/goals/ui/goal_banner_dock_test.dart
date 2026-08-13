@@ -170,6 +170,28 @@ void main() {
     expect(visible.map((entry) => entry.nudge.id), ['visible']);
   });
 
+  test('local suppression never hides a newer activation of the same row', () {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    final visible = visibleGoalBannerEntries(
+      entries: [
+        entry(
+          id: 'rerun',
+          headline: 'Fresh activation',
+          activationCount: 2,
+        ),
+      ],
+      locallySnoozedDeadlines: {
+        'rerun': (
+          activation: 1,
+          until: now.add(const Duration(hours: 12)),
+        ),
+      },
+      now: now,
+    );
+
+    expect(visible.map((entry) => entry.nudge.id), ['rerun']);
+  });
+
   testWidgets('a single tenant just sits: no dots, no auto-advance after '
       'a full tenure', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
@@ -888,7 +910,7 @@ void main() {
 
     container
         .read(locallySnoozedNudgeDeadlinesProvider.notifier)
-        .add('a', DateTime.utc(2099));
+        .add('a', 1, DateTime.utc(2099));
     await settleTransition(tester);
 
     expect(find.text('Quiet now'), findsNothing);

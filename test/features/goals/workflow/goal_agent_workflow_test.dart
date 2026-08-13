@@ -1392,6 +1392,11 @@ void main() {
           'until': '2099-08-12T08:30:00Z',
           'reason': 'keep the longer lifetime',
         }, id: 'c8'),
+        toolCall(GoalAgentToolNames.snoozeGoalAd, {
+          'adId': 'ad-snooze',
+          'until': '2099-08-12T11:30:00+02:00',
+          'reason': 'follow-up timing choice in the same turn',
+        }, id: 'c9'),
       ],
       manager: conversationManager,
     );
@@ -1419,7 +1424,7 @@ void main() {
     // The dismissed ad was NOT retired (terminal), the missing ad was
     // skipped, the active ad was NOT re-run but WAS retired; the retired
     // ad was re-run.
-    expect(written, hasLength(4));
+    expect(written, hasLength(5));
     final retired = written.singleWhere((n) => n.id == 'ad-active');
     expect(retired.status, GoalNudgeStatus.retired);
     expect(retired.provenance['retireReason'], 'quota completed');
@@ -1434,24 +1439,25 @@ void main() {
     expect(rerun.snoozedUntil, isNull);
     expect(rerun.lastSnoozeDuration, isNull);
     expect(rerun.dismissedForDayAt, isNull);
-    final snoozed = written.singleWhere((n) => n.id == 'ad-snooze');
+    final snoozed = written.lastWhere((n) => n.id == 'ad-snooze');
     expect(snoozed.status, GoalNudgeStatus.active);
     expect(
       snoozed.snoozedUntil,
-      DateTime.utc(2099, 8, 12, 8, 30),
+      DateTime.utc(2099, 8, 12, 9, 30),
     );
     expect(
       snoozed.lastSnoozeDuration,
       GoalBannerSnoozeDuration.custom,
     );
-    expect(snoozed.snoozeHistory, hasLength(1));
+    expect(snoozed.snoozeHistory, hasLength(2));
     expect(
-      snoozed.snoozeHistory.single.snoozedUntil,
-      DateTime.utc(2099, 8, 12, 8, 30),
+      snoozed.snoozeHistory.last.snoozedUntil,
+      DateTime.utc(2099, 8, 12, 9, 30),
     );
+    expect(snoozed.snoozeHistory.last.returnUtcOffsetMinutes, 120);
     expect(
       snoozed.staleAt,
-      DateTime.utc(2099, 8, 12, 8, 30).add(goalAdLifetime),
+      DateTime.utc(2099, 8, 12, 9, 30).add(goalAdLifetime),
       reason: 'the banner must remain live after its snooze expires',
     );
     final longLived = written.singleWhere((n) => n.id == 'ad-snooze-long');
