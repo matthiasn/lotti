@@ -63,7 +63,8 @@ void main() {
     expect(find.text('1 day to healthy'), findsOneWidget);
     expect(find.text('4 / 6'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
-    expect(find.text('done'), findsOneWidget);
+    expect(find.text('done · target met'), findsOneWidget);
+    expect(find.text('done · target not met yet'), findsOneWidget);
     expect(find.text('ages out tonight'), findsOneWidget);
     expect(find.text('today'), findsOneWidget);
   });
@@ -132,7 +133,15 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalCompactWindowStrip(
-          days: [true, false, true, false, false, true, false],
+          days: [
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+            GoalCompactDayState.partial,
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+          ],
         ),
       ),
     );
@@ -150,7 +159,13 @@ void main() {
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const GoalCompactWindowStrip(days: [false, true, false]),
+        const GoalCompactWindowStrip(
+          days: [
+            GoalCompactDayState.none,
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+          ],
+        ),
       ),
     );
 
@@ -180,9 +195,79 @@ void main() {
 
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
-    expect(find.text('done'), findsNothing);
+    expect(find.text('done · target met'), findsNothing);
+    expect(find.text('done · target not met yet'), findsNothing);
     expect(find.text('ages out tonight'), findsNothing);
     expect(find.text('today'), findsNothing);
+  });
+
+  testWidgets('a point-sample health header quotes the latest reading, not '
+      'the period average', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                GoalMetricProgressView(
+                  criterionId: 'weight',
+                  sourceId: GoalHealthDataTypes.weight,
+                  name: 'Weight',
+                  target: 88,
+                  direction: GoalDirection.atMost,
+                  unitName: 'kg',
+                  days: [day(2, 92), day(1, 96), day(0, 95)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Latest observation (95) — the three-day average would render as
+    // "94.333 of 88 kg".
+    expect(find.text('95 of 88 kg'), findsOneWidget);
+  });
+
+  testWidgets('the blood-pressure header quotes the latest paired reading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                GoalMetricProgressView(
+                  criterionId: 'systolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                  name: 'Systolic blood pressure',
+                  target: 125,
+                  direction: GoalDirection.atMost,
+                  unitName: 'mmHg',
+                  days: [day(1, 131), day(0, 127)],
+                ),
+                GoalMetricProgressView(
+                  criterionId: 'diastolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                  name: 'Diastolic blood pressure',
+                  target: 85,
+                  direction: GoalDirection.atMost,
+                  unitName: 'mmHg',
+                  days: [day(1, 91), day(0, 89)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // The latest measurements (127 / 89), not the averages (129 / 90).
+    expect(find.text('127 / 89 mmHg'), findsOneWidget);
   });
 
   testWidgets(
@@ -835,7 +920,9 @@ void main() {
     );
 
     expect(find.text('at rate'), findsOneWidget);
-    expect(find.byType(SingleChildScrollView), findsNWidgets(2));
+    // Weekday labels and day cells share ONE horizontal scroller so they
+    // cannot drift apart when the narrow grid scrolls.
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 
   testWidgets('tapping a previous habit day records the chosen outcome for '
@@ -888,7 +975,7 @@ void main() {
     );
     expect(menuButton.position, PopupMenuPosition.under);
     expect(menuButton.menuPadding, EdgeInsets.zero);
-    expect(menuButton.tooltip, isEmpty);
+    expect(menuButton.tooltip, 'Aug 8, 2026: No entry');
     expect(
       find.bySemanticsLabel('Aug 8, 2026: No entry'),
       findsOneWidget,
@@ -908,6 +995,183 @@ void main() {
     expect(selected?.habitId, 'walk');
     expect(selected?.day, DateTime.utc(2026, 8, 8));
     expect(selected?.outcome, HabitCompletionType.fail);
+  });
+
+  testWidgets('the outcome menu opens with the concrete date of the selected '
+      'day', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async =>
+                  true,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-habit-day-date-walk-2026-08-08')),
+      findsOneWidget,
+    );
+    expect(find.text('Sat, Aug 8'), findsOneWidget);
+  });
+
+  testWidgets('a completed day short of its window target renders as a '
+      'partial success, a satisfied day at full strength', (tester) async {
+    GoalProgressDay verdictDay(int offset, num value, {bool? satisfied}) =>
+        GoalProgressDay(
+          day: today.subtract(Duration(days: offset)),
+          value: value,
+          targetSatisfied: satisfied,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  verdictDay(6, 1, satisfied: false),
+                  verdictDay(5, 0, satisfied: false),
+                  verdictDay(4, 0, satisfied: false),
+                  verdictDay(3, 1, satisfied: true),
+                  verdictDay(2, 0, satisfied: true),
+                  verdictDay(1, 0, satisfied: true),
+                  verdictDay(0, 0, satisfied: true),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // The completed-but-short day carries the partial marker...
+    expect(
+      find.byKey(const ValueKey('goal-day-partial-walk-2026-08-05')),
+      findsOneWidget,
+    );
+    // ...while the completed day whose window verdict held does not.
+    expect(
+      find.byKey(const ValueKey('goal-day-partial-walk-2026-08-08')),
+      findsNothing,
+    );
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final partialCell = tester.widget<Container>(
+      find.byKey(const ValueKey('goal-habit-day-visual-walk-2026-08-05')),
+    );
+    final fullCell = tester.widget<Container>(
+      find.byKey(const ValueKey('goal-habit-day-visual-walk-2026-08-08')),
+    );
+    expect(
+      (partialCell.decoration! as BoxDecoration).color,
+      tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.muted),
+    );
+    expect(
+      (fullCell.decoration! as BoxDecoration).color,
+      tokens.colors.interactive.enabled,
+    );
+  });
+
+  testWidgets('a same-goal observation recorded today offers a one-tap habit '
+      'check-off', (tester) async {
+    ({DateTime day, String habitId, HabitCompletionType outcome})? selected;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'measure',
+                  name: 'Measure Blood Pressure',
+                  targetCount: 5,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                  suggestedFromDimensionName: 'Systolic blood pressure',
+                ),
+              ],
+            ),
+            onHabitOutcomeSelected:
+                ({required day, required habitId, required outcome}) async {
+                  selected = (day: day, habitId: habitId, outcome: outcome);
+                  return true;
+                },
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        'Systolic blood pressure recorded today — check off this habit?',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-habit-checkoff-measure')));
+    await tester.pump();
+
+    expect(selected?.habitId, 'measure');
+    expect(selected?.day, today);
+    expect(selected?.outcome, HabitCompletionType.success);
+  });
+
+  testWidgets('without a suggestion or callback no check-off affordance '
+      'renders', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'measure',
+                name: 'Measure Blood Pressure',
+                targetCount: 5,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+                suggestedFromDimensionName: 'Systolic blood pressure',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // A read-only card (inactive goal) must not offer the write path even
+    // when the suggestion is present in the projection.
+    expect(
+      find.byKey(const ValueKey('goal-habit-checkoff-measure')),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -1405,13 +1669,13 @@ void main() {
               compositeRule: GoalCompositeRuleKind.atLeast,
               requiredSuccesses: 2,
               compositeCompactWindow: const [
-                false,
-                true,
-                false,
-                true,
-                true,
-                false,
-                true,
+                GoalCompactDayState.none,
+                GoalCompactDayState.full,
+                GoalCompactDayState.none,
+                GoalCompactDayState.full,
+                GoalCompactDayState.full,
+                GoalCompactDayState.none,
+                GoalCompactDayState.full,
               ],
               habits: [
                 GoalHabitProgressView(

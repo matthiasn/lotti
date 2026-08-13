@@ -166,6 +166,19 @@ class GoalAgentDetailPage extends ConsumerWidget {
           healthAvailable: healthAsync.hasValue,
           spec: spec,
         ),
+        // The agent's voice — standing report and active banners — stays
+        // grouped with the goal definition at the top; the evidence
+        // (habit cards, then charts) follows below it.
+        SizedBox(height: tokens.spacing.cardItemSpacing),
+        _AgentSayingSection(
+          agentId: agentId,
+          healthAsync: healthAsync,
+          nudges: nudges,
+          report: latestReport,
+          reportIsStale:
+              agentState is AgentStateEntity && agentState.isReportStale,
+          canRefresh: isActive,
+        ),
         if (progress != null) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           GoalProgressCard(
@@ -205,16 +218,6 @@ class GoalAgentDetailPage extends ConsumerWidget {
                   },
           ),
         ],
-        SizedBox(height: tokens.spacing.cardItemSpacing),
-        _AgentSayingSection(
-          agentId: agentId,
-          healthAsync: healthAsync,
-          nudges: nudges,
-          report: latestReport,
-          reportIsStale:
-              agentState is AgentStateEntity && agentState.isReportStale,
-          canRefresh: isActive,
-        ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
         if (isActive)
           ChangeSetSummaryCard.selfTargeted(
@@ -466,7 +469,9 @@ class _GoalReportCardState extends State<_GoalReportCard> {
     final content = report?.content.trim();
     final hasTldr = tldr != null && tldr.isNotEmpty;
     final hasContent = content != null && content.isNotEmpty;
-    final expandable = hasTldr && hasContent;
+    // A full text identical to the TLDR would make Show more a no-op that
+    // merely repeats the same paragraph — hide the toggle instead.
+    final expandable = hasTldr && hasContent && content != tldr;
     final primary = hasTldr
         ? tldr
         : hasContent

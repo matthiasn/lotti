@@ -57,7 +57,17 @@ void main() {
     expect(habit.deficit, 1);
     expect(habit.oldestSuccessAgesOutTonight, isFalse);
     expect(habit.successfulWeeks, 2);
-    expect(view.compactWindow, [true, false, false, true, false, false, true]);
+    expect(view.compactWindow, [
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      // Completed today, but only three of four successes in the window:
+      // a partial success, not a full one.
+      GoalCompactDayState.partial,
+    ]);
   });
 
   test('an at-rate habit marks the oldest active success as aging out', () {
@@ -124,7 +134,15 @@ void main() {
 
     expect(view.metric?.days, hasLength(7));
     expect(view.metric?.aggregation, GoalAggregation.dailySumThenAverage);
-    expect(view.compactWindow, [true, false, false, false, true, false, true]);
+    expect(view.compactWindow, [
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+    ]);
   });
 
   test('an at-most metric marks values at or below its ceiling', () {
@@ -146,9 +164,12 @@ void main() {
     );
 
     expect(view.metric?.direction, GoalDirection.atMost);
-    expect(view.compactWindow.take(5), everyElement(isFalse));
-    expect(view.compactWindow.last, isFalse);
-    expect(view.compactWindow[5], isFalse);
+    expect(
+      view.compactWindow.take(5),
+      everyElement(GoalCompactDayState.none),
+    );
+    expect(view.compactWindow.last, GoalCompactDayState.none);
+    expect(view.compactWindow[5], GoalCompactDayState.none);
   });
 
   test('a health metric with a bounded improving trend is on track', () {
@@ -240,7 +261,15 @@ void main() {
     expect(metric.days.last.isObserved, isTrue);
     expect(
       view.compactWindow,
-      [true, true, true, true, true, false, false],
+      [
+        GoalCompactDayState.full,
+        GoalCompactDayState.full,
+        GoalCompactDayState.full,
+        GoalCompactDayState.full,
+        GoalCompactDayState.full,
+        GoalCompactDayState.none,
+        GoalCompactDayState.none,
+      ],
       reason: 'a late session keeps the rolling at-most-zero window failed',
     );
   });
@@ -285,9 +314,21 @@ void main() {
     final count = build(GoalAggregation.count);
 
     expect(sum.metric?.aggregation, GoalAggregation.sum);
-    expect(sum.compactWindow, [false, false, false, false, true]);
+    expect(sum.compactWindow, [
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+    ]);
     expect(count.metric?.aggregation, GoalAggregation.count);
-    expect(count.compactWindow, [false, false, false, false, true]);
+    expect(count.compactWindow, [
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+    ]);
   });
 
   test(
@@ -351,7 +392,7 @@ void main() {
 
     expect(dayView.metric?.days, hasLength(1));
     expect(dayView.metric?.window, const GoalWindow.day());
-    expect(dayView.compactWindow, [true]);
+    expect(dayView.compactWindow, [GoalCompactDayState.full]);
     expect(monthView.metric?.days, hasLength(31));
     expect(monthView.metric?.days.first.day, DateTime.utc(2026, 8));
     expect(monthView.metric?.days.last.day, DateTime.utc(2026, 8, 31));
@@ -392,13 +433,13 @@ void main() {
     );
 
     expect(view.compactWindow, [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
     ]);
   });
 
@@ -455,8 +496,10 @@ void main() {
     expect(view.metric?.days, hasLength(7));
     expect(view.metrics.map((metric) => metric.name), ['steps', 'weight-id']);
     expect(view.metrics.last.days.last.value, 81);
-    expect(view.compactWindow[5], isTrue);
-    expect(view.compactWindow.last, isTrue);
+    // Completed via the habit leaf while no leaf's window target held yet:
+    // the accomplishment shows as a partial success.
+    expect(view.compactWindow[5], GoalCompactDayState.partial);
+    expect(view.compactWindow.last, GoalCompactDayState.full);
   });
 
   test('composite strip rewards a fully completed day independently of the '
@@ -488,8 +531,8 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow[5], isTrue);
-    expect(view.compactWindow.last, isFalse);
+    expect(view.compactWindow[5], GoalCompactDayState.partial);
+    expect(view.compactWindow.last, GoalCompactDayState.none);
   });
 
   test('composite strip stays green when the rolling quota is met', () {
@@ -520,7 +563,7 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow.last, isTrue);
+    expect(view.compactWindow.last, GoalCompactDayState.full);
   });
 
   test('composite progress preserves every metric leaf', () {
@@ -592,8 +635,103 @@ void main() {
       reference: today,
     );
 
-    expect(view.compactWindow[5], isFalse);
-    expect(view.compactWindow.last, isTrue);
+    expect(view.compactWindow[5], GoalCompactDayState.none);
+    expect(view.compactWindow.last, GoalCompactDayState.full);
+  });
+
+  test('habit days carry the as-of-day window verdict so completed days can '
+      'render as partial successes', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.habit(
+        criterionId: 'walk',
+        habitId: 'walk-id',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'walk-id': {day(5): 1, day(0): 1},
+        },
+      ),
+      reference: today,
+    );
+
+    final days = view.habits.single.days;
+    // Window ending day(5) holds one success — completed but short of the
+    // two-per-window target.
+    expect(days[1].hasValue, isTrue);
+    expect(days[1].targetSatisfied, isFalse);
+    // Window ending today holds both successes — the target is met.
+    expect(days.last.hasValue, isTrue);
+    expect(days.last.targetSatisfied, isTrue);
+    // An empty day still carries the window verdict without a completion.
+    expect(days[3].hasValue, isFalse);
+    expect(days[3].targetSatisfied, isFalse);
+  });
+
+  test('a matching health observation recorded today suggests checking off '
+      'the still-blank habit', () {
+    GoalProgressView build({
+      Map<DateTime, int> habitDays = const {},
+      Map<DateTime, num>? systolicDays,
+      String habitTitle = 'Measure Blood Pressure',
+    }) => buildGoalProgressView(
+      criteria: GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'measure',
+            habitId: 'measure-id',
+            window: const GoalWindow.rollingDays(count: 7),
+            targetCount: 5,
+            title: habitTitle,
+          ),
+          const GoalCriterion.metric(
+            criterionId: 'systolic',
+            dataType: GoalHealthDataTypes.bloodPressureSystolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 125,
+            direction: GoalDirection.atMost,
+            title: 'Systolic blood pressure',
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {'measure-id': habitDays},
+        quantitativeDailySums: {
+          GoalHealthDataTypes.bloodPressureSystolic:
+              systolicDays ?? {day(0): 127},
+        },
+      ),
+      reference: today,
+    );
+
+    // Data recorded today + blank habit day + shared "blood pressure"
+    // tokens: the card should offer the one-tap check-off.
+    expect(
+      build().habits.single.suggestedFromDimensionName,
+      'Systolic blood pressure',
+    );
+    // Already completed today: nothing to suggest.
+    expect(
+      build(habitDays: {day(0): 1}).habits.single.suggestedFromDimensionName,
+      isNull,
+    );
+    // No observation today: no evidence to suggest from.
+    expect(
+      build(systolicDays: {day(1): 127})
+          .habits
+          .single
+          .suggestedFromDimensionName,
+      isNull,
+    );
+    // No distinctive word overlap ("BP" is not "blood pressure"): the
+    // medication habit must not be suggested by a measurement.
+    expect(
+      build(habitTitle: 'BP meds').habits.single.suggestedFromDimensionName,
+      isNull,
+    );
   });
 
   test('provider reads the active spec, resolves habit names and preserves the '

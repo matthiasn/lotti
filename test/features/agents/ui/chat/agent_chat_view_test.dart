@@ -180,22 +180,70 @@ void main() {
       tester.widget<GptMarkdown>(find.byType(GptMarkdown)).data,
       longReply,
     );
-    expect(tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines, 8);
+    // Height-based collapse: `GptMarkdown.maxLines` counts each block
+    // element as one line, so it never truncated numbered coaching lists.
+    // The clamp is a clipped viewport instead.
+    const collapseClip = ValueKey('agent-reply-collapse');
+    expect(find.byKey(collapseClip), findsOneWidget);
+    final collapsedHeight = tester.getSize(find.byKey(collapseClip)).height;
     expect(find.text('Show more'), findsOneWidget);
 
     await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines,
-      isNull,
-    );
     expect(find.text('Show less'), findsOneWidget);
+    expect(find.byKey(collapseClip), findsNothing);
+    expect(
+      tester.getSize(find.byType(AgentMarkdownView)).height,
+      greaterThan(collapsedHeight),
+    );
 
     await tester.tap(find.text('Show less'));
     await tester.pumpAndSettle();
 
-    expect(tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines, 8);
+    expect(find.byKey(collapseClip), findsOneWidget);
+    expect(find.text('Show more'), findsOneWidget);
+  });
+
+  testWidgets('a reply that fits the collapsed viewport shows no toggle even '
+      'when its character count is high', (tester) async {
+    // Over the former 360-character heuristic, but rendering as a couple of
+    // lines — the old line-count clamp showed a Show more button that did
+    // nothing.
+    final wideShortReply = List.filled(25, 'steady progress').join(' ');
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+          ),
+        ),
+        overrides: [
+          agentChatProjectionProvider('goal-1').overrideWith(
+            (ref) async => [
+              AgentChatMessage(
+                id: 'wide-short-reply',
+                role: AgentChatRole.agent,
+                text: wideShortReply,
+                createdAt: DateTime(2026, 8, 11, 9),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Show more'), findsNothing);
+    expect(find.text('Show less'), findsNothing);
   });
 
   testWidgets('restores an externally retained draft and submits it from the '

@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
+
 // No internal SDK controllers in tests
 
 // MockKeyVerification and MockDeviceKeys come from the centralized

@@ -75,7 +75,7 @@ void main() {
       final pages = await pagesFor(tester, '/agents');
       expect(pages, hasLength(1));
       expect(pages.single.child, isA<AgentsPage>());
-      expect(pages.single.title, 'Agents');
+      expect(pages.single.title, 'Goal Agents');
     });
 
     testWidgets('/agents/create stacks the creation page on the list', (

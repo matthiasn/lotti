@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import 'key_verification_runner_test_helpers.dart';
+
 // ignore_for_file: cascade_invocations
 
 void main() {

@@ -1576,7 +1576,7 @@ abstract class AppLocalizations {
   /// Title of the top-level agents page.
   ///
   /// In en, this message translates to:
-  /// **'Agents'**
+  /// **'Goal Agents'**
   String get agentsPageTitle;
 
   /// No description provided for @agentStateConsecutiveFailures.
@@ -5469,13 +5469,13 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableAgentsPage.
   ///
   /// In en, this message translates to:
-  /// **'Enable Agents page'**
+  /// **'Enable Goal Agents page'**
   String get configFlagEnableAgentsPage;
 
   /// No description provided for @configFlagEnableAgentsPageDescription.
   ///
   /// In en, this message translates to:
-  /// **'Show the Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.'**
+  /// **'Show the Goal Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.'**
   String get configFlagEnableAgentsPageDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
@@ -11155,6 +11155,18 @@ abstract class AppLocalizations {
   /// **'Your measurables'**
   String get goalFormYourMeasurables;
 
+  /// Button that records the suggested habit completion for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark done'**
+  String get goalHabitCheckOffAction;
+
+  /// Inline suggestion to check off a habit because matching data was recorded today.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimension} recorded today — check off this habit?'**
+  String goalHabitCheckOffSuggestion(String dimension);
+
   /// Screen-reader label for the falling trend arrow on a goal-agent list row.
   ///
   /// In en, this message translates to:
@@ -11265,7 +11277,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalProgressDone.
   ///
   /// In en, this message translates to:
-  /// **'done'**
+  /// **'done · target met'**
   String get goalProgressDone;
 
   /// No description provided for @goalProgressHabitDayNoEntry.
@@ -11291,6 +11303,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count}× · {window}'**
   String goalProgressHabitTargetWindow(int count, String window);
+
+  /// Legend label for a day where the habit was completed but the goal window target was not yet met.
+  ///
+  /// In en, this message translates to:
+  /// **'done · target not met yet'**
+  String get goalProgressPartial;
 
   /// No description provided for @goalProgressTitle.
   ///

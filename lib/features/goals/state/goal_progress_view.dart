@@ -18,6 +18,12 @@ enum GoalDimensionKind { habit, health, measurable, categoryTime }
 
 enum GoalCompositeRuleKind { all, any, atLeast }
 
+/// One cell of the seven-day picture. [full] means the goal requirement was
+/// satisfied as of that day; [partial] means the user did everything within
+/// their control that day (habits completed) while the goal target was not
+/// yet met — rendered as a lighter wash of the same success hue.
+enum GoalCompactDayState { none, partial, full }
+
 class GoalRecordedMeasurementProvenance {
   const GoalRecordedMeasurementProvenance({
     required this.agentName,
@@ -44,6 +50,7 @@ class GoalHabitProgressView {
     this.sourceCaption,
     this.window = const GoalWindow.rollingDays(count: 7),
     this.slippedDay,
+    this.suggestedFromDimensionName,
   });
 
   final String habitId;
@@ -52,6 +59,12 @@ class GoalHabitProgressView {
   final String? sourceCaption;
   final int targetCount;
   final List<GoalProgressDay> days;
+
+  /// Set when a sibling data dimension of the same goal recorded an
+  /// observation today, this habit's name shares a distinctive word with that
+  /// dimension, and today has no recorded outcome yet — evidence exists, so
+  /// the card offers a one-tap check-off instead of leaving the day blank.
+  final String? suggestedFromDimensionName;
 
   /// Successful trailing seven-day periods, available only when the authored
   /// criterion itself is a rolling seven-day habit.
@@ -151,7 +164,7 @@ class GoalProgressView {
   final DateTime today;
   final List<GoalHabitProgressView> habits;
   final List<GoalMetricProgressView> metrics;
-  final List<bool>? compositeCompactWindow;
+  final List<GoalCompactDayState>? compositeCompactWindow;
   final GoalCompositeRuleKind? compositeRule;
   final int? requiredSuccesses;
   final bool rootOnTrack;
@@ -162,8 +175,10 @@ class GoalProgressView {
 
   /// The compact list-row picture. Composite routines preserve their `all`,
   /// `any`, or `at least N` semantics; a single habit uses its own series.
-  /// Metric goals respect their at-least/at-most direction.
-  List<bool> get compactWindow {
+  /// Metric goals respect their at-least/at-most direction. A day is `full`
+  /// when the goal requirement held as of that day, `partial` when the
+  /// routine was completed while the requirement was still building up.
+  List<GoalCompactDayState> get compactWindow {
     if (compositeCompactWindow case final compact?) return compact;
     final activeDays = [
       for (var offset = 6; offset >= 0; offset--)
@@ -172,11 +187,9 @@ class GoalProgressView {
     if (habits.isNotEmpty) {
       return [
         for (final day in activeDays)
-          habits.every(
-            (habit) => habit.days.any(
-              (entry) => entry.day == day && entry.hasValue,
-            ),
-          ),
+          _combinedDayState([
+            for (final habit in habits) _habitDayState(habit: habit, day: day),
+          ]),
       ];
     }
     final series = metric;
@@ -188,8 +201,38 @@ class GoalProgressView {
         ? periodDays
         : periodDays.sublist(periodDays.length - 7);
     return [
-      for (final day in compactDays) series.meetsTarget(day),
+      for (final day in compactDays)
+        if (series.meetsTarget(day))
+          GoalCompactDayState.full
+        else
+          GoalCompactDayState.none,
     ];
+  }
+
+  static GoalCompactDayState _habitDayState({
+    required GoalHabitProgressView habit,
+    required DateTime day,
+  }) {
+    final entry = habit.days
+        .where((candidate) => candidate.day == day && candidate.hasValue)
+        .firstOrNull;
+    if (entry == null) return GoalCompactDayState.none;
+    return (entry.targetSatisfied ?? true)
+        ? GoalCompactDayState.full
+        : GoalCompactDayState.partial;
+  }
+
+  /// A multi-habit day is only as strong as its weakest completed habit, and
+  /// only counts at all when every habit was completed.
+  static GoalCompactDayState _combinedDayState(
+    List<GoalCompactDayState> states,
+  ) {
+    if (states.any((state) => state == GoalCompactDayState.none)) {
+      return GoalCompactDayState.none;
+    }
+    return states.any((state) => state == GoalCompactDayState.partial)
+        ? GoalCompactDayState.partial
+        : GoalCompactDayState.full;
   }
 }
 
@@ -199,13 +242,102 @@ bool _meetsTarget(num value, num target, GoalDirection direction) =>
       GoalDirection.atMost => value <= target,
     };
 
-bool _criterionMetOnDay(
+/// Words too generic to link a habit to a data dimension by name. The match
+/// is a whole-word overlap on the remaining tokens, so "Measure Blood
+/// Pressure" pairs with "Systolic blood pressure" while "BP meds" does not.
+/// Deliberately small and English-only: names authored in other languages
+/// still match each other verbatim, and a missed suggestion is harmless.
+const Set<String> _genericNameTokens = {
+  'a',
+  'an',
+  'and',
+  'check',
+  'daily',
+  'day',
+  'days',
+  'every',
+  'for',
+  'habit',
+  'log',
+  'measure',
+  'my',
+  'of',
+  'per',
+  'record',
+  'take',
+  'the',
+  'track',
+  'week',
+  'weekly',
+  'with',
+};
+
+Set<String> _nameTokens(String name) => {
+  for (final token in name.toLowerCase().split(
+    RegExp(r'[^\p{L}\p{N}]+', unicode: true),
+  ))
+    if (token.length > 1 && !_genericNameTokens.contains(token)) token,
+};
+
+/// Offers a one-tap check-off when evidence for a matching data dimension
+/// was recorded today while the habit day is still blank.
+GoalHabitProgressView _withCheckOffSuggestion({
+  required GoalHabitProgressView habit,
+  required List<GoalMetricProgressView> metrics,
+  required DateTime today,
+}) {
+  final todayEntry = habit.days
+      .where((entry) => entry.day == today)
+      .firstOrNull;
+  if (todayEntry == null ||
+      todayEntry.hasValue ||
+      todayEntry.habitCompletionType != null) {
+    return habit;
+  }
+  final habitTokens = _nameTokens(habit.name);
+  if (habitTokens.isEmpty) return habit;
+  for (final metric in metrics) {
+    // Category time is excluded: its days are observed by definition, so it
+    // would suggest on every blank day without carrying new evidence.
+    final observableKind =
+        metric.kind == GoalDimensionKind.health ||
+        metric.kind == GoalDimensionKind.measurable;
+    if (!observableKind) continue;
+    final observedToday = metric.days.any(
+      (entry) => entry.day == today && entry.isObserved && entry.value > 0,
+    );
+    if (!observedToday) continue;
+    if (_nameTokens(metric.name).intersection(habitTokens).isEmpty) continue;
+    return GoalHabitProgressView(
+      habitId: habit.habitId,
+      criterionId: habit.criterionId,
+      name: habit.name,
+      sourceCaption: habit.sourceCaption,
+      targetCount: habit.targetCount,
+      days: habit.days,
+      successfulWeeks: habit.successfulWeeks,
+      window: habit.window,
+      slippedDay: habit.slippedDay,
+      suggestedFromDimensionName: metric.name,
+    );
+  }
+  return habit;
+}
+
+GoalCompactDayState _criterionDayState(
   GoalCriterion criterion,
   GoalSignalWindow signals,
   DateTime day,
-) =>
-    _criterionCompletedOnDay(criterion, signals, day) ||
-    const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied;
+) {
+  if (const GoalProgressEvaluator()
+      .evaluate(criterion, signals, day)
+      .satisfied) {
+    return GoalCompactDayState.full;
+  }
+  return _criterionCompletedOnDay(criterion, signals, day)
+      ? GoalCompactDayState.partial
+      : GoalCompactDayState.none;
+}
 
 bool _criterionCompletedOnDay(
   GoalCriterion criterion,
@@ -298,7 +430,7 @@ GoalProgressView buildGoalProgressView({
     GoalCriterionAnyOf() ||
     GoalCriterionAtLeastCount() => [
       for (var offset = 6; offset >= 0; offset--)
-        _criterionMetOnDay(
+        _criterionDayState(
           criteria,
           signals,
           GoalWindow.dayUtc(today.subtract(Duration(days: offset))),
@@ -306,10 +438,52 @@ GoalProgressView buildGoalProgressView({
     ],
     _ => null,
   };
+  final metrics = [
+    for (final metric in metricLeaves)
+      _metricProgressView(
+        metric: metric,
+        signals: signals,
+        reference: reference,
+        projectedOnTrack:
+            evaluation.results[metric.criterionId]?.projectedDaysToTarget !=
+            null,
+      ),
+    for (final measurable in measurableLeaves)
+      _measurableProgressView(
+        measurable: measurable,
+        signals: signals,
+        reference: reference,
+        definition: measurableDefinitions[measurable.dataTypeId],
+        agentRecordedMeasurementIds: agentRecordedMeasurementIds,
+        recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
+        projectedOnTrack:
+            evaluation.results[measurable.criterionId]?.projectedDaysToTarget !=
+            null,
+      ),
+    for (final categoryTime in categoryTimeLeaves)
+      _categoryTimeProgressView(
+        categoryTime: categoryTime,
+        signals: signals,
+        reference: reference,
+        categoryName: categoryNames[categoryTime.categoryId],
+        projectedOnTrack:
+            evaluation
+                .results[categoryTime.criterionId]
+                ?.projectedDaysToTarget !=
+            null,
+      ),
+  ];
   return GoalProgressView(
     today: today,
     rootOnTrack: evaluation.satisfied || evaluation.onTrackByTrend,
-    habits: habits,
+    habits: [
+      for (final habit in habits)
+        _withCheckOffSuggestion(
+          habit: habit,
+          metrics: metrics,
+          today: today,
+        ),
+    ],
     compositeCompactWindow: compositeCompactWindow,
     compositeRule: switch (criteria) {
       GoalCriterionAllOf() => GoalCompositeRuleKind.all,
@@ -323,43 +497,7 @@ GoalProgressView buildGoalProgressView({
       GoalCriterionAnyOf() => 1,
       _ => null,
     },
-    metrics: [
-      for (final metric in metricLeaves)
-        _metricProgressView(
-          metric: metric,
-          signals: signals,
-          reference: reference,
-          projectedOnTrack:
-              evaluation.results[metric.criterionId]?.projectedDaysToTarget !=
-              null,
-        ),
-      for (final measurable in measurableLeaves)
-        _measurableProgressView(
-          measurable: measurable,
-          signals: signals,
-          reference: reference,
-          definition: measurableDefinitions[measurable.dataTypeId],
-          agentRecordedMeasurementIds: agentRecordedMeasurementIds,
-          recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
-          projectedOnTrack:
-              evaluation
-                  .results[measurable.criterionId]
-                  ?.projectedDaysToTarget !=
-              null,
-        ),
-      for (final categoryTime in categoryTimeLeaves)
-        _categoryTimeProgressView(
-          categoryTime: categoryTime,
-          signals: signals,
-          reference: reference,
-          categoryName: categoryNames[categoryTime.categoryId],
-          projectedOnTrack:
-              evaluation
-                  .results[categoryTime.criterionId]
-                  ?.projectedDaysToTarget !=
-              null,
-        ),
-    ],
+    metrics: metrics,
   );
 }
 
@@ -533,10 +671,15 @@ GoalHabitProgressView _habitProgressView({
   required Map<String, String> habitNames,
 }) {
   final range = habit.window.periodRange(reference);
+  // Per-day verdict of the habit's own window ending that day: a completed
+  // day whose window quota was not yet met renders as a partial success.
   GoalProgressDay projection(DateTime day) => GoalProgressDay(
     day: day,
     value: signals.habitSuccessesByDay[habit.habitId]?[day] ?? 0,
     habitCompletionType: signals.habitCompletionsByDay[habit.habitId]?[day],
+    targetSatisfied: const GoalProgressEvaluator()
+        .evaluate(habit, signals, day)
+        .satisfied,
   );
   return GoalHabitProgressView(
     criterionId: habit.criterionId,

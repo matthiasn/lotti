@@ -3,7 +3,7 @@
   "agentControlsReanalyzeButton": "Re-analyse",
   "agentsCreateGoal": "New goal agent",
   "agentsPageEmpty": "No goal agents yet. Create one and it will quietly watch your progress.",
-  "agentsPageTitle": "Agents",
+  "agentsPageTitle": "Goal Agents",
   "aiSetupWizardCreatesOptimized": "Creates optimised models, prompts, and a test category",
   "categoryAutomaticInferenceDescription": "Transcribe new audio and analyse new images in this category automatically",
   "categoryCreationError": "Failed to create category. Please try again.",

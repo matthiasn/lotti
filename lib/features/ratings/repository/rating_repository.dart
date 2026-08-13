@@ -57,7 +57,8 @@ class RatingRepository {
       getIt<DomainLogger>().error(
         LogDomain.sync,
         error,
-        message: 'sequence record failed after rating link write; VC already committed',
+        message:
+            'sequence record failed after rating link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: '_createRatingLink.recordSent',
       );

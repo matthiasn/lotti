@@ -860,7 +860,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível carregar seus agentes agora.';
 
   @override
-  String get agentsPageTitle => 'Agentes';
+  String get agentsPageTitle => 'Agentes de metas';
 
   @override
   String get agentStateConsecutiveFailures => 'Falhas consecutivas';
@@ -3245,11 +3245,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Oriente os usuários iniciantes do Daily OS através de um check-in real que transforma a fala em uma tarefa e um plano diário.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Ativar página Agentes';
+  String get configFlagEnableAgentsPage => 'Ativar página Agentes de metas';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Mostre a página Agentes na navegação principal. Acompanhe a saúde dos seus agentes de metas num relance e confira cada um deles.';
+      'Mostre a página Agentes de metas na navegação principal. Acompanhe a saúde dos seus agentes de metas num relance e confira cada um deles.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6613,6 +6613,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormYourMeasurables => 'Seus mensuráveis';
 
   @override
+  String get goalHabitCheckOffAction => 'Marcar feito';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension registrado hoje — marcar este hábito?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Em queda';
 
   @override
@@ -6698,7 +6706,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'feito';
+  String get goalProgressDone => 'feito · meta atingida';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Sem registo';
@@ -6717,6 +6725,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'feito · meta ainda pendente';
 
   @override
   String get goalProgressTitle => 'Esta semana móvel';

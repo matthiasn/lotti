@@ -40,12 +40,19 @@ class GoalAgentPhaseA {
     this._evaluator = const GoalProgressEvaluator(),
     this._policy = const GoalTrackPolicy(),
     this._onEscalationArmed,
+    this._onReportStale,
   });
 
   /// Nudges the scheduled-wake manager after an escalation is armed, so a
   /// local transition is processed promptly instead of waiting out the
   /// hourly poll. Sync-received records still ride the poll (by design).
   final void Function()? _onEscalationArmed;
+
+  /// Advances the durable report-stale watermark when a tick's derivation
+  /// materially differs from today's already-persisted register — new
+  /// evidence arrived after the standing report was written, so the agent
+  /// is dirty even when the coarse status did not transition.
+  final void Function(String agentId)? _onReportStale;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -78,17 +85,15 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
-    final activeAdExpired = await _expireStaleNudges(
-      agentId,
-      now,
-      activeVersionId: version.id,
-    );
 
     final startDate = version.startDate;
     if (startDate != null &&
         GoalWindow.dayUtc(now).isBefore(GoalWindow.dayUtc(startDate))) {
       // The goal has not begun: no register row, no escalation — the
       // cadence tick above keeps checking until the start day arrives.
+      // The deadline/superseded sweep still runs (there is no derivation
+      // to compare digests against).
+      await _expireStaleNudges(agentId, now, activeVersionId: version.id);
       return const WakeResult(success: true);
     }
 
@@ -99,9 +104,33 @@ class GoalAgentPhaseA {
       includeCategoryTimeSessions: false,
     );
     final facts = derivation.facts;
+    // The sweep runs AFTER derivation so an active banner minted from
+    // evidence that has since changed (a new measurement, a habit
+    // check-off) is recognized as data-stale. Only ad-eligible goals
+    // expire on a digest mismatch: the same eligibility guarantees the
+    // escalation below replaces the copy instead of leaving the goal
+    // silently bannerless.
+    final replacementEligible = automaticGoalAdEligible(
+      facts,
+      derivation.priors,
+    );
+    final activeAdExpired = await _expireStaleNudges(
+      agentId,
+      now,
+      activeVersionId: version.id,
+      currentFactsDigest: replacementEligible ? goalFactsDigest(facts) : null,
+    );
     final needsEscalation =
-        facts.needsEscalation ||
-        (activeAdExpired && automaticGoalAdEligible(facts, derivation.priors));
+        facts.needsEscalation || (activeAdExpired && replacementEligible);
+
+    // New evidence after today's earlier tick means the standing report
+    // now describes an outdated picture — record the dirty state durably
+    // so the detail page shows the out-of-date badge and Update now CTA.
+    // A first tick of the day is not "new data" (the window slid), and a
+    // status transition already escalates to a fresh report.
+    final registerChanged =
+        derivation.existingToday != null &&
+        goalRegisterDigest(derivation.existingToday!) != goalFactsDigest(facts);
 
     final persisted = await persistDerivation(
       agentId: agentId,
@@ -109,6 +138,9 @@ class GoalAgentPhaseA {
       now: now,
       armEscalation: needsEscalation,
     );
+    if (persisted && registerChanged) {
+      _onReportStale?.call(agentId);
+    }
     if (needsEscalation && persisted) {
       _onEscalationArmed?.call();
     }
@@ -167,10 +199,19 @@ class GoalAgentPhaseA {
   /// `expiredAt` is the deadline itself (not this device's wall clock),
   /// and the resolver's terminal dominance makes concurrent sweeps
   /// converge.
+  ///
+  /// When [currentFactsDigest] is provided, an active banner whose stamped
+  /// `factsDigest` provenance no longer matches the current derivation is
+  /// expired as data-stale even before its 72 h deadline — the caller only
+  /// passes a digest when the goal qualifies for automatic replacement
+  /// copy, so this never strips a banner that will not be re-minted.
+  /// Banners minted before digests existed carry no stamp and keep the
+  /// deadline-only behavior.
   Future<bool> _expireStaleNudges(
     String agentId,
     DateTime now, {
     required String activeVersionId,
+    String? currentFactsDigest,
   }) async {
     var activeAdExpired = false;
     // Read and write in ONE transaction: a dismissal landing between a
@@ -218,11 +259,28 @@ class GoalAgentPhaseA {
           continue;
         }
         final staleAt = nudge.staleAt;
-        if (staleAt == null || staleAt.isAfter(now)) continue;
+        final deadlinePassed = staleAt != null && !staleAt.isAfter(now);
+        final stampedDigest = nudge.provenance['factsDigest'];
+        // Same-day banners are exempt from digest expiry: their automatic
+        // replacement would collide with the day's creation id in Phase B
+        // and be skipped, leaving the goal bannerless — and one automatic
+        // banner per day is the respectful ceiling regardless.
+        final activatedDay = GoalWindow.dayUtc(
+          nudge.activatedAt ?? nudge.createdAt,
+        );
+        final dataStale =
+            currentFactsDigest != null &&
+            stampedDigest is String &&
+            stampedDigest != currentFactsDigest &&
+            activatedDay.isBefore(GoalWindow.dayUtc(now));
+        if (!deadlinePassed && !dataStale) continue;
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: GoalNudgeStatus.expired,
-            expiredAt: staleAt.toUtc(),
+            // Deadline expiry keeps the deterministic deadline timestamp;
+            // data-stale expiry records the sweep instant that observed
+            // the changed evidence.
+            expiredAt: (deadlinePassed ? staleAt : now).toUtc(),
             updatedAt: now,
           ),
         );

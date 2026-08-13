@@ -441,7 +441,7 @@
     "description": "Empty state of the agents page."
   },
   "agentsPageLoadFailed": "Couldn't load your agents right now.",
-  "agentsPageTitle": "Agents",
+  "agentsPageTitle": "Goal Agents",
   "@agentsPageTitle": {
     "description": "Title of the top-level agents page."
   },
@@ -1950,8 +1950,8 @@
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
   "configFlagDailyOsOnboardingEnabled": "Daily OS walkthrough",
   "configFlagDailyOsOnboardingEnabledDescription": "Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.",
-  "configFlagEnableAgentsPage": "Enable Agents page",
-  "configFlagEnableAgentsPageDescription": "Show the Agents page in the main navigation. Follow your goal agents' health at a glance and check in on each one.",
+  "configFlagEnableAgentsPage": "Enable Goal Agents page",
+  "configFlagEnableAgentsPageDescription": "Show the Goal Agents page in the main navigation. Follow your goal agents' health at a glance and check in on each one.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
@@ -3749,6 +3749,19 @@
     }
   },
   "goalFormYourMeasurables": "Your measurables",
+  "goalHabitCheckOffAction": "Mark done",
+  "@goalHabitCheckOffAction": {
+    "description": "Button that records the suggested habit completion for today."
+  },
+  "goalHabitCheckOffSuggestion": "{dimension} recorded today — check off this habit?",
+  "@goalHabitCheckOffSuggestion": {
+    "description": "Inline suggestion to check off a habit because matching data was recorded today.",
+    "placeholders": {
+      "dimension": {
+        "type": "String"
+      }
+    }
+  },
   "goalHealthTrendDown": "Trending down",
   "@goalHealthTrendDown": {
     "description": "Screen-reader label for the falling trend arrow on a goal-agent list row."
@@ -3810,7 +3823,7 @@
       }
     }
   },
-  "goalProgressDone": "done",
+  "goalProgressDone": "done · target met",
   "goalProgressHabitDayNoEntry": "No entry",
   "goalProgressHabitDaySemantics": "{date}: {outcome}",
   "@goalProgressHabitDaySemantics": {
@@ -3843,6 +3856,10 @@
         "type": "String"
       }
     }
+  },
+  "goalProgressPartial": "done · target not met yet",
+  "@goalProgressPartial": {
+    "description": "Legend label for a day where the habit was completed but the goal window target was not yet met."
   },
   "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",

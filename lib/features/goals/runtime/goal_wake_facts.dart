@@ -28,6 +28,54 @@ bool automaticGoalAdEligible(
               for (final row in priors) row.attainment,
             ])));
 
+/// `int` and `double` must fingerprint identically after a JSON round-trip,
+/// so every numeric value is normalized through a fixed-precision double.
+String _digestNum(num value) => value.toDouble().toStringAsFixed(4);
+
+String _evidenceDigest(
+  GoalTrackStatus trackStatus,
+  Iterable<({String id, num actual, bool satisfied})> criteria,
+) {
+  final sorted = criteria.toList()..sort((a, b) => a.id.compareTo(b.id));
+  return [
+    trackStatus.name,
+    for (final criterion in sorted)
+      '${criterion.id}=${_digestNum(criterion.actual)}:${criterion.satisfied}',
+  ].join('|');
+}
+
+/// Deterministic fingerprint of the evidence a wake derived: the coarse
+/// status plus each dimension's actual value and satisfaction.
+///
+/// Phase B stamps this into a banner's provenance at minting; Phase A's
+/// staleness sweep compares it against the current derivation, so a banner
+/// quoting evidence that has since changed (a new blood-pressure reading, a
+/// habit check-off) is recognized as data-stale — the dirty state that
+/// drives replacement copy without waiting out the 72 h lifetime.
+String goalFactsDigest(GoalWakeFacts facts) => _evidenceDigest(
+  facts.trackStatus,
+  facts.evaluation.results.values.map(
+    (result) => (
+      id: result.criterionId,
+      actual: result.actual,
+      satisfied: result.satisfied,
+    ),
+  ),
+);
+
+/// The same fingerprint computed from a persisted register row, so a fresh
+/// derivation can be compared against what the last tick recorded.
+String goalRegisterDigest(GoalProgressEntity row) => _evidenceDigest(
+  row.trackStatus,
+  row.criterionResults.map(
+    (result) => (
+      id: result.criterionId,
+      actual: result.actual,
+      satisfied: result.satisfied,
+    ),
+  ),
+);
+
 /// The deterministic facts one Phase A tick derives for a goal agent
 /// (ADR 0054): everything downstream — escalation, and in PR 3 the FACTS
 /// block and the tool gate — reads these, never raw signals.

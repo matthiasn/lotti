@@ -863,7 +863,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile caricare i tuoi agenti al momento.';
 
   @override
-  String get agentsPageTitle => 'Agenti';
+  String get agentsPageTitle => 'Agenti degli obiettivi';
 
   @override
   String get agentStateConsecutiveFailures => 'Fallimenti consecutivi';
@@ -3258,11 +3258,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Guidare gli utenti del sistema operativo giornaliero di prima volta attraverso un check-in reale che trasforma il discorso in un compito e un piano di giorno.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Attivare la pagina Agenti';
+  String get configFlagEnableAgentsPage =>
+      'Attivare la pagina Agenti degli obiettivi';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Mostra la pagina Agenti nella navigazione principale. Segui a colpo d\'occhio lo stato dei tuoi agenti degli obiettivi e dai un\'occhiata a ciascuno.';
+      'Mostra la pagina Agenti degli obiettivi nella navigazione principale. Segui a colpo d\'occhio lo stato dei tuoi agenti degli obiettivi e dai un\'occhiata a ciascuno.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6632,6 +6633,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalFormYourMeasurables => 'I tuoi misurabili';
 
   @override
+  String get goalHabitCheckOffAction => 'Segna fatto';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension registrato oggi — spuntare questa abitudine?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'In calo';
 
   @override
@@ -6717,7 +6726,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'fatto';
+  String get goalProgressDone => 'fatto · obiettivo raggiunto';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Nessuna registrazione';
@@ -6736,6 +6745,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'fatto · obiettivo non ancora raggiunto';
 
   @override
   String get goalProgressTitle => 'Questa settimana mobile';
