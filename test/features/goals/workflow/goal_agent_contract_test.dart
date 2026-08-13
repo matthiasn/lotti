@@ -7,8 +7,11 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 void main() {
   test('the prompt stays under the eval-enforced hard cap', () {
     // The payload lesson: long prompts get skimmed. The eval suite pins
-    // the same bound; this pins it for the production import path.
-    expect(goalAgentSystemPrompt.length, lessThan(3200));
+    // the same bound; this pins it for the production import path. The
+    // ceiling is a discipline rather than a model limit — moved to 3.6k with
+    // the standing-report rule, which has to hold in every language and so
+    // cannot live in the per-wake FACTS block.
+    expect(goalAgentSystemPrompt.length, lessThan(3600));
     expect(
       goalAgentSystemPrompt,
       contains('explicitly asks for another ad'),
