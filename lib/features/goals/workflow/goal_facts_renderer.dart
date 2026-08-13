@@ -2,10 +2,13 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -27,6 +30,11 @@ const goalReusableMinMeanRating = 4.0;
 /// The complete lifetime remains represented by the bounded summaries below.
 const goalCategorySessionEvidenceLimit = 200;
 
+/// Maximum exact samples emitted for one health criterion. The rolling
+/// aggregate and total/omitted counts retain the wider-window context while
+/// keeping imported or unusually dense histories within provider limits.
+const goalHealthObservationEvidenceLimit = 100;
+
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
@@ -44,6 +52,7 @@ class GoalFactsRenderer {
     required GoalWakeFacts facts,
     required List<GoalProgressEntity> priorRegisters,
     required List<GoalNudgeEntity> nudges,
+    required DateTime evaluationReference,
     List<String> observations = const [],
     List<String> unansweredUserMessages = const [],
     String? personaTonePreference,
@@ -65,6 +74,7 @@ class GoalFactsRenderer {
         : categorySessions.sublist(
             categorySessions.length - goalCategorySessionEvidenceLimit,
           );
+    final metricCriteria = _metricCriteriaById(version.criteria);
 
     return _factsBlock({
       'generatedAt': now.toUtc().toIso8601String(),
@@ -81,24 +91,14 @@ class GoalFactsRenderer {
       'evaluation': {
         'criterionResults': [
           for (final result in facts.evaluation.results.values)
-            {
-              'criterionId': result.criterionId,
-              'actual': result.actual,
-              'target': result.target,
-              'ratio': result.ratio,
-              'satisfied': result.satisfied,
-              'sampleCount': result.sampleCount,
-              if (result.paceFeasible != null)
-                'paceFeasible': result.paceFeasible,
-              // Rolling-window habit facts: days-to-recovery, and the buffer
-              // before the count drops below target. The LLM may restate
-              // these but never recomputes them.
-              if (result.deficit != null) 'daysToRecover': result.deficit,
-              if (result.buffer != null) 'bufferDays': result.buffer,
-              if (result.projectedDaysToTarget != null)
-                'projectedDaysToTarget': result.projectedDaysToTarget,
-            },
+            _criterionResultJson(
+              result: result,
+              metric: metricCriteria[result.criterionId],
+              facts: facts,
+              evaluationReference: evaluationReference,
+            ),
         ],
+        'reference': evaluationReference.toIso8601String(),
         'attainment': facts.evaluation.attainment,
         'trackStatus': facts.trackStatus.name,
         'dataCoverage': facts.evaluation.dataCoverage,
@@ -162,6 +162,122 @@ class GoalFactsRenderer {
       'observations': observations,
     });
   }
+
+  Map<String, Object?> _criterionResultJson({
+    required GoalCriterionResult result,
+    required GoalCriterionMetric? metric,
+    required GoalWakeFacts facts,
+    required DateTime evaluationReference,
+  }) {
+    final healthSeries = metric == null
+        ? null
+        : _healthSeriesJson(
+            metric: metric,
+            facts: facts,
+            evaluationReference: evaluationReference,
+          );
+    return {
+      'criterionId': result.criterionId,
+      'actual': result.actual,
+      'target': result.target,
+      'ratio': result.ratio,
+      'satisfied': result.satisfied,
+      'sampleCount': result.sampleCount,
+      if (result.paceFeasible != null) 'paceFeasible': result.paceFeasible,
+      // Rolling-window habit facts: days-to-recovery, and the buffer before
+      // the count drops below target. The LLM may restate these but never
+      // recomputes them.
+      if (result.deficit != null) 'daysToRecover': result.deficit,
+      if (result.buffer != null) 'bufferDays': result.buffer,
+      if (result.projectedDaysToTarget != null)
+        'projectedDaysToTarget': result.projectedDaysToTarget,
+      'healthSeries': ?healthSeries,
+    };
+  }
+
+  Map<String, Object?>? _healthSeriesJson({
+    required GoalCriterionMetric metric,
+    required GoalWakeFacts facts,
+    required DateTime evaluationReference,
+  }) {
+    if (!GoalHealthDataTypes.supported.contains(metric.dataType)) return null;
+    final range = metric.window.periodRange(evaluationReference);
+    final candidates =
+        facts.quantitativeObservationsByType[metric.dataType] ??
+        const <GoalMetricObservation>[];
+    final observations =
+        <GoalMetricObservation>[
+          for (final observation in candidates)
+            if (!GoalWindow.dayUtc(
+                  observation.recordedAt,
+                ).isBefore(range.start) &&
+                !GoalWindow.dayUtc(observation.recordedAt).isAfter(range.end) &&
+                !observation.recordedAt.isAfter(evaluationReference))
+              observation,
+        ]..sort((a, b) {
+          final byTime = a.recordedAt.compareTo(b.recordedAt);
+          return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
+        });
+    final latest = observations.lastOrNull;
+    final emittedObservations =
+        observations.length <= goalHealthObservationEvidenceLimit
+        ? observations
+        : observations.sublist(
+            observations.length - goalHealthObservationEvidenceLimit,
+          );
+    return {
+      'observationCount': observations.length,
+      'observationsOmitted': observations.length - emittedObservations.length,
+      'observations': [
+        for (final observation in emittedObservations)
+          {
+            'recordedAt': observation.recordedAt.toIso8601String(),
+            'value': observation.value,
+          },
+      ],
+      if (latest != null)
+        'latest': {
+          'recordedAt': latest.recordedAt.toIso8601String(),
+          'value': latest.value,
+          'onTarget': _meetsTarget(
+            latest.value,
+            metric.target,
+            metric.direction,
+          ),
+          'isToday':
+              GoalWindow.dayUtc(latest.recordedAt) ==
+              GoalWindow.dayUtc(evaluationReference),
+        },
+    };
+  }
+
+  Map<String, GoalCriterionMetric> _metricCriteriaById(
+    GoalCriterion criteria,
+  ) {
+    final metrics = <String, GoalCriterionMetric>{};
+    void visit(GoalCriterion criterion) {
+      switch (criterion) {
+        case final GoalCriterionMetric metric:
+          metrics[metric.criterionId] = metric;
+        case GoalCriterionAllOf(:final criteria) ||
+            GoalCriterionAnyOf(:final criteria) ||
+            GoalCriterionAtLeastCount(:final criteria):
+          criteria.forEach(visit);
+        case GoalCriterionHabit() ||
+            GoalCriterionMeasurable() ||
+            GoalCriterionCategoryTime():
+      }
+    }
+
+    visit(criteria);
+    return metrics;
+  }
+
+  bool _meetsTarget(num value, num target, GoalDirection direction) =>
+      switch (direction) {
+        GoalDirection.atLeast => value >= target,
+        GoalDirection.atMost => value <= target,
+      };
 
   List<Map<String, Object>> _categoryTimeLifetimeSummary(
     Map<String, List<GoalCategoryTimeSession>> sessionsByCategory,

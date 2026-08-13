@@ -92,8 +92,12 @@ A completed day whose window target was not yet met renders as a lighter
 partial-success wash, each square carries its concrete date in tooltip and
 outcome-menu header, and a blank habit day with a name-matching data
 observation recorded today offers a one-tap check-off. Blood-pressure and
-weight headers quote the latest reading while their verdicts stay on the
-rolling-average target.
+weight headers quote the latest reading. When today's latest sample meets its
+target, the card celebrates that today's logging is on target even if the
+rolling average still needs recovery; an over-target rolling average remains
+actionable when today has not been measured. Agent FACTS carry the newest 100
+exact samples per supported health criterion plus total and omitted counts,
+anchored to the same evaluation day as the rolling aggregate.
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to

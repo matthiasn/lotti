@@ -6286,6 +6286,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det finns inte tillräckligt med data för att bedöma denna dimension ännu.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Dagens senaste mätning ligger inom målet; fortsätt så.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'På målet i dag';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Denna dimension är för närvarande på rätt spår.';
 

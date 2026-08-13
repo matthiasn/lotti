@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -72,6 +73,7 @@ class GoalSignalReader {
         : rangeEnd;
 
     final quantitative = <String, Map<DateTime, num>>{};
+    final quantitativeObservations = <String, List<GoalMetricObservation>>{};
     for (final dataType in needs.quantitativeTypes) {
       final entities = await _journalDb.getQuantitativeByType(
         type: dataType,
@@ -79,6 +81,12 @@ class GoalSignalReader {
         rangeEnd: rangeEnd,
       );
       quantitative[dataType] = _bucketQuantitative(entities, dataType);
+      if (GoalHealthDataTypes.supported.contains(dataType)) {
+        quantitativeObservations[dataType] = _rawQuantitativeObservations(
+          entities,
+          dataType,
+        );
+      }
     }
 
     final habits = <String, Map<DateTime, int>>{};
@@ -217,6 +225,7 @@ class GoalSignalReader {
 
     return GoalSignalWindow(
       quantitativeDailySums: quantitative,
+      quantitativeObservationsByType: quantitativeObservations,
       habitSuccessesByDay: habits,
       habitCompletionsByDay: habitCompletions,
       measurableDailySums: measurables,
@@ -370,9 +379,7 @@ class GoalSignalReader {
     final byDay = <DateTime, num>{};
     switch (healthTypes[dataType]?.aggregationType) {
       case HealthAggregationType.none:
-        // Same display normalization as `aggregateNone`: percentage types
-        // store fractions (body fat 0.18) but chart — and target — as 18.
-        final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
+        final multiplier = _displayMultiplier(dataType);
         final latestByDay = <DateTime, ({DateTime from, String id})>{};
         for (final entity in entities) {
           entity.maybeMap(
@@ -412,6 +419,41 @@ class GoalSignalReader {
     }
     return byDay;
   }
+
+  /// Preserves every quantitative journal sample before daily aggregation.
+  /// Values use the same display normalization as [_bucketQuantitative], and
+  /// ordering matches its equal-timestamp entity-id tie break.
+  List<GoalMetricObservation> _rawQuantitativeObservations(
+    List<JournalEntity> entities,
+    String dataType,
+  ) {
+    final multiplier = _displayMultiplier(dataType);
+    final observations = <GoalMetricObservation>[];
+    for (final entity in entities) {
+      entity.maybeMap(
+        quantitative: (quant) {
+          observations.add(
+            GoalMetricObservation(
+              recordedAt: quant.data.dateFrom,
+              value: quant.data.value * multiplier,
+              tieBreaker: quant.meta.id,
+            ),
+          );
+        },
+        orElse: () {},
+      );
+    }
+    observations.sort((a, b) {
+      final byTime = a.recordedAt.compareTo(b.recordedAt);
+      return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
+    });
+    return observations;
+  }
+
+  /// Matches health aggregation display units: stored percentage fractions
+  /// become whole percentages, while every other type keeps its native unit.
+  num _displayMultiplier(String dataType) =>
+      dataType.contains('PERCENTAGE') ? 100 : 1;
 
   /// Earliest day any leaf's period (or the short-term lookback, or the
   /// grace-period prior window) reaches back to, as a local date.
@@ -462,16 +504,23 @@ Set<String> goalImmediateSignalTriggerTokens(GoalCriterion criteria) {
   };
 }
 
-/// High-frequency goal signals that invalidate the report without waking it.
+/// Goal signals that also invalidate model-facing evidence directly.
+///
+/// Category attribution changes are stale-only because they are high-volume.
+/// Supported health samples remain on the immediate evaluation path and also
+/// mark the report stale: a timestamp/backfill can change the exact series
+/// without changing the daily aggregate persisted in the progress register.
 Set<String> goalStaleSignalTriggerTokens(GoalCriterion criteria) {
   final needs = _SignalNeeds()..collect(criteria);
-  if (needs.categoryTimeCriteria.isEmpty) return const {};
-  return const {
-    textEntryNotification,
-    linkNotification,
-    taskNotification,
-    categoriesNotification,
-    privateToggleNotification,
+  return {
+    ...needs.quantitativeTypes.intersection(GoalHealthDataTypes.supported),
+    if (needs.categoryTimeCriteria.isNotEmpty) ...const {
+      textEntryNotification,
+      linkNotification,
+      taskNotification,
+      categoriesNotification,
+      privateToggleNotification,
+    },
   };
 }
 

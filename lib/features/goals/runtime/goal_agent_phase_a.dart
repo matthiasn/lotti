@@ -130,7 +130,8 @@ class GoalAgentPhaseA {
     // status transition already escalates to a fresh report.
     final registerChanged =
         derivation.existingToday != null &&
-        goalRegisterDigest(derivation.existingToday!) != goalFactsDigest(facts);
+        goalRegisterDigest(derivation.existingToday!) !=
+            goalAggregateFactsDigest(facts);
 
     final persisted = await persistDerivation(
       agentId: agentId,
@@ -348,6 +349,7 @@ class GoalAgentPhaseA {
         previousStatus: previousStatus,
         evaluation: evaluation,
         shortTermAttainment: shortTerm,
+        quantitativeObservationsByType: signals.quantitativeObservationsByType,
         categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
         categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
         categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,

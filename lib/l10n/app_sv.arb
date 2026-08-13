@@ -2876,6 +2876,8 @@
   "goalDimensionNeedsAttentionNote": "Denna dimension behöver uppmärksamhet; dess egna bevis förblir synliga.",
   "goalDimensionNeedsAttentionStatus": "Behöver uppmärksamhet",
   "goalDimensionNoDataNote": "Det finns inte tillräckligt med data för att bedöma denna dimension ännu.",
+  "goalDimensionOnTargetTodayNote": "Dagens senaste mätning ligger inom målet; fortsätt så.",
+  "goalDimensionOnTargetTodayStatus": "På målet i dag",
   "goalDimensionOnTrackNote": "Denna dimension är för närvarande på rätt spår.",
   "goalDimensionOnTrackStatus": "På rätt spår",
   "goalDimensionRecordedByAgent": "Sagt av dig och inspelat efter ditt godkännande.",

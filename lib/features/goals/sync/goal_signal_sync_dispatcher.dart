@@ -16,9 +16,11 @@ import 'package:lotti/services/domain_logging.dart';
 /// `WakeOrchestrator` deliberately listens to `localUpdateStream` only —
 /// synced writes must not wake LLM tiers. Bounded observations run goal
 /// *Phase A* directly because it is deterministic and idempotent (keyed
-/// registers). High-frequency category-time mutations only advance the
-/// receiving agent's report-stale watermark; cadence or Update now consumes
-/// them later. Phase B is never triggered from here: if Phase A finds an
+/// registers). Health mutations also advance the report-stale watermark
+/// because exact timestamped evidence can change without moving an aggregate.
+/// High-frequency category-time mutations only advance that watermark;
+/// cadence or Update now consumes them later. Phase B is never triggered from
+/// here: if Phase A finds an
 /// LLM-worthy transition it arms the escalation wake, and the scheduled-wake
 /// manager's lease election picks exactly one device.
 class GoalSignalSyncDispatcher {

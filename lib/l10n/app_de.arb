@@ -2619,6 +2619,8 @@
   "goalDimensionNeedsAttentionNote": "Diese Dimension braucht Aufmerksamkeit; ihre eigenen Nachweise bleiben sichtbar.",
   "goalDimensionNeedsAttentionStatus": "Braucht Aufmerksamkeit",
   "goalDimensionNoDataNote": "Es liegen noch nicht genügend Daten vor, um diese Dimension beurteilen zu können.",
+  "goalDimensionOnTargetTodayNote": "Der neueste Messwert von heute liegt im Zielbereich; mach so weiter.",
+  "goalDimensionOnTargetTodayStatus": "Heute im Zielbereich",
   "goalDimensionOnTrackNote": "Diese Dimension ist derzeit auf Kurs.",
   "goalDimensionOnTrackStatus": "Auf dem richtigen Weg",
   "goalDimensionRecordedByAgent": "Von dir gesagt und nach deiner Zustimmung aufgezeichnet.",

@@ -7,6 +7,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -279,6 +280,22 @@ void main() {
       )],
       79.4,
     );
+    final observations =
+        window.quantitativeObservationsByType['HealthDataType.WEIGHT']!;
+    expect(
+      observations.map((observation) => observation.recordedAt),
+      [DateTime(2026, 8, 8, 7), DateTime(2026, 8, 8, 21)],
+      reason: 'the agent needs every ordered raw sample, not the daily fold',
+    );
+    expect(observations.map((observation) => observation.value), [81.2, 79.4]);
+    expect(
+      observations.map((observation) => observation.tieBreaker),
+      [
+        'e-${DateTime(2026, 8, 8, 7).millisecondsSinceEpoch}',
+        'e-${DateTime(2026, 8, 8, 21).millisecondsSinceEpoch}',
+      ],
+      reason: 'equal timestamps need a stable replica-independent ordering',
+    );
   });
 
   test('identical point-sample timestamps break the tie by entity id, '
@@ -371,6 +388,11 @@ void main() {
         8,
       )],
       18,
+    );
+    expect(
+      window.quantitativeObservationsByType,
+      isEmpty,
+      reason: 'only goal-supported health series add model-facing raw data',
     );
   });
 
@@ -1158,5 +1180,26 @@ void main() {
       {'walk-habit', 'HealthDataType.STEPS'},
     );
     expect(goalStaleSignalTriggerTokens(criterion), isEmpty);
+  });
+
+  test('supported health samples evaluate immediately and dirty exact report '
+      'evidence', () {
+    const criterion = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: GoalHealthDataTypes.weight,
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 88,
+      direction: GoalDirection.atMost,
+    );
+
+    expect(
+      goalImmediateSignalTriggerTokens(criterion),
+      {GoalHealthDataTypes.weight},
+    );
+    expect(
+      goalStaleSignalTriggerTokens(criterion),
+      {GoalHealthDataTypes.weight},
+    );
   });
 }

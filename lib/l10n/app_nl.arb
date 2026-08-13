@@ -2875,6 +2875,8 @@
   "goalDimensionNeedsAttentionNote": "Deze dimensie heeft aandacht nodig; zijn eigen bewijsmateriaal blijft zichtbaar.",
   "goalDimensionNeedsAttentionStatus": "Heeft aandacht nodig",
   "goalDimensionNoDataNote": "Er zijn nog niet voldoende gegevens om deze dimensie te beoordelen.",
+  "goalDimensionOnTargetTodayNote": "De nieuwste meting van vandaag ligt binnen het doel; ga zo door.",
+  "goalDimensionOnTargetTodayStatus": "Vandaag op doel",
   "goalDimensionOnTrackNote": "Deze dimensie ligt momenteel op koers.",
   "goalDimensionOnTrackStatus": "Op koers",
   "goalDimensionRecordedByAgent": "Door u gezegd en na uw goedkeuring opgenomen.",

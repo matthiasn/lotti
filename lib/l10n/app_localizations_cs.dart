@@ -6347,6 +6347,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'K posouzení této dimenze zatím není dostatek údajů.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Dnešní poslední měření splňuje cílové hodnoty; pokračuj v tom.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'Cíl dnes splněn';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Tato dimenze je momentálně na dobré cestě.';
 

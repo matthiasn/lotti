@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -202,6 +203,34 @@ void main() {
     expect(stale.drainImmediately, isFalse);
     expect(stale.reportStaleOnly, isTrue);
     verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+  });
+
+  test('health samples both evaluate and mark exact report evidence stale', () {
+    const weight = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: GoalHealthDataTypes.weight,
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 88,
+      direction: GoalDirection.atMost,
+    );
+
+    service.registerSignalSubscription(agentId, weight);
+
+    final subscriptions = verify(
+      () => orchestrator.addSubscription(captureAny()),
+    ).captured.cast<AgentSubscription>();
+    final immediate = subscriptions.singleWhere(
+      (subscription) => subscription.id == goalSignalSubscriptionId(agentId),
+    );
+    final stale = subscriptions.singleWhere(
+      (subscription) =>
+          subscription.id == goalStaleSignalSubscriptionId(agentId),
+    );
+    expect(immediate.matchEntityIds, {GoalHealthDataTypes.weight});
+    expect(immediate.drainImmediately, isTrue);
+    expect(stale.matchEntityIds, {GoalHealthDataTypes.weight});
+    expect(stale.reportStaleOnly, isTrue);
   });
 
   test('refreshAfterRevision re-registers changed signals and wakes the goal '

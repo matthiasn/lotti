@@ -3549,6 +3549,14 @@
   "goalDimensionNeedsAttentionNote": "This dimension needs attention; its own evidence stays visible.",
   "goalDimensionNeedsAttentionStatus": "Needs attention",
   "goalDimensionNoDataNote": "There is not enough data to judge this dimension yet.",
+  "goalDimensionOnTargetTodayNote": "Today's latest reading is on target; keep it going.",
+  "@goalDimensionOnTargetTodayNote": {
+    "description": "Positive health-dimension note when the latest reading recorded today meets its target even if the rolling aggregate does not."
+  },
+  "goalDimensionOnTargetTodayStatus": "On target today",
+  "@goalDimensionOnTargetTodayStatus": {
+    "description": "Positive health-dimension status when the latest reading recorded today meets its target."
+  },
   "goalDimensionOnTrackNote": "This dimension is currently on track.",
   "goalDimensionOnTrackStatus": "On track",
   "goalDimensionRecordedByAgent": "Said by you and recorded after your approval.",

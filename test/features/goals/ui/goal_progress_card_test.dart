@@ -270,6 +270,116 @@ void main() {
     expect(find.text('127 / 89 mmHg'), findsOneWidget);
   });
 
+  group('latest-today health status', () {
+    testWidgets(
+      'blood pressure is positive when today is on target despite the average',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metrics: [
+                  GoalMetricProgressView(
+                    criterionId: 'systolic',
+                    sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                    name: 'Systolic blood pressure',
+                    target: 125,
+                    direction: GoalDirection.atMost,
+                    unitName: 'mmHg',
+                    days: [day(1, 129), day(0, 125)],
+                  ),
+                  GoalMetricProgressView(
+                    criterionId: 'diastolic',
+                    sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                    name: 'Diastolic blood pressure',
+                    target: 85,
+                    direction: GoalDirection.atMost,
+                    unitName: 'mmHg',
+                    days: [day(1, 94), day(0, 84)],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('125 / 84 mmHg'), findsOneWidget);
+        expect(find.text('On target today'), findsOneWidget);
+        expect(find.text('Needs attention'), findsNothing);
+        expect(
+          find.text("Today's latest reading is on target; keep it going."),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'weight is positive when today is on target despite the average',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  criterionId: 'weight',
+                  sourceId: GoalHealthDataTypes.weight,
+                  name: 'Weight',
+                  target: 88,
+                  direction: GoalDirection.atMost,
+                  unitName: 'kg',
+                  days: [day(2, 90), day(1, 89), day(0, 88)],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('88 of 88 kg'), findsOneWidget);
+        expect(find.text('On target today'), findsOneWidget);
+        expect(find.text('Needs attention'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'an over-target average still needs attention before today is measured',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  criterionId: 'weight',
+                  sourceId: GoalHealthDataTypes.weight,
+                  name: 'Weight',
+                  target: 88,
+                  direction: GoalDirection.atMost,
+                  unitName: 'kg',
+                  projectedOnTrack: true,
+                  days: [
+                    day(2, 90),
+                    day(1, 89),
+                    GoalProgressDay(
+                      day: today,
+                      value: 0,
+                      isObserved: false,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('89 of 88 kg'), findsOneWidget);
+        expect(find.text('Needs attention'), findsOneWidget);
+        expect(find.text('On track'), findsNothing);
+      },
+    );
+  });
+
   testWidgets(
     'paired blood-pressure dimensions share one dual-line chart and targets',
     (tester) async {
@@ -516,9 +626,9 @@ void main() {
       );
 
       expect(find.text('122 / 81 mmHg'), findsOneWidget);
-      expect(find.text('On track'), findsOneWidget);
+      expect(find.text('On target today'), findsOneWidget);
       expect(
-        find.text('This dimension is currently on track.'),
+        find.text("Today's latest reading is on target; keep it going."),
         findsOneWidget,
       );
       final chart = tester.widget<LineChart>(find.byType(LineChart));

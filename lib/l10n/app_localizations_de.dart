@@ -6324,6 +6324,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Es liegen noch nicht genügend Daten vor, um diese Dimension beurteilen zu können.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Der neueste Messwert von heute liegt im Zielbereich; mach so weiter.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'Heute im Zielbereich';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Diese Dimension ist derzeit auf Kurs.';
 

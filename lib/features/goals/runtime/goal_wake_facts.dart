@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart' show sha1;
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
@@ -44,15 +47,9 @@ String _evidenceDigest(
   ].join('|');
 }
 
-/// Deterministic fingerprint of the evidence a wake derived: the coarse
-/// status plus each dimension's actual value and satisfaction.
-///
-/// Phase B stamps this into a banner's provenance at minting; Phase A's
-/// staleness sweep compares it against the current derivation, so a banner
-/// quoting evidence that has since changed (a new blood-pressure reading, a
-/// habit check-off) is recognized as data-stale — the dirty state that
-/// drives replacement copy without waiting out the 72 h lifetime.
-String goalFactsDigest(GoalWakeFacts facts) => _evidenceDigest(
+/// Deterministic fingerprint of the aggregate evidence persisted in a goal
+/// progress register.
+String goalAggregateFactsDigest(GoalWakeFacts facts) => _evidenceDigest(
   facts.trackStatus,
   facts.evaluation.results.values.map(
     (result) => (
@@ -62,6 +59,44 @@ String goalFactsDigest(GoalWakeFacts facts) => _evidenceDigest(
     ),
   ),
 );
+
+String _healthEvidenceDigest(
+  Map<String, List<GoalMetricObservation>> observationsByType,
+) {
+  if (observationsByType.isEmpty) return '';
+  final types = observationsByType.keys.toList()..sort();
+  final evidence = <String>[];
+  for (final type in types) {
+    final observations = [...observationsByType[type]!]
+      ..sort((a, b) {
+        final byTime = a.recordedAt.compareTo(b.recordedAt);
+        return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
+      });
+    evidence
+      ..add(type)
+      ..addAll(
+        observations.map(
+          (observation) =>
+              '${observation.recordedAt.toIso8601String()}='
+              '${_digestNum(observation.value)}',
+        ),
+      );
+  }
+  return sha1.convert(utf8.encode(evidence.join('|'))).toString();
+}
+
+/// Deterministic fingerprint of every fact that can shape banner copy: the
+/// aggregate register evidence plus exact model-facing health observations.
+///
+/// Phase B stamps this into a banner's provenance at minting; Phase A's
+/// staleness sweep compares it against the current derivation, so a banner
+/// quoting evidence that has since changed is recognized as data-stale even
+/// when a backfill leaves the daily aggregate unchanged.
+String goalFactsDigest(GoalWakeFacts facts) {
+  final aggregate = goalAggregateFactsDigest(facts);
+  final health = _healthEvidenceDigest(facts.quantitativeObservationsByType);
+  return health.isEmpty ? aggregate : '$aggregate|health=$health';
+}
 
 /// The same fingerprint computed from a persisted register row, so a fresh
 /// derivation can be compared against what the last tick recorded.
@@ -85,6 +120,7 @@ class GoalWakeFacts {
     required this.evaluation,
     this.previousStatus,
     this.shortTermAttainment,
+    this.quantitativeObservationsByType = const {},
     this.categoryTimeSessionsByCategory = const {},
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
@@ -100,6 +136,10 @@ class GoalWakeFacts {
 
   final GoalEvaluation evaluation;
   final double? shortTermAttainment;
+
+  /// Exact quantitative samples retained for Phase B evidence. Deterministic
+  /// policy still reads [evaluation], never this model-facing series.
+  final Map<String, List<GoalMetricObservation>> quantitativeObservationsByType;
 
   /// Session-level evidence for model pattern analysis. These observations do
   /// not override [evaluation]; a future governed daily assessment can turn a

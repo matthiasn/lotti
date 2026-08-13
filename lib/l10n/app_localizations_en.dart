@@ -6252,6 +6252,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'There is not enough data to judge this dimension yet.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'Today\'s latest reading is on target; keep it going.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'On target today';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'This dimension is currently on track.';
 

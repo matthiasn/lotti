@@ -15,11 +15,11 @@ sources:
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
-    last_modified: 2026-08-09
+    last_modified: 2026-08-13
   - id: signal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — journal-backed daily aggregates
-    last_modified: 2026-08-12
+    last_modified: 2026-08-13
   - id: evaluator
     resource: ../../lib/features/goals/evaluation/goal_progress_evaluator.dart
     title: GoalProgressEvaluator — pure criteria-tree fold
@@ -43,11 +43,11 @@ sources:
   - id: workflow
     resource: ../../lib/features/goals/workflow/goal_agent_workflow.dart
     title: GoalAgentWorkflow — the Phase B LLM tier
-    last_modified: 2026-08-11
+    last_modified: 2026-08-13
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-12
+    last_modified: 2026-08-13
   - id: strategy
     resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
     title: GoalAgentStrategy — Phase B conversation and tool dispatch
@@ -55,7 +55,7 @@ sources:
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
-    last_modified: 2026-08-12
+    last_modified: 2026-08-13
   - id: tool-dispatcher
     resource: ../../lib/features/goals/workflow/goal_tool_dispatcher.dart
     title: GoalToolDispatcher — proposal persistence and spec revision routing
@@ -170,11 +170,15 @@ flowchart TD
   a EUR0 maintenance event.
 - **Banners are dirty-tracked against their evidence.** Phase B stamps a
   `factsDigest` (coarse status plus each dimension's actual value and
-  satisfaction, `goalFactsDigest`) into every minted or re-run banner's
-  provenance. Phase A's sweep — which runs after derivation for exactly this
-  reason — expires an active banner whose stamped digest no longer matches
-  the current derivation, so a banner quoting "129/94" dies when a new
-  reading lands, and the expiry re-arms the escalation for replacement copy.
+  satisfaction plus a hash of exact health timestamps and values,
+  `goalFactsDigest`) into every minted or re-run banner's provenance. Phase A's
+  sweep — which runs after derivation for exactly this reason — expires an
+  active banner whose stamped digest no longer matches the current derivation,
+  so a banner quoting "129/94" dies when a new reading or same-value backfill
+  lands, and the expiry re-arms the escalation for replacement copy. Health
+  signal subscriptions also advance the standing-report stale watermark
+  directly because the persisted progress register intentionally contains
+  aggregates rather than the full raw series.
   Two deliberate limits: the digest comparison only runs when the goal
   qualifies for automatic copy (never strip a banner that will not be
   re-minted), and same-day banners are exempt (their replacement would
@@ -221,6 +225,19 @@ flowchart TD
   task query as Insights and replaces its persisted prefix by entry id. Day
   keys re-stamp the local calendar date as midnight UTC. The goal agent must
   never disagree with the chart the user is looking at.
+- **Health FACTS preserve observations, not only aggregates.** Weight and
+  systolic/diastolic blood-pressure criterion results keep `actual` as the
+  deterministic rolling aggregate, and add a bounded `healthSeries` for the
+  criterion's authored window and evaluation reference. Its ordered
+  `observations` contain the newest 100 exact journal timestamps and values,
+  `observationCount` and `observationsOmitted` disclose the wider series, and
+  `latest` repeats the newest reading with deterministic `onTarget` and
+  `isToday` flags relative to that evaluation day. Future samples and samples
+  outside the criterion window are excluded. A delayed escalation therefore
+  cannot slide its raw evidence beyond the aggregate it explains. Phase B can
+  describe the latest reading, direction and sparsity without inventing an
+  intermediate measured value or overflowing a provider context; high-volume
+  quantitative types such as steps remain aggregate-only.
 - **Health level trends can be green before the threshold is crossed.** Weight
   and systolic/diastolic blood-pressure leaves use their latest observation per
   day and a rolling seven-day average. An unmet leaf with at least four sampled
@@ -284,6 +301,11 @@ flowchart TD
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
+  For supported health criteria, it explicitly distinguishes the rolling
+  `actual` from the timestamped `healthSeries` anchored to
+  `evaluation.reference`: when the latest reading is on target for that day,
+  copy says the day's logging is complete, describes any lagging rolling
+  average separately, and does not ask for another reading.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
   with one pinned retry each: a transition/detail-refresh wake missing its
@@ -536,8 +558,12 @@ flowchart TD
   cannot drift apart; the reliability tail shares the bottom line with the
   legend. Point-sample health headers (weight, blood pressure — the
   `GoalHealthDataTypes.supported` set) quote the LATEST observation while
-  the met verdict stays on the evaluator's rolling-average basis; aggregate
-  dimensions keep quoting their period aggregate. When a health/measurable
+  the persisted evaluator result stays on its rolling-average basis. If the
+  latest observation was recorded today and meets the target, the card uses a
+  positive daily status and encouragement; otherwise an over-target rolling
+  average still shows Needs attention, including when today is unmeasured.
+  Aggregate dimensions keep quoting their period aggregate. When a
+  health/measurable
   dimension records an observation today and a habit whose name shares a
   distinctive whole word with it (generic words excluded — see
   `_genericNameTokens` in `goal_progress_view.dart`) has no outcome for

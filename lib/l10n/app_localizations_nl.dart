@@ -6301,6 +6301,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er zijn nog niet voldoende gegevens om deze dimensie te beoordelen.';
 
   @override
+  String get goalDimensionOnTargetTodayNote =>
+      'De nieuwste meting van vandaag ligt binnen het doel; ga zo door.';
+
+  @override
+  String get goalDimensionOnTargetTodayStatus => 'Vandaag op doel';
+
+  @override
   String get goalDimensionOnTrackNote =>
       'Deze dimensie ligt momenteel op koers.';
 

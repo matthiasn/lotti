@@ -2619,6 +2619,8 @@
   "goalDimensionNeedsAttentionNote": "Această dimensiune necesită atenție; propriile sale dovezi rămân vizibile.",
   "goalDimensionNeedsAttentionStatus": "Necesită atenție",
   "goalDimensionNoDataNote": "Nu există încă suficiente date pentru a judeca această dimensiune.",
+  "goalDimensionOnTargetTodayNote": "Cea mai recentă măsurătoare de astăzi respectă ținta; continuați tot așa.",
+  "goalDimensionOnTargetTodayStatus": "Țintă atinsă astăzi",
   "goalDimensionOnTrackNote": "Această dimensiune este în prezent pe drumul cel bun.",
   "goalDimensionOnTrackStatus": "Pe drumul cel bun",
   "goalDimensionRecordedByAgent": "Spus de dvs. și înregistrat după aprobarea dvs.",
