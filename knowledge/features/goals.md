@@ -170,11 +170,15 @@ flowchart TD
   a EUR0 maintenance event.
 - **Banners are dirty-tracked against their evidence.** Phase B stamps a
   `factsDigest` (coarse status plus each dimension's actual value and
-  satisfaction, `goalFactsDigest`) into every minted or re-run banner's
-  provenance. Phase A's sweep — which runs after derivation for exactly this
-  reason — expires an active banner whose stamped digest no longer matches
-  the current derivation, so a banner quoting "129/94" dies when a new
-  reading lands, and the expiry re-arms the escalation for replacement copy.
+  satisfaction plus a hash of exact health timestamps and values,
+  `goalFactsDigest`) into every minted or re-run banner's provenance. Phase A's
+  sweep — which runs after derivation for exactly this reason — expires an
+  active banner whose stamped digest no longer matches the current derivation,
+  so a banner quoting "129/94" dies when a new reading or same-value backfill
+  lands, and the expiry re-arms the escalation for replacement copy. Health
+  signal subscriptions also advance the standing-report stale watermark
+  directly because the persisted progress register intentionally contains
+  aggregates rather than the full raw series.
   Two deliberate limits: the digest comparison only runs when the goal
   qualifies for automatic copy (never strip a banner that will not be
   re-minted), and same-day banners are exempt (their replacement would
@@ -224,13 +228,16 @@ flowchart TD
 - **Health FACTS preserve observations, not only aggregates.** Weight and
   systolic/diastolic blood-pressure criterion results keep `actual` as the
   deterministic rolling aggregate, and add a bounded `healthSeries` for the
-  criterion's authored window. Its ordered `observations` contain every exact
-  journal timestamp and value, while `latest` repeats the newest reading with
-  deterministic `onTarget` and `isToday` flags. Future samples and samples
-  outside the criterion window are excluded. Phase B can therefore describe
-  the latest reading, direction and sparsity without inventing an intermediate
-  measured value; high-volume quantitative types such as steps remain
-  aggregate-only.
+  criterion's authored window and evaluation reference. Its ordered
+  `observations` contain the newest 100 exact journal timestamps and values,
+  `observationCount` and `observationsOmitted` disclose the wider series, and
+  `latest` repeats the newest reading with deterministic `onTarget` and
+  `isToday` flags relative to that evaluation day. Future samples and samples
+  outside the criterion window are excluded. A delayed escalation therefore
+  cannot slide its raw evidence beyond the aggregate it explains. Phase B can
+  describe the latest reading, direction and sparsity without inventing an
+  intermediate measured value or overflowing a provider context; high-volume
+  quantitative types such as steps remain aggregate-only.
 - **Health level trends can be green before the threshold is crossed.** Weight
   and systolic/diastolic blood-pressure leaves use their latest observation per
   day and a rolling seven-day average. An unmet leaf with at least four sampled
@@ -295,9 +302,10 @@ flowchart TD
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
   For supported health criteria, it explicitly distinguishes the rolling
-  `actual` from the exact timestamped `healthSeries`: when the latest reading
-  is on target today, copy says today's logging is complete, describes any
-  lagging rolling average separately, and does not ask for another reading.
+  `actual` from the timestamped `healthSeries` anchored to
+  `evaluation.reference`: when the latest reading is on target for that day,
+  copy says the day's logging is complete, describes any lagging rolling
+  average separately, and does not ask for another reading.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
   with one pinned retry each: a transition/detail-refresh wake missing its

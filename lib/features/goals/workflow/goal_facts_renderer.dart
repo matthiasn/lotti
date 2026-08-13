@@ -30,6 +30,11 @@ const goalReusableMinMeanRating = 4.0;
 /// The complete lifetime remains represented by the bounded summaries below.
 const goalCategorySessionEvidenceLimit = 200;
 
+/// Maximum exact samples emitted for one health criterion. The rolling
+/// aggregate and total/omitted counts retain the wider-window context while
+/// keeping imported or unusually dense histories within provider limits.
+const goalHealthObservationEvidenceLimit = 100;
+
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
@@ -47,6 +52,7 @@ class GoalFactsRenderer {
     required GoalWakeFacts facts,
     required List<GoalProgressEntity> priorRegisters,
     required List<GoalNudgeEntity> nudges,
+    required DateTime evaluationReference,
     List<String> observations = const [],
     List<String> unansweredUserMessages = const [],
     String? personaTonePreference,
@@ -89,9 +95,10 @@ class GoalFactsRenderer {
               result: result,
               metric: metricCriteria[result.criterionId],
               facts: facts,
-              now: now,
+              evaluationReference: evaluationReference,
             ),
         ],
+        'reference': evaluationReference.toIso8601String(),
         'attainment': facts.evaluation.attainment,
         'trackStatus': facts.trackStatus.name,
         'dataCoverage': facts.evaluation.dataCoverage,
@@ -160,11 +167,15 @@ class GoalFactsRenderer {
     required GoalCriterionResult result,
     required GoalCriterionMetric? metric,
     required GoalWakeFacts facts,
-    required DateTime now,
+    required DateTime evaluationReference,
   }) {
     final healthSeries = metric == null
         ? null
-        : _healthSeriesJson(metric: metric, facts: facts, now: now);
+        : _healthSeriesJson(
+            metric: metric,
+            facts: facts,
+            evaluationReference: evaluationReference,
+          );
     return {
       'criterionId': result.criterionId,
       'actual': result.actual,
@@ -187,10 +198,10 @@ class GoalFactsRenderer {
   Map<String, Object?>? _healthSeriesJson({
     required GoalCriterionMetric metric,
     required GoalWakeFacts facts,
-    required DateTime now,
+    required DateTime evaluationReference,
   }) {
     if (!GoalHealthDataTypes.supported.contains(metric.dataType)) return null;
-    final range = metric.window.periodRange(now);
+    final range = metric.window.periodRange(evaluationReference);
     final candidates =
         facts.quantitativeObservationsByType[metric.dataType] ??
         const <GoalMetricObservation>[];
@@ -201,16 +212,24 @@ class GoalFactsRenderer {
                   observation.recordedAt,
                 ).isBefore(range.start) &&
                 !GoalWindow.dayUtc(observation.recordedAt).isAfter(range.end) &&
-                !observation.recordedAt.isAfter(now))
+                !observation.recordedAt.isAfter(evaluationReference))
               observation,
         ]..sort((a, b) {
           final byTime = a.recordedAt.compareTo(b.recordedAt);
           return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
         });
     final latest = observations.lastOrNull;
+    final emittedObservations =
+        observations.length <= goalHealthObservationEvidenceLimit
+        ? observations
+        : observations.sublist(
+            observations.length - goalHealthObservationEvidenceLimit,
+          );
     return {
+      'observationCount': observations.length,
+      'observationsOmitted': observations.length - emittedObservations.length,
       'observations': [
-        for (final observation in observations)
+        for (final observation in emittedObservations)
           {
             'recordedAt': observation.recordedAt.toIso8601String(),
             'value': observation.value,
@@ -226,7 +245,8 @@ class GoalFactsRenderer {
             metric.direction,
           ),
           'isToday':
-              GoalWindow.dayUtc(latest.recordedAt) == GoalWindow.dayUtc(now),
+              GoalWindow.dayUtc(latest.recordedAt) ==
+              GoalWindow.dayUtc(evaluationReference),
         },
     };
   }

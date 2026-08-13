@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:mocktail/mocktail.dart';
@@ -196,6 +197,27 @@ void main() {
 
     await dispatcher.dispatchBatch({'some-task-id', 'HABIT_COMPLETION'});
     expect(phaseA.calls, isEmpty);
+  });
+
+  test('synced health evidence marks the report stale and evaluates', () async {
+    const weight = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: GoalHealthDataTypes.weight,
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 88,
+      direction: GoalDirection.atMost,
+    );
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a', goalCriteria: weight);
+
+    await dispatcher.dispatchBatch({GoalHealthDataTypes.weight});
+
+    verify(() => agentService.markReportStale('goal-a')).called(1);
+    expect(phaseA.calls.single.$2, {GoalHealthDataTypes.weight});
+    expect(evaluated, ['goal-a']);
   });
 
   test('synced category-time churn waits for the scheduled cadence', () async {

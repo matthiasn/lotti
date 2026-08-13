@@ -629,7 +629,7 @@ void main() {
   });
 
   test(
-    'the workflow sends exact health series through the final FACTS copy',
+    'an overdue workflow anchors exact health series to its encoded day',
     () async {
       const weight = GoalCriterion.metric(
         criterionId: 'health-weight',
@@ -686,25 +686,28 @@ void main() {
             temperature = 0.7,
             strategy,
           }) async {
-            expect(message, contains('"actual": 89.0'));
+            expect(message, contains('"actual": 90.0'));
             expect(message, contains('"healthSeries"'));
+            expect(
+              message,
+              contains('"reference": "2026-08-08T23:59:59.000"'),
+            );
             expect(
               message,
               contains('"recordedAt": "2026-08-08T08:00:00.000"'),
             );
             expect(
               message,
-              contains('"recordedAt": "2026-08-09T08:00:00.000"'),
+              isNot(contains('"recordedAt": "2026-08-09T08:00:00.000"')),
             );
-            expect(message, contains('"onTarget": true'));
+            expect(message, contains('"onTarget": false'));
             expect(message, contains('"isToday": true'));
             await (strategy! as GoalAgentStrategy).processToolCalls(
               toolCalls: [
                 toolCall(GoalAgentToolNames.updateGoalReport, {
                   'status': 'insufficientData',
-                  'oneLiner': 'Today is on target; the week is still sparse.',
-                  'tldr':
-                      'The latest weight is on target with only two samples.',
+                  'oneLiner': 'The delayed report matches its encoded day.',
+                  'tldr': 'Only observations through August 8 are included.',
                 }),
               ],
               manager: conversationManager,
@@ -712,12 +715,14 @@ void main() {
             return const InferenceUsage(inputTokens: 400, outputTokens: 80);
           };
 
-      final result = await run();
+      final result = await run(
+        triggerTokens: const {'goal-escalation:2026-08-08'},
+      );
 
       expect(result.success, isTrue);
       expect(
         upserts.whereType<AgentReportEntity>().single.tldr,
-        'The latest weight is on target with only two samples.',
+        'Only observations through August 8 are included.',
       );
     },
   );

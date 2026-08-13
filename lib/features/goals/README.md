@@ -95,7 +95,9 @@ observation recorded today offers a one-tap check-off. Blood-pressure and
 weight headers quote the latest reading. When today's latest sample meets its
 target, the card celebrates that today's logging is on target even if the
 rolling average still needs recovery; an over-target rolling average remains
-actionable when today has not been measured.
+actionable when today has not been measured. Agent FACTS carry the newest 100
+exact samples per supported health criterion plus total and omitted counts,
+anchored to the same evaluation day as the rolling aggregate.
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to

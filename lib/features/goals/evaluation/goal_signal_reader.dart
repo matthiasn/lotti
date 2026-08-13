@@ -501,16 +501,23 @@ Set<String> goalImmediateSignalTriggerTokens(GoalCriterion criteria) {
   };
 }
 
-/// High-frequency goal signals that invalidate the report without waking it.
+/// Goal signals that also invalidate model-facing evidence directly.
+///
+/// Category attribution changes are stale-only because they are high-volume.
+/// Supported health samples remain on the immediate evaluation path and also
+/// mark the report stale: a timestamp/backfill can change the exact series
+/// without changing the daily aggregate persisted in the progress register.
 Set<String> goalStaleSignalTriggerTokens(GoalCriterion criteria) {
   final needs = _SignalNeeds()..collect(criteria);
-  if (needs.categoryTimeCriteria.isEmpty) return const {};
-  return const {
-    textEntryNotification,
-    linkNotification,
-    taskNotification,
-    categoriesNotification,
-    privateToggleNotification,
+  return {
+    ...needs.quantitativeTypes.intersection(GoalHealthDataTypes.supported),
+    if (needs.categoryTimeCriteria.isNotEmpty) ...const {
+      textEntryNotification,
+      linkNotification,
+      taskNotification,
+      categoriesNotification,
+      privateToggleNotification,
+    },
   };
 }
 

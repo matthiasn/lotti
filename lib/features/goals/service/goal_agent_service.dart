@@ -179,8 +179,9 @@ class GoalAgentService {
   /// Observes exactly the signals referenced by the goal criteria.
   ///
   /// Bounded habit and measured-data writes immediately run the deterministic
-  /// evaluator. Category-time activity is high-frequency and instead marks
-  /// the report stale; the daily cadence or Update now consumes those changes.
+  /// evaluator. Health samples additionally mark exact report evidence stale,
+  /// while high-frequency category-time activity only marks it stale; the
+  /// daily cadence or Update now consumes category changes.
   void registerSignalSubscription(String agentId, GoalCriterion criteria) {
     _orchestrator.removeSubscriptions(agentId);
     final immediateTokens = goalImmediateSignalTriggerTokens(criteria);

@@ -117,6 +117,7 @@ void main() {
     GoalWakeFacts? wakeFacts,
     List<GoalProgressEntity> priors = const [],
     GoalCriterion? criteria,
+    DateTime? evaluationReference,
   }) {
     final text = withClock(
       fixedClock,
@@ -125,6 +126,7 @@ void main() {
         facts: wakeFacts ?? facts(),
         priorRegisters: priors,
         nudges: nudges,
+        evaluationReference: evaluationReference ?? now,
       ),
     );
     expect(
@@ -320,6 +322,8 @@ void main() {
             as Map<String, dynamic>;
 
     final systolic = healthSeries('health-blood-pressure-systolic');
+    expect(systolic['observationCount'], 2);
+    expect(systolic['observationsOmitted'], 0);
     expect(systolic['observations'], [
       {'recordedAt': '2026-08-08T21:48:00.000', 'value': 129},
       {'recordedAt': '2026-08-09T11:00:00.000', 'value': 125},
@@ -341,6 +345,132 @@ void main() {
           .toList(),
       [96, 95, 94],
     );
+  });
+
+  test('health evidence keeps the newest bounded sample and omitted count', () {
+    const criteria = GoalCriterion.metric(
+      criterionId: 'health-weight',
+      dataType: GoalHealthDataTypes.weight,
+      window: GoalWindow.rollingDays(count: 3650),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 88,
+      direction: GoalDirection.atMost,
+    );
+    final observations = [
+      for (
+        var index = 0;
+        index < goalHealthObservationEvidenceLimit + 2;
+        index++
+      )
+        GoalMetricObservation(
+          recordedAt: DateTime(2026).add(Duration(hours: index)),
+          value: 100 - index / 10,
+        ),
+    ];
+    final json = renderedJson(
+      criteria: criteria,
+      evaluationReference: DateTime(2026, 8, 9, 12),
+      wakeFacts: GoalWakeFacts(
+        trackStatus: GoalTrackStatus.atRisk,
+        evaluation: const GoalEvaluation(
+          attainment: 0.9,
+          satisfied: false,
+          dataCoverage: 1,
+          results: {
+            'health-weight': GoalCriterionResult(
+              criterionId: 'health-weight',
+              actual: 90,
+              target: 88,
+              ratio: 0.9,
+              satisfied: false,
+              sampleCount: 102,
+            ),
+          },
+        ),
+        quantitativeObservationsByType: {
+          GoalHealthDataTypes.weight: observations,
+        },
+      ),
+    );
+    final evaluation = json['evaluation'] as Map<String, dynamic>;
+    final result =
+        (evaluation['criterionResults'] as List<dynamic>).single
+            as Map<String, dynamic>;
+    final series = result['healthSeries'] as Map<String, dynamic>;
+    final emitted = series['observations'] as List<dynamic>;
+
+    expect(series['observationCount'], goalHealthObservationEvidenceLimit + 2);
+    expect(series['observationsOmitted'], 2);
+    expect(emitted, hasLength(goalHealthObservationEvidenceLimit));
+    expect(
+      (emitted.first as Map<String, dynamic>)['recordedAt'],
+      observations[2].recordedAt.toIso8601String(),
+    );
+    expect(
+      (series['latest'] as Map<String, dynamic>)['recordedAt'],
+      observations.last.recordedAt.toIso8601String(),
+    );
+  });
+
+  test('nested non-health criteria remain aggregate-only', () {
+    const criteria = GoalCriterion.anyOf(
+      criterionId: 'any-routine',
+      criteria: [
+        GoalCriterion.atLeastCount(
+          criterionId: 'two-of-three',
+          successes: 2,
+          criteria: [
+            GoalCriterion.habit(
+              criterionId: 'gym',
+              habitId: 'gym-habit',
+              window: GoalWindow.rollingDays(count: 7),
+              targetCount: 3,
+            ),
+            GoalCriterion.measurable(
+              criterionId: 'water',
+              dataTypeId: 'water-id',
+              window: GoalWindow.day(),
+              aggregation: GoalAggregation.sum,
+              target: 2000,
+            ),
+            GoalCriterion.categoryTime(
+              criterionId: 'coding',
+              categoryId: 'coding-category',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.sum,
+              targetHours: 4,
+            ),
+          ],
+        ),
+      ],
+    );
+    final json = renderedJson(
+      criteria: criteria,
+      wakeFacts: const GoalWakeFacts(
+        trackStatus: GoalTrackStatus.atRisk,
+        evaluation: GoalEvaluation(
+          attainment: 1 / 3,
+          satisfied: false,
+          dataCoverage: 1,
+          results: {
+            'gym': GoalCriterionResult(
+              criterionId: 'gym',
+              actual: 1,
+              target: 3,
+              ratio: 1 / 3,
+              satisfied: false,
+              sampleCount: 7,
+            ),
+          },
+        ),
+      ),
+    );
+
+    final evaluation = json['evaluation'] as Map<String, dynamic>;
+    final result =
+        (evaluation['criterionResults'] as List<dynamic>).single
+            as Map<String, dynamic>;
+    expect(result, isNot(contains('healthSeries')));
   });
 
   test('active ads carry freshness; a stale-marked ad is exposed as such', () {

@@ -22,7 +22,7 @@ void main() {
     );
     expect(
       goalAgentSystemPrompt,
-      contains('latest health reading is on target today'),
+      contains('newest bounded exact readings for `evaluation.reference`'),
     );
   });
 

@@ -7,6 +7,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1179,5 +1180,26 @@ void main() {
       {'walk-habit', 'HealthDataType.STEPS'},
     );
     expect(goalStaleSignalTriggerTokens(criterion), isEmpty);
+  });
+
+  test('supported health samples evaluate immediately and dirty exact report '
+      'evidence', () {
+    const criterion = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: GoalHealthDataTypes.weight,
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 88,
+      direction: GoalDirection.atMost,
+    );
+
+    expect(
+      goalImmediateSignalTriggerTokens(criterion),
+      {GoalHealthDataTypes.weight},
+    );
+    expect(
+      goalStaleSignalTriggerTokens(criterion),
+      {GoalHealthDataTypes.weight},
+    );
   });
 }
