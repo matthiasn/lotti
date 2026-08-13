@@ -5178,12 +5178,6 @@ abstract class AppLocalizations {
   /// **'No audio was recorded. Try again.'**
   String get chatInputNoAudioRecorded;
 
-  /// No description provided for @chatInputRecordingFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Recording failed. Please try again.'**
-  String get chatInputRecordingFailed;
-
   /// No description provided for @chatInputPleaseWait.
   ///
   /// In en, this message translates to:
@@ -5195,6 +5189,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Processing...'**
   String get chatInputProcessing;
+
+  /// No description provided for @chatInputRecordingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording failed. Please try again.'**
+  String get chatInputRecordingFailed;
 
   /// No description provided for @chatInputRecordVoice.
   ///
@@ -10779,6 +10779,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Systolic and diastolic · mmHg · 7-day average'**
   String get goalFormBloodPressureSource;
+
+  /// No description provided for @goalFormCategoryTimeCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days'**
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  );
+
+  /// No description provided for @goalFormCategoryTimeSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked time · hours per rolling 7 days'**
+  String get goalFormCategoryTimeSource;
+
+  /// No description provided for @goalFormCategoryTimeTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours per rolling 7 days'**
+  String get goalFormCategoryTimeTarget;
 
   /// No description provided for @goalFormChooseHabit.
   ///

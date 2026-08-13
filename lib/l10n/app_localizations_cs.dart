@@ -3102,13 +3102,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
   @override
-  String get chatInputRecordingFailed => 'Nahrávání selhalo. Zkus to znovu.';
-
-  @override
   String get chatInputPleaseWait => 'Čekejte prosím...';
 
   @override
   String get chatInputProcessing => 'Zpracování...';
+
+  @override
+  String get chatInputRecordingFailed => 'Nahrávání selhalo. Zkus to znovu.';
 
   @override
   String get chatInputRecordVoice => 'Nahrát hlasovou zprávu';
@@ -6376,6 +6376,32 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systolický a diastolický · mmHg · 7denní průměr';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hodinu',
+        '2': 'hodiny',
+        '3': 'hodiny',
+        '4': 'hodiny',
+        'other': 'hodin',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 za klouzavých 7 dní';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Zaznamenaný čas · hodiny za klouzavých 7 dní';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Hodiny za klouzavých 7 dní';
 
   @override
   String get goalFormChooseHabit => 'Vyber existující návyk';

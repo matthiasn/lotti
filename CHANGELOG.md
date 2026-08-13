@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Goal-agent chat supports voice input.** The composer now has a microphone
   button that records, transcribes, and fills the text field.
 
+### Changed
+- **Goal health trends now use charts that fit the data.** Systolic and
+  diastolic blood pressure share one dual-line chart with their separate target
+  lines, while weight uses a line chart that makes small day-to-day changes
+  visible. Other measurable dimensions keep their existing progress bars.
+- **Goal setup can monitor time spent in categories.** Active categories are
+  available as goal dimensions with a rolling seven-day hour target and an
+  at-least or at-most direction.
+
 ### Fixed
+- **Goal agents can choose an inference profile from Agent internals.** The AI
+  setup row now opens a profile picker even though goal agents have no linked
+  task.
 - **The Daily OS planner no longer wakes for days that are already over.** The
   planner kept one scheduled wake per day it had ever planned, and the finished
   ones fired in bursts on every check — each a full model run that found nothing

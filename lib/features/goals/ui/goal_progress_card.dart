@@ -1,16 +1,24 @@
 import 'dart:math' as math;
 
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 /// The handover's seven-cell picture used on each Agents-list row. It is
 /// intentionally unlabeled visually, but exposes one concise semantic summary.
@@ -107,6 +115,7 @@ class GoalProgressCard extends StatelessWidget {
           metric.kind == GoalDimensionKind.categoryTime &&
           metric.categoryTimeSessions.isNotEmpty,
     );
+    final bloodPressure = _bloodPressureMetrics(progress.metrics);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -122,10 +131,14 @@ class GoalProgressCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
-        for (final metric in progress.metrics) ...[
-          _MetricDimensionCard(metric: metric),
-          SizedBox(height: tokens.spacing.step3),
-        ],
+        for (final metric in progress.metrics)
+          if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
+            if (bloodPressure != null && metric == bloodPressure.systolic)
+              _BloodPressureDimensionCard(metrics: bloodPressure)
+            else
+              _MetricDimensionCard(metric: metric),
+            SizedBox(height: tokens.spacing.step3),
+          ],
         for (final patternMetric in patternMetrics) ...[
           _CategoryPatternCard(metric: patternMetric),
           SizedBox(height: tokens.spacing.step3),
@@ -303,6 +316,248 @@ class _HabitDimensionCard extends StatelessWidget {
   }
 }
 
+typedef _BloodPressureMetrics = ({
+  GoalMetricProgressView systolic,
+  GoalMetricProgressView diastolic,
+});
+
+typedef _MetricSummary = ({num current, bool hasData, bool met});
+
+_BloodPressureMetrics? _bloodPressureMetrics(
+  List<GoalMetricProgressView> metrics,
+) {
+  GoalMetricProgressView? systolic;
+  GoalMetricProgressView? diastolic;
+  for (final metric in metrics) {
+    if (metric.sourceId == GoalHealthDataTypes.bloodPressureSystolic) {
+      systolic ??= metric;
+    } else if (metric.sourceId == GoalHealthDataTypes.bloodPressureDiastolic) {
+      diastolic ??= metric;
+    }
+  }
+  if (systolic == null || diastolic == null) return null;
+  final systolicUnit = systolic.unitName?.trim() ?? '';
+  final diastolicUnit = diastolic.unitName?.trim() ?? '';
+  final compatibleDays = listEquals(
+    systolic.days.map((day) => day.day).toList(),
+    diastolic.days.map((day) => day.day).toList(),
+  );
+  final systolicHasData = systolic.days.any((day) => day.isObserved);
+  final diastolicHasData = diastolic.days.any((day) => day.isObserved);
+  if (systolicHasData != diastolicHasData ||
+      systolic.window != diastolic.window ||
+      systolic.aggregation != diastolic.aggregation ||
+      systolicUnit != diastolicUnit ||
+      !compatibleDays) {
+    return null;
+  }
+  return (systolic: systolic, diastolic: diastolic);
+}
+
+_MetricSummary _metricSummary(GoalMetricProgressView metric) {
+  final observed = metric.days.where((day) => day.isObserved).toList();
+  final current = switch (metric.aggregation) {
+    GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
+      observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
+    GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
+      observed.first.value,
+      (value, day) => math.max(value, day.value),
+    ),
+    GoalAggregation.count => observed.length,
+    _ => observed.fold<num>(0, (sum, day) => sum + day.value),
+  };
+  final meetsPeriodTarget = switch (metric.direction) {
+    GoalDirection.atLeast => current >= metric.target,
+    GoalDirection.atMost => current <= metric.target,
+  };
+  return (
+    current: current,
+    hasData: observed.isNotEmpty,
+    met: observed.isNotEmpty && (meetsPeriodTarget || metric.projectedOnTrack),
+  );
+}
+
+class _BloodPressureDimensionCard extends StatelessWidget {
+  const _BloodPressureDimensionCard({required this.metrics});
+
+  final _BloodPressureMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final number = NumberFormat.decimalPattern(locale);
+    final systolic = _metricSummary(metrics.systolic);
+    final diastolic = _metricSummary(metrics.diastolic);
+    final hasData = systolic.hasData && diastolic.hasData;
+    final met = hasData && systolic.met && diastolic.met;
+    final systolicColor = tokens.colors.alert.error.defaultColor;
+    final diastolicColor = tokens.colors.alert.info.defaultColor;
+    final range = _metricDateRange([metrics.systolic, metrics.diastolic]);
+    final unit = metrics.systolic.unitName?.trim() ?? '';
+    final unitSuffix = unit.isEmpty ? '' : ' $unit';
+    final yValues = <num>[
+      metrics.systolic.target,
+      metrics.diastolic.target,
+      ...metrics.systolic.days
+          .where((day) => day.isObserved)
+          .map((day) => day.value),
+      ...metrics.diastolic.days
+          .where((day) => day.isObserved)
+          .map((day) => day.value),
+    ];
+    final reading = hasData
+        ? '${number.format(systolic.current)} / '
+              '${number.format(diastolic.current)}$unitSuffix'
+        : '—';
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _DimensionHeader(
+            kind: GoalDimensionKind.health,
+            title: context.messages.dashboardHealthBloodPressure,
+            source: context.messages.goalDimensionHealthSource,
+            reading: reading,
+            met: met,
+            hasData: hasData,
+          ),
+          if (range != null) ...[
+            SizedBox(height: tokens.spacing.step4),
+            Text(
+              _periodLabel(context, metrics.systolic.days),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+            SizedBox(
+              height: tokens.spacing.step13,
+              child: TimeSeriesMultiLineChart(
+                lineBarsData: [
+                  _bloodPressureLine(metrics.systolic, systolicColor),
+                  _bloodPressureLine(metrics.diastolic, diastolicColor),
+                ],
+                rangeStart: range.start,
+                rangeEnd: range.end,
+                minVal: yValues.reduce(math.min),
+                maxVal: yValues.reduce(math.max),
+                unit: unit,
+                dateOnly: true,
+                horizontalLines: [
+                  _targetLine(metrics.systolic.target, systolicColor),
+                  _targetLine(metrics.diastolic.target, diastolicColor),
+                ],
+              ),
+            ),
+            DashboardChartDateAxis(
+              rangeStart: range.start,
+              rangeEnd: range.end,
+              dateOnly: true,
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            DashboardChartLegend(
+              entries: [
+                DashboardLegendEntry(
+                  color: systolicColor,
+                  label: _targetLegendLabel(
+                    context,
+                    context.messages.dashboardHealthSystolic,
+                    metrics.systolic,
+                  ),
+                ),
+                DashboardLegendEntry(
+                  color: diastolicColor,
+                  label: _targetLegendLabel(
+                    context,
+                    context.messages.dashboardHealthDiastolic,
+                    metrics.diastolic,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            !hasData
+                ? context.messages.goalDimensionNoDataNote
+                : met
+                ? context.messages.goalDimensionOnTrackNote
+                : context.messages.goalDimensionNeedsAttentionNote,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+LineChartBarData _bloodPressureLine(
+  GoalMetricProgressView metric,
+  Color color,
+) {
+  final observations = _metricObservations(metric);
+  return LineChartBarData(
+    spots: observations
+        .map(
+          (item) => FlSpot(
+            item.dateTime.millisecondsSinceEpoch.toDouble(),
+            item.value.toDouble(),
+          ),
+        )
+        .toList(),
+    color: color,
+    isStrokeCapRound: true,
+    dotData: FlDotData(show: observations.length == 1),
+  );
+}
+
+HorizontalLine _targetLine(num target, Color color) {
+  final style = chartEmphasisLine(
+    color.withValues(alpha: SurfaceAlphas.muted),
+  );
+  return HorizontalLine(
+    y: target.toDouble(),
+    color: style.color,
+    strokeWidth: style.strokeWidth,
+    dashArray: style.dashArray,
+  );
+}
+
+String _targetLegendLabel(
+  BuildContext context,
+  String name,
+  GoalMetricProgressView metric,
+) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final direction = switch (metric.direction) {
+    GoalDirection.atLeast => '≥',
+    GoalDirection.atMost => '≤',
+  };
+  return '$name $direction ${NumberFormat.decimalPattern(locale).format(metric.target)}';
+}
+
+({DateTime start, DateTime end})? _metricDateRange(
+  Iterable<GoalMetricProgressView> metrics,
+) {
+  final days =
+      metrics.expand((metric) => metric.days).map((day) => day.day).toList()
+        ..sort();
+  if (days.isEmpty) return null;
+  return (start: days.first, end: days.last);
+}
+
+List<Observation> _metricObservations(GoalMetricProgressView metric) {
+  final observations =
+      metric.days
+          .where((day) => day.isObserved)
+          .map((day) => Observation(day.day, day.value))
+          .toList()
+        ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  return observations;
+}
+
 class _MetricDimensionCard extends StatelessWidget {
   const _MetricDimensionCard({required this.metric});
 
@@ -311,36 +566,20 @@ class _MetricDimensionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final observed = metric.days.where((day) => day.isObserved).toList();
-    final current = switch (metric.aggregation) {
-      GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
-        observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
-      GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
-        observed.first.value,
-        (value, day) => math.max(value, day.value),
-      ),
-      GoalAggregation.count => observed.length,
-      _ => observed.fold<num>(0, (sum, day) => sum + day.value),
-    };
+    final summary = _metricSummary(metric);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
     final unit = metric.unitName?.trim();
     final reading = unit == null || unit.isEmpty
         ? context.messages.goalDimensionMetricReading(
-            number.format(current),
+            number.format(summary.current),
             number.format(metric.target),
           )
         : context.messages.goalDimensionMetricReadingWithUnit(
-            number.format(current),
+            number.format(summary.current),
             number.format(metric.target),
             unit,
           );
-    final meetsPeriodTarget = switch (metric.direction) {
-      GoalDirection.atLeast => current >= metric.target,
-      GoalDirection.atMost => current <= metric.target,
-    };
-    final met =
-        observed.isNotEmpty && (meetsPeriodTarget || metric.projectedOnTrack);
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,20 +589,22 @@ class _MetricDimensionCard extends StatelessWidget {
             title: metric.name,
             source: _dimensionSource(context, metric.kind),
             reading: reading,
-            met: met,
-            hasData: observed.isNotEmpty,
+            met: summary.met,
+            hasData: summary.hasData,
           ),
           SizedBox(height: tokens.spacing.step4),
           if (metric.kind == GoalDimensionKind.categoryTime &&
               metric.dailyTimeRange != null)
             _CategoryBandSeries(metric: metric)
+          else if (GoalHealthDataTypes.supported.contains(metric.sourceId))
+            _MetricTrendSeries(metric: metric)
           else
             _MetricProgressSeries(metric: metric),
           SizedBox(height: tokens.spacing.step3),
           Text(
-            observed.isEmpty
+            !summary.hasData
                 ? context.messages.goalDimensionNoDataNote
-                : met
+                : summary.met
                 ? context.messages.goalDimensionOnTrackNote
                 : context.messages.goalDimensionNeedsAttentionNote,
             style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -1020,6 +1261,51 @@ class _Reliability extends StatelessWidget {
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricTrendSeries extends StatelessWidget {
+  const _MetricTrendSeries({required this.metric});
+
+  final GoalMetricProgressView metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final range = _metricDateRange([metric]);
+    if (range == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _periodLabel(context, metric.days),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
+        ),
+        SizedBox(
+          height: tokens.spacing.step13,
+          child: TimeSeriesLineChart(
+            data: _metricObservations(metric),
+            rangeStart: range.start,
+            rangeEnd: range.end,
+            unit: metric.unitName ?? '',
+            dateOnly: true,
+            horizontalLines: [
+              _targetLine(
+                metric.target,
+                tokens.colors.interactive.enabled,
+              ),
+            ],
+          ),
+        ),
+        DashboardChartDateAxis(
+          rangeStart: range.start,
+          rangeEnd: range.end,
+          dateOnly: true,
         ),
       ],
     );

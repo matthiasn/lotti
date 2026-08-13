@@ -27,14 +27,14 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Adaptive task-agent setup flow presented as one multi-page Wolt route.
+/// Adaptive agent setup flow for task agents and goal-agent profiles.
 class AgentModelSheet {
   const AgentModelSheet._();
 
   static Future<void> show({
     required BuildContext context,
-    required String taskId,
     required String agentId,
+    String? taskId,
   }) {
     final pageIndex = ValueNotifier<int>(0);
     final selectedProviderId = ValueNotifier<String?>(null);
@@ -140,6 +140,14 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
       .toList();
 }
 
+String? _selectedProfileId(
+  AgentConfig? config, {
+  required bool allowLegacyProfile,
+}) {
+  return config?.inferenceSetup?.baseProfileId ??
+      (allowLegacyProfile ? config?.profileId : null);
+}
+
 class _AgentSetupFlowController {
   _AgentSetupFlowController({
     required this.container,
@@ -151,7 +159,7 @@ class _AgentSetupFlowController {
   });
 
   final ProviderContainer container;
-  final String taskId;
+  final String? taskId;
   final String agentId;
   final NavigatorState navigator;
   final ScaffoldMessengerState taskMessenger;
@@ -178,7 +186,8 @@ class _AgentSetupFlowController {
       await action();
       container
         ..invalidate(agentIdentityProvider(agentId))
-        ..invalidate(taskAgentResolvedSetupProvider(agentId));
+        ..invalidate(taskAgentResolvedSetupProvider(agentId))
+        ..invalidate(goalAgentResolvedSetupProvider(agentId));
       return true;
     } catch (error, stackTrace) {
       developer.log(
@@ -219,6 +228,8 @@ class _AgentSetupFlowController {
     BuildContext context,
     TaskAgentSetupOptions options,
   ) async {
+    final taskId = this.taskId;
+    if (taskId == null) return;
     final messages = context.messages;
     final journalDb = container.read(journalDbProvider);
     final entity = await journalDb.journalEntityById(taskId);
@@ -375,10 +386,12 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
         .unwrapPrevious()
         .value;
     final config = identity?.config;
+    final selectedProfileId = _selectedProfileId(
+      config,
+      allowLegacyProfile: controller.taskId == null,
+    );
     final currentProfile = options?.profiles
-        .where(
-          (profile) => profile.id == config?.inferenceSetup?.baseProfileId,
-        )
+        .where((profile) => profile.id == selectedProfileId)
         .firstOrNull;
     final resolvedProfile = setup?.profile;
     final resolvedModelName = resolvedProfile?.thinkingModel?.name;
@@ -409,7 +422,9 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
             children: [
               _AgentSetupSection(
                 label: context.messages.taskAgentCurrentSetupLabel,
-                description: context.messages.taskAgentSetupChoiceHelp,
+                description: controller.taskId == null
+                    ? null
+                    : context.messages.taskAgentSetupChoiceHelp,
                 child: DesignSystemGroupedList(
                   padding: EdgeInsets.zero,
                   filled: false,
@@ -428,26 +443,28 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                       ),
                       onTap: options == null ? null : onChooseProfile,
                     ),
-                    DesignSystemSelectionRow(
-                      key: const ValueKey('agent-choose-model'),
-                      title: context.messages.taskAgentThinkingModelLabel,
-                      subtitle: options != null && options.models.isEmpty
-                          ? context.messages.taskAgentNoModelsAvailable
-                          : modelDescription,
-                      type: DesignSystemSelectionRowType.navigation,
-                      leading: Icon(
-                        Icons.psychology_outlined,
-                        color: tokens.colors.text.mediumEmphasis,
-                        size: tokens.spacing.step6,
+                    if (controller.taskId != null)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey('agent-choose-model'),
+                        title: context.messages.taskAgentThinkingModelLabel,
+                        subtitle: options != null && options.models.isEmpty
+                            ? context.messages.taskAgentNoModelsAvailable
+                            : modelDescription,
+                        type: DesignSystemSelectionRowType.navigation,
+                        leading: Icon(
+                          Icons.psychology_outlined,
+                          color: tokens.colors.text.mediumEmphasis,
+                          size: tokens.spacing.step6,
+                        ),
+                        onTap:
+                            config == null ||
+                                options == null ||
+                                options.models.isEmpty
+                            ? null
+                            : () => onChooseModel(options),
                       ),
-                      onTap:
-                          config == null ||
-                              options == null ||
-                              options.models.isEmpty
-                          ? null
-                          : () => onChooseModel(options),
-                    ),
-                    if (config?.inferenceSetup?.thinkingModelOverrideId != null)
+                    if (controller.taskId != null &&
+                        config?.inferenceSetup?.thinkingModelOverrideId != null)
                       DesignSystemSelectionRow(
                         key: const ValueKey('agent-clear-override'),
                         title: context.messages.taskAgentUseProfileDefault,
@@ -462,108 +479,113 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                   ],
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
-              ValueListenableBuilder<bool>(
-                valueListenable: controller.confirmDisable,
-                builder: (context, visible, _) => visible
-                    ? const SizedBox.shrink()
-                    : Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: DesignSystemButton(
-                          key: const ValueKey('agent-disable'),
-                          label: context.messages.taskAgentTurnOffSetup,
-                          variant: DesignSystemButtonVariant.dangerTertiary,
-                          size: DesignSystemButtonSize.medium,
-                          leadingIcon: Icons.pause_circle_outline_rounded,
-                          onPressed: () =>
-                              controller.confirmDisable.value = true,
+              if (controller.taskId != null) ...[
+                SizedBox(height: tokens.spacing.step5),
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.confirmDisable,
+                  builder: (context, visible, _) => visible
+                      ? const SizedBox.shrink()
+                      : Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: DesignSystemButton(
+                            key: const ValueKey('agent-disable'),
+                            label: context.messages.taskAgentTurnOffSetup,
+                            variant: DesignSystemButtonVariant.dangerTertiary,
+                            size: DesignSystemButtonSize.medium,
+                            leadingIcon: Icons.pause_circle_outline_rounded,
+                            onPressed: () =>
+                                controller.confirmDisable.value = true,
+                          ),
                         ),
-                      ),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: controller.confirmDisable,
-                builder: (context, visible, _) {
-                  if (!visible) return const SizedBox.shrink();
-                  final title = context.messages.taskAgentDisableConfirmTitle;
-                  final body = context.messages.taskAgentDisableConfirmBody;
-                  return Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Focus(
-                          autofocus: true,
-                          child: Semantics(
-                            key: const ValueKey(
-                              'agent-disable-confirmation',
-                            ),
-                            container: true,
-                            liveRegion: true,
-                            label: '$title $body',
-                            child: ExcludeSemantics(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .subtitle
-                                        .subtitle2,
-                                  ),
-                                  SizedBox(height: tokens.spacing.step2),
-                                  Text(
-                                    body,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .body
-                                        .bodyMedium
-                                        .copyWith(
-                                          color:
-                                              tokens.colors.text.mediumEmphasis,
-                                        ),
-                                  ),
-                                ],
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.confirmDisable,
+                  builder: (context, visible, _) {
+                    if (!visible) return const SizedBox.shrink();
+                    final title = context.messages.taskAgentDisableConfirmTitle;
+                    final body = context.messages.taskAgentDisableConfirmBody;
+                    return Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Focus(
+                            autofocus: true,
+                            child: Semantics(
+                              key: const ValueKey(
+                                'agent-disable-confirmation',
+                              ),
+                              container: true,
+                              liveRegion: true,
+                              label: '$title $body',
+                              child: ExcludeSemantics(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .subtitle
+                                          .subtitle2,
+                                    ),
+                                    SizedBox(height: tokens.spacing.step2),
+                                    Text(
+                                      body,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .body
+                                          .bodyMedium
+                                          .copyWith(
+                                            color: tokens
+                                                .colors
+                                                .text
+                                                .mediumEmphasis,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: tokens.spacing.step4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DesignSystemButton(
-                                label: MaterialLocalizations.of(
-                                  context,
-                                ).cancelButtonLabel,
-                                variant: DesignSystemButtonVariant.secondary,
-                                size: DesignSystemButtonSize.medium,
-                                fullWidth: true,
-                                onPressed: () =>
-                                    controller.confirmDisable.value = false,
+                          SizedBox(height: tokens.spacing.step4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DesignSystemButton(
+                                  label: MaterialLocalizations.of(
+                                    context,
+                                  ).cancelButtonLabel,
+                                  variant: DesignSystemButtonVariant.secondary,
+                                  size: DesignSystemButtonSize.medium,
+                                  fullWidth: true,
+                                  onPressed: () =>
+                                      controller.confirmDisable.value = false,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: tokens.spacing.step3),
-                            Expanded(
-                              child: DesignSystemButton(
-                                label: context
-                                    .messages
-                                    .taskAgentDisableConfirmAction,
-                                variant: DesignSystemButtonVariant.danger,
-                                size: DesignSystemButtonSize.medium,
-                                fullWidth: true,
-                                onPressed: controller.disable,
+                              SizedBox(width: tokens.spacing.step3),
+                              Expanded(
+                                child: DesignSystemButton(
+                                  label: context
+                                      .messages
+                                      .taskAgentDisableConfirmAction,
+                                  variant: DesignSystemButtonVariant.danger,
+                                  size: DesignSystemButtonSize.medium,
+                                  fullWidth: true,
+                                  onPressed: controller.disable,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -638,6 +660,10 @@ class _AgentProfilePage extends ConsumerWidget {
             .where((profile) => isDesktop || !profile.desktopOnly)
             .toList() ??
         const <AiConfigInferenceProfile>[];
+    final selectedProfileId = _selectedProfileId(
+      config,
+      allowLegacyProfile: controller.taskId == null,
+    );
 
     return _AgentBusyGuard(
       controller: controller,
@@ -645,20 +671,22 @@ class _AgentProfilePage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DesignSystemSelectionRow(
-              title: context.messages.taskAgentUseCategoryDefault,
-              subtitle: context.messages.taskAgentUseCategoryDefaultDescription,
-              subtitleMaxLines: null,
-              type: DesignSystemSelectionRowType.action,
-              leading: Icon(
-                Icons.category_outlined,
-                color: tokens.colors.text.mediumEmphasis,
-                size: tokens.spacing.step6,
+            if (controller.taskId != null)
+              DesignSystemSelectionRow(
+                title: context.messages.taskAgentUseCategoryDefault,
+                subtitle:
+                    context.messages.taskAgentUseCategoryDefaultDescription,
+                subtitleMaxLines: null,
+                type: DesignSystemSelectionRowType.action,
+                leading: Icon(
+                  Icons.category_outlined,
+                  color: tokens.colors.text.mediumEmphasis,
+                  size: tokens.spacing.step6,
+                ),
+                onTap: options == null
+                    ? null
+                    : () => controller.useCategoryDefault(context, options),
               ),
-              onTap: options == null
-                  ? null
-                  : () => controller.useCategoryDefault(context, options),
-            ),
             if (profiles.isEmpty)
               DesignSystemSelectionRow(
                 title: context.messages.taskAgentNoProfilesAvailable,
@@ -678,7 +706,7 @@ class _AgentProfilePage extends ConsumerWidget {
                   subtitle: _profileRoute(context, profile, options),
                   subtitleMaxLines: null,
                   type: DesignSystemSelectionRowType.singleSelect,
-                  selected: config?.inferenceSetup?.baseProfileId == profile.id,
+                  selected: selectedProfileId == profile.id,
                   leading: Icon(
                     Icons.account_tree_outlined,
                     color: tokens.colors.text.mediumEmphasis,

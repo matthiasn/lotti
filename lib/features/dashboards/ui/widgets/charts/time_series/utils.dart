@@ -26,11 +26,13 @@ class DashboardChartDateAxis extends StatelessWidget {
   const DashboardChartDateAxis({
     required this.rangeStart,
     required this.rangeEnd,
+    this.dateOnly = false,
     super.key,
   });
 
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final bool dateOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +42,14 @@ class DashboardChartDateAxis extends StatelessWidget {
     const count = 4; // start, +1/3, +2/3, end — aligns with the linear axis.
     final labels = [
       for (var i = 0; i < count; i++)
-        chartDateFormatterMmDd(startMs + (endMs - startMs) * i / (count - 1)),
+        dateOnly
+            ? chartDateFormatterMmDdUtc(
+                context,
+                startMs + (endMs - startMs) * i / (count - 1),
+              )
+            : chartDateFormatterMmDd(
+                startMs + (endMs - startMs) * i / (count - 1),
+              ),
     ];
     return Padding(
       padding: EdgeInsets.only(

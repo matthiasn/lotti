@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
@@ -18,6 +19,8 @@ Future<void> hPumpChart(
   required DateTime rangeStart,
   required DateTime rangeEnd,
   String unit = '',
+  bool dateOnly = false,
+  List<HorizontalLine> horizontalLines = const [],
   Size physicalSize = const Size(800, 600),
 }) async {
   tester.view.physicalSize = physicalSize;
@@ -35,6 +38,8 @@ Future<void> hPumpChart(
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             unit: unit,
+            dateOnly: dateOnly,
+            horizontalLines: horizontalLines,
           ),
         ),
       ),

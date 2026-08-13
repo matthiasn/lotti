@@ -5,13 +5,13 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T15:42:59Z }
+generated: { by: claude-code/opus-5, at: 2026-08-13T00:50:11Z }
 stale_after: 2026-10-12
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
-    last_modified: 2026-07-26
+    last_modified: 2026-08-13
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
@@ -423,7 +423,19 @@ Conversations / Observations / Activity** — used both inside the panel and as 
 body of the standalone `AgentDetailPage`. Each tab is owned by an existing
 component plus a Stats card wrapping the agent's template, profile, controls and
 current `AgentStateEntity`. There is no panel-specific logic; both consumers see
-the same tabs and behaviour.
+the same tabs and behaviour. The Stats setup row opens the shared inference
+setup sheet for agent kinds that can persist instance profiles even when they do
+not own a task, such as goal agents. Task-only category defaults and direct
+thinking-model overrides remain hidden on that profile-only path. Because goal
+agents have no template assignment, their Stats row resolves the persisted
+identity profile directly through `goalAgentResolvedSetupProvider`; saving a
+profile invalidates that resolver together with the identity so the effective
+route is shown immediately. With no profile override, or when the selected
+profile can no longer resolve, the same resolver shows the built-in GLM 5.2
+fallback used by `GoalAgentWorkflow` rather than describing a runnable goal
+agent as having broken or missing AI setup. For legacy goal identities that
+still carry only `AgentConfig.profileId`, the profile-only sheet uses that value
+as its selected base profile until the next save writes the typed setup.
 
 # Settings surfaces
 

@@ -3091,13 +3091,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
-  String get chatInputRecordingFailed => 'Falha na gravação. Tente novamente.';
-
-  @override
   String get chatInputPleaseWait => 'Por favor, espere...';
 
   @override
   String get chatInputProcessing => 'Processando...';
+
+  @override
+  String get chatInputRecordingFailed => 'Falha na gravação. Tente novamente.';
 
   @override
   String get chatInputRecordVoice => 'Gravar mensagem de voz';
@@ -6367,6 +6367,29 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Sistólica e diastólica · mmHg · média de 7 dias';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hora',
+        'other': 'horas',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 por semana móvel';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Tempo registrado · horas por semana móvel';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Horas por semana móvel';
 
   @override
   String get goalFormChooseHabit => 'Escolher um hábito existente';

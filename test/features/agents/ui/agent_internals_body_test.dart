@@ -9,12 +9,15 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
 import '../test_data/ai_config_factories.dart';
 import '../test_data/entity_factories.dart';
@@ -212,6 +215,201 @@ void main() {
     expect(find.text(profile.name), findsOneWidget);
     expect(find.text('Thinking model'), findsOneWidget);
     expect(find.text('Test Model · Gemini\nProfile default'), findsOneWidget);
+  });
+
+  testWidgets('goal agent can select an inference profile without a task', (
+    tester,
+  ) async {
+    final profile = testInferenceProfile(
+      id: 'profile-1',
+      thinkingModelId: 'model-1',
+    );
+    final model = testAiModel();
+    final provider = testInferenceProvider();
+    final service = MockTaskAgentService();
+    when(
+      () => service.updateAgentProfile(
+        agentId: any(named: 'agentId'),
+        profileId: any(named: 'profileId'),
+      ),
+    ).thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+            ),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          taskAgentSetupOptionsProvider.overrideWith(
+            (ref) async => TaskAgentSetupOptions(
+              profiles: [profile],
+              models: [model],
+              providers: [provider],
+            ),
+          ),
+          taskAgentServiceProvider.overrideWithValue(service),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('No AI setup').first,
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    final setupRow = tester.widget<DesignSystemListItem>(
+      find.ancestor(
+        of: find.text('No AI setup').first,
+        matching: find.byType(DesignSystemListItem),
+      ),
+    );
+    expect(setupRow.onTap, isNotNull);
+
+    await tester.tap(find.text('No AI setup').first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('agent-disable')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Use category default'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('agent-profile-profile-1')));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => service.updateAgentProfile(
+        agentId: 'agent-001',
+        profileId: 'profile-1',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('goal agent displays its profile without a template', (
+    tester,
+  ) async {
+    final model = testAiModel();
+    final provider = testInferenceProvider();
+    final resolved = ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.resolved,
+      profile: ResolvedProfile(
+        thinkingModelId: model.providerModelId,
+        thinkingProvider: provider,
+        thinkingModel: model,
+      ),
+      source: AgentSetupResolutionSource.baseProfile,
+      setupOrigin: AgentInferenceSetupOrigin.user,
+    );
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+              config: const AgentConfig(profileId: 'profile-1'),
+            ),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          goalAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => resolved,
+          ),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Test Model · via Gemini'),
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    expect(find.text('Test Model · via Gemini'), findsOneWidget);
+    expect(find.text('Current setup'), findsOneWidget);
+    expect(find.text('No AI setup'), findsNothing);
+  });
+
+  testWidgets('task agent setup waits for an active task', (tester) async {
+    final profile = testInferenceProfile(
+      id: 'profile-1',
+      thinkingModelId: 'model-1',
+    );
+    final model = testAiModel();
+    final provider = testInferenceProvider();
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          taskAgentSetupOptionsProvider.overrideWith(
+            (ref) async => TaskAgentSetupOptions(
+              profiles: [profile],
+              models: [model],
+              providers: [provider],
+            ),
+          ),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('No AI setup').first,
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    final setupRow = tester.widget<DesignSystemListItem>(
+      find.ancestor(
+        of: find.text('No AI setup').first,
+        matching: find.byType(DesignSystemListItem),
+      ),
+    );
+    expect(setupRow.onTap, isNull);
   });
 
   testWidgets('setup row distinguishes a broken setup from no selection', (

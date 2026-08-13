@@ -14,13 +14,16 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// line in epoch-millis x against a "nice" value axis derived from the data's
 /// min/max. The x range is fixed to `[rangeStart, rangeEnd]` so adjacent cards
 /// align; tooltips show the formatted value, [unit], and date. Unlike the bar
-/// chart it does not backfill missing days — gaps are simply not drawn.
+/// chart it does not backfill missing days; observations on either side remain
+/// connected. A singleton renders its point because no line segment exists yet.
 class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
     required this.data,
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
+    this.dateOnly = false,
+    this.horizontalLines = const [],
     super.key,
   });
 
@@ -28,6 +31,8 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final bool dateOnly;
+  final List<HorizontalLine> horizontalLines;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +47,12 @@ class TimeSeriesLineChart extends StatelessWidget {
         )
         .toList();
 
-    final spotValues = spots.map((spot) => spot.y).toList();
-    final minY = spotValues.isNotEmpty ? spotValues.reduce(min).floor() : 0;
-    final maxY = spotValues.isNotEmpty ? spotValues.reduce(max).ceil() : 1;
+    final axisValues = [
+      ...spots.map((spot) => spot.y),
+      ...horizontalLines.map((line) => line.y),
+    ];
+    final minY = axisValues.isNotEmpty ? axisValues.reduce(min).floor() : 0;
+    final maxY = axisValues.isNotEmpty ? axisValues.reduce(max).ceil() : 1;
     final axis = niceAxis(minY, maxY);
 
     return Padding(
@@ -88,7 +96,9 @@ class TimeSeriesLineChart extends StatelessWidget {
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
-                        text: chartDateFormatterFull(context, spot.x),
+                        text: dateOnly
+                            ? chartDateFormatterDateOnlyUtc(context, spot.x)
+                            : chartDateFormatterFull(context, spot.x),
                         style: chartTooltipStyle,
                       ),
                     ],
@@ -117,6 +127,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: tokens.colors.decorative.level01),
           ),
+          extraLinesData: ExtraLinesData(horizontalLines: horizontalLines),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           minY: axis.min,
@@ -126,7 +137,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               spots: spots,
               color: tokens.colors.interactive.enabled,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(show: spots.length == 1),
               belowBarData: BarAreaData(
                 show: true,
                 color: tokens.colors.interactive.enabled.withValues(

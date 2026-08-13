@@ -13,7 +13,10 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
@@ -50,6 +53,23 @@ HabitDefinition _habit(
   private: private,
   deletedAt: deletedAt,
   version: '1',
+);
+
+CategoryDefinition _category(
+  String id,
+  String name, {
+  bool active = true,
+  bool private = false,
+  DateTime? deletedAt,
+}) => CategoryDefinition(
+  id: id,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+  name: name,
+  vectorClock: null,
+  private: private,
+  active: active,
+  deletedAt: deletedAt,
 );
 
 GoalSpecVersionEntity _spec({
@@ -113,6 +133,7 @@ void main() {
 
   late MockGoalAgentService agentService;
   late MockHabitsRepository habitsRepository;
+  late MockCategoryRepository categoryRepository;
   late _MockGoalSpecRevisionService revisionService;
 
   List<Override> overrides({
@@ -122,10 +143,16 @@ void main() {
     bool identityMissing = false,
     bool healthMissing = false,
     AgentLifecycle identityLifecycle = AgentLifecycle.active,
+    List<CategoryDefinition> categories = const [],
+    Stream<List<CategoryDefinition>>? categoriesStream,
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
+    categoryRepositoryProvider.overrideWithValue(categoryRepository),
+    categoriesStreamProvider.overrideWith(
+      (ref) => categoriesStream ?? Stream.value(categories),
+    ),
     if (editSpec != null ||
         identityFails ||
         healthFails ||
@@ -159,6 +186,7 @@ void main() {
   setUp(() {
     agentService = MockGoalAgentService();
     habitsRepository = MockHabitsRepository();
+    categoryRepository = MockCategoryRepository();
     revisionService = _MockGoalSpecRevisionService();
     when(habitsRepository.watchHabitDefinitions).thenAnswer(
       (_) => Stream.value([_habit('gym', 'Gym'), _habit('run', 'Run')]),
@@ -169,6 +197,9 @@ void main() {
       final id = invocation.positionalArguments.single as String;
       return _habit(id, id, private: true);
     });
+    when(
+      categoryRepository.getAllCategoriesIncludingHidden,
+    ).thenAnswer((_) async => [_category('deep-work', 'Deep work')]);
   });
 
   testWidgets('requires a speakable intention before mapping', (tester) async {
@@ -447,6 +478,531 @@ void main() {
       ),
     ).called(1);
     expect(navigated, ['/agents']);
+  });
+
+  testWidgets('selects category time and saves its rolling weekly hour cap', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [
+            _category('deep-work', 'Deep work'),
+            _category('archived', 'Archived category', active: false),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Spend less time working',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tracked category time'), findsOneWidget);
+    expect(find.text('Deep work'), findsOneWidget);
+    expect(find.text('Archived category'), findsNothing);
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(target, findsOneWidget);
+    await tester.enterText(target, '12');
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey('goal-form-category-time-direction-deep-work'),
+            ),
+            matching: find.text('At least'),
+          )
+          .last,
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining(
+        'Deep work: At least 12 hours per rolling 7 days',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final saved = verify(
+      () => agentService.createGoalAgent(
+        title: 'Spend less time working',
+        displayName: 'Juno',
+        statement: 'Spend less time working',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(
+      saved,
+      const GoalCriterion.categoryTime(
+        criterionId: 'category-time-deep-work',
+        categoryId: 'deep-work',
+        title: 'Deep work',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 12,
+        direction: GoalDirection.atLeast,
+      ),
+    );
+  });
+
+  testWidgets('matches category time from the intention with safe defaults', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [_category('deep-work', 'Deep work')],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: target,
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
+          .text,
+      '1',
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining(
+        'Deep work: No more than 1 hour per rolling 7 days',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('removed category time can be selected again', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [_category('deep-work', 'Deep work')],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-deep-work'),
+    );
+    await tester.tap(
+      find.descendant(of: card, matching: find.byIcon(Icons.close_rounded)),
+    );
+    await tester.pumpAndSettle();
+    expect(card, findsNothing);
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    expect(find.text('Deep work'), findsOneWidget);
+  });
+
+  testWidgets('retains an unavailable category by its stored identifier', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const criteria = GoalCriterion.categoryTime(
+      criterionId: 'archived-hours',
+      categoryId: 'archived',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 5,
+    );
+    final current = _spec(criteria: criteria);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerNoChangesReason,
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-archived'),
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('archived')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('archived: No more than 5 hours per rolling 7 days'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final saved = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: 'Juno',
+        title: 'Weekly movement',
+        statement: 'Gym and run every week',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(saved, criteria);
+  });
+
+  testWidgets('rematches categories that load after the first mapping', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('goal-form-category-time-card-deep-work')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '1',
+    );
+  });
+
+  testWidgets('category refresh preserves manually configured mappings', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Build a consistent routine',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([
+      _category('deep-work', 'Deep work'),
+      _category('admin', 'Admin'),
+    ]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '5',
+    );
+  });
+
+  testWidgets('category refresh does not restore a manually removed match', (
+    tester,
+  ) async {
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-deep-work'),
+    );
+    await tester.tap(
+      find.descendant(of: card, matching: find.byType(DesignSystemIconAction)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([
+      _category('deep-work', 'Deep work'),
+      _category('admin', 'Admin'),
+    ]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-category-time-card-deep-work')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('drops a newly selected category that becomes inactive', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    when(
+      categoryRepository.getAllCategoriesIncludingHidden,
+    ).thenAnswer(
+      (_) async => [_category('deep-work', 'Deep work', active: false)],
+    );
+    categories.add([]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    expect(
+      find.text('Choose at least one signal the agent can actually observe.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets('keeps a selected private category when visibility changes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    when(
+      categoryRepository.getAllCategoriesIncludingHidden,
+    ).thenAnswer(
+      (_) async => [_category('deep-work', 'Deep work', private: true)],
+    );
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    categories.add([]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final saved =
+        verify(
+              () => agentService.createGoalAgent(
+                title: any(named: 'title'),
+                displayName: any(named: 'displayName'),
+                statement: any(named: 'statement'),
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionCategoryTime;
+    expect(saved.categoryId, 'deep-work');
+    expect(saved.title, 'Deep work');
+    verify(categoryRepository.getAllCategoriesIncludingHidden).called(1);
+    verifyNever(() => categoryRepository.getCategoryById(any()));
   });
 
   testWidgets('save refreshes an untouched derived title after cleanup', (

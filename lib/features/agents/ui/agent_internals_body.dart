@@ -315,7 +315,13 @@ class _ProfileSection extends ConsumerWidget {
     // that feature is not wired, which disables the row rather than opening
     // nothing.
     final dailyOsSetupLauncher = ref.watch(dailyOsSetupSheetLauncherProvider);
-    final setup = ref.watch(agentResolvedSetupProvider(agentId)).value;
+    final setup = ref
+        .watch(
+          identity?.kind == AgentKinds.goalAgent
+              ? goalAgentResolvedSetupProvider(agentId)
+              : agentResolvedSetupProvider(agentId),
+        )
+        .value;
     final route = setup?.profile == null
         ? null
         : formatInferenceRouteIdentity(
@@ -330,6 +336,9 @@ class _ProfileSection extends ConsumerWidget {
         ? context.messages.taskAgentSetupBroken
         : context.messages.taskAgentNoProfileSelectedDescription;
     final taskId = state?.slots.activeTaskId;
+    final canOpenTaskSetup =
+        identity != null &&
+        (identity.kind == AgentKinds.goalAgent || taskId != null);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -364,12 +373,12 @@ class _ProfileSection extends ConsumerWidget {
                 ? (dailyOsSetupLauncher == null
                       ? null
                       : () => dailyOsSetupLauncher(context))
-                : taskId == null
+                : !canOpenTaskSetup
                 ? null
                 : () => AgentModelSheet.show(
                     context: context,
-                    taskId: taskId,
                     agentId: agentId,
+                    taskId: taskId,
                   ),
           ),
         ],

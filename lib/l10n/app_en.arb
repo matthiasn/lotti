@@ -1883,9 +1883,9 @@
   "chatInputHintSelectModel": "Select a model to start chatting",
   "chatInputListening": "Listening...",
   "chatInputNoAudioRecorded": "No audio was recorded. Try again.",
-  "chatInputRecordingFailed": "Recording failed. Please try again.",
   "chatInputPleaseWait": "Please wait...",
   "chatInputProcessing": "Processing...",
+  "chatInputRecordingFailed": "Recording failed. Please try again.",
   "chatInputRecordVoice": "Record voice message",
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
@@ -3573,6 +3573,22 @@
   },
   "goalFormAddDimension": "Add dimension",
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
+  "@goalFormCategoryTimeCadence": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      },
+      "direction": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormCategoryTimeSource": "Tracked time · hours per rolling 7 days",
+  "goalFormCategoryTimeTarget": "Hours per rolling 7 days",
   "goalFormChooseHabit": "Choose an existing habit",
   "goalFormCompositeAll": "All dimensions",
   "goalFormCompositeAllHint": "Strictest — every dimension must be met.",

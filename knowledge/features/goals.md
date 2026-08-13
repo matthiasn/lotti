@@ -5,13 +5,13 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-12T20:40:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-13T00:50:11Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-11
+    last_modified: 2026-08-13
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -378,18 +378,26 @@ flowchart TD
   `authoredBy: user` and `diffFromVersionId`. The create/edit UI
   rewrites rolling-seven-day habit and measurable leaves, the supported
   at-least rolling-average steps metric, and rolling-average weight plus
-  systolic/diastolic blood-pressure leaves with either target direction;
+  systolic/diastolic blood-pressure leaves with either target direction. It
+  also creates and edits category-time sums with a rolling-seven-day hour
+  target and either direction;
   `all`, `any`, and `atLeastCount` wrappers round-trip through an explicit
-  composite-rule picker. Other health and category-time leaves and
-  opposite-direction step
+  composite-rule picker. Category-time leaves with a local time band, other
+  health leaves, and opposite-direction step
   criteria are retained exactly and shown read-only. Supported trees retain
   authored leaf titles, composite wrappers and stable collision-free node ids.
-  Manual mapping choices
-  survive back-navigation while the intention is unchanged, and saving
+  Manual mapping choices survive back-navigation while the intention is
+  unchanged. A category-stream refresh adds newly available intention matches
+  without resetting other manual signals or targets, and a manually removed
+  category match stays suppressed until the user reselects it. Saving validates
+  category-time selections through a direct database snapshot that includes
+  hidden rows, retaining an active private category if it disappears from the
+  discovery stream while removing newly selected inactive or deleted
+  categories. It likewise
   reconciles selected habits against the latest active-habit stream so a paused
   or removed habit cannot be minted into a dead criterion. After a minted edit,
-  the runtime re-registers the new signal set and enqueues an immediate
-  `goal revised` wake so the report and health do not describe the old spec.
+  the runtime re-registers the new signal set and enqueues an immediate `goal
+  revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
   rating histories and shown-at watermarks merge losslessly on concurrent
@@ -469,7 +477,15 @@ flowchart TD
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
   adds a seven-cell compact strip to the list. The detail page expands the
   same source into a habit grid or metric series using each leaf criterion's
-  actual day/rolling/week/month range; rolling habit projections keep the
+  actual day/rolling/week/month range. Canonical weight data uses the shared
+  time-series line treatment, while paired systolic and diastolic dimensions
+  render as one dual-line blood-pressure chart with both authored targets;
+  a partial blood-pressure import remains two separate cards so the available
+  component is not hidden. Singleton health series render a visible point until
+  a second observation can form a line. These daily health charts format their
+  canonical midnight-UTC keys as date-only values, so devices west of UTC do
+  not shift a goal day backward in tooltips or the shared date axis. Other
+  numeric dimensions retain the progress-bar series. Rolling habit projections keep the
   immediately preceding slipped day separate from active-period arithmetic,
   and periods longer than seven days scroll horizontally instead of being
   relabelled as a trailing week. Metric satisfaction is folded with the same
@@ -588,11 +604,11 @@ flowchart TD
   Goal-list rows and banner semantics resolve the active spec title; the
   identity display name remains the conversational persona used by chat.
   The current form represents rolling habit quotas, linked measurable targets,
-  weight and blood-pressure targets, composite rules, and the supported steps
-  metric. Other quantitative health selection, category-time selection,
-  `atLeast`/`atMost` tracked-hour targets, and an optional local time band
-  remain read-only when already authored; they still render as typed dimension
-  cards. Direct daily assessment is available on detail, while an
+  weight and blood-pressure targets, tracked category hours, composite rules,
+  and the supported steps metric. Category-time criteria with an optional
+  local time band and other quantitative health criteria remain read-only when
+  already authored; they still render as typed dimension cards. Direct daily
+  assessment is available on detail, while an
   agent-suggested assessment still needs its approval UI.
 - **Tracked time invalidates without churning wakes.** Category-time leaves
   observe the journal, link, task, category and privacy notifications used by

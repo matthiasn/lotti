@@ -136,6 +136,42 @@ void main() {
       expect(lineChart.data.minY, axis.min);
       expect(lineChart.data.maxY, axis.max);
       expect(lineChart.data.maxY, greaterThan(lineChart.data.minY));
+      expect(lineChart.data.lineBarsData.single.dotData.show, isTrue);
+    });
+
+    testWidgets('multiple observations keep point markers hidden', (
+      tester,
+    ) async {
+      await hPumpChart(
+        tester,
+        data: [
+          Observation(DateTime(2024, 3, 10), 50),
+          Observation(DateTime(2024, 3, 11), 51),
+        ],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.data.lineBarsData.single.dotData.show, isFalse);
+    });
+
+    testWidgets('reference lines render and participate in axis bounds', (
+      tester,
+    ) async {
+      final reference = HorizontalLine(y: 5);
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 10)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        horizontalLines: [reference],
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.data.extraLinesData.horizontalLines, [reference]);
+      expect(lineChart.data.minY, lessThanOrEqualTo(reference.y));
+      expect(lineChart.data.maxY, greaterThanOrEqualTo(10));
     });
   });
 
@@ -321,6 +357,29 @@ void main() {
 
       final items = tooltipData.getTooltipItems([]);
       expect(items, isEmpty);
+    });
+
+    testWidgets('date-only tooltip preserves a canonical UTC day key', (
+      tester,
+    ) async {
+      final obsTime = DateTime.utc(2024, 3, 15);
+      await hPumpChart(
+        tester,
+        data: [Observation(obsTime, 7)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        dateOnly: true,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final spot = FlSpot(obsTime.millisecondsSinceEpoch.toDouble(), 7);
+      final barData = LineChartBarData(spots: [spot]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 0, spot),
+      ]);
+
+      expect(items.single!.children![1].toPlainText(), 'Mar 15');
     });
   });
 }

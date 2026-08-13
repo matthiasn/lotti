@@ -1,15 +1,19 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -179,6 +183,311 @@ void main() {
     expect(find.text('done'), findsNothing);
     expect(find.text('ages out tonight'), findsNothing);
     expect(find.text('today'), findsNothing);
+  });
+
+  testWidgets(
+    'paired blood-pressure dimensions share one dual-line chart and targets',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                GoalMetricProgressView(
+                  criterionId: 'systolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                  name: 'Systolic blood pressure',
+                  target: 125,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(1, 122), day(0, 129)],
+                ),
+                GoalMetricProgressView(
+                  criterionId: 'diastolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                  name: 'Diastolic blood pressure',
+                  target: 85,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(1, 81), day(0, 94)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(DesignSystemSectionCard), findsOneWidget);
+      expect(find.text('Blood Pressure'), findsOneWidget);
+      expect(find.text('129 / 94 mmHg'), findsOneWidget);
+      expect(find.byType(LineChart), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData, hasLength(2));
+      expect(chart.data.lineBarsData[0].spots.map((spot) => spot.y), [
+        122,
+        129,
+      ]);
+      expect(chart.data.lineBarsData[1].spots.map((spot) => spot.y), [81, 94]);
+      expect(
+        chart.data.extraLinesData.horizontalLines.map((line) => line.y),
+        [125, 85],
+      );
+      expect(find.text('Systolic ≤ 125'), findsOneWidget);
+      expect(find.text('Diastolic ≤ 85'), findsOneWidget);
+      expect(
+        tester
+            .widget<TimeSeriesMultiLineChart>(
+              find.byType(TimeSeriesMultiLineChart),
+            )
+            .dateOnly,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'blood-pressure dimensions with different periods stay separate',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metrics: [
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                    name: 'Systolic blood pressure',
+                    target: 125,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    unitName: 'mmHg',
+                    days: [day(1, 122), day(0, 124)],
+                  ),
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                    name: 'Diastolic blood pressure',
+                    target: 85,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    window: const GoalWindow.rollingDays(count: 10),
+                    unitName: 'mmHg',
+                    days: [day(2, 82), day(1, 81), day(0, 83)],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.text('Systolic blood pressure'), findsOneWidget);
+      expect(find.text('Diastolic blood pressure'), findsOneWidget);
+      expect(find.byType(DesignSystemSectionCard), findsNWidgets(2));
+      expect(find.byType(LineChart), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'partial blood-pressure observations stay in separate visible charts',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metrics: [
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                    name: 'Systolic blood pressure',
+                    target: 125,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    unitName: 'mmHg',
+                    days: [day(0, 124)],
+                  ),
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                    name: 'Diastolic blood pressure',
+                    target: 85,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    unitName: 'mmHg',
+                    days: [
+                      GoalProgressDay(
+                        day: today,
+                        value: 0,
+                        isObserved: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.text('Systolic blood pressure'), findsOneWidget);
+      expect(find.text('Diastolic blood pressure'), findsOneWidget);
+      final charts = tester.widgetList<LineChart>(find.byType(LineChart));
+      expect(charts, hasLength(2));
+      expect(charts.first.data.lineBarsData.single.spots, hasLength(1));
+      expect(charts.first.data.lineBarsData.single.dotData.show, isTrue);
+      expect(charts.last.data.lineBarsData.single.spots, isEmpty);
+    },
+  );
+
+  testWidgets('paired blood pressure reports when there is no observed data', (
+    tester,
+  ) async {
+    GoalMetricProgressView metric(String sourceId, String name, num target) =>
+        GoalMetricProgressView(
+          sourceId: sourceId,
+          name: name,
+          target: target,
+          direction: GoalDirection.atMost,
+          aggregation: GoalAggregation.max,
+          unitName: 'mmHg',
+          days: [
+            GoalProgressDay(day: today, value: 0, isObserved: false),
+          ],
+        );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metrics: [
+              metric(
+                GoalHealthDataTypes.bloodPressureSystolic,
+                'Systolic blood pressure',
+                125,
+              ),
+              metric(
+                GoalHealthDataTypes.bloodPressureDiastolic,
+                'Diastolic blood pressure',
+                85,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('—'), findsOneWidget);
+    expect(
+      find.text('There is not enough data to judge this dimension yet.'),
+      findsOneWidget,
+    );
+    final chart = tester.widget<LineChart>(find.byType(LineChart));
+    expect(chart.data.lineBarsData, hasLength(2));
+    expect(
+      chart.data.lineBarsData.map((line) => line.spots),
+      everyElement(isEmpty),
+    );
+  });
+
+  testWidgets(
+    'paired singleton blood pressure stays visible and reports on track',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                GoalMetricProgressView(
+                  sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                  name: 'Systolic blood pressure',
+                  target: 125,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(0, 122)],
+                ),
+                GoalMetricProgressView(
+                  sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                  name: 'Diastolic blood pressure',
+                  target: 85,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(0, 81)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('122 / 81 mmHg'), findsOneWidget);
+      expect(find.text('On track'), findsOneWidget);
+      expect(
+        find.text('This dimension is currently on track.'),
+        findsOneWidget,
+      );
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(
+        chart.data.lineBarsData.map((line) => line.dotData.show),
+        everyElement(isTrue),
+      );
+    },
+  );
+
+  testWidgets('weight uses a line chart and omits missing samples', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              criterionId: 'weight',
+              sourceId: GoalHealthDataTypes.weight,
+              name: 'Weight',
+              target: 88,
+              direction: GoalDirection.atMost,
+              unitName: 'kg',
+              days: [
+                day(2, 94.2),
+                GoalProgressDay(
+                  day: today.subtract(const Duration(days: 1)),
+                  value: 0,
+                  isObserved: false,
+                ),
+                day(0, 95),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(LineChart), findsOneWidget);
+    expect(find.byType(FractionallySizedBox), findsNothing);
+    final chart = tester.widget<LineChart>(find.byType(LineChart));
+    expect(chart.data.lineBarsData, hasLength(1));
+    expect(chart.data.lineBarsData.single.spots.map((spot) => spot.y), [
+      94.2,
+      95,
+    ]);
+    expect(
+      tester
+          .widget<TimeSeriesLineChart>(find.byType(TimeSeriesLineChart))
+          .dateOnly,
+      isTrue,
+    );
   });
 
   testWidgets('metric bars expose localized date, value, target, and state', (

@@ -3069,14 +3069,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
-  String get chatInputRecordingFailed =>
-      'Inspelningen misslyckades. Försök igen.';
-
-  @override
   String get chatInputPleaseWait => 'Vänta, snälla...';
 
   @override
   String get chatInputProcessing => 'Bearbetar...';
+
+  @override
+  String get chatInputRecordingFailed =>
+      'Inspelningen misslyckades. Försök igen.';
 
   @override
   String get chatInputRecordVoice => 'Spela in röstmeddelande';
@@ -6315,6 +6315,29 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'timme',
+        'other': 'timmar',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 per rullande 7 dagar';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Registrerad tid · timmar per rullande 7 dagar';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Timmar per rullande 7 dagar';
 
   @override
   String get goalFormChooseHabit => 'Välj en befintlig vana';

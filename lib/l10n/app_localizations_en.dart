@@ -3046,13 +3046,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
-  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
-
-  @override
   String get chatInputPleaseWait => 'Please wait...';
 
   @override
   String get chatInputProcessing => 'Processing...';
+
+  @override
+  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
 
   @override
   String get chatInputRecordVoice => 'Record voice message';
@@ -6281,6 +6281,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systolic and diastolic · mmHg · 7-day average';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hour',
+        'other': 'hours',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 per rolling 7 days';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Tracked time · hours per rolling 7 days';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Hours per rolling 7 days';
 
   @override
   String get goalFormChooseHabit => 'Choose an existing habit';
