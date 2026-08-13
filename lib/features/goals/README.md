@@ -101,7 +101,10 @@ its target, the card celebrates that today's logging is on target even if the
 rolling average still needs recovery; an over-target rolling average remains
 actionable when today has not been measured. Agent FACTS carry the newest 100
 exact samples per supported health criterion plus total and omitted counts,
-anchored to the same evaluation instant as the rolling aggregate. Banner
+anchored to the same evaluation instant as the rolling aggregate. The latest
+sample also carries today's completion state and its direction since the
+previous sample, while a daily-action index keeps completed health logging
+separate from rolling habits that remain behind. Banner
 freshness hashes only those model-facing window samples, so older backfills do
 not invalidate copy that could not cite them. Goal Agents
 list rows share one silhouette — reserved week-strip footprint, shared trend

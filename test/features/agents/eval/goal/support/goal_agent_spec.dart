@@ -116,4 +116,24 @@ const goalAgentPolicyMatrix = [
         'use tone roast within bounds (streak/behavior, never person or '
         'body)',
   ),
+  GoalAgentPolicyRule(
+    id: 'P16',
+    given:
+        'sparse health series whose latest blood-pressure reading is on '
+        'target today while rolling averages remain above target',
+    expected:
+        'report insufficientData; cite exact observations and improving '
+        'direction; distinguish latest from averages; say today is done; '
+        'no repeat-reading nudge or ad',
+  ),
+  GoalAgentPolicyRule(
+    id: 'P17',
+    given:
+        'same on-target reading today, but a separate medication habit is '
+        'one completion behind',
+    expected:
+        'keep blood-pressure logging complete for today while naming the '
+        'medication habit as behind; do not invent which day was missed; no '
+        'repeat-reading nudge or ad',
+  ),
 ];

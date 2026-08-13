@@ -159,6 +159,11 @@ void main() {
     expect(localTime['utcOffsetMinutes'], isA<int>());
     expect(localTime['timeZoneName'], isA<String>());
     final evaluation = json['evaluation'] as Map<String, dynamic>;
+    expect(evaluation['todayGuidance'], {
+      'healthLoggingCompleteCriterionIds': <String>[],
+      'healthLoggingNeededCriterionIds': <String>[],
+      'rollingHabitCriterionIdsBehind': <String>[],
+    });
     expect(evaluation['trackStatus'], 'offTrack');
     expect(evaluation['attainment'], 0.64);
     expect(evaluation['trailing3DayAttainment'], 0.5);
@@ -313,6 +318,14 @@ void main() {
       ),
     );
     final evaluation = json['evaluation'] as Map<String, dynamic>;
+    expect(evaluation['todayGuidance'], {
+      'healthLoggingCompleteCriterionIds': [
+        'health-blood-pressure-diastolic',
+        'health-blood-pressure-systolic',
+      ],
+      'healthLoggingNeededCriterionIds': <String>[],
+      'rollingHabitCriterionIdsBehind': <String>[],
+    });
     final results = (evaluation['criterionResults'] as List)
         .cast<Map<String, dynamic>>();
     Map<String, dynamic> healthSeries(String criterionId) =>
@@ -333,6 +346,12 @@ void main() {
       'value': 125,
       'onTarget': true,
       'isToday': true,
+      'todayStatus': 'completeOnTarget',
+    });
+    expect(systolic['latestChange'], {
+      'fromValue': 129,
+      'toValue': 125,
+      'direction': 'towardTarget',
     });
     expect(
       (healthSeries('health-blood-pressure-diastolic')['latest']
@@ -345,7 +364,189 @@ void main() {
           .toList(),
       [96, 95, 94],
     );
+    expect(
+      (healthSeries('health-weight')['latest']
+          as Map<String, dynamic>)['todayStatus'],
+      'measuredOffTarget',
+    );
+    expect(healthSeries('health-weight')['latestChange'], {
+      'fromValue': 95,
+      'toValue': 94,
+      'direction': 'towardTarget',
+    });
   });
+
+  test(
+    'today guidance keeps unmeasured health and rolling habits actionable',
+    () {
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'health-routine',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'health-weight',
+            dataType: GoalHealthDataTypes.weight,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 88,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit-bp-meds',
+            habitId: 'habit-bp-meds',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 7,
+          ),
+        ],
+      );
+      final json = renderedJson(
+        criteria: criteria,
+        evaluationReference: DateTime(2026, 8, 9, 12),
+        wakeFacts: GoalWakeFacts(
+          trackStatus: GoalTrackStatus.insufficientData,
+          evaluation: const GoalEvaluation(
+            attainment: 0.9,
+            satisfied: false,
+            dataCoverage: 1 / 7,
+            results: {
+              'health-weight': GoalCriterionResult(
+                criterionId: 'health-weight',
+                actual: 95,
+                target: 88,
+                ratio: 88 / 95,
+                satisfied: false,
+                sampleCount: 1,
+              ),
+              'habit-bp-meds': GoalCriterionResult(
+                criterionId: 'habit-bp-meds',
+                actual: 6,
+                target: 7,
+                ratio: 6 / 7,
+                satisfied: false,
+                sampleCount: 6,
+                deficit: 7,
+              ),
+            },
+          ),
+          quantitativeObservationsByType: {
+            GoalHealthDataTypes.weight: [
+              GoalMetricObservation(
+                recordedAt: DateTime(2026, 8, 8, 8),
+                value: 95,
+              ),
+            ],
+          },
+        ),
+      );
+      final evaluation = json['evaluation'] as Map<String, dynamic>;
+      expect(evaluation['todayGuidance'], {
+        'healthLoggingCompleteCriterionIds': <String>[],
+        'healthLoggingNeededCriterionIds': ['health-weight'],
+        'rollingHabitCriterionIdsBehind': ['habit-bp-meds'],
+      });
+      final result = (evaluation['criterionResults'] as List<dynamic>)
+          .cast<Map<String, dynamic>>()
+          .singleWhere((entry) => entry['criterionId'] == 'health-weight');
+      final latest =
+          (result['healthSeries'] as Map<String, dynamic>)['latest']
+              as Map<String, dynamic>;
+      expect(latest['todayStatus'], 'notMeasuredToday');
+    },
+  );
+
+  test(
+    'latest health change respects authored direction and flat readings',
+    () {
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'direction-checks',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'weight-at-most',
+            dataType: GoalHealthDataTypes.weight,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.max,
+            target: 88,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'weight-at-least',
+            dataType: GoalHealthDataTypes.weight,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.max,
+            target: 95,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'flat-systolic',
+            dataType: GoalHealthDataTypes.bloodPressureSystolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.max,
+            target: 125,
+            direction: GoalDirection.atMost,
+          ),
+        ],
+      );
+      GoalCriterionResult result(String id, num actual, num target) =>
+          GoalCriterionResult(
+            criterionId: id,
+            actual: actual,
+            target: target,
+            ratio: 0.9,
+            satisfied: false,
+            sampleCount: 2,
+          );
+      final json = renderedJson(
+        criteria: criteria,
+        wakeFacts: GoalWakeFacts(
+          trackStatus: GoalTrackStatus.atRisk,
+          evaluation: GoalEvaluation(
+            attainment: 0.9,
+            satisfied: false,
+            dataCoverage: 1,
+            results: {
+              'weight-at-most': result('weight-at-most', 91, 88),
+              'weight-at-least': result('weight-at-least', 91, 95),
+              'flat-systolic': result('flat-systolic', 130, 125),
+            },
+          ),
+          quantitativeObservationsByType: {
+            GoalHealthDataTypes.weight: [
+              GoalMetricObservation(
+                recordedAt: DateTime(2026, 8, 8),
+                value: 90,
+              ),
+              GoalMetricObservation(
+                recordedAt: DateTime(2026, 8, 9),
+                value: 91,
+              ),
+            ],
+            GoalHealthDataTypes.bloodPressureSystolic: [
+              GoalMetricObservation(
+                recordedAt: DateTime(2026, 8, 8),
+                value: 130,
+              ),
+              GoalMetricObservation(
+                recordedAt: DateTime(2026, 8, 9),
+                value: 130,
+              ),
+            ],
+          },
+        ),
+      );
+      final results =
+          ((json['evaluation'] as Map<String, dynamic>)['criterionResults']
+                  as List<dynamic>)
+              .cast<Map<String, dynamic>>();
+      String direction(String id) =>
+          (((results.singleWhere(
+                        (entry) => entry['criterionId'] == id,
+                      )['healthSeries']
+                      as Map<String, dynamic>)['latestChange']
+                  as Map<String, dynamic>)['direction'])
+              as String;
+      expect(direction('weight-at-most'), 'awayFromTarget');
+      expect(direction('weight-at-least'), 'towardTarget');
+      expect(direction('flat-systolic'), 'flat');
+    },
+  );
 
   test('health evidence keeps the newest bounded sample and omitted count', () {
     const criteria = GoalCriterion.metric(

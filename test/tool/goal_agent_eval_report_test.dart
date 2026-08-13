@@ -20,6 +20,8 @@ Map<String, dynamic> _case({
   String failureCategory = 'none',
   double? credits,
   double? energyWh,
+  int? inputTokens,
+  int? outputTokens,
   List<String> toolNames = const [],
   String? errorMessage,
 }) => {
@@ -29,6 +31,8 @@ Map<String, dynamic> _case({
   'failureCategory': failureCategory,
   'credits': credits,
   'energyWh': energyWh,
+  'inputTokens': inputTokens,
+  'outputTokens': outputTokens,
   'toolCalls': [
     for (final name in toolNames) {'name': name, 'argumentsJson': '{}'},
   ],
@@ -46,12 +50,16 @@ void main() {
             scenarioId: 'gp_noop',
             credits: 0.001,
             energyWh: 0.3,
+            inputTokens: 1000,
+            outputTokens: 200,
           ),
           _case(
             modelId: 'glm-5.2',
             scenarioId: 'gp_on_track',
             credits: 0.003,
             energyWh: 0.6,
+            inputTokens: 1200,
+            outputTokens: 300,
           ),
         ],
       ),
@@ -71,10 +79,15 @@ void main() {
     ]);
 
     // glm passes 2/2 and outranks qwen at 1/2.
-    final glmIndex = report.indexOf('| `glm-5.2` | 2 | 2 | 1.00 |');
-    final qwenIndex = report.indexOf('| `qwen3.6-27b` | 2 | 1 | 0.50 |');
+    final glmIndex = report.indexOf(
+      '| `glm-5.2` | 2 | 2 | 1.00 | 1100 | 250 |',
+    );
+    final qwenIndex = report.indexOf(
+      '| `qwen3.6-27b` | 2 | 1 | 0.50 | not reported | not reported |',
+    );
     expect(glmIndex, greaterThanOrEqualTo(0), reason: report);
     expect(qwenIndex, greaterThan(glmIndex));
+    expect(report, contains('| Mean in | Mean out |'));
 
     // Credits sum and the goal-month extrapolation:
     // 0.004 total / 2 cases × 3 wakes × 30 days = 0.18.

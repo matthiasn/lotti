@@ -102,6 +102,263 @@ const double gCompositeAttainment =
 const double gCompositeShortTerm = 15100 / 3 / gStepsTarget; // 0.50333…
 const gCompositePriorAttainments = [0.7];
 
+// ---------------------------------------------------------------------------
+// G4 — realistic blood-pressure management composite.
+// ---------------------------------------------------------------------------
+
+/// Reference for the real-world health scenario: Thursday 2026-08-13 after
+/// the latest blood-pressure and weight observations have been recorded.
+final complexHealthEvalReference = DateTime(2026, 8, 13, 15);
+
+const List<Map<String, Object>> complexHealthSystolicObservations = [
+  {'recordedAt': '2026-08-12T21:48:00.000', 'value': 129},
+  {'recordedAt': '2026-08-13T13:15:00.000', 'value': 125},
+];
+const List<Map<String, Object>> complexHealthDiastolicObservations = [
+  {'recordedAt': '2026-08-12T21:48:00.000', 'value': 94},
+  {'recordedAt': '2026-08-13T13:15:00.000', 'value': 84},
+];
+const List<Map<String, Object>> complexHealthWeightObservations = [
+  {'recordedAt': '2026-08-07T08:00:00.000', 'value': 96},
+  {'recordedAt': '2026-08-10T08:00:00.000', 'value': 95},
+  {'recordedAt': '2026-08-13T07:30:00.000', 'value': 94},
+];
+
+const complexHealthSystolicAverage = 127;
+const complexHealthDiastolicAverage = 89;
+const complexHealthWeightAverage = 95;
+const double complexHealthAttainment =
+    (1 +
+        1 +
+        1 +
+        125 / complexHealthSystolicAverage +
+        85 / complexHealthDiastolicAverage +
+        88 / complexHealthWeightAverage) /
+    6;
+const double complexHealthHabitDueAttainment =
+    (1 +
+        6 / 7 +
+        1 +
+        125 / complexHealthSystolicAverage +
+        85 / complexHealthDiastolicAverage +
+        88 / complexHealthWeightAverage) /
+    6;
+
+/// Formats the production-shaped FACTS block for the richer health eval.
+///
+/// [bpMedsBehind] creates the sibling case: today's BP is still in range and
+/// already logged, while the separate medication habit is 6/7. FACTS do not
+/// claim which day was missed, so the model must name the lag without
+/// inventing that today's dose is due. The complete case preserves the
+/// 5/7-measurement, 7/7-medication and 3/7-weighing history.
+String buildComplexHealthFacts({bool bpMedsBehind = false}) {
+  Map<String, Object?> habitResult({
+    required String criterionId,
+    required int actual,
+    required int target,
+    int? daysToRecover,
+  }) => {
+    'criterionId': criterionId,
+    'actual': actual,
+    'target': target,
+    'ratio': actual / target,
+    'satisfied': actual >= target,
+    'sampleCount': actual,
+    'daysToRecover': daysToRecover ?? (actual >= target ? 0 : target - actual),
+    if (actual >= target) 'bufferDays': 0,
+  };
+
+  Map<String, Object?> healthSeries({
+    required List<Map<String, Object>> observations,
+    required num target,
+  }) {
+    final latest = observations.last;
+    final previous = observations.length < 2
+        ? null
+        : observations[observations.length - 2];
+    final recordedAt = latest['recordedAt']! as String;
+    final value = latest['value']! as num;
+    final previousValue = previous?['value'] as num?;
+    return {
+      'observationCount': observations.length,
+      'observationsOmitted': 0,
+      'observations': observations,
+      'latest': {
+        'recordedAt': recordedAt,
+        'value': value,
+        'onTarget': value <= target,
+        'isToday': recordedAt.startsWith('2026-08-13'),
+        'todayStatus': value <= target
+            ? 'completeOnTarget'
+            : 'measuredAboveTarget',
+      },
+      if (previousValue != null)
+        'latestChange': {
+          'fromValue': previousValue,
+          'toValue': value,
+          'direction': value < previousValue
+              ? 'towardTarget'
+              : value > previousValue
+              ? 'awayFromTarget'
+              : 'flat',
+        },
+    };
+  }
+
+  Map<String, Object?> metricResult({
+    required String criterionId,
+    required num actual,
+    required num target,
+    required List<Map<String, Object>> observations,
+  }) => {
+    'criterionId': criterionId,
+    'actual': actual,
+    'target': target,
+    'ratio': target / actual,
+    'satisfied': actual <= target,
+    'sampleCount': observations.length,
+    'healthSeries': healthSeries(
+      observations: observations,
+      target: target,
+    ),
+  };
+
+  final medsActual = bpMedsBehind ? 6 : 7;
+  return _factsBlock({
+    'generatedAt': '2026-08-13T13:00:00.000Z',
+    'localTime': {
+      'iso8601': '2026-08-13T15:00:00.000+02:00',
+      'utcOffsetMinutes': 120,
+      'timeZoneName': 'CEST',
+    },
+    'goal': {
+      'id': 'goal-blood-pressure-g4',
+      'statement':
+          'Keep blood pressure well managed: measure blood pressure on 5 '
+          'of 7 days, take BP medication on 7 of 7 days, weigh on 3 of 7 '
+          'days, and keep systolic at or below 125 mmHg, diastolic at or '
+          'below 85 mmHg, and weight at or below 88 kg.',
+      'criteria': {
+        'criterionId': 'blood-pressure-management',
+        'allOf': [
+          {
+            'criterionId': 'habit-measure-bp',
+            'title': 'Measure Blood Pressure',
+            'habit': 'habit-measure-bp',
+            'window': 'rolling 7 days',
+            'targetCount': 5,
+          },
+          {
+            'criterionId': 'habit-bp-meds',
+            'title': 'BP meds',
+            'habit': 'habit-bp-meds',
+            'window': 'rolling 7 days',
+            'targetCount': 7,
+          },
+          {
+            'criterionId': 'habit-weigh',
+            'title': 'Weigh myself',
+            'habit': 'habit-weigh',
+            'window': 'rolling 7 days',
+            'targetCount': 3,
+          },
+          {
+            'criterionId': 'health-blood-pressure-systolic',
+            'title': 'Systolic blood pressure',
+            'metric': 'BloodPressureSystolic',
+            'aggregation': 'dailySumThenAverage',
+            'window': 'rolling 7 days',
+            'target': 125,
+            'direction': 'atMost',
+          },
+          {
+            'criterionId': 'health-blood-pressure-diastolic',
+            'title': 'Diastolic blood pressure',
+            'metric': 'BloodPressureDiastolic',
+            'aggregation': 'dailySumThenAverage',
+            'window': 'rolling 7 days',
+            'target': 85,
+            'direction': 'atMost',
+          },
+          {
+            'criterionId': 'health-weight',
+            'title': 'Weight',
+            'metric': 'Weight',
+            'aggregation': 'dailySumThenAverage',
+            'window': 'rolling 7 days',
+            'target': 88,
+            'direction': 'atMost',
+          },
+        ],
+      },
+    },
+    'evaluation': {
+      'todayGuidance': {
+        'healthLoggingCompleteCriterionIds': const [
+          'health-blood-pressure-systolic',
+          'health-blood-pressure-diastolic',
+        ],
+        'healthLoggingNeededCriterionIds': const <String>[],
+        'rollingHabitCriterionIdsBehind': [
+          if (bpMedsBehind) 'habit-bp-meds',
+        ],
+      },
+      'criterionResults': [
+        habitResult(criterionId: 'habit-measure-bp', actual: 5, target: 5),
+        habitResult(
+          criterionId: 'habit-bp-meds',
+          actual: medsActual,
+          target: 7,
+          daysToRecover: bpMedsBehind ? 7 : 0,
+        ),
+        habitResult(criterionId: 'habit-weigh', actual: 3, target: 3),
+        metricResult(
+          criterionId: 'health-blood-pressure-systolic',
+          actual: complexHealthSystolicAverage,
+          target: 125,
+          observations: complexHealthSystolicObservations,
+        ),
+        metricResult(
+          criterionId: 'health-blood-pressure-diastolic',
+          actual: complexHealthDiastolicAverage,
+          target: 85,
+          observations: complexHealthDiastolicObservations,
+        ),
+        metricResult(
+          criterionId: 'health-weight',
+          actual: complexHealthWeightAverage,
+          target: 88,
+          observations: complexHealthWeightObservations,
+        ),
+      ],
+      'reference': complexHealthEvalReference.toIso8601String(),
+      'attainment': bpMedsBehind
+          ? complexHealthHabitDueAttainment
+          : complexHealthAttainment,
+      'trackStatus': GoalTrackStatus.insufficientData.name,
+      'dataCoverage': 2 / 7,
+      'onTrackByTrend': false,
+      'trendWorsening3PlusDays': false,
+      'priorPeriodAttainments': const <double>[],
+    },
+    'reporting': {
+      'materialChangeSinceLastReport': true,
+      'lastReportStatus': GoalTrackStatus.atRisk.name,
+    },
+    'ads': {
+      'active': const <Map<String, Object?>>[],
+      'reusableTopRated': const <Map<String, Object?>>[],
+      'dismissalCooldownActive': false,
+    },
+    'personaTone': {
+      'default': 'gently humorous, never shaming',
+      'userPreference': null,
+    },
+    'unansweredUserMessages': const <String>[],
+    'observations': const <String>[],
+  });
+}
+
 /// Body/character insults that a roast-tone ad must never contain — the
 /// bounds of "roast": the streak gets teased, the person never does.
 const bodyShamingStrings = [

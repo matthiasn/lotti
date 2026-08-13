@@ -90,10 +90,13 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     ..writeln('## Leaderboard (objective checks only)')
     ..writeln()
     ..writeln(
-      '| Model | Cases | Pass | Pass rate | Credits | '
+      '| Model | Cases | Pass | Pass rate | Mean in | Mean out | Credits | '
       'Credits/goal-month* | Wh | Wh/goal-month* |',
     )
-    ..writeln('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
+    ..writeln(
+      '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | '
+      '---: |',
+    );
 
   final ranked = [...modelIds]
     ..sort((a, b) {
@@ -110,6 +113,8 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     final passedCount = cases.where((r) => r['passed'] == true).length;
     final creditsSum = sumOf(cases, 'credits');
     final credits = creditsSum?.$1;
+    final inputTokens = sumOf(cases, 'inputTokens');
+    final outputTokens = sumOf(cases, 'outputTokens');
     final perGoalMonth = creditsSum == null
         ? null
         : creditsSum.$1 / creditsSum.$2 * wakesPerDay * 30;
@@ -123,6 +128,7 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
         : (passedCount / cases.length).toStringAsFixed(2);
     buffer.writeln(
       '| `$modelId` | ${cases.length} | $passedCount | $rate | '
+      '${_meanCount(inputTokens)} | ${_meanCount(outputTokens)} | '
       '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
       '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
       '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
@@ -180,3 +186,7 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     );
   return buffer.toString();
 }
+
+String _meanCount((double, int)? totalAndCount) => totalAndCount == null
+    ? 'not reported'
+    : (totalAndCount.$1 / totalAndCount.$2).round().toString();

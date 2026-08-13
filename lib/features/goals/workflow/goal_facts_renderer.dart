@@ -74,7 +74,7 @@ class GoalFactsRenderer {
         : categorySessions.sublist(
             categorySessions.length - goalCategorySessionEvidenceLimit,
           );
-    final metricCriteria = _metricCriteriaById(version.criteria);
+    final leafCriteria = _leafCriteriaById(version.criteria);
 
     return _factsBlock({
       'generatedAt': now.toUtc().toIso8601String(),
@@ -89,11 +89,16 @@ class GoalFactsRenderer {
         'criteria': criterionJson(version.criteria),
       },
       'evaluation': {
+        'todayGuidance': _todayGuidanceJson(
+          criteria: leafCriteria,
+          facts: facts,
+          evaluationReference: evaluationReference,
+        ),
         'criterionResults': [
           for (final result in facts.evaluation.results.values)
             _criterionResultJson(
               result: result,
-              metric: metricCriteria[result.criterionId],
+              metric: leafCriteria.metrics[result.criterionId],
               facts: facts,
               evaluationReference: evaluationReference,
             ),
@@ -207,6 +212,9 @@ class GoalFactsRenderer {
       evaluationReference: evaluationReference,
     );
     final latest = observations.lastOrNull;
+    final previous = observations.length < 2
+        ? null
+        : observations[observations.length - 2];
     final emittedObservations =
         observations.length <= goalHealthObservationEvidenceLimit
         ? observations
@@ -232,34 +240,126 @@ class GoalFactsRenderer {
             metric.target,
             metric.direction,
           ),
-          'isToday':
-              GoalWindow.dayUtc(latest.recordedAt) ==
-              GoalWindow.dayUtc(evaluationReference),
+          'isToday': _isToday(latest.recordedAt, evaluationReference),
+          'todayStatus': _healthTodayStatus(
+            latest: latest,
+            metric: metric,
+            evaluationReference: evaluationReference,
+          ),
+        },
+      if (previous != null && latest != null)
+        'latestChange': {
+          'fromValue': previous.value,
+          'toValue': latest.value,
+          'direction': _latestChangeDirection(
+            previous: previous.value,
+            latest: latest.value,
+            direction: metric.direction,
+          ),
         },
     };
   }
 
-  Map<String, GoalCriterionMetric> _metricCriteriaById(
+  ({
+    Map<String, GoalCriterionMetric> metrics,
+    Map<String, GoalCriterionHabit> habits,
+  })
+  _leafCriteriaById(
     GoalCriterion criteria,
   ) {
     final metrics = <String, GoalCriterionMetric>{};
+    final habits = <String, GoalCriterionHabit>{};
     void visit(GoalCriterion criterion) {
       switch (criterion) {
         case final GoalCriterionMetric metric:
           metrics[metric.criterionId] = metric;
+        case final GoalCriterionHabit habit:
+          habits[habit.criterionId] = habit;
         case GoalCriterionAllOf(:final criteria) ||
             GoalCriterionAnyOf(:final criteria) ||
             GoalCriterionAtLeastCount(:final criteria):
           criteria.forEach(visit);
-        case GoalCriterionHabit() ||
-            GoalCriterionMeasurable() ||
-            GoalCriterionCategoryTime():
+        case GoalCriterionMeasurable() || GoalCriterionCategoryTime():
       }
     }
 
     visit(criteria);
-    return metrics;
+    return (metrics: metrics, habits: habits);
   }
+
+  Map<String, Object> _todayGuidanceJson({
+    required ({
+      Map<String, GoalCriterionMetric> metrics,
+      Map<String, GoalCriterionHabit> habits,
+    })
+    criteria,
+    required GoalWakeFacts facts,
+    required DateTime evaluationReference,
+  }) {
+    final healthLoggingComplete = <String>[];
+    final healthLoggingNeeded = <String>[];
+    for (final entry in criteria.metrics.entries) {
+      final metric = entry.value;
+      if (!GoalHealthDataTypes.supported.contains(metric.dataType)) continue;
+      final observations = goalHealthObservationsForCriterion(
+        metric: metric,
+        facts: facts,
+        evaluationReference: evaluationReference,
+      );
+      final latest = observations.lastOrNull;
+      if (latest != null &&
+          _isToday(latest.recordedAt, evaluationReference) &&
+          _meetsTarget(latest.value, metric.target, metric.direction)) {
+        healthLoggingComplete.add(entry.key);
+      } else if (latest == null ||
+          !_isToday(latest.recordedAt, evaluationReference)) {
+        final result = facts.evaluation.results[entry.key];
+        if (result != null && !result.satisfied) {
+          healthLoggingNeeded.add(entry.key);
+        }
+      }
+    }
+    final rollingHabitsBehind = <String>[
+      for (final entry in criteria.habits.entries)
+        if (entry.value.window is GoalWindowRollingDays &&
+            facts.evaluation.results[entry.key]?.satisfied == false)
+          entry.key,
+    ];
+    return {
+      'healthLoggingCompleteCriterionIds': healthLoggingComplete..sort(),
+      'healthLoggingNeededCriterionIds': healthLoggingNeeded..sort(),
+      'rollingHabitCriterionIdsBehind': rollingHabitsBehind..sort(),
+    };
+  }
+
+  String _healthTodayStatus({
+    required GoalMetricObservation latest,
+    required GoalCriterionMetric metric,
+    required DateTime evaluationReference,
+  }) {
+    if (!_isToday(latest.recordedAt, evaluationReference)) {
+      return 'notMeasuredToday';
+    }
+    return _meetsTarget(latest.value, metric.target, metric.direction)
+        ? 'completeOnTarget'
+        : 'measuredOffTarget';
+  }
+
+  String _latestChangeDirection({
+    required num previous,
+    required num latest,
+    required GoalDirection direction,
+  }) {
+    if (latest == previous) return 'flat';
+    final towardTarget = switch (direction) {
+      GoalDirection.atLeast => latest > previous,
+      GoalDirection.atMost => latest < previous,
+    };
+    return towardTarget ? 'towardTarget' : 'awayFromTarget';
+  }
+
+  bool _isToday(DateTime recordedAt, DateTime evaluationReference) =>
+      GoalWindow.dayUtc(recordedAt) == GoalWindow.dayUtc(evaluationReference);
 
   bool _meetsTarget(num value, num target, GoalDirection direction) =>
       switch (direction) {
