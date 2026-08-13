@@ -429,6 +429,9 @@ int _compareGoalNudgeSnoozes(GoalNudgeSnooze a, GoalNudgeSnooze b) {
   if (byMinutes != 0) return byMinutes;
   final byOffset = a.utcOffsetMinutes.compareTo(b.utcOffsetMinutes);
   if (byOffset != 0) return byOffset;
+  final byReturnOffsetPresence = (a.returnUtcOffsetMinutes == null ? 1 : 0)
+      .compareTo(b.returnUtcOffsetMinutes == null ? 1 : 0);
+  if (byReturnOffsetPresence != 0) return byReturnOffsetPresence;
   return (a.returnUtcOffsetMinutes ?? a.utcOffsetMinutes).compareTo(
     b.returnUtcOffsetMinutes ?? b.utcOffsetMinutes,
   );
