@@ -76,6 +76,7 @@ class DirectedRelation {
         return directed ? 'is_superseded_by' : 'supersedes';
       case EntryLinkType.rating:
       case EntryLinkType.project:
+      case EntryLinkType.relationship:
         throw StateError('$type is not a task relationship');
     }
   }
@@ -103,6 +104,7 @@ class DirectedRelation {
         return directed ? 'is superseded by' : 'supersedes';
       case EntryLinkType.rating:
       case EntryLinkType.project:
+      case EntryLinkType.relationship:
         throw StateError('$type is not a task relationship');
     }
   }

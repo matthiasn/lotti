@@ -5827,6 +5827,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Resposta de IA';
 
   @override
+  String get entryTypeLabelCheckIn => 'Contato';
+
+  @override
   String get entryTypeLabelChecklist => 'Lista de verificação';
 
   @override

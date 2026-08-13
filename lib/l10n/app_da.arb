@@ -2724,6 +2724,7 @@
   "entryLabelsHeaderTitle": "Etiketter",
   "entryLabelsNoLabels": "Ingen etiketter tildelt",
   "entryTypeLabelAiResponse": "AI-respons",
+  "entryTypeLabelCheckIn": "Check-in",
   "entryTypeLabelChecklist": "Tjekliste",
   "entryTypeLabelChecklistItem": "To Do",
   "entryTypeLabelHabitCompletionEntry": "Habit",

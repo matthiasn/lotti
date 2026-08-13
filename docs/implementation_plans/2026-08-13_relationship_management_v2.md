@@ -187,8 +187,10 @@ Per ADR 0038 with the D1 deltas:
    (`type` strings `Relationship`/`CheckIn` + link mapping),
    `lib/utils/file_utils.dart` (`folderForJournalEntity`, `typeSuffix`),
    `journal_card.dart`, `entry_details_widget.dart`.
-6. `lib/logic/persistence_logic.dart` — `createRelationshipEntry`,
-   `createCheckInEntry` (writes the link and the denormalized id together).
+6. `lib/features/relationships/repository/relationship_repository.dart` —
+   `createRelationship` / `createCheckIn` (writes the `RelationshipLink` and
+   the denormalized id together), mirroring `ProjectRepository` rather than
+   growing `persistence_logic.dart`.
 7. Deletion cascade (ADR 0037 §5): relationship delete soft-deletes linked
    check-ins, the agent identity + its entities (reports, nudges, registers),
    and pending reminder rows. Explicit tests.

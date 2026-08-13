@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_audio_context.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -224,6 +226,20 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = ProjectEntry;
 
+  const factory JournalEntity.relationship({
+    required Metadata meta,
+    required RelationshipData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = RelationshipEntry;
+
+  const factory JournalEntity.checkIn({
+    required Metadata meta,
+    required CheckInData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = CheckInEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -290,6 +306,14 @@ extension JournalEntityExtension on JournalEntity {
 
       case ProjectEntry():
         ids.add(projectNotification);
+
+      case RelationshipEntry():
+        ids.add(relationshipNotification);
+
+      case final CheckInEntry checkIn:
+        ids
+          ..add(checkIn.data.relationshipId)
+          ..add(checkInNotification);
     }
 
     return ids;

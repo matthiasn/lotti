@@ -5867,6 +5867,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Răspuns AI';
 
   @override
+  String get entryTypeLabelCheckIn => 'Contact';
+
+  @override
   String get entryTypeLabelChecklist => 'Listă de verificare';
 
   @override

@@ -2481,6 +2481,7 @@
   "entryLabelsHeaderTitle": "Étiquettes",
   "entryLabelsNoLabels": "Aucune étiquette assignée",
   "entryTypeLabelAiResponse": "Réponse IA",
+  "entryTypeLabelCheckIn": "Échange",
   "entryTypeLabelChecklist": "Liste de contrôle",
   "entryTypeLabelChecklistItem": "Élément de liste",
   "entryTypeLabelHabitCompletionEntry": "Habitude",

@@ -2724,6 +2724,7 @@
   "entryLabelsHeaderTitle": "Etiketter",
   "entryLabelsNoLabels": "Inga etiketter tilldelade",
   "entryTypeLabelAiResponse": "AI-respons",
+  "entryTypeLabelCheckIn": "Avstämning",
   "entryTypeLabelChecklist": "Checklista",
   "entryTypeLabelChecklistItem": "Att göra",
   "entryTypeLabelHabitCompletionEntry": "Habit",

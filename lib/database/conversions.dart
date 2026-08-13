@@ -20,6 +20,9 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     habitCompletion: (HabitCompletionEntry entry) => entry.data.habitId,
     aiResponse: (AiResponseEntry entry) => entry.data.type?.name,
     rating: (RatingEntry entry) => entry.data.catalogId,
+    // Denormalized so "check-ins for relationship" is a plain indexed
+    // type+subtype filter, the habitCompletion/habitId precedent.
+    checkIn: (CheckInEntry entry) => entry.data.relationshipId,
     orElse: () => '',
   );
 
@@ -98,6 +101,8 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       dayPlan: (_) => 'DayPlanEntry',
       rating: (_) => 'RatingEntry',
       project: (_) => 'Project',
+      relationship: (_) => 'Relationship',
+      checkIn: (_) => 'CheckIn',
     ),
     subtype: subtype,
     serialized: json.encode(entity),

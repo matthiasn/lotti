@@ -2488,6 +2488,7 @@
   "entryLabelsHeaderTitle": "Štítky",
   "entryLabelsNoLabels": "Žádné přiřazené štítky",
   "entryTypeLabelAiResponse": "Odpověď AI",
+  "entryTypeLabelCheckIn": "Kontakt",
   "entryTypeLabelChecklist": "Kontrolní seznam",
   "entryTypeLabelChecklistItem": "Úkol",
   "entryTypeLabelHabitCompletionEntry": "Návyk",

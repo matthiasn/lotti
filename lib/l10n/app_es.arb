@@ -2481,6 +2481,7 @@
   "entryLabelsHeaderTitle": "Etiquetas",
   "entryLabelsNoLabels": "Sin etiquetas asignadas",
   "entryTypeLabelAiResponse": "Respuesta de IA",
+  "entryTypeLabelCheckIn": "Contacto",
   "entryTypeLabelChecklist": "Lista de verificación",
   "entryTypeLabelChecklistItem": "Elemento de lista",
   "entryTypeLabelHabitCompletionEntry": "Hábito",

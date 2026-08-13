@@ -9899,6 +9899,12 @@ abstract class AppLocalizations {
   /// **'AI Response'**
   String get entryTypeLabelAiResponse;
 
+  /// No description provided for @entryTypeLabelCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in'**
+  String get entryTypeLabelCheckIn;
+
   /// No description provided for @entryTypeLabelChecklist.
   ///
   /// In en, this message translates to:

@@ -2723,6 +2723,7 @@
   "entryLabelsHeaderTitle": "Etiketten",
   "entryLabelsNoLabels": "Geen labels toegewezen",
   "entryTypeLabelAiResponse": "AI-respons",
+  "entryTypeLabelCheckIn": "Check-in",
   "entryTypeLabelChecklist": "Checklist",
   "entryTypeLabelChecklistItem": "Te doen",
   "entryTypeLabelHabitCompletionEntry": "Gewoonte",

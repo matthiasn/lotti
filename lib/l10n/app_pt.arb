@@ -2723,6 +2723,7 @@
   "entryLabelsHeaderTitle": "Etiquetas",
   "entryLabelsNoLabels": "Nenhum rótulo atribuído",
   "entryTypeLabelAiResponse": "Resposta de IA",
+  "entryTypeLabelCheckIn": "Contato",
   "entryTypeLabelChecklist": "Lista de verificação",
   "entryTypeLabelChecklistItem": "Fazer",
   "entryTypeLabelHabitCompletionEntry": "Hábito",

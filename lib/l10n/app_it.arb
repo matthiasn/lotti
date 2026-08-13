@@ -2724,6 +2724,7 @@
   "entryLabelsHeaderTitle": "Etichette",
   "entryLabelsNoLabels": "Nessuna etichetta assegnata",
   "entryTypeLabelAiResponse": "Risposta dell'IA",
+  "entryTypeLabelCheckIn": "Contatto",
   "entryTypeLabelChecklist": "Lista di controllo",
   "entryTypeLabelChecklistItem": "Da fare",
   "entryTypeLabelHabitCompletionEntry": "Abitazioni",

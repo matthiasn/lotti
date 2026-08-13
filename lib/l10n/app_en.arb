@@ -3148,6 +3148,7 @@
   "entryLabelsHeaderTitle": "Labels",
   "entryLabelsNoLabels": "No labels assigned",
   "entryTypeLabelAiResponse": "AI Response",
+  "entryTypeLabelCheckIn": "Check-in",
   "entryTypeLabelChecklist": "Checklist",
   "entryTypeLabelChecklistItem": "To Do",
   "entryTypeLabelHabitCompletionEntry": "Habit",

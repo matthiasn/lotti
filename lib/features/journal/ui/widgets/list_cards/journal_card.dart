@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -275,6 +276,30 @@ class _EntryCardContent extends StatelessWidget {
         icon: Icons.folder_rounded,
         iconColor: _categoryColor(context, item),
         title: _titleText(context, p.data.title),
+      ),
+      final RelationshipEntry r => _scaffold(
+        context,
+        icon: Icons.person_rounded,
+        iconColor: _categoryColor(context, item),
+        title: _titleText(context, r.data.title),
+        secondary: _notePreview(context, r.entryText),
+      ),
+      final CheckInEntry c => _scaffold(
+        context,
+        icon: switch (c.data.interactionType) {
+          CheckInInteractionType.inPerson => Icons.people_rounded,
+          CheckInInteractionType.call => Icons.call_rounded,
+          CheckInInteractionType.videoCall => Icons.videocam_rounded,
+          CheckInInteractionType.message => Icons.chat_rounded,
+          CheckInInteractionType.other => Icons.forum_rounded,
+        },
+        iconColor: _categoryColor(context, item),
+        title: _contentTitle(
+          context,
+          c.entryText,
+          fallback: context.messages.entryTypeLabelCheckIn,
+        ),
+        secondary: _contentRemainder(context, c.entryText),
       ),
     };
   }

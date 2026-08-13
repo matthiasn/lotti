@@ -5771,6 +5771,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'AI-respons';
 
   @override
+  String get entryTypeLabelCheckIn => 'Check-in';
+
+  @override
   String get entryTypeLabelChecklist => 'Tjekliste';
 
   @override
