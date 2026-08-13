@@ -33,3 +33,17 @@ const kDetailContentMaxWidth = 960.0;
 /// column while it renders so the title field, the chip lane and the band
 /// share one right edge.
 const kActionListContentMaxWidth = 520.0;
+
+/// The narrowest row width that can host an inline trailing control (a
+/// stepper, say) beside the row's title without starving the title's measure.
+/// Below this, the control drops to the row's secondary line.
+///
+/// 496 is the measured point at which a two-word title, a cadence stepper
+/// and a trailing checkbox stop fitting on one 16dp-padded row.
+const kRowInlineControlMinWidth = 496.0;
+
+/// The fixed width for a short numeric target input rendered inline beside a
+/// row title (a unit-labelled amount, a step count). Wide enough for a
+/// five-digit value plus its unit label, narrow enough to leave the row's
+/// title its measure.
+const kInlineTargetInputWidth = 320.0;

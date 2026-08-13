@@ -31,7 +31,9 @@ class DesignSystemTextInput extends StatefulWidget {
     this.trailingIcon,
     this.onTrailingIconTap,
     this.trailingIconTooltip,
+    this.trailingIconKey,
     this.enabled = true,
+    this.readOnly = false,
     this.obscureText = false,
     this.autofocus = false,
     this.keyboardType,
@@ -64,7 +66,18 @@ class DesignSystemTextInput extends StatefulWidget {
   /// Required when [onTrailingIconTap] is supplied so icon-only actions never
   /// fall back to an icon glyph name in a screen reader.
   final String? trailingIconTooltip;
+
+  /// Optional key on the actionable [trailingIcon] button so feature tests
+  /// can target the affordance directly.
+  final Key? trailingIconKey;
   final bool enabled;
+
+  /// Renders the field as a display value rather than an editable input:
+  /// full-emphasis text on a quiet fill with no outline, no cursor, and no
+  /// focus/hover border states. Unlike `enabled: false` the field is not
+  /// dimmed and an actionable [trailingIcon] stays live — the slot for the
+  /// affordance that flips the field back to editable.
+  final bool readOnly;
   final bool obscureText;
   final bool autofocus;
   final TextInputType? keyboardType;
@@ -145,18 +158,19 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
           SizedBox(height: spec.labelGap),
         ],
         MouseRegion(
-          onEnter: widget.enabled
+          onEnter: widget.enabled && !widget.readOnly
               ? (_) => setState(() => _hovered = true)
               : null,
-          onExit: widget.enabled
+          onExit: widget.enabled && !widget.readOnly
               ? (_) => setState(() => _hovered = false)
               : null,
           child: DecoratedBox(
             decoration: BoxDecoration(
+              color: widget.readOnly ? tokens.colors.background.level01 : null,
               borderRadius: BorderRadius.circular(spec.borderRadius),
               border: Border.all(
                 color: borderColor,
-                width: _focused ? 2 : 1,
+                width: _focused && !widget.readOnly ? 2 : 1,
               ),
             ),
             child: SizedBox(
@@ -168,6 +182,8 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     controller: _controller,
                     focusNode: _focusNode,
                     enabled: widget.enabled,
+                    readOnly: widget.readOnly,
+                    showCursor: !widget.readOnly,
                     obscureText: widget.obscureText,
                     autofocus: widget.autofocus,
                     keyboardType: widget.keyboardType,
@@ -255,6 +271,7 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
 
     final label = widget.trailingIconTooltip!;
     return Semantics(
+      key: widget.trailingIconKey,
       button: true,
       enabled: widget.enabled,
       label: label,
@@ -275,6 +292,7 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
 
   Color _resolveBorderColor(DsTokens tokens, bool hasError) {
     if (hasError) return tokens.colors.alert.error.defaultColor;
+    if (widget.readOnly) return Colors.transparent;
     if (_focused) return tokens.colors.interactive.enabled;
     if (_hovered) return tokens.colors.text.mediumEmphasis;
     return tokens.colors.text.highEmphasis.withValues(

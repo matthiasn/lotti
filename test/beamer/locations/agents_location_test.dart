@@ -285,7 +285,7 @@ void main() {
       );
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Looks right'));
+      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Create agent'));
       await tester.pumpAndSettle();

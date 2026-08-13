@@ -128,7 +128,18 @@ routine was fully completed on that day. Goal creation now follows the designed
 intention → observable mapping → confirmation flow. Each watched habit has its
 own rolling-seven-day cadence, unobservable intentions receive an honest
 refusal instead of a fictional measurement, and the user names both the goal
-and its conversational persona. The same flow edits an active goal from its
+and its conversational persona. The goal name is an explicit labelled field on
+the mapping step (derived from the selected signals, emoji-free, until the
+user types their own) and reappears on the confirmation step as the same
+field rendered read-only behind a pencil affordance. The automatic step count
+is an always-visible signal row rather than an intention-gated one, and an
+intention that names a health capability (blood pressure, weight) surfaces it
+as an offer row directly in the signals card. Picked health and tracked-time
+signals seed sensible default targets, a missing target errors inline on its
+own input and scrolls into view, back-edits of the intention only add matched
+signals (never clearing shaped targets, and a re-checked habit restores its
+remembered cadence), and every signal is added through one multi-select
+picker. The same flow edits an active goal from its
 detail menu. Owner edits preserve criterion identities where possible, retain
 unsupported or out-of-range criterion trees read-only, keep already-authored
 habit criteria when privacy hides them from the picker, and mint a new

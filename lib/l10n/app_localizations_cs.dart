@@ -6387,6 +6387,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormAddDimension => 'Přidat rozměr';
 
   @override
+  String get goalFormAddSignal => 'Přidat signál';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolický a diastolický · mmHg · 7denní průměr';
 
@@ -6486,7 +6489,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Cíl můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.';
+      'Agenta můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Název cíle';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6543,11 +6549,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormIntentionPrompt => 'K čemu chceš směřovat?';
 
   @override
-  String get goalFormLooksRight => 'Vypadá to dobře';
-
-  @override
   String get goalFormMappingIntro =>
-      'Můžu koučovat jen to, co vidím. Tato odškrtnutí jsou moje oči:';
+      'Mohu koučovat jen to, co vidím. Tyto signály jsou moje oči.';
 
   @override
   String get goalFormMappingTitle => 'Tohle můžu sledovat';
@@ -6600,7 +6603,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Průběžný týden — vždy posledních 7 dní. Počty platí pro každý návyk zvlášť; žádné mrtvé víkendy ani ztracené týdny.';
+      'Průběžný týden — vždy posledních 7 dní. Počty platí pro každý signál zvlášť; žádné mrtvé víkendy ani ztracené týdny.';
 
   @override
   String get goalFormSaveChanges => 'Uložit novou verzi';
@@ -6627,6 +6630,12 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Vyber alespoň jeden signál, který agent opravdu dokáže sledovat.';
+
+  @override
+  String get goalFormValidationPersona => 'Pojmenuj svého agenta.';
+
+  @override
+  String get goalFormValidationTitle => 'Pojmenuj svůj cíl.';
 
   @override
   String goalFormWeeklyTarget(int count) {
@@ -12988,4 +12997,8 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get goalFormValidationTarget =>
+      'Pro pokračování nastav cílovou hodnotu.';
 }

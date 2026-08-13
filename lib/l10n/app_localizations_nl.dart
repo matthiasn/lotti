@@ -6341,6 +6341,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormAddDimension => 'Voeg dimensie toe';
 
   @override
+  String get goalFormAddSignal => 'Signaal toevoegen';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systolisch en diastolisch · mmHg · 7-daags gemiddelde';
 
@@ -6430,7 +6433,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Je kunt dit doel altijd hernoemen, bijstellen, pauzeren of verwijderen.';
+      'Je kunt deze agent altijd hernoemen, bijstellen, pauzeren of verwijderen.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Naam van het doel';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6487,11 +6493,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Waar wil je naartoe werken?';
 
   @override
-  String get goalFormLooksRight => 'Ziet er goed uit';
-
-  @override
   String get goalFormMappingIntro =>
-      'Ik kan je alleen coachen op wat ik kan zien. Deze vinkjes zijn mijn ogen:';
+      'Ik kan alleen coachen wat ik zie. Deze signalen zijn mijn ogen.';
 
   @override
   String get goalFormMappingTitle => 'Dit kan ik volgen';
@@ -6544,7 +6547,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Voortschrijdende week — altijd de laatste 7 dagen. Aantallen gelden per gewoonte; geen dode weekenden, geen verloren weken.';
+      'Voortschrijdende week — altijd de laatste 7 dagen. Aantallen gelden per signaal; geen dode weekenden, geen verloren weken.';
 
   @override
   String get goalFormSaveChanges => 'Nieuwe versie opslaan';
@@ -6572,6 +6575,12 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Kies minstens één signaal dat de agent echt kan waarnemen.';
+
+  @override
+  String get goalFormValidationPersona => 'Geef je agent een naam.';
+
+  @override
+  String get goalFormValidationTitle => 'Geef je doel een naam.';
 
   @override
   String goalFormWeeklyTarget(int count) {
@@ -12875,4 +12884,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get goalFormValidationTarget => 'Stel een doel in om door te gaan.';
 }

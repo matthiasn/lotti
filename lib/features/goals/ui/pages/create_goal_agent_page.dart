@@ -18,7 +18,9 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/steppers/design_system_stepper.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -96,7 +98,19 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _watchesSteps = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
-  var _showAllHabits = false;
+  final Set<String> _matchedHabitIds = {};
+  final Set<String> _matchedHealthTypes = {};
+
+  /// Cadences a deselected habit had, restored on re-check so a micro-slip
+  /// never costs the user a value they already shaped.
+  final _rememberedHabitTargets = <String, int>{};
+
+  /// Mapping entities whose target failed validation, keyed
+  /// `steps` / `health:{type}` / `measurable:{id}` / `category:{id}`.
+  final _targetErrors = <String>{};
+  final _errorAnchors = <String, GlobalKey>{};
+  String? _personaError;
+  String? _titleError;
   var _initialized = false;
   var _defaultPersonaInitialized = false;
   var _saving = false;
@@ -216,43 +230,50 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         categoriesFingerprint != _derivedCategoriesFingerprint;
     final requiresFullRemap = _derivedFrom != statement || habitsChanged;
     if (!_editing && requiresFullRemap) {
-      _suppressedCategoryTimeIds.clear();
+      // ADDITIVE re-derive: a back-edit of the intention adds newly matched
+      // signals but never clears targets the user already shaped — silent
+      // full remaps destroyed cadences and selections.
       final matchedHabits = [
         for (final habit in habits)
           if (_matchesIntention(habit.name)) habit,
       ];
+      _matchedHabitIds
+        ..clear()
+        ..addAll(matchedHabits.map((habit) => habit.id));
       final stepsLabel = context.messages.goalCreateStepsTargetLabel;
-      _watchesSteps = _matchesIntention(stepsLabel);
-      _habitTargets
-        ..clear()
-        ..addEntries(
-          matchedHabits.map((habit) => MapEntry(habit.id, 3)),
-        );
-      final matchedMeasurables = [
-        for (final measurable in _knownMeasurables)
-          if (_matchesIntention(measurable.displayName)) measurable,
-      ];
-      _measurableTargets
-        ..clear()
-        ..addEntries(
-          matchedMeasurables.map((measurable) => MapEntry(measurable.id, 1)),
-        );
-      final matchedCategories = [
-        for (final category in _knownCategories)
-          if (_matchesIntention(category.name)) category,
-      ];
-      _categoryTimeTargets
-        ..clear()
-        ..addEntries(
-          matchedCategories.map((category) => MapEntry(category.id, 1)),
-        );
-      _categoryTimeDirections
-        ..clear()
-        ..addEntries(
-          matchedCategories.map(
-            (category) => MapEntry(category.id, GoalDirection.atMost),
-          ),
-        );
+      _watchesSteps = _watchesSteps || _matchesIntention(stepsLabel);
+      // Health capabilities match the intention the same way habits do, so
+      // "keep my blood pressure under control" surfaces blood pressure as an
+      // offer row instead of hiding it behind the picker.
+      final messages = context.messages;
+      _matchedHealthTypes.clear();
+      if (_matchesIntention(messages.goalFormHealthWeight)) {
+        _matchedHealthTypes.add(GoalHealthDataTypes.weight);
+      }
+      if (_matchesIntention(messages.dashboardHealthBloodPressure) ||
+          _matchesIntention(messages.goalFormHealthBloodPressureSystolic)) {
+        _matchedHealthTypes
+          ..add(GoalHealthDataTypes.bloodPressureSystolic)
+          ..add(GoalHealthDataTypes.bloodPressureDiastolic);
+      }
+      for (final habit in matchedHabits) {
+        _habitTargets.putIfAbsent(habit.id, () => 3);
+      }
+      for (final measurable in _knownMeasurables) {
+        if (_matchesIntention(measurable.displayName)) {
+          _measurableTargets.putIfAbsent(measurable.id, () => 1);
+        }
+      }
+      for (final category in _knownCategories) {
+        if (_matchesIntention(category.name) &&
+            !_suppressedCategoryTimeIds.contains(category.id)) {
+          _categoryTimeTargets.putIfAbsent(category.id, () => 1);
+          _categoryTimeDirections.putIfAbsent(
+            category.id,
+            () => GoalDirection.atMost,
+          );
+        }
+      }
       _deriveTitle(habits);
       _derivedFrom = statement;
       if (habitsFingerprint != null) {
@@ -280,19 +301,50 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 
     setState(() {
       _validation = null;
+      _targetErrors.clear();
       _step = _GoalFormStep.mapping;
     });
   }
+
+  /// Re-derives the title after a selection change, but only while the
+  /// form still owns it — a user-authored (or deliberately cleared-and-
+  /// retyped) title is never overwritten.
+  void _refreshDerivedTitle(List<HabitDefinition> habits) {
+    if (_title.text.trim() != _derivedTitle) return;
+    _title.text = '';
+    _deriveTitle(habits);
+  }
+
+  /// A habit name without its emoji decorations: the derived goal title is
+  /// prose identity, and a red heart must not be the flow's loudest pixel.
+  static String _plainName(String name) => name
+      .replaceAll(
+        RegExp(
+          r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]',
+          unicode: true,
+        ),
+        '',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  /// A picked health signal starts from a sensible default target instead of
+  /// an empty value the form would reject one step later.
+  static num? _defaultHealthTarget(String dataType) => switch (dataType) {
+    GoalHealthDataTypes.bloodPressureSystolic => 130,
+    GoalHealthDataTypes.bloodPressureDiastolic => 80,
+    _ => null,
+  };
 
   void _deriveTitle(List<HabitDefinition> habits) {
     final currentTitle = _title.text.trim();
     if (currentTitle.isNotEmpty && currentTitle != _derivedTitle) return;
     final selectedNames = [
       for (final habit in habits)
-        if (_habitTargets.containsKey(habit.id)) habit.name,
+        if (_habitTargets.containsKey(habit.id)) _plainName(habit.name),
     ];
     final derivedTitle = selectedNames.isNotEmpty
-        ? selectedNames.join(' + ')
+        ? selectedNames.join(' & ')
         : _watchesSteps
         ? context.messages.goalCreateTypeSteps
         : _statement.text.trim();
@@ -310,29 +362,67 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         _healthTargets.isNotEmpty ||
         _categoryTimeTargets.isNotEmpty;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
-    final invalidSteps =
-        _watchesSteps && (stepsTarget == null || stepsTarget <= 0);
-    final invalidHealthTargets = _healthTargets.values.any(
-      (target) => target == null || target <= 0,
-    );
-    final invalidMeasurableTargets = _measurableTargets.values.any(
-      (target) => target == null || target <= 0,
-    );
-    final invalidCategoryTimeTargets = _categoryTimeTargets.values.any(
-      (target) => target == null || target <= 0,
-    );
-    if (!hasMapping ||
-        invalidSteps ||
-        invalidMeasurableTargets ||
-        invalidCategoryTimeTargets ||
-        invalidHealthTargets) {
-      setState(() => _validation = context.messages.goalFormValidationMapping);
+    final invalidKeys = <String>{
+      if (_watchesSteps && (stepsTarget == null || stepsTarget <= 0)) 'steps',
+      for (final entry in _healthTargets.entries)
+        if (entry.value == null || entry.value! <= 0) 'health:${entry.key}',
+      for (final entry in _measurableTargets.entries)
+        if (entry.value == null || entry.value! <= 0) 'measurable:${entry.key}',
+      for (final entry in _categoryTimeTargets.entries)
+        if (entry.value == null || entry.value! <= 0) 'category:${entry.key}',
+    };
+    if (!hasMapping || invalidKeys.isNotEmpty) {
+      // Each missing target errors on its own card; the generic message is
+      // reserved for a form with nothing mapped at all.
+      setState(() {
+        _targetErrors
+          ..clear()
+          ..addAll(invalidKeys);
+        _validation = invalidKeys.isEmpty
+            ? context.messages.goalFormValidationMapping
+            : null;
+      });
+      _revealFirstTargetError();
       return;
     }
     _deriveTitle(habits);
     setState(() {
       _validation = null;
+      _targetErrors.clear();
       _step = _GoalFormStep.confirmation;
+    });
+  }
+
+  GlobalKey _anchorFor(String key) =>
+      _errorAnchors.putIfAbsent(key, GlobalKey.new);
+
+  /// Scrolls the first offending target card into view, so a failed
+  /// validation is never an invisible message elsewhere on the page.
+  void _revealFirstTargetError() {
+    final orderedKeys = [
+      'steps',
+      for (final dataType in _healthTargets.keys) 'health:$dataType',
+      for (final id in _measurableTargets.keys) 'measurable:$id',
+      for (final id in _categoryTimeTargets.keys) 'category:$id',
+    ];
+    String? first;
+    for (final key in orderedKeys) {
+      if (_targetErrors.contains(key)) {
+        first = key;
+        break;
+      }
+    }
+    if (first == null) return;
+    final anchor = _errorAnchors[first];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final anchorContext = anchor?.currentContext;
+      if (!mounted || anchorContext == null) return;
+      Scrollable.ensureVisible(
+        anchorContext,
+        duration: MotionDurations.medium2,
+        curve: MotionCurves.emphasizedDecelerate,
+        alignment: 0.2,
+      );
     });
   }
 
@@ -416,7 +506,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         ),
       for (final entry in _habitTargets.entries)
         context.messages.goalFormHabitCadence(
-          names[entry.key] ?? entry.key,
+          _plainName(names[entry.key] ?? entry.key),
           entry.value,
         ),
       for (final entry in _measurableTargets.entries)
@@ -466,12 +556,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final persona = _persona.text.trim();
     final statement = _statement.text.trim();
     if (persona.isEmpty) {
-      setState(() => _validation = messages.goalFormValidationIdentity);
+      setState(() => _personaError = messages.goalFormValidationPersona);
       return;
     }
     setState(() {
       _saving = true;
       _validation = null;
+      _targetErrors.clear();
+      _personaError = null;
+      _titleError = null;
     });
     late final List<HabitDefinition> confirmedHabits;
     late final List<CategoryDefinition> confirmedCategories;
@@ -507,7 +600,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     if (title.isEmpty) {
       setState(() {
         _saving = false;
-        _validation = messages.goalFormValidationIdentity;
+        _titleError = messages.goalFormValidationTitle;
       });
       return;
     }
@@ -652,6 +745,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       setState(() {
         _step = _GoalFormStep.values[_step.index - 1];
         _validation = null;
+        _targetErrors.clear();
       });
       return;
     }
@@ -728,6 +822,28 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final pageTitle = _editing
         ? messages.goalFormEditTitle
         : messages.agentsCreateGoal;
+    final desktop = isDesktopLayout(context);
+    // On wide layouts the CTA lives in the reading column, below the last
+    // card; the bottom-pinned bar is a phone pattern only.
+    final primaryAction = DesignSystemButton(
+      key: const ValueKey('goal-form-primary-action'),
+      label: switch (_step) {
+        _GoalFormStep.intention => messages.goalFormContinue,
+        _GoalFormStep.mapping => messages.goalFormContinue,
+        _GoalFormStep.confirmation =>
+          _editing
+              ? messages.goalFormSaveChanges
+              : messages.goalCreateSaveButton,
+      },
+      onPressed: switch (_step) {
+        _GoalFormStep.intention => () => _mapIntention(habits),
+        _GoalFormStep.mapping => () => _continueToConfirmation(habits),
+        _GoalFormStep.confirmation => _save,
+      },
+      isLoading: _saving,
+      size: DesignSystemButtonSize.large,
+      fullWidth: !desktop,
+    );
     return PopScope(
       canPop: _step == _GoalFormStep.intention,
       onPopInvokedWithResult: (didPop, _) {
@@ -749,74 +865,109 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         ),
         body: SafeArea(
           child: DetailContentWidth(
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step4),
-                  child: _StepProgress(step: _step),
+            // A form is a reading column, not a pane: cap it at the
+            // action-list measure so desktop stops stretching rows and the
+            // CTA across a void.
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: kActionListContentMaxWidth,
                 ),
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.symmetric(
-                      vertical: tokens.spacing.step5,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step4),
+                      child: _StepProgress(step: _step),
                     ),
-                    children: [
-                      switch (_step) {
-                        _GoalFormStep.intention => _IntentionStep(
-                          controller: _statement,
-                          validation: _validation,
-                          onExampleSelected: (example) {
-                            setState(() {
-                              _statement.text = example;
-                              _validation = null;
-                            });
-                          },
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.symmetric(
+                          vertical: tokens.spacing.step5,
                         ),
-                        _GoalFormStep.mapping => _MappingStep(
-                          habits: habits,
-                          habitsFailed:
-                              habitsAsync.hasError && habitsAsync.value == null,
-                          mapping: _mapping,
-                          measurables: measurables,
-                          categories: categories,
-                          measurableTargets: _measurableTargets,
-                          healthTargets: _healthTargets,
-                          healthDirections: _healthDirections,
-                          categoryTimeTargets: _categoryTimeTargets,
-                          categoryTimeDirections: _categoryTimeDirections,
-                          compositeRule: _compositeRule,
-                          requiredSuccesses: _requiredSuccesses,
-                          habitTargets: _habitTargets,
-                          watchesSteps: _watchesSteps,
-                          stepsTarget: _stepsTarget,
-                          showAllHabits: _showAllHabits,
-                          validation: _validation,
-                          onStepsChanged: (selected) => setState(() {
-                            _watchesSteps = selected;
-                            _validation = null;
-                          }),
-                          onHabitChanged:
-                              ({required habitId, required selected}) =>
-                                  setState(() {
+                        children: [
+                          switch (_step) {
+                            _GoalFormStep.intention => _IntentionStep(
+                              controller: _statement,
+                              validation: _validation,
+                              onExampleSelected: (example) {
+                                setState(() {
+                                  _statement.text = example;
+                                  _validation = null;
+                                  _targetErrors.clear();
+                                });
+                              },
+                            ),
+                            _GoalFormStep.mapping => _MappingStep(
+                              title: _title,
+                              habits: habits,
+                              habitsFailed:
+                                  habitsAsync.hasError &&
+                                  habitsAsync.value == null,
+                              mapping: _mapping,
+                              measurables: measurables,
+                              categories: categories,
+                              measurableTargets: _measurableTargets,
+                              healthTargets: _healthTargets,
+                              healthDirections: _healthDirections,
+                              categoryTimeTargets: _categoryTimeTargets,
+                              categoryTimeDirections: _categoryTimeDirections,
+                              compositeRule: _compositeRule,
+                              requiredSuccesses: _requiredSuccesses,
+                              habitTargets: _habitTargets,
+                              watchesSteps: _watchesSteps,
+                              stepsTarget: _stepsTarget,
+                              matchedHabitIds: _matchedHabitIds,
+                              matchedHealthTypes: _matchedHealthTypes,
+                              targetErrors: _targetErrors,
+                              anchorFor: _anchorFor,
+                              titleError: _titleError,
+                              validation: _validation,
+                              onStepsChanged: (selected) => setState(() {
+                                _watchesSteps = selected;
+                                _refreshDerivedTitle(habits);
+                                _validation = null;
+                                _targetErrors.clear();
+                              }),
+                              onStepsTargetChanged: () => setState(() {
+                                _validation = null;
+                                _targetErrors.clear();
+                              }),
+                              onHabitChanged:
+                                  ({
+                                    required habitId,
+                                    required selected,
+                                  }) => setState(() {
                                     if (selected) {
                                       _habitTargets.putIfAbsent(
                                         habitId,
-                                        () => 3,
+                                        () =>
+                                            _rememberedHabitTargets[habitId] ??
+                                            3,
                                       );
                                     } else {
-                                      _habitTargets.remove(habitId);
+                                      final removed = _habitTargets.remove(
+                                        habitId,
+                                      );
+                                      if (removed != null) {
+                                        _rememberedHabitTargets[habitId] =
+                                            removed;
+                                      }
                                     }
+                                    _refreshDerivedTitle(habits);
                                     _validation = null;
+                                    _targetErrors.clear();
                                   }),
-                          onTargetChanged: (habitId, target) => setState(() {
-                            _habitTargets[habitId] = target;
-                            _validation = null;
-                          }),
-                          onShowAll: () =>
-                              setState(() => _showAllHabits = true),
-                          onMeasurableChanged:
-                              ({required measurableId, required selected}) =>
+                              onTargetChanged: (habitId, target) =>
                                   setState(() {
+                                    _habitTargets[habitId] = target;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onMeasurableChanged:
+                                  ({
+                                    required measurableId,
+                                    required selected,
+                                  }) => setState(() {
                                     if (selected) {
                                       _measurableTargets.putIfAbsent(
                                         measurableId,
@@ -826,113 +977,124 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                       _measurableTargets.remove(measurableId);
                                     }
                                     _validation = null;
+                                    _targetErrors.clear();
                                   }),
-                          onMeasurableTargetChanged: (id, target) =>
-                              setState(() {
-                                _measurableTargets[id] = target;
+                              onMeasurableTargetChanged: (id, target) =>
+                                  setState(() {
+                                    _measurableTargets[id] = target;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onHealthSelected: (dataTypes) => setState(() {
+                                for (final dataType in dataTypes) {
+                                  _healthTargets.putIfAbsent(
+                                    dataType,
+                                    () => _defaultHealthTarget(dataType),
+                                  );
+                                  _healthDirections.putIfAbsent(
+                                    dataType,
+                                    () => GoalDirection.atMost,
+                                  );
+                                }
                                 _validation = null;
+                                _targetErrors.clear();
                               }),
-                          onHealthSelected: (dataTypes) => setState(() {
-                            for (final dataType in dataTypes) {
-                              _healthTargets.putIfAbsent(dataType, () => null);
-                              _healthDirections.putIfAbsent(
-                                dataType,
-                                () => GoalDirection.atMost,
-                              );
-                            }
-                            _validation = null;
-                          }),
-                          onHealthRemoved: (dataType) => setState(() {
-                            _healthTargets.remove(dataType);
-                            _healthDirections.remove(dataType);
-                            _validation = null;
-                          }),
-                          onHealthTargetChanged: (dataType, target) =>
-                              setState(() {
-                                _healthTargets[dataType] = target;
+                              onHealthRemoved: (dataType) => setState(() {
+                                _healthTargets.remove(dataType);
+                                _healthDirections.remove(dataType);
                                 _validation = null;
+                                _targetErrors.clear();
                               }),
-                          onHealthDirectionChanged: (dataType, direction) =>
-                              setState(() {
-                                _healthDirections[dataType] = direction;
-                                _validation = null;
-                              }),
-                          onCategoryTimeSelected: (categoryId) => setState(() {
-                            _suppressedCategoryTimeIds.remove(categoryId);
-                            _categoryTimeTargets.putIfAbsent(
-                              categoryId,
-                              () => null,
-                            );
-                            _categoryTimeDirections.putIfAbsent(
-                              categoryId,
-                              () => GoalDirection.atMost,
-                            );
-                            _validation = null;
-                          }),
-                          onCategoryTimeRemoved: (categoryId) => setState(() {
-                            _suppressedCategoryTimeIds.add(categoryId);
-                            _categoryTimeTargets.remove(categoryId);
-                            _categoryTimeDirections.remove(categoryId);
-                            _validation = null;
-                          }),
-                          onCategoryTimeTargetChanged: (categoryId, target) =>
-                              setState(() {
-                                _categoryTimeTargets[categoryId] = target;
-                                _validation = null;
-                              }),
-                          onCategoryTimeDirectionChanged:
-                              (categoryId, direction) => setState(() {
-                                _categoryTimeDirections[categoryId] = direction;
-                                _validation = null;
-                              }),
-                          onCompositeRuleChanged: (rule, required) =>
-                              setState(() {
-                                _compositeRule = rule;
-                                _requiredSuccesses = required;
-                              }),
-                        ),
-                        _GoalFormStep.confirmation => _ConfirmationStep(
-                          title: _title,
-                          persona: _persona,
-                          signalDescription: _signalDescription(habits),
-                          preservesCriteria: !_mapping.isEditable,
-                          editVersion: editSpec?.version,
-                          validation: _validation,
-                          enabled: !_saving,
-                        ),
-                      },
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom:
-                        tokens.spacing.step4 +
-                        DesignSystemBottomNavigationBar.occupiedHeight(context),
-                  ),
-                  child: DesignSystemButton(
-                    key: const ValueKey('goal-form-primary-action'),
-                    label: switch (_step) {
-                      _GoalFormStep.intention => messages.goalFormContinue,
-                      _GoalFormStep.mapping => messages.goalFormLooksRight,
-                      _GoalFormStep.confirmation =>
-                        _editing
-                            ? messages.goalFormSaveChanges
-                            : messages.goalCreateSaveButton,
-                    },
-                    onPressed: switch (_step) {
-                      _GoalFormStep.intention => () => _mapIntention(habits),
-                      _GoalFormStep.mapping => () => _continueToConfirmation(
-                        habits,
+                              onHealthTargetChanged: (dataType, target) =>
+                                  setState(() {
+                                    _healthTargets[dataType] = target;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onHealthDirectionChanged: (dataType, direction) =>
+                                  setState(() {
+                                    _healthDirections[dataType] = direction;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onCategoryTimeSelected: (categoryId) => setState(
+                                () {
+                                  _suppressedCategoryTimeIds.remove(categoryId);
+                                  _categoryTimeTargets.putIfAbsent(
+                                    categoryId,
+                                    () => 1,
+                                  );
+                                  _categoryTimeDirections.putIfAbsent(
+                                    categoryId,
+                                    () => GoalDirection.atMost,
+                                  );
+                                  _validation = null;
+                                  _targetErrors.clear();
+                                },
+                              ),
+                              onCategoryTimeRemoved: (categoryId) =>
+                                  setState(() {
+                                    _suppressedCategoryTimeIds.add(categoryId);
+                                    _categoryTimeTargets.remove(categoryId);
+                                    _categoryTimeDirections.remove(categoryId);
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onCategoryTimeTargetChanged:
+                                  (categoryId, target) => setState(() {
+                                    _categoryTimeTargets[categoryId] = target;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onCategoryTimeDirectionChanged:
+                                  (categoryId, direction) => setState(() {
+                                    _categoryTimeDirections[categoryId] =
+                                        direction;
+                                    _validation = null;
+                                    _targetErrors.clear();
+                                  }),
+                              onCompositeRuleChanged: (rule, required) =>
+                                  setState(() {
+                                    _compositeRule = rule;
+                                    _requiredSuccesses = required;
+                                  }),
+                            ),
+                            _GoalFormStep.confirmation => _ConfirmationStep(
+                              title: _title,
+                              persona: _persona,
+                              signalDescription: _signalDescription(habits),
+                              preservesCriteria: !_mapping.isEditable,
+                              editVersion: editSpec?.version,
+                              validation: _validation,
+                              personaError: _personaError,
+                              titleError: _titleError,
+                              enabled: !_saving,
+                            ),
+                          },
+                          if (desktop) ...[
+                            SizedBox(height: tokens.spacing.sectionGap),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: primaryAction,
+                            ),
+                          ],
+                        ],
                       ),
-                      _GoalFormStep.confirmation => _save,
-                    },
-                    isLoading: _saving,
-                    size: DesignSystemButtonSize.large,
-                    fullWidth: true,
-                  ),
+                    ),
+                    if (!desktop)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom:
+                              tokens.spacing.step4 +
+                              DesignSystemBottomNavigationBar.occupiedHeight(
+                                context,
+                              ),
+                        ),
+                        child: primaryAction,
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1066,6 +1228,7 @@ String _goalDirectionLabel(BuildContext context, GoalDirection direction) =>
 
 class _MappingStep extends StatelessWidget {
   const _MappingStep({
+    required this.title,
     required this.habits,
     required this.habitsFailed,
     required this.mapping,
@@ -1081,12 +1244,16 @@ class _MappingStep extends StatelessWidget {
     required this.habitTargets,
     required this.watchesSteps,
     required this.stepsTarget,
-    required this.showAllHabits,
+    required this.matchedHabitIds,
+    required this.matchedHealthTypes,
+    required this.targetErrors,
+    required this.anchorFor,
+    required this.titleError,
     required this.validation,
     required this.onStepsChanged,
+    required this.onStepsTargetChanged,
     required this.onHabitChanged,
     required this.onTargetChanged,
-    required this.onShowAll,
     required this.onMeasurableChanged,
     required this.onMeasurableTargetChanged,
     required this.onHealthSelected,
@@ -1115,13 +1282,21 @@ class _MappingStep extends StatelessWidget {
   final Map<String, int> habitTargets;
   final bool watchesSteps;
   final TextEditingController stepsTarget;
-  final bool showAllHabits;
+  final TextEditingController title;
+  final Set<String> matchedHabitIds;
+  final Set<String> matchedHealthTypes;
+
+  /// Keys of mapping entities whose target failed validation; each renders
+  /// as an error on its own input rather than one message mid-page.
+  final Set<String> targetErrors;
+  final GlobalKey Function(String key) anchorFor;
+  final String? titleError;
   final String? validation;
   final ValueChanged<bool> onStepsChanged;
+  final VoidCallback onStepsTargetChanged;
   final void Function({required String habitId, required bool selected})
   onHabitChanged;
   final void Function(String habitId, int target) onTargetChanged;
-  final VoidCallback onShowAll;
   final void Function({required String measurableId, required bool selected})
   onMeasurableChanged;
   final void Function(String measurableId, num? target)
@@ -1148,9 +1323,11 @@ class _MappingStep extends StatelessWidget {
     final selectedIds = habitTargets.keys.toSet();
     final visibleHabits = <({String id, String name})>[
       for (final id in selectedIds) (id: id, name: habitsById[id]?.name ?? id),
-      if (showAllHabits)
-        for (final habit in habits)
-          if (!selectedIds.contains(habit.id)) (id: habit.id, name: habit.name),
+      // Intention-matched habits stay visible when unchecked — a checkbox
+      // must not delete its own row.
+      for (final id in matchedHabitIds)
+        if (!selectedIds.contains(id))
+          (id: id, name: habitsById[id]?.name ?? id),
     ];
     final noObservableMatch =
         mapping.isEditable &&
@@ -1182,6 +1359,16 @@ class _MappingStep extends StatelessWidget {
         healthTargets.length +
         categoryTimeTargets.length +
         (watchesSteps ? 1 : 0);
+    // Intention-matched health capabilities surface as unchecked offer rows
+    // in the signals card until picked, like the steps offer.
+    final offersBloodPressure =
+        matchedHealthTypes.contains(
+          GoalHealthDataTypes.bloodPressureSystolic,
+        ) &&
+        !healthTargets.containsKey(GoalHealthDataTypes.bloodPressureSystolic);
+    final offersWeight =
+        matchedHealthTypes.contains(GoalHealthDataTypes.weight) &&
+        !healthTargets.containsKey(GoalHealthDataTypes.weight);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1210,83 +1397,116 @@ class _MappingStep extends StatelessWidget {
             ),
           )
         else ...[
-          if (watchesSteps || selectedIds.isNotEmpty || showAllHabits)
-            DesignSystemSectionCard(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  if (!watchesSteps && showAllHabits)
-                    DesignSystemSelectionRow(
-                      key: const ValueKey('goal-form-steps-row'),
-                      title: messages.goalCreateStepsTargetLabel,
-                      subtitle: messages.goalFormStepsSignal,
-                      type: DesignSystemSelectionRowType.multiSelect,
-                      showSelectedBackground: false,
-                      onTap: () => onStepsChanged(true),
-                    ),
-                  if (watchesSteps) ...[
-                    DesignSystemSelectionRow(
-                      key: const ValueKey('goal-form-steps-row'),
-                      title: messages.goalCreateStepsTargetLabel,
-                      subtitle: messages.goalFormStepsSignal,
-                      type: DesignSystemSelectionRowType.multiSelect,
-                      selected: true,
-                      showSelectedBackground: false,
-                      onTap: () => onStepsChanged(false),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: tokens.spacing.step5,
-                        right: tokens.spacing.step5,
-                        bottom: tokens.spacing.step4,
-                      ),
-                      child: DesignSystemTextInput(
-                        key: const ValueKey('goal-form-steps-target'),
-                        controller: stepsTarget,
-                        label: messages.goalCreateStepsTargetLabel,
-                        leadingIcon: Icons.directions_walk_rounded,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                  ],
-                  for (final habit in visibleHabits)
-                    DesignSystemSelectionRow(
-                      key: ValueKey('goal-form-habit-${habit.id}'),
-                      title: habit.name,
-                      subtitle: messages.goalFormHabitSignal,
-                      titleMaxLines: 2,
-                      type: DesignSystemSelectionRowType.multiSelect,
-                      selected: selectedIds.contains(habit.id),
-                      showSelectedBackground: false,
-                      trailing: selectedIds.contains(habit.id)
+          DesignSystemSectionCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final habit in visibleHabits)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final selected = selectedIds.contains(habit.id);
+                      // Compact widths give the title its full measure and
+                      // drop the cadence stepper to the row's secondary
+                      // line; the trailing slot returns where the width
+                      // earns it.
+                      final compact =
+                          constraints.maxWidth < kRowInlineControlMinWidth;
+                      final stepper = selected
                           ? _HabitTargetStepper(
                               habitId: habit.id,
                               value: habitTargets[habit.id]!,
                               onChanged: (value) =>
                                   onTargetChanged(habit.id, value),
                             )
-                          : null,
-                      onTap: () => onHabitChanged(
-                        habitId: habit.id,
-                        selected: !selectedIds.contains(habit.id),
-                      ),
+                          : null;
+                      final row = DesignSystemSelectionRow(
+                        key: ValueKey('goal-form-habit-${habit.id}'),
+                        title: _CreateGoalAgentPageState._plainName(
+                          habit.name,
+                        ),
+                        subtitle: messages.goalFormHabitSignal,
+                        titleMaxLines: 2,
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        selected: selected,
+                        showSelectedBackground: false,
+                        trailing: compact || stepper == null
+                            ? null
+                            : Padding(
+                                padding: EdgeInsets.only(
+                                  right: tokens.spacing.step1,
+                                ),
+                                child: stepper,
+                              ),
+                        secondaryLine: compact ? stepper : null,
+                        onTap: () => onHabitChanged(
+                          habitId: habit.id,
+                          selected: !selected,
+                        ),
+                      );
+                      return Column(
+                        children: [row, _signalRowDivider(tokens)],
+                      );
+                    },
+                  ),
+                // The steps offer trails the user's own signals.
+                DesignSystemSelectionRow(
+                  key: const ValueKey('goal-form-steps-row'),
+                  title: messages.goalCreateStepsTargetLabel,
+                  subtitle: messages.goalFormStepsSignal,
+                  type: DesignSystemSelectionRowType.multiSelect,
+                  selected: watchesSteps,
+                  showSelectedBackground: false,
+                  secondaryLine: watchesSteps
+                      ? KeyedSubtree(
+                          key: anchorFor('steps'),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: kInlineTargetInputWidth,
+                            ),
+                            child: DesignSystemTextInput(
+                              key: const ValueKey('goal-form-steps-target'),
+                              controller: stepsTarget,
+                              label: messages.goalCreateStepsTargetLabel,
+                              leadingIcon: Icons.directions_walk_rounded,
+                              keyboardType: TextInputType.number,
+                              errorText: targetErrors.contains('steps')
+                                  ? messages.goalFormValidationTarget
+                                  : null,
+                              onChanged: (_) => onStepsTargetChanged(),
+                            ),
+                          ),
+                        )
+                      : null,
+                  onTap: () => onStepsChanged(!watchesSteps),
+                ),
+                if (offersBloodPressure)
+                  DesignSystemSelectionRow(
+                    key: const ValueKey('goal-form-offer-blood-pressure'),
+                    title: messages.dashboardHealthBloodPressure,
+                    subtitle: messages.goalFormBloodPressureSource,
+                    type: DesignSystemSelectionRowType.multiSelect,
+                    showSelectedBackground: false,
+                    onTap: () => onHealthSelected(const [
+                      GoalHealthDataTypes.bloodPressureSystolic,
+                      GoalHealthDataTypes.bloodPressureDiastolic,
+                    ]),
+                  ),
+                if (offersWeight)
+                  DesignSystemSelectionRow(
+                    key: const ValueKey('goal-form-offer-weight'),
+                    title: messages.goalFormHealthWeight,
+                    subtitle: messages.goalFormHealthSource('kg'),
+                    type: DesignSystemSelectionRowType.multiSelect,
+                    showSelectedBackground: false,
+                    onTap: () => onHealthSelected(
+                      const [GoalHealthDataTypes.weight],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          if (!showAllHabits) ...[
-            SizedBox(height: tokens.spacing.step3),
-            DesignSystemButton(
-              label: messages.goalFormChooseHabit,
-              onPressed: onShowAll,
-              leadingIcon: Icons.add_rounded,
-              variant: DesignSystemButtonVariant.secondary,
-              size: DesignSystemButtonSize.medium,
-              fullWidth: true,
-            ),
-          ],
+          ),
           for (final measurable in selectedMeasurables) ...[
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.cardItemSpacing),
             DesignSystemSectionCard(
               key: ValueKey('goal-form-measurable-card-${measurable.id}'),
               child: Row(
@@ -1322,6 +1542,11 @@ class _MappingStep extends StatelessWidget {
                     measurableId: measurable.id,
                     value: measurableTargets[measurable.id],
                     unitName: measurable.unitName,
+                    errorText:
+                        targetErrors.contains('measurable:${measurable.id}')
+                        ? messages.goalFormValidationTarget
+                        : null,
+                    anchorKey: anchorFor('measurable:${measurable.id}'),
                     onChanged: (value) =>
                         onMeasurableTargetChanged(measurable.id, value),
                   ),
@@ -1338,12 +1563,16 @@ class _MappingStep extends StatelessWidget {
             ),
           ],
           for (final entry in healthTargets.entries) ...[
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.cardItemSpacing),
             _HealthTargetCard(
               key: ValueKey('goal-form-health-card-${entry.key}'),
               dataType: entry.key,
               value: entry.value,
               direction: healthDirections[entry.key] ?? GoalDirection.atMost,
+              errorText: targetErrors.contains('health:${entry.key}')
+                  ? messages.goalFormValidationTarget
+                  : null,
+              anchorKey: anchorFor('health:${entry.key}'),
               onTargetChanged: (target) =>
                   onHealthTargetChanged(entry.key, target),
               onDirectionChanged: (direction) =>
@@ -1352,12 +1581,16 @@ class _MappingStep extends StatelessWidget {
             ),
           ],
           for (final category in selectedCategories) ...[
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.cardItemSpacing),
             _CategoryTimeTargetCard(
               key: ValueKey('goal-form-category-time-card-${category.id}'),
               categoryId: category.id,
               categoryName: category.name,
               value: categoryTimeTargets[category.id],
+              errorText: targetErrors.contains('category:${category.id}')
+                  ? messages.goalFormValidationTarget
+                  : null,
+              anchorKey: anchorFor('category:${category.id}'),
               direction:
                   categoryTimeDirections[category.id] ?? GoalDirection.atMost,
               onTargetChanged: (target) =>
@@ -1367,30 +1600,37 @@ class _MappingStep extends StatelessWidget {
               onRemove: () => onCategoryTimeRemoved(category.id),
             ),
           ],
-          SizedBox(height: tokens.spacing.step3),
+          if (validation != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              validation!,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.alert.error.defaultColor,
+              ),
+            ),
+          ],
+          SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
-            label: context.messages.goalFormAddDimension,
+            key: const ValueKey('goal-form-add-signal'),
+            label: context.messages.goalFormAddSignal,
             onPressed: () => showModalBottomSheet<void>(
               context: context,
               isScrollControlled: true,
               builder: (context) => _DimensionSourcePicker(
+                habits: habits,
+                habitsFailed: habitsFailed,
                 measurables: measurables,
                 categories: categories,
+                selectedHabitIds: habitTargets.keys.toSet(),
                 selectedMeasurableIds: measurableTargets.keys.toSet(),
                 selectedHealthDataTypes: healthTargets.keys.toSet(),
                 selectedCategoryIds: categoryTimeTargets.keys.toSet(),
-                onMeasurableSelected: (id) {
-                  Navigator.of(context).pop();
-                  onMeasurableChanged(measurableId: id, selected: true);
-                },
-                onHealthSelected: (dataTypes) {
-                  Navigator.of(context).pop();
-                  onHealthSelected(dataTypes);
-                },
-                onCategorySelected: (categoryId) {
-                  Navigator.of(context).pop();
-                  onCategoryTimeSelected(categoryId);
-                },
+                onHabitChanged: onHabitChanged,
+                onMeasurableChanged: onMeasurableChanged,
+                onHealthSelected: onHealthSelected,
+                onHealthRemoved: onHealthRemoved,
+                onCategorySelected: onCategoryTimeSelected,
+                onCategoryRemoved: onCategoryTimeRemoved,
               ),
             ),
             leadingIcon: Icons.add_rounded,
@@ -1398,7 +1638,7 @@ class _MappingStep extends StatelessWidget {
             fullWidth: true,
           ),
           if (dimensionCount > 1) ...[
-            SizedBox(height: tokens.spacing.step4),
+            SizedBox(height: tokens.spacing.cardItemSpacing),
             DesignSystemSectionCard(
               child: Row(
                 children: [
@@ -1451,45 +1691,38 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
-          if (showAllHabits && habits.isEmpty) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              habitsFailed
-                  ? messages.goalCreateHabitsLoadFailed
-                  : messages.goalFormNoHabits,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
+          SizedBox(height: tokens.spacing.sectionGap),
+          // The goal's NAME is authored here, after the signals that shape
+          // it — the derived value keeps following the selection until the
+          // user types their own.
+          DesignSystemTextInput(
+            key: const ValueKey('goal-form-title-mapping'),
+            controller: title,
+            label: messages.goalFormGoalNameLabel,
+            leadingIcon: Icons.flag_outlined,
+            errorText: titleError,
+          ),
+          SizedBox(height: tokens.spacing.sectionGap),
+          // A footnote, not a card: the explainer must not impersonate a
+          // second input under the goal-name field.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.calendar_view_week_rounded,
+                size: IconSizes.s,
                 color: tokens.colors.text.mediumEmphasis,
               ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            DesignSystemButton(
-              label: messages.goalFormOpenHabits,
-              onPressed: () => beamToNamed('/habits'),
-              variant: DesignSystemButtonVariant.secondary,
-              fullWidth: true,
-            ),
-          ],
-          SizedBox(height: tokens.spacing.step4),
-          DesignSystemSectionCard(
-            padding: EdgeInsets.all(tokens.spacing.step4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.calendar_view_week_rounded,
-                  color: tokens.colors.interactive.enabled,
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    messages.goalFormRollingNote,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  messages.goalFormRollingNote,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           if (noObservableMatch) ...[
             SizedBox(height: tokens.spacing.step4),
@@ -1501,19 +1734,19 @@ class _MappingStep extends StatelessWidget {
             ),
           ],
         ],
-        if (validation != null) ...[
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            validation!,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.alert.error.defaultColor,
-            ),
-          ),
-        ],
       ],
     );
   }
 }
+
+/// The hairline that closes each signal band inside the signals card.
+Widget _signalRowDivider(DsTokens tokens) => Padding(
+  padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+  child: Divider(
+    height: BorderWidths.hairline,
+    color: tokens.colors.decorative.level01,
+  ),
+);
 
 String _compositeRuleLabel(
   BuildContext context,
@@ -1534,12 +1767,19 @@ class _MeasurableTargetInput extends StatefulWidget {
     required this.measurableId,
     required this.value,
     required this.unitName,
+    required this.errorText,
+    required this.anchorKey,
     required this.onChanged,
   });
 
   final String measurableId;
   final num? value;
   final String unitName;
+  final String? errorText;
+
+  /// Scroll anchor for validation: the page scrolls this input into view
+  /// when its target fails the continue check.
+  final Key anchorKey;
   final ValueChanged<num?> onChanged;
 
   @override
@@ -1559,18 +1799,21 @@ class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return SizedBox(
-      width: tokens.spacing.step13 * 2,
-      child: DesignSystemTextInput(
-        key: ValueKey('goal-form-measurable-target-${widget.measurableId}'),
-        controller: _controller,
-        label: widget.unitName,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (raw) {
-          final value = num.tryParse(raw.replaceAll(',', '.'));
-          widget.onChanged(value);
-        },
+    return KeyedSubtree(
+      key: widget.anchorKey,
+      child: SizedBox(
+        width: kInlineTargetInputWidth,
+        child: DesignSystemTextInput(
+          key: ValueKey('goal-form-measurable-target-${widget.measurableId}'),
+          controller: _controller,
+          label: widget.unitName,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          errorText: widget.errorText,
+          onChanged: (raw) {
+            final value = num.tryParse(raw.replaceAll(',', '.'));
+            widget.onChanged(value);
+          },
+        ),
       ),
     );
   }
@@ -1581,6 +1824,8 @@ class _HealthTargetCard extends StatelessWidget {
     required this.dataType,
     required this.value,
     required this.direction,
+    required this.errorText,
+    required this.anchorKey,
     required this.onTargetChanged,
     required this.onDirectionChanged,
     required this.onRemove,
@@ -1590,6 +1835,8 @@ class _HealthTargetCard extends StatelessWidget {
   final String dataType;
   final num? value;
   final GoalDirection direction;
+  final String? errorText;
+  final Key anchorKey;
   final ValueChanged<num?> onTargetChanged;
   final ValueChanged<GoalDirection> onDirectionChanged;
   final VoidCallback onRemove;
@@ -1657,6 +1904,8 @@ class _HealthTargetCard extends StatelessWidget {
             dataType: dataType,
             value: value,
             unit: unit,
+            errorText: errorText,
+            anchorKey: anchorKey,
             onChanged: onTargetChanged,
           ),
         ],
@@ -1670,12 +1919,16 @@ class _HealthTargetInput extends StatefulWidget {
     required this.dataType,
     required this.value,
     required this.unit,
+    required this.errorText,
+    required this.anchorKey,
     required this.onChanged,
   });
 
   final String dataType;
   final num? value;
   final String unit;
+  final String? errorText;
+  final Key anchorKey;
   final ValueChanged<num?> onChanged;
 
   @override
@@ -1694,13 +1947,17 @@ class _HealthTargetInputState extends State<_HealthTargetInput> {
   }
 
   @override
-  Widget build(BuildContext context) => DesignSystemTextInput(
-    key: ValueKey('goal-form-health-target-${widget.dataType}'),
-    controller: _controller,
-    label: context.messages.goalFormHealthTarget(widget.unit),
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-    onChanged: (raw) => widget.onChanged(
-      num.tryParse(raw.trim().replaceAll(',', '.')),
+  Widget build(BuildContext context) => KeyedSubtree(
+    key: widget.anchorKey,
+    child: DesignSystemTextInput(
+      key: ValueKey('goal-form-health-target-${widget.dataType}'),
+      controller: _controller,
+      label: context.messages.goalFormHealthTarget(widget.unit),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      errorText: widget.errorText,
+      onChanged: (raw) => widget.onChanged(
+        num.tryParse(raw.trim().replaceAll(',', '.')),
+      ),
     ),
   );
 }
@@ -1711,6 +1968,8 @@ class _CategoryTimeTargetCard extends StatelessWidget {
     required this.categoryName,
     required this.value,
     required this.direction,
+    required this.errorText,
+    required this.anchorKey,
     required this.onTargetChanged,
     required this.onDirectionChanged,
     required this.onRemove,
@@ -1721,6 +1980,8 @@ class _CategoryTimeTargetCard extends StatelessWidget {
   final String categoryName;
   final num? value;
   final GoalDirection direction;
+  final String? errorText;
+  final Key anchorKey;
   final ValueChanged<num?> onTargetChanged;
   final ValueChanged<GoalDirection> onDirectionChanged;
   final VoidCallback onRemove;
@@ -1736,7 +1997,7 @@ class _CategoryTimeTargetCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.schedule_rounded,
-                color: tokens.colors.alert.warning.defaultColor,
+                color: tokens.colors.text.mediumEmphasis,
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
@@ -1784,6 +2045,8 @@ class _CategoryTimeTargetCard extends StatelessWidget {
           _CategoryTimeTargetInput(
             categoryId: categoryId,
             value: value,
+            errorText: errorText,
+            anchorKey: anchorKey,
             onChanged: onTargetChanged,
           ),
         ],
@@ -1796,11 +2059,15 @@ class _CategoryTimeTargetInput extends StatefulWidget {
   const _CategoryTimeTargetInput({
     required this.categoryId,
     required this.value,
+    required this.errorText,
+    required this.anchorKey,
     required this.onChanged,
   });
 
   final String categoryId;
   final num? value;
+  final String? errorText;
+  final Key anchorKey;
   final ValueChanged<num?> onChanged;
 
   @override
@@ -1820,45 +2087,75 @@ class _CategoryTimeTargetInputState extends State<_CategoryTimeTargetInput> {
   }
 
   @override
-  Widget build(BuildContext context) => DesignSystemTextInput(
-    key: ValueKey('goal-form-category-time-target-${widget.categoryId}'),
-    controller: _controller,
-    label: context.messages.goalFormCategoryTimeTarget,
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-    onChanged: (raw) => widget.onChanged(
-      num.tryParse(raw.trim().replaceAll(',', '.')),
+  Widget build(BuildContext context) => KeyedSubtree(
+    key: widget.anchorKey,
+    child: DesignSystemTextInput(
+      key: ValueKey('goal-form-category-time-target-${widget.categoryId}'),
+      controller: _controller,
+      label: context.messages.goalFormCategoryTimeTarget,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      errorText: widget.errorText,
+      onChanged: (raw) => widget.onChanged(
+        num.tryParse(raw.trim().replaceAll(',', '.')),
+      ),
     ),
   );
 }
 
 class _DimensionSourcePicker extends StatefulWidget {
   const _DimensionSourcePicker({
+    required this.habits,
+    required this.habitsFailed,
     required this.measurables,
     required this.categories,
+    required this.selectedHabitIds,
     required this.selectedMeasurableIds,
     required this.selectedHealthDataTypes,
     required this.selectedCategoryIds,
-    required this.onMeasurableSelected,
+    required this.onHabitChanged,
+    required this.onMeasurableChanged,
     required this.onHealthSelected,
+    required this.onHealthRemoved,
     required this.onCategorySelected,
+    required this.onCategoryRemoved,
   });
 
+  final List<HabitDefinition> habits;
+  final bool habitsFailed;
   final List<MeasurableDataType> measurables;
   final List<CategoryDefinition> categories;
+  final Set<String> selectedHabitIds;
   final Set<String> selectedMeasurableIds;
   final Set<String> selectedHealthDataTypes;
   final Set<String> selectedCategoryIds;
-  final ValueChanged<String> onMeasurableSelected;
+  final void Function({required String habitId, required bool selected})
+  onHabitChanged;
+  final void Function({required String measurableId, required bool selected})
+  onMeasurableChanged;
   final ValueChanged<List<String>> onHealthSelected;
+  final ValueChanged<String> onHealthRemoved;
   final ValueChanged<String> onCategorySelected;
+  final ValueChanged<String> onCategoryRemoved;
 
   @override
   State<_DimensionSourcePicker> createState() => _DimensionSourcePickerState();
 }
 
+/// The ONE place every watchable signal lives — habits, steps aside (it has
+/// its own always-visible row), weight, blood pressure, measurables and
+/// tracked time — searchable in plain language, multi-select, and it stays
+/// open until Done so composing a goal is one visit, not four.
 class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   final _search = TextEditingController();
   var _query = '';
+
+  // Local mirrors: the sheet applies every toggle to the parent immediately
+  // but renders from its own state, because a modal does not rebuild with
+  // the page behind it.
+  late final Set<String> _habitIds = {...widget.selectedHabitIds};
+  late final Set<String> _measurableIds = {...widget.selectedMeasurableIds};
+  late final Set<String> _healthTypes = {...widget.selectedHealthDataTypes};
+  late final Set<String> _categoryIds = {...widget.selectedCategoryIds};
 
   @override
   void dispose() {
@@ -1871,6 +2168,9 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final query = _query.trim().toLowerCase();
+    final visibleHabits = widget.habits.where((habit) {
+      return query.isEmpty || habit.name.toLowerCase().contains(query);
+    }).toList();
     final visible = widget.measurables.where((measurable) {
       return query.isEmpty ||
           measurable.displayName.toLowerCase().contains(query) ||
@@ -1898,6 +2198,10 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
       GoalHealthDataTypes.bloodPressureSystolic,
       GoalHealthDataTypes.bloodPressureDiastolic,
     ];
+    final weightSelected = _healthTypes.contains(GoalHealthDataTypes.weight);
+    final bloodPressureSelected = bloodPressureTypes.every(
+      _healthTypes.contains,
+    );
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step5),
@@ -1906,7 +2210,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              messages.goalFormAddDimension,
+              messages.goalFormAddSignal,
               style: tokens.typography.styles.heading.heading3,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -1921,6 +2225,57 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
               child: ListView(
                 shrinkWrap: true,
                 children: [
+                  if (visibleHabits.isNotEmpty ||
+                      (query.isEmpty &&
+                          (widget.habits.isEmpty || widget.habitsFailed))) ...[
+                    Text(
+                      messages.goalDimensionHabitSource,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                    for (final habit in visibleHabits)
+                      DesignSystemSelectionRow(
+                        key: ValueKey('goal-form-picker-habit-${habit.id}'),
+                        title: habit.name,
+                        subtitle: messages.goalFormHabitSignal,
+                        titleMaxLines: 2,
+                        selected: _habitIds.contains(habit.id),
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          final selected = !_habitIds.contains(habit.id);
+                          setState(() {
+                            selected
+                                ? _habitIds.add(habit.id)
+                                : _habitIds.remove(habit.id);
+                          });
+                          widget.onHabitChanged(
+                            habitId: habit.id,
+                            selected: selected,
+                          );
+                        },
+                      ),
+                    if (widget.habits.isEmpty && query.isEmpty) ...[
+                      Text(
+                        widget.habitsFailed
+                            ? messages.goalCreateHabitsLoadFailed
+                            : messages.goalFormNoHabits,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacing.step2),
+                      DesignSystemButton(
+                        label: messages.goalFormOpenHabits,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          beamToNamed('/habits');
+                        },
+                        variant: DesignSystemButtonVariant.secondary,
+                        fullWidth: true,
+                      ),
+                    ],
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
                   if (showsHealth) ...[
                     Text(
                       messages.goalFormHealthData,
@@ -1934,18 +2289,24 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         ),
                         title: messages.goalFormHealthWeight,
                         subtitle: messages.goalFormHealthSource('kg'),
-                        selected: widget.selectedHealthDataTypes.contains(
-                          GoalHealthDataTypes.weight,
-                        ),
-                        type: DesignSystemSelectionRowType.singleSelect,
-                        onTap:
-                            widget.selectedHealthDataTypes.contains(
-                              GoalHealthDataTypes.weight,
-                            )
-                            ? null
-                            : () => widget.onHealthSelected(
-                                const [GoalHealthDataTypes.weight],
-                              ),
+                        selected: weightSelected,
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          setState(() {
+                            weightSelected
+                                ? _healthTypes.remove(
+                                    GoalHealthDataTypes.weight,
+                                  )
+                                : _healthTypes.add(GoalHealthDataTypes.weight);
+                          });
+                          if (weightSelected) {
+                            widget.onHealthRemoved(GoalHealthDataTypes.weight);
+                          } else {
+                            widget.onHealthSelected(
+                              const [GoalHealthDataTypes.weight],
+                            );
+                          }
+                        },
                       ),
                     if (bloodPressureMatches)
                       DesignSystemSelectionRow(
@@ -1954,18 +2315,22 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         ),
                         title: messages.dashboardHealthBloodPressure,
                         subtitle: messages.goalFormBloodPressureSource,
-                        selected: bloodPressureTypes.every(
-                          widget.selectedHealthDataTypes.contains,
-                        ),
-                        type: DesignSystemSelectionRowType.singleSelect,
-                        onTap:
-                            bloodPressureTypes.every(
-                              widget.selectedHealthDataTypes.contains,
-                            )
-                            ? null
-                            : () => widget.onHealthSelected(
-                                bloodPressureTypes,
-                              ),
+                        selected: bloodPressureSelected,
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          setState(() {
+                            bloodPressureSelected
+                                ? _healthTypes.removeAll(bloodPressureTypes)
+                                : _healthTypes.addAll(bloodPressureTypes);
+                          });
+                          if (bloodPressureSelected) {
+                            bloodPressureTypes.forEach(
+                              widget.onHealthRemoved,
+                            );
+                          } else {
+                            widget.onHealthSelected(bloodPressureTypes);
+                          }
+                        },
                       ),
                     SizedBox(height: tokens.spacing.step4),
                   ],
@@ -1982,13 +2347,21 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         ),
                         title: category.name,
                         subtitle: messages.goalFormCategoryTimeSource,
-                        selected: widget.selectedCategoryIds.contains(
-                          category.id,
-                        ),
-                        type: DesignSystemSelectionRowType.singleSelect,
-                        onTap: widget.selectedCategoryIds.contains(category.id)
-                            ? null
-                            : () => widget.onCategorySelected(category.id),
+                        selected: _categoryIds.contains(category.id),
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          final selected = !_categoryIds.contains(category.id);
+                          setState(() {
+                            selected
+                                ? _categoryIds.add(category.id)
+                                : _categoryIds.remove(category.id);
+                          });
+                          if (selected) {
+                            widget.onCategorySelected(category.id);
+                          } else {
+                            widget.onCategoryRemoved(category.id);
+                          }
+                        },
                       ),
                     SizedBox(height: tokens.spacing.step4),
                   ],
@@ -2003,14 +2376,22 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                       subtitle: context.messages.goalFormMeasurableSource(
                         measurable.unitName,
                       ),
-                      selected: widget.selectedMeasurableIds.contains(
-                        measurable.id,
-                      ),
-                      type: DesignSystemSelectionRowType.singleSelect,
-                      onTap:
-                          widget.selectedMeasurableIds.contains(measurable.id)
-                          ? null
-                          : () => widget.onMeasurableSelected(measurable.id),
+                      selected: _measurableIds.contains(measurable.id),
+                      type: DesignSystemSelectionRowType.multiSelect,
+                      onTap: () {
+                        final selected = !_measurableIds.contains(
+                          measurable.id,
+                        );
+                        setState(() {
+                          selected
+                              ? _measurableIds.add(measurable.id)
+                              : _measurableIds.remove(measurable.id);
+                        });
+                        widget.onMeasurableChanged(
+                          measurableId: measurable.id,
+                          selected: selected,
+                        );
+                      },
                     ),
                   if (visible.isEmpty && query.isEmpty)
                     DesignSystemButton(
@@ -2025,6 +2406,13 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                     ),
                 ],
               ),
+            ),
+            SizedBox(height: tokens.spacing.step4),
+            DesignSystemButton(
+              key: const ValueKey('goal-form-picker-done'),
+              label: messages.doneButton,
+              onPressed: () => Navigator.of(context).pop(),
+              fullWidth: true,
             ),
           ],
         ),
@@ -2127,33 +2515,18 @@ class _HabitTargetStepper extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        DesignSystemIconAction(
-          key: ValueKey('goal-form-decrease-$habitId'),
-          icon: Icons.remove_rounded,
-          tooltip: context.messages.goalFormDecreaseTarget,
-          onPressed: value > 1 ? () => onChanged(value - 1) : null,
-        ),
-        Text(
-          context.messages.goalFormWeeklyTarget(value),
-          style: tokens.typography.styles.subtitle.subtitle2,
-        ),
-        DesignSystemIconAction(
-          key: ValueKey('goal-form-increase-$habitId'),
-          icon: Icons.add_rounded,
-          tooltip: context.messages.goalFormIncreaseTarget,
-          onPressed: value < 7 ? () => onChanged(value + 1) : null,
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => DesignSystemStepper(
+    label: context.messages.goalFormWeeklyTarget(value),
+    decrementTooltip: context.messages.goalFormDecreaseTarget,
+    incrementTooltip: context.messages.goalFormIncreaseTarget,
+    decrementKey: ValueKey('goal-form-decrease-$habitId'),
+    incrementKey: ValueKey('goal-form-increase-$habitId'),
+    onDecrement: value > 1 ? () => onChanged(value - 1) : null,
+    onIncrement: value < 7 ? () => onChanged(value + 1) : null,
+  );
 }
 
-class _ConfirmationStep extends StatelessWidget {
+class _ConfirmationStep extends StatefulWidget {
   const _ConfirmationStep({
     required this.title,
     required this.persona,
@@ -2161,6 +2534,8 @@ class _ConfirmationStep extends StatelessWidget {
     required this.preservesCriteria,
     required this.editVersion,
     required this.validation,
+    required this.personaError,
+    required this.titleError,
     required this.enabled,
   });
 
@@ -2170,12 +2545,27 @@ class _ConfirmationStep extends StatelessWidget {
   final bool preservesCriteria;
   final int? editVersion;
   final String? validation;
+  final String? personaError;
+  final String? titleError;
   final bool enabled;
+
+  @override
+  State<_ConfirmationStep> createState() => _ConfirmationStepState();
+}
+
+/// A CONFIRMATION, not more form: the plain-language summary is the hero,
+/// the goal name reads as a text row with an edit affordance (it was fully
+/// editable one step ago), the persona field follows, and the cost note is
+/// a caption, not a card competing with the summary.
+class _ConfirmationStepState extends State<_ConfirmationStep> {
+  bool _editingTitle = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // A validation error re-opens the field so the fix is one tap closer.
+    final editingTitle = _editingTitle || widget.titleError != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2184,57 +2574,83 @@ class _ConfirmationStep extends StatelessWidget {
           style: tokens.typography.styles.heading.heading3,
         ),
         SizedBox(height: tokens.spacing.step5),
-        DesignSystemTextInput(
-          key: const ValueKey('goal-form-persona'),
-          controller: persona,
-          label: messages.goalFormPersonaLabel,
-          leadingIcon: Icons.auto_awesome_rounded,
-          enabled: enabled,
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        DesignSystemTextInput(
-          key: const ValueKey('goal-form-title'),
-          controller: title,
-          label: messages.goalCreateNameLabel,
-          leadingIcon: Icons.flag_outlined,
-          errorText: validation,
-          enabled: enabled,
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemSectionCard(
-          child: Text(
-            preservesCriteria
-                ? messages.goalFormPreservedCriteriaSummary
-                : messages.goalFormRestatement(signalDescription),
-            style: tokens.typography.styles.body.bodyLarge,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step3),
         DesignSystemSectionCard(
           padding: EdgeInsets.all(tokens.spacing.step4),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.eco_outlined,
-                color: tokens.colors.interactive.enabled,
+              Text(
+                widget.preservesCriteria
+                    ? messages.goalFormPreservedCriteriaSummary
+                    : messages.goalFormRestatement(widget.signalDescription),
+                style: tokens.typography.styles.subtitle.subtitle1,
               ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  messages.goalFormCostHonesty,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
+              SizedBox(height: tokens.spacing.step4),
+              // ONE field grammar across steps: the same labelled input as
+              // the mapping step, read-only until the pencil (or a
+              // validation error) unlocks it.
+              DesignSystemTextInput(
+                key: const ValueKey('goal-form-title'),
+                controller: widget.title,
+                label: messages.goalFormGoalNameLabel,
+                leadingIcon: Icons.flag_outlined,
+                errorText: widget.titleError,
+                enabled: widget.enabled,
+                readOnly: !editingTitle,
+                trailingIcon: editingTitle ? null : Icons.edit_outlined,
+                trailingIconTooltip: editingTitle
+                    ? null
+                    : messages.goalFormGoalNameLabel,
+                trailingIconKey: const ValueKey('goal-form-title-edit'),
+                onTrailingIconTap: editingTitle
+                    ? null
+                    : () => setState(() => _editingTitle = true),
               ),
             ],
           ),
         ),
-        if (editVersion != null) ...[
+        SizedBox(height: tokens.spacing.step4),
+        DesignSystemTextInput(
+          key: const ValueKey('goal-form-persona'),
+          controller: widget.persona,
+          label: messages.goalFormPersonaLabel,
+          leadingIcon: Icons.auto_awesome_rounded,
+          errorText: widget.personaError,
+          enabled: widget.enabled,
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.eco_outlined,
+              size: IconSizes.s,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Text(
+                messages.goalFormCostHonesty,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (widget.validation != null) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            widget.validation!,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.alert.error.defaultColor,
+            ),
+          ),
+        ],
+        if (widget.editVersion != null) ...[
           SizedBox(height: tokens.spacing.step4),
           Text(
-            messages.goalFormEditVersion(editVersion! + 1),
+            messages.goalFormEditVersion(widget.editVersion! + 1),
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),

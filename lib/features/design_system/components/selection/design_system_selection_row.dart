@@ -41,6 +41,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     this.trailing,
     this.selected = false,
     this.showSelectedBackground = true,
+    this.secondaryLine,
     this.selectedLabel,
     this.semanticLabel,
     this.focusNode,
@@ -77,6 +78,17 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// list into one visual block. Selection semantics are unaffected.
   final bool showSelectedBackground;
 
+  /// Optional content rendered on its own line directly below the row,
+  /// left-aligned to the row's title inset — the slot for a control that a
+  /// narrow row cannot host in its trailing position (a cadence stepper,
+  /// say). The component owns the inset metric, so the line lands on the
+  /// title glyph whether or not the row has a leading rail.
+  ///
+  /// The line sits outside the row's tap target and semantics container:
+  /// tapping it never toggles the row, and interactive children keep their
+  /// own semantics.
+  final Widget? secondaryLine;
+
   /// Optional visible state label displayed before the selected check.
   final String? selectedLabel;
 
@@ -101,7 +113,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
         semanticLabel ??
         (subtitle == null || subtitle!.isEmpty ? title : '$title, $subtitle');
 
-    return Semantics(
+    final row = Semantics(
       container: true,
       label: resolvedSemanticLabel,
       button: isMulti ? null : true,
@@ -138,6 +150,33 @@ class DesignSystemSelectionRow extends StatelessWidget {
           excludeFromSemantics: true,
         ),
       ),
+    );
+    if (secondaryLine == null) return row;
+
+    // The title inset is component-owned: the list item's horizontal padding
+    // plus, when a leading rail exists, the rail width and its gap. The gap
+    // above the line is the row's own bottom padding — tighter than the
+    // padded distance to whatever follows, so the line binds upward to its
+    // row rather than floating between two.
+    final titleInset =
+        tokens.spacing.step5 +
+        (leading != null ? tokens.spacing.step8 + tokens.spacing.step3 : 0.0);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        row,
+        Padding(
+          padding: EdgeInsets.only(
+            left: titleInset,
+            right: tokens.spacing.step5,
+            bottom: tokens.spacing.step4,
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: secondaryLine,
+          ),
+        ),
+      ],
     );
   }
 

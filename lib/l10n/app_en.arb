@@ -3588,6 +3588,10 @@
     }
   },
   "goalFormAddDimension": "Add dimension",
+  "goalFormAddSignal": "Add a signal",
+  "@goalFormAddSignal": {
+    "description": "Button opening the unified signal picker on the mapping step."
+  },
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
   "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
   "@goalFormCategoryTimeCadence": {
@@ -3642,7 +3646,11 @@
   "goalFormExampleGym": "gym twice a week",
   "goalFormExampleRead": "read before bed",
   "goalFormExampleWalk": "walk more",
-  "goalFormFooter": "You can rename, retarget, pause or delete this goal anytime.",
+  "goalFormFooter": "You can rename, retarget, pause or delete this agent anytime.",
+  "goalFormGoalNameLabel": "Goal name",
+  "@goalFormGoalNameLabel": {
+    "description": "Label of the goal's editable name field on the mapping and confirmation steps."
+  },
   "goalFormHabitCadence": "{habit} ({count}× a week)",
   "@goalFormHabitCadence": {
     "placeholders": {
@@ -3654,7 +3662,7 @@
       }
     }
   },
-  "goalFormHabitSignal": "habit check-off",
+  "goalFormHabitSignal": "habit check‑off",
   "goalFormHealthBloodPressureDiastolic": "Diastolic blood pressure",
   "goalFormHealthBloodPressureSystolic": "Systolic blood pressure",
   "goalFormHealthCadence": "{healthName}: 7-day average {direction} {target} {unitName}",
@@ -3696,8 +3704,7 @@
   "goalFormIntentionHelper": "Say it your way — this is how your agent will talk about it.",
   "goalFormIntentionHint": "Get to the gym twice a week, and keep up my morning exercises.",
   "goalFormIntentionPrompt": "What do you want to work toward?",
-  "goalFormLooksRight": "Looks right",
-  "goalFormMappingIntro": "I can only coach what I can see. These check-offs are my eyes:",
+  "goalFormMappingIntro": "I can only coach what I can see. These signals are my eyes.",
   "goalFormMappingTitle": "Here’s what I can watch",
   "goalFormMeasurableCadence": "{measurableName}: {target} per rolling week",
   "@goalFormMeasurableCadence": {
@@ -3741,7 +3748,7 @@
       }
     }
   },
-  "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per habit; no dead weekends, no lost weeks.",
+  "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.",
   "goalFormSaveChanges": "Save new version",
   "goalFormStepsCadence": "{target} steps a day",
   "@goalFormStepsCadence": {
@@ -3756,6 +3763,18 @@
   "goalFormValidationIdentity": "Give the goal and its agent a name.",
   "goalFormValidationIntention": "Describe what you want to work toward first.",
   "goalFormValidationMapping": "Choose at least one signal the agent can actually observe.",
+  "goalFormValidationPersona": "Give your agent a name.",
+  "@goalFormValidationPersona": {
+    "description": "Validation anchored to the agent persona field."
+  },
+  "goalFormValidationTarget": "Set a target to continue.",
+  "@goalFormValidationTarget": {
+    "description": "Inline error on a mapping signal's target input when the target is missing or not positive"
+  },
+  "goalFormValidationTitle": "Give your goal a name.",
+  "@goalFormValidationTitle": {
+    "description": "Validation anchored to the goal name field."
+  },
   "goalFormWeeklyTarget": "{count}× / 7 days",
   "@goalFormWeeklyTarget": {
     "placeholders": {

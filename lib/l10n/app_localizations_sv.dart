@@ -6326,6 +6326,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormAddDimension => 'Lägg till dimension';
 
   @override
+  String get goalFormAddSignal => 'Lägg till en signal';
+
+  @override
   String get goalFormBloodPressureSource =>
       'Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt';
 
@@ -6422,7 +6425,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormFooter =>
-      'Du kan när som helst byta namn, justera, pausa eller ta bort målet.';
+      'Du kan när som helst byta namn, justera, pausa eller ta bort agenten.';
+
+  @override
+  String get goalFormGoalNameLabel => 'Målets namn';
 
   @override
   String goalFormHabitCadence(String habit, int count) {
@@ -6479,11 +6485,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Vad vill du arbeta mot?';
 
   @override
-  String get goalFormLooksRight => 'Ser bra ut';
-
-  @override
   String get goalFormMappingIntro =>
-      'Jag kan bara coacha det jag kan se. De här markeringarna är mina ögon:';
+      'Jag kan bara coacha det jag ser. De här signalerna är mina ögon.';
 
   @override
   String get goalFormMappingTitle => 'Det här kan jag följa';
@@ -6535,7 +6538,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormRollingNote =>
-      'Rullande vecka — alltid de senaste 7 dagarna. Antal gäller per vana; inga döda helger, inga förlorade veckor.';
+      'Rullande vecka — alltid de senaste 7 dagarna. Antal gäller per signal; inga döda helger, inga förlorade veckor.';
 
   @override
   String get goalFormSaveChanges => 'Spara ny version';
@@ -6562,6 +6565,12 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Välj minst en signal som agenten faktiskt kan observera.';
+
+  @override
+  String get goalFormValidationPersona => 'Ge din agent ett namn.';
+
+  @override
+  String get goalFormValidationTitle => 'Ge ditt mål ett namn.';
 
   @override
   String goalFormWeeklyTarget(int count) {
@@ -12845,4 +12854,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get goalFormValidationTarget => 'Ange ett mål för att fortsätta.';
 }

@@ -440,6 +440,136 @@ void main() {
       expect(sizedBox.height, dsTokensLight.spacing.step8);
     });
 
+    testWidgets('readOnly renders a quiet display field, not a disabled one', (
+      tester,
+    ) async {
+      const key = Key('read-only-input');
+      final controller = TextEditingController(text: 'Gym & Run');
+      addTearDown(controller.dispose);
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          key: key,
+          controller: controller,
+          label: 'Goal name',
+          readOnly: true,
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.readOnly, isTrue);
+      expect(textField.showCursor, isFalse);
+
+      // Quiet fill, no outline — a display value, not an input at rest.
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DecoratedBox &&
+                widget.decoration is BoxDecoration &&
+                (widget.decoration as BoxDecoration).border != null,
+          ),
+        ),
+      );
+      final decoration = decoratedBox.decoration as BoxDecoration;
+      expect(decoration.color, dsTokensLight.colors.background.level01);
+      expect((decoration.border! as Border).top.color, Colors.transparent);
+
+      // Unlike enabled: false, the field is not dimmed.
+      expect(
+        find.ancestor(
+          of: find.byType(TextField),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('readOnly ignores hover instead of promoting the border', (
+      tester,
+    ) async {
+      const key = Key('read-only-hover');
+
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          key: key,
+          label: 'Goal name',
+          readOnly: true,
+        ),
+      );
+
+      Color currentBorderColor() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.descendant(
+            of: find.byKey(key),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DecoratedBox &&
+                  widget.decoration is BoxDecoration &&
+                  (widget.decoration as BoxDecoration).border != null,
+            ),
+          ),
+        );
+        return ((decoratedBox.decoration as BoxDecoration).border! as Border)
+            .top
+            .color;
+      }
+
+      expect(currentBorderColor(), Colors.transparent);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(TextField)));
+      await tester.pump();
+
+      expect(currentBorderColor(), Colors.transparent);
+    });
+
+    testWidgets('a readOnly field keeps its trailing icon action live', (
+      tester,
+    ) async {
+      var unlocks = 0;
+
+      await _pumpInput(
+        tester,
+        DesignSystemTextInput(
+          label: 'Goal name',
+          readOnly: true,
+          trailingIcon: Icons.edit_outlined,
+          trailingIconTooltip: 'Edit goal name',
+          trailingIconKey: const Key('unlock-title'),
+          onTrailingIconTap: () => unlocks++,
+        ),
+      );
+
+      final unlock = find.byKey(const Key('unlock-title'));
+      expect(unlock, findsOneWidget);
+      await tester.tap(unlock);
+      expect(unlocks, 1);
+    });
+
+    testWidgets('trailingIconKey only lands on an actionable icon', (
+      tester,
+    ) async {
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Search',
+          trailingIcon: Icons.clear,
+          trailingIconKey: Key('decorative-trailing'),
+        ),
+      );
+
+      // A decorative icon has no affordance to key.
+      expect(find.byKey(const Key('decorative-trailing')), findsNothing);
+      expect(find.byIcon(Icons.clear), findsOneWidget);
+    });
+
     testWidgets('text is vertically centered with icons', (tester) async {
       await _pumpInput(
         tester,
