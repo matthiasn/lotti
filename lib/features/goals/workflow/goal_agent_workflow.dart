@@ -215,6 +215,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
       pendingUserMessage,
       previousAssistantMessage: previousAssistantMessage,
     );
+    // A chat request to change the report is as binding as the detail page's
+    // refresh token, but must not take the token's other effects (persisting
+    // the derivation, re-basing previousStatus) — it is a rewrite of the
+    // standing text, not a re-derivation of the evidence.
+    final userRequestedReport = isExplicitGoalReportUpdateRequest(
+      pendingUserMessage,
+    );
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
@@ -347,6 +354,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
           'EVIDENCE CHANGED. Update the standing report from the '
           'authoritative FACTS.';
     }
+    if (userRequestedReport) {
+      factsBlock =
+          '$factsBlock\n\nUSER EXPLICITLY ASKED FOR THE STANDING REPORT TO '
+          'CHANGE. Call update_goal_report in this turn with the full '
+          'rewritten report honouring their instruction; replying without it '
+          'leaves the report they complained about untouched.';
+    }
     if (userRequestedAd) {
       factsBlock =
           '$factsBlock\n\nUSER EXPLICITLY REQUESTED A NEW BANNER AD. This '
@@ -471,7 +485,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // A transition or explicit detail-page refresh requires a report — one
       // pinned retry, then accept the partial wake. Ordinary automatic no-ops
       // remain legal and free of forced output.
-      if ((facts.statusTransitioned || reportRefresh) && !strategy.hasReport) {
+      if ((facts.statusTransitioned || reportRefresh || userRequestedReport) &&
+          !strategy.hasReport) {
         final retryUsage = await _forceReport(
           conversationId: conversationId,
           resolved: resolved,
@@ -481,7 +496,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId: recordConsumption ? agentId : null,
           runKey: recordConsumption ? runKey : null,
           threadId: recordConsumption ? threadId : null,
-          userRequestedRefresh: reportRefresh,
+          // Say which of the three reasons forced this, so the retry cannot
+          // describe a habit-day edit the user never made.
+          instruction: userRequestedReport
+              ? 'The user asked in chat for the standing report itself to '
+                    'change. Call update_goal_report now with the full '
+                    'rewritten report honouring their instruction, keeping '
+                    'every value faithful to the FACTS block.'
+              : reportRefresh
+              ? 'The user explicitly requested a standing-report refresh '
+                    'after editing a habit day. Call update_goal_report now '
+                    'with the status and current evidence from the FACTS '
+                    'block.'
+              : 'The track status changed this wake. Call update_goal_report '
+                    'now with the status from the FACTS block.',
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -1017,17 +1045,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required String? agentId,
     required String? runKey,
     required String? threadId,
-    required bool userRequestedRefresh,
+    required String instruction,
   }) async {
     try {
       return await _conversationRepository.sendMessage(
         conversationId: conversationId,
-        message: userRequestedRefresh
-            ? 'The user explicitly requested a standing-report refresh after '
-                  'editing a habit day. Call update_goal_report now with the '
-                  'status and current evidence from the FACTS block.'
-            : 'The track status changed this wake. Call update_goal_report '
-                  'now with the status from the FACTS block.',
+        message: instruction,
         model: resolved.modelId,
         provider: resolved.provider,
         inferenceRepo: inferenceRepo,
@@ -1782,6 +1805,36 @@ bool isExplicitGoalAdReplacementRequest(
       qualifiedRequest ||
       requestsBanner ||
       reportsMissingBanner;
+}
+
+/// True when a chat message asks for the STANDING REPORT itself to change —
+/// shorter, restructured, sectioned, less repetitive — rather than asking a
+/// question about the goal.
+///
+/// The report is a stored artifact: a reply alone leaves the user reading the
+/// same text they complained about. Like the ad heuristic this is an English
+/// fast path that forces a forgotten tool call; the language-independent
+/// carrier is the model choosing `update_goal_report` itself, which the
+/// system prompt now asks for explicitly.
+bool isExplicitGoalReportUpdateRequest(String? message) {
+  if (message == null) return false;
+  final normalized = message.toLowerCase().trim();
+  final mentionsReport = RegExp(
+    r'\b(?:report|summary|write[-\s]?up)\b',
+  ).hasMatch(normalized);
+  if (!mentionsReport) return false;
+  final declinesChange = RegExp(
+    r"\b(?:don't|dont|do not|never)\s+"
+    r'(?:change|update|rewrite|restructure|touch|shorten)\b',
+  ).hasMatch(normalized);
+  if (declinesChange) return false;
+  return RegExp(
+    r'\b(?:rewrite|rewrote|restructure|reorganise|reorganize|shorten|shorter|'
+    'concise|condense|trim|tighten|split|bullets?|sections?|format|structure|'
+    r'update|refresh|change|improve|less)\b|'
+    r'\bwall\s+of\s+text\b|'
+    r'\bbreak\s+(?:it|this|that|the\s+report)?\s*up\b',
+  ).hasMatch(normalized);
 }
 
 bool _isShortGoalAdAffirmation(String message) => RegExp(
