@@ -6339,7 +6339,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalDimensionOnTargetTodayNote =>
-      'A leitura mais recente de hoje está dentro da meta; continua assim.';
+      'A leitura mais recente de hoje está dentro da meta; continue assim.';
 
   @override
   String get goalDimensionOnTargetTodayStatus => 'Dentro da meta hoje';

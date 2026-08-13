@@ -6358,10 +6358,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalDimensionOnTargetTodayNote =>
-      'L\'ultima misurazione di oggi è nel target; continua così.';
+      'L\'ultima misurazione di oggi è nell\'obiettivo; continua così.';
 
   @override
-  String get goalDimensionOnTargetTodayStatus => 'In target oggi';
+  String get goalDimensionOnTargetTodayStatus => 'Nell\'obiettivo oggi';
 
   @override
   String get goalDimensionOnTrackNote =>

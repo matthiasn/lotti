@@ -6348,10 +6348,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDimensionOnTargetTodayNote =>
-      'Dnešní nejnovější měření je v cíli; pokračuj v tom.';
+      'Dnešní poslední měření splňuje cílové hodnoty; pokračuj v tom.';
 
   @override
-  String get goalDimensionOnTargetTodayStatus => 'Dnes v cíli';
+  String get goalDimensionOnTargetTodayStatus => 'Cíl dnes splněn';
 
   @override
   String get goalDimensionOnTrackNote =>

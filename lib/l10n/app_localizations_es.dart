@@ -6365,7 +6365,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'La lectura más reciente de hoy está dentro del objetivo; sigue así.';
 
   @override
-  String get goalDimensionOnTargetTodayStatus => 'En el objetivo hoy';
+  String get goalDimensionOnTargetTodayStatus => 'Dentro del objetivo hoy';
 
   @override
   String get goalDimensionOnTrackNote =>

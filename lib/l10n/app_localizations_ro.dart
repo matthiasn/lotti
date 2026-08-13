@@ -6386,10 +6386,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDimensionOnTargetTodayNote =>
-      'Cea mai recentă măsurătoare de astăzi este în intervalul țintă; continuați tot așa.';
+      'Cea mai recentă măsurătoare de astăzi respectă ținta; continuați tot așa.';
 
   @override
-  String get goalDimensionOnTargetTodayStatus => 'În țintă astăzi';
+  String get goalDimensionOnTargetTodayStatus => 'Țintă atinsă astăzi';
 
   @override
   String get goalDimensionOnTrackNote =>

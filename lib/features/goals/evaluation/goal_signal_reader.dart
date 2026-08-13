@@ -379,9 +379,7 @@ class GoalSignalReader {
     final byDay = <DateTime, num>{};
     switch (healthTypes[dataType]?.aggregationType) {
       case HealthAggregationType.none:
-        // Same display normalization as `aggregateNone`: percentage types
-        // store fractions (body fat 0.18) but chart — and target — as 18.
-        final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
+        final multiplier = _displayMultiplier(dataType);
         final latestByDay = <DateTime, ({DateTime from, String id})>{};
         for (final entity in entities) {
           entity.maybeMap(
@@ -429,7 +427,7 @@ class GoalSignalReader {
     List<JournalEntity> entities,
     String dataType,
   ) {
-    final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
+    final multiplier = _displayMultiplier(dataType);
     final observations = <GoalMetricObservation>[];
     for (final entity in entities) {
       entity.maybeMap(
@@ -451,6 +449,11 @@ class GoalSignalReader {
     });
     return observations;
   }
+
+  /// Matches health aggregation display units: stored percentage fractions
+  /// become whole percentages, while every other type keeps its native unit.
+  num _displayMultiplier(String dataType) =>
+      dataType.contains('PERCENTAGE') ? 100 : 1;
 
   /// Earliest day any leaf's period (or the short-term lookback, or the
   /// grace-period prior window) reaches back to, as a local date.
