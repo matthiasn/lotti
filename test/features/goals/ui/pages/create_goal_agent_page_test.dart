@@ -17,6 +17,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -1806,8 +1807,13 @@ void main() {
     final gymRect = tester.getRect(gymRow);
     await tester.tapAt(Offset(gymRect.left + 40, gymRect.center.dy));
     await tester.pump();
-    // An unmatched habit's row disappears entirely on deselection.
-    expect(gymRow, findsNothing);
+    // The picker-added habit keeps its unchecked row for this step entry —
+    // only the cadence stepper leaves with the selection.
+    expect(gymRow, findsOneWidget);
+    expect(
+      tester.widget<DesignSystemSelectionRow>(gymRow).selected,
+      isFalse,
+    );
     expect(find.text('3×/week', skipOffstage: false), findsNothing);
   });
 
@@ -4041,8 +4047,20 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
     await tester.pumpAndSettle();
+    // The toggled-off signal keeps an unchecked row (frozen order) with no
+    // target controls.
+    final pageWeightRow = find.byKey(
+      const ValueKey('goal-form-health-row-weight'),
+    );
+    expect(pageWeightRow, findsOneWidget);
     expect(
-      find.byKey(const ValueKey('goal-form-health-row-weight')),
+      tester.widget<DesignSystemSelectionRow>(pageWeightRow).selected,
+      isFalse,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+      ),
       findsNothing,
     );
   });
@@ -4293,12 +4311,15 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
       await tester.pumpAndSettle();
 
-      // Every toggled-off dimension left no card behind on the page.
+      // The toggled-off blood-pressure signal keeps an unchecked row in the
+      // frozen order; the category and measurable cards leave entirely.
+      final bpRow = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
+      );
+      expect(bpRow, findsOneWidget);
       expect(
-        find.byKey(
-          const ValueKey('goal-form-health-row-blood-pressure'),
-        ),
-        findsNothing,
+        tester.widget<DesignSystemSelectionRow>(bpRow).selected,
+        isFalse,
       );
       expect(
         find.byKey(
@@ -4833,6 +4854,487 @@ void main() {
         signalSpan.style?.color,
         dsTokensLight.colors.text.highEmphasis,
       );
+      // The emphasized span derives from the bodyMedium token, not a raw
+      // TextStyle that would drop the typeface metrics.
+      expect(
+        signalSpan.style?.fontSize,
+        dsTokensLight.typography.styles.body.bodyMedium.fontSize,
+      );
+    },
+  );
+
+  testWidgets(
+    'an edited goal with only a diastolic reading renders a checked '
+    'blood-pressure row',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.metric(
+        criterionId: 'bp-dia',
+        dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 82,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: _spec(criteria: criteria)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // A partial pair is still a selected signal: checked, carrying the
+      // one value it has.
+      final row = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
+      );
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+      String targetText(String dataType) => tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(ValueKey('goal-form-health-target-$dataType')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
+          .text;
+      expect(targetText(GoalHealthDataTypes.bloodPressureDiastolic), '82');
+      expect(targetText(GoalHealthDataTypes.bloodPressureSystolic), isEmpty);
+
+      // Deselecting removes whatever half of the pair is present.
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isFalse,
+      );
+      expect(
+        find.byKey(
+          const ValueKey(
+            'goal-form-health-target-HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+          ),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      expect(
+        find.text(
+          'Choose at least one signal the agent can actually observe.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'only bookkeeping-twin habits are demoted beside a health signal',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(habitsRepository.watchHabitDefinitions).thenAnswer(
+        (_) => Stream.value([
+          _habit('wt', 'Weight training'),
+          _habit('logw', 'Log weight'),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'lose weight',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The readings signal arrives selected…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-health-row-weight')),
+            )
+            .selected,
+        isTrue,
+      );
+      // …"Weight training" is a real habit that shares a word with the
+      // label, so it keeps its default selection…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-wt')),
+            )
+            .selected,
+        isTrue,
+      );
+      // …while "Log weight" is pure bookkeeping and waits unchecked.
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-logw')),
+            )
+            .selected,
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'a deselected health signal survives an intention re-map unseeded',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      final row = find.byKey(
+        const ValueKey('goal-form-health-row-blood-pressure'),
+      );
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+
+      // A changed intention re-maps, but the explicit deselection survives
+      // as an unchecked suggestion instead of being re-seeded.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control every single morning',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(row, findsOneWidget);
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isFalse,
+      );
+
+      // An explicit re-select clears the suppression and re-seeds…
+      await tester.tap(find.text('Blood Pressure'));
+      await tester.pump();
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey(
+                    'goal-form-health-target-'
+                    'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                  ),
+                ),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '130',
+      );
+
+      // …and the next re-map keeps it selected.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Keep my blood pressure under control before breakfast',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(row).selected,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'deselected picker-added signals keep their unchecked rows until '
+    're-entry',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Track my week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('goal-form-picker-habit-run')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const ValueKey('goal-form-health-source-weight')),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+      await tester.pumpAndSettle();
+
+      final runRow = find.byKey(const ValueKey('goal-form-habit-run'));
+      final weightRow = find.byKey(
+        const ValueKey('goal-form-health-row-weight'),
+      );
+      expect(
+        tester.widget<DesignSystemSelectionRow>(runRow).selected,
+        isTrue,
+      );
+      expect(
+        tester.widget<DesignSystemSelectionRow>(weightRow).selected,
+        isTrue,
+      );
+
+      // Deselecting a picker-added habit leaves its unchecked row in place
+      // (tap the row's own title — the derived goal name is also "Run").
+      await tester.tap(
+        find.descendant(of: runRow, matching: find.text('Run')),
+      );
+      await tester.pump();
+      expect(runRow, findsOneWidget);
+      expect(
+        tester.widget<DesignSystemSelectionRow>(runRow).selected,
+        isFalse,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-form-increase-run')),
+        findsNothing,
+      );
+
+      // Same for a picker-added health signal.
+      await tester.tap(find.text('Weight'));
+      await tester.pump();
+      expect(weightRow, findsOneWidget);
+      expect(
+        tester.widget<DesignSystemSelectionRow>(weightRow).selected,
+        isFalse,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'a German bookkeeping habit is demoted beside the weight signal',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(habitsRepository.watchHabitDefinitions).thenAnswer(
+        (_) => Stream.value([
+          _habit('wiegen', 'Gewicht messen'),
+          _habit('heben', 'Gewicht heben'),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+          locale: const Locale('de'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gewicht verlieren',
+      );
+      await tester.tap(find.text('Weiter'));
+      await tester.pumpAndSettle();
+
+      // The readings signal arrives selected…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-health-row-weight')),
+            )
+            .selected,
+        isTrue,
+      );
+      // …"Gewicht messen" is pure bookkeeping in German too, so it waits
+      // unchecked instead of duplicating the readings signal…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-wiegen')),
+            )
+            .selected,
+        isFalse,
+      );
+      expect(
+        tester.getRect(find.text('Vorgeschlagen')).top,
+        lessThan(
+          tester
+              .getRect(find.byKey(const ValueKey('goal-form-habit-wiegen')))
+              .top,
+        ),
+      );
+      // …while "Gewicht heben" has a real leftover word and stays selected.
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-heben')),
+            )
+            .selected,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'a diastolic-only goal renders its stored direction on the shared '
+    'blood-pressure toggle',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.metric(
+        criterionId: 'bp-dia',
+        dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 82,
+        // Spelled out: the stored direction is what this test is about.
+        // ignore: avoid_redundant_argument_values
+        direction: GoalDirection.atLeast,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: _spec(criteria: criteria)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // One toggle drives both readings, so it must read the direction off
+      // whichever half the partial pair actually carries.
+      expect(
+        tester
+            .widget<DsSegmentedToggle<GoalDirection>>(
+              find.byKey(
+                const ValueKey('goal-form-health-direction-blood-pressure'),
+              ),
+            )
+            .selected,
+        GoalDirection.atLeast,
+      );
+
+      // The stored direction survives the round trip to confirmation.
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          'Diastolic blood pressure: 7-day average At least 82 mmHg',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'the picker shows a diastolic-only goal as selected and deselects it',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.metric(
+        criterionId: 'bp-dia',
+        dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 82,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: _spec(criteria: criteria)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+      await tester.pumpAndSettle();
+      final source = find.byKey(
+        const ValueKey('goal-form-health-source-blood-pressure'),
+      );
+      // The picker agrees with the row: a partial pair reads as selected.
+      expect(
+        tester.widget<DesignSystemSelectionRow>(source).selected,
+        isTrue,
+      );
+
+      // Tapping therefore DESELECTS rather than seeding a systolic 130.
+      await tester.tap(source);
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemSelectionRow>(source).selected,
+        isFalse,
+      );
+      await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(
+                const ValueKey('goal-form-health-row-blood-pressure'),
+              ),
+            )
+            .selected,
+        isFalse,
+      );
+      for (final dataType in [
+        GoalHealthDataTypes.bloodPressureSystolic,
+        GoalHealthDataTypes.bloodPressureDiastolic,
+      ]) {
+        expect(
+          find.byKey(ValueKey('goal-form-health-target-$dataType')),
+          findsNothing,
+        );
+      }
+      expect(find.text('130'), findsNothing);
     },
   );
 }

@@ -2939,6 +2939,7 @@
   "goalFormMappingTitle": "Dit kan ik volgen",
   "goalFormMeasurableCadence": "{measurableName}: {target} per voortschrijdende week",
   "goalFormMeasurableSource": "Jouw meetbare · {unitName}",
+  "goalFormMeasurementVerbs": "meten,meet,gemeten,meting,bijhouden,houdt,bijgehouden,noteren,noteert,genoteerd,notitie,registreren,registreert,geregistreerd,controleren,controleert,gecontroleerd,controle,checken,checkt,gecheckt,volgen,volgt,gevolgd",
   "goalFormNoHabits": "Er zijn nog geen actieve gewoonten beschikbaar.",
   "goalFormOpenHabits": "Maak eerst een gewoonte",
   "goalFormPersonaLabel": "Naam van agent",

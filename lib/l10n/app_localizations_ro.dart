@@ -6648,6 +6648,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'măsura,măsoară,măsurat,măsurare,înregistra,înregistrează,înregistrat,înregistrare,nota,notează,notat,verifica,verifică,verificat,monitoriza,monitorizează,monitorizat,urmări,urmărește,urmărit,consemna,consemnează,consemnat';
+
+  @override
   String get goalFormNoHabits => 'Nu există încă obiceiuri active disponibile.';
 
   @override

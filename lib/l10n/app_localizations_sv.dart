@@ -6532,6 +6532,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'mäta,mäter,mätt,mätning,registrera,registrerar,registrerat,registrering,notera,noterar,noterat,anteckna,antecknar,antecknat,kolla,kollar,kollat,kontrollera,kontrollerar,kontrollerat,följa,följer,följt';
+
+  @override
   String get goalFormNoHabits => 'Det finns inga aktiva vanor ännu.';
 
   @override

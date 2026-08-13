@@ -6525,6 +6525,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'måle,måler,målt,måling,registrere,registrerer,registreret,registrering,notere,noterer,noteret,notat,tjekke,tjekker,tjekket,følge,følger,fulgt,overvåge,overvåger,overvåget';
+
+  @override
   String get goalFormNoHabits => 'Der er endnu ingen aktive vaner.';
 
   @override

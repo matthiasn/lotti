@@ -6540,6 +6540,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'meten,meet,gemeten,meting,bijhouden,houdt,bijgehouden,noteren,noteert,genoteerd,notitie,registreren,registreert,geregistreerd,controleren,controleert,gecontroleerd,controle,checken,checkt,gecheckt,volgen,volgt,gevolgd';
+
+  @override
   String get goalFormNoHabits =>
       'Er zijn nog geen actieve gewoonten beschikbaar.';
 

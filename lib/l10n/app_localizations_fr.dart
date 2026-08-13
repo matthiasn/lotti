@@ -6632,6 +6632,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'mesurer,mesure,mesures,mesuré,suivre,suivi,suivis,noter,note,notes,noté,enregistrer,enregistre,enregistré,contrôler,contrôle,contrôlé,vérifier,vérifie,vérifié,surveiller,surveille,surveillé,relever,relevé';
+
+  @override
   String get goalFormNoHabits =>
       'Aucune habitude active n’est encore disponible.';
 

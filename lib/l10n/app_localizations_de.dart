@@ -6570,6 +6570,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'messen,misst,gemessen,messung,tracken,trackt,getrackt,tracking,notieren,notiert,notiz,protokollieren,protokolliert,protokoll,prüfen,prüft,geprüft,kontrollieren,kontrolliert,kontrolle,erfassen,erfasst,überwachen,überwacht,aufzeichnen,aufgezeichnet,dokumentieren,dokumentiert,eintragen,eingetragen';
+
+  @override
   String get goalFormNoHabits => 'Es gibt noch keine aktiven Gewohnheiten.';
 
   @override

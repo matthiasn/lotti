@@ -2683,6 +2683,7 @@
   "goalFormMappingTitle": "Iată ce pot urmări",
   "goalFormMeasurableCadence": "{measurableName}: {target} pe săptămână continuă",
   "goalFormMeasurableSource": "Măsurătoarea dvs. · {unitName}",
+  "goalFormMeasurementVerbs": "măsura,măsoară,măsurat,măsurare,înregistra,înregistrează,înregistrat,înregistrare,nota,notează,notat,verifica,verifică,verificat,monitoriza,monitorizează,monitorizat,urmări,urmărește,urmărit,consemna,consemnează,consemnat",
   "goalFormNoHabits": "Nu există încă obiceiuri active disponibile.",
   "goalFormOpenHabits": "Creați mai întâi un obicei",
   "goalFormPersonaLabel": "Numele agentului",

@@ -6596,6 +6596,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalFormMeasurementVerbs =>
+      'měřit,měří,měření,zaznamenat,zaznamenává,záznam,zapisovat,zapisuje,zápis,sledovat,sleduje,sledování,kontrolovat,kontroluje,kontrola,evidovat,eviduje,evidence';
+
+  @override
   String get goalFormNoHabits =>
       'Zatím nejsou k dispozici žádné aktivní návyky.';
 

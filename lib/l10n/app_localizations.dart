@@ -11131,6 +11131,12 @@ abstract class AppLocalizations {
   /// **'Your measurable · {unitName}'**
   String goalFormMeasurableSource(String unitName);
 
+  /// No description provided for @goalFormMeasurementVerbs.
+  ///
+  /// In en, this message translates to:
+  /// **'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking'**
+  String get goalFormMeasurementVerbs;
+
   /// No description provided for @goalFormNoHabits.
   ///
   /// In en, this message translates to:

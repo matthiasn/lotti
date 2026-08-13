@@ -2683,6 +2683,7 @@
   "goalFormMappingTitle": "Das kann ich beobachten",
   "goalFormMeasurableCadence": "{measurableName}: {target} pro rollierende Woche",
   "goalFormMeasurableSource": "Deine Messgröße · {unitName}",
+  "goalFormMeasurementVerbs": "messen,misst,gemessen,messung,tracken,trackt,getrackt,tracking,notieren,notiert,notiz,protokollieren,protokolliert,protokoll,prüfen,prüft,geprüft,kontrollieren,kontrolliert,kontrolle,erfassen,erfasst,überwachen,überwacht,aufzeichnen,aufgezeichnet,dokumentieren,dokumentiert,eintragen,eingetragen",
   "goalFormNoHabits": "Es gibt noch keine aktiven Gewohnheiten.",
   "goalFormOpenHabits": "Erst eine Gewohnheit erstellen",
   "goalFormPersonaLabel": "Name des Agenten",

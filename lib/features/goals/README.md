@@ -139,8 +139,10 @@ affordance. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
 intention that names a health capability (blood pressure, weight) arrives
 with that signal pre-selected and seeded (130/80 mmHg, at-most), while a
-habit that merely names the same reading is demoted to an unchecked
-suggestion. Every signal is one kind of row in one signals card — provenance
+habit that is nothing but a record of that reading — its whole name is the
+reading's own words plus a measurement verb in the app's language, as in
+"Measure blood pressure" — is demoted to an unchecked suggestion. A signal
+the user deselects stays deselected across intention back-edits. Every signal is one kind of row in one signals card — provenance
 icon, plain-language subtitle, targets on the row's secondary line (blood
 pressure is a single row with paired systolic/diastolic inputs sharing one
 direction) — grouped as the user's signals above a Suggested caption, with
