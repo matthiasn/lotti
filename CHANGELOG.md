@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Changed
+- **Goal agent pages get the whole screen on phones.** The bottom navigation
+  bar slides away on a goal's detail page, its chat, and the create and edit
+  wizards, the way it already does for project details. Those pages dock their
+  own controls at the bottom edge — the day sheet's record button and the
+  wizard's Continue band — and the bar used to sit on top of them.
 - **Goal-agent banners are snooze-first.** The primary action now offers 1,
   3, 6, and 8 hour choices, while Dismiss for today is a secondary option.
   Banners return after the chosen deadline or on the next local day even

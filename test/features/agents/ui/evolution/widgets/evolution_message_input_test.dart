@@ -166,9 +166,8 @@ void main() {
       expect(textField.controller!.text, 'Transcribed text');
     });
 
-    testWidgets('surfaces recorder errors with their diagnostic detail', (
-      tester,
-    ) async {
+    testWidgets('surfaces recorder errors as a localized reason, not raw '
+        'diagnostic text', (tester) async {
       late TranscriptEmittingController controller;
       await tester.pumpWidget(
         buildSubject(
@@ -181,14 +180,49 @@ void main() {
       );
       await tester.pump();
 
-      controller.emitError('HTTP 503: all transcription providers failed');
+      controller.emitError(
+        'HTTP 503: all transcription providers failed',
+        kind: ChatRecorderErrorKind.transcriptionFailed,
+      );
+      await tester.pump();
+
+      // The diagnostic English belongs in the log, not in the user's toast.
+      expect(
+        find.textContaining('transcribing it failed'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('HTTP 503: all transcription providers failed'),
+        findsNothing,
+      );
+      expect(controller.clearResultCalls, 1);
+    });
+
+    testWidgets('a denied microphone reads differently from a failed '
+        'transcription', (tester) async {
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        buildSubject(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      controller.emitError(
+        'Microphone permission denied. Please enable it in Settings.',
+        kind: ChatRecorderErrorKind.permissionDenied,
+      );
       await tester.pump();
 
       expect(
-        find.text('HTTP 503: all transcription providers failed'),
+        find.textContaining("Lotti can't use the microphone"),
         findsOneWidget,
       );
-      expect(controller.clearResultCalls, 1);
+      expect(find.textContaining('Recording failed'), findsNothing);
     });
 
     testWidgets('shows voice controls when recording', (tester) async {

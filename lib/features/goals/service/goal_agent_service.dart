@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/services/db_notification.dart';
 
 /// Creates and wires goal agents (ADR 0053: one durable identity per goal).
 ///
@@ -27,12 +28,20 @@ class GoalAgentService {
     required this._repository,
     required this._syncService,
     required this._orchestrator,
+    this.updateNotifications,
   });
 
   final AgentService _agentService;
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
+
+  /// Post-commit UI ping. Identity writes reach the database through the sync
+  /// service, which does not notify on its own — the wake path pings
+  /// separately — so a user-initiated config change would otherwise leave
+  /// every mounted watcher of `agentIdentityProvider` rendering the old value
+  /// until the page is rebuilt from scratch.
+  final UpdateNotifications? updateNotifications;
 
   /// Creates a goal agent with its v1 spec — identity, state, spec
   /// version, head and first cadence tick in ONE transaction (nested
@@ -222,6 +231,11 @@ class GoalAgentService {
             state == null || state.reportFreshAt == null || state.isReportStale;
       }
     });
+
+    // The toggle is a user-visible state change: ping before the catch-up
+    // refresh is scheduled so the switch settles immediately rather than
+    // waiting on wake work.
+    updateNotifications?.notifyUiOnly({agentId, agentNotification});
 
     if (!enabled) {
       skipPendingReportRefresh(agentId);

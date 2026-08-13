@@ -1553,10 +1553,13 @@
   "chatInputPleaseWait": "Vent venligst...",
   "chatInputProcessing": "Behandler...",
   "chatInputRecordingFailed": "Optagelse mislykkedes. Prøv igen.",
+  "chatInputRecordingNoAudioModel": "Der er endnu ikke opsat en transskriptionsmodel. Tilføj en model med lydunderstøttelse i AI-indstillingerne.",
+  "chatInputRecordingNoMicPermission": "Lotti kan ikke bruge mikrofonen. Giv Lotti adgang til mikrofonen i dine systemindstillinger.",
   "chatInputRecordVoice": "Optag talebesked",
   "chatInputSendTooltip": "Send besked",
   "chatInputStopRealtime": "Stop live-transskriptionen",
   "chatInputStopTranscribe": "Stop og transskribér",
+  "chatInputTranscriptionFailed": "Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.",
   "checklistAddItem": "Tilføj en ny genstand",
   "checklistAiConfidenceLabel": "Selvtillid: {level}",
   "@checklistAiConfidenceLabel": {

@@ -3111,6 +3111,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Error de grabación. Inténtalo de nuevo.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Aún no hay ningún modelo de transcripción configurado. Añade un modelo compatible con audio en los ajustes de IA.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti no puede usar el micrófono. Activa el acceso al micrófono para Lotti en los ajustes del sistema.';
+
+  @override
   String get chatInputRecordVoice => 'Grabar mensaje de voz';
 
   @override
@@ -3121,6 +3129,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Detener y transcribir';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.';
 
   @override
   String get checklistAddItem => 'Agregar un nuevo elemento';
@@ -6538,7 +6550,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalFormGenericIntentionWords =>
-      'y,constante,consistente,diario,diaria,día,días,cada,objetivo,meta,hábito,mes,mensual,meses,por,regular,rutina,tiempo,vez,veces,semana,semanal,semanas,año,anual,años';
+      'y,constante,consistente,diario,diaria,día,días,cada,objetivo,meta,hábito,mes,mensual,meses,por,regular,rutina,tiempo,vez,veces,semana,semanal,semanas,año,anual,años,regularmente,diariamente,semanalmente,mensualmente,anualmente,hábitos,metas,rutinas';
 
   @override
   String get goalFormGoalNameLabel => 'Nombre del objetivo';

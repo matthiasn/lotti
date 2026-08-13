@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_recorder_error_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -71,7 +72,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           context.showToast(
             tone: DesignSystemToastTone.error,
             title: context.messages.commonError,
-            description: context.messages.chatInputRecordingFailed,
+            description: chatRecorderErrorMessage(context, next.errorKind),
             duration: const Duration(seconds: 8),
             replaceCurrent: true,
           );

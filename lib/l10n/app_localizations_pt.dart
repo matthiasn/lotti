@@ -3100,6 +3100,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputRecordingFailed => 'Falha na gravação. Tente novamente.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Ainda não há nenhum modelo de transcrição configurado. Adiciona um modelo compatível com áudio nas definições de IA.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'O Lotti não consegue usar o microfone. Ativa o acesso ao microfone para o Lotti nas definições do sistema.';
+
+  @override
   String get chatInputRecordVoice => 'Gravar mensagem de voz';
 
   @override
@@ -3110,6 +3118,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Pare e transcreva';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
 
   @override
   String get checklistAddItem => 'Adicionar um novo item';
@@ -6515,7 +6527,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormGenericIntentionWords =>
-      'e,constante,consistente,diário,diária,dia,dias,cada,objetivo,meta,hábito,mês,mensal,meses,por,regular,rotina,tempo,vez,vezes,semana,semanal,semanas,ano,anual,anos';
+      'e,constante,consistente,diário,diária,dia,dias,cada,objetivo,meta,hábito,mês,mensal,meses,por,regular,rotina,tempo,vez,vezes,semana,semanal,semanas,ano,anual,anos,metas,hábitos,rotinas,diariamente,semanalmente,mensalmente,anualmente,regularmente';
 
   @override
   String get goalFormGoalNameLabel => 'Nome da meta';
@@ -6598,7 +6610,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'medir,mede,medido,medição,registar,regista,registado,registo,anotar,anota,anotado,controlar,controla,controlado,controlo,verificar,verifica,verificado,monitorizar,monitoriza,monitorizado,acompanhar,acompanha,acompanhamento,tomar,toma,registrar,registra,registrado,registro,monitorar,monitora,monitorado,monitoramento,controle,medições';
+      'medir,mede,medido,medição,registar,regista,registado,registo,anotar,anota,anotado,controlar,controla,controlado,controlo,verificar,verifica,verificado,monitorizar,monitoriza,monitorizado,acompanhar,acompanha,acompanhamento,tomar,toma,registrar,registra,registrado,registro,monitorar,monitora,monitorado,monitoramento,controle,medições,medida,registrada,controlada,verificada,monitorizada,monitorada,acompanhado,acompanhada';
 
   @override
   String get goalFormNoHabits => 'Ainda não há hábitos ativos disponíveis.';

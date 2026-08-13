@@ -118,6 +118,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (_isStarting) {
       state = state.copyWith(
         error: 'Another operation is in progress',
+        errorKind: ChatRecorderErrorKind.busy,
       );
       return;
     }
@@ -134,6 +135,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (!hasPerm) {
         state = state.copyWith(
           error: 'Microphone permission denied. Please enable it in Settings.',
+          errorKind: ChatRecorderErrorKind.permissionDenied,
         );
         await recorder.dispose();
         return;
@@ -220,6 +222,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       if (ref.mounted) {
         state = state.copyWith(
           error: 'Failed to start recording: $e',
+          errorKind: ChatRecorderErrorKind.startFailed,
         );
       }
       await _cleanupInternal();
@@ -263,6 +266,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         state = state.copyWith(
           status: ChatRecorderStatus.idle,
           error: 'No audio file available',
+          errorKind: ChatRecorderErrorKind.noAudioFile,
         );
       }
       return;
@@ -295,6 +299,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             TranscriptionException(:final message) => message,
             _ => e.toString(),
           },
+          // A missing audio model is a setup problem the user can fix, not a
+          // failed request — it earns its own message rather than the
+          // generic transcription failure.
+          errorKind: e.toString().contains('No audio-capable models')
+              ? ChatRecorderErrorKind.noAudioModel
+              : ChatRecorderErrorKind.transcriptionFailed,
         );
       }
     } finally {

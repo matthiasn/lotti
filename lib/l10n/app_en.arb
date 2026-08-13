@@ -1886,10 +1886,13 @@
   "chatInputPleaseWait": "Please wait...",
   "chatInputProcessing": "Processing...",
   "chatInputRecordingFailed": "Recording failed. Please try again.",
+  "chatInputRecordingNoAudioModel": "No transcription model is set up yet. Add an audio-capable model in AI settings.",
+  "chatInputRecordingNoMicPermission": "Lotti can't use the microphone. Enable microphone access for Lotti in your system settings.",
   "chatInputRecordVoice": "Record voice message",
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
+  "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3748,7 +3751,7 @@
       }
     }
   },
-  "goalFormMeasurementVerbs": "measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings",
+  "goalFormMeasurementVerbs": "measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings,read,reads",
   "goalFormNoHabits": "No active habits are available yet.",
   "goalFormOpenHabits": "Create a habit first",
   "goalFormPersonaLabel": "Agent name",

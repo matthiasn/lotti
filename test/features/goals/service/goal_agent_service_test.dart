@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -36,6 +37,7 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockWakeOrchestrator orchestrator;
+  late MockUpdateNotifications updateNotifications;
   late GoalAgentService service;
   late List<AgentDomainEntity> upserts;
 
@@ -44,6 +46,8 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
+    updateNotifications = MockUpdateNotifications();
+    when(() => updateNotifications.notifyUiOnly(any())).thenReturn(null);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(() => repository.getAgentState(any())).thenAnswer((_) async => null);
     service = GoalAgentService(
@@ -51,6 +55,7 @@ void main() {
       repository: repository,
       syncService: syncService,
       orchestrator: orchestrator,
+      updateNotifications: updateNotifications,
     );
     upserts = [];
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -326,6 +331,77 @@ void main() {
         workspaceKey: any(named: 'workspaceKey'),
       ),
     );
+  });
+
+  test(
+    'toggling automatic refreshes pings the UI in both directions',
+    () async {
+      // The identity write goes through the sync service, which does not
+      // notify on its own — without this ping the switch keeps rendering the
+      // old value until its provider is rebuilt from scratch.
+      AgentIdentityEntity identity({required bool enabled}) =>
+          AgentDomainEntity.agent(
+                id: agentId,
+                agentId: agentId,
+                kind: AgentKinds.goalAgent,
+                displayName: 'Goal',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: '$agentId:state',
+                config: AgentConfig(automaticUpdatesEnabled: enabled),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity;
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => identity(enabled: false));
+      when(() => repository.getAgentState(agentId)).thenAnswer(
+        (_) async =>
+            AgentDomainEntity.agentState(
+                  id: '$agentId:state',
+                  agentId: agentId,
+                  slots: const AgentSlots(),
+                  updatedAt: DateTime(2026, 8, 13, 12),
+                  vectorClock: null,
+                )
+                as AgentStateEntity,
+      );
+
+      await service.updateAutomaticUpdates(agentId: agentId, enabled: true);
+
+      final enabling =
+          verify(
+                () => updateNotifications.notifyUiOnly(captureAny()),
+              ).captured.single
+              as Set<String>;
+      expect(enabling, containsAll(<String>{agentId, agentNotification}));
+
+      // The disable path returns early into skipPendingReportRefresh, so it
+      // has to ping before that early return.
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => identity(enabled: true));
+      await service.updateAutomaticUpdates(agentId: agentId, enabled: false);
+
+      final disabling =
+          verify(
+                () => updateNotifications.notifyUiOnly(captureAny()),
+              ).captured.single
+              as Set<String>;
+      expect(disabling, containsAll(<String>{agentId, agentNotification}));
+    },
+  );
+
+  test('a rejected toggle never pings the UI', () async {
+    await expectLater(
+      service.updateAutomaticUpdates(agentId: agentId, enabled: false),
+      throwsA(isA<StateError>()),
+    );
+
+    verifyNever(() => updateNotifications.notifyUiOnly(any()));
   });
 
   test('changing automatic refreshes rejects a missing goal agent', () async {

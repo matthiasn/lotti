@@ -5196,6 +5196,18 @@ abstract class AppLocalizations {
   /// **'Recording failed. Please try again.'**
   String get chatInputRecordingFailed;
 
+  /// No description provided for @chatInputRecordingNoAudioModel.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcription model is set up yet. Add an audio-capable model in AI settings.'**
+  String get chatInputRecordingNoAudioModel;
+
+  /// No description provided for @chatInputRecordingNoMicPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti can\'t use the microphone. Enable microphone access for Lotti in your system settings.'**
+  String get chatInputRecordingNoMicPermission;
+
   /// No description provided for @chatInputRecordVoice.
   ///
   /// In en, this message translates to:
@@ -5219,6 +5231,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop and transcribe'**
   String get chatInputStopTranscribe;
+
+  /// No description provided for @chatInputTranscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording was captured, but transcribing it failed. Please try again.'**
+  String get chatInputTranscriptionFailed;
 
   /// No description provided for @checklistAddItem.
   ///
@@ -11140,7 +11158,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormMeasurementVerbs.
   ///
   /// In en, this message translates to:
-  /// **'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings'**
+  /// **'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings,read,reads'**
   String get goalFormMeasurementVerbs;
 
   /// No description provided for @goalFormNoHabits.

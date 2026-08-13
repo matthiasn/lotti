@@ -3070,6 +3070,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputRecordingFailed => 'Optagelse mislykkedes. Prøv igen.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'Der er endnu ikke opsat en transskriptionsmodel. Tilføj en model med lydunderstøttelse i AI-indstillingerne.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti kan ikke bruge mikrofonen. Giv Lotti adgang til mikrofonen i dine systemindstillinger.';
+
+  @override
   String get chatInputRecordVoice => 'Optag talebesked';
 
   @override
@@ -3080,6 +3088,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Stop og transskribér';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';

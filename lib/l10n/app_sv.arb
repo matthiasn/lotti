@@ -1553,10 +1553,13 @@
   "chatInputPleaseWait": "Vänta, snälla...",
   "chatInputProcessing": "Bearbetar...",
   "chatInputRecordingFailed": "Inspelningen misslyckades. Försök igen.",
+  "chatInputRecordingNoAudioModel": "Ingen transkriberingsmodell är uppsatt än. Lägg till en modell med ljudstöd i AI-inställningarna.",
+  "chatInputRecordingNoMicPermission": "Lotti kan inte använda mikrofonen. Ge Lotti åtkomst till mikrofonen i systeminställningarna.",
   "chatInputRecordVoice": "Spela in röstmeddelande",
   "chatInputSendTooltip": "Skicka meddelande",
   "chatInputStopRealtime": "Stoppa livetranskriptionen",
   "chatInputStopTranscribe": "Stoppa och transkribera",
+  "chatInputTranscriptionFailed": "Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.",
   "checklistAddItem": "Lägg till ett nytt föremål",
   "checklistAiConfidenceLabel": "Självförtroende: {level}",
   "@checklistAiConfidenceLabel": {

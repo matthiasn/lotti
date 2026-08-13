@@ -3055,6 +3055,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputRecordingFailed => 'Recording failed. Please try again.';
 
   @override
+  String get chatInputRecordingNoAudioModel =>
+      'No transcription model is set up yet. Add an audio-capable model in AI settings.';
+
+  @override
+  String get chatInputRecordingNoMicPermission =>
+      'Lotti can\'t use the microphone. Enable microphone access for Lotti in your system settings.';
+
+  @override
   String get chatInputRecordVoice => 'Record voice message';
 
   @override
@@ -3065,6 +3073,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatInputStopTranscribe => 'Stop and transcribe';
+
+  @override
+  String get chatInputTranscriptionFailed =>
+      'The recording was captured, but transcribing it failed. Please try again.';
 
   @override
   String get checklistAddItem => 'Add a new item';
@@ -6503,7 +6515,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings';
+      'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings,read,reads';
 
   @override
   String get goalFormNoHabits => 'No active habits are available yet.';

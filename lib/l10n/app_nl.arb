@@ -1552,10 +1552,13 @@
   "chatInputPleaseWait": "Wacht even...",
   "chatInputProcessing": "Bezig met verwerken...",
   "chatInputRecordingFailed": "Opname mislukt. Probeer het opnieuw.",
+  "chatInputRecordingNoAudioModel": "Er is nog geen transcriptiemodel ingesteld. Voeg een model met audio-ondersteuning toe in de AI-instellingen.",
+  "chatInputRecordingNoMicPermission": "Lotti kan de microfoon niet gebruiken. Geef Lotti toegang tot de microfoon in je systeeminstellingen.",
   "chatInputRecordVoice": "Voicemail opnemen",
   "chatInputSendTooltip": "Bericht versturen",
   "chatInputStopRealtime": "Stop live transcriptie",
   "chatInputStopTranscribe": "Stoppen en transcriberen",
+  "chatInputTranscriptionFailed": "De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.",
   "checklistAddItem": "Een nieuw item toevoegen",
   "checklistAiConfidenceLabel": "Vertrouwen: {level}",
   "@checklistAiConfidenceLabel": {

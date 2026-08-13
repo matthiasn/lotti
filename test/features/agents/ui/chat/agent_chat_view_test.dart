@@ -736,15 +736,73 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      controller.emitError('Microphone permission denied');
+      controller.emitError(
+        'Microphone permission denied. Please enable it in Settings.',
+        kind: ChatRecorderErrorKind.permissionDenied,
+      );
       await tester.pump();
       await tester.pump();
 
+      // The toast names the actual problem instead of the generic line.
       expect(
-        find.textContaining('Recording failed'),
+        find.textContaining("Lotti can't use the microphone"),
         findsOneWidget,
       );
+      expect(find.textContaining('Recording failed'), findsNothing);
       expect(controller.clearResultCalls, greaterThan(0));
+    });
+
+    testWidgets('a missing audio model and a failed request read '
+        'differently', (tester) async {
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.emitError(
+        'No audio-capable models configured',
+        kind: ChatRecorderErrorKind.noAudioModel,
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.textContaining('No transcription model is set up yet'),
+        findsOneWidget,
+      );
+
+      controller.emitError(
+        'network down',
+        kind: ChatRecorderErrorKind.transcriptionFailed,
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(
+        find.textContaining('transcribing it failed'),
+        findsOneWidget,
+      );
+      // The raw diagnostic English never reaches the toast.
+      expect(find.textContaining('network down'), findsNothing);
     });
 
     testWidgets('an empty transcript is not written to the draft', (

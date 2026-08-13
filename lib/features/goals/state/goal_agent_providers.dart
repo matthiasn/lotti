@@ -34,7 +34,8 @@ import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:lotti/services/db_notification.dart' show agentNotification;
+import 'package:lotti/services/db_notification.dart'
+    show UpdateNotifications, agentNotification;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -78,6 +79,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    updateNotifications: getIt<UpdateNotifications>(),
   ),
   name: 'goalAgentServiceProvider',
 );

@@ -29,8 +29,13 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
     // the sidebar replaces it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
 
-    return DesignSystemFiveSlotNavBar.barHeight(context) +
-        DesignSystemBottomNavigationOverlayHeight.of(context);
+    // A slid-away bar occupies nothing; the indicator row above it stays,
+    // so its height still counts.
+    final barHeight =
+        DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
+        ? DesignSystemFiveSlotNavBar.barHeight(context)
+        : 0.0;
+    return barHeight + DesignSystemBottomNavigationOverlayHeight.of(context);
   }
 
   @override
@@ -49,11 +54,20 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
   const DesignSystemBottomNavigationOverlayHeight({
     required this.height,
     required super.child,
+    this.barDocked = true,
     super.key,
   });
 
   /// Rendered height of the overlay row; 0 while no indicator is visible.
   final double height;
+
+  /// Whether the nav bar itself is docked at the bottom edge.
+  ///
+  /// False on routes that slide it away (goal agent pages, project and
+  /// settings details): the bar occupies no screen estate there, so a page
+  /// padding by [DesignSystemBottomNavigationBar.occupiedHeight] must not
+  /// leave a bar-sized gutter its own pinned surface then cannot fill.
+  final bool barDocked;
 
   /// Overlay height published by the nearest enclosing scope, or 0 when
   /// none exists (previews and tests that render pages without the shell).
@@ -65,10 +79,20 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     return scope?.height ?? 0;
   }
 
+  /// Whether the bar is docked; true when no scope exists, so pages rendered
+  /// outside the shell keep reserving room for it as they always have.
+  static bool barDockedOf(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<
+          DesignSystemBottomNavigationOverlayHeight
+        >();
+    return scope?.barDocked ?? true;
+  }
+
   @override
   bool updateShouldNotify(
     DesignSystemBottomNavigationOverlayHeight oldWidget,
-  ) => height != oldWidget.height;
+  ) => height != oldWidget.height || barDocked != oldWidget.barDocked;
 }
 
 class DesignSystemBottomNavigationFabPadding extends StatelessWidget {
