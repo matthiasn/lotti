@@ -83,8 +83,9 @@ itself. The selected shape layers three deterministic hints instead:
   two exact observations with `latestChange`.
 - `evaluation.referenceIsCurrentDay` prevents delayed prior-day wakes from
   calling their historical evaluation "today".
-- The system contract defines those fields, while the `update_goal_report.tldr`
-  schema makes the daily-action distinction part of the required output.
+- The system contract defines those fields, while the original
+  `update_goal_report.tldr` description makes the daily-action distinction
+  part of the required output.
 
 With that shape, GLM 5.2 passed 10/10 fresh samples across both scenarios. It
 cited the latest values and aggregates correctly, described the improvement,
@@ -104,6 +105,34 @@ series, 5/10 explicitly described BP improvement, and 6/10 called out sparse
 coverage. Its higher token and provider-reported energy use also mean the lower
 credit price is not the same thing as lower resource use. These are tiny model
 samples, so the conclusion is a routing signal, not a benchmark claim.
+
+### Structured-report follow-up
+
+The free-form `tldr` remained an omission bottleneck for Muse Glimmer. Replacing
+it with five required report slots — evaluated-period state, rolling standing,
+latest change, coverage, and actions — changed the result materially. The app
+assembles those slots into the visible summary, so a fact cannot disappear in
+a second summarization pass. Actions are split into `now` and `later`; a `now`
+item must copy a criterion id from `healthLoggingNeededCriterionIds`, and the
+runtime discards any id that deterministic FACTS did not authorize. A rolling
+6/7 medication habit therefore cannot become an invented "take it today"
+instruction.
+
+Fresh five-sample confirmation runs across P16 and P17 produced:
+
+| Structured-report model | Strict pass | Due-now violations | Mean input | Mean output | Credits | Wh |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 10/10 | 0/10 | 4,261 | 797 | 0.0428 | 17.25 |
+| `muse-glimmer` | 10/10 | 0/10 | 4,583 | 2,182 | 0.0252 | 168.26 |
+
+This moves Muse Glimmer from 1/10 to 10/10 on the complete complex-health
+contract, not merely the daily-action subset. It consistently bound 94 kg to
+weight, described the 129/94 → 125/84 improvement, called out sparse coverage,
+kept completed logging out of `now`, and isolated the 6/7 medication habit as
+future/ongoing focus. It is now adequate for these health scenarios. It is not
+yet a general Goal Agent default: its mean output remained about 2.7× GLM's and
+its provider-reported energy was about 9.8× higher, while the small scenario
+set says nothing about ads, revisions, dialogue, or no-op discipline.
 
 The richer GLM input is about 7% larger than its baseline input. Follow-up
 token-saving experiments should preserve the winning semantics while testing:

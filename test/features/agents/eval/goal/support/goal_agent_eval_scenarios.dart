@@ -831,7 +831,12 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
         GoalAgentToolNames.updateGoalReport,
-        expectedArgumentsSubset: {'status': 'insufficientData'},
+        expectedArgumentsSubset: {
+          'status': 'insufficientData',
+          'report': {
+            'nextActions': {'now': <Object?>[]},
+          },
+        },
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
@@ -848,6 +853,7 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
         'lower',
         'declin',
         'toward target',
+        'towardtarget',
         'right direction',
         'trending down',
         'dropped',
@@ -858,12 +864,20 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       [
         'done for today',
         'logging is complete',
+        'logging complete',
         'logged today',
         'today is logged',
         'logged and done',
         'nothing more',
       ],
-      ['weight 94', '94 kg'],
+      [
+        'weight 94',
+        '94 kg',
+        'weight was logged today at 94',
+        'weight was measured today at 94',
+        'weight today is 94',
+        'weight today at 94',
+      ],
       ['95'],
       ['weight'],
       [
@@ -874,6 +888,8 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
         'insufficient',
         'two readings',
         '2 readings',
+        'data coverage',
+        'too few',
       ],
     ],
     forbiddenReportClaims: const [
@@ -903,7 +919,12 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
         GoalAgentToolNames.updateGoalReport,
-        expectedArgumentsSubset: {'status': 'insufficientData'},
+        expectedArgumentsSubset: {
+          'status': 'insufficientData',
+          'report': {
+            'nextActions': {'now': <Object?>[]},
+          },
+        },
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
@@ -914,21 +935,51 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       ['89'],
       ['average', 'rolling'],
       ['on target', 'in range', 'within target'],
-      ['done for today', 'logging is complete', 'logged today', 'nothing more'],
+      [
+        'done for today',
+        'logging is complete',
+        'logging complete',
+        'logged today',
+        'is logged',
+        'nothing more',
+      ],
       ['6/7', '6 of 7', 'six of seven'],
       ['med', 'medication'],
-      ['behind', 'missed', 'missing', 'short', 'not met', "isn't met"],
+      [
+        'behind',
+        'missed',
+        'missing',
+        'short',
+        'not met',
+        "isn't met",
+        'not satisfied',
+        'lag',
+        'below target',
+        'need more',
+        'reach 7',
+        'reach the 7',
+        'rebuild',
+        'gap',
+      ],
       [
         'improv',
         'downward',
         'lower',
         'declin',
         'toward target',
+        'towardtarget',
         'moving toward',
         'moved toward',
         'down from',
       ],
-      ['weight 94', '94 kg'],
+      [
+        'weight 94',
+        '94 kg',
+        'weight was logged today at 94',
+        'weight was measured today at 94',
+        'weight today is 94',
+        'weight today at 94',
+      ],
       ['95'],
       ['weight'],
       [
@@ -939,6 +990,8 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
         'insufficient',
         'two readings',
         '2 readings',
+        'data coverage',
+        'too few',
       ],
     ],
     forbiddenReportClaims: const [
@@ -954,6 +1007,8 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     forbiddenReportPatterns: const [
       r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\b(?:missed|missing|skipped|forgot|not taken)\b',
       r'\b(?:missed|missing|skipped|forgot|not taken)\b.{0,40}\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
+      r'\b(?:take|log|record|complete)\b.{0,50}\b(?:meds?|medication|dose)\b.{0,50}\btoday\b',
+      r'\btoday\b.{0,50}\b(?:take|log|record|complete)\b.{0,50}\b(?:meds?|medication|dose)\b',
     ],
   ),
 ];

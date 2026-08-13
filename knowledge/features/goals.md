@@ -330,6 +330,12 @@ flowchart TD
   copy says the evaluated day's logging is complete, describes any lagging
   rolling average separately, and does not ask for another reading. A delayed
   wake names the evaluated date and makes no claim about current-day actions.
+  `update_goal_report` collects evaluated-period state, rolling standing,
+  latest change, coverage, and actions as separate required slots; the strategy
+  assembles them into the persisted summary. Structured current actions carry a
+  criterion id and survive only when deterministic
+  `healthLoggingNeededCriterionIds` authorizes that id, so a lagging rolling
+  habit cannot create a current action item.
   Policy rows P16 and
   P17 regress this distinction with the six-dimensional BP fixture; model
   results and context-shape experiments live in the goal-agent eval run book.

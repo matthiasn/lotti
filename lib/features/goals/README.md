@@ -105,7 +105,13 @@ anchored to the same evaluation instant as the rolling aggregate. The latest
 sample also carries today's completion state and its direction since the
 previous sample, while a daily-action index keeps completed health logging
 separate from rolling habits that remain behind. Delayed prior-day wakes name
-their evaluated date instead of presenting it as today's state. Banner
+their evaluated date instead of presenting it as today's state. Standing
+reports use separate evaluated-period, rolling, change, coverage, and action
+slots that the app assembles into the visible summary. A structured current
+action is shown only when its criterion id appears in deterministic
+health-logging-needed guidance; a lagging rolling habit alone cannot create a
+"do this today" action item.
+Banner
 freshness hashes only those model-facing window samples, so older backfills do
 not invalidate copy that could not cite them. Goal Agents
 list rows share one silhouette — reserved week-strip footprint, shared trend

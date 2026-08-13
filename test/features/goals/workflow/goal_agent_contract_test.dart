@@ -66,9 +66,50 @@ void main() {
     );
     final properties =
         reportTool.parameters['properties'] as Map<String, dynamic>;
+    final required = reportTool.parameters['required'] as List<dynamic>;
+    final report = properties['report'] as Map<String, dynamic>;
+    final reportProperties = report['properties'] as Map<String, dynamic>;
     expect(
-      (properties['tldr'] as Map<String, dynamic>)['description'],
-      contains('todayGuidance lists completed health logging'),
+      required,
+      containsAll(['status', 'oneLiner', 'report']),
+    );
+    expect(
+      report['required'],
+      GoalReportSectionKeys.values,
+    );
+    expect(
+      reportProperties.keys,
+      containsAll(GoalReportSectionKeys.values),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.currentPeriod]
+          as Map<String, dynamic>)['description'],
+      contains('todayGuidance'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.latestChange]
+          as Map<String, dynamic>)['description'],
+      contains('exact latest'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.nextActions]
+          as Map<String, dynamic>)['type'],
+      'object',
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.nextActions]
+          as Map<String, dynamic>)['required'],
+      GoalReportActionKeys.values,
+    );
+    final actionProperties =
+        (reportProperties[GoalReportSectionKeys.nextActions]
+                as Map<String, dynamic>)['properties']
+            as Map<String, dynamic>;
+    expect(
+      ((actionProperties[GoalReportActionKeys.now]
+              as Map<String, dynamic>)['items']
+          as Map<String, dynamic>)['required'],
+      ['criterionId', 'action'],
     );
   });
 

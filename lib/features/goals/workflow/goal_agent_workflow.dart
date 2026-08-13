@@ -412,6 +412,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
       runKey: runKey,
       knownAdIds: knownAdIds,
       activeAdIds: activeAdIds,
+      allowedCurrentActionCriterionIds: _factsRenderer
+          .healthLoggingNeededCriterionIds(
+            criteria: version.criteria,
+            facts: facts,
+            evaluationReference: reference,
+          ),
       // The deterministic status is authoritative: a report claiming
       // anything else is rejected in-conversation.
       expectedStatus: facts.trackStatus,

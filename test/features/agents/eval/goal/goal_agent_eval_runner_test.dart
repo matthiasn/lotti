@@ -258,6 +258,7 @@ void main() {
         final scenario = scenarioById('gh_complex_latest_on_target');
         const correctReport =
             '{"status":"insufficientData",'
+            '"report":{"nextActions":{"now":[],"later":[]}},'
             '"oneLiner":"Today is logged and done: the latest 125/84 is on '
             'target.",'
             '"tldr":"Only two readings make the series sparse, but BP improved '
@@ -277,6 +278,7 @@ void main() {
 
         const fabricatedLatest =
             '{"status":"insufficientData",'
+            '"report":{"nextActions":{"now":[],"later":[]}},'
             '"oneLiner":"Today is logged and done: the latest 125/84 is on '
             'target.",'
             '"tldr":"BP improved from 129/94 to 125/84. Rolling averages are '
@@ -295,6 +297,7 @@ void main() {
 
         const trendMissing =
             '{"status":"insufficientData",'
+            '"report":{"nextActions":{"now":[],"later":[]}},'
             '"oneLiner":"Today is logged and done: 125/84 is on target.", '
             '"tldr":"The readings were 129/94 and 125/84. Rolling averages '
             'are 127 and 89. Weight readings were 96 and 94 with an average '
@@ -316,6 +319,7 @@ void main() {
       final scenario = scenarioById('gh_complex_habit_behind');
       const correctReport =
           '{"status":"insufficientData",'
+          '"report":{"nextActions":{"now":[],"later":[]}},'
           '"oneLiner":"The latest 125/84 is in range and BP logging is '
           'complete for today.", '
           '"tldr":"The two readings are still sparse. BP improved since the '
@@ -335,6 +339,7 @@ void main() {
 
       const repeatsMeasurement =
           '{"status":"insufficientData",'
+          '"report":{"nextActions":{"now":[],"later":[]}},'
           '"oneLiner":"The latest 125/84 is in range and BP logging is '
           'complete for today.", '
           '"tldr":"Two readings are sparse. BP improved since the previous '
@@ -354,6 +359,7 @@ void main() {
 
       const inventsMissedWeekday =
           '{"status":"insufficientData",'
+          '"report":{"nextActions":{"now":[],"later":[]}},'
           '"oneLiner":"The latest 125/84 is in range and BP logging is '
           'complete for today.", '
           '"tldr":"Two readings are sparse. BP improved since the previous '
@@ -365,6 +371,49 @@ void main() {
           scenario: scenario,
           toolCalls: [
             call(GoalAgentToolNames.updateGoalReport, inventsMissedWeekday),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+
+      const inventsActionDueNow =
+          '{"status":"insufficientData", '
+          '"report":{"nextActions":{"now":["Take medication"], '
+          '"later":[]}},'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"Two readings are sparse. BP improved since the previous '
+          'reading, while rolling averages remain 127 and 89. BP meds are '
+          '6/7 and behind. Weight improved to 94 kg with an average of 95."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, inventsActionDueNow),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.argumentMismatch,
+      );
+
+      const inventsMedicationDueToday =
+          '{"status":"insufficientData",'
+          '"report":{"nextActions":{"now":[],"later":[]}},'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"Two readings are sparse. BP improved since the previous '
+          'reading, while rolling averages remain 127 and 89. BP meds are '
+          '6/7 and behind. Weight improved to 94 kg with an average of 95. '
+          'Take BP medication today."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.updateGoalReport,
+              inventsMedicationDueToday,
+            ),
           ],
           assistantContent: '',
         ),

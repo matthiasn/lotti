@@ -43,7 +43,7 @@
     <release version="1.0.9" date="2026-08-13">
       <description>
         <p>Changed: a design-panel polish pass across the goal-agent surfaces. The banner's Log today opens a one-tap logging sheet, day cells wear a dedicated success green with an inner dot for partial days, Restarting reads in blue, warning orange is reserved for genuine attention, the goal statement is labelled, phones get a persistent chat button, the Goal Agents list keeps one card silhouette with the week strip on the right on wide screens, day squares accept taps on a larger area, and chart target lines render at full strength.</p>
-        <p>Fixed: goal-agent health reports separate today's actions from rolling recovery. When today's blood-pressure reading is on target, the agent says logging is complete today, reports the rolling average and latest change separately, and does not ask for another reading; lagging habits remain distinct actions.</p>
+        <p>Fixed: goal-agent health reports separate today's actions from rolling recovery. When today's blood-pressure reading is on target, the agent says logging is complete today, reports the rolling average and latest change separately, and does not ask for another reading. Structured report sections keep latest values, trends, coverage, and actions from being omitted, while explicit current-day action items are accepted only for health criteria the app proves remain loggable.</p>
       </description>
     </release>
     <release version="1.0.8" date="2026-08-12">

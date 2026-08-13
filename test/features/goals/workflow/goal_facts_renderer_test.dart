@@ -557,6 +557,71 @@ void main() {
     },
   );
 
+  test('current report actions expose only unmeasured health criteria', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'health-routine',
+      criteria: [
+        GoalCriterion.metric(
+          criterionId: 'health-weight',
+          dataType: GoalHealthDataTypes.weight,
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 88,
+          direction: GoalDirection.atMost,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-bp-meds',
+          habitId: 'habit-bp-meds',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 7,
+        ),
+      ],
+    );
+    final wakeFacts = GoalWakeFacts(
+      trackStatus: GoalTrackStatus.insufficientData,
+      evaluation: const GoalEvaluation(
+        attainment: 0.9,
+        satisfied: false,
+        dataCoverage: 1 / 7,
+        results: {
+          'health-weight': GoalCriterionResult(
+            criterionId: 'health-weight',
+            actual: 95,
+            target: 88,
+            ratio: 88 / 95,
+            satisfied: false,
+            sampleCount: 1,
+          ),
+          'habit-bp-meds': GoalCriterionResult(
+            criterionId: 'habit-bp-meds',
+            actual: 6,
+            target: 7,
+            ratio: 6 / 7,
+            satisfied: false,
+            sampleCount: 6,
+          ),
+        },
+      ),
+      quantitativeObservationsByType: {
+        GoalHealthDataTypes.weight: [
+          GoalMetricObservation(
+            recordedAt: DateTime(2026, 8, 8, 8),
+            value: 95,
+          ),
+        ],
+      },
+    );
+
+    expect(
+      renderer.healthLoggingNeededCriterionIds(
+        criteria: criteria,
+        facts: wakeFacts,
+        evaluationReference: DateTime(2026, 8, 9, 12),
+      ),
+      {'health-weight'},
+    );
+  });
+
   test('health evidence keeps the newest bounded sample and omitted count', () {
     const criteria = GoalCriterion.metric(
       criterionId: 'health-weight',

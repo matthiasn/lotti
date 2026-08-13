@@ -298,7 +298,11 @@ class GoalFactsRenderer {
     required DateTime evaluationReference,
   }) {
     final healthLoggingComplete = <String>[];
-    final healthLoggingNeeded = <String>[];
+    final healthLoggingNeeded = _healthLoggingNeededCriterionIds(
+      metrics: criteria.metrics,
+      facts: facts,
+      evaluationReference: evaluationReference,
+    ).toList();
     for (final entry in criteria.metrics.entries) {
       final metric = entry.value;
       if (!GoalHealthDataTypes.supported.contains(metric.dataType)) continue;
@@ -312,12 +316,6 @@ class GoalFactsRenderer {
           _isToday(latest.recordedAt, evaluationReference) &&
           _meetsTarget(latest.value, metric.target, metric.direction)) {
         healthLoggingComplete.add(entry.key);
-      } else if (latest == null ||
-          !_isToday(latest.recordedAt, evaluationReference)) {
-        final result = facts.evaluation.results[entry.key];
-        if (result != null && !result.satisfied) {
-          healthLoggingNeeded.add(entry.key);
-        }
       }
     }
     final rollingHabitsBehind = <String>[
@@ -331,6 +329,42 @@ class GoalFactsRenderer {
       'healthLoggingNeededCriterionIds': healthLoggingNeeded..sort(),
       'rollingHabitCriterionIdsBehind': rollingHabitsBehind..sort(),
     };
+  }
+
+  /// Health criteria whose latest observation is absent for the evaluated
+  /// day while their rolling result remains unsatisfied. Reports may turn
+  /// only these criterion ids into current-period actions.
+  Set<String> healthLoggingNeededCriterionIds({
+    required GoalCriterion criteria,
+    required GoalWakeFacts facts,
+    required DateTime evaluationReference,
+  }) => _healthLoggingNeededCriterionIds(
+    metrics: _leafCriteriaById(criteria).metrics,
+    facts: facts,
+    evaluationReference: evaluationReference,
+  );
+
+  Set<String> _healthLoggingNeededCriterionIds({
+    required Map<String, GoalCriterionMetric> metrics,
+    required GoalWakeFacts facts,
+    required DateTime evaluationReference,
+  }) {
+    final needed = <String>{};
+    for (final entry in metrics.entries) {
+      final metric = entry.value;
+      if (!GoalHealthDataTypes.supported.contains(metric.dataType)) continue;
+      final observations = goalHealthObservationsForCriterion(
+        metric: metric,
+        facts: facts,
+        evaluationReference: evaluationReference,
+      );
+      final latest = observations.lastOrNull;
+      if (latest == null || !_isToday(latest.recordedAt, evaluationReference)) {
+        final result = facts.evaluation.results[entry.key];
+        if (result != null && !result.satisfied) needed.add(entry.key);
+      }
+    }
+    return needed;
   }
 
   String _healthTodayStatus({
