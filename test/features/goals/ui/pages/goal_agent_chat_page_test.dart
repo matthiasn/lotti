@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -22,42 +20,38 @@ void main() {
   testWidgets('uses the agent name and returns to that goal detail', (
     tester,
   ) async {
-    final identity =
-        AgentDomainEntity.agent(
-              id: 'goal-1',
-              agentId: 'goal-1',
-              kind: AgentKinds.goalAgent,
-              displayName: 'Juno',
-              lifecycle: AgentLifecycle.active,
-              mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: const {},
-              currentStateId: 'goal-1:state',
-              config: const AgentConfig(),
-              createdAt: DateTime(2026),
-              updatedAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as AgentIdentityEntity;
+    final identity = AgentDomainEntity.agent(
+      id: 'goal-1',
+      agentId: 'goal-1',
+      kind: AgentKinds.goalAgent,
+      displayName: 'Juno',
+      lifecycle: AgentLifecycle.active,
+      mode: AgentInteractionMode.autonomous,
+      allowedCategoryIds: const {},
+      currentStateId: 'goal-1:state',
+      config: const AgentConfig(),
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+    ) as AgentIdentityEntity;
     final navigated = <String>[];
-    final spec =
-        AgentDomainEntity.goalSpecVersion(
-              id: 'goal-1:spec-v1',
-              agentId: 'goal-1',
-              version: 1,
-              status: GoalSpecVersionStatus.active,
-              authoredBy: 'user',
-              title: 'Walk',
-              statement: 'Walk three times in every rolling week.',
-              criteria: const GoalCriterion.habit(
-                criterionId: 'walk',
-                habitId: 'walk',
-                window: GoalWindow.rollingDays(count: 7),
-                targetCount: 3,
-              ),
-              createdAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as GoalSpecVersionEntity;
+    final spec = AgentDomainEntity.goalSpecVersion(
+      id: 'goal-1:spec-v1',
+      agentId: 'goal-1',
+      version: 1,
+      status: GoalSpecVersionStatus.active,
+      authoredBy: 'user',
+      title: 'Walk',
+      statement: 'Walk three times in every rolling week.',
+      criteria: const GoalCriterion.habit(
+        criterionId: 'walk',
+        habitId: 'walk',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 3,
+      ),
+      createdAt: DateTime(2026),
+      vectorClock: null,
+    ) as GoalSpecVersionEntity;
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
 
@@ -111,22 +105,20 @@ void main() {
   testWidgets('rejects a non-goal identity without mounting a composer', (
     tester,
   ) async {
-    final foreignIdentity =
-        AgentDomainEntity.agent(
-              id: 'goal-1',
-              agentId: 'goal-1',
-              kind: AgentKinds.taskAgent,
-              displayName: 'Not a goal',
-              lifecycle: AgentLifecycle.active,
-              mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: const {},
-              currentStateId: 'goal-1:state',
-              config: const AgentConfig(),
-              createdAt: DateTime(2026),
-              updatedAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as AgentIdentityEntity;
+    final foreignIdentity = AgentDomainEntity.agent(
+      id: 'goal-1',
+      agentId: 'goal-1',
+      kind: AgentKinds.taskAgent,
+      displayName: 'Not a goal',
+      lifecycle: AgentLifecycle.active,
+      mode: AgentInteractionMode.autonomous,
+      allowedCategoryIds: const {},
+      currentStateId: 'goal-1:state',
+      config: const AgentConfig(),
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+    ) as AgentIdentityEntity;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentChatPage(agentId: 'goal-1'),
@@ -149,22 +141,20 @@ void main() {
   testWidgets('a completed system pop persists the detail route', (
     tester,
   ) async {
-    final identity =
-        AgentDomainEntity.agent(
-              id: 'goal-1',
-              agentId: 'goal-1',
-              kind: AgentKinds.goalAgent,
-              displayName: 'Juno',
-              lifecycle: AgentLifecycle.active,
-              mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: const {},
-              currentStateId: 'goal-1:state',
-              config: const AgentConfig(),
-              createdAt: DateTime(2026),
-              updatedAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as AgentIdentityEntity;
+    final identity = AgentDomainEntity.agent(
+      id: 'goal-1',
+      agentId: 'goal-1',
+      kind: AgentKinds.goalAgent,
+      displayName: 'Juno',
+      lifecycle: AgentLifecycle.active,
+      mode: AgentInteractionMode.autonomous,
+      allowedCategoryIds: const {},
+      currentStateId: 'goal-1:state',
+      config: const AgentConfig(),
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      vectorClock: null,
+    ) as AgentIdentityEntity;
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -181,15 +171,13 @@ void main() {
         ],
       ),
     );
-    unawaited(
-      tester
-          .state<NavigatorState>(find.byType(Navigator))
-          .push(
-            MaterialPageRoute<void>(
-              builder: (_) => const GoalAgentChatPage(agentId: 'goal-1'),
-            ),
+    tester
+        .state<NavigatorState>(find.byType(Navigator))
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => const GoalAgentChatPage(agentId: 'goal-1'),
           ),
-    );
+        );
     await tester.pumpAndSettle();
 
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();

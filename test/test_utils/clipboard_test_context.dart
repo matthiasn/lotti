@@ -1,7 +1,6 @@
 // `super_clipboard`'s native write path routes through the irondash message
-// channel. `MockMessageChannelContext` and `superNativeExtensionsContext` come
-// from its transitive dependencies, hence the lint ignore.
-// ignore_for_file: depend_on_referenced_packages
+// channel. Direct dev dependencies expose `MockMessageChannelContext` and
+// `superNativeExtensionsContext` for deterministic widget tests.
 import 'package:irondash_message_channel/irondash_message_channel.dart';
 import 'package:super_native_extensions/src/native/context.dart';
 

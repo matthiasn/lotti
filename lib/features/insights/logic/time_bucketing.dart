@@ -333,9 +333,10 @@ InsightsChartData buildChartData(
     for (final key in seriesKeys)
       [
         for (final bucket in perBucket)
-          key == kInsightsOtherCategoryKey
-              ? rolledUp.fold<int>(0, (sum, id) => sum + (bucket[id] ?? 0))
-              : bucket[key] ?? 0,
+          if (key == kInsightsOtherCategoryKey)
+            rolledUp.fold<int>(0, (sum, id) => sum + (bucket[id] ?? 0))
+          else
+            bucket[key] ?? 0,
       ],
   ];
 

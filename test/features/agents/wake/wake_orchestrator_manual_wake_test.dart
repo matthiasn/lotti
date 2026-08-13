@@ -250,7 +250,6 @@ void main() {
               return null;
             };
 
-          // ignore: cascade_invocations
           orchestrator.start(controller.stream);
 
           // Emit a notification to enqueue a subscription job

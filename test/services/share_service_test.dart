@@ -3,9 +3,8 @@ import 'package:lotti/services/share_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus/share_plus.dart';
-// Transitive via share_plus; only the platform interface exposes the
+// Only the directly declared platform-interface dev dependency exposes the
 // settable instance seam.
-// ignore: depend_on_referenced_packages
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart';
 
 class _MockSharePlatform extends Mock

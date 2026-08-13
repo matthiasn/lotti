@@ -66,7 +66,7 @@ class _ProfileLocalityScenario {
   /// The model id stored in each profile slot (null for unset slots).
   List<String?> get slotModelIds => [
     for (var i = 0; i < slotCount; i++)
-      shapes[i] == _SlotShape.unset ? null : _modelIdFor(i),
+      if (shapes[i] == _SlotShape.unset) null else _modelIdFor(i),
   ];
 
   /// Model rows the repo should return for this scenario. A `missingModel`
@@ -170,16 +170,15 @@ AiConfigInferenceProfile _profile({
   String? imageGenerationModelId,
 }) {
   return AiConfig.inferenceProfile(
-        id: id,
-        name: 'Test',
-        createdAt: DateTime.utc(2026, 3, 15),
-        thinkingModelId: thinkingModelId,
-        thinkingHighEndModelId: thinkingHighEndModelId,
-        imageRecognitionModelId: imageRecognitionModelId,
-        transcriptionModelId: transcriptionModelId,
-        imageGenerationModelId: imageGenerationModelId,
-      )
-      as AiConfigInferenceProfile;
+    id: id,
+    name: 'Test',
+    createdAt: DateTime.utc(2026, 3, 15),
+    thinkingModelId: thinkingModelId,
+    thinkingHighEndModelId: thinkingHighEndModelId,
+    imageRecognitionModelId: imageRecognitionModelId,
+    transcriptionModelId: transcriptionModelId,
+    imageGenerationModelId: imageGenerationModelId,
+  ) as AiConfigInferenceProfile;
 }
 
 AiConfigModel _model({
@@ -191,16 +190,15 @@ AiConfigModel _model({
   // (see `ai_config.dart` docstring on `inferenceProfile`). Default the
   // factory to the matching shape used by production seeders.
   return AiConfig.model(
-        id: id,
-        name: id,
-        providerModelId: providerModelId ?? id,
-        inferenceProviderId: inferenceProviderId,
-        createdAt: DateTime.utc(2026, 3, 15),
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      )
-      as AiConfigModel;
+    id: id,
+    name: id,
+    providerModelId: providerModelId ?? id,
+    inferenceProviderId: inferenceProviderId,
+    createdAt: DateTime.utc(2026, 3, 15),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: false,
+  ) as AiConfigModel;
 }
 
 AiConfigInferenceProvider _provider({
@@ -208,14 +206,13 @@ AiConfigInferenceProvider _provider({
   required InferenceProviderType type,
 }) {
   return AiConfig.inferenceProvider(
-        id: id,
-        baseUrl: '',
-        apiKey: '',
-        name: type.name,
-        inferenceProviderType: type,
-        createdAt: DateTime.utc(2026, 3, 15),
-      )
-      as AiConfigInferenceProvider;
+    id: id,
+    baseUrl: '',
+    apiKey: '',
+    name: type.name,
+    inferenceProviderType: type,
+    createdAt: DateTime.utc(2026, 3, 15),
+  ) as AiConfigInferenceProvider;
 }
 
 void main() {

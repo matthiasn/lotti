@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -310,12 +309,10 @@ class _InspectorContentState extends State<_InspectorContent> {
 
   void _scrollToEnd() {
     if (!_scroll.hasClients) return;
-    unawaited(
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: kThemeAnimationDuration,
-        curve: Curves.easeOut,
-      ),
+    _scroll.animateTo(
+      _scroll.position.maxScrollExtent,
+      duration: kThemeAnimationDuration,
+      curve: Curves.easeOut,
     );
   }
 

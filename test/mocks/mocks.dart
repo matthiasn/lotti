@@ -1391,7 +1391,10 @@ class MockLinkedFromEntriesController extends LinkedFromEntriesController {
 }
 
 class MockLinkedTasksControllerManageMode extends LinkedTasksController {
-  MockLinkedTasksControllerManageMode([super.taskId]);
+  // The production family constructor intentionally names its unused argument
+  // `_`, so a matching super parameter cannot carry the useful test name.
+  // ignore: use_super_parameters
+  MockLinkedTasksControllerManageMode([String taskId = '']) : super(taskId);
 
   @override
   LinkedTasksState build() {

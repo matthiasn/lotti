@@ -347,9 +347,10 @@ ChangeSetEntity _expectedRetiredConsolidatedSet(ChangeSetEntity set) {
   return set.copyWith(
     items: [
       for (final item in set.items)
-        item.status == ChangeItemStatus.pending
-            ? item.copyWith(status: ChangeItemStatus.retracted)
-            : item,
+        if (item.status == ChangeItemStatus.pending)
+          item.copyWith(status: ChangeItemStatus.retracted)
+        else
+          item,
     ],
     status: ChangeSetStatus.resolved,
   );

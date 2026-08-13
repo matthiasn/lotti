@@ -331,9 +331,10 @@ class _CalendarWeekRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final cell in row)
-          cell == null
-              ? SizedBox(width: cellSize, height: cellSize)
-              : CalendarDayCell(data: cell),
+          if (cell == null)
+            SizedBox(width: cellSize, height: cellSize)
+          else
+            CalendarDayCell(data: cell),
       ],
     );
   }

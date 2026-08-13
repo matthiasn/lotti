@@ -15,7 +15,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:permission_handler/permission_handler.dart';
-// ignore: depend_on_referenced_packages
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
     show PermissionHandlerPlatform;
 import 'package:uuid/uuid.dart';

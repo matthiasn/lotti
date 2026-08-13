@@ -175,9 +175,10 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
         if (updatedParsedItem != null) {
           await syncService.upsertEntity(updatedParsedItem);
         }
-        if (taskLink != null) {
+        final link = taskLink;
+        if (link != null) {
           await _softDeleteTaskLinksForParsedItem(captureItemId!, now);
-          await syncService.upsertLink(taskLink);
+          await syncService.upsertLink(link);
         }
       });
     }
@@ -280,26 +281,24 @@ extension _DayAgentCaptureToolHandlers on DayAgentCaptureService {
       }
     }
 
-    final item =
-        AgentDomainEntity.parsedItem(
-              id: 'parsed_${_uuid.v4()}',
-              agentId: agentId,
-              captureId: captureId,
-              kind: kind,
-              title: title,
-              categoryId: matchedTask?.meta.categoryId ?? categoryId,
-              confidence: confidence,
-              confidenceScore: score,
-              createdAt: now,
-              vectorClock: null,
-              lowConfidence: lowConfidence,
-              spokenPhrase: _optionalString(data['spokenPhrase']),
-              matchedTaskId: matchedTaskId,
-              estimateMinutes: _optionalInt(data['estimateMinutes']),
-              timeAnchor: _optionalString(data['timeAnchor']),
-              proposedUpdate: _optionalString(data['proposedUpdate']),
-            )
-            as ParsedItemEntity;
+    final item = AgentDomainEntity.parsedItem(
+      id: 'parsed_${_uuid.v4()}',
+      agentId: agentId,
+      captureId: captureId,
+      kind: kind,
+      title: title,
+      categoryId: matchedTask?.meta.categoryId ?? categoryId,
+      confidence: confidence,
+      confidenceScore: score,
+      createdAt: now,
+      vectorClock: null,
+      lowConfidence: lowConfidence,
+      spokenPhrase: _optionalString(data['spokenPhrase']),
+      matchedTaskId: matchedTaskId,
+      estimateMinutes: _optionalInt(data['estimateMinutes']),
+      timeAnchor: _optionalString(data['timeAnchor']),
+      proposedUpdate: _optionalString(data['proposedUpdate']),
+    ) as ParsedItemEntity;
 
     final link = matchedTaskId == null
         ? null

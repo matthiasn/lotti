@@ -46,9 +46,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus/share_plus.dart';
 // SharePlatform is only re-exported from share_plus with a `show` clause that
-// omits it, so the platform interface package is imported directly here to
-// install a fake instance. It is a transitive dependency of share_plus.
-// ignore: depend_on_referenced_packages
+// omits it, so the directly declared platform-interface dev dependency exposes
+// the fake-instance seam used here.
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart'
     show SharePlatform;
 

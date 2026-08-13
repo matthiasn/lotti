@@ -99,7 +99,7 @@ Future<void> _launch(
   void showProgress() {
     if (pushed) return;
     pushed = true;
-    unawaited(navigator.push(progressRoute));
+    navigator.push(progressRoute);
   }
 
   try {

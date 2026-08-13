@@ -66,7 +66,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
       // Only scroll when an enclosing Scrollable exists (the hosting modal owns
       // it); a directly-pumped sheet has none and must not throw.
       if (ctx != null && Scrollable.maybeOf(ctx) != null) {
-        unawaited(Scrollable.ensureVisible(ctx, alignment: 0.5));
+        Scrollable.ensureVisible(ctx, alignment: 0.5);
       }
     });
   }

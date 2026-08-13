@@ -211,12 +211,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Navigate to EvolutionChatPage.
-        unawaited(
-          navigatorKey.currentState!.push(
-            MaterialPageRoute<void>(
-              builder: (_) =>
-                  const EvolutionChatPage(templateId: kTestTemplateId),
-            ),
+        navigatorKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const EvolutionChatPage(templateId: kTestTemplateId),
           ),
         );
         await tester.pumpAndSettle();

@@ -124,7 +124,7 @@ class _DesignSystemTextareaState extends State<DesignSystemTextarea> {
     final accessibleFieldLabel = [
       widget.semanticsLabel ?? widget.label ?? widget.hintText,
       if (widget.helperText != null || widget.errorText != null)
-        hasError ? widget.errorText : widget.helperText,
+        if (hasError) widget.errorText else widget.helperText,
     ].nonNulls.join(', ');
 
     final textarea = Column(

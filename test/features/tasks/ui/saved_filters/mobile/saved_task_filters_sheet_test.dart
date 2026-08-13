@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -692,11 +690,9 @@ void main() {
       );
       await tester.pump();
 
-      unawaited(
-        navKey.currentState!.push(
-          MaterialPageRoute<void>(
-            builder: (_) => const Scaffold(body: SavedTaskFiltersSheet()),
-          ),
+      navKey.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: SavedTaskFiltersSheet()),
         ),
       );
       await tester.pump();

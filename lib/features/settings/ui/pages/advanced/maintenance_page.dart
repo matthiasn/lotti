@@ -81,18 +81,17 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
                 .messages
                 .settingsMaintenanceOnboardingAnimationGallerySubtitle,
             icon: Icons.animation_rounded,
-            onTap: () => unawaited(
-              // Root navigator on mobile so the gallery covers the shell's
-              // floating bottom nav instead of leaving it stacked on top —
-              // this debug screen is pushed on top of a settings route, so
-              // it can't be matched (and slid away) by the route-based
-              // `settingsRouteHidesBottomNav`. See `bottom_nav_safe_navigator.dart`.
-              bottomNavSafeNavigatorOf(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const OnboardingAnimationGalleryPage(),
+            onTap: () =>
+                // Root navigator on mobile so the gallery covers the shell's
+                // floating bottom nav instead of leaving it stacked on top —
+                // this debug screen is pushed on top of a settings route, so
+                // it can't be matched (and slid away) by the route-based
+                // `settingsRouteHidesBottomNav`. See `bottom_nav_safe_navigator.dart`.
+                bottomNavSafeNavigatorOf(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const OnboardingAnimationGalleryPage(),
+                  ),
                 ),
-              ),
-            ),
           ),
           (
             title: context.messages.settingsResetHintsTitle,

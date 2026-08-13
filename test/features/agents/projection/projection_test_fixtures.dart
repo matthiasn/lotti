@@ -121,7 +121,7 @@ List<AgentEvent> _buildArbitraryGraph(List<_EdgeNode> nodes) {
           for (final ref in nodes[i].parentRefs)
             // Map into [0, n+2): < n is a present node (any node, so self- and
             // forward-refs → cycles); otherwise an absent ghost (→ dangling).
-            (ref % (n + 2)) < n ? 'e${ref % (n + 2)}' : 'ghost$ref',
+            if ((ref % (n + 2)) < n) 'e${ref % (n + 2)}' else 'ghost$ref',
         ],
       ),
   ];
@@ -146,9 +146,10 @@ List<List<T>> permutationsOf<T>(List<T> items) {
 /// PRs 3–7 per the kernel plan).
 extension AnyProjectionFixtures on Any {
   /// A well-formed DAG of 0..12 events. See [GeneratedDag].
-  Generator<GeneratedDag> get projectionDag => ListAnys(this)
-      .listWithLengthInRange(0, 12, _nodeSpec)
-      .map((specs) => GeneratedDag(_buildEvents(specs)));
+  Generator<GeneratedDag> get projectionDag =>
+      ListAnys(this)
+          .listWithLengthInRange(0, 12, _nodeSpec)
+          .map((specs) => GeneratedDag(_buildEvents(specs)));
 
   /// A set of 0..9 parentless events (all concurrent). `canonicalOrder` must
   /// return these in `(hostId, id)` order, which makes this the clean test of
@@ -175,11 +176,12 @@ extension AnyProjectionFixtures on Any {
   /// unique (`e0`..), so only a cycle can make `canonicalOrder` throw. Vector
   /// clocks are trivial (ordering is edge-driven). Use to property-test
   /// robustness on malformed graphs, not just well-formed DAGs.
-  Generator<List<AgentEvent>> get arbitraryEdgeGraph => ListAnys(this)
-      .listWithLengthInRange(0, 10, _edgeNode)
-      .map(
-        _buildArbitraryGraph,
-      );
+  Generator<List<AgentEvent>> get arbitraryEdgeGraph =>
+      ListAnys(this)
+          .listWithLengthInRange(0, 10, _edgeNode)
+          .map(
+            _buildArbitraryGraph,
+          );
 
   /// A linear chain `e0 → e1 → … → e{n-1}` of 1..15 events (each event's parent
   /// is the previous one). Exactly one head: the last event. Guarantees the
