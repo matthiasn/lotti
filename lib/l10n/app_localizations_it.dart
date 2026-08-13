@@ -13194,4 +13194,133 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get navTabTitlePeople => 'Persone';
+
+  @override
+  String get relationshipsPageTitle => 'Persone';
+
+  @override
+  String get configFlagEnableRelationships => 'Attiva la pagina Persone';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Mostra la scheda Persone per coltivare le tue relazioni personali.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Aggiungi le persone a cui vuoi restare vicino.';
+
+  @override
+  String get relationshipCreateTitle => 'Aggiungi persona';
+
+  @override
+  String get relationshipNameLabel => 'Nome';
+
+  @override
+  String get relationshipNicknameLabel => 'Soprannome';
+
+  @override
+  String get relationshipNameRequired => 'Il nome è obbligatorio';
+
+  @override
+  String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Ricordami di restare in contatto';
+
+  @override
+  String get relationshipCadenceLabel => 'Ritmo dei contatti';
+
+  @override
+  String get relationshipCadenceNone => 'Nessun ritmo';
+
+  @override
+  String get relationshipCadenceWeekly => 'Ogni settimana';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Ogni due settimane';
+
+  @override
+  String get relationshipCadenceMonthly => 'Ogni mese';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Ogni trimestre';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Impossibile salvare la persona. Riprova.';
+
+  @override
+  String get relationshipLogCheckIn => 'Registra un contatto';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.';
+
+  @override
+  String get relationshipStatusActive => 'Attiva';
+
+  @override
+  String get relationshipStatusDormant => 'In pausa';
+
+  @override
+  String get relationshipStatusArchived => 'Archiviata';
+
+  @override
+  String get checkInInteractionLabel => 'Come avete parlato?';
+
+  @override
+  String get checkInInteractionInPerson => 'Di persona';
+
+  @override
+  String get checkInInteractionCall => 'Chiamata';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videochiamata';
+
+  @override
+  String get checkInInteractionMessage => 'Messaggio';
+
+  @override
+  String get checkInInteractionOther => 'Altro';
+
+  @override
+  String get checkInSentimentLabel => 'Com\'è andata?';
+
+  @override
+  String get checkInSentimentDelightful => 'Splendido';
+
+  @override
+  String get checkInSentimentGood => 'Bene';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutro';
+
+  @override
+  String get checkInSentimentStrained => 'Teso';
+
+  @override
+  String get checkInSentimentDifficult => 'Difficile';
+
+  @override
+  String get checkInTopicsLabel => 'Argomenti';
+
+  @override
+  String get checkInTopicsHint => 'Separati da virgole, ad es. lavoro, viaggi';
+
+  @override
+  String get checkInNarrativeLabel => 'Di cosa avete parlato?';
+
+  @override
+  String get checkInPayAttentionLabel => 'La prossima volta fai attenzione a';
+
+  @override
+  String get checkInAvoidLabel => 'Meglio evitare';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Impossibile salvare il contatto. Riprova.';
 }

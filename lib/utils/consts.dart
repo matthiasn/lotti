@@ -13,6 +13,7 @@ const enableDashboardsPageFlag = 'enable_dashboards_page';
 const enableUnifiedGoalsFlag = 'enable_unified_goals';
 const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';
+const enableRelationshipsFlag = 'enable_relationships';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableProjectsFlag = 'enable_projects';
 const enableEmbeddingsFlag = 'enable_embeddings';

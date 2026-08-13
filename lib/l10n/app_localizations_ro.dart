@@ -13277,4 +13277,134 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get navTabTitlePeople => 'Persoane';
+
+  @override
+  String get relationshipsPageTitle => 'Persoane';
+
+  @override
+  String get configFlagEnableRelationships => 'Activați pagina Persoane';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Afișează fila Persoane pentru a vă îngriji relațiile personale.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Adăugați persoanele de care doriți să rămâneți aproape.';
+
+  @override
+  String get relationshipCreateTitle => 'Adăugați o persoană';
+
+  @override
+  String get relationshipNameLabel => 'Nume';
+
+  @override
+  String get relationshipNicknameLabel => 'Poreclă';
+
+  @override
+  String get relationshipNameRequired => 'Numele este obligatoriu';
+
+  @override
+  String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Amintiți-mi să păstrez legătura';
+
+  @override
+  String get relationshipCadenceLabel => 'Ritmul contactului';
+
+  @override
+  String get relationshipCadenceNone => 'Fără ritm';
+
+  @override
+  String get relationshipCadenceWeekly => 'Săptămânal';
+
+  @override
+  String get relationshipCadenceFortnightly => 'La două săptămâni';
+
+  @override
+  String get relationshipCadenceMonthly => 'Lunar';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Trimestrial';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Persoana nu a putut fi salvată. Încercați din nou.';
+
+  @override
+  String get relationshipLogCheckIn => 'Înregistrați un contact';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nicio înregistrare încă — adăugați una după următoarea conversație.';
+
+  @override
+  String get relationshipStatusActive => 'Activă';
+
+  @override
+  String get relationshipStatusDormant => 'Inactivă';
+
+  @override
+  String get relationshipStatusArchived => 'Arhivată';
+
+  @override
+  String get checkInInteractionLabel => 'Cum ați vorbit?';
+
+  @override
+  String get checkInInteractionInPerson => 'În persoană';
+
+  @override
+  String get checkInInteractionCall => 'Apel';
+
+  @override
+  String get checkInInteractionVideoCall => 'Apel video';
+
+  @override
+  String get checkInInteractionMessage => 'Mesaj';
+
+  @override
+  String get checkInInteractionOther => 'Altfel';
+
+  @override
+  String get checkInSentimentLabel => 'Cum a fost?';
+
+  @override
+  String get checkInSentimentDelightful => 'Minunat';
+
+  @override
+  String get checkInSentimentGood => 'Bine';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutru';
+
+  @override
+  String get checkInSentimentStrained => 'Tensionat';
+
+  @override
+  String get checkInSentimentDifficult => 'Dificil';
+
+  @override
+  String get checkInTopicsLabel => 'Subiecte';
+
+  @override
+  String get checkInTopicsHint =>
+      'Separate prin virgulă, de ex. muncă, călătorii';
+
+  @override
+  String get checkInNarrativeLabel => 'Despre ce ați vorbit?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
+
+  @override
+  String get checkInAvoidLabel => 'De evitat';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Înregistrarea nu a putut fi salvată. Încercați din nou.';
 }

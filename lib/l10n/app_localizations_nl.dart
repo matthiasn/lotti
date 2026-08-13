@@ -13049,4 +13049,133 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get navTabTitlePeople => 'Mensen';
+
+  @override
+  String get relationshipsPageTitle => 'Mensen';
+
+  @override
+  String get configFlagEnableRelationships => 'Mensen-pagina inschakelen';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Toon het tabblad Mensen om je persoonlijke relaties te onderhouden.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Voeg de mensen toe met wie je dichtbij wilt blijven.';
+
+  @override
+  String get relationshipCreateTitle => 'Persoon toevoegen';
+
+  @override
+  String get relationshipNameLabel => 'Naam';
+
+  @override
+  String get relationshipNicknameLabel => 'Bijnaam';
+
+  @override
+  String get relationshipNameRequired => 'Een naam is verplicht';
+
+  @override
+  String get relationshipImportantLabel => 'Belangrijk';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Herinner me eraan contact te houden';
+
+  @override
+  String get relationshipCadenceLabel => 'Contactritme';
+
+  @override
+  String get relationshipCadenceNone => 'Geen ritme';
+
+  @override
+  String get relationshipCadenceWeekly => 'Wekelijks';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Om de twee weken';
+
+  @override
+  String get relationshipCadenceMonthly => 'Maandelijks';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Elk kwartaal';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Kon de persoon niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get relationshipLogCheckIn => 'Check-in vastleggen';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nog geen check-ins — leg er een vast na jullie volgende gesprek.';
+
+  @override
+  String get relationshipStatusActive => 'Actief';
+
+  @override
+  String get relationshipStatusDormant => 'Sluimerend';
+
+  @override
+  String get relationshipStatusArchived => 'Gearchiveerd';
+
+  @override
+  String get checkInInteractionLabel => 'Hoe hadden jullie contact?';
+
+  @override
+  String get checkInInteractionInPerson => 'In persoon';
+
+  @override
+  String get checkInInteractionCall => 'Telefoontje';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videogesprek';
+
+  @override
+  String get checkInInteractionMessage => 'Bericht';
+
+  @override
+  String get checkInInteractionOther => 'Anders';
+
+  @override
+  String get checkInSentimentLabel => 'Hoe voelde het?';
+
+  @override
+  String get checkInSentimentDelightful => 'Heerlijk';
+
+  @override
+  String get checkInSentimentGood => 'Goed';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutraal';
+
+  @override
+  String get checkInSentimentStrained => 'Gespannen';
+
+  @override
+  String get checkInSentimentDifficult => 'Moeilijk';
+
+  @override
+  String get checkInTopicsLabel => 'Onderwerpen';
+
+  @override
+  String get checkInTopicsHint => 'Kommagescheiden, bijv. werk, reizen';
+
+  @override
+  String get checkInNarrativeLabel => 'Waar hebben jullie het over gehad?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Let de volgende keer op';
+
+  @override
+  String get checkInAvoidLabel => 'Beter vermijden';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Kon de check-in niet opslaan. Probeer het opnieuw.';
 }

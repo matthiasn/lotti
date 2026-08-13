@@ -12933,6 +12933,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get navTabTitlePeople => 'People';
+
+  @override
+  String get relationshipsPageTitle => 'People';
+
+  @override
+  String get configFlagEnableRelationships => 'Enable People page';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Show the People tab for nurturing your personal relationships.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Add the people you want to stay close to.';
+
+  @override
+  String get relationshipCreateTitle => 'Add person';
+
+  @override
+  String get relationshipNameLabel => 'Name';
+
+  @override
+  String get relationshipNicknameLabel => 'Nickname';
+
+  @override
+  String get relationshipNameRequired => 'A name is required';
+
+  @override
+  String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipImportantDescription => 'Nudge me to stay in touch';
+
+  @override
+  String get relationshipCadenceLabel => 'Check-in cadence';
+
+  @override
+  String get relationshipCadenceNone => 'No cadence';
+
+  @override
+  String get relationshipCadenceWeekly => 'Weekly';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Every two weeks';
+
+  @override
+  String get relationshipCadenceMonthly => 'Monthly';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Quarterly';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Could not save this person. Please try again.';
+
+  @override
+  String get relationshipLogCheckIn => 'Log check-in';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'No check-ins yet — log one after you next talk.';
+
+  @override
+  String get relationshipStatusActive => 'Active';
+
+  @override
+  String get relationshipStatusDormant => 'Dormant';
+
+  @override
+  String get relationshipStatusArchived => 'Archived';
+
+  @override
+  String get checkInInteractionLabel => 'How did you connect?';
+
+  @override
+  String get checkInInteractionInPerson => 'In person';
+
+  @override
+  String get checkInInteractionCall => 'Call';
+
+  @override
+  String get checkInInteractionVideoCall => 'Video call';
+
+  @override
+  String get checkInInteractionMessage => 'Message';
+
+  @override
+  String get checkInInteractionOther => 'Other';
+
+  @override
+  String get checkInSentimentLabel => 'How did it feel?';
+
+  @override
+  String get checkInSentimentDelightful => 'Delightful';
+
+  @override
+  String get checkInSentimentGood => 'Good';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutral';
+
+  @override
+  String get checkInSentimentStrained => 'Strained';
+
+  @override
+  String get checkInSentimentDifficult => 'Difficult';
+
+  @override
+  String get checkInTopicsLabel => 'Topics';
+
+  @override
+  String get checkInTopicsHint => 'Comma-separated, e.g. work, travel';
+
+  @override
+  String get checkInNarrativeLabel => 'What did you talk about?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Next time, pay attention to';
+
+  @override
+  String get checkInAvoidLabel => 'Better to avoid';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Could not save the check-in. Please try again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

@@ -13026,4 +13026,133 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get navTabTitlePeople => 'Personer';
+
+  @override
+  String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get configFlagEnableRelationships => 'Aktivera sidan Personer';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Visa fliken Personer för att vårda dina personliga relationer.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Lägg till människorna du vill hålla kontakten med.';
+
+  @override
+  String get relationshipCreateTitle => 'Lägg till person';
+
+  @override
+  String get relationshipNameLabel => 'Namn';
+
+  @override
+  String get relationshipNicknameLabel => 'Smeknamn';
+
+  @override
+  String get relationshipNameRequired => 'Namn krävs';
+
+  @override
+  String get relationshipImportantLabel => 'Viktig';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Påminn mig om att hålla kontakten';
+
+  @override
+  String get relationshipCadenceLabel => 'Kontaktrytm';
+
+  @override
+  String get relationshipCadenceNone => 'Ingen rytm';
+
+  @override
+  String get relationshipCadenceWeekly => 'Varje vecka';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Varannan vecka';
+
+  @override
+  String get relationshipCadenceMonthly => 'Varje månad';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Varje kvartal';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Personen kunde inte sparas. Försök igen.';
+
+  @override
+  String get relationshipLogCheckIn => 'Logga avstämning';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Inga avstämningar än — logga en efter ert nästa samtal.';
+
+  @override
+  String get relationshipStatusActive => 'Aktiv';
+
+  @override
+  String get relationshipStatusDormant => 'Vilande';
+
+  @override
+  String get relationshipStatusArchived => 'Arkiverad';
+
+  @override
+  String get checkInInteractionLabel => 'Hur pratade ni?';
+
+  @override
+  String get checkInInteractionInPerson => 'Personligen';
+
+  @override
+  String get checkInInteractionCall => 'Samtal';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videosamtal';
+
+  @override
+  String get checkInInteractionMessage => 'Meddelande';
+
+  @override
+  String get checkInInteractionOther => 'Annat';
+
+  @override
+  String get checkInSentimentLabel => 'Hur kändes det?';
+
+  @override
+  String get checkInSentimentDelightful => 'Underbart';
+
+  @override
+  String get checkInSentimentGood => 'Bra';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutralt';
+
+  @override
+  String get checkInSentimentStrained => 'Ansträngt';
+
+  @override
+  String get checkInSentimentDifficult => 'Svårt';
+
+  @override
+  String get checkInTopicsLabel => 'Ämnen';
+
+  @override
+  String get checkInTopicsHint => 'Kommaseparerade, t.ex. jobb, resor';
+
+  @override
+  String get checkInNarrativeLabel => 'Vad pratade ni om?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
+
+  @override
+  String get checkInAvoidLabel => 'Bäst att undvika';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Avstämningen kunde inte sparas. Försök igen.';
 }

@@ -13141,4 +13141,133 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get navTabTitlePeople => 'Pessoas';
+
+  @override
+  String get relationshipsPageTitle => 'Pessoas';
+
+  @override
+  String get configFlagEnableRelationships => 'Ativar a página Pessoas';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Mostra a aba Pessoas para cuidar dos seus relacionamentos pessoais.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Adicione as pessoas de quem você quer ficar perto.';
+
+  @override
+  String get relationshipCreateTitle => 'Adicionar pessoa';
+
+  @override
+  String get relationshipNameLabel => 'Nome';
+
+  @override
+  String get relationshipNicknameLabel => 'Apelido';
+
+  @override
+  String get relationshipNameRequired => 'O nome é obrigatório';
+
+  @override
+  String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String get relationshipImportantDescription => 'Me lembre de manter contato';
+
+  @override
+  String get relationshipCadenceLabel => 'Ritmo de contato';
+
+  @override
+  String get relationshipCadenceNone => 'Sem ritmo';
+
+  @override
+  String get relationshipCadenceWeekly => 'Semanal';
+
+  @override
+  String get relationshipCadenceFortnightly => 'A cada duas semanas';
+
+  @override
+  String get relationshipCadenceMonthly => 'Mensal';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Trimestral';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Não foi possível salvar a pessoa. Tente novamente.';
+
+  @override
+  String get relationshipLogCheckIn => 'Registrar contato';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nenhum registro ainda — adicione um após a próxima conversa.';
+
+  @override
+  String get relationshipStatusActive => 'Ativo';
+
+  @override
+  String get relationshipStatusDormant => 'Adormecido';
+
+  @override
+  String get relationshipStatusArchived => 'Arquivado';
+
+  @override
+  String get checkInInteractionLabel => 'Como vocês conversaram?';
+
+  @override
+  String get checkInInteractionInPerson => 'Pessoalmente';
+
+  @override
+  String get checkInInteractionCall => 'Ligação';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videochamada';
+
+  @override
+  String get checkInInteractionMessage => 'Mensagem';
+
+  @override
+  String get checkInInteractionOther => 'Outro';
+
+  @override
+  String get checkInSentimentLabel => 'Como foi?';
+
+  @override
+  String get checkInSentimentDelightful => 'Maravilhoso';
+
+  @override
+  String get checkInSentimentGood => 'Bom';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutro';
+
+  @override
+  String get checkInSentimentStrained => 'Tenso';
+
+  @override
+  String get checkInSentimentDifficult => 'Difícil';
+
+  @override
+  String get checkInTopicsLabel => 'Assuntos';
+
+  @override
+  String get checkInTopicsHint =>
+      'Separados por vírgulas, ex.: trabalho, viagens';
+
+  @override
+  String get checkInNarrativeLabel => 'Sobre o que vocês conversaram?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Na próxima vez, preste atenção em';
+
+  @override
+  String get checkInAvoidLabel => 'Melhor evitar';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Não foi possível salvar o registro. Tente novamente.';
 }

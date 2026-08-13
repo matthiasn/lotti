@@ -107,6 +107,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableRelationshipsFlag,
+      description: 'Enable People Page?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableSessionRatingsFlag,
       description: 'Enable session ratings?',
       status: false,

@@ -29,7 +29,8 @@ class NavService {
     resetTabsToRoots();
 
     _navigationFlagsSub =
-        Rx.combineLatest6<
+        Rx.combineLatest7<
+              bool,
               bool,
               bool,
               bool,
@@ -43,6 +44,7 @@ class NavService {
                 bool projects,
                 bool events,
                 bool unifiedGoals,
+                bool relationships,
               })
             >(
               _journalDb.watchConfigFlag(enableHabitsPageFlag),
@@ -51,6 +53,7 @@ class NavService {
               _journalDb.watchConfigFlag(enableProjectsFlag),
               _journalDb.watchConfigFlag(enableEventsFlag),
               _journalDb.watchConfigFlag(enableUnifiedGoalsFlag),
+              _journalDb.watchConfigFlag(enableRelationshipsFlag),
               (
                 habits,
                 dashboards,
@@ -58,6 +61,7 @@ class NavService {
                 projects,
                 events,
                 unifiedGoals,
+                relationships,
               ) => (
                 habits: habits,
                 dashboards: dashboards,
@@ -65,6 +69,7 @@ class NavService {
                 projects: projects,
                 events: events,
                 unifiedGoals: unifiedGoals,
+                relationships: relationships,
               ),
             )
             .listen(_handleNavigationFlagsUpdated);
@@ -80,6 +85,7 @@ class NavService {
       bool projects,
       bool events,
       bool unifiedGoals,
+      bool relationships,
     })
   >
   _navigationFlagsSub;
@@ -145,6 +151,7 @@ class NavService {
   bool _isDailyOsPageEnabled = false;
   bool _isProjectsPageEnabled = false;
   bool _isEventsPageEnabled = false;
+  bool _isRelationshipsPageEnabled = false;
 
   String currentPath = '/tasks';
   final indexStreamController = StreamController<int>.broadcast();
@@ -162,6 +169,7 @@ class NavService {
   final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
   final BeamerDelegate goalsDelegate = goalsBeamerDelegate;
+  final BeamerDelegate relationshipsDelegate = relationshipsBeamerDelegate;
 
   /// Sends every tab back to its root path and selects Tasks.
   ///
@@ -192,6 +200,7 @@ class NavService {
   bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
   bool get isEventsPageEnabled => _isEventsPageEnabled;
+  bool get isRelationshipsPageEnabled => _isRelationshipsPageEnabled;
 
   List<BeamerDelegate>? _cachedBeamerDelegates;
 
@@ -229,6 +238,11 @@ class NavService {
       enabled: _isDashboardsPageEnabled,
       rootPath: '/dashboards',
       delegate: dashboardsDelegate,
+    );
+    yield (
+      enabled: _isRelationshipsPageEnabled,
+      rootPath: '/people',
+      delegate: relationshipsDelegate,
     );
     yield (enabled: true, rootPath: '/journal', delegate: journalDelegate);
     yield (
@@ -277,6 +291,7 @@ class NavService {
       bool projects,
       bool events,
       bool unifiedGoals,
+      bool relationships,
     })
     flags,
   ) {
@@ -286,6 +301,7 @@ class NavService {
     _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;
     _isEventsPageEnabled = flags.events;
+    _isRelationshipsPageEnabled = flags.relationships;
     _cachedBeamerDelegates = null;
 
     final previousPath = currentPath;

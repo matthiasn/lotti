@@ -13252,4 +13252,134 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get navTabTitlePeople => 'Proches';
+
+  @override
+  String get relationshipsPageTitle => 'Proches';
+
+  @override
+  String get configFlagEnableRelationships => 'Activer la page Proches';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Affiche l\'onglet Proches pour cultiver tes relations personnelles.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Ajoute les personnes dont tu veux rester proche.';
+
+  @override
+  String get relationshipCreateTitle => 'Ajouter une personne';
+
+  @override
+  String get relationshipNameLabel => 'Nom';
+
+  @override
+  String get relationshipNicknameLabel => 'Surnom';
+
+  @override
+  String get relationshipNameRequired => 'Le nom est obligatoire';
+
+  @override
+  String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Rappelle-moi de garder le contact';
+
+  @override
+  String get relationshipCadenceLabel => 'Rythme de contact';
+
+  @override
+  String get relationshipCadenceNone => 'Aucun rythme';
+
+  @override
+  String get relationshipCadenceWeekly => 'Chaque semaine';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Toutes les deux semaines';
+
+  @override
+  String get relationshipCadenceMonthly => 'Chaque mois';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Chaque trimestre';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Impossible d\'enregistrer la personne. Réessaie.';
+
+  @override
+  String get relationshipLogCheckIn => 'Noter un échange';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Aucun échange noté — ajoute le premier après votre prochaine conversation.';
+
+  @override
+  String get relationshipStatusActive => 'Active';
+
+  @override
+  String get relationshipStatusDormant => 'En veille';
+
+  @override
+  String get relationshipStatusArchived => 'Archivée';
+
+  @override
+  String get checkInInteractionLabel => 'Comment avez-vous échangé ?';
+
+  @override
+  String get checkInInteractionInPerson => 'En personne';
+
+  @override
+  String get checkInInteractionCall => 'Appel';
+
+  @override
+  String get checkInInteractionVideoCall => 'Visio';
+
+  @override
+  String get checkInInteractionMessage => 'Message';
+
+  @override
+  String get checkInInteractionOther => 'Autre';
+
+  @override
+  String get checkInSentimentLabel => 'C\'était comment ?';
+
+  @override
+  String get checkInSentimentDelightful => 'Merveilleux';
+
+  @override
+  String get checkInSentimentGood => 'Bien';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutre';
+
+  @override
+  String get checkInSentimentStrained => 'Tendu';
+
+  @override
+  String get checkInSentimentDifficult => 'Difficile';
+
+  @override
+  String get checkInTopicsLabel => 'Sujets';
+
+  @override
+  String get checkInTopicsHint =>
+      'Séparés par des virgules, p. ex. travail, voyages';
+
+  @override
+  String get checkInNarrativeLabel => 'De quoi avez-vous parlé ?';
+
+  @override
+  String get checkInPayAttentionLabel => 'La prochaine fois, fais attention à';
+
+  @override
+  String get checkInAvoidLabel => 'À éviter';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Impossible d\'enregistrer l\'échange. Réessaie.';
 }

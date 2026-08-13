@@ -13173,4 +13173,132 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get navTabTitlePeople => 'Lidé';
+
+  @override
+  String get relationshipsPageTitle => 'Lidé';
+
+  @override
+  String get configFlagEnableRelationships => 'Zapnout stránku Lidé';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Zobrazit záložku Lidé pro péči o tvoje osobní vztahy.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Přidej lidi, se kterými chceš zůstat v kontaktu.';
+
+  @override
+  String get relationshipCreateTitle => 'Přidat osobu';
+
+  @override
+  String get relationshipNameLabel => 'Jméno';
+
+  @override
+  String get relationshipNicknameLabel => 'Přezdívka';
+
+  @override
+  String get relationshipNameRequired => 'Jméno je povinné';
+
+  @override
+  String get relationshipImportantLabel => 'Důležité';
+
+  @override
+  String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
+
+  @override
+  String get relationshipCadenceLabel => 'Frekvence kontaktu';
+
+  @override
+  String get relationshipCadenceNone => 'Bez frekvence';
+
+  @override
+  String get relationshipCadenceWeekly => 'Každý týden';
+
+  @override
+  String get relationshipCadenceFortnightly => 'Každé dva týdny';
+
+  @override
+  String get relationshipCadenceMonthly => 'Každý měsíc';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Každé čtvrtletí';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Osobu se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipLogCheckIn => 'Zaznamenat kontakt';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Zatím žádné záznamy — přidej první po dalším rozhovoru.';
+
+  @override
+  String get relationshipStatusActive => 'Aktivní';
+
+  @override
+  String get relationshipStatusDormant => 'Spící';
+
+  @override
+  String get relationshipStatusArchived => 'Archivované';
+
+  @override
+  String get checkInInteractionLabel => 'Jak jste se spojili?';
+
+  @override
+  String get checkInInteractionInPerson => 'Osobně';
+
+  @override
+  String get checkInInteractionCall => 'Hovor';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videohovor';
+
+  @override
+  String get checkInInteractionMessage => 'Zpráva';
+
+  @override
+  String get checkInInteractionOther => 'Jinak';
+
+  @override
+  String get checkInSentimentLabel => 'Jaké to bylo?';
+
+  @override
+  String get checkInSentimentDelightful => 'Skvělé';
+
+  @override
+  String get checkInSentimentGood => 'Dobré';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutrální';
+
+  @override
+  String get checkInSentimentStrained => 'Napjaté';
+
+  @override
+  String get checkInSentimentDifficult => 'Těžké';
+
+  @override
+  String get checkInTopicsLabel => 'Témata';
+
+  @override
+  String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
+
+  @override
+  String get checkInNarrativeLabel => 'O čem jste mluvili?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Příště se zaměřit na';
+
+  @override
+  String get checkInAvoidLabel => 'Raději se vyhnout';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Záznam se nepodařilo uložit. Zkus to prosím znovu.';
 }

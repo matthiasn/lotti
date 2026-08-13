@@ -6,6 +6,7 @@ import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 
@@ -118,6 +119,21 @@ final goalsBeamerDelegate = BeamerDelegate(
     final path = routeInformation.uri.path;
     if (path == '/goals' || path.startsWith('/goals/')) {
       return GoalsLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.uri.path);
+  },
+);
+
+final relationshipsBeamerDelegate = BeamerDelegate(
+  initialPath: '/people',
+  updateParent: false,
+  updateFromParent: false,
+  locationBuilder: (routeInformation, _) {
+    // Root-path match (not a substring) so unrelated paths don't get routed
+    // here — the events delegate precedent.
+    final path = routeInformation.uri.path;
+    if (path == '/people' || path.startsWith('/people/')) {
+      return RelationshipsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },
