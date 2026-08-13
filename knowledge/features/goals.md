@@ -170,12 +170,15 @@ flowchart TD
   a EUR0 maintenance event.
 - **Banners are dirty-tracked against their evidence.** Phase B stamps a
   `factsDigest` (coarse status plus each dimension's actual value and
-  satisfaction plus a hash of exact health timestamps and values,
+  satisfaction plus a hash of the exact health timestamps and values that the
+  criterion's authored window can render at that evaluation reference,
   `goalFactsDigest`) into every minted or re-run banner's provenance. Phase A's
   sweep — which runs after derivation for exactly this reason — expires an
   active banner whose stamped digest no longer matches the current derivation,
   so a banner quoting "129/94" dies when a new reading or same-value backfill
-  lands, and the expiry re-arms the escalation for replacement copy. Health
+  lands inside that model-facing window, and the expiry re-arms the escalation
+  for replacement copy. A prior-period backfill that FACTS cannot expose leaves
+  valid copy alone. Health
   signal subscriptions also advance the standing-report stale watermark
   directly because the persisted progress register intentionally contains
   aggregates rather than the full raw series.
@@ -187,7 +190,7 @@ flowchart TD
   stamp existed keep deadline-only expiry.
 - **The report is dirty-tracked against the register.** When a tick's
   derivation differs from today's already-persisted register row
-  (`goalRegisterDigest` vs `goalFactsDigest`), Phase A advances the durable
+  (`goalRegisterDigest` vs `goalAggregateFactsDigest`), Phase A advances the durable
   report-stale watermark through the orchestrator — the detail page shows
   the out-of-date badge and the Update now CTA even though no status
   transitioned. The first tick of a day is not "new data" (the window slid),
@@ -234,10 +237,18 @@ flowchart TD
   `latest` repeats the newest reading with deterministic `onTarget` and
   `isToday` flags relative to that evaluation day. Future samples and samples
   outside the criterion window are excluded. A delayed escalation therefore
-  cannot slide its raw evidence beyond the aggregate it explains. Phase B can
+  evaluates at the final representable microsecond before the encoded day's
+  next local midnight: fractional-second samples at the boundary remain in the
+  period, while its raw evidence cannot slide beyond the aggregate it explains.
+  Phase B can
   describe the latest reading, direction and sparsity without inventing an
   intermediate measured value or overflowing a provider context; high-volume
   quantitative types such as steps remain aggregate-only.
+  The journal query may reach the next local midnight for complete historical
+  days, but the reader clips both quantitative aggregation and raw observations
+  to the captured evaluation instant before either projection is built. A
+  concurrent same-day write therefore appears in both representations on the
+  next wake, never in only one side of the current FACTS.
 - **Health level trends can be green before the threshold is crossed.** Weight
   and systolic/diastolic blood-pressure leaves use their latest observation per
   day and a rolling seven-day average. An unmet leaf with at least four sampled

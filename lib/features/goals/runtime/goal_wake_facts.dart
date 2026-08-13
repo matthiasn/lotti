@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart' show sha1;
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 
 /// Whether three consecutive attainment points are strictly worsening.
 /// [priorAttainments] is ordered most-recent-first.
@@ -85,6 +88,67 @@ String _healthEvidenceDigest(
   return sha1.convert(utf8.encode(evidence.join('|'))).toString();
 }
 
+/// Exact observations that one health criterion can expose to inference.
+///
+/// Keeping this projection shared by rendering and freshness guarantees that
+/// a prior-period backfill cannot stale copy when it is absent from FACTS.
+List<GoalMetricObservation> goalHealthObservationsForCriterion({
+  required GoalCriterionMetric metric,
+  required GoalWakeFacts facts,
+  required DateTime evaluationReference,
+}) {
+  if (!GoalHealthDataTypes.supported.contains(metric.dataType)) {
+    return const [];
+  }
+  final range = metric.window.periodRange(evaluationReference);
+  final candidates =
+      facts.quantitativeObservationsByType[metric.dataType] ??
+      const <GoalMetricObservation>[];
+  return <GoalMetricObservation>[
+    for (final observation in candidates)
+      if (!GoalWindow.dayUtc(observation.recordedAt).isBefore(range.start) &&
+          !GoalWindow.dayUtc(observation.recordedAt).isAfter(range.end) &&
+          !observation.recordedAt.isAfter(evaluationReference))
+        observation,
+  ]..sort((a, b) {
+    final byTime = a.recordedAt.compareTo(b.recordedAt);
+    return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
+  });
+}
+
+Map<String, List<GoalMetricObservation>> _renderedHealthEvidence({
+  required GoalCriterion criteria,
+  required GoalWakeFacts facts,
+  required DateTime evaluationReference,
+}) {
+  final evidence = <String, List<GoalMetricObservation>>{};
+
+  void visit(GoalCriterion criterion) {
+    switch (criterion) {
+      case final GoalCriterionMetric metric
+          when GoalHealthDataTypes.supported.contains(metric.dataType):
+        evidence['${metric.criterionId}:${metric.dataType}'] =
+            goalHealthObservationsForCriterion(
+              metric: metric,
+              facts: facts,
+              evaluationReference: evaluationReference,
+            );
+      case GoalCriterionAllOf(:final criteria) ||
+          GoalCriterionAnyOf(:final criteria) ||
+          GoalCriterionAtLeastCount(:final criteria):
+        criteria.forEach(visit);
+      case GoalCriterionMetric() ||
+          GoalCriterionHabit() ||
+          GoalCriterionMeasurable() ||
+          GoalCriterionCategoryTime():
+        break;
+    }
+  }
+
+  visit(criteria);
+  return evidence;
+}
+
 /// Deterministic fingerprint of every fact that can shape banner copy: the
 /// aggregate register evidence plus exact model-facing health observations.
 ///
@@ -92,9 +156,19 @@ String _healthEvidenceDigest(
 /// staleness sweep compares it against the current derivation, so a banner
 /// quoting evidence that has since changed is recognized as data-stale even
 /// when a backfill leaves the daily aggregate unchanged.
-String goalFactsDigest(GoalWakeFacts facts) {
+String goalFactsDigest(
+  GoalWakeFacts facts, {
+  required GoalCriterion criteria,
+  required DateTime evaluationReference,
+}) {
   final aggregate = goalAggregateFactsDigest(facts);
-  final health = _healthEvidenceDigest(facts.quantitativeObservationsByType);
+  final health = _healthEvidenceDigest(
+    _renderedHealthEvidence(
+      criteria: criteria,
+      facts: facts,
+      evaluationReference: evaluationReference,
+    ),
+  );
   return health.isEmpty ? aggregate : '$aggregate|health=$health';
 }
 

@@ -662,6 +662,10 @@ void main() {
                     value: 90,
                   ),
                   GoalMetricObservation(
+                    recordedAt: DateTime(2026, 8, 8, 23, 59, 59, 500),
+                    value: 89,
+                  ),
+                  GoalMetricObservation(
                     recordedAt: DateTime(2026, 8, 9, 8),
                     value: 88,
                   ),
@@ -690,11 +694,16 @@ void main() {
             expect(message, contains('"healthSeries"'));
             expect(
               message,
-              contains('"reference": "2026-08-08T23:59:59.000"'),
+              contains('"reference": "2026-08-08T23:59:59.999999"'),
             );
             expect(
               message,
               contains('"recordedAt": "2026-08-08T08:00:00.000"'),
+            );
+            expect(
+              message,
+              contains('"recordedAt": "2026-08-08T23:59:59.500"'),
+              reason: 'the completed day includes its final fractional second',
             );
             expect(
               message,

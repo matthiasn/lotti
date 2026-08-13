@@ -97,7 +97,9 @@ target, the card celebrates that today's logging is on target even if the
 rolling average still needs recovery; an over-target rolling average remains
 actionable when today has not been measured. Agent FACTS carry the newest 100
 exact samples per supported health criterion plus total and omitted counts,
-anchored to the same evaluation day as the rolling aggregate.
+anchored to the same evaluation instant as the rolling aggregate. Banner
+freshness hashes only those model-facing window samples, so older backfills do
+not invalidate copy that could not cite them.
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to

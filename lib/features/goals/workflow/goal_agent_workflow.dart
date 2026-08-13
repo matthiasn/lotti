@@ -563,6 +563,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           strategy: strategy,
           derivation: derivation,
           now: now,
+          evaluationReference: reference,
           escalationBaseline: goalEscalationBaselineFromTriggerTokens(
             triggerTokens,
           ),
@@ -871,9 +872,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// The evaluation instant for an overdue period — LOCAL wall clock,
   /// unlike [_headTimestamp]: signal queries and day keys are local.
   DateTime? _periodEnd(String periodKey) {
-    final parts = _periodParts(periodKey);
-    if (parts == null) return null;
-    return DateTime(parts.$1, parts.$2, parts.$3, 23, 59, 59);
+    return _periodEndExclusive(periodKey)?.subtract(
+      const Duration(microseconds: 1),
+    );
   }
 
   /// Exclusive local end of an encoded day, preserving the final second.
@@ -1126,11 +1127,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalAgentStrategy strategy,
     required GoalWakeDerivation derivation,
     required DateTime now,
+    DateTime? evaluationReference,
     String? escalationBaseline,
     bool replyToUser = false,
     bool userRequestedAd = false,
     String? adCreationDiscriminator,
   }) async {
+    final factsReference = evaluationReference ?? now;
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
       runKey: runKey,
@@ -1513,7 +1516,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
               // Re-stamp the evidence fingerprint: the re-run is a fresh
               // acknowledgment of the CURRENT facts, so later Phase A
               // sweeps must compare against this wake's derivation.
-              'factsDigest': goalFactsDigest(derivation.facts),
+              'factsDigest': goalFactsDigest(
+                derivation.facts,
+                criteria: derivation.version.criteria,
+                evaluationReference: factsReference,
+              ),
             },
           ),
         );
@@ -1600,7 +1607,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
             // data-stale once new evidence changes the derivation.
             provenance: {
               'specVersionId': derivation.version.id,
-              'factsDigest': goalFactsDigest(derivation.facts),
+              'factsDigest': goalFactsDigest(
+                derivation.facts,
+                criteria: derivation.version.criteria,
+                evaluationReference: factsReference,
+              ),
             },
           ),
         );

@@ -118,7 +118,13 @@ class GoalAgentPhaseA {
       agentId,
       now,
       activeVersionId: version.id,
-      currentFactsDigest: replacementEligible ? goalFactsDigest(facts) : null,
+      currentFactsDigest: replacementEligible
+          ? goalFactsDigest(
+              facts,
+              criteria: version.criteria,
+              evaluationReference: now,
+            )
+          : null,
     );
     final needsEscalation =
         facts.needsEscalation || (activeAdExpired && replacementEligible);
