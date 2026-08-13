@@ -328,6 +328,22 @@ void main() {
     );
   });
 
+  test('changing automatic refreshes rejects a missing goal agent', () async {
+    await expectLater(
+      service.updateAutomaticUpdates(agentId: agentId, enabled: false),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(upserts, isEmpty);
+    verifyNever(() => orchestrator.clearThrottle(agentId));
+    verifyNever(
+      () => orchestrator.cancelPendingWakes(
+        agentId,
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    );
+  });
+
   test('turning automatic refreshes on queues one catch-up for a stale '
       'report', () async {
     AgentIdentityEntity identity({required bool enabled}) =>
