@@ -2664,6 +2664,7 @@
   "goalFormExampleRead": "vor dem Schlafengehen lesen",
   "goalFormExampleWalk": "mehr spazieren gehen",
   "goalFormFooter": "Du kannst diesen Agenten jederzeit umbenennen, neu ausrichten, pausieren oder löschen.",
+  "goalFormGenericIntentionWords": "und,konsequent,konstant,täglich,tag,tage,tagen,jeder,jede,jeden,ziel,gewohnheit,monat,monatlich,monate,pro,regelmäßig,routine,zeit,mal,woche,wöchentlich,wochen,jahr,jährlich,jahre",
   "goalFormGoalNameLabel": "Name des Ziels",
   "goalFormHabitCadence": "{habit} ({count}×/Woche)",
   "goalFormHabitSignal": "zählt, wenn du die Gewohnheit abhakst",

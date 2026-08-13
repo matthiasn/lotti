@@ -6568,6 +6568,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puteți redenumi, reajusta, întrerupe sau șterge oricând acest agent.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'și,constant,consecvent,zilnic,zilnică,zi,zile,fiecare,obiectiv,scop,obicei,lună,lunar,luni,pe,regulat,rutină,timp,dată,ori,săptămână,săptămânal,săptămâni,an,anual,ani';
+
+  @override
   String get goalFormGoalNameLabel => 'Numele obiectivului';
 
   @override
@@ -6649,7 +6653,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'măsura,măsoară,măsurat,măsurare,înregistra,înregistrează,înregistrat,înregistrare,nota,notează,notat,verifica,verifică,verificat,monitoriza,monitorizează,monitorizat,urmări,urmărește,urmărit,consemna,consemnează,consemnat';
+      'măsura,măsoară,măsurat,măsurare,înregistra,înregistrează,înregistrat,înregistrare,nota,notează,notat,verifica,verifică,verificat,monitoriza,monitorizează,monitorizat,urmări,urmărește,urmărit,consemna,consemnează,consemnat,monitorizare,monitorizarea,monitorizări,măsurarea,măsurători,înregistrarea,verificarea,urmărirea,consemnarea,notarea';
 
   @override
   String get goalFormNoHabits => 'Nu există încă obiceiuri active disponibile.';

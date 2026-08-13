@@ -6421,6 +6421,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can rename, retarget, pause or delete this agent anytime.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'and,consistent,consistently,daily,day,days,each,every,goal,habit,month,monthly,months,per,regular,regularly,routine,time,times,week,weekly,weeks,year,yearly,years';
+
+  @override
   String get goalFormGoalNameLabel => 'Goal name';
 
   @override
@@ -6499,7 +6503,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking';
+      'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings';
 
   @override
   String get goalFormNoHabits => 'No active habits are available yet.';

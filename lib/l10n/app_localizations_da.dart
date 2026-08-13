@@ -6448,6 +6448,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Du kan når som helst omdøbe, justere, sætte på pause eller slette denne agent.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'og,konsekvent,dagligt,daglig,dag,dage,hver,hvert,mål,vane,måned,månedlig,måneder,per,regelmæssig,rutine,tid,gang,gange,uge,ugentlig,uger,år,årlig';
+
+  @override
   String get goalFormGoalNameLabel => 'Målets navn';
 
   @override

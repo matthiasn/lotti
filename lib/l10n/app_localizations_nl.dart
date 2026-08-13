@@ -6463,6 +6463,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt deze agent altijd hernoemen, bijstellen, pauzeren of verwijderen.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'en,consistent,consequent,dagelijks,dag,dagen,elke,elk,doel,gewoonte,maand,maandelijks,maanden,per,regelmatig,routine,tijd,keer,week,wekelijks,weken,jaar,jaarlijks,jaren';
+
+  @override
   String get goalFormGoalNameLabel => 'Naam van het doel';
 
   @override

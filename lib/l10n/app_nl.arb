@@ -2920,6 +2920,7 @@
   "goalFormExampleRead": "lezen voor het slapengaan",
   "goalFormExampleWalk": "meer wandelen",
   "goalFormFooter": "Je kunt deze agent altijd hernoemen, bijstellen, pauzeren of verwijderen.",
+  "goalFormGenericIntentionWords": "en,consistent,consequent,dagelijks,dag,dagen,elke,elk,doel,gewoonte,maand,maandelijks,maanden,per,regelmatig,routine,tijd,keer,week,wekelijks,weken,jaar,jaarlijks,jaren",
   "goalFormGoalNameLabel": "Naam van het doel",
   "goalFormHabitCadence": "{habit} ({count}×/week)",
   "goalFormHabitSignal": "telt wanneer je de gewoonte afvinkt",

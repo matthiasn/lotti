@@ -2921,6 +2921,7 @@
   "goalFormExampleRead": "läsa före läggdags",
   "goalFormExampleWalk": "promenera mer",
   "goalFormFooter": "Du kan när som helst byta namn, justera, pausa eller ta bort agenten.",
+  "goalFormGenericIntentionWords": "och,konsekvent,dagligen,daglig,dag,dagar,varje,mål,vana,månad,månatlig,månader,per,regelbunden,rutin,tid,gång,gånger,vecka,veckovis,veckor,år,årlig",
   "goalFormGoalNameLabel": "Målets namn",
   "goalFormHabitCadence": "{habit} ({count}×/vecka)",
   "goalFormHabitSignal": "räknas när du bockar av vanan",

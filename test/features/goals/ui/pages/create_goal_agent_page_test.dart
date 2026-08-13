@@ -5337,4 +5337,167 @@ void main() {
       expect(find.text('130'), findsNothing);
     },
   );
+
+  testWidgets(
+    'a German bookkeeping habit carrying a cadence word is demoted',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(habitsRepository.watchHabitDefinitions).thenAnswer(
+        (_) => Stream.value([
+          _habit('wiegen', 'Gewicht täglich messen'),
+          _habit('heben', 'Gewicht heben'),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+          locale: const Locale('de'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gewicht verlieren',
+      );
+      await tester.tap(find.text('Weiter'));
+      await tester.pumpAndSettle();
+
+      // The readings signal arrives selected…
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-health-row-weight')),
+            )
+            .selected,
+        isTrue,
+      );
+      // …and "täglich" is a German generic cadence word, so it no longer
+      // shields the bookkeeping habit from demotion.
+      final bookkeeping = find.byKey(const ValueKey('goal-form-habit-wiegen'));
+      expect(
+        tester.widget<DesignSystemSelectionRow>(bookkeeping).selected,
+        isFalse,
+      );
+      expect(
+        tester.getRect(find.text('Vorgeschlagen')).top,
+        lessThan(tester.getRect(bookkeeping).top),
+      );
+      // A habit with a real leftover word still keeps its selection.
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(const ValueKey('goal-form-habit-heben')),
+            )
+            .selected,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'a newly filled blood-pressure half saves the shared direction',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.metric(
+        criterionId: 'bp-dia',
+        dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 82,
+        // Spelled out: the stored direction is what this test is about.
+        // ignore: avoid_redundant_argument_values
+        direction: GoalDirection.atLeast,
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          GoalSpecRevisionService.ownerNoChangesReason,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Filling the blank half of the pair must adopt the direction the
+      // shared toggle already shows, not the atMost default.
+      await tester.enterText(
+        find.byKey(
+          const ValueKey(
+            'goal-form-health-target-'
+            'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+          ),
+        ),
+        '128',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining(
+          'Systolic blood pressure: 7-day average At least 128 mmHg',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          'Diastolic blood pressure: 7-day average At least 82 mmHg',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      final saved =
+          verify(
+                () => revisionService.reviseFromOwner(
+                  agentId: 'goal-1',
+                  baseVersionId: current.id,
+                  displayName: any(named: 'displayName'),
+                  title: any(named: 'title'),
+                  statement: any(named: 'statement'),
+                  criteria: captureAny(named: 'criteria'),
+                ),
+              ).captured.single
+              as GoalCriterionAllOf;
+      expect(
+        {
+          for (final leaf in saved.criteria.whereType<GoalCriterionMetric>())
+            leaf.dataType: (leaf.target, leaf.direction),
+        },
+        {
+          GoalHealthDataTypes.bloodPressureSystolic: (
+            128,
+            GoalDirection.atLeast,
+          ),
+          GoalHealthDataTypes.bloodPressureDiastolic: (
+            82,
+            GoalDirection.atLeast,
+          ),
+        },
+      );
+    },
+  );
 }

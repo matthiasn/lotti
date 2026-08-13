@@ -6553,6 +6553,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu peux renommer, réajuster, mettre en pause ou supprimer cet agent à tout moment.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'et,constant,constante,régulier,régulière,quotidien,quotidienne,jour,jours,chaque,objectif,habitude,mois,mensuel,mensuelle,par,routine,temps,fois,semaine,hebdomadaire,semaines,année,annuel,an,ans,années';
+
+  @override
   String get goalFormGoalNameLabel => 'Nom de l\'objectif';
 
   @override
@@ -6633,7 +6637,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'mesurer,mesure,mesures,mesuré,suivre,suivi,suivis,noter,note,notes,noté,enregistrer,enregistre,enregistré,contrôler,contrôle,contrôlé,vérifier,vérifie,vérifié,surveiller,surveille,surveillé,relever,relevé';
+      'mesurer,mesure,mesures,mesuré,suivre,suivi,suivis,noter,note,notes,noté,enregistrer,enregistre,enregistré,contrôler,contrôle,contrôlé,vérifier,vérifie,vérifié,surveiller,surveille,surveillé,relever,relevé,mesurée,mesurées,suivie,suivies,notée,notées,enregistrée,enregistrées,contrôlée,contrôlées,vérifiée,vérifiées,surveillée,surveillées,relevée,relevées,relevés';
 
   @override
   String get goalFormNoHabits =>

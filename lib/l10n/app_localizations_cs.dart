@@ -6519,6 +6519,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Agenta můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'konzistentní,pravidelně,denně,den,dny,dní,každý,každá,cíl,návyk,zvyk,měsíc,měsíčně,měsíce,pravidelný,rutina,čas,krát,týden,týdně,týdny,rok,ročně,roky,let';
+
+  @override
   String get goalFormGoalNameLabel => 'Název cíle';
 
   @override

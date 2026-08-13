@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
@@ -209,6 +210,24 @@ bool projectsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   return segments[1] != 'create';
 }
 
+/// True when the agents beamer location points at a goal agent's own pages —
+/// the detail page, its chat, its edit wizard (`/agents/details/{id}/...`) or
+/// the create wizard (`/agents/create`).
+///
+/// Every one of them is a terminal page that owns its bottom edge: the detail
+/// page's day-assessment sheet docks its `Record for <day>` CTA there, and
+/// both wizards pin their Continue band there. With the bar in place the
+/// blurred pill sits on top of that CTA. They slide the bar away for the same
+/// reason as [projectsRouteHidesBottomNav]. Pure function of router state.
+///
+/// The `/agents` list root keeps the bar — it is a tab you navigate *from*.
+bool agentsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
+  if (location is! AgentsLocation) return false;
+  final segments = location.state.uri.pathSegments;
+  if (segments.length < 2 || segments.first != 'agents') return false;
+  return segments[1] == 'details' || segments[1] == 'create';
+}
+
 /// Clamps a raw navigation index into `[0, itemCount - 1]` so a stale index
 /// from the nav stream cannot go out of bounds when feature flags shrink the
 /// destinations list.
@@ -323,6 +342,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.tasksDelegate,
     navService.projectsDelegate,
     navService.settingsDelegate,
+    navService.agentsDelegate,
   ]);
 
   bool _notLoggedInToastShown = false;
@@ -809,6 +829,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         (destinations[index].kind == _AppNavigationDestinationKind.projects &&
             projectsRouteHidesBottomNav(
               navService.projectsDelegate.currentBeamLocation,
+            )) ||
+        (destinations[index].kind == _AppNavigationDestinationKind.agents &&
+            agentsRouteHidesBottomNav(
+              navService.agentsDelegate.currentBeamLocation,
             ));
 
     // The bar fills with as many destinations as fit comfortably at the

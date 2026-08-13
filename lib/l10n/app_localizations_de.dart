@@ -6493,6 +6493,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du kannst diesen Agenten jederzeit umbenennen, neu ausrichten, pausieren oder löschen.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'und,konsequent,konstant,täglich,tag,tage,tagen,jeder,jede,jeden,ziel,gewohnheit,monat,monatlich,monate,pro,regelmäßig,routine,zeit,mal,woche,wöchentlich,wochen,jahr,jährlich,jahre';
+
+  @override
   String get goalFormGoalNameLabel => 'Name des Ziels';
 
   @override

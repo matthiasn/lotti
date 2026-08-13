@@ -275,6 +275,7 @@ void main() {
         '/dashboards',
         '/journal',
         '/settings',
+        '/agents',
       ]) {
         delegates[path] = await createEmptyDelegate(path);
       }
@@ -289,6 +290,7 @@ void main() {
       when(() => nav.dashboardsDelegate).thenReturn(delegates['/dashboards']!);
       when(() => nav.journalDelegate).thenReturn(delegates['/journal']!);
       when(() => nav.settingsDelegate).thenReturn(delegates['/settings']!);
+      when(() => nav.agentsDelegate).thenReturn(delegates['/agents']!);
       when(() => nav.isProjectsPageEnabled).thenReturn(false);
       when(() => nav.isDailyOsPageEnabled).thenReturn(false);
       when(() => nav.isHabitsPageEnabled).thenReturn(false);

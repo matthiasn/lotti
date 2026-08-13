@@ -2921,6 +2921,7 @@
   "goalFormExampleRead": "læs før sengetid",
   "goalFormExampleWalk": "gå mere",
   "goalFormFooter": "Du kan når som helst omdøbe, justere, sætte på pause eller slette denne agent.",
+  "goalFormGenericIntentionWords": "og,konsekvent,dagligt,daglig,dag,dage,hver,hvert,mål,vane,måned,månedlig,måneder,per,regelmæssig,rutine,tid,gang,gange,uge,ugentlig,uger,år,årlig",
   "goalFormGoalNameLabel": "Målets navn",
   "goalFormHabitCadence": "{habit} ({count}×/uge)",
   "goalFormHabitSignal": "tæller, når du krydser vanen af",

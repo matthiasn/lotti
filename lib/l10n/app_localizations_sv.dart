@@ -6455,6 +6455,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du kan när som helst byta namn, justera, pausa eller ta bort agenten.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'och,konsekvent,dagligen,daglig,dag,dagar,varje,mål,vana,månad,månatlig,månader,per,regelbunden,rutin,tid,gång,gånger,vecka,veckovis,veckor,år,årlig';
+
+  @override
   String get goalFormGoalNameLabel => 'Målets namn';
 
   @override

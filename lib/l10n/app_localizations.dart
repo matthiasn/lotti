@@ -11012,6 +11012,12 @@ abstract class AppLocalizations {
   /// **'You can rename, retarget, pause or delete this agent anytime.'**
   String get goalFormFooter;
 
+  /// No description provided for @goalFormGenericIntentionWords.
+  ///
+  /// In en, this message translates to:
+  /// **'and,consistent,consistently,daily,day,days,each,every,goal,habit,month,monthly,months,per,regular,regularly,routine,time,times,week,weekly,weeks,year,yearly,years'**
+  String get goalFormGenericIntentionWords;
+
   /// Label of the goal's editable name field on the mapping and confirmation steps.
   ///
   /// In en, this message translates to:
@@ -11134,7 +11140,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormMeasurementVerbs.
   ///
   /// In en, this message translates to:
-  /// **'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking'**
+  /// **'measure,measures,measured,measuring,track,tracks,tracked,tracking,log,logs,logged,logging,check,checks,checked,checking,record,records,recorded,recording,monitor,monitors,monitored,monitoring,note,notes,noted,noting,take,takes,taking,took,taken,measurement,measurements,reading,readings'**
   String get goalFormMeasurementVerbs;
 
   /// No description provided for @goalFormNoHabits.

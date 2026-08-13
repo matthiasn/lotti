@@ -6514,6 +6514,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Podes renomear, reajustar, pausar ou eliminar este agente a qualquer momento.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'e,constante,consistente,diário,diária,dia,dias,cada,objetivo,meta,hábito,mês,mensal,meses,por,regular,rotina,tempo,vez,vezes,semana,semanal,semanas,ano,anual,anos';
+
+  @override
   String get goalFormGoalNameLabel => 'Nome da meta';
 
   @override
@@ -6594,7 +6598,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormMeasurementVerbs =>
-      'medir,mede,medido,medição,registar,regista,registado,registo,anotar,anota,anotado,controlar,controla,controlado,controlo,verificar,verifica,verificado,monitorizar,monitoriza,monitorizado,acompanhar,acompanha,acompanhamento,tomar,toma';
+      'medir,mede,medido,medição,registar,regista,registado,registo,anotar,anota,anotado,controlar,controla,controlado,controlo,verificar,verifica,verificado,monitorizar,monitoriza,monitorizado,acompanhar,acompanha,acompanhamento,tomar,toma,registrar,registra,registrado,registro,monitorar,monitora,monitorado,monitoramento,controle,medições';
 
   @override
   String get goalFormNoHabits => 'Ainda não há hábitos ativos disponíveis.';

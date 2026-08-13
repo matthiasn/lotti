@@ -6537,6 +6537,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes renombrar este agente, cambiar su objetivo, pausarlo o eliminarlo cuando quieras.';
 
   @override
+  String get goalFormGenericIntentionWords =>
+      'y,constante,consistente,diario,diaria,día,días,cada,objetivo,meta,hábito,mes,mensual,meses,por,regular,rutina,tiempo,vez,veces,semana,semanal,semanas,año,anual,años';
+
+  @override
   String get goalFormGoalNameLabel => 'Nombre del objetivo';
 
   @override

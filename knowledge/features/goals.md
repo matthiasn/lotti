@@ -488,7 +488,17 @@ flowchart TD
   Manual mapping choices survive back-navigation while the intention is
   unchanged. A category-stream refresh adds newly available intention matches
   without resetting other manual signals or targets, and a manually removed
-  category match stays suppressed until the user reselects it. Saving validates
+  category match stays suppressed until the user reselects it.
+  **An edited intention re-maps additively, and an explicit deselection
+  outranks the re-map.** Health signals the user unticked are remembered for
+  the lifetime of the form: a re-map still offers them as unchecked
+  suggestions but never re-seeds their targets, and re-selecting one clears
+  the memory and restores its default target. The same rule already governs
+  category-time matches, so no back-edit of the statement can silently
+  resurrect a signal the user removed.
+  Signals added through the picker likewise stay on the card as unchecked rows
+  once unticked, until the step is re-entered and the row order is re-frozen —
+  deselecting is never a deletion the user has to undo through the picker. Saving validates
   category-time selections through a direct database snapshot that includes
   hidden rows, retaining an active private category if it disappears from the
   discovery stream while removing newly selected inactive or deleted
@@ -776,6 +786,17 @@ flowchart TD
   existing measurable setup flow. Mapping waits for the active-habit snapshot before caching a
   match, uses whole-word matching that excludes generic cadence terms, and
   explicitly refuses an intention for which no observable proxy exists.
+  **Both word lists the matcher subtracts — the generic cadence terms and the
+  bookkeeping verbs — come from the ARB catalogs
+  (`goalFormGenericIntentionWords`, `goalFormMeasurementVerbs`), not from Dart
+  constants.** They are matched against text the user wrote in their own
+  language, so an English-only list silently disables matching in every other
+  locale. An intention naming a health capability pre-selects that signal, and
+  a habit whose entire name is the health label plus a bookkeeping verb
+  ("Measure blood pressure", "Gewicht messen") is demoted to an unchecked
+  suggestion so the goal never watches one reading twice; a habit with any
+  other distinctive word left over ("Weight training") is a real habit and
+  keeps its selection.
   Existing criteria outside the form's representable range stay losslessly
   read-only. Before creation or editing saves, every selected habit is checked
   through an unfiltered integrity lookup. This retains an active private habit
