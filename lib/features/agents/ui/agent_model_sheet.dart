@@ -140,6 +140,14 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
       .toList();
 }
 
+String? _selectedProfileId(
+  AgentConfig? config, {
+  required bool allowLegacyProfile,
+}) {
+  return config?.inferenceSetup?.baseProfileId ??
+      (allowLegacyProfile ? config?.profileId : null);
+}
+
 class _AgentSetupFlowController {
   _AgentSetupFlowController({
     required this.container,
@@ -378,10 +386,12 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
         .unwrapPrevious()
         .value;
     final config = identity?.config;
+    final selectedProfileId = _selectedProfileId(
+      config,
+      allowLegacyProfile: controller.taskId == null,
+    );
     final currentProfile = options?.profiles
-        .where(
-          (profile) => profile.id == config?.inferenceSetup?.baseProfileId,
-        )
+        .where((profile) => profile.id == selectedProfileId)
         .firstOrNull;
     final resolvedProfile = setup?.profile;
     final resolvedModelName = resolvedProfile?.thinkingModel?.name;
@@ -650,6 +660,10 @@ class _AgentProfilePage extends ConsumerWidget {
             .where((profile) => isDesktop || !profile.desktopOnly)
             .toList() ??
         const <AiConfigInferenceProfile>[];
+    final selectedProfileId = _selectedProfileId(
+      config,
+      allowLegacyProfile: controller.taskId == null,
+    );
 
     return _AgentBusyGuard(
       controller: controller,
@@ -692,7 +706,7 @@ class _AgentProfilePage extends ConsumerWidget {
                   subtitle: _profileRoute(context, profile, options),
                   subtitleMaxLines: null,
                   type: DesignSystemSelectionRowType.singleSelect,
-                  selected: config?.inferenceSetup?.baseProfileId == profile.id,
+                  selected: selectedProfileId == profile.id,
                   leading: Icon(
                     Icons.account_tree_outlined,
                     color: tokens.colors.text.mediumEmphasis,

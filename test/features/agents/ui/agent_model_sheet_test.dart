@@ -147,6 +147,7 @@ void main() {
     AgentConfig? config,
     ResolvedAgentSetup? resolvedSetup,
     TaskAgentSetupOptions? setupOptions,
+    String? taskId = 'task-1',
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -157,7 +158,7 @@ void main() {
               builder: (context) => FilledButton(
                 onPressed: () => AgentModelSheet.show(
                   context: context,
-                  taskId: 'task-1',
+                  taskId: taskId,
                   agentId: 'agent-1',
                 ),
                 child: const Text('Open'),
@@ -309,6 +310,24 @@ void main() {
       semanticsHandle.dispose();
     },
   );
+
+  testWidgets('goal sheet selects a legacy persisted profile', (tester) async {
+    await openSheet(
+      tester,
+      taskId: null,
+      config: AgentConfig(profileId: profile.id),
+    );
+
+    expect(find.text('Saved profile'), findsOneWidget);
+    expect(find.text('No profile selected'), findsNothing);
+
+    await openProfilePage(tester);
+    final profileRow = tester.widget<DesignSystemSelectionRow>(
+      find.byKey(const ValueKey('agent-profile-profile-1')),
+    );
+    expect(profileRow.selected, isTrue);
+    expect(find.text('Copy category default'), findsNothing);
+  });
 
   testWidgets('model choice responds immediately, persists, and closes', (
     tester,

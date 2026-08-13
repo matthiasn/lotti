@@ -197,12 +197,9 @@ void main() {
       final id = invocation.positionalArguments.single as String;
       return _habit(id, id, private: true);
     });
-    when(() => categoryRepository.getCategoryById(any())).thenAnswer((
-      invocation,
-    ) async {
-      final id = invocation.positionalArguments.single as String;
-      return _category(id, id);
-    });
+    when(
+      categoryRepository.getAllCategoriesIncludingHidden,
+    ).thenAnswer((_) async => [_category('deep-work', 'Deep work')]);
   });
 
   testWidgets('requires a speakable intention before mapping', (tester) async {
@@ -915,9 +912,9 @@ void main() {
     await tester.pumpAndSettle();
 
     when(
-      () => categoryRepository.getCategoryById('deep-work'),
+      categoryRepository.getAllCategoriesIncludingHidden,
     ).thenAnswer(
-      (_) async => _category('deep-work', 'Deep work', active: false),
+      (_) async => [_category('deep-work', 'Deep work', active: false)],
     );
     categories.add([]);
     await tester.pumpAndSettle();
@@ -947,9 +944,9 @@ void main() {
     final categories = StreamController<List<CategoryDefinition>>.broadcast();
     addTearDown(categories.close);
     when(
-      () => categoryRepository.getCategoryById('deep-work'),
+      categoryRepository.getAllCategoriesIncludingHidden,
     ).thenAnswer(
-      (_) async => _category('deep-work', 'Deep work', private: true),
+      (_) async => [_category('deep-work', 'Deep work', private: true)],
     );
     when(
       () => agentService.createGoalAgent(
@@ -1004,6 +1001,8 @@ void main() {
             as GoalCriterionCategoryTime;
     expect(saved.categoryId, 'deep-work');
     expect(saved.title, 'Deep work');
+    verify(categoryRepository.getAllCategoriesIncludingHidden).called(1);
+    verifyNever(() => categoryRepository.getCategoryById(any()));
   });
 
   testWidgets('save refreshes an untouched derived title after cleanup', (

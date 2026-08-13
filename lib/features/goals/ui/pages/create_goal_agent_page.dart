@@ -617,12 +617,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final selectedCategoryIds = _categoryTimeTargets.keys.toList();
     if (selectedCategoryIds.isEmpty) return const [];
     final repository = ref.read(categoryRepositoryProvider);
-    final resolvedCategories = await Future.wait([
-      for (final categoryId in selectedCategoryIds)
-        repository.getCategoryById(categoryId),
-    ]);
+    final categoriesById = {
+      for (final category in await repository.getAllCategoriesIncludingHidden())
+        category.id: category,
+    };
     final confirmedCategories = <CategoryDefinition>[];
-    for (final category in resolvedCategories) {
+    for (final categoryId in selectedCategoryIds) {
+      final category = categoriesById[categoryId];
       if (category != null && category.active && category.deletedAt == null) {
         confirmedCategories.add(category);
       }
