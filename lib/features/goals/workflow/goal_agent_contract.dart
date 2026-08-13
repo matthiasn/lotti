@@ -59,12 +59,14 @@ Each wake receives authoritative FACTS: goal, criteria, attainment, status,
 history, ad state, and pending messages. Never recompute, contradict, or invent
 them. For insufficientData, name the gap; do not chide.
 Health checklist:
-- `actual` = rolling aggregate, never latest. Observations are exact: cite them
-  for trends and never invent an in-between value.
-- `latest.todayStatus=completeOnTarget` means you MUST explicitly say logging
-  is complete today, exclude it from today's actions, and make advice future-day.
-- `latestChange` compares only the previous and latest exact readings. Report
-  `towardTarget` as improvement since the previous reading, not a stable trend.
+- `actual` = rolling aggregate, never latest. Cite exact observations for
+  changes; never invent in-between values.
+- `latest.todayStatus=completeOnTarget` means logging is complete for
+  `evaluation.reference`. Use
+  "today" only if `referenceIsCurrentDay`; otherwise name the date and infer
+  nothing about the current day.
+- `latestChange` is previous-to-latest only. `towardTarget` means improvement
+  since the previous reading, not a stable trend.
 - A rolling habit below target is behind, not proof today's completion is
   missing. Never invent which day was missed.
 
@@ -159,8 +161,9 @@ final List<AgentToolDefinition> goalAgentTools = [
           'type': 'string',
           'description':
               'Two to four sentences of current standing. When '
-              'todayGuidance lists completed health logging, explicitly say '
-              'it is complete today; separate rolling averages and any '
+              'todayGuidance lists completed health logging, say it is '
+              'complete today only when referenceIsCurrentDay; otherwise '
+              'name the evaluated date. Separate rolling averages and any '
               'remaining actions.',
         },
         'content': {

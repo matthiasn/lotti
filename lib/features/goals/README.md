@@ -104,7 +104,8 @@ exact samples per supported health criterion plus total and omitted counts,
 anchored to the same evaluation instant as the rolling aggregate. The latest
 sample also carries today's completion state and its direction since the
 previous sample, while a daily-action index keeps completed health logging
-separate from rolling habits that remain behind. Banner
+separate from rolling habits that remain behind. Delayed prior-day wakes name
+their evaluated date instead of presenting it as today's state. Banner
 freshness hashes only those model-facing window samples, so older backfills do
 not invalidate copy that could not cite them. Goal Agents
 list rows share one silhouette — reserved week-strip footprint, shared trend

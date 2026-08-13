@@ -81,6 +81,8 @@ itself. The selected shape layers three deterministic hints instead:
   logging still needed today, and rolling habits behind.
 - Each health series labels its latest reading with `todayStatus` and its last
   two exact observations with `latestChange`.
+- `evaluation.referenceIsCurrentDay` prevents delayed prior-day wakes from
+  calling their historical evaluation "today".
 - The system contract defines those fields, while the `update_goal_report.tldr`
   schema makes the daily-action distinction part of the required output.
 

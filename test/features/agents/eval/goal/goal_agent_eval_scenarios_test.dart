@@ -490,6 +490,13 @@ void main() {
             'direction': 'towardTarget',
           },
         );
+        expect(completeEvaluation['referenceIsCurrentDay'], isTrue);
+        expect(
+          ((result('health-weight')['healthSeries']
+                  as Map<String, dynamic>)['latest']
+              as Map<String, dynamic>)['todayStatus'],
+          'measuredOffTarget',
+        );
         expect(completeEvaluation['todayGuidance'], {
           'healthLoggingCompleteCriterionIds': [
             'health-blood-pressure-systolic',

@@ -159,6 +159,7 @@ void main() {
     expect(localTime['utcOffsetMinutes'], isA<int>());
     expect(localTime['timeZoneName'], isA<String>());
     final evaluation = json['evaluation'] as Map<String, dynamic>;
+    expect(evaluation['referenceIsCurrentDay'], isTrue);
     expect(evaluation['todayGuidance'], {
       'healthLoggingCompleteCriterionIds': <String>[],
       'healthLoggingNeededCriterionIds': <String>[],
@@ -175,6 +176,14 @@ void main() {
       (goal['criteria'] as Map<String, dynamic>)['window'],
       'rolling 7 days',
     );
+  });
+
+  test('marks a delayed evaluation reference as historical', () {
+    final json = renderedJson(
+      evaluationReference: DateTime(2026, 8, 8, 23, 59, 59),
+    );
+    final evaluation = json['evaluation'] as Map<String, dynamic>;
+    expect(evaluation['referenceIsCurrentDay'], isFalse);
   });
 
   test('rolling-window recovery facts reach the authoritative block so the '

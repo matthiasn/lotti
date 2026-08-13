@@ -39,6 +39,7 @@ class GoalAgentEvalScenario {
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
     this.forbiddenReportClaims = const [],
+    this.forbiddenReportPatterns = const [],
     this.requiredToolArgumentTermGroups = const {},
     this.forbiddenToolArgumentTerms = const {},
     this.requiredAssistantContentTermGroups = const [],
@@ -74,6 +75,10 @@ class GoalAgentEvalScenario {
   /// Claims that must not be *affirmatively asserted* in the report
   /// (negated mentions are fine — see `eval_text_matchers.dart`).
   final List<String> forbiddenReportClaims;
+
+  /// Regular expressions for invalid claims whose wording has meaningful
+  /// variation, such as inventing a weekday for an unidentified missed habit.
+  final List<String> forbiddenReportPatterns;
 
   /// Per-tool required term groups over the concatenated arguments of all
   /// calls to that tool.
@@ -945,6 +950,10 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       'needs attention across the board',
       "today's dose is missing",
       'take the outstanding dose today',
+    ],
+    forbiddenReportPatterns: const [
+      r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\b(?:missed|missing|skipped|forgot|not taken)\b',
+      r'\b(?:missed|missing|skipped|forgot|not taken)\b.{0,40}\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
     ],
   ),
 ];

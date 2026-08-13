@@ -25,6 +25,7 @@ void main() {
       contains('`latest.todayStatus=completeOnTarget`'),
     );
     expect(goalAgentSystemPrompt, contains('latestChange'));
+    expect(goalAgentSystemPrompt, contains('referenceIsCurrentDay'));
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '

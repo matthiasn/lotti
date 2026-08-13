@@ -89,6 +89,7 @@ class GoalFactsRenderer {
         'criteria': criterionJson(version.criteria),
       },
       'evaluation': {
+        'referenceIsCurrentDay': _isToday(evaluationReference, now),
         'todayGuidance': _todayGuidanceJson(
           criteria: leafCriteria,
           facts: facts,

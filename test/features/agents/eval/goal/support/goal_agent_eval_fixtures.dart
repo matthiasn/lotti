@@ -152,6 +152,10 @@ const double complexHealthHabitDueAttainment =
 /// inventing that today's dose is due. The complete case preserves the
 /// 5/7-measurement, 7/7-medication and 3/7-weighing history.
 String buildComplexHealthFacts({bool bpMedsBehind = false}) {
+  final referenceDayPrefix = complexHealthEvalReference
+      .toIso8601String()
+      .substring(0, 10);
+
   Map<String, Object?> habitResult({
     required String criterionId,
     required int actual,
@@ -187,10 +191,10 @@ String buildComplexHealthFacts({bool bpMedsBehind = false}) {
         'recordedAt': recordedAt,
         'value': value,
         'onTarget': value <= target,
-        'isToday': recordedAt.startsWith('2026-08-13'),
+        'isToday': recordedAt.startsWith(referenceDayPrefix),
         'todayStatus': value <= target
             ? 'completeOnTarget'
-            : 'measuredAboveTarget',
+            : 'measuredOffTarget',
       },
       if (previousValue != null)
         'latestChange': {
@@ -293,6 +297,7 @@ String buildComplexHealthFacts({bool bpMedsBehind = false}) {
       },
     },
     'evaluation': {
+      'referenceIsCurrentDay': true,
       'todayGuidance': {
         'healthLoggingCompleteCriterionIds': const [
           'health-blood-pressure-systolic',

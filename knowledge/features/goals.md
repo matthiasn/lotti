@@ -245,7 +245,9 @@ flowchart TD
   the authored direction. `evaluation.todayGuidance` indexes health logging
   complete today, health logging still needed today, and rolling habits behind,
   so Phase B does not have to infer today's actionability from unrelated
-  aggregates. Future samples and samples outside the criterion window are
+  aggregates. `evaluation.referenceIsCurrentDay` distinguishes a live
+  evaluation from a delayed prior-day escalation; only the live case may call
+  the evaluated day "today". Future samples and samples outside the criterion window are
   excluded. A delayed escalation therefore
   evaluates at the final representable microsecond before the encoded day's
   next local midnight: fractional-second samples at the boundary remain in the
@@ -325,8 +327,10 @@ flowchart TD
   For supported health criteria, it explicitly distinguishes the rolling
   `actual` from the timestamped `healthSeries` anchored to
   `evaluation.reference`: when the latest reading is on target for that day,
-  copy says the day's logging is complete, describes any lagging rolling
-  average separately, and does not ask for another reading. Policy rows P16 and
+  copy says the evaluated day's logging is complete, describes any lagging
+  rolling average separately, and does not ask for another reading. A delayed
+  wake names the evaluated date and makes no claim about current-day actions.
+  Policy rows P16 and
   P17 regress this distinction with the six-dimensional BP fixture; model
   results and context-shape experiments live in the goal-agent eval run book.
   A wake with zero tool calls is legal (the no-op policy row) — the

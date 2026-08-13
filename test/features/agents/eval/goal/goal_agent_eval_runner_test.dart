@@ -351,6 +351,25 @@ void main() {
         ),
         GoalAgentEvalFailureCategory.forbiddenReportContent,
       );
+
+      const inventsMissedWeekday =
+          '{"status":"insufficientData",'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"Two readings are sparse. BP improved since the previous '
+          'reading, while rolling averages remain 127 and 89. BP meds are '
+          '6/7 and behind because Monday was missed. Weight improved to 94 kg '
+          'with an average of 95."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, inventsMissedWeekday),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
     });
   });
 
