@@ -75,11 +75,19 @@ class GoalSignalReader {
     final quantitative = <String, Map<DateTime, num>>{};
     final quantitativeObservations = <String, List<GoalMetricObservation>>{};
     for (final dataType in needs.quantitativeTypes) {
-      final entities = await _journalDb.getQuantitativeByType(
+      final queriedEntities = await _journalDb.getQuantitativeByType(
         type: dataType,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
+      // The query intentionally reaches the next local midnight so completed
+      // historical days retain their final hour. A live wake can receive a
+      // row written after it captured [reference] while this await is in
+      // flight, though. Clip once here so deterministic aggregates and the
+      // parallel exact series describe the same snapshot.
+      final entities = queriedEntities
+          .where((entity) => !entity.meta.dateFrom.isAfter(reference))
+          .toList(growable: false);
       quantitative[dataType] = _bucketQuantitative(entities, dataType);
       if (GoalHealthDataTypes.supported.contains(dataType)) {
         quantitativeObservations[dataType] = _rawQuantitativeObservations(

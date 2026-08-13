@@ -168,10 +168,10 @@ void main() {
             ),
           ),
           JournalEntity.quantitative(
-            meta: meta(DateTime(2026, 8, 8, 18)),
+            meta: meta(DateTime(2026, 8, 8, 13)),
             data: QuantitativeData.discreteQuantityData(
-              dateFrom: DateTime(2026, 8, 8, 18),
-              dateTo: DateTime(2026, 8, 8, 18),
+              dateFrom: DateTime(2026, 8, 8, 13),
+              dateTo: DateTime(2026, 8, 8, 13),
               value: 1400,
               dataType: 'custom_rowing_meters',
               unit: 'm',
@@ -234,69 +234,73 @@ void main() {
     },
   );
 
-  test("point-sample types (aggregation none) keep the day's LATEST "
-      'sample', () async {
-    const weight = GoalCriterion.metric(
-      criterionId: 'weight',
-      dataType: 'HealthDataType.WEIGHT',
-      window: GoalWindow.day(),
-      aggregation: GoalAggregation.max,
-      target: 80,
-      direction: GoalDirection.atMost,
-    );
-    JournalEntity sample(DateTime at, num value) => JournalEntity.quantitative(
-      meta: meta(at),
-      data: QuantitativeData.discreteQuantityData(
-        dateFrom: at,
-        dateTo: at,
-        value: value,
+  test(
+    'point-sample aggregate and raw evidence share the evaluation cutoff',
+    () async {
+      const weight = GoalCriterion.metric(
+        criterionId: 'weight',
         dataType: 'HealthDataType.WEIGHT',
-        unit: 'kg',
-      ),
-    );
-    when(
-      () => journalDb.getQuantitativeByType(
-        type: 'HealthDataType.WEIGHT',
-        rangeStart: any(named: 'rangeStart'),
-        rangeEnd: any(named: 'rangeEnd'),
-      ),
-    ).thenAnswer(
-      // Newest-first, like the real query: without deterministic
-      // reduction the OLDEST sample would win the day-keyed map.
-      (_) async => [
-        sample(DateTime(2026, 8, 8, 21), 79.4),
-        sample(DateTime(2026, 8, 8, 7), 81.2),
-        // Defensive: a stray non-quantitative row is skipped, not bucketed.
-        measurement(DateTime(2026, 8, 8, 12), 1),
-      ],
-    );
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.max,
+        target: 80,
+        direction: GoalDirection.atMost,
+      );
+      JournalEntity sample(DateTime at, num value) =>
+          JournalEntity.quantitative(
+            meta: meta(at),
+            data: QuantitativeData.discreteQuantityData(
+              dateFrom: at,
+              dateTo: at,
+              value: value,
+              dataType: 'HealthDataType.WEIGHT',
+              unit: 'kg',
+            ),
+          );
+      when(
+        () => journalDb.getQuantitativeByType(
+          type: 'HealthDataType.WEIGHT',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer(
+        // Newest-first, like the real query: without deterministic
+        // reduction the OLDEST sample would win the day-keyed map.
+        (_) async => [
+          // This row arrived after the wake captured its reference. Neither the
+          // deterministic aggregate nor the exact model evidence may include it.
+          sample(DateTime(2026, 8, 8, 21), 79.4),
+          sample(DateTime(2026, 8, 8, 7), 81.2),
+          // Defensive: a stray non-quantitative row is skipped, not bucketed.
+          measurement(DateTime(2026, 8, 8, 12), 1),
+        ],
+      );
 
-    final window = await reader.read(criteria: weight, reference: reference);
-    expect(
-      window.quantitativeDailySums['HealthDataType.WEIGHT']![DateTime.utc(
-        2026,
-        8,
-        8,
-      )],
-      79.4,
-    );
-    final observations =
-        window.quantitativeObservationsByType['HealthDataType.WEIGHT']!;
-    expect(
-      observations.map((observation) => observation.recordedAt),
-      [DateTime(2026, 8, 8, 7), DateTime(2026, 8, 8, 21)],
-      reason: 'the agent needs every ordered raw sample, not the daily fold',
-    );
-    expect(observations.map((observation) => observation.value), [81.2, 79.4]);
-    expect(
-      observations.map((observation) => observation.tieBreaker),
-      [
-        'e-${DateTime(2026, 8, 8, 7).millisecondsSinceEpoch}',
-        'e-${DateTime(2026, 8, 8, 21).millisecondsSinceEpoch}',
-      ],
-      reason: 'equal timestamps need a stable replica-independent ordering',
-    );
-  });
+      final window = await reader.read(criteria: weight, reference: reference);
+      expect(
+        window.quantitativeDailySums['HealthDataType.WEIGHT']![DateTime.utc(
+          2026,
+          8,
+          8,
+        )],
+        81.2,
+      );
+      final observations =
+          window.quantitativeObservationsByType['HealthDataType.WEIGHT']!;
+      expect(
+        observations.map((observation) => observation.recordedAt),
+        [DateTime(2026, 8, 8, 7)],
+        reason: 'both representations stop at the captured reference instant',
+      );
+      expect(observations.map((observation) => observation.value), [81.2]);
+      expect(
+        observations.map((observation) => observation.tieBreaker),
+        [
+          'e-${DateTime(2026, 8, 8, 7).millisecondsSinceEpoch}',
+        ],
+        reason: 'equal timestamps need a stable replica-independent ordering',
+      );
+    },
+  );
 
   test('identical point-sample timestamps break the tie by entity id, '
       'independent of query return order', () async {

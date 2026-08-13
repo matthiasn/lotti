@@ -201,23 +201,11 @@ class GoalFactsRenderer {
     required DateTime evaluationReference,
   }) {
     if (!GoalHealthDataTypes.supported.contains(metric.dataType)) return null;
-    final range = metric.window.periodRange(evaluationReference);
-    final candidates =
-        facts.quantitativeObservationsByType[metric.dataType] ??
-        const <GoalMetricObservation>[];
-    final observations =
-        <GoalMetricObservation>[
-          for (final observation in candidates)
-            if (!GoalWindow.dayUtc(
-                  observation.recordedAt,
-                ).isBefore(range.start) &&
-                !GoalWindow.dayUtc(observation.recordedAt).isAfter(range.end) &&
-                !observation.recordedAt.isAfter(evaluationReference))
-              observation,
-        ]..sort((a, b) {
-          final byTime = a.recordedAt.compareTo(b.recordedAt);
-          return byTime != 0 ? byTime : a.tieBreaker.compareTo(b.tieBreaker);
-        });
+    final observations = goalHealthObservationsForCriterion(
+      metric: metric,
+      facts: facts,
+      evaluationReference: evaluationReference,
+    );
     final latest = observations.lastOrNull;
     final emittedObservations =
         observations.length <= goalHealthObservationEvidenceLimit

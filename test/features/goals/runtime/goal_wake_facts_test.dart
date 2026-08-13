@@ -1,11 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
 void main() {
+  const criteria = GoalCriterion.metric(
+    criterionId: 'health-weight',
+    dataType: GoalHealthDataTypes.weight,
+    window: GoalWindow.rollingDays(count: 7),
+    aggregation: GoalAggregation.dailySumThenAverage,
+    target: 88,
+    direction: GoalDirection.atMost,
+  );
+  final reference = DateTime(2026, 8, 9, 12);
+
   GoalWakeFacts facts(List<GoalMetricObservation> observations) =>
       GoalWakeFacts(
         trackStatus: GoalTrackStatus.atRisk,
@@ -63,14 +75,141 @@ void main() {
       reason: 'the persisted aggregate did not change',
     );
     expect(
-      goalFactsDigest(backfilled),
-      isNot(goalFactsDigest(original)),
+      goalFactsDigest(
+        backfilled,
+        criteria: criteria,
+        evaluationReference: reference,
+      ),
+      isNot(
+        goalFactsDigest(
+          original,
+          criteria: criteria,
+          evaluationReference: reference,
+        ),
+      ),
       reason: 'banner copy can describe timestamps and sparsity',
     );
     expect(
-      goalFactsDigest(reordered),
-      goalFactsDigest(original),
+      goalFactsDigest(
+        reordered,
+        criteria: criteria,
+        evaluationReference: reference,
+      ),
+      goalFactsDigest(
+        original,
+        criteria: criteria,
+        evaluationReference: reference,
+      ),
       reason: 'query order cannot create replica-specific freshness',
     );
   });
+
+  test(
+    'exact digest ignores prior-period samples absent from rendered facts',
+    () {
+      final current = facts([
+        GoalMetricObservation(
+          recordedAt: DateTime(2026, 8, 8, 8),
+          value: 88,
+        ),
+      ]);
+      final withPriorPeriodBackfill = facts([
+        GoalMetricObservation(
+          recordedAt: DateTime(2026, 8, 2, 8),
+          value: 91,
+        ),
+        ...current.quantitativeObservationsByType[GoalHealthDataTypes.weight]!,
+      ]);
+
+      expect(
+        goalFactsDigest(
+          withPriorPeriodBackfill,
+          criteria: criteria,
+          evaluationReference: reference,
+        ),
+        goalFactsDigest(
+          current,
+          criteria: criteria,
+          evaluationReference: reference,
+        ),
+        reason: 'banner freshness must hash only model-facing window evidence',
+      );
+    },
+  );
+
+  test(
+    'composite freshness visits nested health and ignores non-health leaves',
+    () {
+      const composite = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            target: 10000,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit',
+            habitId: 'meds',
+            window: GoalWindow.day(),
+            targetCount: 1,
+          ),
+          GoalCriterion.measurable(
+            criterionId: 'water',
+            dataTypeId: 'water-id',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            target: 2000,
+          ),
+          GoalCriterion.categoryTime(
+            criterionId: 'sleep',
+            categoryId: 'sleep-id',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            targetHours: 8,
+          ),
+          GoalCriterion.anyOf(
+            criterionId: 'health-choice',
+            criteria: [
+              GoalCriterion.atLeastCount(
+                criterionId: 'health-count',
+                successes: 1,
+                criteria: [criteria],
+              ),
+            ],
+          ),
+        ],
+      );
+      final original = facts([
+        GoalMetricObservation(
+          recordedAt: DateTime(2026, 8, 8, 8),
+          value: 88,
+        ),
+      ]);
+      final changed = facts([
+        GoalMetricObservation(
+          recordedAt: DateTime(2026, 8, 8, 8),
+          value: 87,
+        ),
+      ]);
+
+      expect(
+        goalFactsDigest(
+          changed,
+          criteria: composite,
+          evaluationReference: reference,
+        ),
+        isNot(
+          goalFactsDigest(
+            original,
+            criteria: composite,
+            evaluationReference: reference,
+          ),
+        ),
+        reason: 'only the nested model-facing health series changes the digest',
+      );
+    },
+  );
 }
