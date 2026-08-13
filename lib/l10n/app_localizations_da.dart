@@ -6563,6 +6563,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormValidationPersona => 'Giv din agent et navn.';
 
   @override
+  String get goalFormValidationTarget => 'Angiv et mål for at fortsætte.';
+
+  @override
   String get goalFormValidationTitle => 'Giv dit mål et navn.';
 
   @override
@@ -12844,7 +12847,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get goalFormValidationTarget => 'Angiv et mål for at fortsætte.';
 }

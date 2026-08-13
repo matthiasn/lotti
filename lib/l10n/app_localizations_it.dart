@@ -6650,6 +6650,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalFormValidationPersona => 'Dai un nome al tuo agente.';
 
   @override
+  String get goalFormValidationTarget => 'Imposta un obiettivo per continuare.';
+
+  @override
   String get goalFormValidationTitle => 'Dai un nome al tuo obiettivo.';
 
   @override
@@ -13022,7 +13025,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get goalFormValidationTarget => 'Imposta un obiettivo per continuare.';
 }

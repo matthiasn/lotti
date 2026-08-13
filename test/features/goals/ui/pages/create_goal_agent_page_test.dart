@@ -3741,4 +3741,434 @@ void main() {
       expect(find.text('Here’s what I can watch'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'an intention-matched measurable seeds its card and can be removed',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final water = MeasurableDataType(
+        id: 'water',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        displayName: 'Water',
+        description: '',
+        unitName: 'ml',
+        version: 1,
+        vectorClock: null,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: [
+            ...overrides(),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value([water]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Drink more water',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // The matched measurable arrives as a card seeded with a target of 1.
+      final card = find.byKey(
+        const ValueKey('goal-form-measurable-card-water'),
+      );
+      expect(card, findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(
+                  const ValueKey('goal-form-measurable-target-water'),
+                ),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        '1',
+      );
+
+      // The card's remove action deselects the measurable entirely.
+      await tester.tap(
+        find.descendant(of: card, matching: find.byIcon(Icons.close_rounded)),
+      );
+      await tester.pumpAndSettle();
+      expect(card, findsNothing);
+    },
+  );
+
+  testWidgets('the picker unselects an already-selected habit', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    final pickerRow = find.byKey(const ValueKey('goal-form-picker-habit-gym'));
+    expect(
+      tester.widget<DesignSystemSelectionRow>(pickerRow).selected,
+      isTrue,
+    );
+
+    await tester.tap(pickerRow);
+    await tester.pump();
+    expect(
+      tester.widget<DesignSystemSelectionRow>(pickerRow).selected,
+      isFalse,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+    // The matched habit stays visible on the page, but deselected.
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-habit-gym')),
+          )
+          .selected,
+      isFalse,
+    );
+  });
+
+  testWidgets('the picker toggles a selected weight dimension off', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my health',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    final weightRow = find.byKey(
+      const ValueKey('goal-form-health-source-weight'),
+    );
+    await tester.tap(weightRow);
+    await tester.pump();
+    expect(
+      tester.widget<DesignSystemSelectionRow>(weightRow).selected,
+      isTrue,
+    );
+
+    // A second tap toggles the dimension back off instead of dead-ending.
+    await tester.tap(weightRow);
+    await tester.pump();
+    expect(
+      tester.widget<DesignSystemSelectionRow>(weightRow).selected,
+      isFalse,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(
+        const ValueKey('goal-form-health-card-HealthDataType.WEIGHT'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('fixing one invalid target keeps the other error visible', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Steps on with a blanked target, weight picked with its null default.
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      '',
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-health-source-weight')),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set a target to continue.'), findsNWidgets(2));
+
+    // Fixing the steps target clears ONLY the steps error; the untouched
+    // weight target stays flagged.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      '9000',
+    );
+    await tester.pump();
+    expect(find.text('Set a target to continue.'), findsOneWidget);
+    expect(
+      tester
+          .widget<DesignSystemTextInput>(
+            find.byKey(const ValueKey('goal-form-steps-target')),
+          )
+          .errorText,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<DesignSystemTextInput>(
+            find.byKey(
+              const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+            ),
+          )
+          .errorText,
+      'Set a target to continue.',
+    );
+  });
+
+  testWidgets('typing clears the confirmation field errors without saving', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const ValueKey('goal-form-title')), '');
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-persona')),
+      '',
+    );
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+    expect(find.text('Give your agent a name.'), findsOneWidget);
+
+    // Typing a persona name clears its error immediately, before any save.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-persona')),
+      'Mika',
+    );
+    await tester.pump();
+    expect(find.text('Give your agent a name.'), findsNothing);
+
+    await tester.tap(find.text('Create agent'));
+    await tester.pumpAndSettle();
+    expect(find.text('Give your goal a name.'), findsOneWidget);
+
+    // Typing a goal name clears the title error the same way.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-title')),
+      'Comeback season',
+    );
+    await tester.pump();
+    expect(find.text('Give your goal a name.'), findsNothing);
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets('a measurable card lays out without overflow at phone width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final water = MeasurableDataType(
+      id: 'water',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      displayName: 'Water',
+      description: '',
+      unitName: 'ml',
+      version: 1,
+      vectorClock: null,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: [
+          ...overrides(),
+          measurableDataTypesStreamProvider.overrideWith(
+            (ref) => Stream.value([water]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Drink more water',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // The card renders, and the flexible target input yields instead of
+    // forcing a RenderFlex overflow at 320 logical pixels.
+    expect(
+      find.byKey(const ValueKey('goal-form-measurable-card-water')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'the picker toggles blood pressure, category time and measurables '
+    'back off',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final water = MeasurableDataType(
+        id: 'water',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        displayName: 'Water',
+        description: '',
+        unitName: 'ml',
+        version: 1,
+        vectorClock: null,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: [
+            ...overrides(categories: [_category('deep-work', 'Deep work')]),
+            measurableDataTypesStreamProvider.overrideWith(
+              (ref) => Stream.value([water]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Track my week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+      await tester.pumpAndSettle();
+
+      Future<void> toggleTwice(Finder row) async {
+        await tester.tap(row);
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemSelectionRow>(row).selected,
+          isTrue,
+        );
+        await tester.tap(row);
+        await tester.pump();
+        expect(
+          tester.widget<DesignSystemSelectionRow>(row).selected,
+          isFalse,
+        );
+      }
+
+      await toggleTwice(
+        find.byKey(const ValueKey('goal-form-health-source-blood-pressure')),
+      );
+      await toggleTwice(
+        find.byKey(
+          const ValueKey('goal-form-category-time-source-deep-work'),
+        ),
+      );
+      await toggleTwice(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DesignSystemSelectionRow && widget.title == 'Water',
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+      await tester.pumpAndSettle();
+
+      // Every toggled-off dimension left no card behind on the page.
+      expect(
+        find.byKey(
+          const ValueKey(
+            'goal-form-health-card-HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('goal-form-category-time-card-deep-work'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-form-measurable-card-water')),
+        findsNothing,
+      );
+    },
+  );
 }

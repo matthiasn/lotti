@@ -922,15 +922,17 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               anchorFor: _anchorFor,
                               titleError: _titleError,
                               validation: _validation,
+                              onTitleChanged: () =>
+                                  setState(() => _titleError = null),
                               onStepsChanged: (selected) => setState(() {
                                 _watchesSteps = selected;
                                 _refreshDerivedTitle(habits);
                                 _validation = null;
-                                _targetErrors.clear();
+                                _targetErrors.remove('steps');
                               }),
                               onStepsTargetChanged: () => setState(() {
                                 _validation = null;
-                                _targetErrors.clear();
+                                _targetErrors.remove('steps');
                               }),
                               onHabitChanged:
                                   ({
@@ -955,13 +957,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                     }
                                     _refreshDerivedTitle(habits);
                                     _validation = null;
-                                    _targetErrors.clear();
                                   }),
                               onTargetChanged: (habitId, target) =>
                                   setState(() {
                                     _habitTargets[habitId] = target;
                                     _validation = null;
-                                    _targetErrors.clear();
                                   }),
                               onMeasurableChanged:
                                   ({
@@ -977,13 +977,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                       _measurableTargets.remove(measurableId);
                                     }
                                     _validation = null;
-                                    _targetErrors.clear();
+                                    _targetErrors.remove(
+                                      'measurable:$measurableId',
+                                    );
                                   }),
                               onMeasurableTargetChanged: (id, target) =>
                                   setState(() {
                                     _measurableTargets[id] = target;
                                     _validation = null;
-                                    _targetErrors.clear();
+                                    _targetErrors.remove('measurable:$id');
                                   }),
                               onHealthSelected: (dataTypes) => setState(() {
                                 for (final dataType in dataTypes) {
@@ -997,25 +999,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                   );
                                 }
                                 _validation = null;
-                                _targetErrors.clear();
                               }),
                               onHealthRemoved: (dataType) => setState(() {
                                 _healthTargets.remove(dataType);
                                 _healthDirections.remove(dataType);
                                 _validation = null;
-                                _targetErrors.clear();
+                                _targetErrors.remove('health:$dataType');
                               }),
                               onHealthTargetChanged: (dataType, target) =>
                                   setState(() {
                                     _healthTargets[dataType] = target;
                                     _validation = null;
-                                    _targetErrors.clear();
+                                    _targetErrors.remove('health:$dataType');
                                   }),
                               onHealthDirectionChanged: (dataType, direction) =>
                                   setState(() {
                                     _healthDirections[dataType] = direction;
                                     _validation = null;
-                                    _targetErrors.clear();
                                   }),
                               onCategoryTimeSelected: (categoryId) => setState(
                                 () {
@@ -1029,7 +1029,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                     () => GoalDirection.atMost,
                                   );
                                   _validation = null;
-                                  _targetErrors.clear();
                                 },
                               ),
                               onCategoryTimeRemoved: (categoryId) =>
@@ -1038,20 +1037,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                     _categoryTimeTargets.remove(categoryId);
                                     _categoryTimeDirections.remove(categoryId);
                                     _validation = null;
-                                    _targetErrors.clear();
+                                    _targetErrors.remove(
+                                      'category:$categoryId',
+                                    );
                                   }),
                               onCategoryTimeTargetChanged:
                                   (categoryId, target) => setState(() {
                                     _categoryTimeTargets[categoryId] = target;
                                     _validation = null;
-                                    _targetErrors.clear();
+                                    _targetErrors.remove(
+                                      'category:$categoryId',
+                                    );
                                   }),
                               onCategoryTimeDirectionChanged:
                                   (categoryId, direction) => setState(() {
                                     _categoryTimeDirections[categoryId] =
                                         direction;
                                     _validation = null;
-                                    _targetErrors.clear();
                                   }),
                               onCompositeRuleChanged: (rule, required) =>
                                   setState(() {
@@ -1068,6 +1070,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               validation: _validation,
                               personaError: _personaError,
                               titleError: _titleError,
+                              onPersonaChanged: () =>
+                                  setState(() => _personaError = null),
+                              onTitleChanged: () =>
+                                  setState(() => _titleError = null),
                               enabled: !_saving,
                             ),
                           },
@@ -1250,6 +1256,7 @@ class _MappingStep extends StatelessWidget {
     required this.anchorFor,
     required this.titleError,
     required this.validation,
+    required this.onTitleChanged,
     required this.onStepsChanged,
     required this.onStepsTargetChanged,
     required this.onHabitChanged,
@@ -1292,6 +1299,7 @@ class _MappingStep extends StatelessWidget {
   final GlobalKey Function(String key) anchorFor;
   final String? titleError;
   final String? validation;
+  final VoidCallback onTitleChanged;
   final ValueChanged<bool> onStepsChanged;
   final VoidCallback onStepsTargetChanged;
   final void Function({required String habitId, required bool selected})
@@ -1538,17 +1546,19 @@ class _MappingStep extends StatelessWidget {
                       ],
                     ),
                   ),
-                  _MeasurableTargetInput(
-                    measurableId: measurable.id,
-                    value: measurableTargets[measurable.id],
-                    unitName: measurable.unitName,
-                    errorText:
-                        targetErrors.contains('measurable:${measurable.id}')
-                        ? messages.goalFormValidationTarget
-                        : null,
-                    anchorKey: anchorFor('measurable:${measurable.id}'),
-                    onChanged: (value) =>
-                        onMeasurableTargetChanged(measurable.id, value),
+                  Flexible(
+                    child: _MeasurableTargetInput(
+                      measurableId: measurable.id,
+                      value: measurableTargets[measurable.id],
+                      unitName: measurable.unitName,
+                      errorText:
+                          targetErrors.contains('measurable:${measurable.id}')
+                          ? messages.goalFormValidationTarget
+                          : null,
+                      anchorKey: anchorFor('measurable:${measurable.id}'),
+                      onChanged: (value) =>
+                          onMeasurableTargetChanged(measurable.id, value),
+                    ),
                   ),
                   DesignSystemIconAction(
                     icon: Icons.close_rounded,
@@ -1701,6 +1711,7 @@ class _MappingStep extends StatelessWidget {
             label: messages.goalFormGoalNameLabel,
             leadingIcon: Icons.flag_outlined,
             errorText: titleError,
+            onChanged: (_) => onTitleChanged(),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           // A footnote, not a card: the explainer must not impersonate a
@@ -1801,8 +1812,8 @@ class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
   Widget build(BuildContext context) {
     return KeyedSubtree(
       key: widget.anchorKey,
-      child: SizedBox(
-        width: kInlineTargetInputWidth,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: kInlineTargetInputWidth),
         child: DesignSystemTextInput(
           key: ValueKey('goal-form-measurable-target-${widget.measurableId}'),
           controller: _controller,
@@ -2536,6 +2547,8 @@ class _ConfirmationStep extends StatefulWidget {
     required this.validation,
     required this.personaError,
     required this.titleError,
+    required this.onPersonaChanged,
+    required this.onTitleChanged,
     required this.enabled,
   });
 
@@ -2547,6 +2560,8 @@ class _ConfirmationStep extends StatefulWidget {
   final String? validation;
   final String? personaError;
   final String? titleError;
+  final VoidCallback onPersonaChanged;
+  final VoidCallback onTitleChanged;
   final bool enabled;
 
   @override
@@ -2605,6 +2620,7 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
                 onTrailingIconTap: editingTitle
                     ? null
                     : () => setState(() => _editingTitle = true),
+                onChanged: (_) => widget.onTitleChanged(),
               ),
             ],
           ),
@@ -2617,6 +2633,7 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
           leadingIcon: Icons.auto_awesome_rounded,
           errorText: widget.personaError,
           enabled: widget.enabled,
+          onChanged: (_) => widget.onPersonaChanged(),
         ),
         SizedBox(height: tokens.spacing.step4),
         Row(

@@ -6635,6 +6635,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormValidationPersona => 'Pojmenuj svého agenta.';
 
   @override
+  String get goalFormValidationTarget =>
+      'Pro pokračování nastav cílovou hodnotu.';
+
+  @override
   String get goalFormValidationTitle => 'Pojmenuj svůj cíl.';
 
   @override
@@ -12997,8 +13001,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get goalFormValidationTarget =>
-      'Pro pokračování nastav cílovou hodnotu.';
 }

@@ -129,9 +129,11 @@ intention → observable mapping → confirmation flow. Each watched habit has i
 own rolling-seven-day cadence, unobservable intentions receive an honest
 refusal instead of a fictional measurement, and the user names both the goal
 and its conversational persona. The goal name is an explicit labelled field on
-the mapping step (derived from the selected signals, emoji-free, until the
-user types their own) and reappears on the confirmation step as the same
-field rendered read-only behind a pencil affordance. The automatic step count
+the mapping step — derived from the selected habits' names (emoji-free),
+falling back to the steps label or the intention text when no habit is
+selected, until the user types their own — and reappears on the
+confirmation step as the same field rendered read-only behind a pencil
+affordance. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
 intention that names a health capability (blood pressure, weight) surfaces it
 as an offer row directly in the signals card. Picked health and tracked-time

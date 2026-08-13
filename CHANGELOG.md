@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.9]
 ### Added
 - **An explicit goal-name field in the goal editor.** The goal's name is a
-  labelled field on the mapping step — pre-filled from the selected signals
-  (emoji-free) until you type your own — and the confirmation step shows the
+  labelled field on the mapping step — pre-filled from the selected habits'
+  names (emoji-free; the steps label or your intention when no habit is
+  selected) until you type your own — and the confirmation step shows the
   same field read-only with a pencil that unlocks it. Previously the title
   was silently assembled from habit names.
 - **Steps and matching health signals are offered directly.** The automatic

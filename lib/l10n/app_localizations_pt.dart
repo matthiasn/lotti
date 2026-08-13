@@ -6627,10 +6627,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolhe pelo menos um sinal que o agente consiga realmente observar.';
 
   @override
-  String get goalFormValidationPersona => 'Dê um nome ao seu agente.';
+  String get goalFormValidationPersona => 'Dá um nome ao teu agente.';
 
   @override
-  String get goalFormValidationTitle => 'Dê um nome à sua meta.';
+  String get goalFormValidationTarget => 'Define uma meta para continuar.';
+
+  @override
+  String get goalFormValidationTitle => 'Dá um nome à tua meta.';
 
   @override
   String goalFormWeeklyTarget(int count) {
@@ -12966,7 +12969,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String get goalFormValidationTarget => 'Define uma meta para continuar.';
 }

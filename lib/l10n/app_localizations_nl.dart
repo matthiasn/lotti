@@ -6580,6 +6580,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormValidationPersona => 'Geef je agent een naam.';
 
   @override
+  String get goalFormValidationTarget => 'Stel een doel in om door te gaan.';
+
+  @override
   String get goalFormValidationTitle => 'Geef je doel een naam.';
 
   @override
@@ -12884,7 +12887,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get goalFormValidationTarget => 'Stel een doel in om door te gaan.';
 }

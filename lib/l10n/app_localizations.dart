@@ -11179,6 +11179,12 @@ abstract class AppLocalizations {
   /// **'Give your agent a name.'**
   String get goalFormValidationPersona;
 
+  /// Inline error on a mapping signal's target input when the target is missing or not positive
+  ///
+  /// In en, this message translates to:
+  /// **'Set a target to continue.'**
+  String get goalFormValidationTarget;
+
   /// Validation anchored to the goal name field.
   ///
   /// In en, this message translates to:
@@ -21669,12 +21675,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Inline error on a mapping signal's target input when the target is missing or not positive
-  ///
-  /// In en, this message translates to:
-  /// **'Set a target to continue.'**
-  String get goalFormValidationTarget;
 }
 
 class _AppLocalizationsDelegate

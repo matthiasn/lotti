@@ -6537,6 +6537,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormValidationPersona => 'Give your agent a name.';
 
   @override
+  String get goalFormValidationTarget => 'Set a target to continue.';
+
+  @override
   String get goalFormValidationTitle => 'Give your goal a name.';
 
   @override
@@ -12762,9 +12765,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get goalFormValidationTarget => 'Set a target to continue.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

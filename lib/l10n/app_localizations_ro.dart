@@ -6686,6 +6686,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormValidationPersona => 'Dați un nume agentului dvs.';
 
   @override
+  String get goalFormValidationTarget => 'Setați o țintă pentru a continua.';
+
+  @override
   String get goalFormValidationTitle => 'Dați un nume obiectivului dvs.';
 
   @override
@@ -13100,7 +13103,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get goalFormValidationTarget => 'Setați o țintă pentru a continua.';
 }
