@@ -866,7 +866,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de charger tes agents pour le moment.';
 
   @override
-  String get agentsPageTitle => 'Agents';
+  String get agentsPageTitle => 'Agents d\'objectifs';
 
   @override
   String get agentStateConsecutiveFailures => 'Échecs consécutifs';
@@ -3261,11 +3261,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Accompagne les nouveaux utilisateurs de Daily OS dans un vrai point de situation qui transforme ta voix en tâche et en plan de journée.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Activer la page Agents';
+  String get configFlagEnableAgentsPage =>
+      'Activer la page Agents d\'objectifs';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Afficher la page Agents dans la navigation principale. Suis la santé de tes agents d\'objectifs en un coup d\'œil et va voir chacun d\'eux.';
+      'Afficher la page Agents d\'objectifs dans la navigation principale. Suis la santé de tes agents d\'objectifs en un coup d\'œil et va voir chacun d\'eux.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6654,6 +6655,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalFormYourMeasurables => 'Tes mesures';
 
   @override
+  String get goalHabitCheckOffAction => 'Marquer fait';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension enregistré aujourd\'hui — cocher cette habitude ?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'En baisse';
 
   @override
@@ -6739,7 +6748,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'fait';
+  String get goalProgressDone => 'fait · objectif atteint';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Aucune entrée';
@@ -6758,6 +6767,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'fait · objectif pas encore atteint';
 
   @override
   String get goalProgressTitle => 'Cette semaine glissante';

@@ -861,7 +861,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron cargar tus agentes ahora mismo.';
 
   @override
-  String get agentsPageTitle => 'Agentes';
+  String get agentsPageTitle => 'Agentes de objetivos';
 
   @override
   String get agentStateConsecutiveFailures => 'Fallos consecutivos';
@@ -3257,11 +3257,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Guía a los nuevos usuarios de Daily OS por un check-in real que convierte tu voz en una tarea y un plan del día.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Habilitar página Agentes';
+  String get configFlagEnableAgentsPage =>
+      'Habilitar página Agentes de objetivos';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Mostrar la página Agentes en la navegación principal. Sigue la salud de tus agentes de objetivos de un vistazo y pasa a ver cada uno.';
+      'Mostrar la página Agentes de objetivos en la navegación principal. Sigue la salud de tus agentes de objetivos de un vistazo y pasa a ver cada uno.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6636,6 +6637,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalFormYourMeasurables => 'Tus mensurables';
 
   @override
+  String get goalHabitCheckOffAction => 'Marcar hecho';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension registrado hoy — ¿marcar este hábito?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'A la baja';
 
   @override
@@ -6721,7 +6730,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'hecho';
+  String get goalProgressDone => 'hecho · objetivo cumplido';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Sin registro';
@@ -6740,6 +6749,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'hecho · objetivo aún pendiente';
 
   @override
   String get goalProgressTitle => 'Esta semana móvil';

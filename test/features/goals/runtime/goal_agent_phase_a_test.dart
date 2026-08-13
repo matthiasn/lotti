@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -338,6 +339,239 @@ void main() {
       ),
       isEmpty,
     );
+  });
+
+  GoalNudgeEntity stampedNudge({
+    required String factsDigest,
+    required DateTime activatedAt,
+  }) =>
+      AgentDomainEntity.goalNudge(
+            id: 'ad-stamped',
+            agentId: agentId,
+            status: GoalNudgeStatus.active,
+            brief: const GoalNudgeBrief(
+              headline: 'Your blood pressure is 129/94',
+              tone: GoalNudgeTone.nudge,
+              animation: GoalBannerAnimation.steady,
+            ),
+            briefDigest: 'stamped',
+            createdAt: activatedAt,
+            updatedAt: activatedAt,
+            vectorClock: null,
+            activatedAt: activatedAt,
+            staleAt: DateTime(2026, 8, 20),
+            provenance: {
+              'specVersionId': '$agentId:spec-v1',
+              'factsDigest': factsDigest,
+            },
+          )
+          as GoalNudgeEntity;
+
+  GoalSignalWindow badWeek() => GoalSignalWindow(
+    quantitativeDailySums: {
+      'cumulative_step_count': {
+        for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 6000,
+      },
+    },
+  );
+
+  void stubOffTrackRegisters() {
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-08',
+        status: GoalTrackStatus.offTrack,
+        attainment: 0.6,
+      ),
+    );
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-07',
+        status: GoalTrackStatus.offTrack,
+        attainment: 0.6,
+      ),
+    );
+  }
+
+  test('an active banner from an earlier day whose stamped facts digest no '
+      'longer matches the derivation is expired as data-stale and its '
+      'replacement escalation armed', () async {
+    stubSpec();
+    stubOffTrackRegisters();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        stampedNudge(
+          factsDigest: 'evidence-before-the-new-reading',
+          activatedAt: DateTime(2026, 8, 7, 10),
+        ),
+      ],
+    );
+
+    await run(badWeek());
+
+    final expired = upserts.whereType<GoalNudgeEntity>().single;
+    expect(expired.status, GoalNudgeStatus.expired);
+    expect(
+      expired.expiredAt,
+      now.toUtc(),
+      reason: 'data-stale expiry records the sweep that observed the change',
+    );
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
+      ),
+      hasLength(1),
+      reason: 'Phase B must re-mint the banner from the changed evidence',
+    );
+  });
+
+  test('a banner minted today is exempt from digest expiry — one automatic '
+      'banner per day', () async {
+    stubSpec();
+    stubOffTrackRegisters();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        stampedNudge(
+          factsDigest: 'evidence-before-the-new-reading',
+          activatedAt: DateTime(2026, 8, 8, 9),
+        ),
+      ],
+    );
+
+    await run(badWeek());
+
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
+      ),
+      isEmpty,
+    );
+  });
+
+  test('a digest mismatch is ignored when the goal no longer qualifies for '
+      'automatic copy — no silent banner strip', () async {
+    stubSpec();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-08',
+        status: GoalTrackStatus.onTrack,
+        attainment: 1,
+      ),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        stampedNudge(
+          factsDigest: 'evidence-before-the-new-reading',
+          activatedAt: DateTime(2026, 8, 7, 10),
+        ),
+      ],
+    );
+
+    await run(onTrackSignals());
+
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+  });
+
+  Future<WakeResult> runWithStaleCallback(
+    GoalSignalWindow signals,
+    List<String> staleCalls,
+  ) => withClock(
+    fixedClock,
+    () =>
+        GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeSignalReader(signals),
+          onReportStale: staleCalls.add,
+        ).execute(
+          agentIdentity: identity,
+          runKey: 'run-1',
+          triggerTokens: const {'cumulative_step_count'},
+          threadId: 'thread-1',
+        ),
+  );
+
+  test("new evidence after today's earlier tick advances the report-stale "
+      'watermark', () async {
+    stubSpec();
+    stubOffTrackRegisters();
+    final staleCalls = <String>[];
+
+    // The persisted register carries no criterion results, the fresh
+    // derivation does — the report describes outdated evidence.
+    await runWithStaleCallback(badWeek(), staleCalls);
+
+    expect(staleCalls, [agentId]);
+  });
+
+  test('the first tick of a day does not mark the report stale — the window '
+      'sliding is not new data', () async {
+    stubSpec();
+    final staleCalls = <String>[];
+
+    await runWithStaleCallback(badWeek(), staleCalls);
+
+    expect(staleCalls, isEmpty);
+  });
+
+  test('an identical recomputation leaves the report fresh', () async {
+    stubSpec();
+    final derivation = await withClock(
+      fixedClock,
+      () => phaseA(badWeek()).deriveWakeFacts(
+        agentId: agentId,
+        version: specVersion as GoalSpecVersionEntity,
+        now: now,
+        includeCategoryTimeSessions: false,
+      ),
+    );
+    final matchingRow =
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, '2026-08-08'),
+              agentId: agentId,
+              periodKey: '2026-08-08',
+              trackStatus: derivation.facts.trackStatus,
+              attainment: derivation.facts.evaluation.attainment,
+              dataCoverage: derivation.facts.evaluation.dataCoverage,
+              satisfied: derivation.facts.evaluation.satisfied,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 8, 6),
+              updatedAt: DateTime(2026, 8, 8, 6),
+              vectorClock: null,
+              criterionResults: [
+                for (final result in derivation.facts.evaluation.results.values)
+                  GoalCriterionProgress(
+                    criterionId: result.criterionId,
+                    actual: result.actual,
+                    target: result.target,
+                    ratio: result.ratio,
+                    satisfied: result.satisfied,
+                    sampleCount: result.sampleCount,
+                    paceFeasible: result.paceFeasible,
+                  ),
+              ],
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer((_) async => matchingRow);
+    final staleCalls = <String>[];
+
+    await runWithStaleCallback(badWeek(), staleCalls);
+
+    expect(staleCalls, isEmpty);
   });
 
   test('a revision landing mid-wake fences the register AND the '

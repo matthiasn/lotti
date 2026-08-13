@@ -26,6 +26,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
+import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -37,20 +38,22 @@ class _MockGoalHabitCompletionService extends Mock
     implements GoalHabitCompletionService {}
 
 void main() {
-  final goalIdentity = AgentDomainEntity.agent(
-    id: 'goal-1',
-    agentId: 'goal-1',
-    kind: AgentKinds.goalAgent,
-    displayName: 'Move more',
-    lifecycle: AgentLifecycle.active,
-    mode: AgentInteractionMode.autonomous,
-    allowedCategoryIds: const {},
-    currentStateId: 'goal-1:state',
-    config: const AgentConfig(),
-    createdAt: DateTime(2026),
-    updatedAt: DateTime(2026),
-    vectorClock: null,
-  ) as AgentIdentityEntity;
+  final goalIdentity =
+      AgentDomainEntity.agent(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: AgentKinds.goalAgent,
+            displayName: 'Move more',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'goal-1:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
   testWidgets('renders the health header and no-report hint without an empty '
       'timeline section', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -63,24 +66,26 @@ void main() {
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
-    final spec = AgentDomainEntity.goalSpecVersion(
-      id: 'goal-1:spec-v1',
-      agentId: 'goal-1',
-      version: 1,
-      status: GoalSpecVersionStatus.active,
-      authoredBy: 'user',
-      title: 'Move more',
-      statement: 'Average 10,000 steps per day over a rolling week.',
-      criteria: const GoalCriterion.metric(
-        criterionId: 'steps',
-        dataType: 'cumulative_step_count',
-        window: GoalWindow.rollingDays(count: 7),
-        aggregation: GoalAggregation.dailySumThenAverage,
-        target: 10000,
-      ),
-      createdAt: DateTime(2026, 8),
-      vectorClock: null,
-    ) as GoalSpecVersionEntity;
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Average 10,000 steps per day over a rolling week.',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -216,15 +221,17 @@ void main() {
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
           agentStateProvider('goal-1').overrideWith(
-            (ref) async => AgentDomainEntity.agentState(
-              id: 'goal-1:state',
-              agentId: 'goal-1',
-              slots: const AgentSlots(),
-              updatedAt: DateTime(2026, 8, 12, 18, 30),
-              vectorClock: null,
-              reportFreshAt: DateTime(2026, 8, 12, 18),
-              reportStaleAt: DateTime(2026, 8, 12, 18, 30),
-            ) as AgentStateEntity,
+            (ref) async =>
+                AgentDomainEntity.agentState(
+                      id: 'goal-1:state',
+                      agentId: 'goal-1',
+                      slots: const AgentSlots(),
+                      updatedAt: DateTime(2026, 8, 12, 18, 30),
+                      vectorClock: null,
+                      reportFreshAt: DateTime(2026, 8, 12, 18),
+                      reportStaleAt: DateTime(2026, 8, 12, 18, 30),
+                    )
+                    as AgentStateEntity,
           ),
         ],
       ),
@@ -283,32 +290,37 @@ void main() {
   testWidgets("the standing report stays surfaced while the goal's active "
       'banners render uncapped — only its own', (tester) async {
     GoalBannerEntry entry(String agentId, String headline) => (
-      nudge: AgentDomainEntity.goalNudge(
-        id: 'ad-$agentId-$headline',
-        agentId: agentId,
-        status: GoalNudgeStatus.active,
-        brief: GoalNudgeBrief(
-          headline: headline,
-          tone: GoalNudgeTone.nudge,
-          animation: GoalBannerAnimation.steady,
-        ),
-        briefDigest: 'd',
-        createdAt: DateTime(2026, 8, 10),
-        updatedAt: DateTime(2026, 8, 10),
-        vectorClock: null,
-      ) as GoalNudgeEntity,
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: 'ad-$agentId-$headline',
+                agentId: agentId,
+                status: GoalNudgeStatus.active,
+                brief: GoalNudgeBrief(
+                  headline: headline,
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: DateTime(2026, 8, 10),
+                updatedAt: DateTime(2026, 8, 10),
+                vectorClock: null,
+              )
+              as GoalNudgeEntity,
       goalTitle: agentId,
     );
-    final report = AgentDomainEntity.agentReport(
-      id: 'report-goal-1',
-      agentId: 'goal-1',
-      scope: AgentReportScopes.current,
-      createdAt: DateTime(2026, 8, 10),
-      vectorClock: null,
-      oneLiner: 'Three walks remain before Sunday.',
-      tldr: '**Three walks** remain before Sunday.',
-      content: '## Full report\n\nThe current routine needs three walks.',
-    ) as AgentReportEntity;
+    final report =
+        AgentDomainEntity.agentReport(
+              id: 'report-goal-1',
+              agentId: 'goal-1',
+              scope: AgentReportScopes.current,
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              oneLiner: 'Three walks remain before Sunday.',
+              tldr: '**Three walks** remain before Sunday.',
+              content:
+                  '## Full report\n\nThe current routine needs three walks.',
+            )
+            as AgentReportEntity;
     final delayedHistoricalReport = report.copyWith(
       id: 'report-delayed-history',
       createdAt: DateTime(2026, 8, 11),
@@ -316,23 +328,25 @@ void main() {
       tldr: 'Delayed historical report must not replace the head.',
       content: 'Delayed historical report must not replace the head.',
     );
-    final spec = AgentDomainEntity.goalSpecVersion(
-      id: 'goal-1:spec-v1',
-      agentId: 'goal-1',
-      version: 1,
-      status: GoalSpecVersionStatus.active,
-      authoredBy: 'user',
-      title: 'Move more',
-      statement: 'Walk this week.',
-      criteria: const GoalCriterion.habit(
-        criterionId: 'walk',
-        habitId: 'walk',
-        window: GoalWindow.rollingDays(count: 7),
-        targetCount: 3,
-      ),
-      createdAt: DateTime(2026, 8),
-      vectorClock: null,
-    ) as GoalSpecVersionEntity;
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -407,25 +421,114 @@ void main() {
     expect(find.text('Third day on the couch.'), findsOneWidget);
   });
 
+  testWidgets("the agent's report and banners sit above the progress "
+      'evidence — goal definition first, charts last', (tester) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Three walks remain before Sunday.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final sayingTop = tester
+        .getTopLeft(find.text('What your agent is saying'))
+        .dy;
+    final progressTop = tester.getTopLeft(find.byType(GoalProgressCard)).dy;
+    expect(
+      sayingTop,
+      lessThan(progressTop),
+      reason:
+          'the report/banner group belongs directly under the goal '
+          'definition, with the habit and chart evidence below it',
+    );
+  });
+
   testWidgets('a banner past its staleAt is filtered out at render time even '
       'while still active — the fresh sibling still renders', (tester) async {
     final now = DateTime(2026, 8, 10, 12);
     GoalBannerEntry entry(String id, String headline, DateTime staleAt) => (
-      nudge: AgentDomainEntity.goalNudge(
-        id: id,
-        agentId: 'goal-1',
-        status: GoalNudgeStatus.active,
-        brief: GoalNudgeBrief(
-          headline: headline,
-          tone: GoalNudgeTone.nudge,
-          animation: GoalBannerAnimation.steady,
-        ),
-        briefDigest: 'd-$id',
-        createdAt: DateTime(2026, 8, 9),
-        updatedAt: DateTime(2026, 8, 9),
-        vectorClock: null,
-        staleAt: staleAt,
-      ) as GoalNudgeEntity,
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: id,
+                agentId: 'goal-1',
+                status: GoalNudgeStatus.active,
+                brief: GoalNudgeBrief(
+                  headline: headline,
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd-$id',
+                createdAt: DateTime(2026, 8, 9),
+                updatedAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                staleAt: staleAt,
+              )
+              as GoalNudgeEntity,
       goalTitle: 'goal-1',
     );
 
@@ -521,20 +624,22 @@ void main() {
 
   testWidgets('past ads stay browsable in the timeline with their localized '
       'outcome', (tester) async {
-    final past = AgentDomainEntity.goalNudge(
-      id: 'ad-past',
-      agentId: 'goal-1',
-      status: GoalNudgeStatus.dismissed,
-      brief: const GoalNudgeBrief(
-        headline: 'Six days of quiet soles.',
-        tone: GoalNudgeTone.nudge,
-        animation: GoalBannerAnimation.steady,
-      ),
-      briefDigest: 'd',
-      createdAt: DateTime(2026, 8, 9),
-      updatedAt: DateTime(2026, 8, 9),
-      vectorClock: null,
-    ) as GoalNudgeEntity;
+    final past =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-past',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.dismissed,
+              brief: const GoalNudgeBrief(
+                headline: 'Six days of quiet soles.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -585,41 +690,45 @@ void main() {
         outcome: HabitCompletionType.fail,
       ),
     ).thenAnswer((_) async => true);
-    final spec = AgentDomainEntity.goalSpecVersion(
-      id: 'goal-1:spec-v1',
-      agentId: 'goal-1',
-      version: 1,
-      status: GoalSpecVersionStatus.active,
-      authoredBy: 'user',
-      title: 'Move more',
-      statement: 'Walk twice each rolling week.',
-      criteria: const GoalCriterion.habit(
-        criterionId: 'walk',
-        habitId: 'walk',
-        window: GoalWindow.rollingDays(count: 7),
-        targetCount: 2,
-      ),
-      createdAt: DateTime(2026),
-      vectorClock: null,
-    ) as GoalSpecVersionEntity;
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk twice each rolling week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 2,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
     GoalNudgeEntity history(
       String id,
       String headline,
       GoalNudgeStatus status,
-    ) => AgentDomainEntity.goalNudge(
-      id: id,
-      agentId: 'goal-1',
-      status: status,
-      brief: GoalNudgeBrief(
-        headline: headline,
-        tone: GoalNudgeTone.nudge,
-        animation: GoalBannerAnimation.steady,
-      ),
-      briefDigest: 'digest-$id',
-      createdAt: DateTime(2026, 8, 10),
-      updatedAt: DateTime(2026, 8, 10),
-      vectorClock: null,
-    ) as GoalNudgeEntity;
+    ) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-1',
+              status: status,
+              brief: GoalNudgeBrief(
+                headline: headline,
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'digest-$id',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
     final today = DateTime.utc(2026, 8, 11);
     var progressReads = 0;
 
@@ -904,9 +1013,11 @@ void main() {
           ),
         );
     await tester.pumpAndSettle();
-    final popScope = tester.widget(
-      find.byWidgetPredicate((w) => w is PopScope),
-    ) as PopScope;
+    final popScope =
+        tester.widget(
+              find.byWidgetPredicate((w) => w is PopScope),
+            )
+            as PopScope;
     expect(popScope.canPop, isTrue, reason: 'false kills the iOS gesture');
 
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();

@@ -854,7 +854,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentsPageLoadFailed => 'Agenty se teď nepodařilo načíst.';
 
   @override
-  String get agentsPageTitle => 'Agenti';
+  String get agentsPageTitle => 'Agenti cílů';
 
   @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';
@@ -3255,11 +3255,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Povolit stránku Agenti';
+  String get configFlagEnableAgentsPage => 'Povolit stránku Agenti cílů';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Zobrazí stránku Agenti v hlavní navigaci. Sleduj zdraví svých agentů cílů na první pohled a nahlédni ke každému z nich.';
+      'Zobrazí stránku Agenti cílů v hlavní navigaci. Sleduj zdraví svých agentů cílů na první pohled a nahlédni ke každému z nich.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6624,6 +6624,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormYourMeasurables => 'Tvoje měřitelné veličiny';
 
   @override
+  String get goalHabitCheckOffAction => 'Hotovo';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension dnes zaznamenáno — odškrtnout tento návyk?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Klesá';
 
   @override
@@ -6711,7 +6719,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'hotovo';
+  String get goalProgressDone => 'hotovo · cíl splněn';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Bez záznamu';
@@ -6730,6 +6738,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'hotovo · cíl zatím nesplněn';
 
   @override
   String get goalProgressTitle => 'Tento klouzavý týden';

@@ -851,7 +851,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentsPageLoadFailed => 'Kunne ikke indlæse dine agenter lige nu.';
 
   @override
-  String get agentsPageTitle => 'Agenter';
+  String get agentsPageTitle => 'Målagenter';
 
   @override
   String get agentStateConsecutiveFailures => 'På hinanden følgende fejl';
@@ -3213,11 +3213,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Guid førstegangsbrugere af Daily OS gennem en rigtig check-in, der gør tale til en opgave og en dagsplan.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Aktivér agenter-siden';
+  String get configFlagEnableAgentsPage => 'Aktivér målagenter-siden';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Vis agenter-siden i hovednavigationen. Følg dine målagenters tilstand med et blik, og kig ind til hver enkelt.';
+      'Vis målagenter-siden i hovednavigationen. Følg dine målagenters tilstand med et blik, og kig ind til hver enkelt.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6552,6 +6552,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormYourMeasurables => 'Dine målbare';
 
   @override
+  String get goalHabitCheckOffAction => 'Markér som gjort';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension registreret i dag — vil du markere vanen som gjort?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Falder';
 
   @override
@@ -6637,7 +6645,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'klaret';
+  String get goalProgressDone => 'gjort · mål nået';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Ingen registrering';
@@ -6656,6 +6664,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'gjort · mål endnu ikke nået';
 
   @override
   String get goalProgressTitle => 'Denne rullende uge';

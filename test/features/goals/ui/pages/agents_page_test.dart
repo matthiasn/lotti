@@ -372,7 +372,15 @@ void main() {
       final strip = tester.widget<GoalCompactWindowStrip>(
         find.byType(GoalCompactWindowStrip),
       );
-      expect(strip.days, [true, false, true, false, true, false, true]);
+      expect(strip.days, [
+        GoalCompactDayState.full,
+        GoalCompactDayState.none,
+        GoalCompactDayState.full,
+        GoalCompactDayState.none,
+        GoalCompactDayState.full,
+        GoalCompactDayState.none,
+        GoalCompactDayState.full,
+      ]);
     },
   );
 

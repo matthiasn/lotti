@@ -1507,6 +1507,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
             provenance: {
               ..._withoutGoalBannerSnooze(nudge.provenance),
               'rerunReason': action.reason,
+              // Re-stamp the evidence fingerprint: the re-run is a fresh
+              // acknowledgment of the CURRENT facts, so later Phase A
+              // sweeps must compare against this wake's derivation.
+              'factsDigest': goalFactsDigest(derivation.facts),
             },
           ),
         );
@@ -1588,8 +1592,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
             staleAt: now.toUtc().add(goalAdLifetime),
             activatedAt: now.toUtc(),
             // The originating spec version: a banner syncing in AFTER
-            // the revision sweep carries its own fencing evidence.
-            provenance: {'specVersionId': derivation.version.id},
+            // the revision sweep carries its own fencing evidence. The
+            // facts digest lets Phase A's sweep recognize the banner as
+            // data-stale once new evidence changes the derivation.
+            provenance: {
+              'specVersionId': derivation.version.id,
+              'factsDigest': goalFactsDigest(derivation.facts),
+            },
           ),
         );
       }

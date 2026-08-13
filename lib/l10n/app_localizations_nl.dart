@@ -854,7 +854,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je agenten konden nu niet worden geladen.';
 
   @override
-  String get agentsPageTitle => 'Agenten';
+  String get agentsPageTitle => 'Doelagenten';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutieve storingen';
@@ -3224,11 +3224,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begeleid de eerste keer Dagelijkse OS gebruikers door een echte check-in die spraak verandert in een taak en een dagplan.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Agentenpagina inschakelen';
+  String get configFlagEnableAgentsPage => 'Doelagentenpagina inschakelen';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Toon de agentenpagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doelagenten en kijk bij elk van hen binnen.';
+      'Toon de doelagentenpagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doelagenten en kijk bij elk van hen binnen.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6569,6 +6569,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormYourMeasurables => 'Jouw meetbare gegevens';
 
   @override
+  String get goalHabitCheckOffAction => 'Afvinken';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension vandaag vastgelegd — gewoonte afvinken?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Daalt';
 
   @override
@@ -6654,7 +6662,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'gedaan';
+  String get goalProgressDone => 'gedaan · doel gehaald';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Geen invoer';
@@ -6673,6 +6681,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'gedaan · doel nog niet gehaald';
 
   @override
   String get goalProgressTitle => 'Deze lopende week';

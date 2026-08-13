@@ -12,6 +12,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -25,7 +26,7 @@ import 'package:lotti/widgets/charts/utils.dart';
 class GoalCompactWindowStrip extends StatelessWidget {
   const GoalCompactWindowStrip({required this.days, super.key});
 
-  final List<bool> days;
+  final List<GoalCompactDayState> days;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
     if (visible.isEmpty) return const SizedBox.shrink();
     return Semantics(
       label: context.messages.goalProgressCompactSemantics(
-        visible.where((hit) => hit).length,
+        visible.where((state) => state != GoalCompactDayState.none).length,
       ),
       child: ExcludeSemantics(
         child: Row(
@@ -43,7 +44,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
             for (var index = 0; index < visible.length; index++) ...[
               if (index > 0) SizedBox(width: tokens.spacing.step1),
               _CompactDayCell(
-                hit: visible[index],
+                state: visible[index],
                 today: index == visible.length - 1,
               ),
             ],
@@ -55,9 +56,9 @@ class GoalCompactWindowStrip extends StatelessWidget {
 }
 
 class _CompactDayCell extends StatelessWidget {
-  const _CompactDayCell({required this.hit, required this.today});
+  const _CompactDayCell({required this.state, required this.today});
 
-  final bool hit;
+  final GoalCompactDayState state;
   final bool today;
 
   @override
@@ -67,9 +68,7 @@ class _CompactDayCell extends StatelessWidget {
       width: IconSizes.xs,
       height: IconSizes.xs,
       decoration: BoxDecoration(
-        color: hit
-            ? tokens.colors.interactive.enabled
-            : tokens.colors.background.level03,
+        color: goalDayStateFill(tokens, state),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
     );
@@ -85,6 +84,21 @@ class _CompactDayCell extends StatelessWidget {
         : cell;
   }
 }
+
+/// Shared fill for a day cell: the full-strength success hue when the goal
+/// requirement held as of that day, a lighter wash of the same hue for a
+/// partial success (routine kept, target still building), neutral otherwise.
+/// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha,
+/// so no new color token is introduced.
+Color goalDayStateFill(DsTokens tokens, GoalCompactDayState state) =>
+    switch (state) {
+      GoalCompactDayState.full => tokens.colors.interactive.enabled,
+      GoalCompactDayState.partial =>
+        tokens.colors.interactive.enabled.withValues(
+          alpha: SurfaceAlphas.muted,
+        ),
+      GoalCompactDayState.none => tokens.colors.background.level03,
+    };
 
 /// Rolling-window detail visual. Habit routines render one row per watched
 /// habit; metric goals render seven bars against the target frame.
@@ -291,25 +305,22 @@ class _HabitDimensionCard extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step2),
           ],
-          _DimensionWeekdayHeader(
-            days: habit.days,
-            habitId: habit.habitId,
-          ),
-          SizedBox(height: tokens.spacing.step2),
           _HabitProgressRow(
             habit: habit,
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
           ),
-          if (successfulWeeks != null) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _Reliability(successfulWeeks: successfulWeeks),
-            ),
-          ],
           SizedBox(height: tokens.spacing.step4),
-          const _ProgressLegend(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Expanded(child: _ProgressLegend()),
+              if (successfulWeeks != null) ...[
+                SizedBox(width: tokens.spacing.step3),
+                _Reliability(successfulWeeks: successfulWeeks),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -321,7 +332,7 @@ typedef _BloodPressureMetrics = ({
   GoalMetricProgressView diastolic,
 });
 
-typedef _MetricSummary = ({num current, bool hasData, bool met});
+typedef _MetricSummary = ({num current, num latest, bool hasData, bool met});
 
 _BloodPressureMetrics? _bloodPressureMetrics(
   List<GoalMetricProgressView> metrics,
@@ -372,10 +383,25 @@ _MetricSummary _metricSummary(GoalMetricProgressView metric) {
   };
   return (
     current: current,
+    // The most recent observation. Point-sample vitals display this instead
+    // of the period aggregate: the header must show the reading the user
+    // just took, while the met verdict stays on the evaluator's basis.
+    latest: observed.isEmpty ? 0 : observed.last.value,
     hasData: observed.isNotEmpty,
     met: observed.isNotEmpty && (meetsPeriodTarget || metric.projectedOnTrack),
   );
 }
+
+/// What the dimension header quotes as "current": the latest sample for
+/// point-sample health vitals (blood pressure, weight), the period aggregate
+/// for everything that is genuinely a sum/count/average target (steps,
+/// measurables, tracked time).
+num _metricDisplayValue(
+  GoalMetricProgressView metric,
+  _MetricSummary summary,
+) => GoalHealthDataTypes.supported.contains(metric.sourceId)
+    ? summary.latest
+    : summary.current;
 
 class _BloodPressureDimensionCard extends StatelessWidget {
   const _BloodPressureDimensionCard({required this.metrics});
@@ -407,8 +433,9 @@ class _BloodPressureDimensionCard extends StatelessWidget {
           .map((day) => day.value),
     ];
     final reading = hasData
-        ? '${number.format(systolic.current)} / '
-              '${number.format(diastolic.current)}$unitSuffix'
+        ? '${number.format(_metricDisplayValue(metrics.systolic, systolic))} / '
+              '${number.format(_metricDisplayValue(metrics.diastolic, diastolic))}'
+              '$unitSuffix'
         : '—';
     return DesignSystemSectionCard(
       child: Column(
@@ -570,13 +597,14 @@ class _MetricDimensionCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final number = NumberFormat.decimalPattern(locale);
     final unit = metric.unitName?.trim();
+    final displayValue = _metricDisplayValue(metric, summary);
     final reading = unit == null || unit.isEmpty
         ? context.messages.goalDimensionMetricReading(
-            number.format(summary.current),
+            number.format(displayValue),
             number.format(metric.target),
           )
         : context.messages.goalDimensionMetricReadingWithUnit(
-            number.format(summary.current),
+            number.format(displayValue),
             number.format(metric.target),
             unit,
           );
@@ -731,8 +759,11 @@ class _DimensionHeader extends StatelessWidget {
   }
 }
 
-class _DimensionWeekdayHeader extends StatelessWidget {
-  const _DimensionWeekdayHeader({required this.days, required this.habitId});
+/// The weekday label track paired with the day squares. It shares the same
+/// pitch and item extent — and the same horizontal scroller — as the squares
+/// below it, so labels and cells can never drift out of alignment.
+class _WeekdayTrack extends StatelessWidget {
+  const _WeekdayTrack({required this.days, required this.habitId});
 
   final List<GoalProgressDay> days;
   final String habitId;
@@ -741,44 +772,33 @@ class _DimensionWeekdayHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    if (days.length > 7) {
-      return Text(
-        _periodLabel(context, days),
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.lowEmphasis,
-        ),
-      );
-    }
     final metrics = _weekdayLabelMetrics(context, days);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: _DayTrack(
-        height: math.max(IconSizes.s, metrics.height),
-        itemExtent: ControlSizes.iconChipCompact,
-        pitch: _dayTrackPitch(context, days),
-        children: [
-          for (final day in days)
-            SizedBox(
-              key: ValueKey(
-                'goal-habit-weekday-$habitId-'
-                '${day.day.toIso8601String().substring(0, 10)}',
-              ),
-              width: ControlSizes.iconChipCompact,
-              child: OverflowBox(
-                maxWidth: double.infinity,
-                child: Text(
-                  DateFormat.E(locale).format(day.day),
-                  maxLines: 1,
-                  softWrap: false,
-                  textAlign: TextAlign.center,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
+    return _DayTrack(
+      height: math.max(IconSizes.s, metrics.height),
+      itemExtent: ControlSizes.iconChipCompact,
+      pitch: _dayTrackPitch(context, days),
+      children: [
+        for (final day in days)
+          SizedBox(
+            key: ValueKey(
+              'goal-habit-weekday-$habitId-'
+              '${day.day.toIso8601String().substring(0, 10)}',
+            ),
+            width: ControlSizes.iconChipCompact,
+            child: OverflowBox(
+              maxWidth: double.infinity,
+              child: Text(
+                DateFormat.E(locale).format(day.day),
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -1006,11 +1026,72 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               SizedBox(height: tokens.spacing.step1),
               Text(cadence, style: cadenceStyle),
             ],
-            SizedBox(height: tokens.spacing.step1),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: cells(),
-            ),
+            SizedBox(height: tokens.spacing.step2),
+            if (activeDays.length > 7) ...[
+              Text(
+                _periodLabel(context, activeDays),
+                style: cadenceStyle,
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: cells(),
+              ),
+            ] else
+              // Labels and squares scroll as one unit, keeping each weekday
+              // caption glued to its cell.
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _WeekdayTrack(
+                      days: activeDays,
+                      habitId: habit.habitId,
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    cells(),
+                  ],
+                ),
+              ),
+            if (widget.onOutcomeSelected != null &&
+                habit.suggestedFromDimensionName != null) ...[
+              SizedBox(height: tokens.spacing.step3),
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_outlined,
+                    size: IconSizes.s,
+                    color: tokens.colors.interactive.enabled,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Expanded(
+                    child: Text(
+                      context.messages.goalHabitCheckOffSuggestion(
+                        habit.suggestedFromDimensionName!,
+                      ),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  DesignSystemButton(
+                    key: ValueKey('goal-habit-checkoff-${habit.habitId}'),
+                    label: context.messages.goalHabitCheckOffAction,
+                    onPressed: _savingDay != null
+                        ? null
+                        : () => _recordOutcome(
+                            widget.today,
+                            HabitCompletionType.success,
+                          ),
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.dense,
+                    leadingIcon: Icons.check_rounded,
+                  ),
+                ],
+              ),
+            ],
           ],
         );
       },
@@ -1065,6 +1146,14 @@ class _ProgressDayCell extends StatelessWidget {
     final tokens = context.designTokens;
     final hit = day.hasValue;
     final missed = day.habitCompletionType == HabitCompletionType.fail;
+    // A completed day is a partial success (lighter wash) while the habit's
+    // own window target was not yet met as of that day; a null verdict from
+    // older projections keeps the established full-strength rendering.
+    final dayState = !hit
+        ? GoalCompactDayState.none
+        : (day.targetSatisfied ?? true)
+        ? GoalCompactDayState.full
+        : GoalCompactDayState.partial;
     const visualDimension = ControlSizes.iconChipCompact;
     final border = agingOut
         ? Border.all(
@@ -1085,11 +1174,9 @@ class _ProgressDayCell extends StatelessWidget {
       width: visualDimension,
       height: visualDimension,
       decoration: BoxDecoration(
-        color: hit
-            ? tokens.colors.interactive.enabled
-            : missed
+        color: missed
             ? tokens.colors.alert.error.defaultColor
-            : tokens.colors.background.level03,
+            : goalDayStateFill(tokens, dayState),
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: border,
       ),
@@ -1101,6 +1188,15 @@ class _ProgressDayCell extends StatelessWidget {
             )
           : null,
     );
+    if (dayState == GoalCompactDayState.partial) {
+      cell = KeyedSubtree(
+        key: ValueKey(
+          'goal-day-partial-$habitId-'
+          '${day.day.toIso8601String().substring(0, 10)}',
+        ),
+        child: cell,
+      );
+    }
     if (missed) {
       cell = KeyedSubtree(
         key: ValueKey(
@@ -1117,9 +1213,9 @@ class _ProgressDayCell extends StatelessWidget {
             radius: tokens.radii.s,
             child: cell,
           );
-    final date = DateFormat.yMMMd(
-      Localizations.localeOf(context).toLanguageTag(),
-    ).format(day.day);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final date = DateFormat.yMMMd(locale).format(day.day);
+    final menuDate = DateFormat.MMMEd(locale).format(day.day);
     final outcome = hit
         ? context.messages.completeHabitSuccessButton
         : missed
@@ -1134,7 +1230,10 @@ class _ProgressDayCell extends StatelessWidget {
       return Semantics(
         label: semanticLabel,
         excludeSemantics: true,
-        child: decoratedCell,
+        child: Tooltip(
+          message: semanticLabel,
+          child: decoratedCell,
+        ),
       );
     }
     return Semantics(
@@ -1160,11 +1259,28 @@ class _ProgressDayCell extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(tokens.radii.s),
           ),
-          tooltip: '',
+          // The hover/long-press affordance carries the concrete date, so a
+          // square never has to be resolved back to a calendar day mentally.
+          tooltip: semanticLabel,
           onSelected: (outcome) {
             if (outcome != day.habitCompletionType) callback(outcome);
           },
           itemBuilder: (context) => [
+            PopupMenuItem<HabitCompletionType>(
+              key: ValueKey(
+                'goal-habit-day-date-$habitId-'
+                '${day.day.toIso8601String().substring(0, 10)}',
+              ),
+              enabled: false,
+              height: ControlSizes.iconChipCompact,
+              child: Text(
+                menuDate,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+            const PopupMenuDivider(),
             PopupMenuItem(
               key: const ValueKey('goal-habit-day-success'),
               value: HabitCompletionType.success,
@@ -1660,10 +1776,14 @@ class _ProgressLegend extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
-        Text(
-          label,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+        // Flexible so the longer done/partial labels line-break on narrow
+        // cards instead of overflowing the legend row.
+        Flexible(
+          child: Text(
+            label,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ),
         ),
       ],
@@ -1675,6 +1795,12 @@ class _ProgressLegend extends StatelessWidget {
         item(
           tokens.colors.interactive.enabled,
           context.messages.goalProgressDone,
+        ),
+        item(
+          tokens.colors.interactive.enabled.withValues(
+            alpha: SurfaceAlphas.muted,
+          ),
+          context.messages.goalProgressPartial,
         ),
         item(
           tokens.colors.alert.warning.defaultColor,

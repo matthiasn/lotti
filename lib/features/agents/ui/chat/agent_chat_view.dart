@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -526,7 +527,7 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-class _MessageBubble extends StatefulWidget {
+class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
     required this.agentName,
@@ -537,37 +538,16 @@ class _MessageBubble extends StatefulWidget {
   final String agentName;
 
   @override
-  State<_MessageBubble> createState() => _MessageBubbleState();
-}
-
-class _MessageBubbleState extends State<_MessageBubble> {
-  static const _collapsedMaxLines = 8;
-  static const _longReplyCharacterThreshold = 360;
-  static const _longReplyLineThreshold = 8;
-
-  bool _expanded = false;
-
-  bool get _canCollapse {
-    final message = widget.message;
-    if (message.role != AgentChatRole.agent) return false;
-    final lineBreaks = '\n'.allMatches(message.text).length;
-    return message.text.length > _longReplyCharacterThreshold ||
-        lineBreaks >= _longReplyLineThreshold;
-  }
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final message = widget.message;
     final isUser = message.role == AgentChatRole.user;
-    final author = isUser ? context.messages.goalChatYou : widget.agentName;
+    final author = isUser ? context.messages.goalChatYou : agentName;
     final time = DateFormat.jm(
       Localizations.localeOf(context).toString(),
     ).format(message.createdAt);
-    final canCollapse = _canCollapse;
     return Semantics(
       container: true,
-      explicitChildNodes: canCollapse,
+      explicitChildNodes: !isUser,
       label: context.messages.goalChatMessageSemantics(
         author,
         time,
@@ -606,35 +586,15 @@ class _MessageBubbleState extends State<_MessageBubble> {
                     )
                   else
                     ExcludeSemantics(
-                      child: AgentMarkdownView(
-                        message.text,
-                        maxLines: canCollapse && !_expanded
-                            ? _collapsedMaxLines
-                            : null,
-                        overflow: canCollapse && !_expanded
-                            ? TextOverflow.ellipsis
-                            : null,
+                      child: _CollapsibleAgentMarkdown(
+                        text: message.text,
                         style: tokens.typography.styles.body.bodyMedium
                             .copyWith(
                               color: tokens.colors.text.highEmphasis,
                             ),
+                        fadeColor: tokens.colors.background.level02,
                       ),
                     ),
-                  if (canCollapse) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    DesignSystemButton(
-                      label: _expanded
-                          ? context.messages.aiResponseShowLess
-                          : context.messages.aiResponseShowMore,
-                      onPressed: () => setState(() => _expanded = !_expanded),
-                      variant: DesignSystemButtonVariant.tertiary,
-                      size: DesignSystemButtonSize.dense,
-                      trailingIcon: _expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      alignsLabelToLeadingEdge: true,
-                    ),
-                  ],
                   SizedBox(height: tokens.spacing.step1),
                   ExcludeSemantics(
                     child: Text(
@@ -651,6 +611,160 @@ class _MessageBubbleState extends State<_MessageBubble> {
         ),
       ),
     );
+  }
+}
+
+/// Collapses a long agent reply to a bounded height with a bottom fade and a
+/// Show more / Show less toggle.
+///
+/// The clamp is HEIGHT-based, not line-based: `GptMarkdown` renders block
+/// elements (lists, headings, quotes) as `WidgetSpan`s that each count as a
+/// single "line" of the outer `Text.rich`, so a `maxLines` clamp never bites
+/// on markdown-heavy replies and the former toggle looked inert. Measuring
+/// the laid-out height keeps the toggle honest: it appears exactly when the
+/// content overflows the collapsed viewport.
+class _CollapsibleAgentMarkdown extends StatefulWidget {
+  const _CollapsibleAgentMarkdown({
+    required this.text,
+    required this.style,
+    required this.fadeColor,
+  });
+
+  final String text;
+  final TextStyle style;
+
+  /// The bubble surface color the bottom fade dissolves into.
+  final Color fadeColor;
+
+  @override
+  State<_CollapsibleAgentMarkdown> createState() =>
+      _CollapsibleAgentMarkdownState();
+}
+
+class _CollapsibleAgentMarkdownState extends State<_CollapsibleAgentMarkdown> {
+  static const _collapsedLines = 8;
+
+  bool _expanded = false;
+  double? _contentHeight;
+
+  double get _collapsedHeight {
+    final fontSize = widget.style.fontSize ?? 14;
+    return fontSize * (widget.style.height ?? 1.4) * _collapsedLines;
+  }
+
+  void _handleHeight(double height) {
+    if (_contentHeight == height) return;
+    // Reported during layout — defer the rebuild to the next frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _contentHeight != height) {
+        setState(() => _contentHeight = height);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final collapsedHeight = _collapsedHeight;
+    final overflows = (_contentHeight ?? 0) > collapsedHeight + 1;
+    final collapsed = overflows && !_expanded;
+    // The child stays laid out at full height inside the OverflowBox while
+    // collapsed, so the measurement keeps tracking content changes.
+    final content = _MeasureHeight(
+      onHeight: _handleHeight,
+      child: AgentMarkdownView(widget.text, style: widget.style),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!collapsed)
+          content
+        else
+          ClipRect(
+            key: const ValueKey('agent-reply-collapse'),
+            child: Stack(
+              children: [
+                SizedBox(
+                  height: collapsedHeight,
+                  child: OverflowBox(
+                    alignment: Alignment.topLeft,
+                    maxHeight: double.infinity,
+                    child: content,
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: tokens.spacing.step6,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          widget.fadeColor.withValues(alpha: 0),
+                          widget.fadeColor,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (overflows) ...[
+          SizedBox(height: tokens.spacing.step1),
+          DesignSystemButton(
+            label: _expanded
+                ? context.messages.aiResponseShowLess
+                : context.messages.aiResponseShowMore,
+            onPressed: () => setState(() => _expanded = !_expanded),
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            trailingIcon: _expanded
+                ? Icons.expand_less_rounded
+                : Icons.expand_more_rounded,
+            alignsLabelToLeadingEdge: true,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _MeasureHeight extends SingleChildRenderObjectWidget {
+  const _MeasureHeight({required this.onHeight, super.child});
+
+  final ValueChanged<double> onHeight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMeasureHeight(onHeight);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderMeasureHeight renderObject,
+  ) {
+    renderObject.onHeight = onHeight;
+  }
+}
+
+class _RenderMeasureHeight extends RenderProxyBox {
+  _RenderMeasureHeight(this.onHeight);
+
+  ValueChanged<double> onHeight;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (_reported != size.height) {
+      _reported = size.height;
+      onHeight(size.height);
+    }
   }
 }
 

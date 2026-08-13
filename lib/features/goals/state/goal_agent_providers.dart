@@ -59,6 +59,11 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
     // A locally armed escalation must not wait out the hourly poll.
     onEscalationArmed: () =>
         ref.read(scheduledWakeManagerProvider).requestCheck(),
+    // New evidence after today's earlier tick dirties the standing report
+    // without necessarily transitioning the status — persist the stale
+    // watermark so the detail page shows the badge and Update now CTA.
+    onReportStale: (agentId) =>
+        ref.read(agentServiceProvider).markReportStale(agentId),
   ),
   name: 'goalAgentPhaseAProvider',
 );

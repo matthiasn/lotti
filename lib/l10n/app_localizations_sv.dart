@@ -857,7 +857,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att läsa in dina agenter just nu.';
 
   @override
-  String get agentsPageTitle => 'Agenter';
+  String get agentsPageTitle => 'Målagenter';
 
   @override
   String get agentStateConsecutiveFailures =>
@@ -3222,11 +3222,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vägled förstagångsanvändare av Daily OS genom en riktig avstämning som förvandlar tal till en uppgift och en dagsplan.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Aktivera agenter-sidan';
+  String get configFlagEnableAgentsPage => 'Aktivera målagenter-sidan';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Visa sidan Agenter i huvudnavigeringen. Följ dina målagenters hälsa med en blick och titta in hos var och en.';
+      'Visa sidan Målagenter i huvudnavigeringen. Följ dina målagenters hälsa med en blick och titta in hos var och en.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6559,6 +6559,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormYourMeasurables => 'Dina mätbara saker';
 
   @override
+  String get goalHabitCheckOffAction => 'Markera klart';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension registrerat i dag — bocka av vanan?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Minskar';
 
   @override
@@ -6644,7 +6652,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'klart';
+  String get goalProgressDone => 'klart · mål uppnått';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Ingen registrering';
@@ -6663,6 +6671,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'klart · mål ännu inte uppnått';
 
   @override
   String get goalProgressTitle => 'Den här rullande veckan';

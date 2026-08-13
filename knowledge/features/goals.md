@@ -168,6 +168,26 @@ flowchart TD
   at risk on the initial/worsening path), that expiry re-arms the period's
   escalation so Phase B creates or reuses a replacement. Healthy expiry stays
   a EUR0 maintenance event.
+- **Banners are dirty-tracked against their evidence.** Phase B stamps a
+  `factsDigest` (coarse status plus each dimension's actual value and
+  satisfaction, `goalFactsDigest`) into every minted or re-run banner's
+  provenance. Phase A's sweep — which runs after derivation for exactly this
+  reason — expires an active banner whose stamped digest no longer matches
+  the current derivation, so a banner quoting "129/94" dies when a new
+  reading lands, and the expiry re-arms the escalation for replacement copy.
+  Two deliberate limits: the digest comparison only runs when the goal
+  qualifies for automatic copy (never strip a banner that will not be
+  re-minted), and same-day banners are exempt (their replacement would
+  collide with the day's deterministic creation id in Phase B, and one
+  automatic banner per day is the ceiling anyway). Banners minted before the
+  stamp existed keep deadline-only expiry.
+- **The report is dirty-tracked against the register.** When a tick's
+  derivation differs from today's already-persisted register row
+  (`goalRegisterDigest` vs `goalFactsDigest`), Phase A advances the durable
+  report-stale watermark through the orchestrator — the detail page shows
+  the out-of-date badge and the Update now CTA even though no status
+  transitioned. The first tick of a day is not "new data" (the window slid),
+  and identical recomputation keeps the report fresh.
 - **The register and its escalation commit in one transaction.** A register
   write acknowledging a transition without its escalation would be
   permanent: the next run reads the new status as `previousStatus` and
@@ -450,7 +470,9 @@ flowchart TD
   The card keeps `cardPadding` on its lateral and bottom edges but uses
   `spacing.step2` above the fixed-height action header, preventing the rating
   and dismissal tap targets from creating a visually double-padded top edge.
-- **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
+- **The Goal Agents tab** (`enable_agents_page` flag; labelled "Goal Agents"
+  via `agentsPageTitle` in every catalog, while the `/agents` route path is
+  deliberately unchanged so deep links survive): one card per
   goal agent with health at a glance — a coarse-health chip
   (`coarseHealthOf` collapses the runtime `GoalTrackStatus` into Healthy /
   Behind / Restarting / Not enough data; `recovering` reads Restarting, never
@@ -500,7 +522,28 @@ flowchart TD
   to true over that day's habit completions. A fully completed routine day can
   therefore be green while the current goal remains Behind or Restarting.
   Numeric leaves still respect `atLeast` versus `atMost` direction, and missing
-  samples never count as successful days.
+  samples never count as successful days. Both the compact strip and the
+  detail day cells are tri-state (`GoalCompactDayState`): full-strength green
+  when the goal requirement held as of that day, a lighter wash of the same
+  hue (`SurfaceAlphas.muted`, no new token) for a partial success — the
+  routine was kept while the window target was still building — and neutral
+  otherwise. The detail legend carries all four entries (done · target met,
+  done · target not met yet, ages out tonight, today). Each day square shows
+  its concrete date in a hover/long-press tooltip (the same localized string
+  as its semantics), and the Success/Missed menu opens with the selected
+  day's date as a disabled header row. Weekday labels render directly above
+  their squares inside ONE shared horizontal scroller, so labels and cells
+  cannot drift apart; the reliability tail shares the bottom line with the
+  legend. Point-sample health headers (weight, blood pressure — the
+  `GoalHealthDataTypes.supported` set) quote the LATEST observation while
+  the met verdict stays on the evaluator's rolling-average basis; aggregate
+  dimensions keep quoting their period aggregate. When a health/measurable
+  dimension records an observation today and a habit whose name shares a
+  distinctive whole word with it (generic words excluded — see
+  `_genericNameTokens` in `goal_progress_view.dart`) has no outcome for
+  today, the habit card offers a one-tap "Mark done" through the same
+  completion service; category-time dimensions never trigger the suggestion
+  because their days are observed by definition.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
   view also carries an explicit Watching section. A reliability tail is shown
@@ -522,8 +565,13 @@ flowchart TD
   updated even without a material status transition; the Update now control
   uses the same refresh token and shows the shared running state while the
   active agent works, and is absent after the goal leaves the active lifecycle.
-  The detail page also carries active banners and, only while active, the
-  revision-approval card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
+  The detail page groups the agent's voice at the top: the standing report
+  and this goal's active banners (`_AgentSayingSection`, with the Update now
+  control) sit directly under the goal definition header, with the progress
+  evidence — habit cards first, then charts — below them, and, only while
+  active, the revision-approval card (`ChangeSetSummaryCard.selfTargeted`).
+  The report card hides its Show more toggle when the full text is identical
+  to the TLDR. Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
   for an active goal identity, keeps the goal statement visible in its compact
@@ -542,10 +590,14 @@ flowchart TD
   as a new durable turn. The chat service rechecks active goal identity before
   writing that source turn. Payload ownership is checked before inference, chat failures
   cannot re-arm scheduled escalations, and a user wake cannot complete without
-  a visible reply. Agent turns render through `AgentMarkdownView`; replies
-  over 360 characters or eight line breaks start at an eight-rendered-line
-  clamp with a localized Show more / Show less control, while user turns stay
-  literal. Goal FACTS include the local timestamp, UTC offset, and time-zone name
+  a visible reply. Agent turns render through `AgentMarkdownView`; a long
+  reply starts collapsed to a bounded-height clipped viewport with a bottom
+  fade and a localized Show more / Show less control, while user turns stay
+  literal. The collapse is HEIGHT-measured, never `maxLines`-based:
+  `GptMarkdown` renders block elements as `WidgetSpan`s that each count as
+  one "line", so a line clamp never bites on markdown-heavy replies — the
+  toggle appears exactly when the laid-out content overflows the collapsed
+  viewport, so it can never be a visible no-op. Goal FACTS include the local timestamp, UTC offset, and time-zone name
   beside their canonical UTC generation time, allowing relative snooze requests
   to be interpreted against the user's clock. A successful chat wake explicitly
   invalidates the visible-chat, active-banner, and history projections because

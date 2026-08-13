@@ -846,7 +846,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentsPageLoadFailed => 'Couldn\'t load your agents right now.';
 
   @override
-  String get agentsPageTitle => 'Agents';
+  String get agentsPageTitle => 'Goal Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';
@@ -3197,11 +3197,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Enable Agents page';
+  String get configFlagEnableAgentsPage => 'Enable Goal Agents page';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Show the Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.';
+      'Show the Goal Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6526,6 +6526,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalFormYourMeasurables => 'Your measurables';
 
   @override
+  String get goalHabitCheckOffAction => 'Mark done';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension recorded today — check off this habit?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Trending down';
 
   @override
@@ -6611,7 +6619,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'done';
+  String get goalProgressDone => 'done · target met';
 
   @override
   String get goalProgressHabitDayNoEntry => 'No entry';
@@ -6630,6 +6638,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'done · target not met yet';
 
   @override
   String get goalProgressTitle => 'This rolling week';
@@ -12732,7 +12743,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'No goal agents yet. Create one and it will quietly watch your progress.';
 
   @override
-  String get agentsPageTitle => 'Agents';
+  String get agentsPageTitle => 'Goal Agents';
 
   @override
   String get aiSetupWizardCreatesOptimized =>

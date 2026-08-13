@@ -8,8 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Goal-agent chat supports voice input.** The composer now has a microphone
   button that records, transcribes, and fills the text field.
+- **Rolling-week charts show partial successes.** A day where the habit was
+  completed but the window target was not yet met renders in a lighter green,
+  with its own legend entry, on both the goal detail cards and the compact
+  seven-day strips.
+- **Habit check-off suggestions from recorded data.** When a goal's health or
+  measurable dimension records an observation today and a name-matching habit
+  is still blank, the habit card offers a one-tap "Mark done".
+- **Concrete dates on the rolling-week grid.** Each day square shows its date
+  on hover/long-press, and the Success/Missed menu opens with the selected
+  day's date at the top.
 
 ### Changed
+- **The Agents tab is now called Goal Agents**, in the sidebar, mobile
+  navigation, page titles, and settings flag copy.
+- **The goal detail page leads with the agent's voice.** The standing report
+  and active banners now sit directly under the goal definition, with the
+  habit cards and charts below them; the Update now control moves up with
+  them.
+- **Banners refresh when their evidence changes.** Each banner remembers the
+  facts it was written from; a new measurement or habit check-off that changes
+  those facts expires the outdated copy and wakes the agent to write a
+  replacement, and the standing report gains an out-of-date badge when new
+  data arrives after it was written.
+- **Health dimension headers quote the latest reading.** Blood pressure and
+  weight show the most recent measurement instead of a seven-day average; the
+  on-track verdict still follows the goal's rolling-average target.
+- **Rolling-week cards are better balanced.** Weekday labels now sit directly
+  above their day squares and scroll with them, and the reliability tail
+  shares a line with the legend.
 - **Goal health trends now use charts that fit the data.** Systolic and
   diastolic blood pressure share one dual-line chart with their separate target
   lines, while weight uses a line chart that makes small day-to-day changes

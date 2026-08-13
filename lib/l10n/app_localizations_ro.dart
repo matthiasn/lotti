@@ -864,7 +864,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Agenții dvs. nu au putut fi încărcați momentan.';
 
   @override
-  String get agentsPageTitle => 'Agenți';
+  String get agentsPageTitle => 'Agenți de obiective';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
@@ -3268,11 +3268,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Activați pagina Agenți';
+  String get configFlagEnableAgentsPage =>
+      'Activați pagina Agenți de obiective';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Afișează pagina Agenți în navigarea principală. Urmăriți dintr-o privire starea agenților dvs. de obiective și verificați fiecare agent.';
+      'Afișează pagina Agenți de obiective în navigarea principală. Urmăriți dintr-o privire starea agenților dvs. de obiective și verificați fiecare agent.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6660,6 +6661,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormYourMeasurables => 'Elementele dvs. măsurabile';
 
   @override
+  String get goalHabitCheckOffAction => 'Marcați ca făcut';
+
+  @override
+  String goalHabitCheckOffSuggestion(String dimension) {
+    return '$dimension înregistrat astăzi — bifați acest obicei?';
+  }
+
+  @override
   String get goalHealthTrendDown => 'În scădere';
 
   @override
@@ -6748,7 +6757,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalProgressDone => 'realizat';
+  String get goalProgressDone => 'făcut · țintă atinsă';
 
   @override
   String get goalProgressHabitDayNoEntry => 'Nicio înregistrare';
@@ -6767,6 +6776,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalProgressHabitTargetWindow(int count, String window) {
     return '$count× · $window';
   }
+
+  @override
+  String get goalProgressPartial => 'făcut · țintă încă neatinsă';
 
   @override
   String get goalProgressTitle => 'Această săptămână glisantă';
