@@ -95,7 +95,6 @@ class GoalHabitCompletionService {
       comment: '',
     );
     if (saved == null) return false;
-    requestReportRefresh(agentId);
     return true;
   }
 

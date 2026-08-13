@@ -4698,7 +4698,7 @@
   "taskAgentThisReportHeader": "Tato zpráva",
   "taskAgentTurnOffSetup": "Vypnout AI pro tohoto agenta",
   "taskAgentUpdateNow": "Aktualizovat nyní",
-  "taskAgentUpdatesOnChange": "Aktualizuje se při změně úkolu",
+  "taskAgentUpdatesOnChange": "Aktualizace při změnách",
   "taskAgentUseCategoryDefault": "Zkopírovat výchozí nastavení kategorie",
   "taskAgentUseCategoryDefaultDescription": "Zkopíruje aktuální nastavení kategorie. Pozdější změny kategorie tohoto agenta neovlivní.",
   "taskAgentUseProfileDefault": "Použít výchozí model profilu",

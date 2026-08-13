@@ -48,6 +48,7 @@ void main() {
   late MockAgentSyncService syncService;
   late MockJournalDb journalDb;
   late MockUpdateNotifications updateNotifications;
+  late MockWakeOrchestrator wakeOrchestrator;
   late ProviderContainer container;
 
   setUp(() async {
@@ -62,7 +63,19 @@ void main() {
     syncService = MockAgentSyncService();
     journalDb = MockJournalDb();
     updateNotifications = MockUpdateNotifications();
+    wakeOrchestrator = MockWakeOrchestrator();
     when(() => updateNotifications.notify(any())).thenReturn(null);
+    when(
+      () => agentService.markReportStale(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => wakeOrchestrator.enqueueDeferredAutomaticWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenAnswer((_) async => 'run-deferred');
     when(
       () => updateNotifications.syncUpdateStream,
     ).thenAnswer((_) => syncStream.stream);
@@ -96,7 +109,7 @@ void main() {
         agentSyncServiceProvider.overrideWithValue(syncService),
         agentServiceProvider.overrideWithValue(agentService),
         labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
-        wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+        wakeOrchestratorProvider.overrideWithValue(wakeOrchestrator),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
         domainLoggerProvider.overrideWithValue(MockDomainLogger()),
       ],
@@ -280,8 +293,8 @@ void main() {
     expect(phaseA.success, isTrue);
   });
 
-  test('a local escalation nudges the scheduled-wake manager instead of '
-      'waiting out the hourly poll', () async {
+  test('a local transition queues the countdown, and only its deferred wake '
+      'arms and nudges the lease manager', () async {
     const agentId = 'goal-esc';
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
@@ -312,6 +325,9 @@ void main() {
       ),
     );
     when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
+    when(
       () => journalDb.getHabitCompletionsByHabitId(
         habitId: any(named: 'habitId'),
         rangeStart: any(named: 'rangeStart'),
@@ -327,35 +343,52 @@ void main() {
       () => repository.getDueScheduledAgentStates(any()),
     ).thenAnswer((_) async => []);
 
-    final result =
-        await container.read(
-          goalAgentWakeRunnersProvider,
-        )[AgentKinds.goalAgent]!(
-          agentIdentity:
-              AgentDomainEntity.agent(
-                    id: agentId,
-                    agentId: agentId,
-                    kind: AgentKinds.goalAgent,
-                    displayName: 'Gym',
-                    lifecycle: AgentLifecycle.active,
-                    mode: AgentInteractionMode.autonomous,
-                    allowedCategoryIds: const {},
-                    currentStateId: '$agentId:state',
-                    config: const AgentConfig(),
-                    createdAt: DateTime(2026),
-                    updatedAt: DateTime(2026),
-                    vectorClock: null,
-                  )
-                  as AgentIdentityEntity,
-          runKey: 'run-esc',
-          triggerTokens: const {'gym-habit'},
-          threadId: 'thread-esc',
-        );
+    final runner = container.read(
+      goalAgentWakeRunnersProvider,
+    )[AgentKinds.goalAgent]!;
+    final result = await runner(
+      agentIdentity:
+          AgentDomainEntity.agent(
+                id: agentId,
+                agentId: agentId,
+                kind: AgentKinds.goalAgent,
+                displayName: 'Gym',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: '$agentId:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
+      runKey: 'run-esc',
+      triggerTokens: const {'gym-habit'},
+      threadId: 'thread-esc',
+    );
     expect(result.success, isTrue);
 
-    // First-ever evaluation is a transition, so Phase A armed an
-    // escalation and the provider-wired callback must have kicked the
-    // manager into an immediate scan pass.
+    verify(
+      () => wakeOrchestrator.enqueueDeferredAutomaticWake(
+        agentId: agentId,
+        reason: WakeReason.subscription.name,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
+    verifyNever(() => repository.getDueScheduledWakeRecords(any()));
+
+    final deferred = await runner(
+      agentIdentity: goalIdentity(agentId),
+      runKey: 'run-deferred',
+      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+      threadId: 'thread-esc',
+    );
+    expect(deferred.success, isTrue);
+
+    // Only the deferred arm writes the deterministic scheduled record and
+    // kicks the lease manager into an immediate scan pass.
     await untilCalled(() => repository.getDueScheduledWakeRecords(any()));
   });
 

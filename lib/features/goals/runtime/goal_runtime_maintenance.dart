@@ -51,6 +51,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
           identity.agentId,
           criteria,
         );
+        _goalAgentService.restorePendingReportRefresh(
+          identity: identity,
+          state: await _repository.getAgentState(identity.agentId),
+        );
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }

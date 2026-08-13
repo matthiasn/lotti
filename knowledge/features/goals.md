@@ -35,7 +35,11 @@ sources:
   - id: trigger-tokens
     resource: ../../lib/classes/goal_trigger_tokens.dart
     title: Goal trigger tokens — cadence, escalation, baseline, report-refresh
-    last_modified: 2026-08-12
+    last_modified: 2026-08-13
+  - id: goal-service
+    resource: ../../lib/features/goals/service/goal_agent_service.dart
+    title: GoalAgentService — lifecycle, subscriptions and report automation
+    last_modified: 2026-08-13
   - id: progress-vocabulary
     resource: ../../lib/classes/goal_progress_models.dart
     title: Persisted per-dimension progress vocabulary
@@ -138,9 +142,14 @@ flowchart TD
     REARM --> READ[GoalSignalReader\njournal → GoalSignalWindow]
     READ --> EVAL[GoalProgressEvaluator\n+ GoalTrackPolicy]
     EVAL --> REG[upsert goalProgress register\ngoal_progress:agent:evaluation-day\nrecompute, never accumulate]
-    REG --> TRANS{status transitioned vs\nlast persisted status?}
-    TRANS -- no --> DONE[return — the €0 no-op]
-    TRANS -- yes --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
+    REG --> MATERIAL{status transition, register change,\nor eligible banner expiry?}
+    MATERIAL -- no --> DONE[return — the €0 no-op]
+    MATERIAL -- yes --> STALE2[advance report-stale watermark]
+    STALE2 --> AUTO{automatic report\nupdates enabled?}
+    AUTO -- no --> DONE
+    AUTO -- yes --> DEFER[local goal-report-refresh job\n120-second visible countdown\nfirst deadline wins]
+    DEFER --> DPA[GoalAgentPhaseA\ndeferred refresh trigger]
+    DPA --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
     ESC --> NUDGE[nudge ScheduledWakeManager\nrequestCheck on arming device]
     NUDGE --> ROUTE{escalation trigger token\non the wake?}
     ROUTE -- no --> PA
@@ -192,21 +201,25 @@ flowchart TD
   collide with the day's deterministic creation id in Phase B, and one
   automatic banner per day is the ceiling anyway). Banners minted before the
   stamp existed keep deadline-only expiry.
-- **The report is dirty-tracked against the register.** When a tick's
-  derivation differs from today's already-persisted register row
-  (`goalRegisterDigest` vs `goalAggregateFactsDigest`), Phase A advances the durable
-  report-stale watermark through the orchestrator — the detail page shows
-  the out-of-date badge and the Update now CTA even though no status
-  transitioned. The first tick of a day is not "new data" (the window slid),
-  and identical recomputation keeps the report fresh.
-- **The register and its escalation commit in one transaction.** A register
-  write acknowledging a transition without its escalation would be
-  permanent: the next run reads the new status as `previousStatus` and
-  never re-arms the missed Phase B wake. The escalation deadline is
-  derived from the period (its UTC day key), never from the arming
-  device's wall clock, so every device arming the same logical escalation
-  writes an identical record and the concurrent resolver's later-deadline
-  preference cannot resurrect a consumed wake.
+- **The report is dirty-tracked before inference.** A status transition,
+  eligible banner expiry, or derivation that differs from today's persisted
+  register (`goalRegisterDigest` vs `goalAggregateFactsDigest`) makes Phase A
+  advance the durable report-stale watermark immediately. With automatic
+  updates enabled, it also queues one local `goal-report-refresh` job behind
+  the shared 120-second agent countdown. Bursts merge into the first job and
+  keep its original deadline; they cannot postpone inference forever. The
+  detail page uses the shared automation control to expose that deadline,
+  Update now, Skip once, and the persisted automatic-updates switch. The first
+  tick of a day is not "new data" (the window slid), and identical
+  recomputation keeps the report fresh.
+- **The deferred arm and its escalation commit in one transaction.** When the
+  local countdown fires, its dedicated trigger re-enters Phase A and writes the
+  current register together with a forced report-refresh escalation. The
+  escalation deadline is derived from the period (its UTC day key), never from
+  the arming device's wall clock, so every device arming the same logical
+  escalation writes an identical record and the concurrent resolver's
+  later-deadline preference cannot resurrect a consumed wake. The scheduled
+  wake's existing lease still elects the single device that spends inference.
 - **Grace history is a consecutive, same-spec-version streak**: prior-row
   collection stops at the first missing day and at the first row computed
   under a superseded spec version.
@@ -310,17 +323,20 @@ flowchart TD
   detail-page refreshes are explicit user wakes.** The orchestrator listens
   local-only. On sync, bounded habit/measured signals run Phase A directly,
   while category-time mutations only advance the receiving agent's durable
-  report-stale watermark. Automatic LLM-worthy work becomes a
-  `goal-escalation:<periodKey>` scheduled wake whose lease election picks
-  exactly one device. A durable source chat turn instead carries a
-  `goal-chat-message:<messageId>` trigger on a manual `userMessage` wake. The
-  source exists before enqueue, the wake bypasses throttling, and no chat UI
-  owns an inference loop. A successful exact-day habit edit also enqueues a
-  workspace-scoped `goal-report-refresh` wake; its workspace does not supersede
-  the ordinary subscription wake. It first persists the deterministic register
-  from the same derivation snapshot without arming a duplicate escalation, then
-  routes to Phase B to refresh the standing report even when the coarse status
-  did not change.
+  report-stale watermark. Meaningful bounded evidence first becomes a local,
+  workspace-scoped `goal-report-refresh` countdown. When it fires, its deferred
+  trigger makes Phase A arm the synced `goal-escalation:<periodKey>` scheduled
+  wake whose lease election picks exactly one device. Restart hydration
+  reconstructs the local job with that trigger and workspace; Skip once clears
+  only this pending refresh. Turning automation off cancels it but leaves the
+  deterministic signal subscription live, and turning it back on schedules one
+  catch-up when the standing report is absent or stale. A durable source chat
+  turn instead carries a `goal-chat-message:<messageId>` trigger on a manual
+  `userMessage` wake. The source exists before enqueue, the wake bypasses
+  throttling, and no chat UI owns an inference loop. Update now uses a manual
+  wake in the same report-refresh workspace, supersedes the pending countdown,
+  persists the deterministic register from the prose snapshot, and routes to
+  Phase B immediately even when the coarse status did not change.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
@@ -663,11 +679,14 @@ flowchart TD
   privacy, sync and reminder behavior remain shared. Historical corrections
   keep the selected calendar day but use the current wall-clock fields so
   deterministic entry ids do not collide when an outcome is changed back.
-  The resulting local journal signal wakes Phase A immediately. The detail edit
-  additionally queues a fact-grounded report refresh, so the standing report is
-  updated even without a material status transition; the Update now control
-  uses the same refresh token and shows the shared running state while the
-  active agent works, and is absent after the goal leaves the active lifecycle.
+  The resulting local journal signal wakes Phase A immediately. When the
+  register changes, Phase A marks the report stale and joins the shared
+  two-minute fact-grounded refresh countdown; the progress evidence therefore
+  updates immediately while model work remains coalesced. The shared controls
+  keep Update now available beside the countdown, offer Skip once without
+  disabling later automatic updates, and show the running state while the
+  active agent works. They are absent after the goal leaves the active
+  lifecycle.
   The detail page groups the agent's voice at the top: the standing report
   and this goal's active banners (`_AgentSayingSection`, with the Update now
   control) sit directly under the goal definition header, with the progress

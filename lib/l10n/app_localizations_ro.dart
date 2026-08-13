@@ -12342,8 +12342,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskAgentUpdateNow => 'Actualizați acum';
 
   @override
-  String get taskAgentUpdatesOnChange =>
-      'Se actualizează când sarcina se modifică';
+  String get taskAgentUpdatesOnChange => 'Se actualizează la modificări';
 
   @override
   String get taskAgentUseCategoryDefault =>

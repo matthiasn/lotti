@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/agents/ui/task_agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_identity_region.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -17,7 +17,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///     line when the visible report was written by a different route.
 ///
 /// Questions 1 and 2 share a line whenever they fit, which is what
-/// [TaskAgentAutomationRow] decides.
+/// [AgentAutomationRow] decides.
 ///
 /// **The band is the only surface.** Its wash and top hairline are the
 /// container; nothing inside draws a second fill, border or radius. An earlier
@@ -104,7 +104,7 @@ class TaskAgentControlsFooter extends StatelessWidget {
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step2,
                 ),
-                child: TaskAgentAutomationRow(
+                child: AgentAutomationRow(
                   automaticUpdatesEnabled: automaticUpdatesEnabled,
                   automationBusy: automationBusy,
                   inferenceAvailable: inferenceAvailable,

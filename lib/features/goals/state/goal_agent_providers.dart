@@ -65,6 +65,9 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
     // watermark so the detail page shows the badge and Update now CTA.
     onReportStale: (agentId) =>
         ref.read(agentServiceProvider).markReportStale(agentId),
+    onReportRefreshNeeded: (agentId) => ref
+        .read(goalAgentServiceProvider)
+        .scheduleAutomaticReportRefresh(agentId),
   ),
   name: 'goalAgentPhaseAProvider',
 );

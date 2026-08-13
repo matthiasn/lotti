@@ -12177,8 +12177,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskAgentUpdateNow => 'Jetzt aktualisieren';
 
   @override
-  String get taskAgentUpdatesOnChange =>
-      'Aktualisiert sich, wenn sich die Aufgabe ändert';
+  String get taskAgentUpdatesOnChange => 'Aktualisiert bei Änderungen';
 
   @override
   String get taskAgentUseCategoryDefault => 'Kategorie-Standard kopieren';

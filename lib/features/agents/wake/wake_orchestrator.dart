@@ -586,6 +586,50 @@ class WakeOrchestrator with AgentErrorLogging {
     _throttle.setDeadlineFromHydration(agentId, deadline);
   }
 
+  /// Queue one automatic wake behind the standard coalescing countdown.
+  ///
+  /// Callers that perform cheap deterministic work immediately can use this
+  /// second-stage wake for the expensive follow-up. Repeated requests in the
+  /// same [workspaceKey] merge into the first job and keep its original
+  /// deadline, so a steady stream of evidence cannot postpone the run forever.
+  Future<String?> enqueueDeferredAutomaticWake({
+    required String agentId,
+    required String reason,
+    required Set<String> triggerTokens,
+    String? workspaceKey,
+  }) async {
+    if (_automaticUpdatesDisabledAgents.contains(agentId)) return null;
+    if (queue.mergeTokens(
+      agentId,
+      triggerTokens,
+      workspaceKey: workspaceKey,
+      isDirect: true,
+    )) {
+      return null;
+    }
+
+    final now = clock.now();
+    final runKey = RunKeyFactory.forManual(
+      agentId: agentId,
+      reason: reason,
+      workspaceKey: workspaceKey,
+      timestamp: now,
+    );
+    queue.enqueue(
+      WakeJob(
+        runKey: runKey,
+        agentId: agentId,
+        reason: reason,
+        triggerTokens: triggerTokens,
+        workspaceKey: workspaceKey,
+        createdAt: now,
+        initiator: WakeInitiator.automation,
+      ),
+    );
+    await _setThrottleDeadline(agentId);
+    return runKey;
+  }
+
   /// Restore a persisted deferred subscription wake after an app restart.
   ///
   /// `nextWakeAt` is durable, but [WakeQueue] is intentionally in-memory.
@@ -595,12 +639,15 @@ class WakeOrchestrator with AgentErrorLogging {
   void restorePendingWake({
     required String agentId,
     required DateTime dueAt,
+    Set<String> triggerTokens = const <String>{},
+    String? workspaceKey,
+    String reasonId = _restoredPendingWakeSubscriptionId,
   }) {
     final now = clock.now();
     final runKey = RunKeyFactory.forSubscription(
       agentId: agentId,
-      subscriptionId: _restoredPendingWakeSubscriptionId,
-      batchTokens: const <String>{},
+      subscriptionId: reasonId,
+      batchTokens: triggerTokens,
       wakeCounter: 0,
       timestamp: dueAt,
     );
@@ -615,8 +662,9 @@ class WakeOrchestrator with AgentErrorLogging {
         runKey: runKey,
         agentId: agentId,
         reason: WakeReason.subscription.name,
-        triggerTokens: const <String>{},
-        reasonId: _restoredPendingWakeSubscriptionId,
+        triggerTokens: triggerTokens,
+        reasonId: reasonId,
+        workspaceKey: workspaceKey,
         createdAt: createdAt,
       ),
     );

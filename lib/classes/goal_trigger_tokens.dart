@@ -19,6 +19,14 @@ const goalReportRefreshTriggerToken = 'goal-report-refresh';
 bool goalReportRefreshRequested(Set<String> triggerTokens) =>
     triggerTokens.contains(goalReportRefreshTriggerToken);
 
+/// Local coalescing wake that turns accumulated goal evidence into one synced,
+/// lease-elected report refresh. It never enters inference directly: Phase A
+/// consumes this token and arms the period-scoped scheduled wake below.
+const goalDeferredReportRefreshTriggerToken = 'goal-report-refresh-deferred';
+
+bool goalDeferredReportRefreshRequested(Set<String> triggerTokens) =>
+    triggerTokens.contains(goalDeferredReportRefreshTriggerToken);
+
 /// Prefix of the per-period escalation workspaces. Escalation records are
 /// lease-elected: exactly one device runs the LLM tier for a given
 /// period's transition.

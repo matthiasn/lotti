@@ -1153,6 +1153,111 @@ void main() {
         },
       );
 
+      test('a deferred automatic wake exposes one countdown and coalesces '
+          'later evidence without extending it', () {
+        fakeAsync((async) {
+          final startedAt = clock.now();
+          var storedState = makeTestState(agentId: 'agent-1');
+          final executions = <Set<String>>[];
+          orchestrator.wakeExecutor =
+              (
+                agentId,
+                runKey,
+                triggers,
+                threadId,
+              ) async {
+                executions.add(Set<String>.from(triggers));
+                return null;
+              };
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => storedState);
+          when(() => mockRepository.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            storedState =
+                invocation.positionalArguments.single as AgentStateEntity;
+          });
+
+          orchestrator.enqueueDeferredAutomaticWake(
+            agentId: 'agent-1',
+            reason: WakeReason.subscription.name,
+            triggerTokens: const {'goal-refresh-arm'},
+            workspaceKey: 'goal-report-refresh',
+          );
+          async.flushMicrotasks();
+          final firstDeadline = storedState.nextWakeAt;
+          expect(
+            firstDeadline,
+            startedAt.add(WakeOrchestrator.throttleWindow),
+          );
+          expect(executions, isEmpty);
+
+          async.elapse(const Duration(seconds: 30));
+          orchestrator.enqueueDeferredAutomaticWake(
+            agentId: 'agent-1',
+            reason: WakeReason.subscription.name,
+            triggerTokens: const {'new-evidence'},
+            workspaceKey: 'goal-report-refresh',
+          );
+          async.flushMicrotasks();
+          expect(
+            storedState.nextWakeAt,
+            firstDeadline,
+            reason: 'coalescing must not postpone a busy goal forever',
+          );
+
+          async
+            ..elapse(const Duration(seconds: 90))
+            ..flushMicrotasks();
+          expect(executions, [
+            {'goal-refresh-arm', 'new-evidence'},
+          ]);
+          expect(storedState.nextWakeAt, isNull);
+        });
+      });
+
+      test(
+        'restorePendingWake preserves custom trigger and workspace data',
+        () {
+          fakeAsync((async) {
+            final dueAt = clock.now().subtract(const Duration(seconds: 1));
+            Set<String>? receivedTriggers;
+            orchestrator.wakeExecutor =
+                (
+                  agentId,
+                  runKey,
+                  triggers,
+                  threadId,
+                ) async {
+                  receivedTriggers = Set<String>.from(triggers);
+                  return null;
+                };
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer(
+              (_) async => makeTestState(
+                agentId: 'agent-1',
+                nextWakeAt: dueAt,
+              ),
+            );
+
+            orchestrator.restorePendingWake(
+              agentId: 'agent-1',
+              dueAt: dueAt,
+              triggerTokens: const {'goal-refresh-arm'},
+              workspaceKey: 'goal-report-refresh',
+              reasonId: 'goal-refresh-arm',
+            );
+            async.flushMicrotasks();
+
+            expect(receivedTriggers, {'goal-refresh-arm'});
+            final run = captureWakeRuns(mockRepository).single;
+            expect(run.reasonId, 'goal-refresh-arm');
+          });
+        },
+      );
+
       test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
           orchestrator

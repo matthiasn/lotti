@@ -45,6 +45,7 @@ void main() {
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(() => repository.getAgentState(any())).thenAnswer((_) async => null);
     service = GoalAgentService(
       agentService: agentService,
       repository: repository,
@@ -56,6 +57,21 @@ void main() {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
     when(() => orchestrator.addSubscription(any())).thenReturn(null);
+    when(() => orchestrator.clearThrottle(any())).thenReturn(null);
+    when(
+      () => orchestrator.cancelPendingWakes(
+        any(),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenReturn(const []);
+    when(
+      () => orchestrator.enqueueDeferredAutomaticWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenAnswer((_) async => 'run-deferred');
     when(
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
@@ -158,7 +174,7 @@ void main() {
       () => agentService.createAgent(
         kind: AgentKinds.goalAgent,
         displayName: 'Juno',
-        config: const AgentConfig(),
+        config: const AgentConfig(automaticUpdatesEnabled: true),
         agentId: agentId,
       ),
     ).called(1);
@@ -168,6 +184,295 @@ void main() {
     when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
     service.removeSignalSubscriptions(agentId);
     verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+  });
+
+  test('legacy goal configs keep automatic refreshes enabled', () {
+    final legacy =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+
+    expect(GoalAgentService.automaticUpdatesEnabled(legacy), isTrue);
+    expect(
+      GoalAgentService.automaticUpdatesEnabled(
+        legacy.copyWith(
+          config: const AgentConfig(automaticUpdatesEnabled: false),
+        ),
+      ),
+      isFalse,
+    );
+  });
+
+  test('an active automatic goal queues the deferred Phase A arm', () async {
+    final identity =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    when(() => repository.getEntity(agentId)).thenAnswer((_) async => identity);
+
+    await service.scheduleAutomaticReportRefresh(agentId);
+
+    verify(
+      () => orchestrator.enqueueDeferredAutomaticWake(
+        agentId: agentId,
+        reason: WakeReason.subscription.name,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test('a disabled or dormant goal never queues automatic inference', () async {
+    AgentIdentityEntity identity({
+      bool enabled = false,
+      AgentLifecycle lifecycle = AgentLifecycle.active,
+    }) =>
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: lifecycle,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: AgentConfig(automaticUpdatesEnabled: enabled),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => identity());
+    await service.scheduleAutomaticReportRefresh(agentId);
+
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer(
+      (_) async => identity(enabled: true, lifecycle: AgentLifecycle.dormant),
+    );
+    await service.scheduleAutomaticReportRefresh(agentId);
+
+    verifyNever(
+      () => orchestrator.enqueueDeferredAutomaticWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+  });
+
+  test('turning automatic refreshes off persists the preference and cancels '
+      'only pending work', () async {
+    final identity =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    when(() => repository.getEntity(agentId)).thenAnswer((_) async => identity);
+    await service.updateAutomaticUpdates(agentId: agentId, enabled: false);
+
+    final written = upserts.whereType<AgentIdentityEntity>().single;
+    expect(written.config.automaticUpdatesEnabled, isFalse);
+    verify(() => orchestrator.clearThrottle(agentId)).called(1);
+    verify(
+      () => orchestrator.cancelPendingWakes(
+        agentId,
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
+    verifyNever(
+      () => orchestrator.enqueueDeferredAutomaticWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+  });
+
+  test('turning automatic refreshes on queues one catch-up for a stale '
+      'report', () async {
+    AgentIdentityEntity identity({required bool enabled}) =>
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: AgentConfig(automaticUpdatesEnabled: enabled),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    var reads = 0;
+    when(() => repository.getEntity(agentId)).thenAnswer((_) async {
+      reads++;
+      return identity(enabled: reads > 1);
+    });
+    when(() => repository.getAgentState(agentId)).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentState(
+                id: '$agentId:state',
+                agentId: agentId,
+                slots: const AgentSlots(),
+                updatedAt: DateTime(2026, 8, 13, 12),
+                vectorClock: null,
+                reportFreshAt: DateTime(2026, 8, 13, 10),
+                reportStaleAt: DateTime(2026, 8, 13, 11),
+              )
+              as AgentStateEntity,
+    );
+
+    await service.updateAutomaticUpdates(agentId: agentId, enabled: true);
+
+    expect(
+      upserts
+          .whereType<AgentIdentityEntity>()
+          .single
+          .config
+          .automaticUpdatesEnabled,
+      isTrue,
+    );
+    verify(
+      () => orchestrator.enqueueDeferredAutomaticWake(
+        agentId: agentId,
+        reason: WakeReason.subscription.name,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test('restoring a countdown reconstructs its goal-specific trigger', () {
+    final identity =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: const AgentConfig(automaticUpdatesEnabled: true),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    final dueAt = DateTime(2026, 8, 13, 12, 2);
+    final state =
+        AgentDomainEntity.agentState(
+              id: '$agentId:state',
+              agentId: agentId,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2026, 8, 13, 12),
+              vectorClock: null,
+              nextWakeAt: dueAt,
+            )
+            as AgentStateEntity;
+    when(
+      () => orchestrator.restorePendingWake(
+        agentId: any(named: 'agentId'),
+        dueAt: any(named: 'dueAt'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+        reasonId: any(named: 'reasonId'),
+      ),
+    ).thenReturn(null);
+
+    service.restorePendingReportRefresh(identity: identity, state: state);
+
+    verify(
+      () => orchestrator.restorePendingWake(
+        agentId: agentId,
+        dueAt: dueAt,
+        triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+        reasonId: goalDeferredReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test('a disabled goal clears a restored local countdown', () {
+    final identity =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.goalAgent,
+              displayName: 'Goal',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: '$agentId:state',
+              config: const AgentConfig(automaticUpdatesEnabled: false),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    final state =
+        AgentDomainEntity.agentState(
+              id: '$agentId:state',
+              agentId: agentId,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2026, 8, 13, 12),
+              vectorClock: null,
+              nextWakeAt: DateTime(2026, 8, 13, 12, 2),
+            )
+            as AgentStateEntity;
+
+    service.restorePendingReportRefresh(identity: identity, state: state);
+
+    verify(() => orchestrator.clearThrottle(agentId)).called(1);
+    verify(
+      () => orchestrator.cancelPendingWakes(
+        agentId,
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
   });
 
   test('category time marks the report stale while bounded signals wake', () {

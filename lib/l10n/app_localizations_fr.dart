@@ -12316,8 +12316,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskAgentUpdateNow => 'Mettre à jour';
 
   @override
-  String get taskAgentUpdatesOnChange =>
-      'Se met à jour quand cette tâche change';
+  String get taskAgentUpdatesOnChange => 'Se met à jour lors des changements';
 
   @override
   String get taskAgentUseCategoryDefault => 'Copier le réglage de la catégorie';

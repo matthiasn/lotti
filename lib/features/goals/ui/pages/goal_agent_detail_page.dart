@@ -1,17 +1,21 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
@@ -243,8 +247,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           healthAsync: healthAsync,
           nudges: nudges,
           report: latestReport,
-          reportIsStale:
-              agentState is AgentStateEntity && agentState.isReportStale,
+          identity: goalIdentity,
+          agentState: agentState is AgentStateEntity ? agentState : null,
           canRefresh: isActive,
           // Always non-null: a null callback would fall back to the card's
           // default navigate-to-detail — a self-navigation no-op on this
@@ -481,13 +485,14 @@ class _GoalHeader extends StatelessWidget {
   }
 }
 
-class _AgentSayingSection extends ConsumerWidget {
+class _AgentSayingSection extends ConsumerStatefulWidget {
   const _AgentSayingSection({
     required this.agentId,
     required this.healthAsync,
     required this.nudges,
     required this.report,
-    required this.reportIsStale,
+    required this.identity,
+    required this.agentState,
     required this.canRefresh,
     this.onBannerCta,
   });
@@ -496,7 +501,8 @@ class _AgentSayingSection extends ConsumerWidget {
   final AsyncValue<GoalAgentHealth> healthAsync;
   final List<GoalBannerEntry> nudges;
   final AgentReportEntity? report;
-  final bool reportIsStale;
+  final AgentIdentityEntity identity;
+  final AgentStateEntity? agentState;
   final bool canRefresh;
 
   /// Anchor-scroll to the evidence this page hosts — the banner CTA must
@@ -504,59 +510,68 @@ class _AgentSayingSection extends ConsumerWidget {
   final VoidCallback? onBannerCta;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AgentSayingSection> createState() =>
+      _AgentSayingSectionState();
+}
+
+class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
+  bool _automationBusy = false;
+  bool _cancelledManually = false;
+
+  @override
+  void didUpdateWidget(covariant _AgentSayingSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldWake = oldWidget.agentState?.nextWakeAt;
+    final newWake = widget.agentState?.nextWakeAt;
+    if (newWake != oldWake && newWake?.isAfter(clock.now()) == true) {
+      _cancelledManually = false;
+    }
+  }
+
+  Future<void> _updateAutomaticUpdates(bool enabled) async {
+    if (_automationBusy) return;
+    setState(() => _automationBusy = true);
+    try {
+      await ref
+          .read(goalAgentServiceProvider)
+          .updateAutomaticUpdates(
+            agentId: widget.agentId,
+            enabled: enabled,
+          );
+      _cancelledManually = false;
+    } finally {
+      if (mounted) setState(() => _automationBusy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isRefreshing =
-        ref.watch(agentIsRunningProvider(agentId)).value ?? false;
-    final oneLiner = healthAsync.value?.reportOneLiner;
-    final header = Row(
-      children: [
-        Expanded(
-          child: Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step1,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              // The page's one section-heading style; warning ink stays
-              // exclusive to genuine state (the out-of-date badge), so
-              // orange keeps meaning "needs attention" on a health surface.
-              Text(
-                context.messages.goalDetailSayingTitle,
-                // subtitle1: a SECTION header must outrank the subtitle2
-                // card titles it governs.
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-              if (reportIsStale && (report != null || oneLiner != null))
-                DesignSystemBadge.outlined(
-                  label: context.messages.taskAgentStatusOutOfDate,
-                  tone: DesignSystemBadgeTone.warning,
-                  semanticLabel: context.messages.taskAgentReportOutdatedTitle,
-                ),
-            ],
-          ),
-        ),
-        if (canRefresh) ...[
-          SizedBox(width: tokens.spacing.step2),
-          DesignSystemButton(
-            label: context.messages.taskAgentUpdateNow,
-            onPressed: () => ref
-                .read(goalHabitCompletionServiceProvider)
-                .requestReportRefresh(agentId),
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.dense,
-            leadingIcon: Icons.refresh_rounded,
-            isLoading: isRefreshing,
-          ),
-        ],
-      ],
+        ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
+    final oneLiner = widget.healthAsync.value?.reportOneLiner;
+    final nextWakeAt = widget.agentState?.nextWakeAt;
+    final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
+      widget.identity,
+    );
+    final showCountdown =
+        widget.canRefresh &&
+        automaticUpdatesEnabled &&
+        !isRefreshing &&
+        !_cancelledManually &&
+        nextWakeAt?.isAfter(clock.now()) == true;
+    final hasReportContent = widget.report != null || oneLiner != null;
+    final header = Text(
+      context.messages.goalDetailSayingTitle,
+      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
     );
     final reportCard = _GoalReportCard(
-      report: report,
+      report: widget.report,
       fallback:
           oneLiner ??
-          (healthAsync.hasError
+          (widget.healthAsync.hasError
               ? context.messages.goalDetailHealthUnavailable
               : context.messages.goalDetailNoReport),
       fallbackMuted: oneLiner == null,
@@ -568,21 +583,47 @@ class _AgentSayingSection extends ConsumerWidget {
       children: [
         header,
         SizedBox(height: tokens.spacing.step2),
+        if (widget.canRefresh) ...[
+          AgentAutomationRow(
+            automaticUpdatesEnabled: automaticUpdatesEnabled,
+            automationBusy: _automationBusy,
+            inferenceAvailable: true,
+            isRunning: isRefreshing,
+            showCountdown: showCountdown,
+            nextWakeAt: nextWakeAt,
+            hasReportContent: hasReportContent,
+            isStale: widget.agentState?.isReportStale ?? false,
+            onAutomaticUpdatesChanged: (enabled) =>
+                unawaited(_updateAutomaticUpdates(enabled)),
+            onRunNow: () => ref
+                .read(goalHabitCompletionServiceProvider)
+                .requestReportRefresh(widget.agentId),
+            onSkipScheduledUpdate: () {
+              ref
+                  .read(goalAgentServiceProvider)
+                  .skipPendingReportRefresh(widget.agentId);
+              setState(() => _cancelledManually = true);
+            },
+            onCountdownExpired: () =>
+                ref.invalidate(agentStateProvider(widget.agentId)),
+          ),
+          SizedBox(height: tokens.spacing.step2),
+        ],
         reportCard,
         // Every active banner remains reachable here, uncapped. The shell
         // rotates one slot; this goal-owned surface does not. Banners are an
         // interaction channel, not a replacement for the standing report.
-        for (var index = 0; index < nudges.length; index++) ...[
+        for (var index = 0; index < widget.nudges.length; index++) ...[
           SizedBox(height: tokens.spacing.step3),
           GoalBannerExposureTracker(
             key: ValueKey(
-              '${nudges[index].nudge.id}:'
-              '${nudges[index].nudge.activationCount}',
+              '${widget.nudges[index].nudge.id}:'
+              '${widget.nudges[index].nudge.activationCount}',
             ),
-            nudgeId: nudges[index].nudge.id,
+            nudgeId: widget.nudges[index].nudge.id,
             child: GoalBannerCard(
-              entry: nudges[index],
-              onCtaPressed: onBannerCta,
+              entry: widget.nudges[index],
+              onCtaPressed: widget.onBannerCta,
             ),
           ),
         ],

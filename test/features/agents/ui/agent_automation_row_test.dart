@@ -3,7 +3,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/ui/task_agent_automation_row.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -27,7 +27,7 @@ void main() {
     VoidCallback? onSkipScheduledUpdate,
     VoidCallback? onCountdownExpired,
   }) {
-    return TaskAgentAutomationRow(
+    return AgentAutomationRow(
       automaticUpdatesEnabled: automaticUpdatesEnabled,
       automationBusy: automationBusy,
       inferenceAvailable: inferenceAvailable,
@@ -76,7 +76,7 @@ void main() {
       find.byKey(const ValueKey('taskAgentScheduleLabel'));
 
   DsTokens tokensOf(WidgetTester tester) =>
-      tester.element(find.byType(TaskAgentAutomationRow)).designTokens;
+      tester.element(find.byType(AgentAutomationRow)).designTokens;
 
   group('manual trigger', () {
     testWidgets('is labelled, glyphed and fires the callback', (tester) async {
@@ -503,7 +503,7 @@ void main() {
 
       // The line is reserved rather than appearing and disappearing as the
       // user flips the switch.
-      expect(find.text('Updates when this task changes'), findsOneWidget);
+      expect(find.text('Updates on changes'), findsOneWidget);
     });
 
     testWidgets('says nothing about the next update while one is running', (
@@ -521,7 +521,7 @@ void main() {
       // The trigger already reads "Thinking…"; promising a future update
       // beside it describes a settled state the card is not in.
       expect(find.text('Thinking…'), findsOneWidget);
-      expect(find.text('Updates when this task changes'), findsNothing);
+      expect(find.text('Updates on changes'), findsNothing);
       expect(scheduleLabel(), findsNothing);
     });
 
@@ -542,14 +542,33 @@ void main() {
       );
       await tester.pump();
 
-      // "Updates when this task changes" has no deadline behind it; treating
+      // "Updates on changes" has no deadline behind it; treating
       // it as an expired countdown would loop the card through rebuilds.
-      expect(find.text('Updates when this task changes'), findsOneWidget);
+      expect(find.text('Updates on changes'), findsOneWidget);
       expect(expiries, 0);
     });
   });
 
   group('responsive behaviour', () {
+    testWidgets('the idle automation promise fits a narrow goal surface', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        subject(automaticUpdatesEnabled: true, onRunNow: () {}),
+        width: 320,
+        locale: const Locale('de'),
+        textScaler: const TextScaler.linear(1.3),
+      );
+
+      expect(find.text('Aktualisiert bei Änderungen'), findsOneWidget);
+      final label = tester.widget<Text>(scheduleLabel());
+      expect(label.maxLines, 2);
+      expect(label.softWrap, isTrue);
+      expect(tester.getSize(scheduleLabel()).width, 320);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('drops schedule prose before it drops the countdown value', (
       tester,
     ) async {

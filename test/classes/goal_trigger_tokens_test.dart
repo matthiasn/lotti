@@ -34,6 +34,21 @@ void main() {
     expect(goalReportRefreshRequested(const {'gym-habit'}), isFalse);
   });
 
+  test('deferred report refresh has its own Phase A arm token', () {
+    expect(
+      goalDeferredReportRefreshRequested(
+        const {goalDeferredReportRefreshTriggerToken},
+      ),
+      isTrue,
+    );
+    expect(
+      goalDeferredReportRefreshRequested(
+        const {goalReportRefreshTriggerToken},
+      ),
+      isFalse,
+    );
+  });
+
   test('the baseline token round-trips the pre-transition status', () {
     expect(goalEscalationBaselineToken('offTrack'), 'goal-baseline:offTrack');
     expect(

@@ -6507,7 +6507,7 @@
   "@taskAgentUpdateNow": {
     "description": "Manual trigger in the task-agent card footer. Always present: it runs the agent immediately whether or not an automatic update is scheduled."
   },
-  "taskAgentUpdatesOnChange": "Updates when this task changes",
+  "taskAgentUpdatesOnChange": "Updates on changes",
   "@taskAgentUpdatesOnChange": {
     "description": "Schedule line in the task-agent card footer when automatic updates are on but no wake is currently pending. Keeps the line reserved so toggling automation does not resize the card."
   },

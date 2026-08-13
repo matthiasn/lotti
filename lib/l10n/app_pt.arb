@@ -5279,7 +5279,7 @@
   "taskAgentThisReportHeader": "Este relatório",
   "taskAgentTurnOffSetup": "Desative a IA para este agente",
   "taskAgentUpdateNow": "Atualizar agora",
-  "taskAgentUpdatesOnChange": "Atualiza quando esta tarefa muda",
+  "taskAgentUpdatesOnChange": "Atualiza com alterações",
   "taskAgentUseCategoryDefault": "Copiar categoria padrão",
   "taskAgentUseCategoryDefaultDescription": "Copia a configuração atual da categoria. Alterações posteriores de categoria não afetarão este agente.",
   "taskAgentUseProfileDefault": "Usar perfil padrão",
