@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -6,21 +7,18 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class _MockGoalHabitCompletionService extends Mock
-    implements GoalHabitCompletionService {}
 
 void main() {
   final today = DateTime.utc(2026, 8, 13);
-  late _MockGoalHabitCompletionService completionService;
+  late MockGoalHabitCompletionService completionService;
 
-  setUpAll(() {
-    registerFallbackValue(HabitCompletionType.success);
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
-    completionService = _MockGoalHabitCompletionService();
+    completionService = MockGoalHabitCompletionService();
   });
 
   GoalProgressView progress({int measureValueToday = 0}) => GoalProgressView(
@@ -122,10 +120,12 @@ void main() {
     ).thenAnswer((_) async => true);
     await pumpSheet(tester);
 
-    await tester.tap(
-      find.byKey(const ValueKey('goal-log-today-mark-measure')),
-    );
-    await tester.pumpAndSettle();
+    await withClock(Clock.fixed(DateTime.utc(2026, 8, 13, 14)), () async {
+      await tester.tap(
+        find.byKey(const ValueKey('goal-log-today-mark-measure')),
+      );
+      await tester.pumpAndSettle();
+    });
 
     verify(
       () => completionService.record(
@@ -168,6 +168,90 @@ void main() {
       findsOneWidget,
     );
     expect(find.text("That didn't save — please try again."), findsOneWidget);
+  });
+
+  testWidgets('a sheet held open across midnight writes the NEW day, never '
+      'the stale constructor snapshot', (tester) async {
+    final afterMidnight = DateTime.utc(2026, 8, 14, 0, 30);
+    when(
+      () => completionService.record(
+        agentId: any(named: 'agentId'),
+        habitId: any(named: 'habitId'),
+        day: any(named: 'day'),
+        outcome: any(named: 'outcome'),
+      ),
+    ).thenAnswer((_) async => true);
+    await pumpSheet(tester);
+
+    await withClock(Clock.fixed(afterMidnight), () async {
+      await tester.tap(
+        find.byKey(const ValueKey('goal-log-today-mark-measure')),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    verify(
+      () => completionService.record(
+        agentId: 'goal-1',
+        habitId: 'measure',
+        day: DateTime.utc(2026, 8, 14),
+        outcome: HabitCompletionType.success,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('a composite goal with many dimensions scrolls — later rows '
+      'and their actions stay reachable', (tester) async {
+    tester.view.physicalSize = const Size(390, 500);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final manyHabits = GoalProgressView(
+      today: today,
+      habits: [
+        for (var i = 0; i < 20; i++)
+          GoalHabitProgressView(
+            habitId: 'habit-$i',
+            name: 'Habit $i',
+            targetCount: 3,
+            days: [
+              for (var offset = 6; offset >= 0; offset--)
+                GoalProgressDay(
+                  day: today.subtract(Duration(days: offset)),
+                  value: 0,
+                ),
+            ],
+            successfulWeeks: 0,
+          ),
+      ],
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalLogTodaySheet(agentId: 'goal-1', progress: manyHabits),
+        ),
+        overrides: [
+          goalHabitCompletionServiceProvider.overrideWithValue(
+            completionService,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // SingleChildScrollView children are always built, so reachability is
+    // a geometry claim: the last action starts below the fold and scrolling
+    // brings it into the viewport.
+    const lastRow = ValueKey('goal-log-today-mark-habit-19');
+    expect(tester.getRect(find.byKey(lastRow)).bottom, greaterThan(500));
+    await tester.scrollUntilVisible(
+      find.byKey(lastRow),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      tester.getRect(find.byKey(lastRow)).bottom,
+      lessThanOrEqualTo(500),
+    );
   });
 
   testWidgets('a habit already completed today opens as done', (tester) async {

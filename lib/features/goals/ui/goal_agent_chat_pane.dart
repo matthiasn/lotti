@@ -29,7 +29,8 @@ class GoalAgentChatPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(agentIdentityProvider(agentId)).value;
-    final health = ref.watch(goalAgentHealthProvider(agentId)).value;
+    final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
+    final health = healthAsync.value;
     final composer = ref.watch(goalChatControllerProvider(agentId));
     final controller = ref.read(goalChatControllerProvider(agentId).notifier);
     final measurables = ref.watch(measurableDataTypesStreamProvider).value;
@@ -41,11 +42,15 @@ class GoalAgentChatPane extends ConsumerWidget {
         : context.messages.agentsPageTitle;
     // The subtitle is current STATE, not the aspiration: next to a Behind
     // chip elsewhere, the goal statement here read as the agent claiming
-    // all is well.
-    final coarseHealthLabel = goalCoarseHealthLabel(
-      context.messages,
-      coarseHealthOf(health?.trackStatus),
-    );
+    // all is well. Only a RESOLVED health record carries a verdict — while
+    // the first load is in flight (or has failed with no prior value) the
+    // header shows no label rather than a false "Not enough data".
+    final coarseHealthLabel = healthAsync.hasValue
+        ? goalCoarseHealthLabel(
+            context.messages,
+            coarseHealthOf(health?.trackStatus),
+          )
+        : null;
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final now = clock.now();
@@ -134,15 +139,16 @@ class GoalAgentChatPane extends ConsumerWidget {
                                 color: tokens.colors.text.highEmphasis,
                               ),
                         ),
-                        Text(
-                          coarseHealthLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
+                        if (coarseHealthLabel != null)
+                          Text(
+                            coarseHealthLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                          ),
                       ],
                     ),
                   ),

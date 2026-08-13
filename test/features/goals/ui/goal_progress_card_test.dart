@@ -1341,11 +1341,14 @@ void main() {
           tester.getSize(visualCell),
           const Size.square(ControlSizes.iconChipCompact),
         );
-        // The interactive slot keeps the compact width (pitch unchanged)
-        // but meets the design system's touch floor vertically.
+        // The interactive slot fills the track pitch horizontally and
+        // meets the design system's touch floor vertically.
         expect(
           tester.getSize(cell),
-          const Size(ControlSizes.iconChipCompact, TapTargets.minimum),
+          Size(
+            expectedPitch,
+            TapTargets.minimum,
+          ),
         );
         expect(
           tester.getCenter(marker).dx,
@@ -1596,7 +1599,15 @@ void main() {
       const dayKey = ValueKey('goal-habit-day-walk-2026-08-11');
       expect(
         tester.getSize(find.byKey(dayKey)),
-        const Size(ControlSizes.iconChipCompact, TapTargets.minimum),
+        Size(
+          ControlSizes.iconChipCompact +
+              tester
+                  .element(find.byType(GoalProgressCard))
+                  .designTokens
+                  .spacing
+                  .step2,
+          TapTargets.minimum,
+        ),
       );
       expect(
         tester.getCenter(find.text('Walk')).dy,

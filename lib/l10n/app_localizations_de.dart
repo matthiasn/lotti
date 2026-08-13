@@ -6736,6 +6736,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalProgressPartial => 'erledigt · Ziel noch offen';
 
   @override
+  String get goalProgressStripLoading => 'Tagesübersicht wird noch geladen';
+
+  @override
   String get goalProgressTitle => 'Diese rollierende Woche';
 
   @override

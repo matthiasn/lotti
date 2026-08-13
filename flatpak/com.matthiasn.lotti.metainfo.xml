@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.9" date="2026-08-13">
+      <description>
+        <p>Changed: a design-panel polish pass across the goal-agent surfaces. The banner's Log today opens a one-tap logging sheet, day cells wear a dedicated success green with an inner dot for partial days, Restarting reads in blue, warning orange is reserved for genuine attention, the goal statement is labelled, phones get a persistent chat button, the Goal Agents list keeps one card silhouette with the week strip on the right on wide screens, day squares accept taps on a larger area, and chart target lines render at full strength.</p>
+      </description>
+    </release>
     <release version="1.0.8" date="2026-08-12">
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
@@ -47,7 +52,6 @@
         <p>Changed: the Agents tab is now called Goal Agents, and the goal detail page leads with the standing report and banners directly under the goal definition, with habit cards and charts below.</p>
         <p>Changed: banners refresh when their evidence changes. A new measurement or habit check-off that changes the facts a banner quotes expires the outdated copy and wakes the agent for a replacement, and the standing report gains an out-of-date badge when new data arrives after it was written.</p>
         <p>Changed: blood pressure and weight distinguish today's result from the rolling trend. They show the latest measurement and give positive feedback when today's reading is on target, while an over-target average still needs attention when today has not been measured.</p>
-        <p>Changed: a design-panel polish pass across the goal-agent surfaces. The banner's Log today opens a one-tap logging sheet, day cells wear a dedicated success green with an inner dot for partial days, Restarting reads in blue, warning orange is reserved for genuine attention, the goal statement is labelled, phones get a persistent chat button, the Goal Agents list keeps one card silhouette with the week strip on the right on wide screens, day squares accept taps on a larger area, and chart target lines render at full strength.</p>
         <p>Changed: goal health trends now use charts that fit the data. Systolic and diastolic blood pressure share one dual-line chart with separate target lines, while weight uses a line chart that makes small day-to-day changes visible. Other measurable dimensions keep their existing progress bars.</p>
         <p>Changed: goal setup can monitor time spent in active categories, with a rolling seven-day hour target and an at-least or at-most direction.</p>
         <p>Fixed: goal agents receive every timestamped blood-pressure and weight observation in the goal window alongside the rolling aggregate, so reports can cite the latest value and improving trend instead of presenting an average as a measurement.</p>

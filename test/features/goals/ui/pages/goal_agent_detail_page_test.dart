@@ -35,9 +35,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class _MockGoalHabitCompletionService extends Mock
-    implements GoalHabitCompletionService {}
-
 void main() {
   final goalIdentity =
       AgentDomainEntity.agent(
@@ -60,7 +57,7 @@ void main() {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final completionService = _MockGoalHabitCompletionService();
+    final completionService = MockGoalHabitCompletionService();
     when(
       () => completionService.requestReportRefresh('goal-1'),
     ).thenReturn('refresh-run');
@@ -824,7 +821,7 @@ void main() {
       'history', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
-    final completionService = _MockGoalHabitCompletionService();
+    final completionService = MockGoalHabitCompletionService();
     when(
       () => completionService.record(
         agentId: 'goal-1',

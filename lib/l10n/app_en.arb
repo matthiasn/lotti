@@ -3885,6 +3885,10 @@
   "@goalProgressPartial": {
     "description": "Legend label for a day where the habit was completed but the goal window target was not yet met."
   },
+  "goalProgressStripLoading": "Daily record still loading",
+  "@goalProgressStripLoading": {
+    "description": "Screen-reader label for a compact week strip whose data has not resolved yet — a loading state, never a health verdict."
+  },
   "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",
   "goalRecordOfferConflict": "You already logged this measurable on one of these days. Ask what should be kept before recording anything.",

@@ -6249,7 +6249,21 @@ class AppLocalizationsRo extends AppLocalizations {
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Ieri: $metCount din $dimensionCount dimensiuni · $requiredCount necesare.';
+    String _temp0 = intl.Intl.pluralLogic(
+      dimensionCount,
+      locale: localeName,
+      other: '$dimensionCount de dimensiuni',
+      few: '$dimensionCount dimensiuni',
+      one: '1 dimensiune',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      requiredCount,
+      locale: localeName,
+      other: '$requiredCount necesare',
+      few: '$requiredCount necesare',
+      one: '1 necesară',
+    );
+    return 'Ieri: $metCount din $_temp0 · $_temp1.';
   }
 
   @override
@@ -6798,6 +6812,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalProgressPartial => 'făcut · țintă încă neatinsă';
+
+  @override
+  String get goalProgressStripLoading => 'Evidența zilnică se încarcă încă';
 
   @override
   String get goalProgressTitle => 'Această săptămână glisantă';

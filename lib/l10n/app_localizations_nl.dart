@@ -6706,6 +6706,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalProgressPartial => 'gedaan · doel nog niet gehaald';
 
   @override
+  String get goalProgressStripLoading => 'Dagoverzicht wordt nog geladen';
+
+  @override
   String get goalProgressTitle => 'Deze lopende week';
 
   @override

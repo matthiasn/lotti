@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -166,40 +167,42 @@ void main() {
         onSeek: seeks.add,
       );
 
-      final detector = _getGestureDetector(tester);
-      detector.onHorizontalDragStart?.call(
-        DragStartDetails(
-          localPosition: _localPointForRatio(tester, 0.1),
-          globalPosition: _pointForRatio(tester, 0.1),
-        ),
-      );
-      detector.onHorizontalDragUpdate?.call(
-        DragUpdateDetails(
-          localPosition: _localPointForRatio(tester, 0.3),
-          globalPosition: _pointForRatio(tester, 0.3),
-        ),
-      );
-      await tester.pump();
-      expect(seeks, [const Duration(seconds: 30)]);
+      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+        final detector = _getGestureDetector(tester);
+        detector.onHorizontalDragStart?.call(
+          DragStartDetails(
+            localPosition: _localPointForRatio(tester, 0.1),
+            globalPosition: _pointForRatio(tester, 0.1),
+          ),
+        );
+        detector.onHorizontalDragUpdate?.call(
+          DragUpdateDetails(
+            localPosition: _localPointForRatio(tester, 0.3),
+            globalPosition: _pointForRatio(tester, 0.3),
+          ),
+        );
+        await tester.pump();
+        expect(seeks, [const Duration(seconds: 30)]);
 
-      detector.onHorizontalDragUpdate?.call(
-        DragUpdateDetails(
-          localPosition: _localPointForRatio(tester, 0.5),
-          globalPosition: _pointForRatio(tester, 0.5),
-        ),
-      );
-      await tester.pump();
-      expect(seeks.length, 1);
+        detector.onHorizontalDragUpdate?.call(
+          DragUpdateDetails(
+            localPosition: _localPointForRatio(tester, 0.5),
+            globalPosition: _pointForRatio(tester, 0.5),
+          ),
+        );
+        await tester.pump();
+        expect(seeks.length, 1);
 
-      await tester.pump(const Duration(milliseconds: 59));
-      expect(seeks.length, 1);
+        await tester.pump(const Duration(milliseconds: 59));
+        expect(seeks.length, 1);
 
-      await tester.pump(const Duration(milliseconds: 1));
-      expect(seeks.length, 2);
-      expect(seeks.last, const Duration(seconds: 50));
+        await tester.pump(const Duration(milliseconds: 1));
+        expect(seeks.length, 2);
+        expect(seeks.last, const Duration(seconds: 50));
 
-      detector.onHorizontalDragEnd?.call(DragEndDetails());
-      await tester.pump();
+        detector.onHorizontalDragEnd?.call(DragEndDetails());
+        await tester.pump();
+      });
     });
 
     testWidgets('drag end emits pending seek immediately', (tester) async {
@@ -211,35 +214,41 @@ void main() {
         onSeek: seeks.add,
       );
 
-      final detector = _getGestureDetector(tester);
-      detector.onHorizontalDragStart?.call(
-        DragStartDetails(
-          localPosition: _localPointForRatio(tester, 0.2),
-          globalPosition: _pointForRatio(tester, 0.2),
-        ),
-      );
-      detector.onHorizontalDragUpdate?.call(
-        DragUpdateDetails(
-          localPosition: _localPointForRatio(tester, 0.4),
-          globalPosition: _pointForRatio(tester, 0.4),
-        ),
-      );
-      await tester.pump();
-      expect(seeks, [const Duration(seconds: 36)]);
+      // Fixed clock: the widget throttles on clock.now(), so wall time
+      // elapsing between the direct callback invocations (a slow CI runner)
+      // can never open the 60ms window early and turn the pending second
+      // update into an immediate emit.
+      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+        final detector = _getGestureDetector(tester);
+        detector.onHorizontalDragStart?.call(
+          DragStartDetails(
+            localPosition: _localPointForRatio(tester, 0.2),
+            globalPosition: _pointForRatio(tester, 0.2),
+          ),
+        );
+        detector.onHorizontalDragUpdate?.call(
+          DragUpdateDetails(
+            localPosition: _localPointForRatio(tester, 0.4),
+            globalPosition: _pointForRatio(tester, 0.4),
+          ),
+        );
+        await tester.pump();
+        expect(seeks, [const Duration(seconds: 36)]);
 
-      detector.onHorizontalDragUpdate?.call(
-        DragUpdateDetails(
-          localPosition: _localPointForRatio(tester, 0.7),
-          globalPosition: _pointForRatio(tester, 0.7),
-        ),
-      );
-      await tester.pump();
-      expect(seeks.length, 1);
+        detector.onHorizontalDragUpdate?.call(
+          DragUpdateDetails(
+            localPosition: _localPointForRatio(tester, 0.7),
+            globalPosition: _pointForRatio(tester, 0.7),
+          ),
+        );
+        await tester.pump();
+        expect(seeks.length, 1);
 
-      detector.onHorizontalDragEnd?.call(DragEndDetails());
-      await tester.pump();
-      expect(seeks.length, 2);
-      expect(seeks.last, const Duration(seconds: 63));
+        detector.onHorizontalDragEnd?.call(DragEndDetails());
+        await tester.pump();
+        expect(seeks.length, 2);
+        expect(seeks.last, const Duration(seconds: 63));
+      });
     });
 
     testWidgets('rapid drags remain throttled to trailing seek', (
@@ -253,40 +262,44 @@ void main() {
         onSeek: seeks.add,
       );
 
-      final detector = _getGestureDetector(tester);
-      detector.onHorizontalDragStart?.call(
-        DragStartDetails(
-          localPosition: _localPointForRatio(tester, 0.1),
-          globalPosition: _pointForRatio(tester, 0.1),
-        ),
-      );
-      detector.onHorizontalDragUpdate?.call(
-        DragUpdateDetails(
-          localPosition: _localPointForRatio(tester, 0.2),
-          globalPosition: _pointForRatio(tester, 0.2),
-        ),
-      );
-      await tester.pump();
-      expect(seeks, [const Duration(seconds: 16)]);
-
-      for (final ratio in <double>[0.35, 0.55, 0.8]) {
-        detector.onHorizontalDragUpdate?.call(
-          DragUpdateDetails(
-            localPosition: _localPointForRatio(tester, ratio),
-            globalPosition: _pointForRatio(tester, ratio),
+      // Fixed clock: only the pumped fake-async timers may open the
+      // throttle window, never wall time between direct invocations.
+      await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+        final detector = _getGestureDetector(tester);
+        detector.onHorizontalDragStart?.call(
+          DragStartDetails(
+            localPosition: _localPointForRatio(tester, 0.1),
+            globalPosition: _pointForRatio(tester, 0.1),
           ),
         );
-        await tester.pump(const Duration(milliseconds: 10));
-      }
+        detector.onHorizontalDragUpdate?.call(
+          DragUpdateDetails(
+            localPosition: _localPointForRatio(tester, 0.2),
+            globalPosition: _pointForRatio(tester, 0.2),
+          ),
+        );
+        await tester.pump();
+        expect(seeks, [const Duration(seconds: 16)]);
 
-      expect(seeks.length, 1);
+        for (final ratio in <double>[0.35, 0.55, 0.8]) {
+          detector.onHorizontalDragUpdate?.call(
+            DragUpdateDetails(
+              localPosition: _localPointForRatio(tester, ratio),
+              globalPosition: _pointForRatio(tester, ratio),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 10));
+        }
 
-      await tester.pump(const Duration(milliseconds: 60));
-      expect(seeks.length, 2);
-      expect(seeks.last, const Duration(seconds: 64));
+        expect(seeks.length, 1);
 
-      detector.onHorizontalDragEnd?.call(DragEndDetails());
-      await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(seeks.length, 2);
+        expect(seeks.last, const Duration(seconds: 64));
+
+        detector.onHorizontalDragEnd?.call(DragEndDetails());
+        await tester.pump();
+      });
     });
 
     testWidgets('disabled state prevents seeking', (tester) async {

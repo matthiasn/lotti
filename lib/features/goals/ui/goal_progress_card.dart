@@ -46,7 +46,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
     if (visible.isEmpty) return const SizedBox.shrink();
     return Semantics(
       label: placeholder
-          ? context.messages.goalCoarseHealthNotEnoughData
+          ? context.messages.goalProgressStripLoading
           : context.messages.goalProgressCompactSemantics(
               visible
                   .where((state) => state != GoalCompactDayState.none)
@@ -1006,7 +1006,10 @@ class _DayTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (children.isEmpty) return const SizedBox.shrink();
-    final width = itemExtent + pitch * (children.length - 1);
+    // Slots span the full pitch, so adjacent hit regions touch without
+    // overlapping — each editable cell gets the widest tap area the
+    // authored density allows, and labels stay centered over their cells.
+    final width = pitch * children.length;
     return SizedBox(
       width: width,
       height: height,
@@ -1016,7 +1019,7 @@ class _DayTrack extends StatelessWidget {
           for (var index = 0; index < children.length; index++)
             Positioned(
               left: pitch * index,
-              width: itemExtent,
+              width: pitch,
               height: height,
               child: Center(child: children[index]),
             ),
@@ -1382,13 +1385,11 @@ class _ProgressDayCell extends StatelessWidget {
       // The visual stays at the compact chip size; the hit slot meets the
       // design system's touch floor vertically and fills the track pitch
       // horizontally — invisible ergonomics, unchanged rhythm.
-      child: SizedBox(
+      child: SizedBox.expand(
         key: ValueKey(
           'goal-habit-day-$habitId-'
           '${day.day.toIso8601String().substring(0, 10)}',
         ),
-        width: ControlSizes.iconChipCompact,
-        height: TapTargets.minimum,
         child: PopupMenuButton<HabitCompletionType>(
           enabled: enabled && !saving,
           initialValue: day.habitCompletionType,

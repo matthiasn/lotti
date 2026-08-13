@@ -6213,7 +6213,7 @@ class AppLocalizationsCs extends AppLocalizations {
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Včera: $metCount z $dimensionCount dimenzí · $requiredCount potřeba.';
+    return 'Včera: $metCount z $dimensionCount dimenzí · potřeba: $requiredCount.';
   }
 
   @override
@@ -6760,6 +6760,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalProgressPartial => 'hotovo · cíl zatím nesplněn';
+
+  @override
+  String get goalProgressStripLoading => 'Denní záznam se ještě načítá';
 
   @override
   String get goalProgressTitle => 'Tento klouzavý týden';

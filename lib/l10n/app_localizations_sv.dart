@@ -6695,6 +6695,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressPartial => 'klart · mål ännu inte uppnått';
 
   @override
+  String get goalProgressStripLoading => 'Dagsöversikten läses fortfarande in';
+
+  @override
   String get goalProgressTitle => 'Den här rullande veckan';
 
   @override

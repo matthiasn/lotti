@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
@@ -134,7 +135,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
     void handleDragEnd() {
       if (_pendingSeek != null) {
         widget.onSeek(_pendingSeek!);
-        _lastSeekInvocation = DateTime.now();
+        _lastSeekInvocation = clock.now();
         _pendingSeek = null;
       }
       _throttleTimer?.cancel();
@@ -173,7 +174,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   }
 
   void _scheduleSeek(Duration target) {
-    final now = DateTime.now();
+    final now = clock.now();
     if (_lastSeekInvocation == null ||
         now.difference(_lastSeekInvocation!) > _seekThrottleDelay) {
       _emitSeek(target);
@@ -185,7 +186,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
     _throttleTimer ??= Timer(_seekThrottleDelay, () {
       if (_pendingSeek != null) {
         widget.onSeek(_pendingSeek!);
-        _lastSeekInvocation = DateTime.now();
+        _lastSeekInvocation = clock.now();
         _pendingSeek = null;
       }
       _throttleTimer = null;
@@ -196,7 +197,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
     _pendingSeek = null;
     _cancelThrottle();
     widget.onSeek(target);
-    _lastSeekInvocation = DateTime.now();
+    _lastSeekInvocation = clock.now();
   }
 
   void _cancelThrottle() {

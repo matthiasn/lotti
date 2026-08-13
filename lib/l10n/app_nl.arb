@@ -2974,6 +2974,7 @@
   "goalProgressHabitTarget": "{count}× per 7 dagen",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressPartial": "gedaan · doel nog niet gehaald",
+  "goalProgressStripLoading": "Dagoverzicht wordt nog geladen",
   "goalProgressTitle": "Deze lopende week",
   "goalProgressToday": "vandaag",
   "goalRecordOfferConflict": "Je hebt dit op één van deze dagen al meetbaar vastgelegd. Vraag wat u moet bewaren voordat u iets opneemt.",

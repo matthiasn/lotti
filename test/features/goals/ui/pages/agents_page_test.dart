@@ -142,6 +142,17 @@ void main() {
     // Trend is a separate visible field beside status, not an icon-only hint.
     expect(find.text('Trending down'), findsOneWidget);
     expect(find.text('Trending up'), findsOneWidget);
+
+    // Unresolved strips announce LOADING, never a health verdict — and the
+    // dashed placeholder encoding keeps them visually distinct from a
+    // genuinely empty week.
+    // The tappable row merges descendant semantics into one node, so the
+    // strip's label is matched as a substring of the merged announcement.
+    expect(
+      find.bySemanticsLabel(RegExp('Daily record still loading')),
+      findsNWidgets(2),
+    );
+    expect(find.bySemanticsLabel(RegExp('Not enough data')), findsNothing);
   });
 
   testWidgets(

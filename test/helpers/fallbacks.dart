@@ -479,4 +479,5 @@ void registerAllFallbackValues() {
   // stubbed with any()).
   registerFallbackValue(const DraftPlanPayload());
   registerFallbackValue(const RefinePlanPayload());
+  registerFallbackValue(HabitCompletionType.success);
 }

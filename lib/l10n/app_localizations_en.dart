@@ -6662,6 +6662,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalProgressPartial => 'done · target not met yet';
 
   @override
+  String get goalProgressStripLoading => 'Daily record still loading';
+
+  @override
   String get goalProgressTitle => 'This rolling week';
 
   @override

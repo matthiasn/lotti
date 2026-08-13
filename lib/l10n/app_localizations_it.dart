@@ -6223,7 +6223,13 @@ class AppLocalizationsIt extends AppLocalizations {
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Ieri: $metCount di $dimensionCount dimensioni · $requiredCount richieste.';
+    String _temp0 = intl.Intl.pluralLogic(
+      requiredCount,
+      locale: localeName,
+      other: '$requiredCount necessarie',
+      one: '1 necessaria',
+    );
+    return 'Ieri: $metCount di $dimensionCount dimensioni · $_temp0.';
   }
 
   @override
@@ -6767,6 +6773,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalProgressPartial => 'fatto · obiettivo non ancora raggiunto';
+
+  @override
+  String get goalProgressStripLoading =>
+      'Il registro giornaliero è ancora in caricamento';
 
   @override
   String get goalProgressTitle => 'Questa settimana mobile';

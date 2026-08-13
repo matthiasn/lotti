@@ -6148,7 +6148,7 @@ class AppLocalizationsDa extends AppLocalizations {
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'I går: $metCount af $dimensionCount dimensioner · $requiredCount krævet.';
+    return 'I går: $metCount af $dimensionCount dimensioner · $requiredCount kræves.';
   }
 
   @override
@@ -6686,6 +6686,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalProgressPartial => 'gjort · mål endnu ikke nået';
+
+  @override
+  String get goalProgressStripLoading => 'Daglig oversigt indlæses stadig';
 
   @override
   String get goalProgressTitle => 'Denne rullende uge';

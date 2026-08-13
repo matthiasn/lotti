@@ -2975,6 +2975,7 @@
   "goalProgressHabitTarget": "{count}× per 7 dagar",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressPartial": "klart · mål ännu inte uppnått",
+  "goalProgressStripLoading": "Dagsöversikten läses fortfarande in",
   "goalProgressTitle": "Den här rullande veckan",
   "goalProgressToday": "i dag",
   "goalRecordOfferConflict": "Du har redan loggat detta mätbara en av dessa dagar. Fråga vad som ska sparas innan du spelar in något.",

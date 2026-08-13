@@ -49,6 +49,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
   final GlobalKey _progressSectionKey = GlobalKey();
+  final GlobalKey _headerKey = GlobalKey();
 
   String get agentId => widget.agentId;
 
@@ -68,13 +69,17 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
   }
 
   /// The page opens with one title — the H1 in the header. The app bar's
-  /// copy only fades in once the header has scrolled away, so the goal name
-  /// never reads twice in the same viewport.
+  /// copy only fades in once the header has actually scrolled away (its
+  /// laid-out extent, not a fixed offset — a wrapped title or a large text
+  /// scale grows the header), so the goal name never reads twice in the
+  /// same viewport.
   void _syncAppBarTitle() {
-    final tokens = context.designTokens;
+    final headerBox = _headerKey.currentContext?.findRenderObject();
+    final threshold = headerBox is RenderBox && headerBox.hasSize
+        ? headerBox.size.height
+        : context.designTokens.spacing.step12;
     _appBarTitleVisible.value =
-        _scrollController.hasClients &&
-        _scrollController.offset > tokens.spacing.step12;
+        _scrollController.hasClients && _scrollController.offset > threshold;
   }
 
   /// The banner CTA performs the verb it names: a goal with loggable habit
@@ -100,8 +105,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     if (target == null) return;
     Scrollable.ensureVisible(
       target,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
+      duration: MotionDurations.medium4,
+      curve: MotionCurves.emphasizedDecelerate,
       alignment: 0.02,
     );
   }
@@ -228,6 +233,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
       ),
       children: [
         _GoalHeader(
+          key: _headerKey,
           agentId: agentId,
           identity: goalIdentity,
           health: health,
@@ -340,7 +346,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             valueListenable: _appBarTitleVisible,
             builder: (context, visible, child) => AnimatedOpacity(
               opacity: visible ? 1 : 0,
-              duration: const Duration(milliseconds: 150),
+              duration: MotionDurations.short3,
               child: child,
             ),
             child: Text(spec?.title ?? goalIdentity.displayName),
@@ -393,6 +399,7 @@ class _GoalHeader extends StatelessWidget {
     required this.health,
     required this.healthAvailable,
     required this.spec,
+    super.key,
   });
 
   final String agentId;

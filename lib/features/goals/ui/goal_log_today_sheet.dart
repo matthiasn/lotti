@@ -1,7 +1,9 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
@@ -45,12 +47,14 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
     setState(() => _saving.add(habit.habitId));
     var saved = false;
     try {
+      // The day is derived at SUBMISSION time: a sheet opened before local
+      // midnight must not silently write yesterday's date after it.
       saved = await ref
           .read(goalHabitCompletionServiceProvider)
           .record(
             agentId: widget.agentId,
             habitId: habit.habitId,
-            day: widget.progress.today,
+            day: GoalWindow.dayUtc(clock.now()),
             outcome: HabitCompletionType.success,
           );
     } on Object {
@@ -79,7 +83,7 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
       locale,
     ).format(widget.progress.today);
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -112,11 +116,14 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   if (_doneToday(habit))
-                    Icon(
-                      Icons.check_circle_rounded,
-                      key: ValueKey('goal-log-today-done-${habit.habitId}'),
-                      size: IconSizes.s,
-                      color: tokens.colors.alert.success.defaultColor,
+                    Semantics(
+                      label: context.messages.completeHabitSuccessButton,
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        key: ValueKey('goal-log-today-done-${habit.habitId}'),
+                        size: IconSizes.s,
+                        color: tokens.colors.alert.success.defaultColor,
+                      ),
                     )
                   else
                     DesignSystemButton(

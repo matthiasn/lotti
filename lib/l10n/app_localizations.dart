@@ -11346,6 +11346,12 @@ abstract class AppLocalizations {
   /// **'done · target not met yet'**
   String get goalProgressPartial;
 
+  /// Screen-reader label for a compact week strip whose data has not resolved yet — a loading state, never a health verdict.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily record still loading'**
+  String get goalProgressStripLoading;
+
   /// No description provided for @goalProgressTitle.
   ///
   /// In en, this message translates to:

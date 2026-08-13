@@ -2718,6 +2718,7 @@
   "goalProgressHabitTarget": "{count}× pro 7 Tage",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressPartial": "erledigt · Ziel noch offen",
+  "goalProgressStripLoading": "Tagesübersicht wird noch geladen",
   "goalProgressTitle": "Diese rollierende Woche",
   "goalProgressToday": "heute",
   "goalRecordOfferConflict": "Du hast diese Messgröße an einem dieser Tage bereits protokolliert. Kläre vor dem Aufzeichnen, welcher Eintrag erhalten bleiben soll.",
