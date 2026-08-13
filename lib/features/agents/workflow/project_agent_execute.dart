@@ -548,10 +548,26 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       );
 
       try {
+        final failureAt = clock.now();
+        final latestState =
+            await agentRepository.getAgentState(agentId) ?? state;
+        final hasPendingActivity =
+            latestState.slots.pendingProjectActivityAt != null;
         await syncService.upsertEntity(
-          state.copyWith(
-            updatedAt: now,
-            consecutiveFailureCount: state.consecutiveFailureCount + 1,
+          latestState.copyWith(
+            // A failed subscription wake has already left the in-memory
+            // queue. Keep real pending work durable for a one-shot morning
+            // retry instead of relying on another user edit to revive it.
+            scheduledWakeAt:
+                latestState.scheduledWakeAt ??
+                (hasPendingActivity
+                    ? nextOccurrenceOf(
+                        failureAt,
+                        hour: AgentSchedules.projectDailyDigestHour,
+                      )
+                    : null),
+            updatedAt: failureAt,
+            consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
           ),
         );
       } catch (stateError, s) {

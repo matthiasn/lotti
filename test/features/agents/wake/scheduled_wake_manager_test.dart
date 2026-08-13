@@ -51,7 +51,6 @@ class _GeneratedScheduledWakeSpec {
   final _GeneratedScheduledWakeTimeSlot timeSlot;
 
   bool get expectsRetirement =>
-      kind == _GeneratedScheduledWakeStateKind.projectNeverWoken ||
       kind == _GeneratedScheduledWakeStateKind.projectDormant;
 
   bool get expectsEnqueue => !expectsRetirement;
@@ -1787,7 +1786,7 @@ void main() {
     });
 
     test(
-      'clears never-woken project schedules without pending activity',
+      'enqueues never-woken project schedules as creation fallbacks',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final pastSchedule = DateTime(2024, 3, 14, 6);
@@ -1806,18 +1805,13 @@ void main() {
             final manager = createAndStart();
             async.flushMicrotasks();
 
-            verifyNever(
+            verify(
               () => orchestrator.enqueueManualWake(
                 agentId: kTestAgentId,
                 reason: WakeReason.scheduled.name,
               ),
-            );
-            final captured =
-                verify(
-                      () => syncService.upsertEntity(captureAny()),
-                    ).captured.single
-                    as AgentStateEntity;
-            expect(captured.scheduledWakeAt, isNull);
+            ).called(1);
+            verifyNever(() => syncService.upsertEntity(any()));
 
             manager.stop();
           });

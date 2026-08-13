@@ -389,7 +389,12 @@ void main() {
         );
         expect(
           updatedState.scheduledWakeAt,
-          isNull,
+          DateTime(2026, 3, 21, 6),
+          reason: '$scenario',
+        );
+        expect(
+          updatedState.slots.pendingProjectActivityAt,
+          testDate,
           reason: '$scenario',
         );
 
@@ -528,7 +533,7 @@ void main() {
       });
 
       test(
-        'starts stale without a recurring daily digest schedule',
+        'persists a one-shot fallback for the explicit creation wake',
         () async {
           final identity = makeIdentity();
           final template = makeTestTemplate(
@@ -577,7 +582,8 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, isNull);
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.pendingProjectActivityAt, testDate);
         },
       );
 
@@ -1050,11 +1056,15 @@ void main() {
             vectorClock: null,
           );
           final legacySchedule = DateTime(2026, 3, 23, 6);
-          final state = makeState(
-            id: 'state-pa-dormant',
-            agentId: 'pa-dormant',
-            activeProjectId: 'project-dormant',
-          ).copyWith(scheduledWakeAt: legacySchedule);
+          final state =
+              makeState(
+                id: 'state-pa-dormant',
+                agentId: 'pa-dormant',
+                activeProjectId: 'project-dormant',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: legacySchedule,
+              );
 
           when(
             () => mockAgentService.listAgents(
@@ -1064,6 +1074,9 @@ void main() {
           when(
             () => mockRepository.getAgentStatesByAgentIds(['pa-dormant']),
           ).thenAnswer((_) async => {'pa-dormant': state});
+          when(
+            () => mockRepository.getAgentState('pa-dormant'),
+          ).thenAnswer((_) async => state);
           when(
             () => mockRepository.getLinksFromMultiple(
               ['pa-dormant'],
@@ -1094,6 +1107,66 @@ void main() {
               dueAt: any(named: 'dueAt'),
             ),
           );
+        },
+      );
+
+      test(
+        'does not clear activity that arrives after the startup snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-racing');
+          final link = AgentLink.agentProject(
+            id: 'link-racing',
+            fromId: 'pa-racing',
+            toId: 'project-racing',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final scheduledAt = DateTime(2026, 3, 23, 6);
+          final snapshot =
+              makeState(
+                id: 'state-pa-racing',
+                agentId: 'pa-racing',
+                activeProjectId: 'project-racing',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: scheduledAt,
+              );
+          final current = snapshot.copyWith(
+            slots: snapshot.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 22, 9, 59),
+            ),
+            updatedAt: DateTime(2026, 3, 22, 9, 59),
+          );
+
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-racing']),
+          ).thenAnswer((_) async => {'pa-racing': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-racing'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-racing'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-racing': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockRepository.getAgentState('pa-racing'),
+          ).called(1);
         },
       );
 

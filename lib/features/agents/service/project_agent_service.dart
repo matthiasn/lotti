@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -52,7 +53,7 @@ class ProjectAgentService {
   /// 2. Update the agent's state with `activeProjectId = projectId`.
   /// 3. Create an [AgentProjectLink] from agentId → projectId.
   /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Enqueue a creation wake.
+  /// 5. Enqueue a creation wake with a one-shot persisted fallback.
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
@@ -106,7 +107,17 @@ class ProjectAgentService {
 
       final now = clock.now();
       final updatedState = state.copyWith(
-        slots: state.slots.copyWith(activeProjectId: projectId),
+        slots: state.slots.copyWith(
+          activeProjectId: projectId,
+          pendingProjectActivityAt: now,
+        ),
+        // The creation wake is queued in memory for immediate execution. This
+        // one-shot fallback makes that explicit work durable across a process
+        // exit and is cleared by the first successful wake; it never recurs.
+        scheduledWakeAt: nextOccurrenceOf(
+          now,
+          hour: AgentSchedules.projectDailyDigestHour,
+        ),
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);
@@ -297,30 +308,42 @@ class ProjectAgentService {
 
   /// Removes the legacy always-on daily digest from an idle project agent.
   ///
-  /// Project updates already persist an event-driven subscription wake in
-  /// `nextWakeAt`. Retaining a separate `scheduledWakeAt` when there is no
+  /// Project updates persist an event-driven wake only while work is pending.
+  /// Retaining `scheduledWakeAt` after a completed wake when there is no
   /// pending project activity only keeps a meaningless 06:00 row alive in the
-  /// Wake tab. A schedule that still has pending activity is left intact as a
-  /// one-time migration safety net and is retired by the next successful wake.
+  /// Wake tab. Never-woken agents and schedules with pending activity remain
+  /// one-shot durability fallbacks and are retired by a successful wake.
   Future<AgentStateEntity?> _retireDormantDailySchedule(
     AgentStateEntity? state,
   ) async {
     if (state == null ||
         state.scheduledWakeAt == null ||
+        state.lastWakeAt == null ||
         state.slots.pendingProjectActivityAt != null) {
       return state;
     }
 
-    final updatedState = state.copyWith(
+    // The monitor starts before restoration and can persist project activity
+    // after the bulk snapshot above. Re-read before a whole-row upsert so this
+    // migration cannot erase that newer pending marker.
+    final currentState = await repository.getAgentState(state.agentId);
+    if (currentState == null ||
+        currentState.scheduledWakeAt == null ||
+        currentState.lastWakeAt == null ||
+        currentState.slots.pendingProjectActivityAt != null) {
+      return currentState;
+    }
+
+    final updatedState = currentState.copyWith(
       scheduledWakeAt: null,
       updatedAt: clock.now(),
     );
     await syncService.upsertEntity(updatedState);
-    onPersistedStateChanged?.call(state.agentId);
+    onPersistedStateChanged?.call(currentState.agentId);
     domainLogger?.log(
       LogDomain.agentRuntime,
       'retired dormant daily schedule for '
-      '${DomainLogger.sanitizeId(state.agentId)}',
+      '${DomainLogger.sanitizeId(currentState.agentId)}',
       subDomain: 'restore',
     );
     return updatedState;

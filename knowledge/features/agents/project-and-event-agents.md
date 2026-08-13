@@ -41,9 +41,8 @@ expensive and useless.
 1. Enforces one project agent per project.
 2. Validates the template is a project-agent template.
 3. Creates identity and state.
-4. Sets `slots.activeProjectId`.
-5. Leaves `scheduledWakeAt` unset: a project agent is dormant unless work is
-   observed.
+4. Sets `slots.activeProjectId` and marks the explicit creation work pending.
+5. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
 6. Creates `agent_project` and `template_assignment` links.
 7. Announces itself (see below).
 8. Registers the project subscription.
@@ -80,23 +79,27 @@ id through it. Task agents solve the same problem one layer up, by calling
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Dormant: project agent created
-  Dormant --> WakingNow: creation wake or manual reanalysis
+  [*] --> CreationPending: project agent created
+  CreationPending --> WakingNow: immediate creation wake
+  CreationPending --> MorningDigest: restart or creation failure
+  Dormant --> WakingNow: manual reanalysis
   Dormant --> ShortDelay: direct project edit
   Dormant --> MorningDigest: linked task or propagated project activity
   ShortDelay --> WakingNow: coalescing deadline reached
   MorningDigest --> WakingNow: next local 06:00 reached
   WakingNow --> Dormant: no newer activity
   WakingNow --> MorningDigest: newer activity queued during wake
+  WakingNow --> MorningDigest: wake failed with pending activity
   LegacyDailySchedule --> Dormant: cleanup with no activity
   LegacyDailySchedule --> WakingNow: pending activity still exists
 ```
 
 - **Linked-task churn** does not wake the agent immediately.
   `ProjectActivityMonitor` listens to `localUpdateStream`, resolves affected
-  project ids, and sets `slots.pendingProjectActivityAt`. The project
-  subscription persists `nextWakeAt` for the next local 06:00 and reconstructs
-  that queued wake after a restart.
+  project ids, sets `slots.pendingProjectActivityAt`, and arms a one-shot
+  `scheduledWakeAt` for the next local 06:00. Project/link notifications also
+  use the subscription's persisted `nextWakeAt` path; either path survives a
+  restart and the first successful wake clears both.
 - **Direct project edits** use the same subscription but take the short
   coalescing path, so an explicit project edit does not wait until morning.
 - **Explicit requests** (`creation` and manual `reanalysis`) bypass the
@@ -104,17 +107,21 @@ stateDiagram-v2
 
 ## Dormant-by-default scheduling
 
-Project agents do not own a recurring `scheduledWakeAt`. Meaningful local
-activity creates the event-driven `nextWakeAt`; after a successful wake the
-orchestrator clears it when no follow-up remains. Consequently the Wake tab
-contains a project-agent row only while actual queued work exists.
+Project agents do not own a recurring `scheduledWakeAt`. Creation or meaningful
+local activity may create a one-shot state schedule, and subscription routing
+may additionally persist `nextWakeAt` for its queued job. A successful wake
+clears the pending marker and both deadlines when no newer activity remains. A
+failed wake with pending activity re-arms the one-shot morning fallback instead
+of waiting for another edit. Consequently the Wake tab contains a project-agent
+row only while actual work or a retry is pending.
 
 Older installations can still contain the former daily schedule. Startup
-restoration clears it immediately when `pendingProjectActivityAt` is null, and
-`ScheduledWakeManager` applies the same cleanup if an overdue row wins the
-startup race. If pending activity exists, the legacy row may fire once as a
-migration safety net; every successful workflow run clears `scheduledWakeAt`
-instead of rolling it forward.
+restoration clears it when the agent has completed at least one wake and
+`pendingProjectActivityAt` is null, re-reading current state first so a
+concurrent activity write cannot be overwritten. `ScheduledWakeManager` applies
+the same dormant cleanup to overdue rows. Never-woken agents and agents with
+pending activity retain the row as a one-shot safety net; every successful
+workflow run clears `scheduledWakeAt` instead of rolling it forward.
 
 During the final state transition, `pendingProjectActivityAt` is cleared **only
 when no newer activity arrived during the wake**. If fresh activity lands

@@ -107,6 +107,11 @@ void main() {
             hGeneratedProjectActivityNow,
             reason: '$scenario',
           );
+          expect(
+            state.scheduledWakeAt,
+            DateTime(2026, 4, 4, 6),
+            reason: '$scenario',
+          );
           expect(state.updatedAt, hGeneratedProjectActivityNow);
         }
 
@@ -176,6 +181,7 @@ void main() {
               as AgentStateEntity;
       expect(captured.slots.activeProjectId, 'project-1');
       expect(captured.slots.pendingProjectActivityAt, now);
+      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
 
       verify(
         () => notifications.notifyUiOnly({'agent-1', agentNotification}),
@@ -220,7 +226,50 @@ void main() {
               ).captured.single
               as AgentStateEntity;
       expect(captured.slots.pendingProjectActivityAt, now);
+      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
     });
+
+    test(
+      'preserves an existing explicit wake while refreshing activity',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-existing-wake',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final existingWake = DateTime(2026, 3, 22, 18);
+        final state = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+          scheduledWakeAt: existingWake,
+        );
+
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 2);
+
+        final captured =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(captured.scheduledWakeAt, existingWake);
+        expect(captured.slots.pendingProjectActivityAt, now);
+      },
+    );
 
     test('skips deleted agents', () async {
       final link = AgentLink.agentProject(

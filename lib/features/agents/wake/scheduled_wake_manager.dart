@@ -576,7 +576,10 @@ class ScheduledWakeManager with AgentErrorLogging {
     if (!isProjectAgent) return false;
 
     final hasPendingActivity = state.slots.pendingProjectActivityAt != null;
-    return !hasPendingActivity;
+    // A never-woken project agent may still be waiting for its explicit
+    // creation wake. That job is in-memory, so its one-shot state schedule is
+    // the restart fallback until the first successful run records lastWakeAt.
+    return !hasPendingActivity && state.lastWakeAt != null;
   }
 
   /// Clear an obsolete project `scheduledWakeAt` without executing a wake.

@@ -1115,6 +1115,14 @@ void main() {
       });
 
       test('increments failure count on error', () async {
+        final pendingState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+        );
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => pendingState);
         mockConversationRepository.sendMessageDelegate =
             ({
               required conversationId,
@@ -1130,12 +1138,14 @@ void main() {
               throw Exception('LLM error');
             };
 
-        await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         // Verify state was updated with incremented failure count.
         // The state update outside the transaction (for failure) is the 3rd
@@ -1148,6 +1158,11 @@ void main() {
           (s) => s.consecutiveFailureCount > 0,
         );
         expect(stateUpdates, isNotEmpty);
+        expect(stateUpdates.single.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        expect(
+          stateUpdates.single.slots.pendingProjectActivityAt,
+          DateTime(2026, 3, 20, 9),
+        );
       });
       test('includes linked task context in user message', () async {
         final linkedTask = _fakeTaskEntity(

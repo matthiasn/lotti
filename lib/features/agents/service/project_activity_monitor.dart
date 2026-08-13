@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -14,9 +15,10 @@ import 'package:lotti/services/domain_logging.dart';
 ///
 /// Linked-task activity does not wake project agents immediately. This monitor
 /// listens to the local update stream, resolves whether an affected project has
-/// a provisioned agent, and persists a pending activity marker. In parallel,
-/// the project subscription queues that work for the next local 06:00; direct
-/// project edits take the subscription's short coalescing path instead.
+/// a provisioned agent, and persists both a pending activity marker and a
+/// one-shot morning fallback. Project subscriptions may still queue a sooner
+/// short-delay wake for direct edits; the first successful wake clears both
+/// paths, so the fallback never becomes a recurrence.
 class ProjectActivityMonitor with AgentErrorLogging {
   ProjectActivityMonitor({
     required this._notifications,
@@ -100,6 +102,15 @@ class ProjectActivityMonitor with AgentErrorLogging {
           slots: state.slots.copyWith(
             pendingProjectActivityAt: now,
           ),
+          // Project activity owns a single durable morning fallback. A
+          // successful wake clears it; another activity update can arm a new
+          // one, but no workflow rolls it forward unconditionally.
+          scheduledWakeAt:
+              state.scheduledWakeAt ??
+              nextOccurrenceOf(
+                now,
+                hour: AgentSchedules.projectDailyDigestHour,
+              ),
           updatedAt: now,
         ),
       );
