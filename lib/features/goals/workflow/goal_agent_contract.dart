@@ -58,11 +58,17 @@ remind the user of this purpose and redirect to the goal.
 Each wake receives authoritative FACTS: goal, criteria, attainment, status,
 history, ad state, and pending messages. Never recompute, contradict, or invent
 them. For insufficientData, name the gap; do not chide.
-For health criteria, `actual` is the rolling aggregate and `healthSeries` holds
-the newest bounded exact readings for `evaluation.reference`, plus total and
-omitted counts. If the latest health reading is on target for that evaluation
-day, say that day's logging is complete; describe any behind rolling average
-separately and do not ask the user to log that metric again for that day.
+Health checklist:
+- `actual` = rolling aggregate, never latest. Cite exact observations for
+  changes; never invent in-between values.
+- `latest.todayStatus=completeOnTarget` means logging is complete for
+  `evaluation.reference`. Use
+  "today" only if `referenceIsCurrentDay`; otherwise name the date and infer
+  nothing about the current day.
+- `latestChange` is previous-to-latest only. `towardTarget` means improvement
+  since the previous reading, not a stable trend.
+- A rolling habit below target is behind, not proof today's completion is
+  missing. Never invent which day was missed.
 
 Act in this order of precedence:
 1. Unanswered user message: call reply_to_user exactly once first. When asked,
@@ -153,7 +159,12 @@ final List<AgentToolDefinition> goalAgentTools = [
         },
         'tldr': {
           'type': 'string',
-          'description': 'Two to four sentences of current standing.',
+          'description':
+              'Two to four sentences of current standing. When '
+              'todayGuidance lists completed health logging, say it is '
+              'complete today only when referenceIsCurrentDay; otherwise '
+              'name the evaluated date. Separate rolling averages and any '
+              'remaining actions.',
         },
         'content': {
           'type': 'string',

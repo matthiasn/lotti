@@ -39,6 +39,7 @@ class GoalAgentEvalScenario {
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
     this.forbiddenReportClaims = const [],
+    this.forbiddenReportPatterns = const [],
     this.requiredToolArgumentTermGroups = const {},
     this.forbiddenToolArgumentTerms = const {},
     this.requiredAssistantContentTermGroups = const [],
@@ -74,6 +75,10 @@ class GoalAgentEvalScenario {
   /// Claims that must not be *affirmatively asserted* in the report
   /// (negated mentions are fine — see `eval_text_matchers.dart`).
   final List<String> forbiddenReportClaims;
+
+  /// Regular expressions for invalid claims whose wording has meaningful
+  /// variation, such as inventing a weekday for an unidentified missed habit.
+  final List<String> forbiddenReportPatterns;
 
   /// Per-tool required term groups over the concatenated arguments of all
   /// calls to that tool.
@@ -813,5 +818,142 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       ..._adCreationToolNames,
     ],
     maxToolCallCounts: const {GoalAgentToolNames.proposeGoalRevision: 0},
+  ),
+  GoalAgentEvalScenario(
+    id: 'gh_complex_latest_on_target',
+    policyRuleId: 'P16',
+    description:
+        'Six-dimensional health goal: sparse BP samples improve from '
+        '129/94 to an on-target 125/84 today while the 127/89 rolling '
+        'averages and 95 kg weight average remain behind; all three logging '
+        'habits have met their 5/7, 7/7 and 3/7 targets.',
+    facts: buildComplexHealthFacts(),
+    expectedToolCalls: const [
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.updateGoalReport,
+        expectedArgumentsSubset: {'status': 'insufficientData'},
+      ),
+    ],
+    forbiddenToolNames: _adCreationToolNames,
+    requiredReportTermGroups: const [
+      ['125'],
+      ['84'],
+      ['127'],
+      ['89'],
+      ['average', 'rolling'],
+      ['on target', 'in range', 'within target'],
+      [
+        'improv',
+        'downward',
+        'lower',
+        'declin',
+        'toward target',
+        'right direction',
+        'trending down',
+        'dropped',
+        'down from',
+        'moving toward',
+        'moved toward',
+      ],
+      [
+        'done for today',
+        'logging is complete',
+        'logged today',
+        'today is logged',
+        'logged and done',
+        'nothing more',
+      ],
+      ['weight 94', '94 kg'],
+      ['95'],
+      ['weight'],
+      [
+        'sparse',
+        'limited data',
+        'low data',
+        'few readings',
+        'insufficient',
+        'two readings',
+        '2 readings',
+      ],
+    ],
+    forbiddenReportClaims: const [
+      'latest systolic is 127',
+      'systolic is at 127',
+      'latest reading is 127',
+      'current blood pressure is 127',
+      'blood pressure is 127/89',
+      'latest diastolic is 89',
+      'diastolic is at 89',
+      'measure blood pressure again',
+      'take another blood pressure reading',
+      'log blood pressure again',
+      'log another blood pressure reading',
+      'nothing logged today',
+      'needs attention across the board',
+    ],
+  ),
+  GoalAgentEvalScenario(
+    id: 'gh_complex_habit_behind',
+    policyRuleId: 'P17',
+    description:
+        'The same on-target BP reading is complete for today, but BP meds '
+        'are 6/7: name the lag narrowly without inventing which day was '
+        'missed or asking for another measurement.',
+    facts: buildComplexHealthFacts(bpMedsBehind: true),
+    expectedToolCalls: const [
+      GoalAgentExpectedToolCall(
+        GoalAgentToolNames.updateGoalReport,
+        expectedArgumentsSubset: {'status': 'insufficientData'},
+      ),
+    ],
+    forbiddenToolNames: _adCreationToolNames,
+    requiredReportTermGroups: const [
+      ['125'],
+      ['84'],
+      ['127'],
+      ['89'],
+      ['average', 'rolling'],
+      ['on target', 'in range', 'within target'],
+      ['done for today', 'logging is complete', 'logged today', 'nothing more'],
+      ['6/7', '6 of 7', 'six of seven'],
+      ['med', 'medication'],
+      ['behind', 'missed', 'missing', 'short', 'not met', "isn't met"],
+      [
+        'improv',
+        'downward',
+        'lower',
+        'declin',
+        'toward target',
+        'moving toward',
+        'moved toward',
+        'down from',
+      ],
+      ['weight 94', '94 kg'],
+      ['95'],
+      ['weight'],
+      [
+        'sparse',
+        'limited data',
+        'low data',
+        'few readings',
+        'insufficient',
+        'two readings',
+        '2 readings',
+      ],
+    ],
+    forbiddenReportClaims: const [
+      'measure blood pressure again',
+      'take another blood pressure reading',
+      'log blood pressure again',
+      'log another blood pressure reading',
+      'nothing logged today',
+      'needs attention across the board',
+      "today's dose is missing",
+      'take the outstanding dose today',
+    ],
+    forbiddenReportPatterns: const [
+      r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\b(?:missed|missing|skipped|forgot|not taken)\b',
+      r'\b(?:missed|missing|skipped|forgot|not taken)\b.{0,40}\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
+    ],
   ),
 ];

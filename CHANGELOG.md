@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   captioned in weeks; day squares accept taps on a comfortably larger area;
   and chart target lines render at full strength.
 
+### Fixed
+- **Goal-agent health reports separate today's actions from rolling recovery.**
+  When today's blood-pressure reading is on target, the agent now says logging
+  is complete today, reports the rolling average and latest change separately,
+  and does not ask for another reading; lagging habits remain distinct actions.
+
 ## [1.0.8]
 ### Added
 - **Goal-agent chat supports voice input.** The composer now has a microphone

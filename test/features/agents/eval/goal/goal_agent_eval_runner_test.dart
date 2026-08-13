@@ -251,6 +251,126 @@ void main() {
       );
       expect(category, GoalAgentEvalFailureCategory.none);
     });
+
+    test(
+      'complex health report distinguishes exact readings from averages',
+      () {
+        final scenario = scenarioById('gh_complex_latest_on_target');
+        const correctReport =
+            '{"status":"insufficientData",'
+            '"oneLiner":"Today is logged and done: the latest 125/84 is on '
+            'target.",'
+            '"tldr":"Only two readings make the series sparse, but BP improved '
+            'from 129/94 to 125/84. The rolling averages remain 127 and 89. '
+            'Weight also improved from 96 to the latest 94 kg, while its average '
+            'is 95."}';
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenario,
+            toolCalls: [
+              call(GoalAgentToolNames.updateGoalReport, correctReport),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.none,
+        );
+
+        const fabricatedLatest =
+            '{"status":"insufficientData",'
+            '"oneLiner":"Today is logged and done: the latest 125/84 is on '
+            'target.",'
+            '"tldr":"BP improved from 129/94 to 125/84. Rolling averages are '
+            '127 and 89. Weight improved from 96 to 94 kg with an average of 95. '
+            'Current blood pressure is 127/89. Two readings are sparse."}';
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenario,
+            toolCalls: [
+              call(GoalAgentToolNames.updateGoalReport, fabricatedLatest),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.forbiddenReportContent,
+        );
+
+        const trendMissing =
+            '{"status":"insufficientData",'
+            '"oneLiner":"Today is logged and done: 125/84 is on target.", '
+            '"tldr":"The readings were 129/94 and 125/84. Rolling averages '
+            'are 127 and 89. Weight readings were 96 and 94 with an average '
+            'of 95. Only two readings make the series sparse."}';
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenario,
+            toolCalls: [
+              call(GoalAgentToolNames.updateGoalReport, trendMissing),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.missingRequiredReportContent,
+        );
+      },
+    );
+
+    test('complex health habit report isolates the action still due', () {
+      final scenario = scenarioById('gh_complex_habit_behind');
+      const correctReport =
+          '{"status":"insufficientData",'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"The two readings are still sparse. BP improved since the '
+          'previous reading, while the rolling averages remain 127 and 89. '
+          'BP meds are 6/7, so that separate habit is behind after one missed '
+          'day. Weight improved to 94 kg with a rolling average of 95."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, correctReport),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+
+      const repeatsMeasurement =
+          '{"status":"insufficientData",'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"Two readings are sparse. BP improved since the previous '
+          'reading, while rolling averages remain 127 and 89. BP meds are '
+          '6/7 after a missed day. Weight improved to 94 kg with an average of '
+          '95. Measure blood pressure again."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, repeatsMeasurement),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+
+      const inventsMissedWeekday =
+          '{"status":"insufficientData",'
+          '"oneLiner":"The latest 125/84 is in range and BP logging is '
+          'complete for today.", '
+          '"tldr":"Two readings are sparse. BP improved since the previous '
+          'reading, while rolling averages remain 127 and 89. BP meds are '
+          '6/7 and behind because Monday was missed. Weight improved to 94 kg '
+          'with an average of 95."}';
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, inventsMissedWeekday),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+    });
   });
 
   group('GoalAgentEvalReport', () {

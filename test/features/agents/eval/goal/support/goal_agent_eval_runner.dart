@@ -474,6 +474,11 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   )) {
     return GoalAgentEvalFailureCategory.forbiddenReportContent;
   }
+  if (scenario.forbiddenReportPatterns.any(
+    (pattern) => RegExp(pattern, caseSensitive: false).hasMatch(reportText),
+  )) {
+    return GoalAgentEvalFailureCategory.forbiddenReportContent;
+  }
 
   for (final entry in scenario.requiredToolArgumentTermGroups.entries) {
     final arguments = _argumentsFor(toolCalls, entry.key);

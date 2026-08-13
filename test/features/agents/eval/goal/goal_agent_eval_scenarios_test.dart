@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 
 import 'support/goal_agent_eval_fixtures.dart';
 import 'support/goal_agent_eval_scenarios.dart';
@@ -67,6 +70,16 @@ void main() {
         priorAttainments: priors,
       ),
     );
+  }
+
+  Map<String, dynamic> decodedFacts(GoalAgentEvalScenario scenario) {
+    const prefix = '```json\n';
+    final start = scenario.facts.indexOf(prefix);
+    final end = scenario.facts.lastIndexOf('\n```');
+    return jsonDecode(
+          scenario.facts.substring(start + prefix.length, end),
+        )
+        as Map<String, dynamic>;
   }
 
   group('fixture arithmetic matches the real evaluator', () {
@@ -290,9 +303,239 @@ void main() {
         GoalTrackStatus.onTrack,
       );
     });
+
+    test('complex health fixture matches six real evaluator leaves', () {
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'blood-pressure-management',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'habit-measure-bp',
+            habitId: 'habit-measure-bp',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 5,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit-bp-meds',
+            habitId: 'habit-bp-meds',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 7,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit-weigh',
+            habitId: 'habit-weigh',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'health-blood-pressure-systolic',
+            dataType: GoalHealthDataTypes.bloodPressureSystolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 125,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'health-blood-pressure-diastolic',
+            dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 85,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'health-weight',
+            dataType: GoalHealthDataTypes.weight,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 88,
+            direction: GoalDirection.atMost,
+          ),
+        ],
+      );
+
+      GoalSignalWindow signals({required bool medsDue}) => GoalSignalWindow(
+        quantitativeDailySums: {
+          GoalHealthDataTypes.bloodPressureSystolic: {
+            DateTime.utc(2026, 8, 12): 129,
+            DateTime.utc(2026, 8, 13): 125,
+          },
+          GoalHealthDataTypes.bloodPressureDiastolic: {
+            DateTime.utc(2026, 8, 12): 94,
+            DateTime.utc(2026, 8, 13): 84,
+          },
+          GoalHealthDataTypes.weight: {
+            DateTime.utc(2026, 8, 7): 96,
+            DateTime.utc(2026, 8, 10): 95,
+            DateTime.utc(2026, 8, 13): 94,
+          },
+        },
+        habitSuccessesByDay: {
+          'habit-measure-bp': {
+            DateTime.utc(2026, 8, 7): 1,
+            DateTime.utc(2026, 8, 8): 1,
+            DateTime.utc(2026, 8, 10): 1,
+            DateTime.utc(2026, 8, 12): 1,
+            DateTime.utc(2026, 8, 13): 1,
+          },
+          'habit-bp-meds': {
+            for (var day = 7; day <= (medsDue ? 12 : 13); day++)
+              DateTime.utc(2026, 8, day): 1,
+          },
+          'habit-weigh': {
+            DateTime.utc(2026, 8, 7): 1,
+            DateTime.utc(2026, 8, 10): 1,
+            DateTime.utc(2026, 8, 13): 1,
+          },
+        },
+      );
+
+      final complete = evaluator.evaluate(
+        criteria,
+        signals(medsDue: false),
+        complexHealthEvalReference,
+      );
+      expect(
+        complete.results['health-blood-pressure-systolic']!.actual,
+        complexHealthSystolicAverage,
+      );
+      expect(
+        complete.results['health-blood-pressure-diastolic']!.actual,
+        complexHealthDiastolicAverage,
+      );
+      expect(
+        complete.results['health-weight']!.actual,
+        complexHealthWeightAverage,
+      );
+      expect(complete.results['habit-measure-bp']!.actual, 5);
+      expect(complete.results['habit-bp-meds']!.actual, 7);
+      expect(complete.results['habit-weigh']!.actual, 3);
+      expect(complete.attainment, closeTo(complexHealthAttainment, 1e-12));
+      expect(
+        policy.derive(evaluation: complete),
+        GoalTrackStatus.insufficientData,
+      );
+
+      final habitDue = evaluator.evaluate(
+        criteria,
+        signals(medsDue: true),
+        complexHealthEvalReference,
+      );
+      expect(habitDue.results['habit-bp-meds']!.actual, 6);
+      expect(habitDue.results['habit-bp-meds']!.deficit, 7);
+      expect(
+        habitDue.attainment,
+        closeTo(complexHealthHabitDueAttainment, 1e-12),
+      );
+      expect(
+        policy.derive(evaluation: habitDue),
+        GoalTrackStatus.insufficientData,
+      );
+    });
   });
 
   group('scenario catalog invariants', () {
+    test(
+      'complex health scenarios carry exact time series and habit state',
+      () {
+        final complete = goalAgentEvalScenarios.singleWhere(
+          (scenario) => scenario.id == 'gh_complex_latest_on_target',
+        );
+        final completeEvaluation =
+            decodedFacts(complete)['evaluation'] as Map<String, dynamic>;
+        final completeResults = (completeEvaluation['criterionResults'] as List)
+            .cast<Map<String, dynamic>>();
+        Map<String, dynamic> result(String id) => completeResults.singleWhere(
+          (entry) => entry['criterionId'] == id,
+        );
+
+        expect(completeResults, hasLength(6));
+        expect(result('habit-measure-bp')['actual'], 5);
+        expect(result('habit-bp-meds')['actual'], 7);
+        expect(result('habit-weigh')['actual'], 3);
+        expect(
+          ((result('health-blood-pressure-systolic')['healthSeries']
+                      as Map<String, dynamic>)['observations']
+                  as List)
+              .map((entry) => (entry as Map<String, dynamic>)['value']),
+          [129, 125],
+        );
+        expect(
+          ((result('health-blood-pressure-diastolic')['healthSeries']
+                      as Map<String, dynamic>)['observations']
+                  as List)
+              .map((entry) => (entry as Map<String, dynamic>)['value']),
+          [94, 84],
+        );
+        expect(
+          ((result('health-weight')['healthSeries']
+                      as Map<String, dynamic>)['observations']
+                  as List)
+              .map((entry) => (entry as Map<String, dynamic>)['value']),
+          [96, 95, 94],
+        );
+        expect(
+          (result('health-blood-pressure-systolic')['healthSeries']
+              as Map<String, dynamic>)['latest'],
+          allOf(
+            containsPair('onTarget', true),
+            containsPair('todayStatus', 'completeOnTarget'),
+          ),
+        );
+        expect(
+          (result('health-blood-pressure-systolic')['healthSeries']
+              as Map<String, dynamic>)['latestChange'],
+          {
+            'fromValue': 129,
+            'toValue': 125,
+            'direction': 'towardTarget',
+          },
+        );
+        expect(completeEvaluation['referenceIsCurrentDay'], isTrue);
+        expect(
+          ((result('health-weight')['healthSeries']
+                  as Map<String, dynamic>)['latest']
+              as Map<String, dynamic>)['todayStatus'],
+          'measuredOffTarget',
+        );
+        expect(completeEvaluation['todayGuidance'], {
+          'healthLoggingCompleteCriterionIds': [
+            'health-blood-pressure-systolic',
+            'health-blood-pressure-diastolic',
+          ],
+          'healthLoggingNeededCriterionIds': <String>[],
+          'rollingHabitCriterionIdsBehind': <String>[],
+        });
+
+        final habitDue = goalAgentEvalScenarios.singleWhere(
+          (scenario) => scenario.id == 'gh_complex_habit_behind',
+        );
+        final dueResults =
+            ((decodedFacts(habitDue)['evaluation']
+                        as Map<String, dynamic>)['criterionResults']
+                    as List)
+                .cast<Map<String, dynamic>>();
+        final meds = dueResults.singleWhere(
+          (entry) => entry['criterionId'] == 'habit-bp-meds',
+        );
+        expect(meds['actual'], 6);
+        expect(meds['target'], 7);
+        expect(meds['satisfied'], isFalse);
+        expect(meds['daysToRecover'], 7);
+        expect(
+          (decodedFacts(habitDue)['evaluation']
+              as Map<String, dynamic>)['todayGuidance'],
+          {
+            'healthLoggingCompleteCriterionIds': [
+              'health-blood-pressure-systolic',
+              'health-blood-pressure-diastolic',
+            ],
+            'healthLoggingNeededCriterionIds': <String>[],
+            'rollingHabitCriterionIdsBehind': ['habit-bp-meds'],
+          },
+        );
+      },
+    );
+
     test('scenario ids are unique', () {
       final ids = goalAgentEvalScenarios.map((s) => s.id).toList();
       expect(ids.toSet().length, ids.length);

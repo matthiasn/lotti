@@ -22,8 +22,10 @@ void main() {
     );
     expect(
       goalAgentSystemPrompt,
-      contains('newest bounded exact readings for `evaluation.reference`'),
+      contains('`latest.todayStatus=completeOnTarget`'),
     );
+    expect(goalAgentSystemPrompt, contains('latestChange'));
+    expect(goalAgentSystemPrompt, contains('referenceIsCurrentDay'));
   });
 
   test('the tool surface includes the shared reply carrier and seven goal '
@@ -58,6 +60,15 @@ void main() {
         GoalAgentToolNames.legacyProposeGoalRevision,
       ),
       isTrue,
+    );
+    final reportTool = goalAgentTools.singleWhere(
+      (tool) => tool.name == GoalAgentToolNames.updateGoalReport,
+    );
+    final properties =
+        reportTool.parameters['properties'] as Map<String, dynamic>;
+    expect(
+      (properties['tldr'] as Map<String, dynamic>)['description'],
+      contains('todayGuidance lists completed health logging'),
     );
   });
 

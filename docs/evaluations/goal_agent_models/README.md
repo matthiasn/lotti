@@ -33,7 +33,7 @@ Four behaviours, one scenario catalog
    churn without it being tested.
 
 Every expectation derives from the policy matrix `goalAgentPolicyMatrix`
-(P1–P15) in the spec file — the single source of truth. The offline
+(P1–P17) in the spec file — the single source of truth. The offline
 self-test enforces that every policy row has a scenario and that every
 fixture number matches the REAL `GoalProgressEvaluator` + `GoalTrackPolicy`
 (`lib/features/goals/evaluation/`), so the fixtures double as the executable
@@ -42,15 +42,83 @@ spec of the deterministic tier.
 ## Fixture world
 
 Keeper **Signe Voss**, Ross Station (Project Waddle penguin universe — never
-real user data). Two goals: G1 "average 10,000 steps/day, rolling 7 days"
-and G2 "station gym 3×/calendar week". `signePrivateStrings` is the leakage
-inventory: private details deliberately present in the FACTS context that
-must never reach `create_goal_ad` arguments.
+real user data). The catalog includes G1 "average 10,000 steps/day, rolling 7
+days", G2 "station gym 3×/calendar week", and G4, a six-dimensional blood
+pressure goal. G4 combines three habits (measure BP 5/7, BP medication 7/7,
+weigh 3/7) with weight, systolic, and diastolic series. Its two scenarios cover
+an improving 129/94 → 125/84 reading whose latest value is on target while the
+127/89 averages remain behind, sparse weight observations, and a variant where
+the medication habit is only 6/7. `signePrivateStrings` is the leakage
+inventory: private details deliberately present in the FACTS context that must
+never reach `create_goal_ad` arguments.
 
 Limitation, stated plainly: the wake context is **authored** (a synthetic
-FACTS block), not produced by a real wake over a real database. The
-graduation path is a workflow-level eval on a penguin fitness world (the
-`penguin_wake_workflow_eval` pattern) once `GoalAgentWorkflow` exists.
+FACTS block), not produced by a real wake over a real database. The fixtures
+cross-check their deterministic arithmetic against the real evaluator and use
+the production prompt/tool contract, but a future workflow-level eval should
+also build FACTS through `GoalAgentWorkflow` over a penguin fitness database.
+
+## Complex health results — 2026-08-13
+
+The first 3-sample baseline exposed a reasoning gap rather than a value-reading
+gap. GLM 5.2 and Kimi K3 usually cited the latest readings and rolling averages
+correctly, but only passed half the cases because they often failed to say that
+today's on-target BP logging was complete. Both Qwen models missed more of the
+series evidence and occasionally attempted a forbidden banner action.
+
+| Baseline model | Pass | Mean input | Mean output |
+| --- | ---: | ---: | ---: |
+| `glm-5.2` | 3/6 | 3,588 | 941 |
+| `kimi-k3` | 3/6 | 3,502 | 560 |
+| `qwen3.5-122b-a10b` | 0/6 | 4,164 | 1,213 |
+| `qwen3.6-27b` | 0/6 | 4,164 | 1,297 |
+
+Prompt-only emphasis regressed GLM 5.2 to 1/6. A top-level daily-action index
+or per-series labels helped in different scenarios but neither was reliable by
+itself. The selected shape layers three deterministic hints instead:
+
+- `evaluation.todayGuidance` lists health logging complete today, health
+  logging still needed today, and rolling habits behind.
+- Each health series labels its latest reading with `todayStatus` and its last
+  two exact observations with `latestChange`.
+- `evaluation.referenceIsCurrentDay` prevents delayed prior-day wakes from
+  calling their historical evaluation "today".
+- The system contract defines those fields, while the `update_goal_report.tldr`
+  schema makes the daily-action distinction part of the required output.
+
+With that shape, GLM 5.2 passed 10/10 fresh samples across both scenarios. It
+cited the latest values and aggregates correctly, described the improvement,
+said BP logging was complete today, isolated the 6/7 medication habit when
+present, and never asked for another BP reading.
+
+| Selected-shape model | Strict pass | Today complete | Repeat-BP nudge | Mean input | Mean output | Credits | Wh |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 10/10 | 10/10 | 0/10 | 3,850 | 1,003 | 0.0535 | 19.34 |
+| `muse-glimmer` | 1/10 | 10/10 | 0/10 | 4,173 | 1,500 | 0.0185 | 129.67 |
+
+Muse Glimmer therefore reaches the primary daily-action conclusion, uses about
+65% fewer reported credits in this small run, and avoids harmful repeat
+measurement advice. It is not adequate as the default for the complete report
+contract yet: only 2/10 reports bound the latest 94 kg weight to the weight
+series, 5/10 explicitly described BP improvement, and 6/10 called out sparse
+coverage. Its higher token and provider-reported energy use also mean the lower
+credit price is not the same thing as lower resource use. These are tiny model
+samples, so the conclusion is a routing signal, not a benchmark claim.
+
+The richer GLM input is about 7% larger than its baseline input. Follow-up
+token-saving experiments should preserve the winning semantics while testing:
+
+- one paired BP observation stream instead of duplicate systolic/diastolic
+  timestamps;
+- compact observation tuples with latest-day flags attached only once;
+- removal of target/window repetition across the statement, criterion tree,
+  and result rows; and
+- whether summary fields such as `ratio` and `sampleCount` can be omitted when
+  the exact series and deterministic status already carry the needed evidence.
+
+Raw run artifacts stay local under ignored `eval_artifacts/`; the scenario
+catalog, objective classifier, and this run record are the reproducible source
+of truth committed to the repository.
 
 ## Cost
 

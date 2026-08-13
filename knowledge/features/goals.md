@@ -56,6 +56,10 @@ sources:
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
     last_modified: 2026-08-13
+  - id: goal-agent-evals
+    resource: ../../docs/evaluations/goal_agent_models/README.md
+    title: Goal-agent model evaluation run book and results
+    last_modified: 2026-08-13
   - id: tool-dispatcher
     resource: ../../lib/features/goals/workflow/goal_tool_dispatcher.dart
     title: GoalToolDispatcher — proposal persistence and spec revision routing
@@ -235,8 +239,16 @@ flowchart TD
   `observations` contain the newest 100 exact journal timestamps and values,
   `observationCount` and `observationsOmitted` disclose the wider series, and
   `latest` repeats the newest reading with deterministic `onTarget` and
-  `isToday` flags relative to that evaluation day. Future samples and samples
-  outside the criterion window are excluded. A delayed escalation therefore
+  `isToday` flags relative to that evaluation day. It also classifies the
+  reading as `completeOnTarget`, `measuredOffTarget`, or `notMeasuredToday`,
+  while `latestChange` labels only the previous-to-latest movement relative to
+  the authored direction. `evaluation.todayGuidance` indexes health logging
+  complete today, health logging still needed today, and rolling habits behind,
+  so Phase B does not have to infer today's actionability from unrelated
+  aggregates. `evaluation.referenceIsCurrentDay` distinguishes a live
+  evaluation from a delayed prior-day escalation; only the live case may call
+  the evaluated day "today". Future samples and samples outside the criterion window are
+  excluded. A delayed escalation therefore
   evaluates at the final representable microsecond before the encoded day's
   next local midnight: fractional-second samples at the boundary remain in the
   period, while its raw evidence cannot slide beyond the aggregate it explains.
@@ -315,8 +327,12 @@ flowchart TD
   For supported health criteria, it explicitly distinguishes the rolling
   `actual` from the timestamped `healthSeries` anchored to
   `evaluation.reference`: when the latest reading is on target for that day,
-  copy says the day's logging is complete, describes any lagging rolling
-  average separately, and does not ask for another reading.
+  copy says the evaluated day's logging is complete, describes any lagging
+  rolling average separately, and does not ask for another reading. A delayed
+  wake names the evaluated date and makes no claim about current-day actions.
+  Policy rows P16 and
+  P17 regress this distinction with the six-dimensional BP fixture; model
+  results and context-shape experiments live in the goal-agent eval run book.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
   with one pinned retry each: a transition/detail-refresh wake missing its
