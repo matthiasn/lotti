@@ -219,8 +219,35 @@ void main() {
       await tester.pump();
 
       final labels = tester.widgetList<ChartLabel>(find.byType(ChartLabel));
-      expect(labels.first.text, 'Mar 01');
+      expect(labels.first.text, 'Mar 1');
       expect(labels.last.text, 'Mar 31');
+    });
+
+    testWidgets('date-only axis localizes compact labels', (tester) async {
+      final utcStart = DateTime.utc(2024, 3);
+      final utcEnd = DateTime.utc(2024, 3, 31);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => Localizations.override(
+              context: context,
+              locale: const Locale('de'),
+              child: Scaffold(
+                body: DashboardChartDateAxis(
+                  rangeStart: utcStart,
+                  rangeEnd: utcEnd,
+                  dateOnly: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final labels = tester.widgetList<ChartLabel>(find.byType(ChartLabel));
+      expect(labels.first.text, '1. März');
+      expect(labels.last.text, '31. März');
     });
   });
 }

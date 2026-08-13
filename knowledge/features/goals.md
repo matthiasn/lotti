@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-13T00:10:42Z }
+generated: { by: codex/gpt-5, at: 2026-08-13T00:29:16Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -389,11 +389,14 @@ flowchart TD
   Manual mapping choices survive back-navigation while the intention is
   unchanged. A category-stream refresh adds newly available intention matches
   without resetting other manual signals or targets, and a manually removed
-  category match stays suppressed until the user reselects it. Saving
+  category match stays suppressed until the user reselects it. Saving validates
+  category-time selections through an unfiltered category lookup, retaining an
+  active private category if it disappears from the discovery stream while
+  removing newly selected inactive or deleted categories. It likewise
   reconciles selected habits against the latest active-habit stream so a paused
   or removed habit cannot be minted into a dead criterion. After a minted edit,
-  the runtime re-registers the new signal set and enqueues an immediate
-  `goal revised` wake so the report and health do not describe the old spec.
+  the runtime re-registers the new signal set and enqueues an immediate `goal
+  revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
   rating histories and shown-at watermarks merge losslessly on concurrent

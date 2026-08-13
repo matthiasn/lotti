@@ -44,44 +44,41 @@ Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
   if (identity == null || identity.kind != AgentKinds.goalAgent) return null;
 
   final profileId = identity.config.profileId;
-  if (profileId == null) {
-    final direct = await resolveInferenceProviderWithModel(
-      modelId: meliousGlm52ModelId,
-      aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-      logTag: 'GoalAgentResolvedSetup',
-    );
-    if (direct != null) {
+  if (profileId != null) {
+    final profile = await ref
+        .watch(profileResolverProvider)
+        .resolveByProfileId(profileId);
+    if (profile != null) {
       return ResolvedAgentSetup(
         status: AgentSetupResolutionStatus.resolved,
-        profile: ResolvedProfile(
-          thinkingModelId: direct.model.providerModelId,
-          thinkingProvider: direct.provider,
-          thinkingModel: direct.model,
-        ),
-        source: AgentSetupResolutionSource.directModel,
+        profile: profile,
+        source: identity.config.inferenceSetup == null
+            ? AgentSetupResolutionSource.legacyAgentProfile
+            : AgentSetupResolutionSource.baseProfile,
         setupOrigin: identity.config.inferenceSetup?.origin,
       );
     }
-    return ResolvedAgentSetup(
-      status: AgentSetupResolutionStatus.broken,
-      setupOrigin: identity.config.inferenceSetup?.origin,
-    );
   }
-  final profile = await ref
-      .watch(profileResolverProvider)
-      .resolveByProfileId(profileId);
-  if (profile == null) {
+
+  final direct = await resolveInferenceProviderWithModel(
+    modelId: meliousGlm52ModelId,
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    logTag: 'GoalAgentResolvedSetup',
+  );
+  if (direct != null) {
     return ResolvedAgentSetup(
-      status: AgentSetupResolutionStatus.broken,
+      status: AgentSetupResolutionStatus.resolved,
+      profile: ResolvedProfile(
+        thinkingModelId: direct.model.providerModelId,
+        thinkingProvider: direct.provider,
+        thinkingModel: direct.model,
+      ),
+      source: AgentSetupResolutionSource.directModel,
       setupOrigin: identity.config.inferenceSetup?.origin,
     );
   }
   return ResolvedAgentSetup(
-    status: AgentSetupResolutionStatus.resolved,
-    profile: profile,
-    source: identity.config.inferenceSetup == null
-        ? AgentSetupResolutionSource.legacyAgentProfile
-        : AgentSetupResolutionSource.baseProfile,
+    status: AgentSetupResolutionStatus.broken,
     setupOrigin: identity.config.inferenceSetup?.origin,
   );
 }

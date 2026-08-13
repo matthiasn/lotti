@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -58,14 +59,17 @@ CategoryDefinition _category(
   String id,
   String name, {
   bool active = true,
+  bool private = false,
+  DateTime? deletedAt,
 }) => CategoryDefinition(
   id: id,
   createdAt: DateTime(2026),
   updatedAt: DateTime(2026),
   name: name,
   vectorClock: null,
-  private: false,
+  private: private,
   active: active,
+  deletedAt: deletedAt,
 );
 
 GoalSpecVersionEntity _spec({
@@ -129,6 +133,7 @@ void main() {
 
   late MockGoalAgentService agentService;
   late MockHabitsRepository habitsRepository;
+  late MockCategoryRepository categoryRepository;
   late _MockGoalSpecRevisionService revisionService;
 
   List<Override> overrides({
@@ -144,6 +149,7 @@ void main() {
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
+    categoryRepositoryProvider.overrideWithValue(categoryRepository),
     categoriesStreamProvider.overrideWith(
       (ref) => categoriesStream ?? Stream.value(categories),
     ),
@@ -180,6 +186,7 @@ void main() {
   setUp(() {
     agentService = MockGoalAgentService();
     habitsRepository = MockHabitsRepository();
+    categoryRepository = MockCategoryRepository();
     revisionService = _MockGoalSpecRevisionService();
     when(habitsRepository.watchHabitDefinitions).thenAnswer(
       (_) => Stream.value([_habit('gym', 'Gym'), _habit('run', 'Run')]),
@@ -189,6 +196,12 @@ void main() {
     ).thenAnswer((invocation) async {
       final id = invocation.positionalArguments.single as String;
       return _habit(id, id, private: true);
+    });
+    when(() => categoryRepository.getCategoryById(any())).thenAnswer((
+      invocation,
+    ) async {
+      final id = invocation.positionalArguments.single as String;
+      return _category(id, id);
     });
   });
 
@@ -901,6 +914,11 @@ void main() {
     await tester.tap(find.text('Looks right'));
     await tester.pumpAndSettle();
 
+    when(
+      () => categoryRepository.getCategoryById('deep-work'),
+    ).thenAnswer(
+      (_) async => _category('deep-work', 'Deep work', active: false),
+    );
     categories.add([]);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create agent'));
@@ -918,6 +936,74 @@ void main() {
         criteria: any(named: 'criteria'),
       ),
     );
+  });
+
+  testWidgets('keeps a selected private category when visibility changes', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    when(
+      () => categoryRepository.getCategoryById('deep-work'),
+    ).thenAnswer(
+      (_) async => _category('deep-work', 'Deep work', private: true),
+    );
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    categories.add([]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final saved =
+        verify(
+              () => agentService.createGoalAgent(
+                title: any(named: 'title'),
+                displayName: any(named: 'displayName'),
+                statement: any(named: 'statement'),
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionCategoryTime;
+    expect(saved.categoryId, 'deep-work');
+    expect(saved.title, 'Deep work');
   });
 
   testWidgets('save refreshes an untouched derived title after cleanup', (

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -473,8 +474,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _validation = null;
     });
     late final List<HabitDefinition> confirmedHabits;
+    late final List<CategoryDefinition> confirmedCategories;
     try {
       confirmedHabits = await _reconcileHabitTargetsForSave();
+      if (!mounted) return;
+      confirmedCategories = await _reconcileCategoryTimeTargetsForSave();
     } on Object {
       if (mounted) {
         setState(() {
@@ -485,8 +489,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     if (!mounted) return;
-
-    _reconcileCategoryTimeTargetsForSave();
 
     // Only refresh a title the form still owns. A manually changed (including
     // deliberately blank) title remains untouched, while an auto-derived
@@ -539,6 +541,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             },
             categoryTimeDirections: _categoryTimeDirections,
             categoryTimeTitles: {
+              for (final category in confirmedCategories)
+                category.id: category.name,
               for (final category in _knownCategories)
                 category.id: category.name,
             },
@@ -608,10 +612,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     }
   }
 
-  void _reconcileCategoryTimeTargetsForSave() {
-    final activeCategoryIds = _knownCategories
-        .map((category) => category.id)
-        .toSet();
+  Future<List<CategoryDefinition>>
+  _reconcileCategoryTimeTargetsForSave() async {
+    final selectedCategoryIds = _categoryTimeTargets.keys.toList();
+    final repository = ref.read(categoryRepositoryProvider);
+    final resolvedCategories = await Future.wait([
+      for (final categoryId in selectedCategoryIds)
+        repository.getCategoryById(categoryId),
+    ]);
+    final confirmedCategories = <CategoryDefinition>[];
+    for (final category in resolvedCategories) {
+      if (category != null && category.active && category.deletedAt == null) {
+        confirmedCategories.add(category);
+      }
+    }
+    final activeCategoryIds = {
+      for (final category in confirmedCategories) category.id,
+    };
     final preservedCategoryIds = _editing
         ? _mapping.categoryTimeTargets.keys.toSet()
         : const <String>{};
@@ -623,6 +640,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _categoryTimeDirections.removeWhere(
       (categoryId, _) => !_categoryTimeTargets.containsKey(categoryId),
     );
+    return confirmedCategories;
   }
 
   void _back() {

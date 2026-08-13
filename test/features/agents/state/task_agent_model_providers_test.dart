@@ -339,7 +339,7 @@ void main() {
       when(
         () => resolver.resolveByProfileId('missing-profile'),
       ).thenAnswer((_) async => null);
-      final brokenContainer = ProviderContainer(
+      final fallbackContainer = ProviderContainer(
         overrides: [
           agentIdentityProvider.overrideWith(
             (ref, id) async => makeTestIdentity(
@@ -348,11 +348,32 @@ void main() {
             ),
           ),
           profileResolverProvider.overrideWithValue(resolver),
+          aiConfigRepositoryProvider.overrideWithValue(repository),
         ],
       );
-      addTearDown(brokenContainer.dispose);
+      addTearDown(fallbackContainer.dispose);
+      final fallback = await fallbackContainer.read(
+        goalAgentResolvedSetupProvider('agent').future,
+      );
+      expect(fallback?.status, AgentSetupResolutionStatus.resolved);
+      expect(fallback?.source, AgentSetupResolutionSource.directModel);
+      expect(fallback?.profile?.thinkingModelId, meliousGlm52ModelId);
+
+      final brokenProfileContainer = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+              config: const AgentConfig(profileId: 'missing-profile'),
+            ),
+          ),
+          profileResolverProvider.overrideWithValue(resolver),
+          aiConfigRepositoryProvider.overrideWithValue(unavailableRepository),
+        ],
+      );
+      addTearDown(brokenProfileContainer.dispose);
       expect(
-        (await brokenContainer.read(
+        (await brokenProfileContainer.read(
           goalAgentResolvedSetupProvider('agent').future,
         ))?.status,
         AgentSetupResolutionStatus.broken,

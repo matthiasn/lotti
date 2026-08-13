@@ -44,6 +44,7 @@ class DashboardChartDateAxis extends StatelessWidget {
       for (var i = 0; i < count; i++)
         dateOnly
             ? chartDateFormatterMmDdUtc(
+                context,
                 startMs + (endMs - startMs) * i / (count - 1),
               )
             : chartDateFormatterMmDd(
