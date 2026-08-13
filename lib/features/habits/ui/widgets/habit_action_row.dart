@@ -212,7 +212,7 @@ class _HabitActionRowState extends ConsumerState<HabitActionRow>
     if (isSuccess && !widget.completedToday && prefs.animateHabits) {
       _optimisticCelebration = true;
       _beginCelebration();
-      unawaited(_celebrate.forward(from: 0));
+      _celebrate.forward(from: 0);
     }
     // A success completion honours the independent haptics switch; the "missed"
     // (fail) swipe always buzzes — that is corrective feedback, not a

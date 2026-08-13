@@ -99,21 +99,22 @@ class TaskBrowseRowShell extends StatelessWidget {
               child: child,
             ),
             if (!entry.isLastInSection)
-              interaction.showDividerBelow
-                  ? Divider(
-                      key: ValueKey(
-                        'task-browse-divider-${entry.task.meta.id}',
-                      ),
-                      height: 1,
-                      thickness: 1,
-                      color: TaskShowcasePalette.border(context),
-                    )
-                  : SizedBox(
-                      key: ValueKey(
-                        'task-browse-divider-slot-${entry.task.meta.id}',
-                      ),
-                      height: 1,
-                    ),
+              if (interaction.showDividerBelow)
+                Divider(
+                  key: ValueKey(
+                    'task-browse-divider-${entry.task.meta.id}',
+                  ),
+                  height: 1,
+                  thickness: 1,
+                  color: TaskShowcasePalette.border(context),
+                )
+              else
+                SizedBox(
+                  key: ValueKey(
+                    'task-browse-divider-slot-${entry.task.meta.id}',
+                  ),
+                  height: 1,
+                ),
           ],
         ),
       ),

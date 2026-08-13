@@ -243,9 +243,10 @@ ImpactChartData buildImpactChartData(
     for (final key in seriesKeys)
       [
         for (final bucket in perBucket)
-          key == kInsightsOtherCategoryKey
-              ? rolledUp.fold<double>(0, (sum, id) => sum + (bucket[id] ?? 0))
-              : bucket[key] ?? 0,
+          if (key == kInsightsOtherCategoryKey)
+            rolledUp.fold<double>(0, (sum, id) => sum + (bucket[id] ?? 0))
+          else
+            bucket[key] ?? 0,
       ],
   ];
 
@@ -315,7 +316,7 @@ List<List<double>> shareValues(List<List<double>> values) {
     for (final row in values)
       [
         for (var i = 0; i < bucketCount; i++)
-          totals[i] > 0 ? row[i] / totals[i] : 0.0,
+          if (totals[i] > 0) row[i] / totals[i] else 0.0,
       ],
   ];
 }

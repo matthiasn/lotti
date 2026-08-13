@@ -515,11 +515,9 @@ void main() {
       await tester.pump();
 
       // Push the modal as a second route.
-      unawaited(
-        navigatorKey.currentState!.push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => Scaffold(body: VerificationModal(mockDeviceKeys)),
-          ),
+      navigatorKey.currentState!.push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(body: VerificationModal(mockDeviceKeys)),
         ),
       );
 

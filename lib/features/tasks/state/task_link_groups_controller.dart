@@ -163,7 +163,7 @@ class TaskLinkGroupsController extends AsyncNotifier<TaskLinkGroups> {
     final liveLinks = links.where((l) => l.deletedAt == null).toList();
     final otherIds = {
       for (final link in liveLinks)
-        link.fromId == taskId ? link.toId : link.fromId,
+        if (link.fromId == taskId) link.toId else link.fromId,
     };
 
     final entities = await journalRepository.getJournalEntitiesByIds(

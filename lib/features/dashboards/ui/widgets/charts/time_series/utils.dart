@@ -42,14 +42,15 @@ class DashboardChartDateAxis extends StatelessWidget {
     const count = 4; // start, +1/3, +2/3, end — aligns with the linear axis.
     final labels = [
       for (var i = 0; i < count; i++)
-        dateOnly
-            ? chartDateFormatterMmDdUtc(
-                context,
-                startMs + (endMs - startMs) * i / (count - 1),
-              )
-            : chartDateFormatterMmDd(
-                startMs + (endMs - startMs) * i / (count - 1),
-              ),
+        if (dateOnly)
+          chartDateFormatterMmDdUtc(
+            context,
+            startMs + (endMs - startMs) * i / (count - 1),
+          )
+        else
+          chartDateFormatterMmDd(
+            startMs + (endMs - startMs) * i / (count - 1),
+          ),
     ];
     return Padding(
       padding: EdgeInsets.only(

@@ -63,38 +63,32 @@ void main() {
     directives: 'You narrate events.',
   );
 
-  final geminiProvider =
-      AiConfig.inferenceProvider(
-            id: 'gemini-provider-001',
-            baseUrl: 'https://generativelanguage.googleapis.com',
-            apiKey: 'test-api-key',
-            name: 'Gemini',
-            createdAt: DateTime(2024),
-            inferenceProviderType: InferenceProviderType.gemini,
-          )
-          as AiConfigInferenceProvider;
-  final testProfile =
-      AiConfig.inferenceProfile(
-            id: 'profile-001',
-            name: 'Test Profile',
-            createdAt: DateTime(2024),
-            thinkingModelId: 'models/test-model-v1',
-          )
-          as AiConfigInferenceProfile;
-  final testModel =
-      AiConfig.model(
-            id: 'model-001',
-            name: 'Test Model',
-            providerModelId: 'models/test-model-v1',
-            inferenceProviderId: 'gemini-provider-001',
-            createdAt: DateTime(2024),
-            inputModalities: const [Modality.text],
-            outputModalities: const [Modality.text],
-            isReasoningModel: true,
-            supportsFunctionCalling: true,
-            description: 'Test model',
-          )
-          as AiConfigModel;
+  final geminiProvider = AiConfig.inferenceProvider(
+    id: 'gemini-provider-001',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    apiKey: 'test-api-key',
+    name: 'Gemini',
+    createdAt: DateTime(2024),
+    inferenceProviderType: InferenceProviderType.gemini,
+  ) as AiConfigInferenceProvider;
+  final testProfile = AiConfig.inferenceProfile(
+    id: 'profile-001',
+    name: 'Test Profile',
+    createdAt: DateTime(2024),
+    thinkingModelId: 'models/test-model-v1',
+  ) as AiConfigInferenceProfile;
+  final testModel = AiConfig.model(
+    id: 'model-001',
+    name: 'Test Model',
+    providerModelId: 'models/test-model-v1',
+    inferenceProviderId: 'gemini-provider-001',
+    createdAt: DateTime(2024),
+    inputModalities: const [Modality.text],
+    outputModalities: const [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Test model',
+  ) as AiConfigModel;
 
   JournalEntity eventEntity() => JournalEntity.event(
     meta: Metadata(
@@ -241,7 +235,6 @@ void main() {
     bool throwOnRetry = false,
   }) {
     mockConversationRepository.maxDelegateCalls = 2;
-    // ignore: cascade_invocations
     mockConversationRepository.sendMessageDelegate =
         ({
           required conversationId,
@@ -537,18 +530,17 @@ void main() {
           );
         mockConversationRepository
           ..maxDelegateCalls = 2
-          ..sendMessageDelegate =
-              ({
-                required conversationId,
-                required message,
-                required model,
-                required provider,
-                required inferenceRepo,
-                tools,
-                toolChoice,
-                temperature = 0.7,
-                strategy,
-              }) async => null;
+          ..sendMessageDelegate = ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
 
         final result = await run();
 
@@ -577,18 +569,17 @@ void main() {
           );
         mockConversationRepository
           ..maxDelegateCalls = 2
-          ..sendMessageDelegate =
-              ({
-                required conversationId,
-                required message,
-                required model,
-                required provider,
-                required inferenceRepo,
-                tools,
-                toolChoice,
-                temperature = 0.7,
-                strategy,
-              }) async => null;
+          ..sendMessageDelegate = ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
         when(
           () => attribution.service.prepareCompletion(
             attributionId: any(named: 'attributionId'),
@@ -717,18 +708,17 @@ void main() {
 
     test('keeps the gate armed and counts a failure when even the retry '
         'produces no recap', () async {
-      mockConversationRepository.sendMessageDelegate =
-          ({
-            required conversationId,
-            required message,
-            required model,
-            required provider,
-            required inferenceRepo,
-            tools,
-            toolChoice,
-            temperature = 0.7,
-            strategy,
-          }) async => null; // never publishes a recap
+      mockConversationRepository.sendMessageDelegate = ({
+        required conversationId,
+        required message,
+        required model,
+        required provider,
+        required inferenceRepo,
+        tools,
+        toolChoice,
+        temperature = 0.7,
+        strategy,
+      }) async => null; // never publishes a recap
 
       final result = await run();
       // A wake that produced no recap — even after the forced retry — is a
@@ -760,18 +750,17 @@ void main() {
     });
 
     test('increments the failure count when the conversation throws', () async {
-      mockConversationRepository.sendMessageDelegate =
-          ({
-            required conversationId,
-            required message,
-            required model,
-            required provider,
-            required inferenceRepo,
-            tools,
-            toolChoice,
-            temperature = 0.7,
-            strategy,
-          }) async => throw Exception('inference exploded');
+      mockConversationRepository.sendMessageDelegate = ({
+        required conversationId,
+        required message,
+        required model,
+        required provider,
+        required inferenceRepo,
+        tools,
+        toolChoice,
+        temperature = 0.7,
+        strategy,
+      }) async => throw Exception('inference exploded');
 
       final result = await run();
 
@@ -910,18 +899,17 @@ void main() {
     test(
       'logs and fails the wake when the failure-count write also throws',
       () async {
-        mockConversationRepository.sendMessageDelegate =
-            ({
-              required conversationId,
-              required message,
-              required model,
-              required provider,
-              required inferenceRepo,
-              tools,
-              toolChoice,
-              temperature = 0.7,
-              strategy,
-            }) async => throw Exception('inference exploded');
+        mockConversationRepository.sendMessageDelegate = ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async => throw Exception('inference exploded');
         // The error-path failure-count write then also throws → inner catch logs.
         when(() => mockSyncService.upsertEntity(any())).thenAnswer((inv) async {
           if (inv.positionalArguments.first is AgentStateEntity) {

@@ -298,10 +298,10 @@ class LabelsRepository {
             aiSuppressedLabelIds: nextSuppressed,
           ),
         );
-        return _persistenceLogic.updateDbEntity(updatedEntity);
+        return await _persistenceLogic.updateDbEntity(updatedEntity);
       }
 
-      return _persistenceLogic.updateDbEntity(
+      return await _persistenceLogic.updateDbEntity(
         journalEntity.copyWith(meta: updatedMetadata),
       );
     } catch (error, stackTrace) {
@@ -404,7 +404,7 @@ class LabelsRepository {
 
       // Fallback: allow override when vector clocks are concurrent.
       // Safe for labels since the labeled table merges the set.
-      return _persistenceLogic.updateDbEntity(
+      return await _persistenceLogic.updateDbEntity(
         updatedEntity,
         overrideComparison: true,
       );

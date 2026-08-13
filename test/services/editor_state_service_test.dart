@@ -204,8 +204,9 @@ void main() {
               expectedDeltaById[operation.entryId] = operation.deltaJson;
               expectedSelectionById.remove(operation.entryId);
               expectedEmissionsById[operation.entryId]!.add(true);
-              async.elapse(Duration.zero);
-              async.flushMicrotasks();
+              async
+                ..elapse(Duration.zero)
+                ..flushMicrotasks();
             case _GeneratedEditorStateOperationKind.saveSelection:
               service.saveSelection(
                 operation.entryId,

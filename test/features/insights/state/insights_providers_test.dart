@@ -421,7 +421,6 @@ void main() {
       // month-to-date, but this exercises week stepping.
       // ignore: cascade_invocations
       notifier.selectUnit(InsightsPeriodUnit.week);
-      // ignore: cascade_invocations
       notifier.step(-1);
       expect(
         dayStart(

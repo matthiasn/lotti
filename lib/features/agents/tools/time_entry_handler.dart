@@ -196,7 +196,7 @@ class TimeEntryHandler {
       // in memory and does not need a freshly-fetched DB copy.
       try {
         await _timeService.start(journalEntity, sourceEntity);
-      } catch (e, _) {
+      } catch (e) {
         _domainLogger?.log(
           LogDomain.agentWorkflow,
           'Time entry ${DomainLogger.sanitizeId(createdId)} persisted but '

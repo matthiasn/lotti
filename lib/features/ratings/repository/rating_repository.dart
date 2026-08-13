@@ -57,8 +57,7 @@ class RatingRepository {
       getIt<DomainLogger>().error(
         LogDomain.sync,
         error,
-        message:
-            'sequence record failed after rating link write; VC already committed',
+        message: 'sequence record failed after rating link write; VC already committed',
         stackTrace: stackTrace,
         subDomain: '_createRatingLink.recordSent',
       );
@@ -89,7 +88,7 @@ class RatingRepository {
       );
 
       if (existing != null) {
-        return _updateRating(
+        return await _updateRating(
           existing: existing,
           dimensions: dimensions,
           note: note,
@@ -99,7 +98,7 @@ class RatingRepository {
       // Look up the target entry to inherit its category
       final targetEntry = await _journalDb.journalEntityById(targetId);
 
-      return _createRating(
+      return await _createRating(
         targetId: targetId,
         dimensions: dimensions,
         catalogId: catalogId,

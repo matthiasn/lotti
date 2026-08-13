@@ -139,7 +139,7 @@ class _SentimentScenario {
     final rotated = [...parts.sublist(rotation), ...parts.sublist(0, rotation)];
     final styled = [
       for (var i = 0; i < rotated.length; i++)
-        (seed + i).isEven ? rotated[i] : rotated[i].toUpperCase(),
+        if ((seed + i).isEven) rotated[i] else rotated[i].toUpperCase(),
     ];
     text = styled.isEmpty ? 'nothing to see here' : styled.join(' and then ');
   }

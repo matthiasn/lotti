@@ -19,11 +19,11 @@ sources:
   - id: pubspec
     resource: ../../pubspec.yaml
     title: Version, SDK constraints, dependencies
-    last_modified: 2026-07-26
+    last_modified: 2026-08-13
   - id: fvmrc
     resource: ../../.fvmrc
     title: Pinned Flutter version
-    last_modified: 2026-07-30
+    last_modified: 2026-08-13
   - id: codemagic
     resource: ../../codemagic.yaml
     title: Windows release pipeline
@@ -40,13 +40,13 @@ sources:
 | Linux | Flatpak (Flathub) and tarball |
 | Windows | MSIX |
 
-The Flutter SDK is **pinned in `.fvmrc`** (currently 3.44.8). *Locally*, every
+The Flutter SDK is **pinned in `.fvmrc`** (currently 3.47.0). *Locally*, every
 command is expected to run through FVM — `fvm flutter …`, `fvm dart …`. CI does
 not use that prefix: each provider selects the pinned SDK for the build machine
 and then invokes bare `flutter` and `dart`. The pin is honoured by SDK
 selection there, not by the command prefix.
 
-Dart SDK constraint: `>=3.12.0 <4.0.0`; Flutter `>=3.44.0`.
+Dart SDK constraint: `>=3.12.0 <4.0.0`; Flutter `>=3.47.0`.
 
 ## Bumping the Flutter version
 
@@ -57,11 +57,12 @@ written down. Most consumers follow it automatically; one does not:
 |----------|-------------------|
 | GitHub Actions lanes | Yes — `kuhnroyal/flutter-fvm-config-action` reads it |
 | Codemagic Windows release | Yes — `environment.flutter: fvm` reads it |
-| [`.vscode/settings.json`](../../.vscode/settings.json) | Yes — points at the `.fvm/flutter_sdk` symlink, which `fvm use` repoints |
+| [`.fvm/fvm_config.json`](../../.fvm/fvm_config.json) | No — legacy FVM clients read their own versioned pin |
+| [`.vscode/settings.json`](../../.vscode/settings.json) | No — its SDK path includes the pinned version |
 | [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`**, but CI fails if you forget |
 
-So a Flutter bump is `.fvmrc` **plus** the Flatpak manifest's Flutter `tag:`.
-Both currently read 3.44.8.
+So a Flutter bump updates `.fvmrc`, the legacy FVM config, the VS Code SDK path,
+and the Flatpak manifest's Flutter `tag:`. All four currently read 3.47.0.
 
 The manifest keeps a literal tag on purpose. Flathub builds from the committed
 file and reviewers read it, so deriving the tag at build time would make the
@@ -71,7 +72,7 @@ gap instead: `flatpak-foreign-deps.yml` runs it on every push, and on any PR
 touching `.fvmrc` or `flatpak/`.
 
 The guard exists because drift here is silent by construction. A stale tag
-still resolves as long as it clears the `>=3.44.0` constraint floor, so the
+still resolves as long as it clears the `>=3.47.0` constraint floor, so the
 manifest sat at 3.44.0 through several pin bumps before anyone noticed, meaning
 Flathub users ran an engine nobody else was building against. When it does
 break, it surfaces one layer down as `pub get` failing version solving — "the

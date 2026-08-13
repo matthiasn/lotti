@@ -8,7 +8,6 @@ import 'package:lotti/features/settings/state/health_import_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:mocktail/mocktail.dart';
-// ignore: depend_on_referenced_packages
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
     show PermissionHandlerPlatform;
 

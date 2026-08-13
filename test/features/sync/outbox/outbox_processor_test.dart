@@ -1027,12 +1027,12 @@ void main() {
         return [
           if (call == 1)
             s0
+          else if (call == 2)
+            s1
+          else if (call == 3)
+            s2
           else
-            call == 2
-                ? s1
-                : call == 3
-                ? s2
-                : s0, // 4th call after reset
+            s0, // 4th call after reset
         ];
       });
       _stubHasMorePending(repo);

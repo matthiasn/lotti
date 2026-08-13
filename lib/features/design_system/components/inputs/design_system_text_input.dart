@@ -125,7 +125,8 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
 
     final accessibleFieldLabel = [
       widget.semanticsLabel ?? widget.label ?? widget.hintText,
-      if (_hasExtraInfo) hasError ? widget.errorText : widget.helperText,
+      if (_hasExtraInfo)
+        if (hasError) widget.errorText else widget.helperText,
     ].nonNulls.join(', ');
 
     final input = Column(

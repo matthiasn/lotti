@@ -1,8 +1,6 @@
 // `super_drag_and_drop` routes through irondash's native message channels.
-// These transitive packages expose the test context needed to make the
-// production drag-and-drop wrapper deterministic under the Flutter test
-// binding.
-// ignore_for_file: depend_on_referenced_packages
+// Direct dev dependencies expose the test context needed to make the production
+// drag-and-drop wrapper deterministic under the Flutter test binding.
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

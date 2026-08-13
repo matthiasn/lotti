@@ -20,7 +20,6 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
-// ignore: depend_on_referenced_packages
 import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
     show PermissionHandlerPlatform;
 
