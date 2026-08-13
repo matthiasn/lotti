@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -247,6 +248,21 @@ void main() {
   testWidgets('a stale goal report uses the shared countdown, skip, toggle, '
       'and manual refresh controls', (tester) async {
     final now = DateTime(2026, 8, 13, 12);
+    var stateReads = 0;
+    var agentState =
+        AgentDomainEntity.agentState(
+              id: 'goal-1:state',
+              agentId: 'goal-1',
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+              nextWakeAt: now.add(
+                const Duration(minutes: 1, seconds: 30),
+              ),
+              reportFreshAt: now.subtract(const Duration(hours: 1)),
+              reportStaleAt: now,
+            )
+            as AgentStateEntity;
     final completionService = MockGoalHabitCompletionService();
     final goalService = MockGoalAgentService();
     when(
@@ -289,22 +305,10 @@ void main() {
               'goal-1',
             ).overrideWith((ref) async => {}),
             agentReportProvider('goal-1').overrideWith((ref) async => null),
-            agentStateProvider('goal-1').overrideWith(
-              (ref) async =>
-                  AgentDomainEntity.agentState(
-                        id: 'goal-1:state',
-                        agentId: 'goal-1',
-                        slots: const AgentSlots(),
-                        updatedAt: now,
-                        vectorClock: null,
-                        nextWakeAt: now.add(
-                          const Duration(minutes: 1, seconds: 30),
-                        ),
-                        reportFreshAt: now.subtract(const Duration(hours: 1)),
-                        reportStaleAt: now,
-                      )
-                      as AgentStateEntity,
-            ),
+            agentStateProvider('goal-1').overrideWith((ref) async {
+              stateReads++;
+              return agentState;
+            }),
             goalHabitCompletionServiceProvider.overrideWithValue(
               completionService,
             ),
@@ -328,6 +332,28 @@ void main() {
       await tester.pump();
       verify(() => goalService.skipPendingReportRefresh('goal-1')).called(1);
       expect(find.textContaining('1:30'), findsNothing);
+
+      // A later evidence change can schedule fresh work after Skip once. The
+      // local cancellation must not hide that new persisted deadline.
+      agentState = agentState.copyWith(
+        nextWakeAt: now.add(const Duration(minutes: 2)),
+      );
+      ProviderScope.containerOf(
+        tester.element(find.byType(GoalAgentDetailPage)),
+        listen: false,
+      ).invalidate(agentStateProvider('goal-1'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('2:00'), findsOneWidget);
+
+      // Countdown expiry must re-read persisted state so the row can leave
+      // its scheduled state once the wake runner clears nextWakeAt.
+      final readsBeforeExpiry = stateReads;
+      tester
+          .widget<AgentAutomationRow>(find.byType(AgentAutomationRow))
+          .onCountdownExpired();
+      await tester.pump();
+      expect(stateReads, greaterThan(readsBeforeExpiry));
 
       await tester.tap(
         find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
