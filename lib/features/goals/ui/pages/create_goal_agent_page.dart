@@ -92,6 +92,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _categoryTimeTargets = <String, num?>{};
   final _categoryTimeDirections = <String, GoalDirection>{};
   final _suppressedCategoryTimeIds = <String>{};
+
+  /// Health signals the user explicitly deselected: an intention re-map may
+  /// still surface them as suggestions, but never re-seeds them selected.
+  final _suppressedHealthTypes = <String>{};
   List<HabitDefinition> _knownHabits = const [];
   List<MeasurableDataType> _knownMeasurables = const [];
   List<CategoryDefinition> _knownCategories = const [];
@@ -203,17 +207,38 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     return distinctiveLabelWords.intersection(_words(intention)).isNotEmpty;
   }
 
-  /// Whether this habit's name names one of the intention-matched health
-  /// capabilities (e.g. a "Measure Blood Pressure" habit next to the
-  /// blood-pressure readings signal).
+  /// Bookkeeping verbs that don't make a habit more than a record of the
+  /// measurement it names ("Measure Blood Pressure", "Log weight").
+  static final Set<String> _measurementVerbs = {
+    'measure',
+    'track',
+    'log',
+    'check',
+    'record',
+    'monitor',
+    'take',
+  };
+
+  /// Whether this habit is a bookkeeping twin of an intention-matched
+  /// health capability: every distinctive word in its name is either part
+  /// of the health label or a measurement verb ("Measure Blood Pressure"
+  /// beside the blood-pressure readings signal). A habit that merely shares
+  /// one word with a label ("Weight training", "Pressure wash patio") is a
+  /// real habit and keeps its default selection.
   bool _overlapsMatchedHealthLabel(String habitName) {
     if (_matchedHealthTypes.isEmpty) return false;
     final habitWords = _words(
       _plainName(habitName),
     ).difference(_genericIntentionWords);
+    if (habitWords.isEmpty) return false;
     for (final dataType in _matchedHealthTypes) {
-      final label = _healthDimensionName(context, dataType);
-      if (_words(label).intersection(habitWords).isNotEmpty) return true;
+      final labelWords = _words(_healthDimensionName(context, dataType));
+      final leftover = habitWords
+          .difference(labelWords)
+          .difference(_measurementVerbs);
+      if (leftover.isEmpty && habitWords.intersection(labelWords).isNotEmpty) {
+        return true;
+      }
     }
     return false;
   }
@@ -225,6 +250,33 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       categories
           .map((category) => '${category.id}\u0000${category.name}')
           .join('\u0001');
+
+  /// Signals selected after the snapshot (via the picker) join the chosen
+  /// group for the lifetime of the current mapping-step entry, so
+  /// deselecting one leaves an unchecked row instead of deleting it.
+  void _appendSignalDescriptors(Iterable<String> healthDataTypes) {
+    final descriptors = <String>{
+      for (final dataType in healthDataTypes)
+        if (dataType == GoalHealthDataTypes.weight)
+          'weight'
+        else
+          'blood-pressure',
+    };
+    for (final descriptor in descriptors) {
+      if (!_chosenSignalOrder.contains(descriptor) &&
+          !_suggestedSignalOrder.contains(descriptor)) {
+        _chosenSignalOrder.add(descriptor);
+      }
+    }
+  }
+
+  void _appendHabitDescriptor(String habitId) {
+    final descriptor = 'habit:$habitId';
+    if (!_chosenSignalOrder.contains(descriptor) &&
+        !_suggestedSignalOrder.contains(descriptor)) {
+      _chosenSignalOrder.add(descriptor);
+    }
+  }
 
   void _snapshotSignalGroups() {
     final selectedHabitIds = _habitTargets.keys.toList();
@@ -308,8 +360,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           ..add(GoalHealthDataTypes.bloodPressureDiastolic);
       }
       // The substance arrives selected: a blood-pressure intention watches
-      // blood-pressure readings from the first render, not a checkbox.
+      // blood-pressure readings from the first render, not a checkbox —
+      // unless the user already deselected it once; an explicit choice
+      // survives intention back-edits as an unchecked suggestion.
       for (final dataType in _matchedHealthTypes) {
+        if (_suppressedHealthTypes.contains(dataType)) continue;
         _healthTargets.putIfAbsent(
           dataType,
           () => _defaultHealthTarget(dataType),
@@ -1013,6 +1068,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                             _rememberedHabitTargets[habitId] ??
                                             3,
                                       );
+                                      _appendHabitDescriptor(habitId);
                                     } else {
                                       final removed = _habitTargets.remove(
                                         habitId,
@@ -1056,6 +1112,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                   }),
                               onHealthSelected: (dataTypes) => setState(() {
                                 for (final dataType in dataTypes) {
+                                  _suppressedHealthTypes.remove(dataType);
                                   _healthTargets.putIfAbsent(
                                     dataType,
                                     () => _defaultHealthTarget(dataType),
@@ -1065,9 +1122,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                     () => GoalDirection.atMost,
                                   );
                                 }
+                                _appendSignalDescriptors(dataTypes);
                                 _validation = null;
                               }),
                               onHealthRemoved: (dataType) => setState(() {
+                                _suppressedHealthTypes.add(dataType);
                                 _healthTargets.remove(dataType);
                                 _healthDirections.remove(dataType);
                                 _validation = null;
@@ -1520,7 +1579,10 @@ class _MappingStep extends StatelessWidget {
       GoalHealthDataTypes.bloodPressureSystolic,
       GoalHealthDataTypes.bloodPressureDiastolic,
     ];
-    final selected = healthTargets.containsKey(types.first);
+    // A partial pair (an edited goal carrying only one reading) is still a
+    // selected blood-pressure signal: the row renders checked with the
+    // value it has, and deselecting removes whatever half is present.
+    final selected = types.any(healthTargets.containsKey);
     return Column(
       children: [
         DesignSystemSelectionRow(
@@ -1752,9 +1814,16 @@ class _MappingStep extends StatelessWidget {
       if (descriptor == 'weight') return _weightRow(context);
       if (descriptor == 'steps') return _stepsRow(context);
       final habitId = descriptor.substring('habit:'.length);
-      final known = visibleHabits.where((habit) => habit.id == habitId);
-      if (known.isEmpty) return null;
-      return _habitSignalRow(context, known.first);
+      // A descriptor in the frozen order renders as long as the habit is
+      // resolvable (or still selected under privacy): deselecting a
+      // picker-added habit leaves its unchecked row until step re-entry.
+      if (!habitsById.containsKey(habitId) && !selectedIds.contains(habitId)) {
+        return null;
+      }
+      return _habitSignalRow(
+        context,
+        (id: habitId, name: habitsById[habitId]?.name ?? habitId),
+      );
     }
 
     final knownDescriptors = {...chosenSignalOrder, ...suggestedSignalOrder};
@@ -2865,10 +2934,11 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
                       TextSpan(text: restatementParts.first),
                       TextSpan(
                         text: widget.signalDescription,
-                        style: TextStyle(
-                          color: tokens.colors.text.highEmphasis,
-                          fontWeight: tokens.typography.weight.semiBold,
-                        ),
+                        style: tokens.typography.styles.body.bodyMedium
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                              fontWeight: tokens.typography.weight.semiBold,
+                            ),
                       ),
                       for (final part in restatementParts.skip(1))
                         TextSpan(text: part),
