@@ -221,6 +221,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // standing text, not a re-derivation of the evidence.
     final userRequestedReport = isExplicitGoalReportUpdateRequest(
       pendingUserMessage,
+      previousAssistantMessage: previousAssistantMessage,
     );
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
@@ -1815,17 +1816,41 @@ bool isExplicitGoalAdReplacementRequest(
 /// same text they complained about. Like the ad heuristic this is an English
 /// fast path that forces a forgotten tool call; the language-independent
 /// carrier is the model choosing `update_goal_report` itself, which the
-/// system prompt now asks for explicitly.
-bool isExplicitGoalReportUpdateRequest(String? message) {
+/// system prompt asks for explicitly.
+bool isExplicitGoalReportUpdateRequest(
+  String? message, {
+  String? previousAssistantMessage,
+}) {
   if (message == null) return false;
   final normalized = message.toLowerCase().trim();
+  // "Yes, please" after the agent offers to rewrite the report is the same
+  // request in its most common form; the offer is the only place the subject
+  // is named, exactly as the banner path treats an affirmation.
+  if (_isShortGoalAdAffirmation(normalized) &&
+      _offersGoalReportRewrite(previousAssistantMessage)) {
+    return true;
+  }
   final mentionsReport = RegExp(
     r'\b(?:report|summary|write[-\s]?up)\b',
   ).hasMatch(normalized);
   if (!mentionsReport) return false;
+  // A question ABOUT the report is not a request to rewrite it. Leading
+  // interrogatives only: "can/could/would you shorten it" are requests, and
+  // they are deliberately not in this set.
+  final asksAboutReport = RegExp(
+    r'^(?:how|what|why|when|where|which|who)\b',
+  ).hasMatch(normalized);
+  if (asksAboutReport) return false;
+  // Negation binds loosely in real messages — "don't want you to change the
+  // report", "please don't make the report shorter" — so any negation ahead
+  // of a change word within the same clause declines the rewrite. Forcing a
+  // rewrite against an explicit refusal overwrites a report the user asked
+  // to keep, which is worse than missing an implicit request.
   final declinesChange = RegExp(
-    r"\b(?:don't|dont|do not|never)\s+"
-    r'(?:change|update|rewrite|restructure|touch|shorten)\b',
+    r"\b(?:don't|dont|do not|never|no\s+need\s+to|rather\s+not|"
+    r'stop|leave|keep)\b[^.!?]{0,60}\b(?:change|update|rewrite|rewriting|'
+    'restructure|touch|shorten|shorter|concise|condense|trim|tighten|'
+    r'split|format|structure|improve|less|make|alone|as\s+is)\b',
   ).hasMatch(normalized);
   if (declinesChange) return false;
   return RegExp(
@@ -1834,6 +1859,22 @@ bool isExplicitGoalReportUpdateRequest(String? message) {
     r'update|refresh|change|improve|less)\b|'
     r'\bwall\s+of\s+text\b|'
     r'\bbreak\s+(?:it|this|that|the\s+report)?\s*up\b',
+  ).hasMatch(normalized);
+}
+
+/// Whether the agent's previous visible reply OFFERED to rewrite the standing
+/// report, which is what makes a bare "yes" a rewrite request.
+bool _offersGoalReportRewrite(String? message) {
+  if (message == null) return false;
+  final normalized = message.toLowerCase();
+  if (!RegExp(r'\b(?:report|summary|write[-\s]?up)\b').hasMatch(normalized)) {
+    return false;
+  }
+  return RegExp(
+    r"\b(?:if\s+you(?:'d|\s+would)?\s+(?:like|want)|want\s+me\s+to|"
+    r'would\s+you\s+like|shall\s+i|should\s+i|say\s+the\s+word|'
+    r'i\s+can\s+(?:rewrite|restructure|shorten|split|reformat)|'
+    r'let\s+me\s+(?:rewrite|restructure|shorten|split|reformat))\b',
   ).hasMatch(normalized);
 }
 

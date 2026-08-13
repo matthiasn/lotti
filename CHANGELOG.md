@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.10]
+### Fixed
+- **Asking the goal agent to change its report now changes it.** Telling the
+  agent in chat to make its report shorter, sectioned, or less repetitive used
+  to produce only a chat reply while the standing report stayed as it was. The
+  request now rewrites the report itself, and an explicit refusal to change it
+  is respected.
+
 ### Changed
 - **Goal agent pages get the whole screen on phones.** The bottom navigation
   bar slides away on a goal's detail page, its chat, and the create and edit
