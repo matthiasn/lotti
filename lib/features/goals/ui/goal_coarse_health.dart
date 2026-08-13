@@ -13,7 +13,7 @@ enum GoalCoarseHealth { healthy, behind, restarting, notEnoughData }
 
 /// Collapses the runtime [GoalTrackStatus] (and a null "no register yet")
 /// into the coarse vocabulary. `recovering` maps to **restarting** — a
-/// beginning, read in teal, never framed as failure or coloured red.
+/// beginning, read in the info hue, never framed as failure or coloured red.
 GoalCoarseHealth coarseHealthOf(GoalTrackStatus? status) => switch (status) {
   GoalTrackStatus.onTrack ||
   GoalTrackStatus.achieved => GoalCoarseHealth.healthy,
@@ -30,12 +30,14 @@ String goalCoarseHealthLabel(AppLocalizations messages, GoalCoarseHealth h) =>
       GoalCoarseHealth.notEnoughData => messages.goalCoarseHealthNotEnoughData,
     };
 
-/// The chip/arrow hue for each coarse state. Restarting is the interactive
-/// teal — a fresh start, deliberately NOT red.
+/// The chip/arrow hue for each coarse state. Restarting is the info hue — a
+/// fresh start, deliberately NOT red, and deliberately not a green: the
+/// interactive teal reads as Healthy's success green at chip size, and green
+/// must mean exactly one thing on a health surface.
 Color goalCoarseHealthColor(GoalCoarseHealth h, DsColors colors) => switch (h) {
   GoalCoarseHealth.healthy => colors.alert.success.defaultColor,
   GoalCoarseHealth.behind => colors.alert.warning.defaultColor,
-  GoalCoarseHealth.restarting => colors.interactive.enabled,
+  GoalCoarseHealth.restarting => colors.alert.info.defaultColor,
   GoalCoarseHealth.notEnoughData => colors.text.lowEmphasis,
 };
 

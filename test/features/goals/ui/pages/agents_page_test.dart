@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -141,6 +142,99 @@ void main() {
     // Trend is a separate visible field beside status, not an icon-only hint.
     expect(find.text('Trending down'), findsOneWidget);
     expect(find.text('Trending up'), findsOneWidget);
+
+    // Unresolved strips announce LOADING, never a health verdict — and the
+    // dashed placeholder encoding keeps them visually distinct from a
+    // genuinely empty week.
+    // The tappable row merges descendant semantics into one node, so the
+    // strip's label is matched as a substring of the merged announcement.
+    expect(
+      find.bySemanticsLabel(RegExp('Daily record still loading')),
+      findsNWidgets(2),
+    );
+    expect(find.bySemanticsLabel(RegExp('Not enough data')), findsNothing);
+  });
+
+  testWidgets('a narrow row stacks hint and strip below the identity and '
+      'badges the dominant issue', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-fit:spec-v1',
+              agentId: 'goal-fit',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Walk daily',
+              statement: 'Walk every day.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 5,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 13);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-fit', 'Vesper')],
+          ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.offTrack,
+              reportOneLiner: 'Three walks are missing this window.',
+              spec: spec,
+              deficit: 3,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-fit').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 5,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: offset == 2 ? 1 : 0,
+                        targetSatisfied: false,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The phone branch: identity, dominant-issue badge, deterministic hint
+    // and a REAL (non-placeholder) strip stacked in one column.
+    expect(find.text('Walk needs attention'), findsOneWidget);
+    expect(find.text('3 days to recover'), findsOneWidget);
+    final strip = tester.widget<GoalCompactWindowStrip>(
+      find.byType(GoalCompactWindowStrip),
+    );
+    expect(strip.placeholder, isFalse);
+    // Stacked below, not trailing: the strip starts at the identity's left
+    // edge on a narrow row.
+    expect(
+      tester.getTopLeft(find.byType(GoalCompactWindowStrip)).dy,
+      greaterThan(tester.getBottomLeft(find.text('Walk daily')).dy),
+    );
   });
 
   testWidgets(
@@ -381,6 +475,19 @@ void main() {
         GoalCompactDayState.none,
         GoalCompactDayState.full,
       ]);
+
+      // On a wide row the strip moves into the right-aligned data block, so
+      // the card's width carries information instead of dead surface.
+      expect(
+        tester.getTopRight(find.byType(GoalCompactWindowStrip)).dx,
+        greaterThan(
+          tester.getTopRight(find.text('Fitness')).dx,
+        ),
+        reason: 'strip should sit trailing, past the title block',
+      );
+      // Resolved data renders REAL cells; the dashed placeholder encoding is
+      // reserved for rows whose window has not resolved.
+      expect(strip.placeholder, isFalse);
     },
   );
 
@@ -405,7 +512,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
     expect(navigated, ['/agents/create']);
 
@@ -425,7 +532,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
     // The explainer's own CTA remains the single way in.
     expect(find.text('Set an intention'), findsOneWidget);
   });

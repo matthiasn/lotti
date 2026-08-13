@@ -6146,12 +6146,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Börjar om';
 
   @override
+  String get goalCompositeLastSevenDays => 'Senaste 7 dagarna';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return '$metCount av $dimensionCount dimensioner uppfylldes i går · $requiredCount krävs.';
+    return 'I går: $metCount av $dimensionCount dimensioner · $requiredCount krävs.';
   }
 
   @override
@@ -6232,6 +6235,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Det här säger din agent';
+
+  @override
+  String get goalDetailStatementLabel => 'Ditt mål';
 
   @override
   String get goalDetailTimelineTitle => 'Interaktioner';
@@ -6583,6 +6589,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalHealthTrendUp => 'Ökar';
 
   @override
+  String get goalLogTodayLinkedHint => 'Uppdateras från sin länkade källa';
+
+  @override
+  String get goalLogTodayTitle => 'Logga i dag';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6683,6 +6695,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressPartial => 'klart · mål ännu inte uppnått';
 
   @override
+  String get goalProgressStripLoading => 'Dagsöversikten läses fortfarande in';
+
+  @override
   String get goalProgressTitle => 'Den här rullande veckan';
 
   @override
@@ -6751,6 +6766,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Markera rad';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 veckor';
+  }
 
   @override
   String get goalStatusAchieved => 'Uppnått';

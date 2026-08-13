@@ -6205,12 +6205,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Začíná znovu';
 
   @override
+  String get goalCompositeLastSevenDays => 'Posledních 7 dní';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Včera splněno $metCount z $dimensionCount rozměrů · vyžadováno $requiredCount.';
+    return 'Včera: $metCount z $dimensionCount dimenzí · potřeba: $requiredCount.';
   }
 
   @override
@@ -6293,6 +6296,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Co říká tvůj agent';
+
+  @override
+  String get goalDetailStatementLabel => 'Tvůj cíl';
 
   @override
   String get goalDetailTimelineTitle => 'Interakce';
@@ -6648,6 +6654,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalHealthTrendUp => 'Roste';
 
   @override
+  String get goalLogTodayLinkedHint => 'Aktualizuje se z propojeného zdroje';
+
+  @override
+  String get goalLogTodayTitle => 'Zaznamenat dnešek';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6750,6 +6762,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalProgressPartial => 'hotovo · cíl zatím nesplněn';
 
   @override
+  String get goalProgressStripLoading => 'Denní záznam se ještě načítá';
+
+  @override
   String get goalProgressTitle => 'Tento klouzavý týden';
 
   @override
@@ -6817,6 +6832,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Vybrat řádek';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 týdnů';
+  }
 
   @override
   String get goalStatusAchieved => 'Splněno';

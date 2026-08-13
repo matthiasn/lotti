@@ -274,7 +274,8 @@ void main() {
 
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
-      await tester.tap(find.text('New goal agent'));
+      // The DS FAB is icon-only; its accessible name is the semantic label.
+      await tester.tap(find.bySemanticsLabel('New goal agent'));
       await tester.pumpAndSettle();
       expect(find.byType(CreateGoalAgentPage), findsOneWidget);
 

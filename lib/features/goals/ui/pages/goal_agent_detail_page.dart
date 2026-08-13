@@ -24,6 +24,7 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
+import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -34,13 +35,84 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// host strips' visible cap holds back), pending revision proposals, watching
 /// metadata and outcome history. Desktop gives the durable conversation a
 /// peer pane; mobile opens the same projection as a pushed page.
-class GoalAgentDetailPage extends ConsumerWidget {
+class GoalAgentDetailPage extends ConsumerStatefulWidget {
   const GoalAgentDetailPage({required this.agentId, super.key});
 
   final String agentId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GoalAgentDetailPage> createState() =>
+      _GoalAgentDetailPageState();
+}
+
+class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
+  final ScrollController _scrollController = ScrollController();
+  final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
+  final GlobalKey _progressSectionKey = GlobalKey();
+  final GlobalKey _headerKey = GlobalKey();
+
+  String get agentId => widget.agentId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_syncAppBarTitle);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_syncAppBarTitle)
+      ..dispose();
+    _appBarTitleVisible.dispose();
+    super.dispose();
+  }
+
+  /// The page opens with one title — the H1 in the header. The app bar's
+  /// copy only fades in once the header has actually scrolled away (its
+  /// laid-out extent, not a fixed offset — a wrapped title or a large text
+  /// scale grows the header), so the goal name never reads twice in the
+  /// same viewport.
+  void _syncAppBarTitle() {
+    final headerBox = _headerKey.currentContext?.findRenderObject();
+    final threshold = headerBox is RenderBox && headerBox.hasSize
+        ? headerBox.size.height
+        : context.designTokens.spacing.step12;
+    _appBarTitleVisible.value =
+        _scrollController.hasClients && _scrollController.offset > threshold;
+  }
+
+  /// The banner CTA performs the verb it names: a goal with loggable habit
+  /// dimensions opens the one-tap capture sheet; otherwise the CTA anchors
+  /// to the evidence — never a navigation to the route the user is on.
+  void _logToday(GoalProgressView progress) {
+    if (progress.habits.isEmpty) {
+      _scrollToProgress();
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => GoalLogTodaySheet(
+        agentId: agentId,
+        progress: progress,
+      ),
+    );
+  }
+
+  void _scrollToProgress() {
+    final target = _progressSectionKey.currentContext;
+    if (target == null) return;
+    Scrollable.ensureVisible(
+      target,
+      duration: MotionDurations.medium4,
+      curve: MotionCurves.emphasizedDecelerate,
+      alignment: 0.02,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
@@ -149,6 +221,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
       }
     }
     Widget detailList({required bool showChatAction}) => ListView(
+      controller: _scrollController,
       // The mobile shell keeps the bottom navigation overlaid on agents
       // subroutes, so the final content must clear it.
       padding: EdgeInsets.fromLTRB(
@@ -160,6 +233,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
       ),
       children: [
         _GoalHeader(
+          key: _headerKey,
           agentId: agentId,
           identity: goalIdentity,
           health: health,
@@ -178,44 +252,59 @@ class GoalAgentDetailPage extends ConsumerWidget {
           reportIsStale:
               agentState is AgentStateEntity && agentState.isReportStale,
           canRefresh: isActive,
+          // Always non-null: a null callback would fall back to the card's
+          // default navigate-to-detail — a self-navigation no-op on this
+          // page. While the evidence is still resolving the CTA anchors
+          // (or quietly no-ops) and heals when progress lands.
+          onBannerCta: () {
+            final resolved = progress;
+            if (resolved != null) {
+              _logToday(resolved);
+            } else {
+              _scrollToProgress();
+            }
+          },
         ),
         if (progress != null) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalProgressCard(
-            progress: progress,
-            onReflectDay: !isActive || spec == null
-                ? null
-                : (day) => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (context) => GoalDayAssessmentSheet(
-                      agentId: agentId,
-                      specVersionId: spec.id,
-                      specVersion: spec.version,
-                      day: day,
-                      progress: progress,
+          KeyedSubtree(
+            key: _progressSectionKey,
+            child: GoalProgressCard(
+              progress: progress,
+              onReflectDay: !isActive || spec == null
+                  ? null
+                  : (day) => showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (context) => GoalDayAssessmentSheet(
+                        agentId: agentId,
+                        specVersionId: spec.id,
+                        specVersion: spec.version,
+                        day: day,
+                        progress: progress,
+                      ),
                     ),
-                  ),
-            onHabitOutcomeSelected: !isActive
-                ? null
-                : ({
-                    required day,
-                    required habitId,
-                    required outcome,
-                  }) async {
-                    final saved = await ref
-                        .read(goalHabitCompletionServiceProvider)
-                        .record(
-                          agentId: agentId,
-                          habitId: habitId,
-                          day: day,
-                          outcome: outcome,
-                        );
-                    if (saved) {
-                      ref.invalidate(goalAgentProgressViewProvider(agentId));
-                    }
-                    return saved;
-                  },
+              onHabitOutcomeSelected: !isActive
+                  ? null
+                  : ({
+                      required day,
+                      required habitId,
+                      required outcome,
+                    }) async {
+                      final saved = await ref
+                          .read(goalHabitCompletionServiceProvider)
+                          .record(
+                            agentId: agentId,
+                            habitId: habitId,
+                            day: day,
+                            outcome: outcome,
+                          );
+                      if (saved) {
+                        ref.invalidate(goalAgentProgressViewProvider(agentId));
+                      }
+                      return saved;
+                    },
+            ),
           ),
         ],
         SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -241,6 +330,10 @@ class GoalAgentDetailPage extends ConsumerWidget {
             label: context.messages.goalChatTalkTo(goalIdentity.displayName),
             onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
             leadingIcon: Icons.chat_bubble_outline_rounded,
+            // Secondary: the persistent app-bar action is the primary
+            // doorway; this tail button is the convenience for readers who
+            // reached the bottom.
+            variant: DesignSystemButtonVariant.secondary,
             size: DesignSystemButtonSize.medium,
             fullWidth: true,
           ),
@@ -257,8 +350,31 @@ class GoalAgentDetailPage extends ConsumerWidget {
       Scaffold(
         appBar: AppBar(
           leading: backToList,
-          title: Text(spec?.title ?? goalIdentity.displayName),
+          // The header's H1 owns the goal name at rest; the app bar copy
+          // fades in only once the header scrolls away, so the name never
+          // reads twice in one viewport.
+          title: ValueListenableBuilder<bool>(
+            valueListenable: _appBarTitleVisible,
+            builder: (context, visible, child) => AnimatedOpacity(
+              opacity: visible ? 1 : 0,
+              duration: MotionDurations.short3,
+              child: child,
+            ),
+            child: Text(spec?.title ?? goalIdentity.displayName),
+          ),
           actions: [
+            // The conversation is the feature's second half — phones get a
+            // persistent doorway beside the overflow instead of a button
+            // buried below every card.
+            if (!desktop && chatAvailable)
+              IconButton(
+                key: const ValueKey('goal-detail-chat-action'),
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                tooltip: context.messages.goalChatTalkTo(
+                  goalIdentity.displayName,
+                ),
+                onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
+              ),
             _GoalActionsMenuButton(
               agentId: agentId,
               agentName: goalIdentity.displayName,
@@ -294,6 +410,7 @@ class _GoalHeader extends StatelessWidget {
     required this.health,
     required this.healthAvailable,
     required this.spec,
+    super.key,
   });
 
   final String agentId;
@@ -310,36 +427,58 @@ class _GoalHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: tokens.spacing.step3,
-          runSpacing: tokens.spacing.step2,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        // The chip anchors to the title's FIRST line: as a Wrap sibling a
+        // long goal name stranded the monogram alone on the top line.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GoalBannerPersonaChip(
-              monogram: GoalBannerPersonaChip.monogramFor(
-                identity.displayName,
-              ),
-              fill: color.withValues(alpha: SurfaceAlphas.washChip),
-            ),
-            Text(
-              spec?.title ?? identity.displayName,
-              style: tokens.typography.styles.heading.heading3.copyWith(
-                color: tokens.colors.text.highEmphasis,
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              child: GoalBannerPersonaChip(
+                monogram: GoalBannerPersonaChip.monogramFor(
+                  identity.displayName,
+                ),
+                fill: color.withValues(alpha: SurfaceAlphas.washChip),
               ),
             ),
-            if (healthAvailable) GoalCoarseHealthChip(health: coarse),
-            if (health?.direction case final direction?)
-              GoalHealthDirectionChip(direction: direction),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step2,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    spec?.title ?? identity.displayName,
+                    style: tokens.typography.styles.heading.heading3.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                  if (healthAvailable) GoalCoarseHealthChip(health: coarse),
+                  if (health?.direction case final direction?)
+                    GoalHealthDirectionChip(direction: direction),
+                ],
+              ),
+            ),
           ],
         ),
         GoalAgentLifetimePills(agentId: agentId),
         if (spec?.statement case final statement?) ...[
           SizedBox(height: tokens.spacing.step3),
+          // Explicitly labelled as the aspiration: unlabelled, the statement
+          // reads as the agent asserting current status directly against the
+          // health chip above it.
           Text(
-            '“$statement”',
+            context.messages.goalDetailStatementLabel,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            statement,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: tokens.colors.text.mediumEmphasis,
-              fontStyle: FontStyle.italic,
             ),
           ),
         ],
@@ -356,6 +495,7 @@ class _AgentSayingSection extends ConsumerWidget {
     required this.report,
     required this.reportIsStale,
     required this.canRefresh,
+    this.onBannerCta,
   });
 
   final String agentId;
@@ -364,6 +504,10 @@ class _AgentSayingSection extends ConsumerWidget {
   final AgentReportEntity? report;
   final bool reportIsStale;
   final bool canRefresh;
+
+  /// Anchor-scroll to the evidence this page hosts — the banner CTA must
+  /// never navigate to the route the user is already on.
+  final VoidCallback? onBannerCta;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -379,10 +523,15 @@ class _AgentSayingSection extends ConsumerWidget {
             runSpacing: tokens.spacing.step1,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              // The page's one section-heading style; warning ink stays
+              // exclusive to genuine state (the out-of-date badge), so
+              // orange keeps meaning "needs attention" on a health surface.
               Text(
                 context.messages.goalDetailSayingTitle,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.alert.warning.ink,
+                // subtitle1: a SECTION header must outrank the subtitle2
+                // card titles it governs.
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
               if (reportIsStale && (report != null || oneLiner != null))
@@ -419,7 +568,9 @@ class _AgentSayingSection extends ConsumerWidget {
       fallbackMuted: oneLiner == null,
     );
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      // Stretch, not start: on wide panes the report card must share the
+      // banners' right edge instead of shrink-wrapping to its prose.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
         SizedBox(height: tokens.spacing.step2),
@@ -435,7 +586,10 @@ class _AgentSayingSection extends ConsumerWidget {
               '${nudges[index].nudge.activationCount}',
             ),
             nudgeId: nudges[index].nudge.id,
-            child: GoalBannerCard(entry: nudges[index]),
+            child: GoalBannerCard(
+              entry: nudges[index],
+              onCtaPressed: onBannerCta,
+            ),
           ),
         ],
       ],

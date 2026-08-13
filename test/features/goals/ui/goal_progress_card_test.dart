@@ -61,7 +61,7 @@ void main() {
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('3× per 7 days'), findsOneWidget);
     expect(find.text('1 day to healthy'), findsOneWidget);
-    expect(find.text('4 / 6'), findsOneWidget);
+    expect(find.text('4 / 6 weeks'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
     expect(find.text('done · target met'), findsOneWidget);
     expect(find.text('done · target not met yet'), findsOneWidget);
@@ -1197,13 +1197,17 @@ void main() {
     final fullCell = tester.widget<Container>(
       find.byKey(const ValueKey('goal-habit-day-visual-walk-2026-08-08')),
     );
+    // Day states wear the success family — the interactive teal is
+    // reserved for tappable controls.
     expect(
       (partialCell.decoration! as BoxDecoration).color,
-      tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.muted),
+      tokens.colors.alert.success.defaultColor.withValues(
+        alpha: SurfaceAlphas.muted,
+      ),
     );
     expect(
       (fullCell.decoration! as BoxDecoration).color,
-      tokens.colors.interactive.enabled,
+      tokens.colors.alert.success.defaultColor,
     );
   });
 
@@ -1337,9 +1341,14 @@ void main() {
           tester.getSize(visualCell),
           const Size.square(ControlSizes.iconChipCompact),
         );
+        // The interactive slot fills the track pitch horizontally and
+        // meets the design system's touch floor vertically.
         expect(
           tester.getSize(cell),
-          const Size.square(ControlSizes.iconChipCompact),
+          Size(
+            expectedPitch,
+            TapTargets.minimum,
+          ),
         );
         expect(
           tester.getCenter(marker).dx,
@@ -1590,7 +1599,15 @@ void main() {
       const dayKey = ValueKey('goal-habit-day-walk-2026-08-11');
       expect(
         tester.getSize(find.byKey(dayKey)),
-        const Size.square(ControlSizes.iconChipCompact),
+        Size(
+          ControlSizes.iconChipCompact +
+              tester
+                  .element(find.byType(GoalProgressCard))
+                  .designTokens
+                  .spacing
+                  .step2,
+          TapTargets.minimum,
+        ),
       );
       expect(
         tester.getCenter(find.text('Walk')).dy,
@@ -1820,7 +1837,7 @@ void main() {
 
     expect(find.text('The whole goal'), findsOneWidget);
     expect(
-      find.text('2 of 3 dimensions met yesterday · 2 required.'),
+      find.text('Yesterday: 2 of 3 dimensions · 2 required.'),
       findsOneWidget,
     );
     expect(find.text('Reflect on today'), findsOneWidget);

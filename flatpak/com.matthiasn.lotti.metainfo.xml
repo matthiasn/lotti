@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.9" date="2026-08-13">
+      <description>
+        <p>Changed: a design-panel polish pass across the goal-agent surfaces. The banner's Log today opens a one-tap logging sheet, day cells wear a dedicated success green with an inner dot for partial days, Restarting reads in blue, warning orange is reserved for genuine attention, the goal statement is labelled, phones get a persistent chat button, the Goal Agents list keeps one card silhouette with the week strip on the right on wide screens, day squares accept taps on a larger area, and chart target lines render at full strength.</p>
+      </description>
+    </release>
     <release version="1.0.8" date="2026-08-12">
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>

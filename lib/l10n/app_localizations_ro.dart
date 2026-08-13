@@ -6241,12 +6241,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Se repornește';
 
   @override
+  String get goalCompositeLastSevenDays => 'Ultimele 7 zile';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Ieri au fost îndeplinite $metCount din $dimensionCount dimensiuni · sunt necesare $requiredCount.';
+    String _temp0 = intl.Intl.pluralLogic(
+      dimensionCount,
+      locale: localeName,
+      other: '$dimensionCount de dimensiuni',
+      few: '$dimensionCount dimensiuni',
+      one: '1 dimensiune',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      requiredCount,
+      locale: localeName,
+      other: '$requiredCount necesare',
+      few: '$requiredCount necesare',
+      one: '1 necesară',
+    );
+    return 'Ieri: $metCount din $_temp0 · $_temp1.';
   }
 
   @override
@@ -6331,6 +6348,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Ce spune agentul dvs.';
+
+  @override
+  String get goalDetailStatementLabel => 'Obiectivul dvs.';
 
   @override
   String get goalDetailTimelineTitle => 'Interacțiuni';
@@ -6685,6 +6705,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalHealthTrendUp => 'În creștere';
 
   @override
+  String get goalLogTodayLinkedHint => 'Se actualizează din sursa asociată';
+
+  @override
+  String get goalLogTodayTitle => 'Înregistrați astăzi';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6788,6 +6814,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalProgressPartial => 'făcut · țintă încă neatinsă';
 
   @override
+  String get goalProgressStripLoading => 'Evidența zilnică se încarcă încă';
+
+  @override
   String get goalProgressTitle => 'Această săptămână glisantă';
 
   @override
@@ -6856,6 +6885,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Selectați rândul';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 săptămâni';
+  }
 
   @override
   String get goalStatusAchieved => 'Atins';

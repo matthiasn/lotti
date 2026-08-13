@@ -22,9 +22,14 @@ import 'package:lotti/services/nav_service.dart';
 /// register. The star appears only while this run's one rating is due, in a
 /// fixed-width slot so the layout never jumps when it goes.
 class GoalBannerCard extends ConsumerWidget {
-  const GoalBannerCard({required this.entry, super.key});
+  const GoalBannerCard({required this.entry, this.onCtaPressed, super.key});
 
   final GoalBannerEntry entry;
+
+  /// Overrides the CTA pill's default navigate-to-detail behavior. The goal
+  /// detail page passes an anchor-scroll to the evidence it hosts — a CTA on
+  /// the page it points at must never be a self-navigation no-op.
+  final VoidCallback? onCtaPressed;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -141,8 +146,12 @@ class GoalBannerCard extends ConsumerWidget {
                     GoalBannerAnimatedText(
                       text: brief.headline,
                       animation: brief.animation,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                      // One step below bodyLarge, weight carrying the
+                      // emphasis: the page title stays the only large voice
+                      // in the first screenful.
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
                         color: tokens.colors.text.highEmphasis,
+                        fontWeight: tokens.typography.weight.semiBold,
                       ),
                     ),
                     if (brief.tagline != null) ...[
@@ -161,9 +170,11 @@ class GoalBannerCard extends ConsumerWidget {
                       GoalBannerCtaPill(
                         label: brief.cta!,
                         style: style,
-                        onTap: () => beamToNamed(
-                          '/agents/details/${entry.nudge.agentId}',
-                        ),
+                        onTap:
+                            onCtaPressed ??
+                            () => beamToNamed(
+                              '/agents/details/${entry.nudge.agentId}',
+                            ),
                       ),
                     ],
                   ],

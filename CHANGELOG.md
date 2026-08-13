@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9]
+### Changed
+- **A design-panel polish pass across the goal-agent surfaces.** The banner's
+  "Log today" opens a one-tap logging sheet on the goal page instead of
+  navigating to itself; day cells wear a dedicated success green (with an
+  inner dot marking partial days) so green never doubles as a button color;
+  "Restarting" chips read in blue instead of a second green; warning orange
+  is reserved for genuine attention; the goal statement is labelled "Your
+  goal"; phones get a persistent chat button in the title bar; the Goal
+  Agents list keeps one card silhouette with the week strip on the right on
+  wide screens; one legend serves all habit cards with the reliability tail
+  captioned in weeks; day squares accept taps on a comfortably larger area;
+  and chart target lines render at full strength.
+
 ## [1.0.8]
 ### Added
 - **Goal-agent chat supports voice input.** The composer now has a microphone

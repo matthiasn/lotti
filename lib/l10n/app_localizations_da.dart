@@ -6140,12 +6140,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Starter forfra';
 
   @override
+  String get goalCompositeLastSevenDays => 'Seneste 7 dage';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return '$metCount af $dimensionCount dimensioner blev opfyldt i går · $requiredCount kræves.';
+    return 'I går: $metCount af $dimensionCount dimensioner · $requiredCount kræves.';
   }
 
   @override
@@ -6226,6 +6229,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Det siger din agent';
+
+  @override
+  String get goalDetailStatementLabel => 'Dit mål';
 
   @override
   String get goalDetailTimelineTitle => 'Interaktioner';
@@ -6576,6 +6582,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalHealthTrendUp => 'Stiger';
 
   @override
+  String get goalLogTodayLinkedHint => 'Opdateres fra sin tilknyttede kilde';
+
+  @override
+  String get goalLogTodayTitle => 'Registrér i dag';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6676,6 +6688,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalProgressPartial => 'gjort · mål endnu ikke nået';
 
   @override
+  String get goalProgressStripLoading => 'Daglig oversigt indlæses stadig';
+
+  @override
   String get goalProgressTitle => 'Denne rullende uge';
 
   @override
@@ -6743,6 +6758,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Vælg række';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 uger';
+  }
 
   @override
   String get goalStatusAchieved => 'Opnået';

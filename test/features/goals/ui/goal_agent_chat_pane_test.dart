@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -82,14 +84,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Juno'), findsOneWidget);
+    // The subtitle is current STATE, not the aspiration statement — the
+    // statement next to a Behind chip elsewhere read as a status claim.
+    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('Not enough data'), findsNothing);
     expect(
       find.text('Show up for three workouts each week.'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Talk to Juno…'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'What should I do today?');
     await tester.pump();
     expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+  });
+
+  testWidgets('an unresolved health load shows NO coarse label — loading is '
+      'not a data-gap verdict', (tester) async {
+    final identity =
+        AgentDomainEntity.agent(
+              id: 'goal-1',
+              agentId: 'goal-1',
+              kind: AgentKinds.goalAgent,
+              displayName: 'Juno',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'goal-1:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: GoalAgentChatPane(agentId: 'goal-1')),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => identity),
+          // Never resolves: the first health load is still in flight.
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) => Completer<GoalAgentHealth>().future),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Juno'), findsOneWidget);
+    expect(find.text('Not enough data'), findsNothing);
+    expect(find.text('Healthy'), findsNothing);
   });
 }

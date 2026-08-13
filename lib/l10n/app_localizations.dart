@@ -10511,10 +10511,16 @@ abstract class AppLocalizations {
   /// **'Restarting'**
   String get goalCoarseHealthRestarting;
 
+  /// Time-frame caption above the composite seven-day strip.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get goalCompositeLastSevenDays;
+
   /// No description provided for @goalCompositeProgressSummary.
   ///
   /// In en, this message translates to:
-  /// **'{metCount} of {dimensionCount} dimensions met yesterday · {requiredCount} required.'**
+  /// **'Yesterday: {metCount} of {dimensionCount} dimensions · {requiredCount} required.'**
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
@@ -10652,6 +10658,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What your agent is saying'**
   String get goalDetailSayingTitle;
+
+  /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalDetailStatementLabel;
 
   /// Section title of the agent detail interaction timeline.
   ///
@@ -11197,6 +11209,18 @@ abstract class AppLocalizations {
   /// **'Trending up'**
   String get goalHealthTrendUp;
 
+  /// Read-only note on data dimensions in the logging sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates from its linked source'**
+  String get goalLogTodayLinkedHint;
+
+  /// Title of the one-tap logging sheet the banner CTA opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Log today'**
+  String get goalLogTodayTitle;
+
   /// Accessible label for one dated metric bar. Status is missing, met, or missed.
   ///
   /// In en, this message translates to:
@@ -11322,6 +11346,12 @@ abstract class AppLocalizations {
   /// **'done · target not met yet'**
   String get goalProgressPartial;
 
+  /// Screen-reader label for a compact week strip whose data has not resolved yet — a loading state, never a health verdict.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily record still loading'**
+  String get goalProgressStripLoading;
+
   /// No description provided for @goalProgressTitle.
   ///
   /// In en, this message translates to:
@@ -11411,6 +11441,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select row'**
   String get goalRecordOfferSelectRow;
+
+  /// Caption under the six-week reliability tail on a habit card.
+  ///
+  /// In en, this message translates to:
+  /// **'{achieved} / 6 weeks'**
+  String goalReliabilityWeeks(int achieved);
 
   /// Goal track status chip: target date passed with criteria met.
   ///

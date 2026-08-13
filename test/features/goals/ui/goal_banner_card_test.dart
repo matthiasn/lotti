@@ -247,6 +247,32 @@ void main() {
     expect(navigated, ['/agents/details/goal-1']);
   });
 
+  testWidgets('a host-provided CTA handler replaces navigation — on the goal '
+      'detail page the pill must anchor, not self-navigate', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    var anchored = 0;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalBannerCard(
+            entry: (nudge: nudge(), goalTitle: 'Move more'),
+            onCtaPressed: () => anchored++,
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Lace up now'));
+    await tester.pumpAndSettle();
+
+    expect(anchored, 1);
+    expect(navigated, isEmpty);
+  });
+
   testWidgets('consuming the rating never reflows the header — the star '
       'sits in a fixed slot, so the X does not move', (tester) async {
     await pumpCard(tester);

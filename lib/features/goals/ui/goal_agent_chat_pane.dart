@@ -11,6 +11,7 @@ import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
+import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -28,7 +29,8 @@ class GoalAgentChatPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(agentIdentityProvider(agentId)).value;
-    final health = ref.watch(goalAgentHealthProvider(agentId)).value;
+    final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
+    final health = healthAsync.value;
     final composer = ref.watch(goalChatControllerProvider(agentId));
     final controller = ref.read(goalChatControllerProvider(agentId).notifier);
     final measurables = ref.watch(measurableDataTypesStreamProvider).value;
@@ -38,7 +40,17 @@ class GoalAgentChatPane extends ConsumerWidget {
     final name = identity is AgentIdentityEntity
         ? identity.displayName
         : context.messages.agentsPageTitle;
-    final statement = health?.spec?.statement;
+    // The subtitle is current STATE, not the aspiration: next to a Behind
+    // chip elsewhere, the goal statement here read as the agent claiming
+    // all is well. Only a RESOLVED health record carries a verdict — while
+    // the first load is in flight (or has failed with no prior value) the
+    // header shows no label rather than a false "Not enough data".
+    final coarseHealthLabel = healthAsync.hasValue
+        ? goalCoarseHealthLabel(
+            context.messages,
+            coarseHealthOf(health?.trackStatus),
+          )
+        : null;
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final now = clock.now();
@@ -127,10 +139,10 @@ class GoalAgentChatPane extends ConsumerWidget {
                                 color: tokens.colors.text.highEmphasis,
                               ),
                         ),
-                        if (statement != null)
+                        if (coarseHealthLabel != null)
                           Text(
-                            statement,
-                            maxLines: 2,
+                            coarseHealthLabel,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: tokens.typography.styles.others.caption
                                 .copyWith(
