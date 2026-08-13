@@ -503,6 +503,53 @@ void main() {
     expect(captured?.meta.labelIds, isNull);
   });
 
+  test('setLabels logs an asynchronous fallback write failure', () async {
+    final entry = buildEntry(labelIds: const ['a']);
+    final expectedError = StateError('fallback write failed');
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
+    when(
+      () => persistenceLogic.updateMetadata(
+        any(),
+        labelIds: any(named: 'labelIds'),
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).thenAnswer(
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    when(
+      () => persistenceLogic.updateDbEntity(any()),
+    ).thenAnswer((_) async => false);
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        overrideComparison: true,
+      ),
+    ).thenAnswer((_) => Future<bool?>.error(expectedError));
+
+    final result = await repository.setLabels(
+      journalEntityId: entry.meta.id,
+      labelIds: const [],
+    );
+
+    expect(result, isFalse);
+    verify(
+      () => domainLogger.error(
+        LogDomain.labels,
+        expectedError,
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'setLabels',
+      ),
+    ).called(1);
+    verify(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        overrideComparison: true,
+      ),
+    ).called(1);
+  });
+
   test(
     'setLabels filters deleted labels from final list and sorts by name',
     () async {
