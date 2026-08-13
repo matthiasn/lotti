@@ -915,7 +915,22 @@ void main() {
       final laterReturnOffset = baseline.copyWith(
         returnUtcOffsetMinutes: 180,
       );
-      expect(selected(laterReturnOffset, baseline), baseline);
+      expect(selected(laterReturnOffset, baseline), laterReturnOffset);
+
+      final explicitReturnOffset = baseline.copyWith(
+        returnUtcOffsetMinutes: baseline.utcOffsetMinutes,
+      );
+      expect(
+        selected(baseline, explicitReturnOffset),
+        explicitReturnOffset,
+        reason: 'explicit offset evidence must beat a legacy absent value',
+      );
+
+      expect(
+        selected(laterReturnOffset, explicitReturnOffset),
+        explicitReturnOffset,
+        reason: 'two explicit offsets retain their numeric total order',
+      );
     });
 
     test('unions day-dismissal history by id and converges on conflicting '

@@ -410,6 +410,37 @@ void main() {
     expect(request.reason, 'user asked for tomorrow morning');
   });
 
+  test('identical snooze requests are accumulated only once', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00+02:00',
+              'reason': 'first request',
+            },
+          ),
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00+02:00',
+              'reason': 'repeated request',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, hasLength(1));
+    expect(strategy.snoozeRequests.single.reason, 'first request');
+  });
+
   test(
     'snooze rejects offsets outside the DateTime timezone contract',
     () async {

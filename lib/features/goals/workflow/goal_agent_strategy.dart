@@ -387,12 +387,19 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _snoozeRequests.add((
+    final request = (
       adId: adId,
       until: until,
       returnUtcOffsetMinutes: returnUtcOffsetMinutes,
       reason: reason,
-    ));
+    );
+    final alreadyRequested = _snoozeRequests.any(
+      (existing) =>
+          existing.adId == request.adId &&
+          existing.until == request.until &&
+          existing.returnUtcOffsetMinutes == request.returnUtcOffsetMinutes,
+    );
+    if (!alreadyRequested) _snoozeRequests.add(request);
     await _accept(
       call,
       manager,

@@ -58,7 +58,7 @@ Map<String, String> _legacyQuietDeadline(
 DateTime _staleAtAfterQuietPeriod(DateTime until) =>
     until.toUtc().add(goalBannerLifetime);
 
-/// Applies a durable snooze while preserving an append-only timing event.
+/// Applies a durable snooze while preserving unique append-only timing events.
 GoalNudgeEntity snoozeGoalBannerEntity({
   required GoalNudgeEntity nudge,
   required DateTime now,
@@ -66,6 +66,7 @@ GoalNudgeEntity snoozeGoalBannerEntity({
   required String eventId,
   int? returnUtcOffsetMinutes,
 }) {
+  if (nudge.snoozeHistory.any((event) => event.id == eventId)) return nudge;
   final exactDuration = until.toUtc().difference(now.toUtc());
   if (exactDuration <= Duration.zero) {
     throw ArgumentError.value(until, 'until', 'must be in the future');

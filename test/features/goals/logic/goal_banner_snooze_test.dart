@@ -150,6 +150,27 @@ void main() {
     },
   );
 
+  test('reapplying the same snooze event is idempotent', () {
+    final now = DateTime.utc(2026, 8, 11, 10);
+    final until = DateTime.utc(2026, 8, 11, 13);
+    final first = snoozeGoalBannerEntity(
+      nudge: makeGoalNudge(),
+      now: now,
+      until: until,
+      eventId: 'snooze-1',
+    );
+
+    final repeated = snoozeGoalBannerEntity(
+      nudge: first,
+      now: now,
+      until: until,
+      eventId: 'snooze-1',
+    );
+
+    expect(repeated.snoozeHistory, first.snoozeHistory);
+    expect(repeated.snoozeHistory, hasLength(1));
+  });
+
   test('a zero or negative snooze interval is rejected', () {
     final now = DateTime.utc(2026, 8, 11, 10);
     for (final until in [now, now.subtract(const Duration(minutes: 1))]) {
