@@ -100,3 +100,23 @@ const _$GoalBannerSnoozeDurationEnumMap = {
   GoalBannerSnoozeDuration.eightHours: 'eightHours',
   GoalBannerSnoozeDuration.custom: 'custom',
 };
+
+_GoalNudgeDayDismissal _$GoalNudgeDayDismissalFromJson(
+  Map<String, dynamic> json,
+) => _GoalNudgeDayDismissal(
+  id: json['id'] as String,
+  activation: _decodeActivation(json['activation']),
+  dismissedAt: DateTime.parse(json['dismissedAt'] as String),
+  dismissedUntil: DateTime.parse(json['dismissedUntil'] as String),
+  utcOffsetMinutes: _decodeUtcOffsetMinutes(json['utcOffsetMinutes']),
+);
+
+Map<String, dynamic> _$GoalNudgeDayDismissalToJson(
+  _GoalNudgeDayDismissal instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'activation': instance.activation,
+  'dismissedAt': instance.dismissedAt.toIso8601String(),
+  'dismissedUntil': instance.dismissedUntil.toIso8601String(),
+  'utcOffsetMinutes': instance.utcOffsetMinutes,
+};

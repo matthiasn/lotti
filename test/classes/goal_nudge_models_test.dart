@@ -79,6 +79,84 @@ void main() {
     }
   });
 
+  test('snooze validation requires replica-stable timestamp offsets', () {
+    final valid = <String, dynamic>{
+      'snoozedAt': '2026-08-13T10:00:00Z',
+      'snoozedUntil': '2026-08-13T13:00:00+00:00',
+      'durationMinutes': 180,
+    };
+    expect(goalNudgeSnoozeJsonIssues(valid), isEmpty);
+    for (final field in ['snoozedAt', 'snoozedUntil']) {
+      expect(
+        goalNudgeSnoozeJsonIssues({
+          ...valid,
+          field: '2026-08-13T10:00:00',
+        }).single,
+        contains('explicit UTC offset'),
+        reason: field,
+      );
+    }
+  });
+
+  test('snooze validation rejects malformed offset-bearing timestamps', () {
+    expect(
+      goalNudgeSnoozeJsonIssues({
+        'snoozedAt': 'not-a-dateZ',
+        'snoozedUntil': 'still-not-a-dateZ',
+      }),
+      ['snooze timestamps must be valid ISO-8601 instants'],
+    );
+  });
+
+  test('GoalNudgeDayDismissal round-trips local timing evidence', () {
+    final event = GoalNudgeDayDismissal(
+      id: 'dismiss-1',
+      activation: 2,
+      dismissedAt: DateTime.utc(2026, 8, 13, 18),
+      dismissedUntil: DateTime.utc(2026, 8, 13, 22),
+      utcOffsetMinutes: 120,
+    );
+
+    final decoded = GoalNudgeDayDismissal.fromJson(
+      jsonDecode(jsonEncode(event)) as Map<String, dynamic>,
+    );
+
+    expect(decoded, event);
+    expect(decoded.dismissedAtLocal, DateTime.utc(2026, 8, 13, 20));
+  });
+
+  test('day-dismissal validation rejects ambiguous or inverted instants', () {
+    final valid = <String, dynamic>{
+      'dismissedAt': '2026-08-13T18:00:00Z',
+      'dismissedUntil': '2026-08-13T22:00:00Z',
+    };
+    expect(goalNudgeDayDismissalJsonIssues(valid), isEmpty);
+    expect(
+      goalNudgeDayDismissalJsonIssues({
+        ...valid,
+        'dismissedAt': '2026-08-13T18:00:00',
+      }).single,
+      contains('explicit UTC offset'),
+    );
+    expect(
+      goalNudgeDayDismissalJsonIssues({
+        ...valid,
+        'dismissedUntil': '2026-08-13T17:00:00Z',
+      }).single,
+      contains('must be after'),
+    );
+  });
+
+  test('day-dismissal validation rejects malformed offset timestamps', () {
+    expect(
+      goalNudgeDayDismissalJsonIssues({
+        'dismissedAt': 'not-a-dateZ',
+        'dismissedUntil': 'still-not-a-dateZ',
+      }),
+      ['day-dismissal timestamps must be valid ISO-8601 instants'],
+    );
+  });
+
   group('GoalNudgeRating contract', () {
     Map<String, dynamic> json({
       Object? rating = 4,

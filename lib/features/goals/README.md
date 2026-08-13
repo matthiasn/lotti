@@ -170,9 +170,10 @@ prominent action offers 1, 3, 6, or 8 hours in context, while Dismiss for today
 is the tertiary final choice and there is no direct X or swipe dismissal. Both
 choices persist on the nudge, and provider deadlines plus app-resume checks
 restore the exact banner after snooze expiry or the next local day even across
-restarts. Every snooze appends its activation, local offset, start, requested
-return, and duration; the FACTS renderer gives the agent bounded timing
-summaries so repeated requested-return hours can inform future initial display
+restarts. Every snooze and day dismissal appends its activation, local offset,
+start, and requested return boundary; snoozes also preserve the selected or
+exact duration. The FACTS renderer gives the agent bounded timing summaries so
+repeated snooze-return and dismissal hours can inform future initial display
 times. Chat can also snooze the current banner until any requested future time;
 the just-committed snooze is suppressed locally while its durable projection
 reloads. Dismissal cooldown applies to automatic banners only: a direct request

@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -66,7 +67,7 @@ void main() {
   group('snooze', () {
     test('records current state and append-only timing evidence', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
-      await withClock(
+      final savedUntil = await withClock(
         fixedClock,
         () => interactions.snooze(
           'ad-1',
@@ -74,6 +75,7 @@ void main() {
         ),
       );
       final written = upserts.whereType<GoalNudgeEntity>().single;
+      expect(savedUntil, now.add(const Duration(hours: 3)).toUtc());
       expect(written.status, GoalNudgeStatus.active);
       expect(written.snoozedUntil, now.add(const Duration(hours: 3)).toUtc());
       expect(
@@ -98,14 +100,15 @@ void main() {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(activationCount: 3),
       );
-      await interactions.snooze(
+      final staleResult = await interactions.snooze(
         'ad-1',
         duration: GoalBannerSnoozeDuration.oneHour,
         forActivation: 2,
       );
+      expect(staleResult, isNull);
       expect(upserts, isEmpty);
 
-      await withClock(
+      final currentResult = await withClock(
         fixedClock,
         () => interactions.snooze(
           'ad-1',
@@ -113,6 +116,7 @@ void main() {
           forActivation: 3,
         ),
       );
+      expect(currentResult, now.add(const Duration(hours: 1)).toUtc());
       expect(
         upserts
             .whereType<GoalNudgeEntity>()
@@ -148,7 +152,7 @@ void main() {
         ),
       );
 
-      expect(saved, isTrue);
+      expect(saved, now.add(const Duration(hours: 1)).toUtc());
       expect(persisted.snoozeHistory.single.id, 'durable-snooze');
       expect(persisted.snoozedUntil, now.add(const Duration(hours: 1)).toUtc());
     });
@@ -157,20 +161,34 @@ void main() {
   group('dismissForDay', () {
     test('keeps the banner active and records the local-day gate', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
-      await withClock(fixedClock, () => interactions.dismissForDay('ad-1'));
+      final savedUntil = await withClock(
+        fixedClock,
+        () => interactions.dismissForDay('ad-1'),
+      );
       final written = upserts.whereType<GoalNudgeEntity>().single;
+      final expectedUntil = goalBannerNextLocalMidnight(now).toUtc();
+      expect(savedUntil, expectedUntil);
       expect(written.status, GoalNudgeStatus.active);
       expect(written.dismissedForDayAt, now.toUtc());
       expect(written.dismissedAt, isNull);
+      final event = written.dismissalHistory.single;
+      expect(event.id, 'snooze-event-1');
+      expect(event.dismissedAt, now.toUtc());
+      expect(event.dismissedUntil, expectedUntil);
+      expect(written.staleAt, expectedUntil.add(goalBannerLifetime));
+      expect(
+        written.provenance[goalBannerSnoozedUntilKey],
+        expectedUntil.toIso8601String(),
+      );
     });
 
     test('non-active ads and unknown ids are no-ops', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(status: GoalNudgeStatus.retired),
       );
-      await interactions.dismissForDay('ad-1');
+      expect(await interactions.dismissForDay('ad-1'), isNull);
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => null);
-      await interactions.dismissForDay('ad-1');
+      expect(await interactions.dismissForDay('ad-1'), isNull);
       expect(upserts, isEmpty);
     });
 
@@ -187,6 +205,7 @@ void main() {
       final reconciling = GoalNudgeInteractions(
         repository: repository,
         syncService: throwing,
+        newId: () => 'durable-dismissal',
       );
 
       final saved = await withClock(
@@ -194,8 +213,9 @@ void main() {
         () => reconciling.dismissForDay('ad-1'),
       );
 
-      expect(saved, isTrue);
+      expect(saved, goalBannerNextLocalMidnight(now).toUtc());
       expect(persisted.dismissedForDayAt, now.toUtc());
+      expect(persisted.dismissalHistory.single.id, 'durable-dismissal');
     });
   });
 

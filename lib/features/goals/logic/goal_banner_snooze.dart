@@ -11,6 +11,10 @@ const goalBannerSnoozedUntilKey = 'snoozedUntil';
 /// Returns the persisted snooze deadline, or null for absent/malformed data.
 DateTime? goalBannerSnoozedUntil(GoalNudgeEntity nudge) {
   if (nudge.snoozedUntil != null) return nudge.snoozedUntil!.toUtc();
+  // A typed day dismissal dual-writes the same provenance deadline solely for
+  // older clients. Current clients use the calendar-day gate instead of
+  // reporting that compatibility value as a snooze.
+  if (nudge.dismissedForDayAt != null) return null;
   final raw = nudge.provenance[goalBannerSnoozedUntilKey];
   return raw == null ? null : DateTime.tryParse(raw)?.toUtc();
 }
@@ -37,6 +41,23 @@ DateTime goalBannerNextLocalMidnight(DateTime now) {
   return DateTime(local.year, local.month, local.day + 1);
 }
 
+Map<String, String> _legacyQuietDeadline(
+  Map<String, String> provenance,
+  DateTime until,
+) => {
+  for (final entry in provenance.entries)
+    if (entry.key != goalBannerSnoozedUntilKey &&
+        entry.key != 'snoozeReason' &&
+        entry.key != 'snoozedAt')
+      entry.key: entry.value,
+  // Older clients only understand this provenance field. Keep writing it
+  // while typed visibility state can sync to mixed-version devices.
+  goalBannerSnoozedUntilKey: until.toUtc().toIso8601String(),
+};
+
+DateTime _staleAtAfterQuietPeriod(DateTime until) =>
+    until.toUtc().add(goalBannerLifetime);
+
 /// Applies a durable snooze while preserving an append-only timing event.
 GoalNudgeEntity snoozeGoalBannerEntity({
   required GoalNudgeEntity nudge,
@@ -58,7 +79,7 @@ GoalNudgeEntity snoozeGoalBannerEntity({
     durationMinutes: durationMinutes,
     utcOffsetMinutes: now.timeZoneOffset.inMinutes,
   );
-  final staleAfterSnooze = until.toUtc().add(goalBannerLifetime);
+  final staleAfterSnooze = _staleAtAfterQuietPeriod(until);
   return nudge.copyWith(
     snoozedUntil: until.toUtc(),
     lastSnoozeDuration: event.duration,
@@ -68,12 +89,35 @@ GoalNudgeEntity snoozeGoalBannerEntity({
         ? staleAfterSnooze
         : nudge.staleAt,
     updatedAt: now,
-    provenance: {
-      for (final entry in nudge.provenance.entries)
-        if (entry.key != goalBannerSnoozedUntilKey &&
-            entry.key != 'snoozeReason' &&
-            entry.key != 'snoozedAt')
-          entry.key: entry.value,
-    },
+    provenance: _legacyQuietDeadline(nudge.provenance, until),
+  );
+}
+
+/// Applies a rest-of-local-day dismissal without consuming the banner's
+/// visible lifetime, and dual-writes the deadline for older clients.
+GoalNudgeEntity dismissGoalBannerForDayEntity({
+  required GoalNudgeEntity nudge,
+  required DateTime now,
+  required String eventId,
+}) {
+  final hiddenUntil = goalBannerNextLocalMidnight(now);
+  final staleAfterDismissal = _staleAtAfterQuietPeriod(hiddenUntil);
+  final event = GoalNudgeDayDismissal(
+    id: eventId,
+    activation: nudge.activationCount,
+    dismissedAt: now.toUtc(),
+    dismissedUntil: hiddenUntil.toUtc(),
+    utcOffsetMinutes: now.timeZoneOffset.inMinutes,
+  );
+  return nudge.copyWith(
+    snoozedUntil: null,
+    dismissedForDayAt: event.dismissedAt,
+    dismissalHistory: [...nudge.dismissalHistory, event],
+    staleAt:
+        nudge.staleAt == null || nudge.staleAt!.isBefore(staleAfterDismissal)
+        ? staleAfterDismissal
+        : nudge.staleAt,
+    updatedAt: now,
+    provenance: _legacyQuietDeadline(nudge.provenance, hiddenUntil),
   );
 }

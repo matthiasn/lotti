@@ -345,6 +345,26 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
       final byTime = a.snoozedAt.compareTo(b.snoozedAt);
       return byTime != 0 ? byTime : a.id.compareTo(b.id);
     });
+  final dismissals =
+      <GoalNudgeDayDismissal>[
+        ...local.dismissalHistory,
+        ...incoming.dismissalHistory,
+      ]..sort(
+        (a, b) => _dayDismissalOrderKey(a).compareTo(
+          _dayDismissalOrderKey(b),
+        ),
+      );
+  final dismissalsById = <String, GoalNudgeDayDismissal>{};
+  for (final dismissal in dismissals) {
+    dismissalsById.putIfAbsent(dismissal.id, () => dismissal);
+  }
+  final mergedDismissals = dismissalsById.values.toList()
+    ..sort(
+      (a, b) =>
+          '${a.dismissedAt.toUtc().toIso8601String()}\u0000${a.id}'.compareTo(
+            '${b.dismissedAt.toUtc().toIso8601String()}\u0000${b.id}',
+          ),
+    );
   final sameActivation = local.activationCount == incoming.activationCount;
   final snoozedUntil = sameActivation
       ? _latestInstant(local.snoozedUntil, incoming.snoozedUntil)
@@ -367,6 +387,7 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
     snoozeHistory: mergedSnoozes,
     snoozedUntil: snoozedUntil,
     lastSnoozeDuration: effectiveSnooze?.duration ?? winner.lastSnoozeDuration,
+    dismissalHistory: mergedDismissals,
     dismissedForDayAt: sameActivation
         ? _latestInstant(
             local.dismissedForDayAt,
@@ -380,6 +401,13 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
     lastShownAt: _latestInstant(local.lastShownAt, incoming.lastShownAt),
   );
 }
+
+String _dayDismissalOrderKey(GoalNudgeDayDismissal event) =>
+    '${event.id}\u0000'
+    '${event.dismissedAt.toUtc().toIso8601String()}\u0000'
+    '${event.dismissedUntil.toUtc().toIso8601String()}\u0000'
+    '${event.activation.toString().padLeft(10, '0')}\u0000'
+    '${event.utcOffsetMinutes.toString().padLeft(5, '0')}';
 
 int _compareGoalNudgeSnoozes(GoalNudgeSnooze a, GoalNudgeSnooze b) {
   final byId = a.id.compareTo(b.id);

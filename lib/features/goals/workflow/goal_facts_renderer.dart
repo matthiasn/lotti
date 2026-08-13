@@ -160,6 +160,7 @@ class GoalFactsRenderer {
           for (final nudge in reusableTopRated(nudges)) _reusableAdJson(nudge),
         ],
         'dismissalCooldownActive': dismissalCooldownActive(nudges, now),
+        'dismissalBehavior': _dismissalBehaviorJson(nudges),
         'snoozeBehavior': _snoozeBehaviorJson(nudges),
       },
       'personaTone': {
@@ -485,6 +486,37 @@ class GoalFactsRenderer {
                 ) ==
                 GoalWindow.dayUtc(now.toLocal()),
       );
+
+  Map<String, Object?> _dismissalBehaviorJson(List<GoalNudgeEntity> nudges) {
+    final dismissals = [
+      for (final nudge in nudges) ...nudge.dismissalHistory,
+    ]..sort((a, b) => a.dismissedAt.compareTo(b.dismissedAt));
+    final byStartHour = List<int>.filled(24, 0);
+    final byWeekday = List<int>.filled(7, 0);
+    for (final dismissal in dismissals) {
+      byStartHour[dismissal.dismissedAtLocal.hour]++;
+      byWeekday[dismissal.dismissedAtLocal.weekday - DateTime.monday]++;
+    }
+    final recent = dismissals.reversed.take(12).toList().reversed;
+    return {
+      'totalCount': dismissals.length,
+      'countByStartLocalHour': byStartHour,
+      'countByStartLocalWeekday': byWeekday,
+      'recent': [
+        for (final dismissal in recent)
+          {
+            'activation': dismissal.activation,
+            'dismissedAtLocal': _localWallTime(dismissal.dismissedAtLocal),
+            'quietMinutes': dismissal.dismissedUntil
+                .difference(dismissal.dismissedAt)
+                .inMinutes,
+          },
+      ],
+      'interpretationPolicy':
+          'Repeated dismissal hours are evidence about poor display times, '
+          'not permission to suppress future banners automatically.',
+    };
+  }
 
   Map<String, Object?> _snoozeBehaviorJson(List<GoalNudgeEntity> nudges) {
     final snoozes = [

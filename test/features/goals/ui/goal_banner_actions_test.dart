@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,7 @@ void main() {
   );
 
   late MockGoalNudgeInteractions interactions;
+  final persistedDeadline = DateTime.utc(2030);
 
   setUp(() {
     interactions = MockGoalNudgeInteractions();
@@ -52,13 +54,13 @@ void main() {
         duration: any(named: 'duration'),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => persistedDeadline);
     when(
       () => interactions.dismissForDay(
         any(),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => persistedDeadline);
     when(
       () => interactions.recordRating(
         any(),
@@ -128,8 +130,8 @@ void main() {
       final result = await resultFuture;
       expect(result, isTrue);
       expect(
-        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider),
-        contains('ad-1'),
+        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider)['ad-1'],
+        persistedDeadline,
       );
       verify(
         () => interactions.snooze(
@@ -150,6 +152,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(await resultFuture, isTrue);
+      expect(
+        containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider)['ad-1'],
+        persistedDeadline,
+      );
       verify(
         () => interactions.dismissForDay('ad-1', forActivation: 1),
       ).called(1);
@@ -194,7 +200,7 @@ void main() {
           duration: any(named: 'duration'),
           forActivation: any(named: 'forActivation'),
         ),
-      ).thenAnswer((_) async => false);
+      ).thenAnswer((_) async => null);
       final (ctx, ref) = await host(tester);
       final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
       await tester.pumpAndSettle();
@@ -213,6 +219,34 @@ void main() {
           forActivation: 1,
         ),
       ).called(1);
+    });
+
+    testWidgets('a dismissal committed before midnight is not extended when '
+        'the transaction completes after midnight', (tester) async {
+      final persistedMidnight = DateTime.utc(2026, 8, 13, 22);
+      when(
+        () => interactions.dismissForDay(
+          any(),
+          forActivation: any(named: 'forActivation'),
+        ),
+      ).thenAnswer((_) async => persistedMidnight);
+
+      await withClock(
+        Clock.fixed(persistedMidnight.add(const Duration(seconds: 1))),
+        () async {
+          final (ctx, ref) = await host(tester);
+          final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Dismiss for today'));
+          await tester.pumpAndSettle();
+
+          expect(await resultFuture, isTrue);
+          expect(
+            containerOf(ctx).read(locallySnoozedNudgeDeadlinesProvider),
+            isNot(contains('ad-1')),
+          );
+        },
+      );
     });
   });
 

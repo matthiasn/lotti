@@ -22,6 +22,7 @@ void main() {
     GoalBannerSnoozeDuration? lastSnoozeDuration,
     List<GoalNudgeSnooze> snoozeHistory = const [],
     DateTime? dismissedForDayAt,
+    List<GoalNudgeDayDismissal> dismissalHistory = const [],
   }) =>
       AgentDomainEntity.goalNudge(
             id: id,
@@ -46,6 +47,7 @@ void main() {
             lastSnoozeDuration: lastSnoozeDuration,
             snoozeHistory: snoozeHistory,
             dismissedForDayAt: dismissedForDayAt,
+            dismissalHistory: dismissalHistory,
           )
           as GoalNudgeEntity;
 
@@ -699,6 +701,17 @@ void main() {
       skipped: skipped,
     );
 
+    GoalNudgeDayDismissal dismissal(
+      String id, {
+      required int hour,
+    }) => GoalNudgeDayDismissal(
+      id: id,
+      activation: 1,
+      dismissedAt: DateTime.utc(2026, 8, 13, hour),
+      dismissedUntil: DateTime.utc(2026, 8, 13, 22),
+      utcOffsetMinutes: 120,
+    );
+
     test('joins exposure counters, unions ratings and widens watermarks — '
         "no device's outcome is ever lost", () {
       final local = goalNudge(
@@ -889,6 +902,37 @@ void main() {
 
       final laterOffset = baseline.copyWith(utcOffsetMinutes: 180);
       expect(selected(laterOffset, baseline), baseline);
+    });
+
+    test('unions day-dismissal history by id and converges on conflicting '
+        'copies', () {
+      final earlier = dismissal('same-id', hour: 10);
+      final conflictingCopy = earlier.copyWith(
+        dismissedAt: DateTime.utc(2026, 8, 13, 12),
+      );
+      final other = dismissal('other-id', hour: 11);
+      final local = goalNudge(
+        status: GoalNudgeStatus.active,
+        dismissalHistory: [earlier],
+      );
+      final incoming = goalNudge(
+        status: GoalNudgeStatus.active,
+        dismissalHistory: [other, conflictingCopy],
+      );
+
+      final ab = mergeGoalNudgeAccumulators(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+      final ba = mergeGoalNudgeAccumulators(
+        winner: local,
+        local: incoming,
+        incoming: local,
+      );
+
+      expect(ab.dismissalHistory, [earlier, other]);
+      expect(ba.dismissalHistory, ab.dismissalHistory);
     });
   });
 }

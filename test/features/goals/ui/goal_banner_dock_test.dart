@@ -84,13 +84,13 @@ void main() {
         duration: any(named: 'duration'),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => DateTime.utc(2030));
     when(
       () => interactions.dismissForDay(
         any(),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async => DateTime.utc(2030));
     // A press-and-release on the dock body is a tap → banner→conversation
     // navigation; neutralise it so pause/resume tests don't route away.
     beamToNamedOverride = (_) {};

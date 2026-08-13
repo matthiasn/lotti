@@ -82,6 +82,21 @@ void main() {
     expect(goalBannerSnoozedUntil(nudge), typed);
   });
 
+  test('typed day dismissal does not masquerade as a legacy snooze', () {
+    final nudge = makeGoalNudge(
+      dismissedForDayAt: DateTime.utc(2026, 8, 11, 10),
+      provenance: const {
+        goalBannerSnoozedUntilKey: '2026-08-12T00:00:00.000Z',
+      },
+    );
+
+    expect(goalBannerSnoozedUntil(nudge), isNull);
+    expect(
+      goalBannerIsSnoozed(nudge, DateTime.utc(2026, 8, 11, 11)),
+      isFalse,
+    );
+  });
+
   test('day dismissal is active only on the same local calendar day', () {
     final dismissedAt = DateTime(2026, 8, 11, 22).toUtc();
     final nudge = makeGoalNudge(dismissedForDayAt: dismissedAt);
@@ -101,7 +116,7 @@ void main() {
   });
 
   test(
-    'snoozing appends timing evidence and removes legacy quiet metadata',
+    'snoozing appends timing evidence and dual-writes legacy visibility',
     () {
       final now = DateTime.utc(2026, 8, 11, 10);
       final until = DateTime.utc(2026, 8, 11, 13);
@@ -124,7 +139,10 @@ void main() {
       expect(snoozed.lastSnoozeDuration, GoalBannerSnoozeDuration.threeHours);
       expect(snoozed.snoozeHistory.single.durationMinutes, 180);
       expect(snoozed.staleAt, DateTime.utc(2026, 8, 14, 13));
-      expect(snoozed.provenance, {'specVersionId': 'spec-1'});
+      expect(snoozed.provenance, {
+        'specVersionId': 'spec-1',
+        goalBannerSnoozedUntilKey: until.toIso8601String(),
+      });
     },
   );
 
@@ -141,5 +159,37 @@ void main() {
         throwsArgumentError,
       );
     }
+  });
+
+  test('day dismissal appends evidence, dual-writes its deadline, and '
+      'preserves visible lifetime', () {
+    final now = DateTime(2026, 8, 13, 23, 30);
+    final hiddenUntil = goalBannerNextLocalMidnight(now);
+    final dismissed = dismissGoalBannerForDayEntity(
+      nudge: makeGoalNudge(
+        snoozedUntil: now.add(const Duration(hours: 1)),
+        staleAt: now.add(const Duration(minutes: 10)),
+        provenance: const {
+          'snoozeReason': 'legacy',
+          'specVersionId': 'spec-1',
+        },
+      ),
+      now: now,
+      eventId: 'dismiss-1',
+    );
+
+    expect(dismissed.snoozedUntil, isNull);
+    expect(dismissed.dismissedForDayAt, now.toUtc());
+    expect(dismissed.staleAt, hiddenUntil.toUtc().add(goalBannerLifetime));
+    expect(dismissed.provenance, {
+      'specVersionId': 'spec-1',
+      goalBannerSnoozedUntilKey: hiddenUntil.toUtc().toIso8601String(),
+    });
+    final event = dismissed.dismissalHistory.single;
+    expect(event.id, 'dismiss-1');
+    expect(event.activation, 1);
+    expect(event.dismissedAt, now.toUtc());
+    expect(event.dismissedUntil, hiddenUntil.toUtc());
+    expect(event.utcOffsetMinutes, now.timeZoneOffset.inMinutes);
   });
 }
