@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -14,6 +16,25 @@ void main() {
 
   GoalAgentEvalToolCall call(String name, String argumentsJson) =>
       GoalAgentEvalToolCall(name: name, argumentsJson: argumentsJson);
+
+  String healthReport({
+    required String currentPeriod,
+    required String rollingWindow,
+    required String latestChange,
+    required String coverage,
+    List<Object?> now = const [],
+    List<Object?> later = const [],
+  }) => jsonEncode({
+    'status': 'insufficientData',
+    'oneLiner': currentPeriod,
+    'report': {
+      'currentPeriod': currentPeriod,
+      'rollingWindow': rollingWindow,
+      'latestChange': latestChange,
+      'coverage': coverage,
+      'nextActions': {'now': now, 'later': later},
+    },
+  });
 
   group('classifyGoalAgentResult', () {
     test('a correct on-track wake passes', () {
@@ -256,14 +277,18 @@ void main() {
       'complex health report distinguishes exact readings from averages',
       () {
         final scenario = scenarioById('gh_complex_latest_on_target');
-        const correctReport =
-            '{"status":"insufficientData",'
-            '"oneLiner":"Today is logged and done: the latest 125/84 is on '
-            'target.",'
-            '"tldr":"Only two readings make the series sparse, but BP improved '
-            'from 129/94 to 125/84. The rolling averages remain 127 and 89. '
-            'Weight also improved from 96 to the latest 94 kg, while its average '
-            'is 95."}';
+        final correctReport = healthReport(
+          currentPeriod:
+              'Today is logged and done: the latest 125/84 is on target, '
+              'and weight was logged today at 94 kg.',
+          rollingWindow:
+              'The rolling averages remain 127 and 89, while weight averages '
+              '95.',
+          latestChange:
+              'BP improved from 129/94 to 125/84, and weight improved from '
+              '95 to 94 kg.',
+          coverage: 'Only two BP and three weight readings make data sparse.',
+        );
         expect(
           classifyGoalAgentResult(
             scenario: scenario,
@@ -275,13 +300,17 @@ void main() {
           GoalAgentEvalFailureCategory.none,
         );
 
-        const fabricatedLatest =
-            '{"status":"insufficientData",'
-            '"oneLiner":"Today is logged and done: the latest 125/84 is on '
-            'target.",'
-            '"tldr":"BP improved from 129/94 to 125/84. Rolling averages are '
-            '127 and 89. Weight improved from 96 to 94 kg with an average of 95. '
-            'Current blood pressure is 127/89. Two readings are sparse."}';
+        final fabricatedLatest = healthReport(
+          currentPeriod:
+              'Today is logged and done: the latest 125/84 is on target, but '
+              'current blood pressure is 127/89. Weight is 94 kg.',
+          rollingWindow:
+              'Rolling averages are 127 and 89, and weight averages 95.',
+          latestChange:
+              'BP improved from 129/94 to 125/84. Weight improved from 95 to '
+              '94 kg.',
+          coverage: 'Two BP and three weight readings are sparse.',
+        );
         expect(
           classifyGoalAgentResult(
             scenario: scenario,
@@ -293,17 +322,23 @@ void main() {
           GoalAgentEvalFailureCategory.forbiddenReportContent,
         );
 
-        const trendMissing =
-            '{"status":"insufficientData",'
-            '"oneLiner":"Today is logged and done: 125/84 is on target.", '
-            '"tldr":"The readings were 129/94 and 125/84. Rolling averages '
-            'are 127 and 89. Weight readings were 96 and 94 with an average '
-            'of 95. Only two readings make the series sparse."}';
+        final previousReadingsMissing = healthReport(
+          currentPeriod:
+              'Today is logged and done: 125/84 is on target and weight is '
+              '94 kg.',
+          rollingWindow:
+              'Rolling averages are 127 and 89, and weight averages 95.',
+          latestChange: 'Latest BP is 125/84 and latest weight is 94.',
+          coverage: 'Only two readings make the series sparse.',
+        );
         expect(
           classifyGoalAgentResult(
             scenario: scenario,
             toolCalls: [
-              call(GoalAgentToolNames.updateGoalReport, trendMissing),
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                previousReadingsMissing,
+              ),
             ],
             assistantContent: '',
           ),
@@ -314,14 +349,18 @@ void main() {
 
     test('complex health habit report isolates the action still due', () {
       final scenario = scenarioById('gh_complex_habit_behind');
-      const correctReport =
-          '{"status":"insufficientData",'
-          '"oneLiner":"The latest 125/84 is in range and BP logging is '
-          'complete for today.", '
-          '"tldr":"The two readings are still sparse. BP improved since the '
-          'previous reading, while the rolling averages remain 127 and 89. '
-          'BP meds are 6/7, so that separate habit is behind after one missed '
-          'day. Weight improved to 94 kg with a rolling average of 95."}';
+      final correctReport = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight was logged today at 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 and behind, '
+            'while weight averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage: 'The two BP and three weight readings are still sparse.',
+      );
       expect(
         classifyGoalAgentResult(
           scenario: scenario,
@@ -333,14 +372,20 @@ void main() {
         GoalAgentEvalFailureCategory.none,
       );
 
-      const repeatsMeasurement =
-          '{"status":"insufficientData",'
-          '"oneLiner":"The latest 125/84 is in range and BP logging is '
-          'complete for today.", '
-          '"tldr":"Two readings are sparse. BP improved since the previous '
-          'reading, while rolling averages remain 127 and 89. BP meds are '
-          '6/7 after a missed day. Weight improved to 94 kg with an average of '
-          '95. Measure blood pressure again."}';
+      final repeatsMeasurement = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight is 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 after a '
+            'missed day, and weight averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage:
+            'Two BP and three weight readings are sparse. Measure blood '
+            'pressure again.',
+      );
       expect(
         classifyGoalAgentResult(
           scenario: scenario,
@@ -352,14 +397,18 @@ void main() {
         GoalAgentEvalFailureCategory.forbiddenReportContent,
       );
 
-      const inventsMissedWeekday =
-          '{"status":"insufficientData",'
-          '"oneLiner":"The latest 125/84 is in range and BP logging is '
-          'complete for today.", '
-          '"tldr":"Two readings are sparse. BP improved since the previous '
-          'reading, while rolling averages remain 127 and 89. BP meds are '
-          '6/7 and behind because Monday was missed. Weight improved to 94 kg '
-          'with an average of 95."}';
+      final inventsMissedWeekday = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight is 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 and behind '
+            'because Monday was missed, while weight averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage: 'Two BP and three weight readings are sparse.',
+      );
       expect(
         classifyGoalAgentResult(
           scenario: scenario,
@@ -369,6 +418,128 @@ void main() {
           assistantContent: '',
         ),
         GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+
+      final inventsActionDueNow = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight is 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 and behind, '
+            'while weight averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage: 'Two BP and three weight readings are sparse.',
+        now: const ['Take medication'],
+      );
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, inventsActionDueNow),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.argumentMismatch,
+      );
+
+      final inventsMedicationDueToday = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight is 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 and behind, '
+            'while weight averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage: 'Two BP and three weight readings are sparse.',
+        later: const ['Take BP medication today.'],
+      );
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.updateGoalReport,
+              inventsMedicationDueToday,
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+
+      final inventsRecoveryReset = healthReport(
+        currentPeriod:
+            'The latest 125/84 is in range and BP logging is complete for '
+            'today; weight is 94 kg.',
+        rollingWindow:
+            'Rolling averages remain 127 and 89; BP meds are 6/7 and one '
+            'missed day resets the full 7-day recovery window. Weight '
+            'averages 95.',
+        latestChange:
+            'BP improved from 129/94 to 125/84 and weight improved from 95 to '
+            '94 kg.',
+        coverage: 'Two BP and three weight readings are sparse.',
+      );
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, inventsRecoveryReset),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.forbiddenReportContent,
+      );
+    });
+
+    test('complex health eval rejects an incomplete structured report', () {
+      final scenario = scenarioById('gh_complex_latest_on_target');
+      const incomplete =
+          '{"status":"insufficientData","oneLiner":"125/84 on target", '
+          '"report":{"nextActions":{"now":[],"later":[]}},'
+          '"tldr":"129/94 improved to 125/84; rolling 127/89; weight 94 '
+          'and average 95; two readings are sparse and logging complete."}';
+
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.updateGoalReport, incomplete),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.argumentMismatch,
+      );
+    });
+
+    test('complex health machine checks do not grade semantic wording', () {
+      final scenario = scenarioById('gh_complex_latest_on_target');
+      final terseButStructurallyGrounded = healthReport(
+        currentPeriod: 'Current observations: 125, 84, and 94.',
+        rollingWindow: 'Window aggregates: 127, 89, and 95.',
+        latestChange: '129→125; 94→84; 95→94.',
+        coverage: 'BP samples: 2. Weight samples: 3.',
+      );
+
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.updateGoalReport,
+              terseButStructurallyGrounded,
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+        reason:
+            'trend direction, daily-status meaning, and tone are reviewed '
+            'semantically from captured artifacts',
       );
     });
   });

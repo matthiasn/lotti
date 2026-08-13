@@ -66,9 +66,50 @@ void main() {
     );
     final properties =
         reportTool.parameters['properties'] as Map<String, dynamic>;
+    final required = reportTool.parameters['required'] as List<dynamic>;
+    final report = properties['report'] as Map<String, dynamic>;
+    final reportProperties = report['properties'] as Map<String, dynamic>;
     expect(
-      (properties['tldr'] as Map<String, dynamic>)['description'],
-      contains('todayGuidance lists completed health logging'),
+      required,
+      containsAll(['status', 'oneLiner', 'report']),
+    );
+    expect(
+      report['required'],
+      GoalReportSectionKeys.values,
+    );
+    expect(
+      reportProperties.keys,
+      containsAll(GoalReportSectionKeys.values),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.currentPeriod]
+          as Map<String, dynamic>)['description'],
+      contains('todayGuidance'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.latestChange]
+          as Map<String, dynamic>)['description'],
+      contains('exact latest'),
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.nextActions]
+          as Map<String, dynamic>)['type'],
+      'object',
+    );
+    expect(
+      (reportProperties[GoalReportSectionKeys.nextActions]
+          as Map<String, dynamic>)['required'],
+      GoalReportActionKeys.values,
+    );
+    final actionProperties =
+        (reportProperties[GoalReportSectionKeys.nextActions]
+                as Map<String, dynamic>)['properties']
+            as Map<String, dynamic>;
+    expect(
+      ((actionProperties[GoalReportActionKeys.now]
+              as Map<String, dynamic>)['items']
+          as Map<String, dynamic>)['required'],
+      ['criterionId', 'action'],
     );
   });
 
@@ -90,5 +131,79 @@ void main() {
       goalNudgeToneNames,
       [for (final v in GoalNudgeTone.values) v.name],
     );
+  });
+
+  group('GoalStructuredReport', () {
+    Map<String, Object?> validReport() => {
+      'currentPeriod': 'Logging is complete today.',
+      'rollingWindow': 'The rolling average remains above target.',
+      'latestChange': '',
+      'coverage': '',
+      'nextActions': {
+        'now': [
+          {'criterionId': 'health-weight', 'action': 'Log weight.'},
+        ],
+        'later': ['Keep the weekly habit moving.'],
+      },
+    };
+
+    test(
+      'parses complete reports and gates current actions when composing',
+      () {
+        final report = GoalStructuredReport.tryParse(validReport());
+
+        expect(report, isNotNull);
+        expect(
+          report!.visibleSummary(
+            allowedCurrentActionCriterionIds: const {'health-weight'},
+          ),
+          'Logging is complete today.\n\n'
+          'The rolling average remains above target.\n\n'
+          'Log weight.\n\n'
+          'Keep the weekly habit moving.',
+        );
+        expect(
+          report.visibleSummary(
+            allowedCurrentActionCriterionIds: const {},
+          ),
+          isNot(contains('Log weight.')),
+        );
+      },
+    );
+
+    test('rejects empty required standing sections', () {
+      for (final key in ['currentPeriod', 'rollingWindow']) {
+        final value = validReport()..[key] = '  ';
+        expect(
+          GoalStructuredReport.tryParse(value),
+          isNull,
+          reason: key,
+        );
+      }
+    });
+
+    test('rejects missing, mistyped, and empty action fields', () {
+      final malformed = [
+        validReport()..remove('coverage'),
+        validReport()..['latestChange'] = 7,
+        validReport()..['nextActions'] = 'later',
+        validReport()
+          ..['nextActions'] = {
+            'now': [
+              {'criterionId': '', 'action': 'Log weight.'},
+            ],
+            'later': <Object?>[],
+          },
+        validReport()
+          ..['nextActions'] = {
+            'now': <Object?>[],
+            'later': [''],
+          },
+      ];
+
+      for (final value in malformed) {
+        expect(GoalStructuredReport.tryParse(value), isNull, reason: '$value');
+      }
+    });
   });
 }

@@ -639,7 +639,20 @@ void main() {
         target: 88,
         direction: GoalDirection.atMost,
       );
-      stubSpec(criteria: weight);
+      const systolic = GoalCriterion.metric(
+        criterionId: 'health-systolic',
+        dataType: GoalHealthDataTypes.bloodPressureSystolic,
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 125,
+        direction: GoalDirection.atMost,
+      );
+      stubSpec(
+        criteria: const GoalCriterion.allOf(
+          criterionId: 'health-composite',
+          criteria: [weight, systolic],
+        ),
+      );
       stubGlmResolution();
       workflow = GoalAgentWorkflow(
         repository: repository,
@@ -711,12 +724,35 @@ void main() {
             );
             expect(message, contains('"onTarget": false'));
             expect(message, contains('"isToday": true'));
+            expect(
+              message,
+              contains(
+                '"healthLoggingNeededCriterionIds": [\n'
+                '        "health-systolic"',
+              ),
+              reason: 'the historical gap is real for its evaluated day',
+            );
             await (strategy! as GoalAgentStrategy).processToolCalls(
               toolCalls: [
                 toolCall(GoalAgentToolNames.updateGoalReport, {
                   'status': 'insufficientData',
                   'oneLiner': 'The delayed report matches its encoded day.',
-                  'tldr': 'Only observations through August 8 are included.',
+                  'report': {
+                    'currentPeriod':
+                        'Only observations through August 8 are included.',
+                    'rollingWindow': 'The historical window lacks systolic BP.',
+                    'latestChange': '',
+                    'coverage': 'Systolic coverage is missing.',
+                    'nextActions': {
+                      'now': [
+                        {
+                          'criterionId': 'health-systolic',
+                          'action': 'Measure blood pressure now.',
+                        },
+                      ],
+                      'later': <Object?>[],
+                    },
+                  },
                 }),
               ],
               manager: conversationManager,
@@ -729,10 +765,9 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      expect(
-        upserts.whereType<AgentReportEntity>().single.tldr,
-        'Only observations through August 8 are included.',
-      );
+      final tldr = upserts.whereType<AgentReportEntity>().single.tldr;
+      expect(tldr, contains('Only observations through August 8'));
+      expect(tldr, isNot(contains('Measure blood pressure now')));
     },
   );
 

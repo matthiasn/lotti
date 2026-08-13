@@ -45,6 +45,143 @@ final List<String> goalTrackStatusNames = [
   for (final status in GoalTrackStatus.values) status.name,
 ];
 
+/// Stable keys of the structured standing-report payload. The strategy
+/// renders these slots into the persisted user-visible summary in this order.
+abstract final class GoalReportSectionKeys {
+  static const currentPeriod = 'currentPeriod';
+  static const rollingWindow = 'rollingWindow';
+  static const latestChange = 'latestChange';
+  static const coverage = 'coverage';
+  static const nextActions = 'nextActions';
+
+  static const List<String> values = [
+    currentPeriod,
+    rollingWindow,
+    latestChange,
+    coverage,
+    nextActions,
+  ];
+}
+
+/// Keys that separate actions proven due in the evaluated period from later
+/// focus areas. This prevents a lagging rolling habit from becoming a false
+/// "do it today" instruction.
+abstract final class GoalReportActionKeys {
+  static const now = 'now';
+  static const later = 'later';
+
+  static const List<String> values = [now, later];
+}
+
+/// One model-authored action whose current-period visibility is gated by
+/// deterministic FACTS before persistence.
+class GoalReportCurrentAction {
+  const GoalReportCurrentAction({
+    required this.criterionId,
+    required this.action,
+  });
+
+  final String criterionId;
+  final String action;
+}
+
+/// Parsed form of the structured standing report shared by production and
+/// the inference eval classifier, so provider schema compliance is tested
+/// against the same completeness rules the runtime enforces.
+class GoalStructuredReport {
+  const GoalStructuredReport({
+    required this.currentPeriod,
+    required this.rollingWindow,
+    required this.latestChange,
+    required this.coverage,
+    required this.now,
+    required this.later,
+  });
+
+  final String currentPeriod;
+  final String rollingWindow;
+  final String latestChange;
+  final String coverage;
+  final List<GoalReportCurrentAction> now;
+  final List<String> later;
+
+  static GoalStructuredReport? tryParse(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    final currentPeriod = _requiredReportString(
+      value[GoalReportSectionKeys.currentPeriod],
+    );
+    final rollingWindow = _requiredReportString(
+      value[GoalReportSectionKeys.rollingWindow],
+    );
+    final latestChange = _optionalReportString(
+      value[GoalReportSectionKeys.latestChange],
+    );
+    final coverage = _optionalReportString(
+      value[GoalReportSectionKeys.coverage],
+    );
+    final actions = value[GoalReportSectionKeys.nextActions];
+    if (currentPeriod == null ||
+        rollingWindow == null ||
+        latestChange == null ||
+        coverage == null ||
+        actions is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final rawNow = actions[GoalReportActionKeys.now];
+    final rawLater = actions[GoalReportActionKeys.later];
+    if (rawNow is! List<dynamic> || rawLater is! List<dynamic>) return null;
+    final now = <GoalReportCurrentAction>[];
+    for (final item in rawNow) {
+      if (item is! Map<String, dynamic>) return null;
+      final criterionId = _requiredReportString(item['criterionId']);
+      final action = _requiredReportString(item['action']);
+      if (criterionId == null || action == null) return null;
+      now.add(
+        GoalReportCurrentAction(criterionId: criterionId, action: action),
+      );
+    }
+    final later = <String>[];
+    for (final item in rawLater) {
+      final action = _requiredReportString(item);
+      if (action == null) return null;
+      later.add(action);
+    }
+
+    return GoalStructuredReport(
+      currentPeriod: currentPeriod,
+      rollingWindow: rollingWindow,
+      latestChange: latestChange,
+      coverage: coverage,
+      now: now,
+      later: later,
+    );
+  }
+
+  /// Composes model-authored localized sentences without injecting English
+  /// headings. Only explicitly authorized current actions are included.
+  String visibleSummary({
+    required Set<String> allowedCurrentActionCriterionIds,
+  }) => [
+    currentPeriod,
+    rollingWindow,
+    if (latestChange.isNotEmpty) latestChange,
+    if (coverage.isNotEmpty) coverage,
+    for (final item in now)
+      if (allowedCurrentActionCriterionIds.contains(item.criterionId))
+        item.action,
+    ...later,
+  ].join('\n\n');
+}
+
+String? _requiredReportString(Object? value) {
+  final trimmed = _optionalReportString(value);
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+String? _optionalReportString(Object? value) =>
+    value is String ? value.trim() : null;
+
 /// The system prompt. Deliberately lean (hard-capped at 3.2k chars by
 /// the offline test): the payload lesson from task-agent evals is that long
 /// prompts get skimmed, and every number the model needs arrives in the
@@ -67,8 +204,8 @@ Health checklist:
   nothing about the current day.
 - `latestChange` is previous-to-latest only. `towardTarget` means improvement
   since the previous reading, not a stable trend.
-- A rolling habit below target is behind, not proof today's completion is
-  missing. Never invent which day was missed.
+- Put current instructions only in authorized nextActions.now;
+  nextActions.later never says today/now.
 
 Act in this order of precedence:
 1. Unanswered user message: call reply_to_user exactly once first. When asked,
@@ -157,21 +294,89 @@ final List<AgentToolDefinition> goalAgentTools = [
           'type': 'string',
           'description': 'One sentence a banner or list row can show.',
         },
-        'tldr': {
-          'type': 'string',
+        'report': {
+          'type': 'object',
           'description':
-              'Two to four sentences of current standing. When '
-              'todayGuidance lists completed health logging, say it is '
-              'complete today only when referenceIsCurrentDay; otherwise '
-              'name the evaluated date. Separate rolling averages and any '
-              'remaining actions.',
+              'Structured facts that the app assembles into the visible '
+              'standing summary. Prose slots are facts only; put every '
+              'instruction in nextActions. Keep each slot concise and do '
+              'not repeat the same fact across slots. Return a JSON object, '
+              'never an encoded JSON string.',
+          'properties': {
+            GoalReportSectionKeys.currentPeriod: {
+              'type': 'string',
+              'description':
+                  'One concise sentence: what is complete versus loggable for '
+                  'evaluation.reference. Follow todayGuidance. For health, '
+                  'include each latest same-day value and whether it is on '
+                  'target. Say today only when referenceIsCurrentDay.',
+            },
+            GoalReportSectionKeys.rollingWindow: {
+              'type': 'string',
+              'description':
+                  'One concise sentence with rolling or calendar standing: '
+                  'aggregates, targets, and '
+                  'habit quotas. Never present an aggregate as a latest '
+                  'measurement.',
+            },
+            GoalReportSectionKeys.latestChange: {
+              'type': 'string',
+              'description':
+                  'One concise sentence: for every comparable health series, '
+                  'give exact latest and previous values plus latestChange. '
+                  'Empty when no comparable change exists.',
+            },
+            GoalReportSectionKeys.coverage: {
+              'type': 'string',
+              'description':
+                  'One concise sentence with sample counts, sparsity, or the '
+                  'specific insufficientData gap. Empty when not applicable.',
+            },
+            GoalReportSectionKeys.nextActions: {
+              'type': 'object',
+              'description':
+                  'Separate actions FACTS prove are due now from future or '
+                  'ongoing focus. A rollingHabitCriterionIdsBehind entry '
+                  'alone never proves an action is due today.',
+              'properties': {
+                GoalReportActionKeys.now: {
+                  'type': 'array',
+                  'description':
+                      'Actions explicitly proven due at evaluation.reference. '
+                      'criterionId must be copied from '
+                      'healthLoggingNeededCriterionIds. Use an empty list '
+                      'when FACTS do not identify one.',
+                  'items': {
+                    'type': 'object',
+                    'properties': {
+                      'criterionId': {'type': 'string'},
+                      'action': {'type': 'string'},
+                    },
+                    'required': ['criterionId', 'action'],
+                  },
+                },
+                GoalReportActionKeys.later: {
+                  'type': 'array',
+                  'description':
+                      'Future or ongoing focus, worded without claiming it is '
+                      'missing today. Never say today or now, and never '
+                      'instruct current-period completion.',
+                  'items': {'type': 'string'},
+                },
+              },
+              'required': GoalReportActionKeys.values,
+            },
+          },
+          'required': GoalReportSectionKeys.values,
         },
         'content': {
           'type': 'string',
-          'description': 'Optional longer narrative (markdown).',
+          'description':
+              'Optional longer markdown only for material detail absent from '
+              'report. Usually omit; never repeat the structured slots.',
         },
       },
-      'required': ['status', 'oneLiner', 'tldr'],
+      'required': ['status', 'oneLiner', 'report'],
     },
   ),
   AgentToolDefinition(

@@ -46,6 +46,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required this.runKey,
     required Set<String> knownAdIds,
     Set<String>? activeAdIds,
+    this._allowedCurrentActionCriterionIds = const {},
     this.expectedStatus,
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
@@ -68,6 +69,11 @@ class GoalAgentStrategy extends ConversationStrategy
   /// this subset; reusable or retired library entries remain valid rerun
   /// targets but cannot be hidden from a surface where they are not shown.
   final Set<String> _activeAdIds;
+
+  /// Criterion ids deterministic FACTS explicitly mark actionable at the
+  /// evaluation reference. Explicit structured current-action items with any
+  /// other id are dropped before the report becomes user-visible.
+  final Set<String> _allowedCurrentActionCriterionIds;
 
   /// The deterministic track status of this wake's FACTS. The contract
   /// declares it authoritative, so a report claiming any other status is
@@ -194,15 +200,22 @@ class GoalAgentStrategy extends ConversationStrategy
         .where((s) => s.name == statusRaw)
         .firstOrNull;
     final oneLiner = _trimmed(args['oneLiner']);
-    final tldr = _trimmed(args['tldr']);
+    final hasStructuredReport = args.containsKey('report');
+    final structuredTldr = _composeStructuredReport(args['report']);
+    final tldr = hasStructuredReport
+        ? structuredTldr ?? ''
+        : _trimmed(args['tldr']);
     if (status == null || oneLiner.isEmpty || tldr.isEmpty) {
       await _reject(
         call: call,
         manager: manager,
-        error:
-            'Error: update_goal_report needs status (one of '
-            '${goalTrackStatusNames.join('|')}), a non-empty oneLiner and '
-            'a non-empty tldr.',
+        error: hasStructuredReport
+            ? 'Error: update_goal_report needs status (one of '
+                  '${goalTrackStatusNames.join('|')}), a non-empty oneLiner '
+                  'and a complete structured report.'
+            : 'Error: update_goal_report needs status (one of '
+                  '${goalTrackStatusNames.join('|')}), a non-empty oneLiner '
+                  'and a non-empty tldr.',
       );
       return;
     }
@@ -220,7 +233,10 @@ class GoalAgentStrategy extends ConversationStrategy
     _reportOneLiner = oneLiner;
     _reportTldr = tldr;
     final content = _trimmed(args['content']);
-    _reportContent = content.isEmpty ? null : content;
+    // Structured reports are already the complete visible narrative. Ignore
+    // duplicated free-form content so it cannot reintroduce an action that
+    // the deterministic current-action filter removed.
+    _reportContent = hasStructuredReport || content.isEmpty ? null : content;
     await _accept(call, manager, 'Goal report updated.');
   }
 
@@ -419,6 +435,12 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     _observations.add(ObservationRecord(text: note));
     await _accept(call, manager, 'Observation recorded.');
+  }
+
+  String? _composeStructuredReport(Object? value) {
+    return GoalStructuredReport.tryParse(value)?.visibleSummary(
+      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
+    );
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

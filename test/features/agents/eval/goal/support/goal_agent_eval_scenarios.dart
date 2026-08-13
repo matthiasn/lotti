@@ -37,6 +37,7 @@ class GoalAgentEvalScenario {
     this.forbiddenToolNames = const [],
     this.expectsNoToolCalls = false,
     this.requiredReportTermGroups = const [],
+    this.requiredStructuredReportTermGroups = const {},
     this.forbiddenReportTerms = const [],
     this.forbiddenReportClaims = const [],
     this.forbiddenReportPatterns = const [],
@@ -70,6 +71,12 @@ class GoalAgentEvalScenario {
   /// Term groups that must appear in the final `update_goal_report` call
   /// (any member of a group satisfies it).
   final List<List<String>> requiredReportTermGroups;
+
+  /// Machine-checkable term groups pinned to a specific structured report
+  /// slot. Semantic conclusions such as tone, improvement, and whether the
+  /// wording celebrates today's result are reviewed from captured outputs,
+  /// not approximated with an ever-growing synonym list.
+  final Map<String, List<List<String>>> requiredStructuredReportTermGroups;
   final List<String> forbiddenReportTerms;
 
   /// Claims that must not be *affirmatively asserted* in the report
@@ -831,51 +838,38 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
         GoalAgentToolNames.updateGoalReport,
-        expectedArgumentsSubset: {'status': 'insufficientData'},
+        expectedArgumentsSubset: {
+          'status': 'insufficientData',
+          'report': {
+            'nextActions': {'now': <Object?>[]},
+          },
+        },
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
-    requiredReportTermGroups: const [
-      ['125'],
-      ['84'],
-      ['127'],
-      ['89'],
-      ['average', 'rolling'],
-      ['on target', 'in range', 'within target'],
-      [
-        'improv',
-        'downward',
-        'lower',
-        'declin',
-        'toward target',
-        'right direction',
-        'trending down',
-        'dropped',
-        'down from',
-        'moving toward',
-        'moved toward',
+    requiredStructuredReportTermGroups: const {
+      GoalReportSectionKeys.currentPeriod: [
+        ['125'],
+        ['84'],
+        ['94'],
       ],
-      [
-        'done for today',
-        'logging is complete',
-        'logged today',
-        'today is logged',
-        'logged and done',
-        'nothing more',
+      GoalReportSectionKeys.rollingWindow: [
+        ['127'],
+        ['89'],
+        ['95'],
       ],
-      ['weight 94', '94 kg'],
-      ['95'],
-      ['weight'],
-      [
-        'sparse',
-        'limited data',
-        'low data',
-        'few readings',
-        'insufficient',
-        'two readings',
-        '2 readings',
+      GoalReportSectionKeys.latestChange: [
+        ['129'],
+        ['125'],
+        ['94'],
+        ['84'],
+        ['95'],
       ],
-    ],
+      GoalReportSectionKeys.coverage: [
+        ['2', 'two'],
+        ['3', 'three'],
+      ],
+    },
     forbiddenReportClaims: const [
       'latest systolic is 127',
       'systolic is at 127',
@@ -903,44 +897,40 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(
         GoalAgentToolNames.updateGoalReport,
-        expectedArgumentsSubset: {'status': 'insufficientData'},
+        expectedArgumentsSubset: {
+          'status': 'insufficientData',
+          'report': {
+            'nextActions': {'now': <Object?>[]},
+          },
+        },
       ),
     ],
     forbiddenToolNames: _adCreationToolNames,
-    requiredReportTermGroups: const [
-      ['125'],
-      ['84'],
-      ['127'],
-      ['89'],
-      ['average', 'rolling'],
-      ['on target', 'in range', 'within target'],
-      ['done for today', 'logging is complete', 'logged today', 'nothing more'],
-      ['6/7', '6 of 7', 'six of seven'],
-      ['med', 'medication'],
-      ['behind', 'missed', 'missing', 'short', 'not met', "isn't met"],
-      [
-        'improv',
-        'downward',
-        'lower',
-        'declin',
-        'toward target',
-        'moving toward',
-        'moved toward',
-        'down from',
+    forbiddenReportTerms: const ['resets the full 7-day recovery window'],
+    requiredStructuredReportTermGroups: const {
+      GoalReportSectionKeys.currentPeriod: [
+        ['125'],
+        ['84'],
+        ['94'],
       ],
-      ['weight 94', '94 kg'],
-      ['95'],
-      ['weight'],
-      [
-        'sparse',
-        'limited data',
-        'low data',
-        'few readings',
-        'insufficient',
-        'two readings',
-        '2 readings',
+      GoalReportSectionKeys.rollingWindow: [
+        ['127'],
+        ['89'],
+        ['95'],
+        ['6/7', '6 of 7', 'six of seven'],
       ],
-    ],
+      GoalReportSectionKeys.latestChange: [
+        ['129'],
+        ['125'],
+        ['94'],
+        ['84'],
+        ['95'],
+      ],
+      GoalReportSectionKeys.coverage: [
+        ['2', 'two'],
+        ['3', 'three'],
+      ],
+    },
     forbiddenReportClaims: const [
       'measure blood pressure again',
       'take another blood pressure reading',
@@ -954,6 +944,8 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     forbiddenReportPatterns: const [
       r'\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b.{0,40}\b(?:missed|missing|skipped|forgot|not taken)\b',
       r'\b(?:missed|missing|skipped|forgot|not taken)\b.{0,40}\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
+      r'\b(?:take|log|record|complete)\b.{0,50}\b(?:meds?|medication|dose)\b.{0,50}\btoday\b',
+      r'\btoday\b.{0,50}\b(?:take|log|record|complete)\b.{0,50}\b(?:meds?|medication|dose)\b',
     ],
   ),
 ];

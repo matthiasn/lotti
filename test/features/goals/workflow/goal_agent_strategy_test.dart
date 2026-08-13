@@ -121,6 +121,159 @@ void main() {
     expect(strategy.reportContent, isNull);
   });
 
+  test(
+    'structured report sections become the persisted visible summary',
+    () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'insufficientData',
+              'oneLiner': 'Today is handled; the rolling window still lags.',
+              'report': {
+                'currentPeriod':
+                    'Blood pressure logging is complete today at 125/84.',
+                'rollingWindow':
+                    'Rolling averages remain above target at 127/89.',
+                'latestChange':
+                    'Blood pressure improved from 129/94 to 125/84.',
+                'coverage': 'Two readings make the series sparse.',
+                'nextActions': {
+                  'now': <Object>[],
+                  'later': ['Keep taking the medication tomorrow.'],
+                },
+              },
+              'content': 'Take medication today.',
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isTrue);
+      expect(
+        strategy.reportTldr,
+        'Blood pressure logging is complete today at 125/84.\n\n'
+        'Rolling averages remain above target at 127/89.\n\n'
+        'Blood pressure improved from 129/94 to 125/84.\n\n'
+        'Two readings make the series sparse.\n\n'
+        'Keep taking the medication tomorrow.',
+      );
+      expect(strategy.reportContent, isNull);
+    },
+  );
+
+  test(
+    'only deterministically allowed current actions become visible',
+    () async {
+      final gated = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: 'goal-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+        allowedCurrentActionCriterionIds: const {'health-weight'},
+      );
+      await gated.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'insufficientData',
+              'oneLiner': 'One measurement remains.',
+              'report': {
+                'currentPeriod': 'Weight is not measured today.',
+                'rollingWindow': 'The rolling weight average is above target.',
+                'latestChange': '',
+                'coverage': 'Today is missing from the series.',
+                'nextActions': {
+                  'now': [
+                    {
+                      'criterionId': 'health-weight',
+                      'action': 'Log weight today.',
+                    },
+                    {
+                      'criterionId': 'habit-bp-meds',
+                      'action': 'Take medication today.',
+                    },
+                  ],
+                  'later': <Object>[],
+                },
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(gated.reportTldr, contains('Log weight today.'));
+      expect(gated.reportTldr, isNot(contains('Take medication today.')));
+    },
+  );
+
+  test('structured report rejects empty current or rolling standing', () async {
+    for (final emptyKey in ['currentPeriod', 'rollingWindow']) {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'offTrack',
+              'oneLiner': 'Behind.',
+              'report': {
+                'currentPeriod': emptyKey == 'currentPeriod'
+                    ? ''
+                    : 'Nothing completed.',
+                'rollingWindow': emptyKey == 'rollingWindow'
+                    ? ''
+                    : 'The rolling window is behind.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': {
+                  'now': <Object>[],
+                  'later': ['Keep going.'],
+                },
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse, reason: emptyKey);
+      expect(rejection(), contains('structured report'));
+    }
+  });
+
+  test(
+    'structured report rejects malformed next actions without a fallback',
+    () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'offTrack',
+              'oneLiner': 'Behind.',
+              'report': {
+                'currentPeriod': 'Nothing completed.',
+                'rollingWindow': 'The rolling window is behind.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': 'Walk tomorrow',
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.hasReport, isFalse);
+      expect(rejection(), contains('structured report'));
+    },
+  );
+
   test('a report status contradicting the deterministic FACTS is '
       'rejected — the computed status is authoritative', () async {
     final gated = GoalAgentStrategy(
