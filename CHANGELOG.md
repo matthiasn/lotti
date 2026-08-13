@@ -10,8 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button that records, transcribes, and fills the text field.
 
 ### Changed
-- **Lotti now builds with Flutter 3.47.0 and Dart 3.13.0.** The app and all
-  release pipelines use the updated runtime and toolchain.
 - **Goal health trends now use charts that fit the data.** Systolic and
   diastolic blood pressure share one dual-line chart with their separate target
   lines, while weight uses a line chart that makes small day-to-day changes

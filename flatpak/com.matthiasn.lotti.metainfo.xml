@@ -43,7 +43,6 @@
     <release version="1.0.8" date="2026-08-12">
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
-        <p>Changed: Lotti now builds with Flutter 3.47.0 and Dart 3.13.0. The app and all release pipelines use the updated runtime and toolchain.</p>
         <p>Changed: goal health trends now use charts that fit the data. Systolic and diastolic blood pressure share one dual-line chart with separate target lines, while weight uses a line chart that makes small day-to-day changes visible. Other measurable dimensions keep their existing progress bars.</p>
         <p>Changed: goal setup can monitor time spent in active categories, with a rolling seven-day hour target and an at-least or at-most direction.</p>
         <p>Fixed: goal agents can choose an inference profile from Agent internals. Their AI setup row now opens the profile picker even though goal agents have no linked task.</p>

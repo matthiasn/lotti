@@ -71,15 +71,15 @@ committed pin stale and *invisible* rather than stale and wrong.
 gap instead: `flatpak-foreign-deps.yml` runs it on every push, and on any PR
 touching `.fvmrc` or `flatpak/`.
 
-The guard exists because drift here is silent by construction. A stale tag
-still resolves as long as it clears the `>=3.47.0` constraint floor, so the
-manifest sat at 3.44.0 through several pin bumps before anyone noticed, meaning
-Flathub users ran an engine nobody else was building against. When it does
-break, it surfaces one layer down as `pub get` failing version solving — "the
-current Dart SDK version is X, because lotti requires SDK version >=3.12.0
-<4.0.0, version solving failed" — which reads like a dependency problem rather
-than a toolchain one. The Windows lane sat broken this way across a dozen
-consecutive release tags.
+The guard exists because drift can be silent. Historically, while the Flutter
+constraint floor was `>=3.44.0`, the manifest's stale 3.44.0 tag still resolved
+through later pin bumps, so Flathub users ran an engine nobody else was building
+against. With the current `>=3.47.0` floor, that same 3.44.0 tag would instead
+surface one layer down as `pub get` failing version solving — "the current Dart
+SDK version is X, because lotti requires SDK version >=3.12.0 <4.0.0, version
+solving failed" — which reads like a dependency problem rather than a toolchain
+one. The Windows lane sat broken this way across a dozen consecutive release
+tags.
 
 # Continuous integration
 
