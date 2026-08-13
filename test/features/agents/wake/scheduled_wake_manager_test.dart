@@ -33,8 +33,8 @@ enum _GeneratedScheduledWakeTimeSlot {
 
 enum _GeneratedScheduledWakeFailureSlot {
   none,
-  firstFastForward,
-  everyFastForward,
+  firstRetirement,
+  everyRetirement,
 }
 
 enum _GeneratedScheduledWakeManagerOperationKind { start, stop, tick }
@@ -50,10 +50,11 @@ class _GeneratedScheduledWakeSpec {
   final _GeneratedScheduledWakeStateKind kind;
   final _GeneratedScheduledWakeTimeSlot timeSlot;
 
-  bool get expectsFastForward =>
+  bool get expectsRetirement =>
+      kind == _GeneratedScheduledWakeStateKind.projectNeverWoken ||
       kind == _GeneratedScheduledWakeStateKind.projectDormant;
 
-  bool get expectsEnqueue => !expectsFastForward;
+  bool get expectsEnqueue => !expectsRetirement;
 
   DateTime get scheduledWakeAt {
     final (hour, minute) = switch (timeSlot) {
@@ -64,27 +65,6 @@ class _GeneratedScheduledWakeSpec {
       _GeneratedScheduledWakeTimeSlot.endOfDay => (23, 55),
     };
     return DateTime(2026, 5, 17, hour, minute);
-  }
-
-  DateTime expectedFastForwardWakeAt(DateTime now) {
-    final scheduled = scheduledWakeAt;
-    var nextWake = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      scheduled.hour,
-      scheduled.minute,
-    );
-    if (!nextWake.isAfter(now)) {
-      nextWake = DateTime(
-        now.year,
-        now.month,
-        now.day + 1,
-        scheduled.hour,
-        scheduled.minute,
-      );
-    }
-    return nextWake;
   }
 
   AgentStateEntity toState(int index) {
@@ -138,17 +118,17 @@ class _GeneratedScheduledWakeBatchScenario {
   final List<_GeneratedScheduledWakeSpec> specs;
   final _GeneratedScheduledWakeFailureSlot failureSlot;
 
-  Set<String> failingFastForwardAgentIds(List<AgentStateEntity> states) {
-    final fastForwardIds = <String>[
+  Set<String> failingRetirementAgentIds(List<AgentStateEntity> states) {
+    final retirementIds = <String>[
       for (var i = 0; i < specs.length; i++)
-        if (specs[i].expectsFastForward) states[i].agentId,
+        if (specs[i].expectsRetirement) states[i].agentId,
     ];
     return switch (failureSlot) {
       _GeneratedScheduledWakeFailureSlot.none => const <String>{},
-      _GeneratedScheduledWakeFailureSlot.firstFastForward =>
-        fastForwardIds.isEmpty ? const <String>{} : {fastForwardIds.first},
-      _GeneratedScheduledWakeFailureSlot.everyFastForward =>
-        fastForwardIds.toSet(),
+      _GeneratedScheduledWakeFailureSlot.firstRetirement =>
+        retirementIds.isEmpty ? const <String>{} : {retirementIds.first},
+      _GeneratedScheduledWakeFailureSlot.everyRetirement =>
+        retirementIds.toSet(),
     };
   }
 
@@ -344,7 +324,7 @@ void main() {
       glados.any.scheduledWakeBatchScenario,
       glados.ExploreConfig(numRuns: 180),
     ).test(
-      'matches generated due-batch enqueue and fast-forward semantics',
+      'matches generated due-batch enqueue and retirement semantics',
       (
         scenario,
       ) {
@@ -352,13 +332,13 @@ void main() {
           for (final (index, spec) in scenario.specs.indexed)
             spec.toState(index),
         ];
-        final failingFastForwardIds = scenario.failingFastForwardAgentIds(
+        final failingRetirementIds = scenario.failingRetirementAgentIds(
           states,
         );
         final generatedRepository = MockAgentRepository();
         final generatedOrchestrator = MockWakeOrchestrator();
         final generatedSyncService = MockAgentSyncService();
-        final attemptedFastForwardWrites = <AgentStateEntity>[];
+        final attemptedRetirementWrites = <AgentStateEntity>[];
         final notifiedAgentIds = <String>[];
 
         fakeAsync((async) {
@@ -370,7 +350,7 @@ void main() {
               () => generatedRepository.getDueScheduledWakeRecords(any()),
             ).thenAnswer((_) async => []);
             // Every generated agent is live, so the lifecycle guard passes and
-            // the enqueue/fast-forward model is exercised unchanged.
+            // the enqueue/retirement model is exercised unchanged.
             when(
               () => generatedRepository.getEntity(any()),
             ).thenAnswer((_) async => makeTestIdentity());
@@ -379,8 +359,8 @@ void main() {
             ) async {
               final entity =
                   invocation.positionalArguments.single as AgentStateEntity;
-              attemptedFastForwardWrites.add(entity);
-              if (failingFastForwardIds.contains(entity.agentId)) {
+              attemptedRetirementWrites.add(entity);
+              if (failingRetirementIds.contains(entity.agentId)) {
                 throw StateError('generated sync failure');
               }
             });
@@ -398,12 +378,12 @@ void main() {
               for (var i = 0; i < scenario.specs.length; i++)
                 if (scenario.specs[i].expectsEnqueue) states[i].agentId,
             ];
-            final expectedFastForwardIds = <String>[
+            final expectedRetirementIds = <String>[
               for (var i = 0; i < scenario.specs.length; i++)
-                if (scenario.specs[i].expectsFastForward) states[i].agentId,
+                if (scenario.specs[i].expectsRetirement) states[i].agentId,
             ];
-            final expectedNotifiedIds = expectedFastForwardIds
-                .where((agentId) => !failingFastForwardIds.contains(agentId))
+            final expectedNotifiedIds = expectedRetirementIds
+                .where((agentId) => !failingRetirementIds.contains(agentId))
                 .toList();
 
             if (expectedEnqueuedIds.isEmpty) {
@@ -428,23 +408,13 @@ void main() {
             }
 
             expect(
-              attemptedFastForwardWrites.map((state) => state.agentId).toList(),
-              expectedFastForwardIds,
+              attemptedRetirementWrites.map((state) => state.agentId).toList(),
+              expectedRetirementIds,
               reason: '$scenario',
             );
 
-            for (final write in attemptedFastForwardWrites) {
-              final index = states.indexWhere(
-                (state) => state.agentId == write.agentId,
-              );
-              expect(index, isNonNegative, reason: '$scenario');
-              expect(
-                write.scheduledWakeAt,
-                scenario.specs[index].expectedFastForwardWakeAt(
-                  _generatedScheduledWakeNow,
-                ),
-                reason: '$scenario',
-              );
+            for (final write in attemptedRetirementWrites) {
+              expect(write.scheduledWakeAt, isNull, reason: '$scenario');
               expect(write.updatedAt, _generatedScheduledWakeNow);
             }
 
@@ -1776,7 +1746,7 @@ void main() {
       });
     });
 
-    test('fast-forwards dormant project agents without enqueuing a wake', () {
+    test('clears dormant project schedules without enqueuing a wake', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);
       final dormantState = makeTestState(
@@ -1809,7 +1779,7 @@ void main() {
                     () => syncService.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
-          expect(captured.scheduledWakeAt, DateTime(2024, 3, 16, 6));
+          expect(captured.scheduledWakeAt, isNull);
 
           manager.stop();
         });
@@ -1817,7 +1787,7 @@ void main() {
     });
 
     test(
-      'enqueues never-woken project agents even without pending activity',
+      'clears never-woken project schedules without pending activity',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final pastSchedule = DateTime(2024, 3, 14, 6);
@@ -1836,12 +1806,18 @@ void main() {
             final manager = createAndStart();
             async.flushMicrotasks();
 
-            verify(
+            verifyNever(
               () => orchestrator.enqueueManualWake(
                 agentId: kTestAgentId,
                 reason: WakeReason.scheduled.name,
               ),
-            ).called(1);
+            );
+            final captured =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentStateEntity;
+            expect(captured.scheduledWakeAt, isNull);
 
             manager.stop();
           });
@@ -1849,7 +1825,7 @@ void main() {
       },
     );
 
-    test('mixed batch: fast-forwards dormant, enqueues active', () {
+    test('mixed batch: retires dormant schedule and enqueues active', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final pastSchedule = DateTime(2024, 3, 13, 6);
 
@@ -1900,7 +1876,7 @@ void main() {
             ),
           );
 
-          // Dormant agent fast-forwarded via syncService.
+          // Dormant schedule retired via syncService.
           verify(() => syncService.upsertEntity(any())).called(1);
 
           manager.stop();
@@ -1908,7 +1884,7 @@ void main() {
       });
     });
 
-    test('fast-forward fires onPersistedStateChanged callback', () {
+    test('schedule retirement fires onPersistedStateChanged callback', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final dormantState = makeTestState(
         scheduledWakeAt: DateTime(2024, 3, 13, 6),
@@ -2006,9 +1982,7 @@ void main() {
         });
       },
     );
-    test('fast-forward preserves agent schedule hour and keeps today slot', () {
-      // now is 5:00 AM, schedule was for 9:00 AM two days ago.
-      // Fast-forward should schedule for TODAY at 9:00 AM, not tomorrow.
+    test('schedule retirement does not preserve a custom legacy hour', () {
       final now = DateTime(2024, 3, 15, 5);
       final pastSchedule = DateTime(2024, 3, 13, 9);
       final dormantState = makeTestState(
@@ -2034,8 +2008,7 @@ void main() {
                     () => syncService.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
-          // Today at 9:00 AM, not tomorrow.
-          expect(captured.scheduledWakeAt, DateTime(2024, 3, 15, 9));
+          expect(captured.scheduledWakeAt, isNull);
 
           manager.stop();
         });

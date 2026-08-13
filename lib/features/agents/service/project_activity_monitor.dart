@@ -12,11 +12,11 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Tracks local project-linked activity and marks project summaries stale.
 ///
-/// Project agents do not wake immediately on task/project notifications
-/// anymore. Instead, this monitor listens to the local update stream, resolves
-/// whether an affected project has a provisioned project agent, and persists a
-/// pending activity marker on the agent state. The scheduled 06:00 wake later
-/// decides whether to spend tokens on a fresh report.
+/// Linked-task activity does not wake project agents immediately. This monitor
+/// listens to the local update stream, resolves whether an affected project has
+/// a provisioned agent, and persists a pending activity marker. In parallel,
+/// the project subscription queues that work for the next local 06:00; direct
+/// project edits take the subscription's short coalescing path instead.
 class ProjectActivityMonitor with AgentErrorLogging {
   ProjectActivityMonitor({
     required this._notifications,

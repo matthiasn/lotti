@@ -19,7 +19,7 @@ sources:
   - id: project-service
     resource: ../../../lib/features/agents/service/project_agent_service.dart
     title: ProjectAgentService (creation and announcement)
-    last_modified: 2026-07-26
+    last_modified: 2026-08-14
   - id: event-service
     resource: ../../../lib/features/agents/service/event_agent_service.dart
     title: EventAgentService (creation, content gate and announcement)
@@ -42,13 +42,12 @@ expensive and useless.
 2. Validates the template is a project-agent template.
 3. Creates identity and state.
 4. Sets `slots.activeProjectId`.
-5. Schedules the first digest for **tomorrow's local 06:00** —
-   `nextLocalDayAtTime` always rolls forward a full day, even if today's 06:00
-   has not yet passed.
+5. Leaves `scheduledWakeAt` unset: a project agent is dormant unless work is
+   observed.
 6. Creates `agent_project` and `template_assignment` links.
 7. Announces itself (see below).
-8. Registers a **direct project-edit** subscription.
-9. Enqueues a creation wake.
+8. Registers the project subscription.
+9. Enqueues the explicit creation wake.
 
 ## Announcing a newly created agent
 
@@ -81,31 +80,41 @@ id through it. Task agents solve the same problem one layer up, by calling
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Scheduled: project agent created
-  Scheduled --> WakingNow: creation wake
-  Scheduled --> WakingNow: manual reanalysis
-  Scheduled --> WakingNow: direct project edit
-  Scheduled --> PendingActivity: linked task or project activity
-  PendingActivity --> WakingNow: scheduled digest becomes due
-  Scheduled --> SkipAndReschedule: scheduled digest due with no pending activity
-  SkipAndReschedule --> Scheduled
-  WakingNow --> Scheduled: state updated after wake
+  [*] --> Dormant: project agent created
+  Dormant --> WakingNow: creation wake or manual reanalysis
+  Dormant --> ShortDelay: direct project edit
+  Dormant --> MorningDigest: linked task or propagated project activity
+  ShortDelay --> WakingNow: coalescing deadline reached
+  MorningDigest --> WakingNow: next local 06:00 reached
+  WakingNow --> Dormant: no newer activity
+  WakingNow --> MorningDigest: newer activity queued during wake
+  LegacyDailySchedule --> Dormant: cleanup with no activity
+  LegacyDailySchedule --> WakingNow: pending activity still exists
 ```
 
-- **Linked-task churn** never wakes the agent directly. `ProjectActivityMonitor`
-  listens to `localUpdateStream`, resolves affected project ids, and sets
-  `slots.pendingProjectActivityAt` on the project agent state. The digest picks
-  it up later.
-- **Direct project edits** are different: the service registers a direct project
-  notification token, so an explicit edit to the project entity wakes the agent
-  immediately through the orchestrator.
+- **Linked-task churn** does not wake the agent immediately.
+  `ProjectActivityMonitor` listens to `localUpdateStream`, resolves affected
+  project ids, and sets `slots.pendingProjectActivityAt`. The project
+  subscription persists `nextWakeAt` for the next local 06:00 and reconstructs
+  that queued wake after a restart.
+- **Direct project edits** use the same subscription but take the short
+  coalescing path, so an explicit project edit does not wait until morning.
+- **Explicit requests** (`creation` and manual `reanalysis`) bypass the
+  subscription throttle and enqueue immediately.
 
-## The cheap skip
+## Dormant-by-default scheduling
 
-If a scheduled digest is due, a report already exists, and
-`pendingProjectActivityAt` is still `null`, the workflow rolls `scheduledWakeAt`
-forward and **skips the model call entirely**. That is the mechanism keeping
-project agents digest-shaped rather than reactive.
+Project agents do not own a recurring `scheduledWakeAt`. Meaningful local
+activity creates the event-driven `nextWakeAt`; after a successful wake the
+orchestrator clears it when no follow-up remains. Consequently the Wake tab
+contains a project-agent row only while actual queued work exists.
+
+Older installations can still contain the former daily schedule. Startup
+restoration clears it immediately when `pendingProjectActivityAt` is null, and
+`ScheduledWakeManager` applies the same cleanup if an overdue row wins the
+startup race. If pending activity exists, the legacy row may fire once as a
+migration safety net; every successful workflow run clears `scheduledWakeAt`
+instead of rolling it forward.
 
 During the final state transition, `pendingProjectActivityAt` is cleared **only
 when no newer activity arrived during the wake**. If fresh activity lands
@@ -115,11 +124,13 @@ summary is stale again.
 ## Wake flow
 
 `ProjectAgentWorkflow.execute()` loads state and resolves `activeProjectId`,
-checks whether a due scheduled wake can be skipped cheaply, loads the project
+retires a dormant legacy scheduled wake before inference, loads the project
 entity and prior observations, resolves template/version and inference profile,
 builds linked-task context **including task-agent reports**, runs the
 conversation with `ProjectAgentStrategy`, and persists token usage, final
 thought, report, observations, deferred change set and updated state.
+Successful persistence clears the legacy `scheduledWakeAt` and clears
+`pendingProjectActivityAt` only when no newer activity arrived during the wake.
 
 Project reports follow the same inline task-link contract as task reports: when
 linked-task context includes a task id, the report may point at `/tasks/<taskId>`

@@ -11,7 +11,7 @@ sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-08-10
+    last_modified: 2026-08-14
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -130,6 +130,13 @@ A subscription can opt into daily-digest deferral for propagated-only matches.
 Project-agent subscriptions use that path, so linked-task churn waits for the
 scheduled project digest; task-agent subscriptions opt out, so child-entry and
 task-context updates refresh on the normal coalesced path.
+
+That deferred subscription job is the project agent's only normal clock-based
+wake. Project agents start with no `scheduledWakeAt`; local project activity
+creates `nextWakeAt` only while a queued job exists, direct project edits use
+the shorter coalescing deadline, and manual requests bypass throttling. The
+scheduled-wake manager only recognizes state-level project schedules as legacy:
+it clears dormant ones instead of rolling them to another day.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the

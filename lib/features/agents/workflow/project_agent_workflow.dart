@@ -5,7 +5,6 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -135,10 +134,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
       await syncService.upsertEntity(
         state.copyWith(
           lastWakeAt: now,
-          scheduledWakeAt: nextLocalDayAtTime(
-            now,
-            hour: AgentSchedules.projectDailyDigestHour,
-          ),
+          scheduledWakeAt: null,
           updatedAt: now,
           consecutiveFailureCount: 0,
           wakeCounter: state.wakeCounter.increment(hostId),
@@ -157,7 +153,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     onPersistedStateChanged?.call(state.agentId);
 
     _log(
-      'scheduled wake skipped: no pending project activity',
+      'retired legacy scheduled wake: no pending project activity',
       subDomain: 'execute',
     );
   }
