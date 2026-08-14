@@ -5,7 +5,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.10]
+### Added
+- **A fourth day verdict: Improving.** A day where you missed some of the goal
+  but moved the right way now has its own verdict and its own colour, instead
+  of sharing "Mixed" with days that simply stalled.
+- **Reflections start from your data.** Opening a day's reflection now
+  pre-selects the verdict the day's own evidence points at, and says so, rather
+  than always starting on "Met". You can change it; a day with nothing recorded
+  suggests nothing at all.
+
+### Changed
+- **The goal report reads as sections.** Where things stand, the wider window,
+  the latest change, data coverage and what's next each carry a heading, and
+  the next actions are a list rather than a run of sentences. The headings
+  follow your app language whatever language the report was written in.
+- **"Not enough data" no longer contradicts the report beside it.** The chip is
+  hidden wherever the agent has actually published an assessment; thin coverage
+  is still stated inside the report itself.
+- **Long goal names get two lines** in the goal and chat headers instead of
+  being cut off mid-word.
+- **The per-signal note says something specific.** A signal that is behind but
+  whose last reading moved toward the target now says so, in place of the same
+  sentence repeated on every card.
+- **The habit card lost its empty row.** The weekly streak sits on the section
+  heading line rather than alone under the day squares.
+- **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
+
 ### Fixed
+- **Averages no longer show false precision.** A step average rendered as
+  "7,684.429 of 10,000"; large aggregates now read as whole numbers while
+  weight keeps its decimal.
 - **The day-verdict labels were mistranslated in seven languages.** "Met" was
   rendered as the past tense of meeting a *person* — "Getroffen" in German,
   "Ontmoet" in Dutch, "Conheci" in Portuguese — and left untranslated in

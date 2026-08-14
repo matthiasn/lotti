@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-13T00:50:11Z }
+generated: { by: codex/gpt-5, at: 2026-08-14T15:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -55,7 +55,7 @@ sources:
   - id: strategy
     resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
     title: GoalAgentStrategy — Phase B conversation and tool dispatch
-    last_modified: 2026-08-12
+    last_modified: 2026-08-14
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
@@ -309,13 +309,33 @@ flowchart TD
 - **Subjective assessment is a separate governance layer.** Deterministic
   `goalProgress` registers are recomputed from source and never carry a mutable
   opinion. `GoalAssessmentService` appends a durable action and payload for a
-  user's Met/Mixed/Missed reflection, bound to the immutable spec version that
-  was visible when it was recorded. Optional ratings use stable criterion ids;
-  corrections append another record instead of rewriting measurement history.
-  The detail projection renders the measured values read-only beside assessment
-  history. The payload also preserves whether the user rated directly or
-  accepted an agent suggestion; an agent suggestion surface must still obtain
-  approval before writing the accepted assessment.
+  user's Met/Improving/Mixed/Missed reflection, bound to the immutable spec
+  version that was visible when it was recorded. Optional ratings use stable
+  criterion ids; corrections append another record instead of rewriting
+  measurement history. The payload also preserves whether the user rated
+  directly or accepted a suggestion.
+
+  **A recorded verdict outranks the measurement wherever both are shown.** The
+  seven-day strip colours a day from `latestRatingsByDay`, falling back to the
+  measured `GoalCompactDayState` only where no verdict exists — the
+  measurement is evidence about a day, the reflection is the user's ruling on
+  it. Those lookups are scoped to the active `specVersionId`: spec versions are
+  immutable and the history keeps them all, so an unscoped map would let a
+  judgement of retired criteria colour a day under the current ones. Ties on
+  `createdAt` break by record id so two devices cannot disagree.
+
+  `improving` is the verdict a three-way split could not express — some of it
+  missed, but the day moved the right way. It is newer than the shipped wire
+  format, so `rating` carries the nearest legacy-decodable verdict (`mixed`)
+  and `ratingV2` carries the real one: a client predating it discards any
+  record whose rating it cannot decode, taking the note and per-dimension
+  verdicts with it.
+
+  `suggestedDayVerdict` proposes a starting point from the day's own evidence
+  — deterministic, never a model call, because a suggestion that disagreed
+  with the numbers printed above it in the same sheet would be worse than
+  none. A day with no observations at all suggests nothing rather than
+  Missed.
 - **Conversation capture is offer-first and linked-source-only.**
   `parseGoalMeasurableRecordOffer` only recognizes an explicit positive
   quantity/unit pair for a `GoalCriterionMeasurable` in the active criteria

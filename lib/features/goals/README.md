@@ -48,10 +48,12 @@ on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 Each goal-progress period retains one `GoalCriterionProgress` result per stable
 criterion id, so multi-dimensional goals remain accountable beneath the
 composite health result. Subjective daily ratings are deliberately not written
-into those recomputed rows: direct Met/Mixed/Missed assessments are append-only
-agent-log actions bound to the active spec version, with optional notes and
-per-dimension ratings. The detail page presents those reflections as a separate
-history beside the measured evidence.
+into those recomputed rows: Met/Improving/Mixed/Missed assessments are
+append-only agent-log actions bound to the active spec version, with optional
+notes and per-dimension ratings. Every day in the seven-day strip opens its own
+reflection, past days included, and a recorded verdict decides that day's
+colour in place of the measured state. The sheet arrives on a verdict derived
+from the day's evidence, which the user can override.
 
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the
