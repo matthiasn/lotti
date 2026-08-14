@@ -992,6 +992,37 @@ void main() {
           );
         },
       );
+
+      test(
+        'clears pending activity even when no wake deadline exists',
+        () async {
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.cancelScheduledWake('agent-1');
+
+          final persisted =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.slots.pendingProjectActivityAt, isNull);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('restoreSubscriptions', () {
