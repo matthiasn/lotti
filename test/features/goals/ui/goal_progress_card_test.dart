@@ -214,6 +214,113 @@ void main() {
     expect(tapped, [today.subtract(const Duration(days: 6)), today]);
   });
 
+  testWidgets('a read-only strip hugs its cells while a tappable one spans '
+      'the measure', (tester) async {
+    const week = [
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.partial,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+    ];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SizedBox(
+          width: 400,
+          child: Column(
+            children: [
+              const GoalCompactWindowStrip(days: week),
+              GoalCompactWindowStrip(
+                days: week,
+                lastDay: today,
+                onDaySelected: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final strips = find.byType(GoalCompactWindowStrip);
+    final readOnly = tester.getSize(strips.at(0)).width;
+    final tappable = tester.getSize(strips.at(1)).width;
+    // Read-only the strip is a figure and stays out of the list row's way;
+    // tappable it takes the whole measure, so seven cells can each clear the
+    // touch floor without overflowing a phone card.
+    expect(readOnly, lessThan(tappable));
+    expect(
+      tappable,
+      tester.getSize(find.byType(Column).last).width,
+      reason: 'the tappable strip did not span its parent',
+    );
+  });
+
+  testWidgets('a placeholder strip keeps the silhouette without borrowing the '
+      'empty-week fill', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalCompactWindowStrip(
+          days: [
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+          ],
+          placeholder: true,
+          cellSize: ControlSizes.iconChipCompact,
+        ),
+      ),
+    );
+
+    // Dashed outlines, never the filled grey a genuinely-empty week wears:
+    // "no data yet" and "nothing happened" must not share an encoding.
+    expect(find.byType(DsDashedBorder), findsNWidgets(3));
+    final outlined = tester.getSize(
+      find
+          .descendant(
+            of: find.byType(DsDashedBorder).first,
+            matching: find.byType(SizedBox),
+          )
+          .first,
+    );
+    expect(outlined.width, ControlSizes.iconChipCompact);
+    expect(outlined.height, ControlSizes.iconChipCompact);
+  });
+
+  testWidgets('the partial-day dot scales with the square it marks', (
+    tester,
+  ) async {
+    Future<double> dotWidth(double cellSize) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalCompactWindowStrip(
+            days: const [GoalCompactDayState.partial],
+            cellSize: cellSize,
+          ),
+        ),
+      );
+      // The dot is the innermost Container inside the cell.
+      return tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byType(GoalCompactWindowStrip),
+                  matching: find.byType(Container),
+                )
+                .last,
+          )
+          .width;
+    }
+
+    final compact = await dotWidth(IconSizes.xs);
+    final large = await dotWidth(ControlSizes.iconChipCompact);
+    // A dot fixed at the compact size vanishes inside the 28px square the
+    // detail page uses, and the partial state is the one that has no colour
+    // of its own to fall back on.
+    expect(large, greaterThan(compact));
+  });
+
   testWidgets('tappable day cells clear the touch floor and match the habit '
       'day squares, while a read-only strip stays compact', (tester) async {
     await tester.pumpWidget(
