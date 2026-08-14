@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -170,6 +171,102 @@ void main() {
     );
 
     expect(find.byType(DsDashedBorder), findsOneWidget);
+  });
+
+  testWidgets('a tappable strip reports the day each cell stands for, '
+      'counting back from the last', (tester) async {
+    final tapped = <DateTime>[];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: const [
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+            GoalCompactDayState.partial,
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+          ],
+          lastDay: today,
+          onDaySelected: tapped.add,
+        ),
+      ),
+    );
+
+    // The oldest cell is six days back and the last one is today. Tapping a
+    // *past* day is the point: before this, the only way to reflect on a day
+    // was the "Reflect on today" row, so a day could never be closed off
+    // once it had passed.
+    await tester.tap(
+      find.bySemanticsLabel(
+        'Record for ${DateFormat.MMMEd().format(
+          today.subtract(const Duration(days: 6)),
+        )}',
+      ),
+    );
+    await tester.tap(
+      find.bySemanticsLabel(
+        'Record for ${DateFormat.MMMEd().format(today)}',
+      ),
+    );
+
+    expect(tapped, [today.subtract(const Duration(days: 6)), today]);
+  });
+
+  testWidgets('tappable day cells clear the touch floor and match the habit '
+      'day squares, while a read-only strip stays compact', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(InkWell),
+    );
+    expect(cells, findsNWidgets(7));
+    for (var index = 0; index < 7; index++) {
+      expect(
+        tester.getSize(cells.at(index)).height,
+        greaterThanOrEqualTo(TapTargets.minimum),
+        reason: 'cell $index is under the touch floor',
+      );
+    }
+
+    // The square itself matches the habit day squares below it — the whole
+    // goal used to render at IconSizes.xs against their iconChipCompact,
+    // less than half the size, on the same screen.
+    final square = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(GoalCompactWindowStrip),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      square.constraints!.maxWidth,
+      ControlSizes.iconChipCompact,
+    );
   });
 
   testWidgets('metric card renders seven bars in the same rolling frame', (
