@@ -20,7 +20,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// then both paths rendezvous here before writing. Older batches are rejected;
 /// batches observed after the cancellation remain eligible. A failed
 /// cancellation removes only its own cutoff so it cannot silently consume
-/// activity when persistence rolled back.
+/// activity when persistence rolled back. A caller can confirm that storage
+/// committed before a later error, preserving the cutoff while the original
+/// error still reaches the UI.
 class ProjectActivityCancellationCoordinator {
   final Map<String, int> _committedCancellationSequences = {};
   final Map<String, Set<int>> _pendingCancellationSequences = {};
@@ -32,20 +34,23 @@ class ProjectActivityCancellationCoordinator {
 
   Future<T> runCancellation<T>({
     required String agentId,
-    required Future<T> Function() action,
+    required Future<T> Function(void Function() confirmCommit) action,
   }) {
     final cancellationSequence = ++_sequence;
     (_pendingCancellationSequences[agentId] ??= {}).add(
       cancellationSequence,
     );
     return _serialize(agentId, () async {
+      var commitConfirmed = false;
       try {
-        final result = await action();
-        final committed = _committedCancellationSequences[agentId];
-        if (committed == null || cancellationSequence > committed) {
-          _committedCancellationSequences[agentId] = cancellationSequence;
-        }
+        final result = await action(() => commitConfirmed = true);
+        _commitCancellation(agentId, cancellationSequence);
         return result;
+      } catch (_) {
+        if (commitConfirmed) {
+          _commitCancellation(agentId, cancellationSequence);
+        }
+        rethrow;
       } finally {
         final pending = _pendingCancellationSequences[agentId];
         pending?.remove(cancellationSequence);
@@ -54,6 +59,13 @@ class ProjectActivityCancellationCoordinator {
         }
       }
     });
+  }
+
+  void _commitCancellation(String agentId, int cancellationSequence) {
+    final committed = _committedCancellationSequences[agentId];
+    if (committed == null || cancellationSequence > committed) {
+      _committedCancellationSequences[agentId] = cancellationSequence;
+    }
   }
 
   Future<bool> runActivityWrite({

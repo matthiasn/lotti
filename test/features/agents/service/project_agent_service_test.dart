@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -1015,6 +1016,9 @@ void main() {
         'drops queued work when cancellation commits before sync flush fails',
         () async {
           final failingSyncService = _PostCommitFailingAgentSyncService();
+          final cancellationCoordinator =
+              ProjectActivityCancellationCoordinator();
+          final observedSequence = cancellationCoordinator.captureActivity();
           when(
             () => failingSyncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
@@ -1024,6 +1028,7 @@ void main() {
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
             onPersistedStateChanged: notifiedAgentIds.add,
+            cancellationCoordinator: cancellationCoordinator,
           );
           final state = makeState().copyWith(
             slots: AgentSlots(
@@ -1064,6 +1069,15 @@ void main() {
             ),
           ).called(1);
           expect(notifiedAgentIds, ['agent-1']);
+
+          var activityPersisted = false;
+          final accepted = await cancellationCoordinator.runActivityWrite(
+            agentId: 'agent-1',
+            observedSequence: observedSequence,
+            action: () async => activityPersisted = true,
+          );
+          expect(accepted, isFalse);
+          expect(activityPersisted, isFalse);
         },
       );
 

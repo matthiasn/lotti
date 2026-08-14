@@ -2830,6 +2830,12 @@ void main() {
               identity.agentId,
             ),
           ).called(1);
+          verify(
+            () => updateNotifications.notify(
+              {identity.agentId, 'AGENT_CHANGED'},
+              fromSync: true,
+            ),
+          ).called(1);
         },
       );
 

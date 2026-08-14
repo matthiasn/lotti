@@ -137,7 +137,9 @@ stateDiagram-v2
   local transaction as the state write; concurrent opt-in and opt-out changes
   therefore win instead of being overwritten by a stale sync-reconciliation
   decision. Equal or locally dominated identity replays still run this local
-  repair, so a transient receiver-side failure can recover on redelivery. Local
+  repair, so a transient receiver-side failure can recover on redelivery; when
+  that repair changes the fallback, it also notifies local listeners so the
+  visible countdown updates immediately. Local
   settings, resume-time fallback repair, and startup restoration use the same
   transaction-local policy recheck before enabling runtime; a lifecycle change
   that wins during startup also removes the stale observation subscriptions.
@@ -183,7 +185,9 @@ cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 transaction rollback therefore leaves the runtime work intact and surfaces an
 error in the project detail UI. If the state commits but the subsequent outbox
 flush fails, runtime work is still cleared to match storage before that sync
-error is surfaced. Because a transaction can also fail after its callback ran
+error is surfaced, and the confirmed cancellation cutoff remains committed so
+an older activity batch cannot recreate the cleared marker. Because a
+transaction can also fail after its callback ran
 but before commit, the error path re-reads storage and clears runtime work only
 when the cancellation fields are actually absent. Failure persistence and cancellation share the same
 serialized sync transaction path, so a retry computed from an older snapshot

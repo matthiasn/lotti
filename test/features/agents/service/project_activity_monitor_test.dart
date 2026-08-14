@@ -79,7 +79,7 @@ void main() {
         await expectLater(
           coordinator.runCancellation<void>(
             agentId: 'agent-1',
-            action: () async => throw StateError('rollback'),
+            action: (_) async => throw StateError('rollback'),
           ),
           throwsA(isA<StateError>()),
         );
@@ -97,6 +97,35 @@ void main() {
     );
 
     test(
+      'confirmed commit keeps the cutoff when later work throws',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+
+        await expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: (confirmCommit) async {
+              confirmCommit();
+              throw StateError('outbox flush failed');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isFalse);
+        expect(activityPersisted, isFalse);
+      },
+    );
+
+    test(
       'overlapping failed cancellations leave no stale activity cutoff',
       () async {
         final coordinator = ProjectActivityCancellationCoordinator();
@@ -109,7 +138,7 @@ void main() {
         final firstExpectation = expectLater(
           coordinator.runCancellation<void>(
             agentId: 'agent-1',
-            action: () async {
+            action: (_) async {
               firstStarted.complete();
               await releaseFirst.future;
               throw StateError('first rollback');
@@ -121,7 +150,7 @@ void main() {
         final secondExpectation = expectLater(
           coordinator.runCancellation<void>(
             agentId: 'agent-1',
-            action: () async {
+            action: (_) async {
               secondStarted.complete();
               await releaseSecond.future;
               throw StateError('second rollback');

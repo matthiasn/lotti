@@ -234,7 +234,15 @@ extension _AgentHandlers on SyncEventProcessor {
         if (wakeOrchestrator != null &&
             resolvedEntity is AgentIdentityEntity &&
             resolvedEntity.kind == AgentKinds.projectAgent) {
-          await _reconcileProjectAgentRuntime(resolvedEntity);
+          final scheduleChanged = await _reconcileProjectAgentRuntime(
+            resolvedEntity,
+          );
+          if (scheduleChanged) {
+            _updateNotifications.notify(
+              {resolvedEntity.agentId, agentNotification},
+              fromSync: true,
+            );
+          }
         }
         await _projectAgentAttribution(resolvedEntity);
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
@@ -520,10 +528,11 @@ extension _AgentHandlers on SyncEventProcessor {
       '${link.fromId}_project_direct_${link.toId}';
 
   /// Reconciles receiver-local project scheduling and runtime after sync.
-  Future<void> _reconcileProjectAgentRuntime(
+  Future<bool> _reconcileProjectAgentRuntime(
     AgentIdentityEntity identity,
   ) async {
     var policy = (active: false, automaticWakesAllowed: false);
+    var scheduleChanged = false;
     await agentRepository!.runInTransaction(() async {
       final currentIdentity = await agentRepository!.getEntity(identity.id);
       final currentProjectIdentity =
@@ -569,13 +578,14 @@ extension _AgentHandlers on SyncEventProcessor {
               : null,
         ),
       );
+      scheduleChanged = true;
     });
 
     if (!policy.active) {
       wakeOrchestrator!
         ..removeSubscriptions(identity.agentId)
         ..disableAutomaticUpdatesRuntime(identity.agentId);
-      return;
+      return scheduleChanged;
     }
     if (policy.automaticWakesAllowed) {
       wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
@@ -589,6 +599,7 @@ extension _AgentHandlers on SyncEventProcessor {
     for (final link in links.whereType<AgentProjectLink>()) {
       if (link.deletedAt == null) _addProjectSubscription(link);
     }
+    return scheduleChanged;
   }
 
   void _addProjectSubscription(AgentProjectLink link) {

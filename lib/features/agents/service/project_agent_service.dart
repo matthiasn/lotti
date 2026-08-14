@@ -235,7 +235,7 @@ class ProjectAgentService {
     final cancelledAt = clock.now();
     await _cancellationCoordinator.runCancellation(
       agentId: agentId,
-      action: () async {
+      action: (confirmCancellationCommit) async {
         void clearRuntimeWake() {
           orchestrator
             ..clearThrottle(agentId)
@@ -279,6 +279,7 @@ class ProjectAgentService {
             }
           }
           if (cancellationCommitted) {
+            confirmCancellationCommit();
             onPersistedStateChanged?.call(agentId);
             clearRuntimeWake();
           }
