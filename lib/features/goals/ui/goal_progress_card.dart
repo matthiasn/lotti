@@ -1571,6 +1571,10 @@ class _MetricProgressSeries extends StatelessWidget {
 
   final GoalMetricProgressView metric;
 
+  /// Height of the plot area. Shared with the minimum-bar floor below, so a
+  /// change here cannot silently leave an observed-but-tiny day invisible.
+  static double _chartHeight(DsTokens tokens) => tokens.spacing.step9;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -1589,7 +1593,7 @@ class _MetricProgressSeries extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         SizedBox(
-          height: tokens.spacing.step10,
+          height: _chartHeight(tokens),
           child: metric.days.length <= 7
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1617,7 +1621,20 @@ class _MetricProgressSeries extends StatelessWidget {
       for (var index = 0; index < metric.days.length; index++) ...[
         if (index > 0) SizedBox(width: tokens.spacing.step2),
         if (expanded)
-          Expanded(child: _bar(context, metric.days[index], maxValue))
+          // Even spacing across the card, but each bar keeps the same width
+          // it has in the scrollable variant. Left to fill its share, a
+          // seven-day week rendered ~40px slabs that dominated the card and
+          // read nothing like the day squares above them.
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ControlSizes.iconChipCompact,
+                ),
+                child: _bar(context, metric.days[index], maxValue),
+              ),
+            ),
+          )
         else
           SizedBox(
             width: ControlSizes.iconChipCompact,
@@ -1640,16 +1657,24 @@ class _MetricProgressSeries extends StatelessWidget {
     final rawHeightFactor = maxValue == 0
         ? 0.0
         : (day.value / maxValue).clamp(0, 1).toDouble();
-    final minimumObservedHeight = tokens.spacing.step2 / tokens.spacing.step10;
+    final minimumObservedHeight = tokens.spacing.step2 / _chartHeight(tokens);
     final heightFactor =
         day.isObserved && rawHeightFactor < minimumObservedHeight
         ? minimumObservedHeight
         : rawHeightFactor;
     final barFill = DecoratedBox(
       decoration: BoxDecoration(
-        color: metric.meetsTarget(day)
-            ? tokens.colors.alert.info.defaultColor
-            : tokens.colors.background.level03,
+        // The same fill the day cells above use, for the same meaning: this
+        // day met the goal. The bars wore `alert.info` — a blue that carried
+        // no threshold meaning at all, so a 12,000-step day and a 5,000-step
+        // day were told apart only by height, and the day the user actually
+        // beat their target looked no different from the day they missed it.
+        color: goalDayStateFill(
+          tokens,
+          metric.meetsTarget(day)
+              ? GoalCompactDayState.full
+              : GoalCompactDayState.none,
+        ),
         border: !day.isObserved
             ? Border.all(
                 color: tokens.colors.text.lowEmphasis,

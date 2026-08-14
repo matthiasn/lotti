@@ -970,6 +970,58 @@ void main() {
     expect(barColor('2026-08-10'), isNot(barColor('2026-08-11')));
   });
 
+  testWidgets('a day at or above an at-least target wears the day-cell '
+      'success fill, and a slimmer bar than its share of the row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Steps',
+              target: 10000,
+              days: [day(1, 12400), day(0, 5262)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    Color barColor(String date) {
+      final bar = tester.widget<FractionallySizedBox>(
+        find.byKey(ValueKey('goal-metric-bar-$date')),
+      );
+      return ((bar.child! as DecoratedBox).decoration as BoxDecoration).color!;
+    }
+
+    // The bar beating the goal wears exactly the fill a met day cell wears —
+    // one meaning, one colour, across every goal surface. It used to be
+    // `alert.info`, a blue carrying no threshold meaning, so beating the
+    // target looked identical to missing it.
+    expect(
+      barColor('2026-08-10'),
+      goalDayStateFill(tokens, GoalCompactDayState.full),
+      reason: '12,400 steps beat the 10,000 target',
+    );
+    expect(
+      barColor('2026-08-11'),
+      goalDayStateFill(tokens, GoalCompactDayState.none),
+      reason: '5,262 steps fell short',
+    );
+
+    // Seven bars filling a full-width card rendered ~40px slabs. Each one is
+    // now capped at the same width the scrollable variant uses.
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('goal-metric-bar-2026-08-11')))
+          .width,
+      lessThanOrEqualTo(ControlSizes.iconChipCompact),
+    );
+  });
+
   testWidgets('an observed zero keeps a visible success baseline', (
     tester,
   ) async {
