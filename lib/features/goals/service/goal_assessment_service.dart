@@ -41,12 +41,27 @@ class GoalAssessmentService {
             'recordId': recordId,
             'day': day.toIso8601String(),
             'specVersionId': specVersionId,
-            'rating': rating.name,
+            // `rating` stays readable by every shipped client. Versions before
+            // `improving` existed decode by searching their own three-value
+            // enum and DISCARD the whole record when nothing matches, taking
+            // the note and the per-dimension verdicts with it — a synced day
+            // would simply vanish on the other device. So the wire keeps the
+            // nearest legacy verdict here and carries the real one alongside;
+            // readers that understand `ratingV2` prefer it.
+            'rating': _legacyRatingName(rating),
+            if (rating != _legacyRating(rating)) 'ratingV2': rating.name,
             'note': note,
             'dimensionRatings': {
               for (final entry in dimensionRatings.entries)
-                entry.key: entry.value.name,
+                entry.key: _legacyRatingName(entry.value),
             },
+            if (dimensionRatings.values.any(
+              (value) => value != _legacyRating(value),
+            ))
+              'dimensionRatingsV2': {
+                for (final entry in dimensionRatings.entries)
+                  entry.key: entry.value.name,
+              },
             'provenance': provenance.name,
             'suggestedBy': suggestedBy,
           },
@@ -70,3 +85,17 @@ class GoalAssessmentService {
     return recordId;
   }
 }
+
+/// The nearest verdict a client predating [GoalAssessmentRating.improving]
+/// can decode.
+///
+/// "Some of it was missed, but the day moved the right way" collapses to
+/// `mixed` there, which is the honest reading: it was not a clean sweep. Every
+/// other verdict is its own legacy form.
+GoalAssessmentRating _legacyRating(GoalAssessmentRating rating) =>
+    rating == GoalAssessmentRating.improving
+    ? GoalAssessmentRating.mixed
+    : rating;
+
+String _legacyRatingName(GoalAssessmentRating rating) =>
+    _legacyRating(rating).name;

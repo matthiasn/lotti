@@ -9,7 +9,18 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// The verdict choices, in order, derived from the enum itself.
+///
+/// Both the day toggle and the per-dimension toggles read from here: hand-
+/// listing them twice is how a fourth verdict ends up offered on one and
+/// missing from the other.
+List<DsSegment<GoalAssessmentRating>> _ratingSegments(BuildContext context) => [
+  for (final rating in GoalAssessmentRating.values)
+    DsSegment(rating, goalAssessmentRatingLabel(context, rating)),
+];
 
 class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   const GoalDayAssessmentSheet({
@@ -18,6 +29,7 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
     required this.specVersion,
     required this.day,
     required this.progress,
+    this.existing,
     super.key,
   });
 
@@ -27,6 +39,15 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   final DateTime day;
   final GoalProgressView progress;
 
+  /// The verdict already standing for this day, when there is one.
+  ///
+  /// Every day in the strip can be reopened, so the sheet has to arrive
+  /// showing what was recorded. Starting blank meant reopening a day filed as
+  /// Missed offered Met with an empty note, and saving replaced the real
+  /// reflection with that default — losing the note and the per-dimension
+  /// verdicts along with it.
+  final GoalAssessmentRecord? existing;
+
   @override
   ConsumerState<GoalDayAssessmentSheet> createState() =>
       _GoalDayAssessmentSheetState();
@@ -35,10 +56,19 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
 class _GoalDayAssessmentSheetState
     extends ConsumerState<GoalDayAssessmentSheet> {
   final _note = TextEditingController();
-  GoalAssessmentRating _rating = GoalAssessmentRating.met;
+  late GoalAssessmentRating _rating;
   final _dimensionRatings = <String, GoalAssessmentRating>{};
   var _saving = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _rating = existing?.rating ?? GoalAssessmentRating.met;
+    _note.text = existing?.note ?? '';
+    if (existing != null) _dimensionRatings.addAll(existing.dimensionRatings);
+  }
 
   @override
   void dispose() {
@@ -155,20 +185,7 @@ class _GoalDayAssessmentSheetState
                 expand: true,
                 selected: _rating,
                 onChanged: (value) => setState(() => _rating = value),
-                segments: [
-                  DsSegment(
-                    GoalAssessmentRating.met,
-                    context.messages.goalAssessmentMet,
-                  ),
-                  DsSegment(
-                    GoalAssessmentRating.mixed,
-                    context.messages.goalAssessmentMixed,
-                  ),
-                  DsSegment(
-                    GoalAssessmentRating.missed,
-                    context.messages.goalAssessmentMissed,
-                  ),
-                ],
+                segments: _ratingSegments(context),
               ),
               SizedBox(height: tokens.spacing.step4),
               DesignSystemTextarea(
@@ -201,20 +218,7 @@ class _GoalDayAssessmentSheetState
                                 () =>
                                     _dimensionRatings[row.criterionId] = value,
                               ),
-                              segments: [
-                                DsSegment(
-                                  GoalAssessmentRating.met,
-                                  context.messages.goalAssessmentMet,
-                                ),
-                                DsSegment(
-                                  GoalAssessmentRating.mixed,
-                                  context.messages.goalAssessmentMixed,
-                                ),
-                                DsSegment(
-                                  GoalAssessmentRating.missed,
-                                  context.messages.goalAssessmentMissed,
-                                ),
-                              ],
+                              segments: _ratingSegments(context),
                             ),
                           ),
                         ],
@@ -381,16 +385,10 @@ class _AssessmentRatingPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = switch (rating) {
-      GoalAssessmentRating.met => tokens.colors.alert.success.defaultColor,
-      GoalAssessmentRating.mixed => tokens.colors.alert.warning.defaultColor,
-      GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
-    };
-    final label = switch (rating) {
-      GoalAssessmentRating.met => context.messages.goalAssessmentMet,
-      GoalAssessmentRating.mixed => context.messages.goalAssessmentMixed,
-      GoalAssessmentRating.missed => context.messages.goalAssessmentMissed,
-    };
+    // Shared with the seven-day strip: the history and the strip are two views
+    // of the same verdict and must not colour or name it differently.
+    final color = goalAssessmentRatingFill(tokens, rating);
+    final label = goalAssessmentRatingLabel(context, rating);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color.withValues(alpha: SurfaceAlphas.washControl),

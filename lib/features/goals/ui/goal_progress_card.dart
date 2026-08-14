@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -27,8 +28,15 @@ class GoalCompactWindowStrip extends StatelessWidget {
   const GoalCompactWindowStrip({
     required this.days,
     this.placeholder = false,
+    this.cellSize = IconSizes.xs,
+    this.lastDay,
+    this.onDaySelected,
+    this.ratingsByDay = const {},
     super.key,
-  });
+  }) : assert(
+         onDaySelected == null || lastDay != null,
+         'A tappable strip needs lastDay to date the cell that was tapped.',
+       );
 
   final List<GoalCompactDayState> days;
 
@@ -39,11 +47,104 @@ class GoalCompactWindowStrip extends StatelessWidget {
   /// it.
   final bool placeholder;
 
+  /// Edge of one day's square. Defaults to the compact size the list rows
+  /// need; the detail page passes the habit day square's size so the two
+  /// strips on one screen read as the same instrument at the same scale.
+  final double cellSize;
+
+  /// The day the last cell stands for. Every earlier cell counts back from
+  /// it, which is how a tap resolves to a date without a second parallel
+  /// list that could fall out of step with [days].
+  final DateTime? lastDay;
+
+  /// Opens the day's reflection. Null leaves the strip a read-only figure —
+  /// which is what the list rows want, since a tap there navigates.
+  final ValueChanged<DateTime>? onDaySelected;
+
+  /// Day verdicts the user has recorded, keyed by UTC day. Ignored without a
+  /// [lastDay] to line them up against.
+  ///
+  /// A recorded verdict wins over the measured state for that cell. The
+  /// measurement is evidence about a day; the reflection is the user's ruling
+  /// on it, and a strip that kept showing grey after they filed the day as
+  /// missed would be contradicting them.
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
+
+  DateTime _dateAt(int index, int length) =>
+      lastDay!.subtract(Duration(days: length - 1 - index));
+
+  GoalAssessmentRating? _ratingAt(int index, int length) {
+    if (ratingsByDay.isEmpty || lastDay == null) return null;
+    final date = _dateAt(index, length);
+    return ratingsByDay[DateTime.utc(date.year, date.month, date.day)];
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final visible = days.take(7).toList(growable: false);
     if (visible.isEmpty) return const SizedBox.shrink();
+    final onDaySelected = this.onDaySelected;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+
+    Widget cellAt(int index) {
+      if (placeholder) return _PlaceholderDayCell(size: cellSize);
+      final today = index == visible.length - 1;
+      final rating = _ratingAt(index, visible.length);
+      if (onDaySelected == null) {
+        return _CompactDayCell(
+          state: visible[index],
+          today: today,
+          size: cellSize,
+          rating: rating,
+        );
+      }
+      final date = _dateAt(index, visible.length);
+      final dayName = DateFormat.MMMEd(locale).format(date);
+      // Colour and an inner dot are the only thing separating these cells,
+      // and neither reaches a screen reader. Each day therefore announces its
+      // own state, not just its date — the strip's summary gives a count and
+      // cannot say WHICH days went well, which is exactly what a reader needs
+      // once every cell is individually actionable.
+      final outcome = rating != null
+          ? goalAssessmentRatingLabel(context, rating)
+          : switch (visible[index]) {
+              GoalCompactDayState.full => context.messages.goalProgressDone,
+              GoalCompactDayState.partial =>
+                context.messages.goalProgressPartial,
+              GoalCompactDayState.none =>
+                context.messages.goalProgressHabitDayNoEntry,
+            };
+      return _CompactDayCell(
+        state: visible[index],
+        today: today,
+        size: cellSize,
+        rating: rating,
+        label: context.messages.goalProgressHabitDaySemantics(
+          dayName,
+          outcome,
+        ),
+        onTap: () => onDaySelected(date),
+      );
+    }
+
+    // Read-only, the strip is a figure and hugs its content. Tappable, it
+    // spans its parent instead: seven cells each demanding the 48px touch
+    // floor would overflow a phone card, so the cells share the measure and
+    // every one of them still clears the floor.
+    final row = Row(
+      mainAxisSize: onDaySelected == null ? MainAxisSize.min : MainAxisSize.max,
+      children: [
+        for (var index = 0; index < visible.length; index++) ...[
+          if (index > 0) SizedBox(width: tokens.spacing.step1),
+          if (onDaySelected == null)
+            cellAt(index)
+          else
+            Expanded(child: cellAt(index)),
+        ],
+      ],
+    );
+
     return Semantics(
       label: placeholder
           ? context.messages.goalProgressStripLoading
@@ -52,23 +153,9 @@ class GoalCompactWindowStrip extends StatelessWidget {
                   .where((state) => state != GoalCompactDayState.none)
                   .length,
             ),
-      child: ExcludeSemantics(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < visible.length; index++) ...[
-              if (index > 0) SizedBox(width: tokens.spacing.step1),
-              if (placeholder)
-                const _PlaceholderDayCell()
-              else
-                _CompactDayCell(
-                  state: visible[index],
-                  today: index == visible.length - 1,
-                ),
-            ],
-          ],
-        ),
-      ),
+      // A tappable strip publishes each day as its own button, so the summary
+      // above becomes the container's label rather than the whole story.
+      child: onDaySelected == null ? ExcludeSemantics(child: row) : row,
     );
   }
 }
@@ -77,7 +164,9 @@ class GoalCompactWindowStrip extends StatelessWidget {
 /// outline instead of a fill, so the silhouette holds without borrowing the
 /// empty-week encoding.
 class _PlaceholderDayCell extends StatelessWidget {
-  const _PlaceholderDayCell();
+  const _PlaceholderDayCell({this.size = IconSizes.xs});
+
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -87,30 +176,75 @@ class _PlaceholderDayCell extends StatelessWidget {
       child: DsDashedBorder(
         color: tokens.colors.text.lowEmphasis,
         radius: tokens.radii.xs,
-        child: const SizedBox(width: IconSizes.xs, height: IconSizes.xs),
+        child: SizedBox(width: size, height: size),
       ),
     );
   }
 }
 
 class _CompactDayCell extends StatelessWidget {
-  const _CompactDayCell({required this.state, required this.today});
+  const _CompactDayCell({
+    required this.state,
+    required this.today,
+    this.size = IconSizes.xs,
+    this.onTap,
+    this.label,
+    this.rating,
+  });
 
   final GoalCompactDayState state;
   final bool today;
+  final double size;
+  final VoidCallback? onTap;
+
+  /// The user's verdict for this day, when they have recorded one. It decides
+  /// the fill; [state] is only what the app measured.
+  final GoalAssessmentRating? rating;
+
+  /// Spoken and hovered name for a tappable cell. Null on a read-only strip,
+  /// whose semantics are carried by the summary above it.
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final rating = this.rating;
+    // The dot is the measured-partial cue; a recorded verdict wears its own
+    // glyph instead. Either way the cell says something a reader who cannot
+    // separate the hues can still act on.
+    final showsPartialDot =
+        rating == null && state == GoalCompactDayState.partial;
     final cell = Container(
-      width: IconSizes.xs,
-      height: IconSizes.xs,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: goalDayStateFill(tokens, state),
+        color: rating == null
+            ? goalDayStateFill(tokens, state)
+            : goalAssessmentRatingFill(tokens, rating),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
-      child: state == GoalCompactDayState.partial
-          ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step1))
+      child: showsPartialDot
+          ? Center(
+              child: goalPartialDayDot(
+                tokens,
+                // The dot has to stay legible inside the square it marks, so
+                // it scales with it rather than sitting at one fixed size.
+                size <= IconSizes.xs
+                    ? tokens.spacing.step1
+                    : tokens.spacing.step2,
+              ),
+            )
+          // Only where the square is big enough to hold it. On the list rows'
+          // 12px cells a glyph is a smudge, and those strips carry no recorded
+          // verdicts anyway.
+          : rating != null && size >= ControlSizes.iconChipCompact
+          ? Center(
+              child: Icon(
+                goalAssessmentRatingGlyph(rating),
+                size: size * 0.6,
+                color: tokens.colors.alert.success.ink,
+              ),
+            )
           : null,
     );
     // Every cell shares one outer footprint; today only adds the dashed
@@ -119,13 +253,40 @@ class _CompactDayCell extends StatelessWidget {
       padding: EdgeInsets.all(tokens.spacing.step1),
       child: cell,
     );
-    return today
+    final decorated = today
         ? DsDashedBorder(
             color: tokens.colors.text.lowEmphasis,
             radius: tokens.radii.xs,
             child: padded,
           )
         : padded;
+    final onTap = this.onTap;
+    if (onTap == null) return decorated;
+    // The square keeps its size; the hit slot around it takes the full height
+    // of the touch floor and whatever width the row can spare. Growing the
+    // square itself to 48px would make the strip shout over the habit rows it
+    // is meant to summarise.
+    return Semantics(
+      label: label,
+      button: true,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label ?? '',
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: TapTargets.minimum,
+              ),
+              child: Center(child: decorated),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -145,6 +306,55 @@ Color goalDayStateFill(DsTokens tokens, GoalCompactDayState state) =>
         ),
       GoalCompactDayState.none => tokens.colors.background.level03,
     };
+
+/// Hue for a day the user has actually judged, which outranks what the app
+/// measured: a reflection is a statement about the day, and the measurement is
+/// only evidence toward one.
+///
+/// Four distinct hues, all existing alert tokens, and the same three the
+/// reflections-history pill has always used — extended with the blue a
+/// restarting agent wears for [GoalAssessmentRating.improving], which is
+/// progress that is not yet arrival. Sharing one scheme is the point: the
+/// strip and the history are two views of the same verdict, and a day filed
+/// as missed must not be grey in one place and red in another.
+///
+/// Notably [GoalAssessmentRating.missed] is not the neutral grey a day with no
+/// data wears. Deciding a day was missed and never looking at it are different
+/// facts, and the strip has to be able to say which.
+Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
+    switch (rating) {
+      GoalAssessmentRating.met => tokens.colors.alert.success.defaultColor,
+      GoalAssessmentRating.improving => tokens.colors.alert.info.defaultColor,
+      GoalAssessmentRating.mixed => tokens.colors.alert.warning.defaultColor,
+      GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
+    };
+
+/// The glyph that names a recorded verdict without relying on its hue.
+///
+/// Four fills that differ only by colour are four fills a red-green colour
+/// deficiency cannot tell apart, and the strip's whole job is to be read at a
+/// glance. Each verdict therefore carries a shape as well: a tick for met, a
+/// rising arrow for improving, a half-filled circle for mixed, a cross for
+/// missed.
+IconData goalAssessmentRatingGlyph(GoalAssessmentRating rating) =>
+    switch (rating) {
+      GoalAssessmentRating.met => Icons.check_rounded,
+      GoalAssessmentRating.improving => Icons.trending_up_rounded,
+      GoalAssessmentRating.mixed => Icons.contrast_rounded,
+      GoalAssessmentRating.missed => Icons.close_rounded,
+    };
+
+/// The localized name of a day verdict, shared by the strip's semantics and
+/// the reflection sheet's own toggle so the two can never drift apart.
+String goalAssessmentRatingLabel(
+  BuildContext context,
+  GoalAssessmentRating rating,
+) => switch (rating) {
+  GoalAssessmentRating.met => context.messages.goalAssessmentMet,
+  GoalAssessmentRating.improving => context.messages.goalAssessmentImproving,
+  GoalAssessmentRating.mixed => context.messages.goalAssessmentMixed,
+  GoalAssessmentRating.missed => context.messages.goalAssessmentMissed,
+};
 
 /// The non-color cue for a partial day: a full-strength dot inside the
 /// lighter wash, so full/partial/none survive without a legend (the list
@@ -172,12 +382,17 @@ class GoalProgressCard extends StatelessWidget {
     required this.progress,
     this.onHabitOutcomeSelected,
     this.onReflectDay,
+    this.ratingsByDay = const {},
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
   final ValueChanged<DateTime>? onReflectDay;
+
+  /// Day verdicts the user has recorded, keyed by UTC day. They decide the
+  /// whole-goal strip's colours, outranking what the app measured.
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -191,8 +406,23 @@ class GoalProgressCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (progress.compositeRule != null) ...[
-          _CompositeProgressCard(progress: progress),
+        // A composite goal always gets this card: the strip is the only place
+        // its dimensions are summed into one week.
+        //
+        // A leaf goal gets it only where the days are actionable. Gating it on
+        // the composite rule alone left single-habit and single-metric goals
+        // unable to reflect on a past day at all and showing none of the
+        // verdict colours — the feature is about goal days, and a leaf goal
+        // has those too. Adding the card unconditionally would instead put a
+        // second, near-identical week above the one its single dimension
+        // already draws.
+        if (progress.compositeRule != null ||
+            (onReflectDay != null && progress.compactWindow.isNotEmpty)) ...[
+          _CompositeProgressCard(
+            progress: progress,
+            onReflectDay: onReflectDay,
+            ratingsByDay: ratingsByDay,
+          ),
           SizedBox(height: tokens.spacing.step3),
         ],
         for (final habit in progress.habits) ...[
@@ -260,9 +490,19 @@ class GoalProgressCard extends StatelessWidget {
 }
 
 class _CompositeProgressCard extends StatelessWidget {
-  const _CompositeProgressCard({required this.progress});
+  const _CompositeProgressCard({
+    required this.progress,
+    this.onReflectDay,
+    this.ratingsByDay = const {},
+  });
 
   final GoalProgressView progress;
+
+  /// Opens a day's reflection from the strip. Null while the goal cannot be
+  /// reflected on — a retired agent, or a spec that has not resolved.
+  final ValueChanged<DateTime>? onReflectDay;
+
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -300,18 +540,31 @@ class _CompositeProgressCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
-          GoalCompactWindowStrip(days: progress.compactWindow),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.goalCompositeProgressSummary(
-              metYesterday,
-              progress.dimensionCount,
-              required,
-            ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+          GoalCompactWindowStrip(
+            days: progress.compactWindow,
+            // Matched to the habit day squares below: the two strips describe
+            // the same week at the same scale, and the whole-goal one used to
+            // render at 12px against their 28px.
+            cellSize: ControlSizes.iconChipCompact,
+            lastDay: progress.today,
+            onDaySelected: onReflectDay,
+            ratingsByDay: ratingsByDay,
           ),
+          if (progress.compositeRule != null)
+            SizedBox(height: tokens.spacing.step3),
+          // "3 of 5 dimensions · 4 required" says nothing about a goal with
+          // one dimension, so a leaf goal gets the strip without the tally.
+          if (progress.compositeRule != null)
+            Text(
+              context.messages.goalCompositeProgressSummary(
+                metYesterday,
+                progress.dimensionCount,
+                required,
+              ),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
         ],
       ),
     );
@@ -1571,6 +1824,10 @@ class _MetricProgressSeries extends StatelessWidget {
 
   final GoalMetricProgressView metric;
 
+  /// Height of the plot area. Shared with the minimum-bar floor below, so a
+  /// change here cannot silently leave an observed-but-tiny day invisible.
+  static double _chartHeight(DsTokens tokens) => tokens.spacing.step9;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -1589,7 +1846,7 @@ class _MetricProgressSeries extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step3),
         SizedBox(
-          height: tokens.spacing.step10,
+          height: _chartHeight(tokens),
           child: metric.days.length <= 7
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -1617,7 +1874,22 @@ class _MetricProgressSeries extends StatelessWidget {
       for (var index = 0; index < metric.days.length; index++) ...[
         if (index > 0) SizedBox(width: tokens.spacing.step2),
         if (expanded)
-          Expanded(child: _bar(context, metric.days[index], maxValue))
+          // Even spacing across the card, but each bar keeps the same width
+          // it has in the scrollable variant. Left to fill its share, a
+          // seven-day week rendered ~40px slabs that dominated the card and
+          // read nothing like the day squares above them.
+          Expanded(
+            child: Center(
+              // A tight width, not a maximum. `_bar` is a FractionallySizedBox
+              // with no widthFactor, so a loose constraint passes straight
+              // through to a DecoratedBox with no intrinsic width and every
+              // bar collapses to zero — an invisible chart.
+              child: SizedBox(
+                width: ControlSizes.iconChipCompact,
+                child: _bar(context, metric.days[index], maxValue),
+              ),
+            ),
+          )
         else
           SizedBox(
             width: ControlSizes.iconChipCompact,
@@ -1640,16 +1912,24 @@ class _MetricProgressSeries extends StatelessWidget {
     final rawHeightFactor = maxValue == 0
         ? 0.0
         : (day.value / maxValue).clamp(0, 1).toDouble();
-    final minimumObservedHeight = tokens.spacing.step2 / tokens.spacing.step10;
+    final minimumObservedHeight = tokens.spacing.step2 / _chartHeight(tokens);
     final heightFactor =
         day.isObserved && rawHeightFactor < minimumObservedHeight
         ? minimumObservedHeight
         : rawHeightFactor;
     final barFill = DecoratedBox(
       decoration: BoxDecoration(
-        color: metric.meetsTarget(day)
-            ? tokens.colors.alert.info.defaultColor
-            : tokens.colors.background.level03,
+        // The same fill the day cells above use, for the same meaning: this
+        // day met the goal. The bars wore `alert.info` — a blue that carried
+        // no threshold meaning at all, so a 12,000-step day and a 5,000-step
+        // day were told apart only by height, and the day the user actually
+        // beat their target looked no different from the day they missed it.
+        color: goalDayStateFill(
+          tokens,
+          metric.meetsTarget(day)
+              ? GoalCompactDayState.full
+              : GoalCompactDayState.none,
+        ),
         border: !day.isObserved
             ? Border.all(
                 color: tokens.colors.text.lowEmphasis,

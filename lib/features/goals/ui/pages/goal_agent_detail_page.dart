@@ -269,6 +269,20 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
+              // The user's own verdict outranks the measurement in the strip:
+              // a day they filed as missed must not keep rendering as the
+              // neutral grey of a day with no data.
+              //
+              // Scoped to the ACTIVE spec. Spec versions are immutable and the
+              // history keeps them all, so an unscoped map would let a verdict
+              // passed on the old criteria colour the same date under the new
+              // ones — a judgement of a goal that no longer exists.
+              ratingsByDay: spec == null
+                  ? const {}
+                  : latestRatingsByDay(
+                      assessments,
+                      specVersionId: spec.id,
+                    ),
               onReflectDay: !isActive || spec == null
                   ? null
                   : (day) => showModalBottomSheet<void>(
@@ -280,6 +294,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                         specVersion: spec.version,
                         day: day,
                         progress: progress,
+                        // Reopening a judged day shows what was recorded.
+                        // Arriving blank offered Met with an empty note, and
+                        // saving replaced the real reflection with that
+                        // default — note and dimension verdicts included.
+                        existing: latestAssessmentsByDay(
+                          assessments,
+                          specVersionId: spec.id,
+                        )[DateTime.utc(day.year, day.month, day.day)],
                       ),
                     ),
               onHabitOutcomeSelected: !isActive

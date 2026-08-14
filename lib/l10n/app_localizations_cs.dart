@@ -6073,6 +6073,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Denní úvahy';
 
   @override
+  String get goalAssessmentImproving => 'Zlepšuje se';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Měřeno Lotti – tuto část nelze upravovat.';
 
@@ -6080,13 +6083,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalAssessmentMeasuredTitle => 'Co Lotti změřila';
 
   @override
-  String get goalAssessmentMet => 'Setkal';
+  String get goalAssessmentMet => 'Splněno';
 
   @override
-  String get goalAssessmentMissed => 'Zmeškaný';
+  String get goalAssessmentMissed => 'Nesplněno';
 
   @override
-  String get goalAssessmentMixed => 'Smíšený';
+  String get goalAssessmentMixed => 'Smíšené';
 
   @override
   String get goalAssessmentNote => 'Poznámka (volitelné)';

@@ -64,6 +64,79 @@ void main() {
       expect(syncService.transactionCalls, 1);
     },
   );
+
+  test(
+    'an improving verdict stays readable by clients that predate it',
+    () async {
+      final syncService = _TransactionalSyncService();
+      final upserts = <AgentDomainEntity>[];
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+      });
+      final service = GoalAssessmentService(syncService);
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 8, 12, 20, 15)),
+        () => service.record(
+          agentId: 'goal-1',
+          day: DateTime.utc(2026, 8, 11),
+          specVersionId: 'goal-1:spec-v4',
+          rating: GoalAssessmentRating.improving,
+          dimensionRatings: const {
+            'reading': GoalAssessmentRating.improving,
+            'sleep': GoalAssessmentRating.met,
+          },
+          note: 'Short sleep but trending up.',
+        ),
+      );
+
+      final content = (upserts.first as AgentMessagePayloadEntity).content;
+      // A client shipped before `improving` existed decodes by searching its
+      // own three-value enum and DISCARDS the whole record when nothing
+      // matches — note and per-dimension verdicts included. So the legacy key
+      // carries the nearest verdict it can read...
+      expect(content['rating'], 'mixed');
+      expect(content['dimensionRatings'], {
+        'reading': 'mixed',
+        'sleep': 'met',
+      });
+      // ...and the real one rides alongside for readers that understand it.
+      expect(content['ratingV2'], 'improving');
+      expect(content['dimensionRatingsV2'], {
+        'reading': 'improving',
+        'sleep': 'met',
+      });
+    },
+  );
+
+  test('a verdict every client understands carries no second copy', () async {
+    final syncService = _TransactionalSyncService();
+    final upserts = <AgentDomainEntity>[];
+    when(() => syncService.upsertEntity(any())).thenAnswer((
+      invocation,
+    ) async {
+      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    final service = GoalAssessmentService(syncService);
+
+    await withClock(
+      Clock.fixed(DateTime(2026, 8, 12, 20, 15)),
+      () => service.record(
+        agentId: 'goal-1',
+        day: DateTime.utc(2026, 8, 11),
+        specVersionId: 'goal-1:spec-v4',
+        rating: GoalAssessmentRating.met,
+        dimensionRatings: const {'reading': GoalAssessmentRating.met},
+      ),
+    );
+
+    final content = (upserts.first as AgentMessagePayloadEntity).content;
+    expect(content['rating'], 'met');
+    expect(content.containsKey('ratingV2'), isFalse);
+    expect(content.containsKey('dimensionRatingsV2'), isFalse);
+  });
 }
 
 class _TransactionalSyncService extends MockAgentSyncService {

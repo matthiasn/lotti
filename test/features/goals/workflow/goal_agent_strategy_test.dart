@@ -132,6 +132,7 @@ void main() {
               'status': 'insufficientData',
               'oneLiner': 'Today is handled; the rolling window still lags.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod':
                     'Blood pressure logging is complete today at 125/84.',
                 'rollingWindow':
@@ -152,15 +153,23 @@ void main() {
       );
 
       expect(strategy.hasReport, isTrue);
+      // The two tiers are distinct, which is the whole point: the card shows
+      // the TLDR collapsed and opens the composed body behind "Show more".
+      // Composing the sections into the TLDR left the content null, and the
+      // card's `content != tldr` test then found nothing to expand — the
+      // report rendered as one unbroken wall with no way to shorten it.
+      expect(strategy.reportTldr, 'Where the goal stands right now.');
       expect(
-        strategy.reportTldr,
+        strategy.reportContent,
         'Blood pressure logging is complete today at 125/84.\n\n'
         'Rolling averages remain above target at 127/89.\n\n'
         'Blood pressure improved from 129/94 to 125/84.\n\n'
         'Two readings make the series sparse.\n\n'
         'Keep taking the medication tomorrow.',
       );
-      expect(strategy.reportContent, isNull);
+      // The free-form `content` argument is still ignored alongside a
+      // structured report, so it cannot reintroduce a filtered action.
+      expect(strategy.reportContent, isNot(contains('Take medication today.')));
     },
   );
 
@@ -183,6 +192,7 @@ void main() {
               'status': 'insufficientData',
               'oneLiner': 'One measurement remains.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': 'Weight is not measured today.',
                 'rollingWindow': 'The rolling weight average is above target.',
                 'latestChange': '',
@@ -207,10 +217,69 @@ void main() {
         manager: manager,
       );
 
-      expect(gated.reportTldr, contains('Log weight today.'));
-      expect(gated.reportTldr, isNot(contains('Take medication today.')));
+      expect(gated.reportContent, contains('Log weight today.'));
+      expect(gated.reportContent, isNot(contains('Take medication today.')));
     },
   );
+
+  test('a status token in visible prose is rejected, not published', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'insufficientData',
+            'oneLiner': 'Not enough readings yet.',
+            'report': {
+              'tldr': 'The overall status is insufficientData right now.',
+              'currentPeriod': 'Nothing logged today.',
+              'rollingWindow': 'The rolling window is thin.',
+              'latestChange': '',
+              'coverage': 'Two of seven days carry data.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    // The prompt says status names are field values, never prose. That
+    // instruction was the only thing standing between a weaker model and
+    // "the overall status is insufficientData" reaching the user.
+    expect(strategy.hasReport, isFalse);
+    final error = rejection();
+    expect(error, contains('insufficientData'));
+    expect(error, contains('not prose'));
+  });
+
+  test('a status name is still required in the status FIELD', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'insufficientData',
+            'oneLiner': 'Not enough readings yet.',
+            'report': {
+              'tldr': 'Two days of data so far.',
+              'currentPeriod': 'Nothing logged today.',
+              'rollingWindow': 'The rolling window is thin.',
+              'latestChange': '',
+              'coverage': 'Two of seven days carry data.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    // The guard must read prose only — rejecting the field itself would make
+    // the tool impossible to call.
+    expect(strategy.hasReport, isTrue);
+    expect(strategy.reportStatus, GoalTrackStatus.insufficientData);
+  });
 
   test('structured report rejects empty current or rolling standing', () async {
     for (final emptyKey in ['currentPeriod', 'rollingWindow']) {
@@ -222,6 +291,7 @@ void main() {
               'status': 'offTrack',
               'oneLiner': 'Behind.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': emptyKey == 'currentPeriod'
                     ? ''
                     : 'Nothing completed.',
@@ -257,6 +327,7 @@ void main() {
               'status': 'offTrack',
               'oneLiner': 'Behind.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': 'Nothing completed.',
                 'rollingWindow': 'The rolling window is behind.',
                 'latestChange': '',

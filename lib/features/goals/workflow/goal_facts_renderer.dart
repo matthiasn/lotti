@@ -645,14 +645,17 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
       GoalCriterionHabit() => {
         'criterionId': criterion.criterionId,
         if (criterion.title != null) 'title': criterion.title,
-        'habit': criterion.habitId,
+        // No `habit: <habitId>` here, and none below for the measurable's
+        // data type: both are UUIDs in production, `title` already names the
+        // thing, and every tool call references `criterionId` instead. The
+        // evals never surfaced the duplication because their fixtures use
+        // readable slugs ('habit-measure-bp') where the app has UUIDs.
         'window': _windowLabel(criterion.window),
         'targetCount': criterion.targetCount,
       },
       GoalCriterionMeasurable() => {
         'criterionId': criterion.criterionId,
         if (criterion.title != null) 'title': criterion.title,
-        'measurable': criterion.dataTypeId,
         'aggregation': criterion.aggregation.name,
         'window': _windowLabel(criterion.window),
         'target': criterion.target,

@@ -1287,6 +1287,14 @@ void main() {
 
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
     expect(find.text('Talk to Move more'), findsNothing);
+    // Below the fold now that the whole-goal strip has its own card on this
+    // goal — it has two dimensions, so the strip sums a week the individual
+    // habit rows cannot.
+    await tester.scrollUntilVisible(
+      find.text('Watching'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Watching'), findsOneWidget);
     expect(find.text('Morning walk'), findsNWidgets(2));
     expect(find.text('Monthly walk'), findsNWidgets(2));

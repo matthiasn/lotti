@@ -146,6 +146,111 @@ void main() {
       expect(sanitizeAgentReportText(input), input);
     });
 
+    test(
+      'strips the truncated criterion id the goal agent writes into prose',
+      () {
+        // Verbatim from the shipped report: goal criterion ids are minted as
+        // `habit-<habitId>`, so the handle the model needs for
+        // nextActions[].criterionId carries a UUID the model then echoes.
+        expect(
+          sanitizeAgentReportText(
+            'Close the gap on habit 71ca84b0 — 2 more completions needed',
+            stripBareIds: true,
+          ),
+          'Close the gap on habit — 2 more completions needed',
+        );
+        expect(
+          sanitizeAgentReportText(
+            'Close the gap on habit `71ca84b0` today',
+            stripBareIds: true,
+          ),
+          'Close the gap on habit today',
+        );
+      },
+    );
+
+    test('strips the criterion id in the exact form FACTS hands over', () {
+      // `habit-<habitId>` is what the model is given for
+      // nextActions[].criterionId, so it is the form most likely to be echoed
+      // — and the hex there follows a hyphen, not whitespace.
+      expect(
+        sanitizeAgentReportText(
+          'Close the gap on habit-71ca84b0 this week',
+          stripBareIds: true,
+        ),
+        'Close the gap on this week',
+      );
+      expect(
+        sanitizeAgentReportText(
+          'Behind on habit-$uuid today',
+          stripBareIds: true,
+        ),
+        'Behind on today',
+      );
+    });
+
+    test('leaves a readable criterion id with no hex in it alone', () {
+      // `health-blood-pressure-systolic` is a criterion id too, and it reads
+      // perfectly well — there is nothing to protect the reader from.
+      const readable = 'Systolic is health-blood-pressure-systolic today';
+      expect(sanitizeAgentReportText(readable, stripBareIds: true), readable);
+    });
+
+    test('strips a bare UUID standing in prose', () {
+      expect(
+        sanitizeAgentReportText('Ship $uuid now', stripBareIds: true),
+        'Ship now',
+      );
+    });
+
+    test('leaves bare id fragments alone unless asked', () {
+      // Shape alone cannot separate an internal id from a git SHA, a checksum
+      // or any other hex value a task or project report may legitimately
+      // quote — and silently deleting one of those would be worse than the
+      // leak this fixes. Only goal reports opt in.
+      const sha = 'Fixed in deadbeef on Friday';
+      expect(sanitizeAgentReportText(sha), sha);
+      expect(
+        sanitizeAgentReportText(sha, stripBareIds: true),
+        'Fixed in on Friday',
+      );
+    });
+
+    test('an id opening a line does not weld it onto the line above', () {
+      expect(
+        sanitizeAgentReportText(
+          'Summary.\n\nhabit-71ca84b0 is behind.',
+          stripBareIds: true,
+        ),
+        'Summary.\n\n is behind.',
+      );
+      // List structure survives too.
+      expect(
+        sanitizeAgentReportText(
+          '- 71ca84b0 first\n- second',
+          stripBareIds: true,
+        ),
+        '- first\n- second',
+      );
+    });
+
+    test('leaves a bare id inside a link path alone', () {
+      // The whitespace the pattern requires cannot occur inside a URL, which
+      // is what keeps proof-of-work links whole without an explicit carve-out.
+      const bare = 'See https://lotti.app/tasks/$uuid for context';
+      expect(sanitizeAgentReportText(bare, stripBareIds: true), bare);
+      const head = 'See /tasks/71ca84b0 for context';
+      expect(sanitizeAgentReportText(head, stripBareIds: true), head);
+    });
+
+    test('leaves long digit runs and ordinary words alone', () {
+      // A step count is the exact shape a coach reports, and must survive.
+      const steps = 'You walked 12345678 steps this week.';
+      expect(sanitizeAgentReportText(steps, stripBareIds: true), steps);
+      const prose = 'Consistency improved and the streak held.';
+      expect(sanitizeAgentReportText(prose, stripBareIds: true), prose);
+    });
+
     test('preserves a Markdown hard break on an untouched line while '
         'trimming the line a removal actually touched', () {
       // The first line carries a deliberate two-space hard break; a later line

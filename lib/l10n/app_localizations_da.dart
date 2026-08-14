@@ -6009,6 +6009,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Daglige refleksioner';
 
   @override
+  String get goalAssessmentImproving => 'Bedring';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Målt af Lotti - denne del kan ikke redigeres.';
 
@@ -6019,7 +6022,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalAssessmentMet => 'Opfyldt';
 
   @override
-  String get goalAssessmentMissed => 'Savnet';
+  String get goalAssessmentMissed => 'Ikke opfyldt';
 
   @override
   String get goalAssessmentMixed => 'Blandet';

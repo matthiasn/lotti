@@ -545,9 +545,16 @@ String _latestReportText(List<GoalAgentEvalToolCall> toolCalls) {
         },
       );
       final oneLiner = arguments?['oneLiner'];
-      return oneLiner is String && oneLiner.trim().isNotEmpty
-          ? '${oneLiner.trim()}\n\n$summary'
-          : summary;
+      // Every string the user can actually read, including the TLDR. The
+      // TLDR is the *collapsed* view — the one text guaranteed to be on
+      // screen — and `visibleSummary` deliberately omits it, so checking
+      // only the summary would let a forbidden claim sit in the most visible
+      // slot on the card and still pass every scenario assertion.
+      return [
+        if (oneLiner is String && oneLiner.trim().isNotEmpty) oneLiner.trim(),
+        structured.tldr,
+        summary,
+      ].where((part) => part.isNotEmpty).join('\n\n');
     }
   }
   return '';

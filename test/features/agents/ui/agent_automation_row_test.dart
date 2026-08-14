@@ -638,6 +638,104 @@ void main() {
       });
     });
 
+    testWidgets('stacked, the trigger and the switch share a trailing rail', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            automaticUpdatesEnabled: true,
+            onRunNow: () {},
+          ),
+          width: 390,
+        );
+
+        expect(
+          find.byKey(const ValueKey('taskAgentAutomationRowStacked')),
+          findsOneWidget,
+        );
+        // The point of the stacked form: the manual trigger terminates on the
+        // same rail as the switch below it. Left-packed against the status
+        // word — which is what it used to do — the two controls landed at
+        // unrelated x positions and the band read as clutter.
+        expect(
+          tester.getBottomRight(trigger()).dx,
+          moreOrLessEquals(
+            tester.getBottomRight(toggle()).dx,
+            epsilon: 0.5,
+          ),
+          reason: 'the trigger and the switch do not share a trailing rail',
+        );
+        // ...while the status word it describes keeps the leading edge, so the
+        // pair spans the band rather than clustering at either end.
+        expect(
+          tester
+              .getTopLeft(find.byKey(const ValueKey('taskAgentStatusCluster')))
+              .dx,
+          moreOrLessEquals(
+            tester
+                .getTopLeft(
+                  find.byKey(const ValueKey('taskAgentAutomationSetting')),
+                )
+                .dx,
+            epsilon: 0.5,
+          ),
+          reason: 'the status word left the leading column',
+        );
+      });
+    });
+
+    testWidgets('a rule separates the two questions only when stacked', (
+      tester,
+    ) async {
+      const rule = ValueKey('taskAgentAutomationRowRule');
+      await withClock(Clock.fixed(now), () async {
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            automaticUpdatesEnabled: true,
+            onRunNow: () {},
+          ),
+          width: 390,
+        );
+        expect(find.byKey(rule), findsOneWidget);
+        // The rule sits between the two bands, not above or below both.
+        final ruleY = tester.getCenter(find.byKey(rule)).dy;
+        expect(ruleY, greaterThan(tester.getCenter(trigger()).dy));
+        expect(ruleY, lessThan(tester.getCenter(toggle()).dy));
+        // The schedule readout belongs to the switch that governs it, so it
+        // sits below the rule too. Above it, the countdown read as a footnote
+        // to the manual trigger — the one control it has nothing to do with.
+        expect(
+          tester.getCenter(scheduleLabel()).dy,
+          greaterThan(ruleY),
+          reason: 'the schedule line left the automation band',
+        );
+
+        // One line needs no rule: the two questions are already at opposite
+        // ends of the same row, and a horizontal rule cannot separate them.
+        await pumpRow(
+          tester,
+          subject(
+            hasReportContent: true,
+            automaticUpdatesEnabled: true,
+            showCountdown: true,
+            nextWakeAt: now.add(const Duration(minutes: 1, seconds: 30)),
+            onRunNow: () {},
+          ),
+          width: 1400,
+        );
+        expect(
+          find.byKey(const ValueKey('taskAgentAutomationRowWide')),
+          findsOneWidget,
+        );
+        expect(find.byKey(rule), findsNothing);
+      });
+    });
+
     testWidgets('every stacked row starts on one leading column', (
       tester,
     ) async {

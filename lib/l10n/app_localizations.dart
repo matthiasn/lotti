@@ -10313,6 +10313,12 @@ abstract class AppLocalizations {
   /// **'Daily reflections'**
   String get goalAssessmentHistoryTitle;
 
+  /// No description provided for @goalAssessmentImproving.
+  ///
+  /// In en, this message translates to:
+  /// **'Improving'**
+  String get goalAssessmentImproving;
+
   /// No description provided for @goalAssessmentMeasuredReadOnly.
   ///
   /// In en, this message translates to:

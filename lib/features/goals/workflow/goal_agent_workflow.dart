@@ -1258,7 +1258,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           : candidateAssistantText;
       if (assistantText != null) {
         final persistedAssistantText = replyToUser
-            ? sanitizeAgentReportText(assistantText)
+            ? sanitizeAgentReportText(assistantText, stripBareIds: true)
             : assistantText;
         final payloadId = replyToUser
             ? _goalAgentReplyPayloadId(agentId, runKey)
@@ -1308,9 +1308,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
             vectorClock: null,
             content: sanitizeAgentReportText(
               strategy.reportContent ?? strategy.reportTldr!,
+              stripBareIds: true,
             ),
-            tldr: sanitizeAgentReportText(strategy.reportTldr!),
-            oneLiner: sanitizeAgentReportText(strategy.reportOneLiner!),
+            tldr: sanitizeAgentReportText(
+              strategy.reportTldr!,
+              stripBareIds: true,
+            ),
+            oneLiner: sanitizeAgentReportText(
+              strategy.reportOneLiner!,
+              stripBareIds: true,
+            ),
             provenance: <String, Object?>{
               'trackStatus': strategy.reportStatus!.name,
               'periodKey': derivation.periodKey,
@@ -1896,11 +1903,13 @@ bool _offersGoalBanner(String? message) {
 
 /// The report sanitizer applied to every copy field a banner renders.
 GoalNudgeBrief _sanitizeBrief(GoalNudgeBrief brief) => brief.copyWith(
-  headline: sanitizeAgentReportText(brief.headline),
+  headline: sanitizeAgentReportText(brief.headline, stripBareIds: true),
   tagline: brief.tagline == null
       ? null
-      : sanitizeAgentReportText(brief.tagline!),
-  cta: brief.cta == null ? null : sanitizeAgentReportText(brief.cta!),
+      : sanitizeAgentReportText(brief.tagline!, stripBareIds: true),
+  cta: brief.cta == null
+      ? null
+      : sanitizeAgentReportText(brief.cta!, stripBareIds: true),
 );
 
 /// Near-duplicate dedupe key over the banner copy: the same words with

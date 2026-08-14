@@ -890,6 +890,7 @@ void main() {
                   'status': 'insufficientData',
                   'oneLiner': 'The delayed report matches its encoded day.',
                   'report': {
+                    'tldr': 'Where the goal stands right now.',
                     'currentPeriod':
                         'Only observations through August 8 are included.',
                     'rollingWindow': 'The historical window lacks systolic BP.',
@@ -917,9 +918,12 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      final tldr = upserts.whereType<AgentReportEntity>().single.tldr;
-      expect(tldr, contains('Only observations through August 8'));
-      expect(tldr, isNot(contains('Measure blood pressure now')));
+      final report = upserts.whereType<AgentReportEntity>().single;
+      // The composed sections are the expanded body; the TLDR above them is
+      // the model's own one-liner summary.
+      expect(report.content, contains('Only observations through August 8'));
+      expect(report.content, isNot(contains('Measure blood pressure now')));
+      expect(report.tldr, 'Where the goal stands right now.');
     },
   );
 

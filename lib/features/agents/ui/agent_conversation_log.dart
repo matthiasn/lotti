@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
@@ -276,7 +277,10 @@ class _ThreadReportCard extends StatelessWidget {
           ],
         ),
         children: [
-          AgentMarkdownView(report.content),
+          // Summary first, then the body. Reports that split the tiers keep
+          // their summary in `tldr` alone, so rendering `content` by itself
+          // silently dropped it from this view.
+          AgentMarkdownView(reportBodyWithTldr(report)),
           if (attributionFromAgentEntity(report) case final attribution?)
             AiAttributionSummary(
               artifact: AiArtifactReference(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
@@ -35,6 +36,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// drops its sentence ("Next update in 1:30" → "in 1:30" → "1:30") and the row
 /// finally stacks, but the countdown value, the trigger and the switch always
 /// survive. Nothing here truncates a number.
+///
+/// **The two questions stay visibly separate.** Wide, they sit at opposite
+/// ends of one line. Stacked, a rule divides them — the freshness word and its
+/// trigger above it, the schedule readout and the switch it governs below —
+/// so the band reads as two deliberate groups rather than a pile of controls.
+/// While the state pair still fits one line, the trigger terminates on the
+/// same trailing rail as the switch, and the two line up. Once it does not
+/// (the narrowest tier, where the word goes above the button), the trigger
+/// keeps the leading rail with everything else and only the rule separates
+/// the groups.
 ///
 /// **Ticking digits move nothing.** The schedule label reserves the width of
 /// the wording captured when the deadline was set, and the layout decision is
@@ -231,6 +242,32 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
                 ],
               );
 
+        // Stacked, that same pair spans the whole band instead of clustering
+        // on the leading edge. The trigger then terminates on the trailing
+        // rail the switch below it already uses, so the two controls share one
+        // vertical line. Left-packed, the button floated at whatever x the
+        // status word happened to end at, which is what made three deliberate
+        // controls read as three things crammed together.
+        final stackedState = layout.stateStacked
+            ? state
+            : Row(
+                mainAxisAlignment: freshnessLabel == null
+                    ? MainAxisAlignment.end
+                    : MainAxisAlignment.spaceBetween,
+                children: [
+                  if (freshnessLabel != null)
+                    Flexible(
+                      child: Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          end: tokens.spacing.cardItemSpacing,
+                        ),
+                        child: freshness,
+                      ),
+                    ),
+                  trigger,
+                ],
+              );
+
         final schedule = tier == null
             ? null
             : _ScheduleCluster(
@@ -284,18 +321,33 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
           );
         }
 
-        // No gaps between these rows, and that is deliberate. Each one is a
-        // touch-target box taller than its ink — the trigger's button, the
-        // switch's `step9` row — so it already contributes ~12 logical px of
-        // air above and below the text you can actually see. Declared gaps sat
-        // on top of that and the band paid twice: `step5` between these two
-        // rows rendered as ~34px of visible space. Space the boxes, not the
-        // text inside them.
+        // Two bands, not three stray lines: what the report *is* and how to
+        // refresh it now, then whether it refreshes itself. The rule is what
+        // makes that split legible — without it "Automatic updates" reads as a
+        // caption belonging to the trigger above it.
+        //
+        // The rule carries the only declared gap here, and a small one. Each
+        // row is a touch-target box taller than its ink — the trigger's
+        // button, the switch's `step9` row — so it already contributes ~12
+        // logical px of air above and below the text you can actually see.
+        // Declared gaps sit on top of that and the band pays twice: `step5`
+        // between two of these rows rendered as ~34px of visible space.
         return Column(
           key: const ValueKey('taskAgentAutomationRowStacked'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            state,
+            stackedState,
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+              child: const DesignSystemDivider(
+                key: ValueKey('taskAgentAutomationRowRule'),
+              ),
+            ),
+            // Below the rule, with the switch: the countdown describes and
+            // cancels the *automatic* run, so it belongs to the toggle that
+            // governs it. Above the rule it read as a footnote to the manual
+            // trigger — which is the one thing it has nothing to do with.
+            // The wide layout groups the two the same way.
             ?schedule,
             setting,
           ],

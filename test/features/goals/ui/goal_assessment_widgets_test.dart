@@ -298,8 +298,120 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(
       tester.getSize(provenance).height,
-      greaterThan(tester.getSize(find.text('Getroffen')).height),
+      // "Erreicht", not "Getroffen": the German label used to be the past
+      // tense of meeting a *person*, which is not what a met goal criterion
+      // is.
+      greaterThan(tester.getSize(find.text('Erreicht')).height),
       reason: 'the long provenance copy must wrap instead of overflowing',
     );
+  });
+
+  testWidgets('reopening a judged day arrives showing what was recorded', (
+    tester,
+  ) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(today: day),
+            existing: GoalAssessmentRecord(
+              id: 'record-1',
+              day: day,
+              specVersionId: 'goal-1:spec-v1',
+              rating: GoalAssessmentRating.missed,
+              note: 'Travelled all day.',
+              createdAt: DateTime.utc(2026, 8, 11, 21),
+              provenance: GoalAssessmentProvenance.ratedByUser,
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Every day in the strip can be reopened. Arriving blank offered Met with
+    // an empty note, and saving replaced the real reflection with that
+    // default — losing the note and the per-dimension verdicts with it.
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      'Travelled all day.',
+    );
+    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
+      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    );
+    expect(toggle.selected, GoalAssessmentRating.missed);
+  });
+
+  testWidgets('a day with no reflection yet still opens on Met', (
+    tester,
+  ) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(today: day),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
+      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    );
+    expect(toggle.selected, GoalAssessmentRating.met);
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      isEmpty,
+    );
+  });
+
+  testWidgets('every verdict is offered, derived from the enum', (
+    tester,
+  ) async {
+    final day = DateTime.utc(2026, 8, 11);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(today: day),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(
+            _MockGoalAssessmentService(),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Hand-listing the segments is how a fourth verdict ends up offered on
+    // one toggle and missing from the other.
+    for (final verdict in ['Met', 'Improving', 'Mixed', 'Missed']) {
+      expect(find.text(verdict), findsWidgets, reason: verdict);
+    }
   });
 }

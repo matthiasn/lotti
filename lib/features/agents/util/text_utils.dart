@@ -36,20 +36,66 @@ final _reportIdAnnotationPatterns = <RegExp>[
   RegExp('\\s*\\(\\s*$_uuid\\s*\\)'),
 ];
 
+/// A bare internal id fragment echoed into prose.
+///
+/// Goal criterion ids are minted as `habit-<habitId>` (`goal_form_mapping`),
+/// so the handle the model legitimately needs for `nextActions[].criterionId`
+/// carries a UUID inside it. Weaker models copy it into the sentence — "Close
+/// the gap on habit 71ca84b0 — 2 more completions needed".
+///
+/// Matched by shape rather than by a preceding noun, because the noun is
+/// whatever the report's language calls a habit: a whole UUID, or eight or
+/// more hex digits with at least one letter among them, preceded by
+/// whitespace and not followed by `-`, a word character or `/`. Requiring
+/// leading whitespace is what keeps links whole — URLs contain none — and the
+/// trailing guard leaves a longer token intact rather than beheading it.
+///
+/// An ASCII prefix is consumed with it, so the id is caught in the exact form
+/// FACTS hands over — `habit-71ca84b0`, not only the bare `71ca84b0` after a
+/// space. Those prefixes are minted in code, never translated, so matching
+/// them is safe in every language. A prefix with no hex run behind it —
+/// `health-blood-pressure-systolic` — never matches, and should not: it reads
+/// perfectly well.
+///
+/// **Opt-in, and only for goal reports.** Shape alone cannot tell an id from
+/// an eight-character git SHA, a checksum or any other hex value a task or
+/// project report may legitimately quote, and deleting one of those silently
+/// would be worse than the leak this fixes. Goal reports have no such
+/// vocabulary, so [sanitizeAgentReportText] takes it as a flag rather than
+/// applying it to every caller of a shared sanitizer.
+///
+/// A leading space goes with it, so "on habit 71ca84b0 — 2 more" closes up to
+/// "on habit — 2 more" rather than leaving a double space behind. Only
+/// horizontal whitespace, though: swallowing a newline would weld the
+/// paragraph or list item above onto the one the id opened.
+final _bareIdFragmentPattern = RegExp(
+  // Horizontal whitespace only, or a zero-width match at the start of a line.
+  // A bare `\s` also ate the newline before an id that opened a paragraph,
+  // welding two paragraphs — or two list items — into one.
+  r'(?:[ \t]|(?<=^)|(?<=\n))`?(?:[A-Za-z]+-)*'
+  '(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
+  r'`?(?![-\w/])',
+);
+
 /// Removes internal entity ids a model echoed into a user-facing agent report.
 ///
-/// See [_reportIdAnnotationPatterns] for what is stripped and why links are
-/// preserved. Trailing whitespace a removal leaves on a line is trimmed, but
+/// See [_reportIdAnnotationPatterns] for the annotated shapes that are always
+/// stripped. [stripBareIds] additionally removes an unannotated id fragment
+/// and is for goal reports only — see [_bareIdFragmentPattern] for why it is
+/// not the default. Both leave links untouched.
+///
+/// Trailing whitespace a removal leaves on a line is trimmed, but
 /// only on lines a removal actually touched — a line that still appears
 /// verbatim in the input keeps its trailing spaces, so a deliberate Markdown
 /// hard break (two trailing spaces) elsewhere in the report survives.
 /// Indentation and newlines are untouched so lists and code blocks keep their
 /// structure. Returns [text] unchanged when it carries no id annotations.
-String sanitizeAgentReportText(String text) {
+String sanitizeAgentReportText(String text, {bool stripBareIds = false}) {
   var out = text;
   for (final pattern in _reportIdAnnotationPatterns) {
     out = out.replaceAll(pattern, '');
   }
+  if (stripBareIds) out = out.replaceAll(_bareIdFragmentPattern, '');
   if (out == text) return text;
   // A removal only deletes characters (a pattern's leading `\s*` can also eat a
   // preceding newline, merging two lines), so any line still present verbatim

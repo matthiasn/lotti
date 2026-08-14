@@ -5981,6 +5981,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Daily reflections';
 
   @override
+  String get goalAssessmentImproving => 'Improving';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Measured by Lotti — this part isn’t editable.';
 

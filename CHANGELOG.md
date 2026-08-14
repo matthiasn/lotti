@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Fixed
+- **The day-verdict labels were mistranslated in seven languages.** "Met" was
+  rendered as the past tense of meeting a *person* — "Getroffen" in German,
+  "Ontmoet" in Dutch, "Conheci" in Portuguese — and left untranslated in
+  Romanian. All four verdict labels now say what they mean in every language.
+- **The goal agent's report opens short and expands.** The report card has
+  always had a short summary and a Show more toggle, but the goal agent never
+  filled them in separately, so every report arrived as one unbroken wall of
+  text with nothing to collapse. It now leads with a one- or two-sentence
+  summary and opens the full report on demand.
+- **No more internal ids or status codes in the report.** Lines like "Close
+  the gap on habit 71ca84b0" and "the overall status is insufficientData" are
+  gone: criteria are named by their title, and internal codes stay out of the
+  writing entirely. Links to tasks are untouched.
 - **Asking the goal agent to change its report now changes it.** Telling the
   agent in chat to make its report shorter, sectioned, or less repetitive used
   to produce only a chat reply while the standing report stayed as it was. The
@@ -13,6 +26,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is respected.
 
 ### Changed
+- **Every day in the seven-day goal strip is tappable, including past days.**
+  The squares now match the habit day squares in size, and tapping one opens
+  that day's reflection — previously the only way in was a "Reflect on today"
+  row, so a day could never be closed off once it had passed.
+- **Your own verdict for a day decides its colour.** A day you have reflected
+  on takes the colour of the verdict you gave it rather than what the app
+  measured, and there is a new "Improving" verdict for a day that missed some
+  of the goal but moved the right way. Met, Improving, Mixed and Missed each
+  have their own colour, and none of them is the grey of a day with no data.
+- **Agent update controls read as one deliberate control on phones.** The
+  freshness word, Update now and the automatic-updates switch used to sit
+  crammed together on three left-aligned lines. Status and its refresh button
+  now span the row, a rule separates them from the switch, and the button
+  lines up with the switch above it. Task agents get the same treatment.
+- **Step bars are coloured by the goal they were measured against.** A day at
+  or above the target now wears the same green as a met day square instead of
+  the same muted slab as a day at half the goal. The bars are also slimmer, so
+  they no longer dominate the card.
 - **Goal agent pages get the whole screen on phones.** The bottom navigation
   bar slides away on a goal's detail page, its chat, and the create and edit
   wizards, the way it already does for project details. Those pages dock their

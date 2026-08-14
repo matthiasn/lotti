@@ -205,10 +205,11 @@ class GoalAgentStrategy extends ConversationStrategy
         .where((s) => s.name == statusRaw)
         .firstOrNull;
     final oneLiner = _trimmed(args['oneLiner']);
+    final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
-    final structuredTldr = _composeStructuredReport(args['report']);
+    final structured = GoalStructuredReport.tryParse(args['report']);
     final tldr = hasStructuredReport
-        ? structuredTldr ?? ''
+        ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);
     if (status == null || oneLiner.isEmpty || tldr.isEmpty) {
       await _reject(
@@ -221,6 +222,37 @@ class GoalAgentStrategy extends ConversationStrategy
             : 'Error: update_goal_report needs status (one of '
                   '${goalTrackStatusNames.join('|')}), a non-empty oneLiner '
                   'and a non-empty tldr.',
+      );
+      return;
+    }
+    // The prompt tells the model that status names are field values, never
+    // prose. That instruction is the only thing standing between a weaker
+    // model and "the overall status is insufficientData" reaching the user, so
+    // it is enforced here too: reject and let the model retry in the user's
+    // own language. Deliberately not sanitized away — deleting the token would
+    // leave a sentence with a hole in it, and mapping it to English words
+    // would put English into ten other catalogs.
+    final tokenInProse = _statusTokenIn([
+      oneLiner,
+      tldr,
+      if (structured != null) ...[
+        structured.currentPeriod,
+        structured.rollingWindow,
+        structured.latestChange,
+        structured.coverage,
+        for (final item in structured.now) item.action,
+        ...structured.later,
+      ],
+      content,
+    ]);
+    if (tokenInProse != null) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: "$tokenInProse" is a status field value, not prose. '
+            "Rewrite the visible text in the user's language and call "
+            'update_goal_report again.',
       );
       return;
     }
@@ -237,11 +269,20 @@ class GoalAgentStrategy extends ConversationStrategy
     _reportStatus = status;
     _reportOneLiner = oneLiner;
     _reportTldr = tldr;
-    final content = _trimmed(args['content']);
-    // Structured reports are already the complete visible narrative. Ignore
-    // duplicated free-form content so it cannot reintroduce an action that
-    // the deterministic current-action filter removed.
-    _reportContent = hasStructuredReport || content.isEmpty ? null : content;
+    // A structured report supplies both tiers: `tldr` is the collapsed view
+    // above, and the composed sections are the body behind "Show more". Any
+    // free-form `content` alongside it is ignored, so it cannot reintroduce
+    // an action the deterministic current-action filter removed.
+    //
+    // Composing the sections into `tldr` instead — which is what this did —
+    // left `content` null, and the card's expandable test (`content != tldr`)
+    // then found nothing to expand. The whole report rendered collapsed, as
+    // one unbroken wall of text with no affordance to shorten it.
+    _reportContent = hasStructuredReport
+        ? structured?.visibleSummary(
+            allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
+          )
+        : (content.isEmpty ? null : content);
     await _accept(call, manager, 'Goal report updated.');
   }
 
@@ -471,10 +512,19 @@ class GoalAgentStrategy extends ConversationStrategy
     await _accept(call, manager, 'Observation recorded.');
   }
 
-  String? _composeStructuredReport(Object? value) {
-    return GoalStructuredReport.tryParse(value)?.visibleSummary(
-      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
-    );
+  /// The first status token found standing as a word in any visible string.
+  ///
+  /// Word-bounded so a legitimate sentence cannot trip it: the tokens are
+  /// camelCase identifiers (`insufficientData`, `offTrack`) that no language
+  /// writes by accident.
+  String? _statusTokenIn(List<String> texts) {
+    for (final text in texts) {
+      if (text.isEmpty) continue;
+      for (final token in goalTrackStatusNames) {
+        if (RegExp('\\b$token\\b').hasMatch(text)) return token;
+      }
+    }
+    return null;
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

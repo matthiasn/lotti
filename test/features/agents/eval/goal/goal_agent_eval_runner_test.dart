@@ -22,12 +22,14 @@ void main() {
     required String rollingWindow,
     required String latestChange,
     required String coverage,
+    String? tldr,
     List<Object?> now = const [],
     List<Object?> later = const [],
   }) => jsonEncode({
     'status': 'insufficientData',
     'oneLiner': currentPeriod,
     'report': {
+      'tldr': tldr ?? currentPeriod,
       'currentPeriod': currentPeriod,
       'rollingWindow': rollingWindow,
       'latestChange': latestChange,

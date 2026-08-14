@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -170,6 +172,369 @@ void main() {
     );
 
     expect(find.byType(DsDashedBorder), findsOneWidget);
+  });
+
+  testWidgets('a tappable strip reports the day each cell stands for, '
+      'counting back from the last', (tester) async {
+    final tapped = <DateTime>[];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: const [
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+            GoalCompactDayState.partial,
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+            GoalCompactDayState.full,
+            GoalCompactDayState.none,
+          ],
+          lastDay: today,
+          onDaySelected: tapped.add,
+        ),
+      ),
+    );
+
+    // The oldest cell is six days back and the last one is today. Tapping a
+    // *past* day is the point: before this, the only way to reflect on a day
+    // was the "Reflect on today" row, so a day could never be closed off
+    // once it had passed.
+    String cell(int daysBack, String outcome) =>
+        '${DateFormat.MMMEd().format(today.subtract(Duration(days: daysBack)))}'
+        ': $outcome';
+
+    await tester.tap(find.bySemanticsLabel(cell(6, 'done · target met')));
+    await tester.tap(find.bySemanticsLabel(cell(0, 'No entry')));
+
+    expect(tapped, [today.subtract(const Duration(days: 6)), today]);
+
+    // Colour and an inner dot are the only visual difference between these
+    // cells, and neither reaches a screen reader. Each day names its own
+    // state; the strip's summary only gives a count and cannot say which
+    // days went well.
+    expect(
+      find.bySemanticsLabel(cell(4, 'done · target not met yet')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a recorded verdict outranks the measured state, and each '
+      'verdict has its own colour', (tester) async {
+    final week = List.filled(7, GoalCompactDayState.none);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: week,
+          cellSize: ControlSizes.iconChipCompact,
+          lastDay: today,
+          onDaySelected: (_) {},
+          ratingsByDay: {
+            today.subtract(const Duration(days: 3)): GoalAssessmentRating.met,
+            today.subtract(const Duration(days: 2)):
+                GoalAssessmentRating.improving,
+            today.subtract(const Duration(days: 1)): GoalAssessmentRating.mixed,
+            today: GoalAssessmentRating.missed,
+          },
+        ),
+      ),
+    );
+
+    final tokens = tester
+        .element(find.byType(GoalCompactWindowStrip))
+        .designTokens;
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(Container),
+    );
+    Color fillAt(int index) =>
+        (tester.widget<Container>(cells.at(index)).decoration! as BoxDecoration)
+            .color!;
+
+    // Every measured day here is `none` — grey. The user's own verdict is what
+    // decides the colour, because the measurement is evidence about a day and
+    // the reflection is their ruling on it.
+    expect(fillAt(0), goalDayStateFill(tokens, GoalCompactDayState.none));
+    expect(
+      fillAt(3),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.met),
+    );
+    expect(
+      fillAt(4),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.improving),
+    );
+    expect(
+      fillAt(5),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.mixed),
+    );
+    expect(
+      fillAt(6),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.missed),
+    );
+
+    // The verdict is what a screen reader hears too, not just what the eye
+    // sees — the colour is the only visual difference between these cells.
+    expect(
+      find.bySemanticsLabel(
+        '${DateFormat.MMMEd().format(
+          today.subtract(const Duration(days: 2)),
+        )}: Improving',
+      ),
+      findsOneWidget,
+    );
+
+    // Colour alone is not enough: four fills that differ only by hue are four
+    // fills a red-green deficiency cannot separate, and reading the week at a
+    // glance is the strip's entire job. Each verdict wears a shape too.
+    for (final rating in GoalAssessmentRating.values) {
+      expect(
+        find.byIcon(goalAssessmentRatingGlyph(rating)),
+        findsOneWidget,
+        reason: '${rating.name} has no shape of its own',
+      );
+    }
+    expect(
+      {
+        for (final rating in GoalAssessmentRating.values)
+          goalAssessmentRatingGlyph(rating),
+      },
+      hasLength(GoalAssessmentRating.values.length),
+      reason: 'two verdicts share a glyph',
+    );
+
+    // All four are distinguishable, and none of them is the grey of a day
+    // nobody looked at — "I decided this was missed" and "no data" are
+    // different facts and the strip has to be able to say which.
+    final verdicts = {fillAt(3), fillAt(4), fillAt(5), fillAt(6)};
+    expect(verdicts, hasLength(4));
+    expect(
+      verdicts,
+      isNot(contains(goalDayStateFill(tokens, GoalCompactDayState.none))),
+    );
+  });
+
+  testWidgets('a goal with no composite rule still gets a reflectable week', (
+    tester,
+  ) async {
+    Future<void> pump({required bool reflectable}) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: reflectable ? (_) {} : null,
+        ),
+      ),
+    );
+
+    // Gating the whole-goal card on a composite rule left a single-habit goal
+    // unable to reflect on a past day at all, and showing none of the verdict
+    // colours — the feature is about goal days, and this goal has those too.
+    await pump(reflectable: true);
+    expect(find.byType(GoalCompactWindowStrip), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(GoalCompactWindowStrip),
+        matching: find.byType(InkWell),
+      ),
+      findsNWidgets(7),
+    );
+    // The composite tally says nothing about a goal with one dimension.
+    expect(find.textContaining('dimensions'), findsNothing);
+
+    // Read-only, the card would only put a second, near-identical week above
+    // the one the habit row already draws.
+    await pump(reflectable: false);
+    expect(find.byType(GoalCompactWindowStrip), findsNothing);
+  });
+
+  testWidgets('a read-only strip hugs its cells while a tappable one spans '
+      'the measure', (tester) async {
+    const week = [
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+      GoalCompactDayState.partial,
+      GoalCompactDayState.none,
+      GoalCompactDayState.none,
+      GoalCompactDayState.full,
+      GoalCompactDayState.none,
+    ];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SizedBox(
+          width: 400,
+          child: Column(
+            children: [
+              const GoalCompactWindowStrip(days: week),
+              GoalCompactWindowStrip(
+                days: week,
+                lastDay: today,
+                onDaySelected: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final strips = find.byType(GoalCompactWindowStrip);
+    final readOnly = tester.getSize(strips.at(0)).width;
+    final tappable = tester.getSize(strips.at(1)).width;
+    // Read-only the strip is a figure and stays out of the list row's way;
+    // tappable it takes the whole measure, so seven cells can each clear the
+    // touch floor without overflowing a phone card.
+    expect(readOnly, lessThan(tappable));
+    expect(
+      tappable,
+      tester.getSize(find.byType(Column).last).width,
+      reason: 'the tappable strip did not span its parent',
+    );
+  });
+
+  testWidgets('a placeholder strip keeps the silhouette without borrowing the '
+      'empty-week fill', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalCompactWindowStrip(
+          days: [
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+            GoalCompactDayState.none,
+          ],
+          placeholder: true,
+          cellSize: ControlSizes.iconChipCompact,
+        ),
+      ),
+    );
+
+    // Dashed outlines, never the filled grey a genuinely-empty week wears:
+    // "no data yet" and "nothing happened" must not share an encoding.
+    expect(find.byType(DsDashedBorder), findsNWidgets(3));
+    final outlined = tester.getSize(
+      find
+          .descendant(
+            of: find.byType(DsDashedBorder).first,
+            matching: find.byType(SizedBox),
+          )
+          .first,
+    );
+    expect(outlined.width, ControlSizes.iconChipCompact);
+    expect(outlined.height, ControlSizes.iconChipCompact);
+  });
+
+  testWidgets('the partial-day dot scales with the square it marks', (
+    tester,
+  ) async {
+    Future<double> dotWidth(double cellSize) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalCompactWindowStrip(
+            days: const [GoalCompactDayState.partial],
+            cellSize: cellSize,
+          ),
+        ),
+      );
+      // The dot is the innermost Container inside the cell.
+      return tester
+          .getSize(
+            find
+                .descendant(
+                  of: find.byType(GoalCompactWindowStrip),
+                  matching: find.byType(Container),
+                )
+                .last,
+          )
+          .width;
+    }
+
+    final compact = await dotWidth(IconSizes.xs);
+    final large = await dotWidth(ControlSizes.iconChipCompact);
+    // A dot fixed at the compact size vanishes inside the 28px square the
+    // detail page uses, and the partial state is the one that has no colour
+    // of its own to fall back on.
+    expect(large, greaterThan(compact));
+  });
+
+  testWidgets('tappable day cells clear the touch floor and match the habit '
+      'day squares, while a read-only strip stays compact', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(InkWell),
+    );
+    expect(cells, findsNWidgets(7));
+    for (var index = 0; index < 7; index++) {
+      expect(
+        tester.getSize(cells.at(index)).height,
+        greaterThanOrEqualTo(TapTargets.minimum),
+        reason: 'cell $index is under the touch floor',
+      );
+    }
+    // The targets tile the row with no dead space between them. Seven cells
+    // inside a card's rail cannot each reach 48px wide, so every pixel that
+    // would have gone to a gap goes to a target instead.
+    // The targets tile the row rather than sitting as islands in it. Seven
+    // cells inside a card's rail cannot each reach 48px wide, so every pixel
+    // that would have gone to a declared gap goes to a target instead.
+    var covered = 0.0;
+    for (var index = 0; index < 7; index++) {
+      covered += tester.getSize(cells.at(index)).width;
+    }
+    expect(
+      covered,
+      greaterThan(
+        tester.getSize(find.byType(GoalCompactWindowStrip)).width * 0.98,
+      ),
+      reason: 'dead space sits between the day targets',
+    );
+
+    // The square itself matches the habit day squares below it — the whole
+    // goal used to render at IconSizes.xs against their iconChipCompact,
+    // less than half the size, on the same screen.
+    final square = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(GoalCompactWindowStrip),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      square.constraints!.maxWidth,
+      ControlSizes.iconChipCompact,
+    );
   });
 
   testWidgets('metric card renders seven bars in the same rolling frame', (
@@ -968,6 +1333,64 @@ void main() {
     }
 
     expect(barColor('2026-08-10'), isNot(barColor('2026-08-11')));
+  });
+
+  testWidgets('a day at or above an at-least target wears the day-cell '
+      'success fill, and a slimmer bar than its share of the row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Steps',
+              target: 10000,
+              days: [day(1, 12400), day(0, 5262)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    Color barColor(String date) {
+      final bar = tester.widget<FractionallySizedBox>(
+        find.byKey(ValueKey('goal-metric-bar-$date')),
+      );
+      return ((bar.child! as DecoratedBox).decoration as BoxDecoration).color!;
+    }
+
+    // The bar beating the goal wears exactly the fill a met day cell wears —
+    // one meaning, one colour, across every goal surface. It used to be
+    // `alert.info`, a blue carrying no threshold meaning, so beating the
+    // target looked identical to missing it.
+    expect(
+      barColor('2026-08-10'),
+      goalDayStateFill(tokens, GoalCompactDayState.full),
+      reason: '12,400 steps beat the 10,000 target',
+    );
+    expect(
+      barColor('2026-08-11'),
+      goalDayStateFill(tokens, GoalCompactDayState.none),
+      reason: '5,262 steps fell short',
+    );
+
+    // Seven bars filling a full-width card rendered ~40px slabs. Each one now
+    // sits at exactly the width the scrollable variant uses.
+    //
+    // Asserted as an equality on purpose: `lessThanOrEqualTo` also accepts
+    // zero, and zero is precisely what a loose width constraint produces
+    // here — `_bar` is a FractionallySizedBox with no widthFactor, so it
+    // passes the constraint through to a DecoratedBox with no intrinsic
+    // width and the whole chart disappears.
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('goal-metric-bar-2026-08-11')))
+          .width,
+      ControlSizes.iconChipCompact,
+    );
   });
 
   testWidgets('an observed zero keeps a visible success baseline', (
