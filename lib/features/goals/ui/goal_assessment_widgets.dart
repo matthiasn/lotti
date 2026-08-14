@@ -29,6 +29,7 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
     required this.specVersion,
     required this.day,
     required this.progress,
+    this.existing,
     super.key,
   });
 
@@ -38,6 +39,15 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   final DateTime day;
   final GoalProgressView progress;
 
+  /// The verdict already standing for this day, when there is one.
+  ///
+  /// Every day in the strip can be reopened, so the sheet has to arrive
+  /// showing what was recorded. Starting blank meant reopening a day filed as
+  /// Missed offered Met with an empty note, and saving replaced the real
+  /// reflection with that default — losing the note and the per-dimension
+  /// verdicts along with it.
+  final GoalAssessmentRecord? existing;
+
   @override
   ConsumerState<GoalDayAssessmentSheet> createState() =>
       _GoalDayAssessmentSheetState();
@@ -46,10 +56,19 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
 class _GoalDayAssessmentSheetState
     extends ConsumerState<GoalDayAssessmentSheet> {
   final _note = TextEditingController();
-  GoalAssessmentRating _rating = GoalAssessmentRating.met;
+  late GoalAssessmentRating _rating;
   final _dimensionRatings = <String, GoalAssessmentRating>{};
   var _saving = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _rating = existing?.rating ?? GoalAssessmentRating.met;
+    _note.text = existing?.note ?? '';
+    if (existing != null) _dimensionRatings.addAll(existing.dimensionRatings);
+  }
 
   @override
   void dispose() {

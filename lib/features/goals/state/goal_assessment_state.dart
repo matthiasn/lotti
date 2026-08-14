@@ -38,12 +38,17 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
           if (payload is! AgentMessagePayloadEntity) continue;
           final content = payload.content;
           final day = DateTime.tryParse(content['day'] as String? ?? '');
-          final rating = _decodeRating(content['rating']);
+          // `ratingV2` carries the real verdict; `rating` is the nearest form
+          // an older client can read. Prefer the richer one when present.
+          final rating = _decodeRating(
+            content['ratingV2'] ?? content['rating'],
+          );
           final specVersionId = content['specVersionId'];
           if (day == null || rating == null || specVersionId is! String) {
             continue;
           }
-          final rawDimensions = content['dimensionRatings'];
+          final rawDimensions =
+              content['dimensionRatingsV2'] ?? content['dimensionRatings'];
           final dimensionRatings = <String, GoalAssessmentRating>{};
           if (rawDimensions is Map) {
             for (final entry in rawDimensions.entries) {
@@ -97,17 +102,26 @@ GoalAssessmentRating? _decodeRating(Object? raw) {
       GoalAssessmentRating.mixed;
 }
 
-/// The verdict that stands for each day, keyed by UTC day.
+/// The record that stands for each day, keyed by UTC day.
 ///
 /// A day can carry several records — the user reflects, then revises — so the
 /// most recently created one wins. Ties on [GoalAssessmentRecord.createdAt]
 /// keep the first seen, which makes the result stable rather than dependent on
 /// however the store happened to order two writes in the same instant.
-Map<DateTime, GoalAssessmentRating> latestRatingsByDay(
-  Iterable<GoalAssessmentRecord> records,
-) {
+///
+/// [specVersionId] restricts the result to reflections recorded against one
+/// version of the goal. Spec versions are immutable and the history keeps them
+/// all, so without it a verdict passed on the OLD criteria would colour the
+/// same date under the new ones — a judgement of a goal that no longer exists.
+Map<DateTime, GoalAssessmentRecord> latestAssessmentsByDay(
+  Iterable<GoalAssessmentRecord> records, {
+  String? specVersionId,
+}) {
   final latest = <DateTime, GoalAssessmentRecord>{};
   for (final record in records) {
+    if (specVersionId != null && record.specVersionId != specVersionId) {
+      continue;
+    }
     final day = DateTime.utc(
       record.day.year,
       record.day.month,
@@ -118,7 +132,17 @@ Map<DateTime, GoalAssessmentRating> latestRatingsByDay(
       latest[day] = record;
     }
   }
-  return {
-    for (final entry in latest.entries) entry.key: entry.value.rating,
-  };
+  return latest;
 }
+
+/// The verdict standing for each day, for surfaces that only need the colour.
+Map<DateTime, GoalAssessmentRating> latestRatingsByDay(
+  Iterable<GoalAssessmentRecord> records, {
+  String? specVersionId,
+}) => {
+  for (final entry in latestAssessmentsByDay(
+    records,
+    specVersionId: specVersionId,
+  ).entries)
+    entry.key: entry.value.rating,
+};

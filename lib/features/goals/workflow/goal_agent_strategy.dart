@@ -205,6 +205,7 @@ class GoalAgentStrategy extends ConversationStrategy
         .where((s) => s.name == statusRaw)
         .firstOrNull;
     final oneLiner = _trimmed(args['oneLiner']);
+    final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
     final structured = GoalStructuredReport.tryParse(args['report']);
     final tldr = hasStructuredReport
@@ -224,6 +225,37 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    // The prompt tells the model that status names are field values, never
+    // prose. That instruction is the only thing standing between a weaker
+    // model and "the overall status is insufficientData" reaching the user, so
+    // it is enforced here too: reject and let the model retry in the user's
+    // own language. Deliberately not sanitized away — deleting the token would
+    // leave a sentence with a hole in it, and mapping it to English words
+    // would put English into ten other catalogs.
+    final tokenInProse = _statusTokenIn([
+      oneLiner,
+      tldr,
+      if (structured != null) ...[
+        structured.currentPeriod,
+        structured.rollingWindow,
+        structured.latestChange,
+        structured.coverage,
+        for (final item in structured.now) item.action,
+        ...structured.later,
+      ],
+      content,
+    ]);
+    if (tokenInProse != null) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: "$tokenInProse" is a status field value, not prose. '
+            "Rewrite the visible text in the user's language and call "
+            'update_goal_report again.',
+      );
+      return;
+    }
     if (expectedStatus != null && status != expectedStatus) {
       await _reject(
         call: call,
@@ -237,7 +269,6 @@ class GoalAgentStrategy extends ConversationStrategy
     _reportStatus = status;
     _reportOneLiner = oneLiner;
     _reportTldr = tldr;
-    final content = _trimmed(args['content']);
     // A structured report supplies both tiers: `tldr` is the collapsed view
     // above, and the composed sections are the body behind "Show more". Any
     // free-form `content` alongside it is ignored, so it cannot reintroduce
@@ -479,6 +510,21 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     _observations.add(ObservationRecord(text: note));
     await _accept(call, manager, 'Observation recorded.');
+  }
+
+  /// The first status token found standing as a word in any visible string.
+  ///
+  /// Word-bounded so a legitimate sentence cannot trip it: the tokens are
+  /// camelCase identifiers (`insufficientData`, `offTrack`) that no language
+  /// writes by accident.
+  String? _statusTokenIn(List<String> texts) {
+    for (final text in texts) {
+      if (text.isEmpty) continue;
+      for (final token in goalTrackStatusNames) {
+        if (RegExp('\\b$token\\b').hasMatch(text)) return token;
+      }
+    }
+    return null;
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

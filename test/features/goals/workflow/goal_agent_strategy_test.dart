@@ -222,6 +222,65 @@ void main() {
     },
   );
 
+  test('a status token in visible prose is rejected, not published', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'insufficientData',
+            'oneLiner': 'Not enough readings yet.',
+            'report': {
+              'tldr': 'The overall status is insufficientData right now.',
+              'currentPeriod': 'Nothing logged today.',
+              'rollingWindow': 'The rolling window is thin.',
+              'latestChange': '',
+              'coverage': 'Two of seven days carry data.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    // The prompt says status names are field values, never prose. That
+    // instruction was the only thing standing between a weaker model and
+    // "the overall status is insufficientData" reaching the user.
+    expect(strategy.hasReport, isFalse);
+    final error = rejection();
+    expect(error, contains('insufficientData'));
+    expect(error, contains('not prose'));
+  });
+
+  test('a status name is still required in the status FIELD', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'insufficientData',
+            'oneLiner': 'Not enough readings yet.',
+            'report': {
+              'tldr': 'Two days of data so far.',
+              'currentPeriod': 'Nothing logged today.',
+              'rollingWindow': 'The rolling window is thin.',
+              'latestChange': '',
+              'coverage': 'Two of seven days carry data.',
+              'nextActions': {'now': <Object>[], 'later': <Object>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    // The guard must read prose only — rejecting the field itself would make
+    // the tool impossible to call.
+    expect(strategy.hasReport, isTrue);
+    expect(strategy.reportStatus, GoalTrackStatus.insufficientData);
+  });
+
   test('structured report rejects empty current or rolling standing', () async {
     for (final emptyKey in ['currentPeriod', 'rollingWindow']) {
       await strategy.processToolCalls(

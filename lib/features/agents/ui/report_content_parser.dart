@@ -13,15 +13,31 @@ String? explicitReportTldr(AgentReportEntity report) {
   return tldr == null || tldr.isEmpty ? null : tldr;
 }
 
+/// True when [content] already opens with its own TLDR section.
+///
+/// Task and project agents author `content` as the COMPLETE report, starting
+/// with a `## 📋 TLDR` heading, and set [AgentReportEntity.tldr] to the same
+/// summary alongside it. Goal agents split the two: the summary lives only in
+/// the field and `content` is the body. The heading is what tells the two
+/// formats apart.
+bool contentCarriesItsOwnTldr(String content) =>
+    _tldrHeadingRegex.hasMatch(stripLeadingH1(content));
+
+final _tldrHeadingRegex = RegExp(r'## 📋 TLDR\n', multiLine: true);
+
 /// The full rendering of a report: its summary, then the body it introduces.
 ///
 /// A view that renders [AgentReportEntity.content] alone silently drops the
-/// summary for any report that split the tiers.
+/// summary for a report that split the tiers. Prepending it unconditionally
+/// makes the opposite mistake — a task report whose content already opens with
+/// its own TLDR section would show the summary twice — so the summary is added
+/// only when the body does not already carry one.
 String reportBodyWithTldr(AgentReportEntity report) {
   final tldr = explicitReportTldr(report);
   final content = report.content.trim();
   if (tldr == null) return report.content;
   if (content.isEmpty || content == tldr) return tldr;
+  if (contentCarriesItsOwnTldr(content)) return report.content;
   return '$tldr\n\n$content';
 }
 

@@ -293,6 +293,52 @@ void main() {
     );
   });
 
+  testWidgets('a goal with no composite rule still gets a reflectable week', (
+    tester,
+  ) async {
+    Future<void> pump({required bool reflectable}) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: reflectable ? (_) {} : null,
+        ),
+      ),
+    );
+
+    // Gating the whole-goal card on a composite rule left a single-habit goal
+    // unable to reflect on a past day at all, and showing none of the verdict
+    // colours — the feature is about goal days, and this goal has those too.
+    await pump(reflectable: true);
+    expect(find.byType(GoalCompactWindowStrip), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(GoalCompactWindowStrip),
+        matching: find.byType(InkWell),
+      ),
+      findsNWidgets(7),
+    );
+    // The composite tally says nothing about a goal with one dimension.
+    expect(find.textContaining('dimensions'), findsNothing);
+
+    // Read-only, the card would only put a second, near-identical week above
+    // the one the habit row already draws.
+    await pump(reflectable: false);
+    expect(find.byType(GoalCompactWindowStrip), findsNothing);
+  });
+
   testWidgets('a read-only strip hugs its cells while a tappable one spans '
       'the measure', (tester) async {
     const week = [

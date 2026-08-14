@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:glados/glados.dart'
     show
         Any,
@@ -10,6 +9,7 @@ import 'package:glados/glados.dart'
         Glados,
         IntAnys,
         any;
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 
 class _GeneratedHeadingReport {
@@ -466,6 +466,24 @@ void main() {
     test('a report with no tldr renders its content untouched', () {
       const markdown = '## 📋 TLDR\nAll good.';
       expect(reportBodyWithTldr(report(content: markdown)), markdown);
+    });
+
+    test('a body that carries its own TLDR is not given a second one', () {
+      // Task and project agents author `content` as the COMPLETE report,
+      // opening with its own TLDR section, and set `tldr` to the same summary
+      // beside it. Prepending there shows the summary twice.
+      const markdown = '## 📋 TLDR\nAll good.\n\n## ✅ Achieved\n- Shipped';
+      expect(
+        reportBodyWithTldr(report(tldr: 'All good.', content: markdown)),
+        markdown,
+      );
+      expect(contentCarriesItsOwnTldr(markdown), isTrue);
+    });
+
+    test('a body with no TLDR heading is a split-tier report', () {
+      // Goal agents put the summary only in the field, so their body has no
+      // heading and does need the summary prepended.
+      expect(contentCarriesItsOwnTldr('Logging is complete today.'), isFalse);
     });
   });
 }

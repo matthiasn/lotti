@@ -248,5 +248,56 @@ void main() {
     test('no records means no colours to override the measurement', () {
       expect(latestRatingsByDay(const []), isEmpty);
     });
+
+    test('a verdict from another spec version never colours the new goal', () {
+      final day = DateTime.utc(2026, 8, 10);
+      final records = [
+        record(
+          id: 'old-spec',
+          day: day,
+          rating: GoalAssessmentRating.met,
+          createdAt: DateTime.utc(2026, 8, 10, 21),
+        ),
+        GoalAssessmentRecord(
+          id: 'current-spec',
+          day: day,
+          specVersionId: 'spec-2',
+          rating: GoalAssessmentRating.missed,
+          createdAt: DateTime.utc(2026, 8, 10, 9),
+          provenance: GoalAssessmentProvenance.ratedByUser,
+        ),
+      ];
+
+      // Spec versions are immutable and the history keeps them all. Unscoped,
+      // the NEWER old-spec verdict would win and paint the day Met under
+      // criteria it never judged.
+      expect(
+        latestRatingsByDay(records, specVersionId: 'spec-2'),
+        {day: GoalAssessmentRating.missed},
+      );
+      expect(
+        latestRatingsByDay(records, specVersionId: 'spec-1'),
+        {day: GoalAssessmentRating.met},
+      );
+      // Unscoped still means "whatever was written last".
+      expect(latestRatingsByDay(records), {day: GoalAssessmentRating.met});
+    });
+
+    test('the standing record is available whole, not just its rating', () {
+      // Reopening a judged day has to restore the note and the per-dimension
+      // verdicts, not only the colour.
+      final day = DateTime.utc(2026, 8, 10);
+      final standing = latestAssessmentsByDay([
+        record(
+          id: 'r',
+          day: day,
+          rating: GoalAssessmentRating.improving,
+          createdAt: DateTime.utc(2026, 8, 10),
+        ),
+      ])[day];
+
+      expect(standing?.id, 'r');
+      expect(standing?.rating, GoalAssessmentRating.improving);
+    });
   });
 }

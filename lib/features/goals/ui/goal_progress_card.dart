@@ -379,7 +379,18 @@ class GoalProgressCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (progress.compositeRule != null) ...[
+        // A composite goal always gets this card: the strip is the only place
+        // its dimensions are summed into one week.
+        //
+        // A leaf goal gets it only where the days are actionable. Gating it on
+        // the composite rule alone left single-habit and single-metric goals
+        // unable to reflect on a past day at all and showing none of the
+        // verdict colours — the feature is about goal days, and a leaf goal
+        // has those too. Adding the card unconditionally would instead put a
+        // second, near-identical week above the one its single dimension
+        // already draws.
+        if (progress.compositeRule != null ||
+            (onReflectDay != null && progress.compactWindow.isNotEmpty)) ...[
           _CompositeProgressCard(
             progress: progress,
             onReflectDay: onReflectDay,
@@ -512,17 +523,21 @@ class _CompositeProgressCard extends StatelessWidget {
             onDaySelected: onReflectDay,
             ratingsByDay: ratingsByDay,
           ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.goalCompositeProgressSummary(
-              metYesterday,
-              progress.dimensionCount,
-              required,
+          if (progress.compositeRule != null)
+            SizedBox(height: tokens.spacing.step3),
+          // "3 of 5 dimensions · 4 required" says nothing about a goal with
+          // one dimension, so a leaf goal gets the strip without the tally.
+          if (progress.compositeRule != null)
+            Text(
+              context.messages.goalCompositeProgressSummary(
+                metYesterday,
+                progress.dimensionCount,
+                required,
+              ),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
         ],
       ),
     );

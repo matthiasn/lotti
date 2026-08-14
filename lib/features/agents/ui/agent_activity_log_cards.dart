@@ -114,8 +114,10 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
                   child: _expanded
                       ? AgentMarkdownView(reportBodyWithTldr(report))
                       : AgentMarkdownView(
-                          explicitReportTldr(report) ??
-                              parseReportContent(report.content).tldr,
+                          contentCarriesItsOwnTldr(report.content)
+                              ? parseReportContent(report.content).tldr
+                              : explicitReportTldr(report) ??
+                                    parseReportContent(report.content).tldr,
                         ),
                 ),
               if (attributionEnvelope != null)
