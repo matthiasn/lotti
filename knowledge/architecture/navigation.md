@@ -168,10 +168,34 @@ transition even when its URL is correct — which is what the legacy
 
 # Chrome rules are pure functions of router state
 
-Mobile chrome decisions are derived, not stored. `settingsRouteHidesBottomNav`
-takes a `BeamLocation` and returns whether the bottom navigation bar should
-slide away, following one product rule: **menus keep the bar, terminal
-destinations take the bottom edge.**
+Mobile chrome decisions are derived, not stored. Four pure functions of router
+state decide what the bottom edge belongs to, following one product rule:
+**menus keep the bar, terminal destinations take the bottom edge.**
+
+| Predicate | Routes | Effect |
+| --- | --- | --- |
+| `isTaskDetailRoute` | `/tasks/<uuid>` | Bar **unmounted** — `TaskActionBar` replaces it outright |
+| `settingsRouteHidesBottomNav` | AI and Agents sections, sync/advanced leaves, entity editors | Bar **slides away** |
+| `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
+| `agentsRouteHidesBottomNav` | `/agents/create`, `/agents/details/<id>[/chat\|/edit]` | Bar **slides away** |
+
+Removal and slide-away differ on purpose: a page that docks its own bar can
+swap instantly, while a page that replaces the bar with nothing would read as a
+glitch, so the bar animates out and back instead.
+
+The predicates match **exact route shapes, not prefixes.** A malformed or
+restored URL like `/agents/details` with no id renders the plain list, and that
+list must keep its tab bar — so matching on the second path segment alone is a
+bug, not a shortcut.
+
+**Hiding the bar is only half of it.** Pages pad their content by
+`DesignSystemBottomNavigationBar.occupiedHeight`, so a hidden bar must also
+stop being reserved, or the page keeps a bar-sized empty gutter exactly where
+its own pinned surface was meant to dock. `_MobileNavOverlayHeightScope`
+therefore publishes `barDocked` alongside the indicator-row height, and
+`occupiedHeight` adds the bar's own height only when it is docked. The flag
+defaults to true when no scope exists, so a page rendered outside the shell
+(previews, widget tests) reserves room exactly as before.
 
 ```mermaid
 stateDiagram-v2
@@ -180,12 +204,15 @@ stateDiagram-v2
     BarHidden --> BarVisible: navigate back to a menu or list
     note right of BarVisible
       Settings root, menu hubs (advanced, sync,
-      definitions), entity list pages, conflicts list
+      definitions), entity list pages, conflicts list,
+      the Projects and Goal Agents list roots
     end note
     note right of BarHidden
       All of AI and Agents, every sync and advanced
       leaf, entity editors and create routes,
-      top-level leaves, conflict detail
+      top-level leaves, conflict detail,
+      project details, a goal agent's detail, chat,
+      create and edit pages
     end note
 ```
 

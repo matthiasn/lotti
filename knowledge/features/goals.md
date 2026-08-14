@@ -11,7 +11,7 @@ sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-13
+    last_modified: 2026-08-14
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -39,7 +39,7 @@ sources:
   - id: goal-service
     resource: ../../lib/features/goals/service/goal_agent_service.dart
     title: GoalAgentService — lifecycle, subscriptions and report automation
-    last_modified: 2026-08-13
+    last_modified: 2026-08-14
   - id: progress-vocabulary
     resource: ../../lib/classes/goal_progress_models.dart
     title: Persisted per-dimension progress vocabulary
@@ -47,11 +47,11 @@ sources:
   - id: workflow
     resource: ../../lib/features/goals/workflow/goal_agent_workflow.dart
     title: GoalAgentWorkflow — the Phase B LLM tier
-    last_modified: 2026-08-13
+    last_modified: 2026-08-14
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-13
+    last_modified: 2026-08-14
   - id: strategy
     resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
     title: GoalAgentStrategy — Phase B conversation and tool dispatch
@@ -71,7 +71,7 @@ sources:
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
     title: Goal create/edit flow — intention, observable mapping and confirmation
-    last_modified: 2026-08-12
+    last_modified: 2026-08-14
   - id: measurable-capture
     resource: ../../lib/features/goals/service/goal_measurable_capture_service.dart
     title: Approval-gated measurable capture from goal chat
@@ -91,11 +91,11 @@ sources:
   - id: chat-composer
     resource: ../../lib/features/agents/ui/chat/agent_chat_view.dart
     title: AgentChatView — voice-enabled goal chat composer
-    last_modified: 2026-08-12
+    last_modified: 2026-08-14
   - id: recorder-controller
     resource: ../../lib/features/ai_chat/ui/controllers/chat_recorder_controller.dart
     title: ChatRecorderController — shared voice recorder
-    last_modified: 2026-08-12
+    last_modified: 2026-08-14
 ---
 
 # Goal Agents — Runtime
@@ -212,6 +212,14 @@ flowchart TD
   Update now, Skip once, and the persisted automatic-updates switch. The first
   tick of a day is not "new data" (the window slid), and identical
   recomputation keeps the report fresh.
+  **A direct identity write must ping `UpdateNotifications` itself.**
+  `AgentSyncService.upsertEntity` does not notify; the wake path only appears
+  to, because `WakeOutputWriter` pings separately after its own commit. So a
+  user-initiated identity write — `GoalAgentService.updateAutomaticUpdates`
+  toggling that switch — pings after its transaction commits, or
+  `agentIdentityProvider` keeps its cached value and the switch renders the old
+  state until the page is rebuilt from scratch, which reads as a switch that
+  does not work.
 - **The deferred arm and its escalation commit in one transaction.** When the
   local countdown fires, its dedicated trigger re-enters Phase A and writes the
   current register together with a forced report-refresh escalation. The
@@ -751,8 +759,22 @@ flowchart TD
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
   for an active goal identity, shows the coarse-health label (current state,
   never the aspiration statement) in its compact
-  chat header, clears the overlaid navigation bar, and persists the detail
-  route after system/gesture back. `agentChatProjectionProvider`
+  chat header, and persists the detail
+  route after system/gesture back. **Every one of a goal's own pages — detail,
+  chat, create and edit — slides the mobile bottom nav away**
+  (`agentsRouteHidesBottomNav`; the `/agents` list root keeps it), because each
+  docks its own surface at the bottom edge: the day-assessment sheet's record
+  button and the wizards' pinned Continue band. Hiding the bar also stops it
+  being reserved, so those surfaces reach the edge instead of floating above a
+  bar-sized gutter — see
+  [navigation](../architecture/navigation.md#chrome-rules-are-pure-functions-of-router-state).
+  The visible reply list owns its measured heights
+  (`_AgentChatViewState._measuredHeights`, keyed by message id): a collapsible
+  reply's clamp is height-measured, `ListView.builder` disposes an item's State
+  once it leaves the cache extent, and an item that came back without its
+  measurement rendered full-height for one frame — which grew the content above
+  the viewport and made the list jump on every re-entry.
+  `agentChatProjectionProvider`
   filters and sorts the log first, retains the latest fifty durable visible
   candidates, and only then reads their payloads (no automatic `runKey`);
   projected turns are user messages and content-bearing `reply_to_user` actions;
