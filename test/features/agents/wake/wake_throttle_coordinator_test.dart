@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/wake/wake_throttle_coordinator.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -48,6 +49,22 @@ enum _GeneratedThrottlePersistenceOperationKind {
   elapseTick,
   elapseWindow,
   elapseLong,
+}
+
+class _TransactionCheckingAgentRepository extends MockAgentRepository {
+  int transactionCount = 0;
+  bool insideTransaction = false;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    transactionCount += 1;
+    insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      insideTransaction = false;
+    }
+  }
 }
 
 const _generatedThrottleWindow = Duration(seconds: 30);
@@ -416,6 +433,55 @@ void main() {
         } finally {
           coordinator.dispose();
         }
+      });
+    });
+
+    test('serializes persisted throttle set and clear mutations', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final transactionRepository = _TransactionCheckingAgentRepository();
+      var state = makeTestState(
+        agentId: 'agent-1',
+        slots: AgentSlots(
+          activeProjectId: 'project-1',
+          pendingProjectActivityAt: now,
+        ),
+      );
+
+      when(
+        () => transactionRepository.getAgentState('agent-1'),
+      ).thenAnswer((_) async {
+        expect(transactionRepository.insideTransaction, isTrue);
+        return state;
+      });
+      when(() => transactionRepository.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        expect(transactionRepository.insideTransaction, isTrue);
+        state = invocation.positionalArguments.single as AgentStateEntity;
+      });
+
+      fakeAsync((async) {
+        final coordinator = WakeThrottleCoordinator(
+          repository: transactionRepository,
+          onDrainRequested: () async {},
+          throttleWindow: _generatedThrottleWindow,
+        );
+        addTearDown(coordinator.dispose);
+
+        withClock(Clock.fixed(now), () {
+          unawaited(coordinator.setDeadline('agent-1'));
+        });
+        async.flushMicrotasks();
+
+        expect(state.nextWakeAt, now.add(_generatedThrottleWindow));
+        expect(state.slots.pendingProjectActivityAt, now);
+
+        coordinator.clearThrottle('agent-1');
+        async.flushMicrotasks();
+
+        expect(state.nextWakeAt, isNull);
+        expect(state.slots.pendingProjectActivityAt, now);
+        expect(transactionRepository.transactionCount, 2);
       });
     });
 

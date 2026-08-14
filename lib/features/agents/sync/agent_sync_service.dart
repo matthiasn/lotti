@@ -117,6 +117,41 @@ class AgentSyncService {
     return _upsertEntityRaw(entity, fromSync: fromSync);
   }
 
+  /// Atomically re-reads and conditionally updates one agent-state row.
+  ///
+  /// State fields have several independent writers (wake completion, retry,
+  /// cancellation, freshness, and activity monitoring). A caller that copies
+  /// a snapshot before another writer commits can otherwise restore fields the
+  /// newer write cleared. This transaction-scoped transform makes the latest
+  /// persisted row the only mutation base and preserves the append-owned
+  /// message head before stamping and syncing the result.
+  Future<bool> updateAgentState(
+    String agentId,
+    FutureOr<AgentStateEntity?> Function(AgentStateEntity current) update,
+  ) async {
+    var changed = false;
+    await runInTransaction(() async {
+      final current = await _repository.getAgentState(agentId);
+      if (current == null) return;
+
+      final next = await update(current);
+      if (next == null || next == current) return;
+      if (next.agentId != current.agentId || next.id != current.id) {
+        throw ArgumentError.value(
+          next,
+          'update',
+          'Agent-state updates must keep the same row identity',
+        );
+      }
+
+      await _upsertEntityRaw(
+        next.copyWith(recentHeadMessageId: current.recentHeadMessageId),
+      );
+      changed = true;
+    });
+    return changed;
+  }
+
   /// Persists a local [AgentStateEntity] write while preserving the
   /// append-path-owned `recentHeadMessageId`.
   ///

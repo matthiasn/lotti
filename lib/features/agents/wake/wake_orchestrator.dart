@@ -91,6 +91,17 @@ typedef AgentContentChecker = Future<bool> Function(String entityId);
 /// state mutation that must propagate to other devices.
 typedef SyncEntityWriter = Future<void> Function(AgentDomainEntity entity);
 
+/// Transactional, sync-aware agent-state transformer.
+///
+/// The callback receives the latest persisted state inside the write
+/// transaction, preventing independent state writers from overwriting fields
+/// they did not own.
+typedef SyncAgentStateUpdater =
+    Future<bool> Function(
+      String agentId,
+      FutureOr<AgentStateEntity?> Function(AgentStateEntity current) update,
+    );
+
 /// Optional hook run **once per wake, just before the executor**. Used by fork
 /// healing (ADR 0018 rule 8): collapse a surviving multi-head `messagePrev` fork
 /// into one continuation node before the wake acts, so context and the
@@ -188,6 +199,7 @@ class WakeOrchestrator with AgentErrorLogging {
     this.taskContentChecker,
     this.eventContentChecker,
     this.syncEntityWriter,
+    this.syncAgentStateUpdater,
     this.onWakeStart,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
   }) {
@@ -236,6 +248,9 @@ class WakeOrchestrator with AgentErrorLogging {
   /// propagate across devices (e.g. clearing the `awaitingContent` flag).
   /// When null, falls back to the raw [repository] write.
   SyncEntityWriter? syncEntityWriter;
+
+  /// Optional transactional state updater for partial state mutations.
+  SyncAgentStateUpdater? syncAgentStateUpdater;
 
   /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
   /// executor for each wake. When null (the default), wakes run exactly as
@@ -487,6 +502,28 @@ class WakeOrchestrator with AgentErrorLogging {
   /// user-initiated wakes remain available.
   void disableAutomaticUpdatesRuntime(String agentId) {
     _automaticUpdatesDisabledAgents.add(agentId);
+    _cancelPendingAutomaticWakes(
+      agentId,
+      reason: 'automatic wake removed because updates were disabled',
+    );
+  }
+
+  /// Clears this device's automatic countdown and queued automation jobs.
+  ///
+  /// Unlike [disableAutomaticUpdatesRuntime], this does not change the
+  /// automation policy. Sync uses it when a peer has already consumed the
+  /// pending project activity represented by a local subscription wake.
+  void cancelPendingAutomaticWakes(String agentId) {
+    _cancelPendingAutomaticWakes(
+      agentId,
+      reason: 'automatic wake removed because project work was consumed',
+    );
+  }
+
+  void _cancelPendingAutomaticWakes(
+    String agentId, {
+    required String reason,
+  }) {
     clearThrottle(agentId);
     final removed = queue.removeByAgentWhere(
       agentId,
@@ -494,7 +531,7 @@ class WakeOrchestrator with AgentErrorLogging {
     );
     _emitRemovedRunCompletions(
       removed,
-      reason: 'automatic wake removed because updates were disabled',
+      reason: reason,
     );
   }
 
@@ -748,7 +785,9 @@ class WakeOrchestrator with AgentErrorLogging {
   ///
   /// Unlike notification-driven wakes, this bypasses subscription matching and
   /// self-notification suppression.  Used for initial creation wakes and
-  /// manual re-analysis triggers.
+  /// manual re-analysis triggers. Scheduled work defaults to an automation
+  /// initiator so current policy is rechecked at drain time; other callers
+  /// default to a user initiator unless they explicitly say otherwise.
   ///
   /// Returns the wake's deterministic run key so callers can correlate the
   /// enqueued job with its [runCompletions] event.
@@ -799,7 +838,11 @@ class WakeOrchestrator with AgentErrorLogging {
       triggerTokens: triggerTokens,
       workspaceKey: workspaceKey,
       createdAt: now,
-      initiator: initiator ?? WakeInitiator.user,
+      initiator:
+          initiator ??
+          (reason == WakeReason.scheduled.name
+              ? WakeInitiator.automation
+              : WakeInitiator.user),
     );
 
     queue.enqueue(job);

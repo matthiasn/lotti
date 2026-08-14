@@ -1,5 +1,29 @@
 part of 'project_agent_workflow.dart';
 
+/// Keeps a future one-shot deadline for pending project activity.
+///
+/// A due deadline has already spent its attempt, so retaining it would make
+/// every scheduler scan retry immediately. Advancing it to the next local
+/// digest window gives the pending batch a durable retry without recurrence,
+/// but only when automatic project wakes are allowed. A future explicit
+/// schedule is always retained because it may have been requested manually.
+DateTime? _nextProjectActivityFallback({
+  required DateTime? currentSchedule,
+  required DateTime? pendingActivityAt,
+  required bool automaticFallbackAllowed,
+  required DateTime now,
+}) {
+  if (pendingActivityAt == null) return null;
+  if (currentSchedule != null && currentSchedule.isAfter(now)) {
+    return currentSchedule;
+  }
+  if (!automaticFallbackAllowed) return null;
+  return nextOccurrenceOf(
+    now,
+    hour: AgentSchedules.projectDailyDigestHour,
+  );
+}
+
 /// The full wake-cycle execution of [ProjectAgentWorkflow]. Extracted into a
 /// part-file extension to keep the workflow under the size limit; the class
 /// keeps a thin public [ProjectAgentWorkflow.execute] delegator so mocks keep
@@ -31,14 +55,10 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     final projectId = state.slots.activeProjectId;
     if (projectId == null) {
       _log('no active project ID — aborting wake', subDomain: 'execute');
-      return const WakeResult(
-        success: false,
-        error: 'No active project ID',
-      );
+      throw StateError('No active project ID');
     }
 
     final now = clock.now();
-
     // 2. Load the latest report and decide whether a due scheduled wake can be
     // skipped cheaply because no new project activity was recorded.
     final lastReport = await agentRepository.getLatestReport(
@@ -114,10 +134,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         'project not found in journal — aborting wake',
         subDomain: 'execute',
       );
-      return const WakeResult(
-        success: false,
-        error: 'Project not found',
-      );
+      throw StateError('Project not found');
     }
 
     // 4. Load observations.
@@ -145,10 +162,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         'no provider configured — aborting wake',
         subDomain: 'execute',
       );
-      return const WakeResult(
-        success: false,
-        error: 'No inference provider configured',
-      );
+      throw StateError('No inference provider configured');
     }
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
@@ -333,6 +347,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       await syncService.runInTransaction(() async {
         final latestState =
             await agentRepository.getAgentState(agentId) ?? state;
+        final automaticFallbackAllowed = await _automaticFallbackAllowed(
+          agentId,
+        );
 
         // Persist thought.
         final thoughtText = strategy.finalResponse;
@@ -479,9 +496,15 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
               pendingProjectActivityAt: nextPendingActivityAt,
             ),
             lastWakeAt: now,
-            // Project work is scheduled by update-driven subscription wakes.
-            // Any state-level daily schedule is legacy and must not recur.
-            scheduledWakeAt: null,
+            // Activity newer than this run stays pending. Keep its durable
+            // one-shot fallback too; otherwise a suspension before the
+            // in-memory follow-up drains would strand the newer work.
+            scheduledWakeAt: _nextProjectActivityFallback(
+              currentSchedule: latestState.scheduledWakeAt,
+              pendingActivityAt: nextPendingActivityAt,
+              automaticFallbackAllowed: automaticFallbackAllowed,
+              now: now,
+            ),
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
@@ -537,32 +560,12 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
       return const WakeResult(success: true);
     } catch (e, s) {
-      logError('wake failed', error: e, stackTrace: s);
-
-      await finalizeCarrierlessAgentAttribution(
+      return _handleWakeFailure(
+        agentIdentity: agentIdentity,
         runKey: runKey,
-        logger: this,
-        status: AiWorkStatus.failed,
-        errorCode: e.runtimeType.toString(),
-        errorSummary: e.toString(),
+        error: e,
+        stackTrace: s,
       );
-
-      try {
-        await syncService.upsertEntity(
-          state.copyWith(
-            updatedAt: now,
-            consecutiveFailureCount: state.consecutiveFailureCount + 1,
-          ),
-        );
-      } catch (stateError, s) {
-        logError(
-          'failed to update failure count',
-          error: stateError,
-          stackTrace: s,
-        );
-      }
-
-      return WakeResult(success: false, error: e.toString());
     } finally {
       conversationRepository.deleteConversation(conversationId);
     }

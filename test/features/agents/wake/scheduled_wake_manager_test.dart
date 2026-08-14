@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -39,6 +40,20 @@ enum _GeneratedScheduledWakeFailureSlot {
 
 enum _GeneratedScheduledWakeManagerOperationKind { start, stop, tick }
 
+class _TrackingTransactionRepository extends MockAgentRepository {
+  bool insideTransaction = false;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      insideTransaction = false;
+    }
+  }
+}
+
 final _generatedScheduledWakeNow = DateTime(2026, 5, 20, 10, 30);
 
 class _GeneratedScheduledWakeSpec {
@@ -51,7 +66,6 @@ class _GeneratedScheduledWakeSpec {
   final _GeneratedScheduledWakeTimeSlot timeSlot;
 
   bool get expectsRetirement =>
-      kind == _GeneratedScheduledWakeStateKind.projectNeverWoken ||
       kind == _GeneratedScheduledWakeStateKind.projectDormant;
 
   bool get expectsEnqueue => !expectsRetirement;
@@ -240,6 +254,14 @@ void main() {
     when(
       () => repository.getEntity(any()),
     ).thenAnswer((_) async => makeTestIdentity());
+    when(() => repository.getAgentState(any())).thenAnswer((invocation) async {
+      final agentId = invocation.positionalArguments.single as String;
+      return makeTestState(
+        agentId: agentId,
+        scheduledWakeAt: DateTime(2000),
+      );
+    });
+    when(() => repository.upsertEntity(any())).thenAnswer((_) async {});
     // Default run-key stub so unstubbed enqueueManualWake calls (this test
     // file mostly asserts via `verify`, not `when`) don't throw on the
     // now-non-void return type.
@@ -253,6 +275,12 @@ void main() {
         initiator: any(named: 'initiator'),
       ),
     ).thenReturn('run-key-stub');
+    when(
+      () => orchestrator.hasPendingOrActiveWake(
+        any(),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenReturn(false);
   });
 
   ScheduledWakeManager createAndStart({
@@ -354,14 +382,36 @@ void main() {
             when(
               () => generatedRepository.getEntity(any()),
             ).thenAnswer((_) async => makeTestIdentity());
-            when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
+            when(
+              () => generatedRepository.getAgentState(any()),
+            ).thenAnswer((invocation) async {
+              final agentId = invocation.positionalArguments.single as String;
+              return states.where((state) => state.agentId == agentId).first;
+            });
+            when(
+              () => generatedOrchestrator.hasPendingOrActiveWake(
+                any(),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            ).thenReturn(false);
+            when(
+              () => generatedOrchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+                supersede: any(named: 'supersede'),
+                initiator: any(named: 'initiator'),
+              ),
+            ).thenReturn('generated-run-key');
+            when(() => generatedRepository.upsertEntity(any())).thenAnswer((
               invocation,
             ) async {
               final entity =
                   invocation.positionalArguments.single as AgentStateEntity;
               attemptedRetirementWrites.add(entity);
               if (failingRetirementIds.contains(entity.agentId)) {
-                throw StateError('generated sync failure');
+                throw StateError('generated local write failure');
               }
             });
 
@@ -414,9 +464,18 @@ void main() {
             );
 
             for (final write in attemptedRetirementWrites) {
+              final original = states.singleWhere(
+                (state) => state.agentId == write.agentId,
+              );
               expect(write.scheduledWakeAt, isNull, reason: '$scenario');
-              expect(write.updatedAt, _generatedScheduledWakeNow);
+              expect(write.updatedAt, original.updatedAt, reason: '$scenario');
+              expect(
+                write.vectorClock,
+                original.vectorClock,
+                reason: '$scenario',
+              );
             }
+            verifyNever(() => generatedSyncService.upsertEntity(any()));
 
             expect(notifiedAgentIds, expectedNotifiedIds, reason: '$scenario');
 
@@ -579,10 +638,6 @@ void main() {
             when(() => repository.getEntity(any())).thenAnswer(
               (_) async => makeTestIdentity(lifecycle: AgentLifecycle.dormant),
             );
-            when(
-              () => syncService.upsertEntity(any()),
-            ).thenAnswer((_) async {});
-
             final manager = createAndStart();
             async.flushMicrotasks();
 
@@ -595,10 +650,11 @@ void main() {
             // Its stale scheduledWakeAt is cleared so it stops surfacing.
             final cleared =
                 verify(
-                      () => syncService.upsertEntity(captureAny()),
+                      () => repository.upsertEntity(captureAny()),
                     ).captured.single
                     as AgentStateEntity;
             expect(cleared.scheduledWakeAt, isNull);
+            verifyNever(() => syncService.upsertEntity(any()));
 
             manager.stop();
           });
@@ -617,10 +673,6 @@ void main() {
             when(
               () => repository.getEntity(any()),
             ).thenAnswer((_) async => null);
-            when(
-              () => syncService.upsertEntity(any()),
-            ).thenAnswer((_) async {});
-
             final manager = createAndStart();
             async.flushMicrotasks();
 
@@ -630,12 +682,74 @@ void main() {
                 reason: any(named: 'reason'),
               ),
             );
-            verify(() => syncService.upsertEntity(any())).called(1);
+            verify(() => repository.upsertEntity(any())).called(1);
+            verifyNever(() => syncService.upsertEntity(any()));
 
             manager.stop();
           });
         });
       });
+
+      test(
+        'inactive cleanup preserves state written after the due snapshot',
+        () {
+          final now = DateTime(2024, 3, 15, 10, 30);
+          final dueSnapshot = makeTestState(
+            scheduledWakeAt: DateTime(2024, 3, 15, 9),
+            nextWakeAt: DateTime(2024, 3, 15, 9, 2),
+          );
+          final currentState = dueSnapshot.copyWith(
+            slots: dueSnapshot.slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
+            ),
+            nextWakeAt: null,
+            updatedAt: DateTime(2024, 3, 15, 10, 15),
+            vectorClock: const VectorClock({'local': 7}),
+          );
+
+          fakeAsync((async) {
+            withClock(Clock.fixed(now), () {
+              when(
+                () => repository.getDueScheduledAgentStates(any()),
+              ).thenAnswer((_) async => [dueSnapshot]);
+              when(
+                () => repository.getAgentState(kTestAgentId),
+              ).thenAnswer((_) async => currentState);
+              when(() => repository.getEntity(any())).thenAnswer(
+                (_) async =>
+                    makeTestIdentity(lifecycle: AgentLifecycle.dormant),
+              );
+
+              final manager = createAndStart();
+              async.flushMicrotasks();
+
+              final cleared =
+                  verify(
+                        () => repository.upsertEntity(captureAny()),
+                      ).captured.single
+                      as AgentStateEntity;
+              expect(cleared.scheduledWakeAt, isNull);
+              expect(cleared.nextWakeAt, isNull);
+              expect(
+                cleared.slots.pendingProjectActivityAt,
+                DateTime(2024, 3, 15, 10, 15),
+              );
+              expect(cleared.updatedAt, currentState.updatedAt);
+              expect(cleared.vectorClock, currentState.vectorClock);
+              verifyNever(() => syncService.upsertEntity(any()));
+              verifyNever(
+                () => orchestrator.enqueueManualWake(
+                  agentId: any(named: 'agentId'),
+                  reason: any(named: 'reason'),
+                ),
+              );
+
+              manager.stop();
+            });
+          });
+        },
+      );
 
       test('still enqueues for an active agent (regression)', () {
         final now = DateTime(2024, 3, 15, 10, 30);
@@ -1761,9 +1875,8 @@ void main() {
             (_) async => [dormantState],
           );
           when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
           final manager = createAndStart();
           async.flushMicrotasks();
 
@@ -1776,10 +1889,54 @@ void main() {
 
           final captured =
               verify(
-                    () => syncService.upsertEntity(captureAny()),
+                    () => repository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(captured.scheduledWakeAt, isNull);
+          expect(captured.updatedAt, dormantState.updatedAt);
+          expect(captured.vectorClock, dormantState.vectorClock);
+          verifyNever(() => syncService.upsertEntity(any()));
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('does not retire project activity that arrives during the scan', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final dormantSnapshot = makeTestState(
+        scheduledWakeAt: DateTime(2024, 3, 13, 6),
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+      final currentState = dormantSnapshot.copyWith(
+        slots: AgentSlots(
+          activeProjectId: 'project-1',
+          pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
+        ),
+        nextWakeAt: DateTime(2024, 3, 15, 10, 35),
+        updatedAt: DateTime(2024, 3, 15, 10, 15),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantSnapshot],
+          );
+          when(
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => currentState);
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verifyNever(() => syncService.upsertEntity(any()));
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
 
           manager.stop();
         });
@@ -1787,7 +1944,61 @@ void main() {
     });
 
     test(
-      'clears never-woken project schedules without pending activity',
+      'rechecks dormant retirement inside the write transaction',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final dormantSnapshot = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 13, 6),
+          lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final activeState = dormantSnapshot.copyWith(
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
+          ),
+          nextWakeAt: DateTime(2024, 3, 15, 10, 35),
+        );
+        final trackingRepository = _TrackingTransactionRepository();
+        when(
+          () => trackingRepository.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => trackingRepository.getDueScheduledWakeRecords(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => trackingRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestIdentity());
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => trackingRepository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => [dormantSnapshot]);
+            when(
+              () => trackingRepository.getAgentState(kTestAgentId),
+            ).thenAnswer(
+              (_) async => trackingRepository.insideTransaction
+                  ? activeState
+                  : dormantSnapshot,
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: trackingRepository,
+              orchestrator: orchestrator,
+              syncService: syncService,
+            )..start();
+            async.flushMicrotasks();
+
+            verifyNever(() => trackingRepository.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
+      'enqueues never-woken project schedules as creation fallbacks',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
         final pastSchedule = DateTime(2024, 3, 14, 6);
@@ -1806,18 +2017,49 @@ void main() {
             final manager = createAndStart();
             async.flushMicrotasks();
 
-            verifyNever(
+            verify(
               () => orchestrator.enqueueManualWake(
                 agentId: kTestAgentId,
                 reason: WakeReason.scheduled.name,
               ),
+            ).called(1);
+            verifyNever(() => syncService.upsertEntity(any()));
+
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
+      'does not enqueue a creation fallback canceled during the due scan',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final neverWokenState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 14, 6),
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => [neverWokenState]);
+            when(
+              () => repository.getAgentState(kTestAgentId),
+            ).thenAnswer(
+              (_) async => neverWokenState.copyWith(scheduledWakeAt: null),
             );
-            final captured =
-                verify(
-                      () => syncService.upsertEntity(captureAny()),
-                    ).captured.single
-                    as AgentStateEntity;
-            expect(captured.scheduledWakeAt, isNull);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
 
             manager.stop();
           });
@@ -1853,10 +2095,12 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState, activeState],
           );
-          when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
+          when(() => repository.getAgentState(any())).thenAnswer((invocation) {
+            final agentId = invocation.positionalArguments.single as String;
+            return Future.value(
+              agentId == dormantId ? dormantState : activeState,
+            );
+          });
           final manager = createAndStart();
           async.flushMicrotasks();
 
@@ -1876,8 +2120,9 @@ void main() {
             ),
           );
 
-          // Dormant schedule retired via syncService.
-          verify(() => syncService.upsertEntity(any())).called(1);
+          // Dormant schedule retired as device-local state only.
+          verify(() => repository.upsertEntity(any())).called(1);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -1899,9 +2144,8 @@ void main() {
             (_) async => [dormantState],
           );
           when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
           final manager = ScheduledWakeManager(
             repository: repository,
             orchestrator: orchestrator,
@@ -1982,6 +2226,85 @@ void main() {
         });
       },
     );
+
+    test(
+      'does not enqueue a due fallback while equivalent work is active',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final activeState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 15, 6),
+          lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+          ),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [activeState],
+            );
+            when(
+              () => orchestrator.hasPendingOrActiveWake(kTestAgentId),
+            ).thenReturn(true);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
+            verifyNever(() => syncService.upsertEntity(any()));
+
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
+      'does not enqueue when equivalent work starts during the state read',
+      () async {
+        final activeState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 15, 6),
+          lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+          ),
+        );
+        final stateRead = Completer<AgentStateEntity?>();
+        var workStarted = false;
+        when(
+          () => repository.getDueScheduledAgentStates(any()),
+        ).thenAnswer((_) async => [activeState]);
+        when(
+          () => repository.getAgentState(kTestAgentId),
+        ).thenAnswer((_) => stateRead.future);
+        when(
+          () => orchestrator.hasPendingOrActiveWake(kTestAgentId),
+        ).thenAnswer((_) => workStarted);
+
+        final manager = createAndStart();
+        addTearDown(manager.stop);
+        await untilCalled(() => repository.getAgentState(kTestAgentId));
+
+        workStarted = true;
+        stateRead.complete(activeState);
+        await pumpEventQueue();
+
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: kTestAgentId,
+            reason: any(named: 'reason'),
+          ),
+        );
+      },
+    );
     test('schedule retirement does not preserve a custom legacy hour', () {
       final now = DateTime(2024, 3, 15, 5);
       final pastSchedule = DateTime(2024, 3, 13, 9);
@@ -1997,18 +2320,20 @@ void main() {
             (_) async => [dormantState],
           );
           when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
           final manager = createAndStart();
           async.flushMicrotasks();
 
           final captured =
               verify(
-                    () => syncService.upsertEntity(captureAny()),
+                    () => repository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(captured.scheduledWakeAt, isNull);
+          expect(captured.updatedAt, dormantState.updatedAt);
+          expect(captured.vectorClock, dormantState.vectorClock);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -2038,9 +2363,15 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [failingState, succeedingState],
           );
-          // First agent's upsert fails.
+          when(() => repository.getAgentState(any())).thenAnswer((invocation) {
+            final agentId = invocation.positionalArguments.single as String;
+            return Future.value(
+              agentId == failingId ? failingState : succeedingState,
+            );
+          });
+          // First agent's local scheduling write fails.
           when(
-            () => syncService.upsertEntity(any()),
+            () => repository.upsertEntity(any()),
           ).thenThrow(Exception('sync error'));
 
           final manager = createAndStart();

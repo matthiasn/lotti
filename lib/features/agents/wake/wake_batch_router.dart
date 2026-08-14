@@ -383,6 +383,20 @@ extension WakeBatchRouter on WakeOrchestrator {
     DateTime occurredAt,
   ) async {
     try {
+      final stateUpdater = syncAgentStateUpdater;
+      if (stateUpdater != null) {
+        final changed = await stateUpdater(agentId, (state) {
+          final persisted = state.reportStaleAt;
+          if (persisted != null && !occurredAt.isAfter(persisted)) return null;
+          return state.copyWith(
+            reportStaleAt: occurredAt,
+            updatedAt: clock.now(),
+          );
+        });
+        if (changed) onPersistedStateChanged?.call(agentId);
+        return;
+      }
+
       final state = await repository.getAgentState(agentId);
       if (state == null) return;
       final persisted = state.reportStaleAt;

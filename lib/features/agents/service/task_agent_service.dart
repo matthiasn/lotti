@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         WakeInitiator,
         WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -327,34 +329,55 @@ class TaskAgentService {
 
     late AgentIdentityEntity previous;
     late AgentIdentityEntity updated;
-    await syncService.runInTransaction(() async {
-      final identity = await agentService.getAgent(agentId);
-      if (identity == null) {
-        throw StateError('Agent $agentId not found');
+    AgentIdentityEntity? attemptedUpdate;
+    Object? postCommitSyncError;
+    StackTrace? postCommitSyncStackTrace;
+    try {
+      await syncService.runInTransaction(() async {
+        final identity = await agentService.getAgent(agentId);
+        if (identity == null) {
+          throw StateError('Agent $agentId not found');
+        }
+        previous = identity;
+        final wasInferenceDisabled =
+            identity.config.inferenceSetup?.mode ==
+            AgentInferenceSetupMode.disabled;
+        final lifecycle = setup.mode == AgentInferenceSetupMode.disabled
+            ? AgentLifecycle.dormant
+            : wasInferenceDisabled &&
+                  identity.lifecycle == AgentLifecycle.dormant
+            ? AgentLifecycle.active
+            : identity.lifecycle;
+        updated = identity.copyWith(
+          lifecycle: lifecycle,
+          config: identity.config.copyWith(
+            profileId: setup.mode == AgentInferenceSetupMode.configured
+                ? setup.baseProfileId
+                : null,
+            inferenceSetup: setup,
+          ),
+          updatedAt: clock.now(),
+        );
+        attemptedUpdate = updated;
+        await syncService.upsertEntity(updated);
+      });
+    } catch (error, stackTrace) {
+      final attempted = attemptedUpdate;
+      if (attempted == null) rethrow;
+      final persisted = await agentService.getAgent(agentId);
+      if (persisted?.config != attempted.config ||
+          persisted?.lifecycle != attempted.lifecycle ||
+          persisted?.updatedAt != attempted.updatedAt) {
+        rethrow;
       }
-      previous = identity;
-      final wasInferenceDisabled =
-          identity.config.inferenceSetup?.mode ==
-          AgentInferenceSetupMode.disabled;
-      final lifecycle = setup.mode == AgentInferenceSetupMode.disabled
-          ? AgentLifecycle.dormant
-          : wasInferenceDisabled && identity.lifecycle == AgentLifecycle.dormant
-          ? AgentLifecycle.active
-          : identity.lifecycle;
-      updated = identity.copyWith(
-        lifecycle: lifecycle,
-        config: identity.config.copyWith(
-          profileId: setup.mode == AgentInferenceSetupMode.configured
-              ? setup.baseProfileId
-              : null,
-          inferenceSetup: setup,
-        ),
-        updatedAt: clock.now(),
-      );
-      await syncService.upsertEntity(updated);
-    });
+      updated = persisted!;
+      postCommitSyncError = error;
+      postCommitSyncStackTrace = stackTrace;
+    }
 
-    if (setup.mode == AgentInferenceSetupMode.disabled) {
+    if (previous.kind == AgentKinds.projectAgent) {
+      await _reconcileProjectRuntime(agentId);
+    } else if (setup.mode == AgentInferenceSetupMode.disabled) {
       orchestrator
         ..removeSubscriptions(agentId)
         ..disableAutomaticUpdatesRuntime(agentId);
@@ -367,6 +390,13 @@ class TaskAgentService {
       } else {
         orchestrator.disableAutomaticUpdatesRuntime(agentId);
       }
+    }
+
+    if (postCommitSyncError != null) {
+      Error.throwWithStackTrace(
+        postCommitSyncError,
+        postCommitSyncStackTrace!,
+      );
     }
 
     domainLogger?.log(
@@ -393,34 +423,25 @@ class TaskAgentService {
   /// marked stale so removing the timer cannot make the card claim that the
   /// older report is up to date. Subscriptions continue observing later
   /// changes and marking the report stale while automation remains off.
+  ///
+  /// Project-agent settings use the same preference mutation. Their pending
+  /// activity marker is retained across an opt-out, while its device-local
+  /// automatic fallback is removed; opting back in arms a fresh next-morning
+  /// fallback when that marker still represents unfinished work.
   Future<void> updateAutomaticUpdates({
     required String agentId,
     required bool enabled,
   }) async {
     late AgentIdentityEntity identity;
     var wakeOnEnable = false;
-    await syncService.runInTransaction(() async {
-      final current = await agentService.getAgent(agentId);
-      if (current == null) {
-        throw StateError('Agent $agentId not found');
-      }
-      identity = current;
-      if (enabled &&
-          identity.config.inferenceSetup?.mode ==
-              AgentInferenceSetupMode.disabled) {
-        throw StateError(
-          'Choose an inference setup before enabling automation',
-        );
-      }
+    Object? postCommitSyncError;
+    StackTrace? postCommitSyncStackTrace;
+    AgentIdentityEntity? attemptedIdentityUpdate;
 
-      final now = clock.now();
-      final updated = identity.copyWith(
-        config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updated);
-
-      final state = await repository.getAgentState(agentId);
+    void planLocalReconciliation(
+      AgentIdentityEntity current,
+      AgentStateEntity? state,
+    ) {
       if (enabled) {
         // Catch-up wake decision, taken here while the state row is already
         // loaded. "Nothing to catch up on" is a report that exists and is
@@ -428,25 +449,104 @@ class TaskAgentService {
         // its card would otherwise sit empty until the next task edit.
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
-      } else {
-        final pendingWake = state?.nextWakeAt;
-        if (state != null &&
-            pendingWake != null &&
-            pendingWake.isAfter(now) &&
-            !state.isReportStale) {
-          await syncService.upsertEntity(
-            state.copyWith(reportStaleAt: now, updatedAt: now),
+      }
+    }
+
+    try {
+      await syncService.runInTransaction(() async {
+        final current = await agentService.getAgent(agentId);
+        if (current == null) {
+          throw StateError('Agent $agentId not found');
+        }
+        identity = current;
+        if (enabled &&
+            identity.config.inferenceSetup?.mode ==
+                AgentInferenceSetupMode.disabled) {
+          throw StateError(
+            'Choose an inference setup before enabling automation',
           );
         }
-      }
-    });
 
-    final activating = enabled && identity.lifecycle == AgentLifecycle.active;
-    if (activating) {
-      orchestrator.enableAutomaticUpdatesRuntime(agentId);
-      await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+        final now = clock.now();
+        final updated = identity.copyWith(
+          config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
+          updatedAt: now,
+        );
+        attemptedIdentityUpdate = updated;
+        await syncService.upsertEntity(updated);
+
+        final state = await repository.getAgentState(agentId);
+        if (!enabled) {
+          final pendingWake = state?.nextWakeAt;
+          if (state != null) {
+            var updatedState = state;
+            final hasPendingTaskWake =
+                pendingWake != null && pendingWake.isAfter(now);
+            var hasPendingProjectWake = false;
+            if (identity.kind == AgentKinds.projectAgent &&
+                state.scheduledWakeAt != null) {
+              final hasCompletedReport =
+                  state.reportFreshAt != null ||
+                  await repository.getLatestReport(
+                        agentId,
+                        AgentReportScopes.current,
+                      ) !=
+                      null;
+              hasPendingProjectWake = hasCompletedReport;
+            }
+            if ((hasPendingTaskWake || hasPendingProjectWake) &&
+                !state.isReportStale) {
+              updatedState = updatedState.copyWith(reportStaleAt: now);
+            }
+            if (updatedState != state) {
+              await syncService.upsertEntity(
+                updatedState.copyWith(updatedAt: now),
+              );
+            }
+          }
+        }
+        identity = updated;
+        planLocalReconciliation(updated, state);
+      });
+    } catch (error, stackTrace) {
+      // AgentSyncService commits the database transaction before flushing its
+      // outbox. If that flush fails, the preference is already durable even
+      // though the call throws. Confirm that exact state before reconciling
+      // device-local subscriptions and fallback deadlines, then rethrow below.
+      final attempted = attemptedIdentityUpdate;
+      if (attempted == null) rethrow;
+      final persisted = await agentService.getAgent(agentId);
+      if (persisted?.config != attempted.config ||
+          persisted?.updatedAt != attempted.updatedAt) {
+        rethrow;
+      }
+      identity = persisted!;
+      planLocalReconciliation(
+        identity,
+        await repository.getAgentState(agentId),
+      );
+      postCommitSyncError = error;
+      postCommitSyncStackTrace = stackTrace;
+    }
+
+    final bool activating;
+    if (identity.kind == AgentKinds.projectAgent) {
+      activating = await _reconcileProjectRuntime(agentId);
     } else {
-      orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      activating = enabled && identity.lifecycle == AgentLifecycle.active;
+      if (activating) {
+        orchestrator.enableAutomaticUpdatesRuntime(agentId);
+        await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+      } else {
+        orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      }
+    }
+
+    if (postCommitSyncError != null) {
+      Error.throwWithStackTrace(
+        postCommitSyncError,
+        postCommitSyncStackTrace!,
+      );
     }
 
     domainLogger?.log(
@@ -460,7 +560,11 @@ class TaskAgentService {
     // catch-up wake cannot race its own scheduling setup. Inactive agents and
     // disabled setups never reach here.
     if (activating && wakeOnEnable) {
-      triggerReanalysis(agentId);
+      orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: WakeReason.reanalysis.name,
+        initiator: WakeInitiator.automation,
+      );
     }
   }
 
@@ -554,14 +658,117 @@ class TaskAgentService {
     );
   }
 
-  /// Re-register wake subscriptions for a single agent.
+  /// Re-registers the direct project subscriptions used by a project agent.
   ///
-  /// Call this after resuming a paused agent so task changes are observed for
-  /// stale detection, whether or not automatic inference is enabled.
+  /// The shared automation control can be rendered for multiple agent kinds;
+  /// project agents observe `agent_project` links and project-update tokens,
+  /// rather than the task links handled by [restoreSubscriptionsForAgent].
+  Future<void> _restoreProjectSubscriptionsForAgent(String agentId) async {
+    final links = await repository.getLinksFrom(
+      agentId,
+      type: AgentLinkTypes.agentProject,
+    );
+    for (final link in links.whereType<AgentProjectLink>()) {
+      if (link.deletedAt != null) continue;
+      orchestrator.addSubscription(
+        AgentSubscription(
+          id: '${agentId}_project_direct_${link.toId}',
+          agentId: agentId,
+          matchEntityIds: {projectEntityUpdateNotification(link.toId)},
+        ),
+      );
+    }
+  }
+
+  /// Adds the device-local durability fallback for unfinished project work.
+  ///
+  /// The pending marker is synced, but its scheduling deadline is not. Re-read
+  /// and write inside one repository transaction so a concurrent completion
+  /// wins, while preserving the synced timestamp and vector clock.
+  Future<({bool active, bool automaticWakesAllowed})>
+  _reconcilePendingProjectActivityFallback(String agentId) async {
+    var changed = false;
+    var policy = (active: false, automaticWakesAllowed: false);
+    await repository.runInTransaction(() async {
+      final state = await repository.getAgentState(agentId);
+      final currentIdentity = await agentService.getAgent(agentId);
+      final active =
+          currentIdentity?.kind == AgentKinds.projectAgent &&
+          currentIdentity?.lifecycle == AgentLifecycle.active;
+      final automaticWakesAllowed =
+          currentIdentity != null &&
+          currentIdentity.kind == AgentKinds.projectAgent &&
+          projectAgentAutomaticWakesAllowed(
+            config: currentIdentity.config,
+            lifecycle: currentIdentity.lifecycle,
+          );
+      policy = (
+        active: active,
+        automaticWakesAllowed: automaticWakesAllowed,
+      );
+      if (state == null || state.deletedAt != null) {
+        return;
+      }
+      if (!automaticWakesAllowed) {
+        if (state.scheduledWakeAt != null) {
+          await repository.upsertEntity(
+            state.copyWith(scheduledWakeAt: null),
+          );
+          changed = true;
+        }
+        return;
+      }
+      if (state.slots.pendingProjectActivityAt == null ||
+          state.scheduledWakeAt != null) {
+        return;
+      }
+      await repository.upsertEntity(
+        state.copyWith(
+          scheduledWakeAt: nextOccurrenceOf(
+            clock.now(),
+            hour: AgentSchedules.projectDailyDigestHour,
+          ),
+        ),
+      );
+      changed = true;
+    });
+    if (changed) {
+      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+    }
+    return policy;
+  }
+
+  /// Applies the current persisted project policy to local runtime state.
+  Future<bool> _reconcileProjectRuntime(String agentId) async {
+    final policy = await _reconcilePendingProjectActivityFallback(agentId);
+    if (policy.active) {
+      await _restoreProjectSubscriptionsForAgent(agentId);
+    } else {
+      orchestrator.removeSubscriptions(agentId);
+    }
+    if (policy.automaticWakesAllowed) {
+      orchestrator.enableAutomaticUpdatesRuntime(agentId);
+      return true;
+    }
+    orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    return false;
+  }
+
+  /// Re-register wake subscriptions for a single resumed agent.
+  ///
+  /// Project agents restore their direct-project observation and reconcile a
+  /// pending device-local fallback. Other kinds retain the task-link behavior
+  /// used by the existing lifecycle controls.
   Future<void> restoreSubscriptionsForAgent(
     String agentId, {
     bool restoreCountdown = true,
   }) async {
+    final identity = await agentService.getAgent(agentId);
+    if (identity?.kind == AgentKinds.projectAgent) {
+      await _reconcileProjectRuntime(agentId);
+      return;
+    }
+
     final links = await repository.getLinksFrom(
       agentId,
       type: AgentLinkTypes.agentTask,

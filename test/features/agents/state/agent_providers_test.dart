@@ -1825,6 +1825,42 @@ void main() {
       verify(() => mockSyncService.upsertEntity(entity)).called(1);
     });
 
+    test('wires syncAgentStateUpdater to AgentSyncService', () async {
+      final mockRepo = MockAgentRepository();
+      final mockSyncService = MockAgentSyncService();
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      when(
+        () => mockSyncService.updateAgentState(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      final container = ProviderContainer(
+        overrides: [
+          loggingServiceProvider.overrideWithValue(LoggingService()),
+          agentRepositoryProvider.overrideWithValue(mockRepo),
+          agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          wakeQueueProvider.overrideWithValue(queue),
+          wakeRunnerProvider.overrideWithValue(runner),
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final orchestrator = container.read(wakeOrchestratorProvider);
+      Future<AgentStateEntity> update(AgentStateEntity state) async => state;
+
+      expect(
+        await orchestrator.syncAgentStateUpdater!('agent-1', update),
+        isTrue,
+      );
+      verify(
+        () => mockSyncService.updateAgentState('agent-1', update),
+      ).called(1);
+    });
+
     test('wires the fork-healing hook to the journalDb flag and the sync '
         'service', () async {
       // Exercises the PRODUCTION wiring: the hook reads the

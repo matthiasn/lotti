@@ -6,8 +6,10 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -30,6 +32,14 @@ enum _GeneratedProjectStateSlot { present, missing }
 enum _GeneratedProjectProfileSlot { none, profile }
 
 enum _GeneratedProjectCategorySlot { empty, single, pair }
+
+class _PostCommitFailingAgentSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed');
+  }
+}
 
 class _GeneratedProjectAgentCreateScenario {
   const _GeneratedProjectAgentCreateScenario({
@@ -176,10 +186,25 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+    when(
+      () => mockOrchestrator.cancelPendingWakes(
+        any(),
+        allWorkspaces: any(named: 'allWorkspaces'),
+      ),
+    ).thenReturn(const []);
     when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => mockRepository.getAgentState(any()),
+    ).thenAnswer((_) async => null);
+    when(() => mockRepository.getEntity(any())).thenAnswer((invocation) async {
+      return makeIdentity(
+        agentId: invocation.positionalArguments.single as String,
+      );
+    });
 
     service = ProjectAgentService(
       agentService: mockAgentService,
@@ -389,7 +414,12 @@ void main() {
         );
         expect(
           updatedState.scheduledWakeAt,
-          isNull,
+          DateTime(2026, 3, 21, 6),
+          reason: '$scenario',
+        );
+        expect(
+          updatedState.slots.pendingProjectActivityAt,
+          testDate,
           reason: '$scenario',
         );
 
@@ -528,7 +558,7 @@ void main() {
       });
 
       test(
-        'starts stale without a recurring daily digest schedule',
+        'persists a one-shot fallback for the explicit creation wake',
         () async {
           final identity = makeIdentity();
           final template = makeTestTemplate(
@@ -577,7 +607,8 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, isNull);
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.pendingProjectActivityAt, testDate);
         },
       );
 
@@ -918,17 +949,207 @@ void main() {
 
     group('cancelScheduledWake', () {
       test(
-        'delegates to AgentService.cancelPendingWake for the given agent so '
-        'the project AI Report cancel × clears the throttle and drops queued '
-        'subscription jobs',
-        () {
+        'atomically clears both deadlines before dropping queued work',
+        () async {
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+            nextWakeAt: DateTime(2026, 3, 20, 12, 2),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
           when(
-            () => mockAgentService.cancelPendingWake(any()),
-          ).thenReturn(null);
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
 
-          service.cancelScheduledWake('agent-1');
+          await service.cancelScheduledWake('agent-1');
 
-          verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
+          final persisted =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.nextWakeAt, isNull);
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, isNull);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'keeps queued work intact when persisted cancellation fails',
+        () async {
+          final state = makeState().copyWith(
+            nextWakeAt: DateTime(2026, 3, 20, 12, 2),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenThrow(StateError('write failed'));
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(() => mockOrchestrator.clearThrottle(any()));
+          verifyNever(
+            () => mockOrchestrator.cancelPendingWakes(
+              any(),
+              allWorkspaces: any(named: 'allWorkspaces'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'drops queued work when cancellation commits before sync flush fails',
+        () async {
+          final failingSyncService = _PostCommitFailingAgentSyncService();
+          final cancellationCoordinator =
+              ProjectActivityCancellationCoordinator();
+          final observedSequence = cancellationCoordinator.captureActivity();
+          when(
+            () => failingSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          service = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSyncService,
+            onPersistedStateChanged: notifiedAgentIds.add,
+            cancellationCoordinator: cancellationCoordinator,
+          );
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+          var stateReads = 0;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async {
+            stateReads++;
+            return stateReads == 1
+                ? state
+                : state.copyWith(
+                    slots: state.slots.copyWith(
+                      pendingProjectActivityAt: null,
+                    ),
+                    nextWakeAt: null,
+                    scheduledWakeAt: null,
+                  );
+          });
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verify(
+            () => failingSyncService.upsertEntity(any()),
+          ).called(1);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
+          expect(notifiedAgentIds, ['agent-1']);
+
+          var activityPersisted = false;
+          final accepted = await cancellationCoordinator.runActivityWrite(
+            agentId: 'agent-1',
+            observedSequence: observedSequence,
+            action: () async => activityPersisted = true,
+          );
+          expect(accepted, isFalse);
+          expect(activityPersisted, isFalse);
+        },
+      );
+
+      test(
+        'keeps queued work when the transaction fails after its action',
+        () async {
+          final failingSyncService = _PostCommitFailingAgentSyncService();
+          when(
+            () => failingSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          service = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSyncService,
+            onPersistedStateChanged: notifiedAgentIds.add,
+          );
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(() => mockOrchestrator.clearThrottle(any()));
+          verifyNever(
+            () => mockOrchestrator.cancelPendingWakes(
+              any(),
+              allWorkspaces: any(named: 'allWorkspaces'),
+            ),
+          );
+          expect(notifiedAgentIds, isEmpty);
+        },
+      );
+
+      test(
+        'clears pending activity even when no wake deadline exists',
+        () async {
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.cancelScheduledWake('agent-1');
+
+          final persisted =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.slots.pendingProjectActivityAt, isNull);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
         },
       );
     });
@@ -971,6 +1192,12 @@ void main() {
             vectorClock: null,
           );
           final nextWakeAt = DateTime(2026, 3, 23, 8);
+          final state = makeState(agentId: 'pa-1').copyWith(
+            slots: AgentSlots(
+              pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+            ),
+            nextWakeAt: nextWakeAt,
+          );
 
           when(
             () => mockAgentService.listAgents(
@@ -990,12 +1217,11 @@ void main() {
           when(
             () => mockRepository.getAgentStatesByAgentIds(any()),
           ).thenAnswer(
-            (_) async => {
-              'pa-1': makeState(agentId: 'pa-1').copyWith(
-                nextWakeAt: nextWakeAt,
-              ),
-            },
+            (_) async => {'pa-1': state},
           );
+          when(
+            () => mockRepository.getAgentState('pa-1'),
+          ).thenAnswer((_) async => state);
 
           await service.restoreSubscriptions();
 
@@ -1033,7 +1259,180 @@ void main() {
                   ).captured.single
                   as List<String>;
           expect(requestedAgentIds, ['pa-1']);
-          verifyNever(() => mockRepository.getAgentState('pa-1'));
+          verify(() => mockRepository.getAgentState('pa-1')).called(1);
+        },
+      );
+
+      test(
+        'does not hydrate a startup batch consumed after the bulk snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-consumed-race');
+          final nextWakeAt = DateTime(2026, 3, 23, 8);
+          final snapshot =
+              makeState(
+                agentId: 'pa-consumed-race',
+                activeProjectId: 'project-consumed-race',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-consumed-race',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+                nextWakeAt: nextWakeAt,
+                scheduledWakeAt: DateTime(2026, 3, 23, 6),
+              );
+          final current = snapshot.copyWith(
+            slots: snapshot.slots.copyWith(pendingProjectActivityAt: null),
+            nextWakeAt: null,
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 3, 22, 10),
+          );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds([
+              'pa-consumed-race',
+            ]),
+          ).thenAnswer((_) async => {'pa-consumed-race': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-consumed-race'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-consumed-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const {});
+
+          await service.restoreSubscriptions();
+
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+          verifyNever(() => mockRepository.upsertEntity(any()));
+        },
+      );
+
+      test(
+        'keeps observation but suppresses countdown hydration when automation '
+        'is off',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-manual').copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          );
+          final link = AgentLink.agentProject(
+            id: 'link-manual',
+            fromId: 'pa-manual',
+            toId: 'project-manual',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final state = makeState(agentId: 'pa-manual').copyWith(
+            nextWakeAt: DateTime(2026, 3, 22, 12),
+          );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getEntity('pa-manual'),
+          ).thenAnswer((_) async => projectAgent);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-manual']),
+          ).thenAnswer((_) async => {'pa-manual': state});
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-manual'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-manual': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('pa-manual'),
+          ).called(1);
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'clears a markerless fallback for an already opted-out agent',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-opted-out').copyWith(
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          final state =
+              makeState(
+                id: 'state-pa-opted-out',
+                agentId: 'pa-opted-out',
+                activeProjectId: 'project-opted-out',
+              ).copyWith(
+                scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                updatedAt: DateTime(2026, 8, 14, 9),
+                vectorClock: const VectorClock({'peer-a': 4}),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getEntity('pa-opted-out'),
+          ).thenAnswer((_) async => projectAgent);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-opted-out']),
+          ).thenAnswer((_) async => {'pa-opted-out': state});
+          when(
+            () => mockRepository.getAgentState('pa-opted-out'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-opted-out'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const {});
+
+          await service.restoreSubscriptions();
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.updatedAt, state.updatedAt);
+          expect(persisted.vectorClock, state.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'pa-opted-out',
+            ),
+          ).called(1);
         },
       );
 
@@ -1050,11 +1449,17 @@ void main() {
             vectorClock: null,
           );
           final legacySchedule = DateTime(2026, 3, 23, 6);
-          final state = makeState(
-            id: 'state-pa-dormant',
-            agentId: 'pa-dormant',
-            activeProjectId: 'project-dormant',
-          ).copyWith(scheduledWakeAt: legacySchedule);
+          final state =
+              makeState(
+                id: 'state-pa-dormant',
+                agentId: 'pa-dormant',
+                activeProjectId: 'project-dormant',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: legacySchedule,
+                updatedAt: DateTime(2026, 3, 20, 7),
+                vectorClock: const VectorClock({'peer-a': 4}),
+              );
 
           when(
             () => mockAgentService.listAgents(
@@ -1064,6 +1469,9 @@ void main() {
           when(
             () => mockRepository.getAgentStatesByAgentIds(['pa-dormant']),
           ).thenAnswer((_) async => {'pa-dormant': state});
+          when(
+            () => mockRepository.getAgentState('pa-dormant'),
+          ).thenAnswer((_) async => state);
           when(
             () => mockRepository.getLinksFromMultiple(
               ['pa-dormant'],
@@ -1081,12 +1489,14 @@ void main() {
 
           final repaired =
               verify(
-                    () => mockSyncService.upsertEntity(captureAny()),
+                    () => mockRepository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.slots.pendingProjectActivityAt, isNull);
-          expect(repaired.updatedAt, DateTime(2026, 3, 22, 10));
+          expect(repaired.updatedAt, state.updatedAt);
+          expect(repaired.vectorClock, state.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
           expect(notifiedAgentIds, ['pa-dormant']);
           verifyNever(
             () => mockOrchestrator.restorePendingWake(
@@ -1094,6 +1504,126 @@ void main() {
               dueAt: any(named: 'dueAt'),
             ),
           );
+        },
+      );
+
+      test(
+        'does not clear activity that arrives after the startup snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-racing');
+          final link = AgentLink.agentProject(
+            id: 'link-racing',
+            fromId: 'pa-racing',
+            toId: 'project-racing',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final scheduledAt = DateTime(2026, 3, 23, 6);
+          final snapshot =
+              makeState(
+                id: 'state-pa-racing',
+                agentId: 'pa-racing',
+                activeProjectId: 'project-racing',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: scheduledAt,
+              );
+          final current = snapshot.copyWith(
+            slots: snapshot.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 22, 9, 59),
+            ),
+            updatedAt: DateTime(2026, 3, 22, 9, 59),
+          );
+
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-racing']),
+          ).thenAnswer((_) async => {'pa-racing': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-racing'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-racing'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-racing': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockRepository.getAgentState('pa-racing'),
+          ).called(2);
+        },
+      );
+
+      test(
+        'does not clear a newer manual schedule after the startup snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-manual-race');
+          final link = AgentLink.agentProject(
+            id: 'link-manual-race',
+            fromId: 'pa-manual-race',
+            toId: 'project-manual-race',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final snapshot =
+              makeState(
+                id: 'state-pa-manual-race',
+                agentId: 'pa-manual-race',
+                activeProjectId: 'project-manual-race',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: DateTime(2026, 3, 23, 6),
+                updatedAt: DateTime(2026, 3, 22, 9),
+              );
+          final current = snapshot.copyWith(
+            scheduledWakeAt: DateTime(2026, 3, 23, 7),
+            updatedAt: DateTime(2026, 3, 22, 9, 59),
+          );
+
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-manual-race']),
+          ).thenAnswer((_) async => {'pa-manual-race': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-manual-race'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-manual-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-manual-race': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockRepository.getAgentState('pa-manual-race'),
+          ).called(2);
         },
       );
 
@@ -1144,6 +1674,146 @@ void main() {
 
           verifyNever(() => mockSyncService.upsertEntity(any()));
           verify(() => mockOrchestrator.addSubscription(any())).called(1);
+        },
+      );
+
+      test(
+        'arms pending activity that has no local fallback after restart',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-pending');
+          final link = AgentLink.agentProject(
+            id: 'link-pending',
+            fromId: 'pa-pending',
+            toId: 'project-pending',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final pendingState =
+              makeState(
+                id: 'state-pa-pending',
+                agentId: 'pa-pending',
+                activeProjectId: 'project-pending',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-pending',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-pending']),
+          ).thenAnswer((_) async => {'pa-pending': pendingState});
+          when(
+            () => mockRepository.getAgentState('pa-pending'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-pending'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-pending': [link],
+            },
+          );
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 22, 10)), () {
+            return service.restoreSubscriptions();
+          });
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+          expect(
+            persisted.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 22, 9),
+          );
+          expect(
+            persisted.updatedAt,
+            pendingState.updatedAt,
+            reason: 'A local-only deadline must not affect synced LWW data.',
+          );
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          expect(notifiedAgentIds, ['pa-pending']);
+        },
+      );
+
+      test(
+        'startup reconciliation honors a concurrent lifecycle change',
+        () async {
+          final snapshotIdentity = makeIdentity(agentId: 'pa-paused-race');
+          final currentIdentity = snapshotIdentity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            updatedAt: DateTime(2026, 3, 22, 10),
+          );
+          final link = AgentLink.agentProject(
+            id: 'link-paused-race',
+            fromId: 'pa-paused-race',
+            toId: 'project-paused-race',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final pendingState =
+              makeState(
+                id: 'state-pa-paused-race',
+                agentId: 'pa-paused-race',
+                activeProjectId: 'project-paused-race',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-paused-race',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [snapshotIdentity]);
+          when(
+            () => mockRepository.getEntity('pa-paused-race'),
+          ).thenAnswer((_) async => currentIdentity);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-paused-race']),
+          ).thenAnswer((_) async => {'pa-paused-race': pendingState});
+          when(
+            () => mockRepository.getAgentState('pa-paused-race'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-paused-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-paused-race': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.removeSubscriptions('pa-paused-race'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'pa-paused-race',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(
+              'pa-paused-race',
+            ),
+          );
         },
       );
 

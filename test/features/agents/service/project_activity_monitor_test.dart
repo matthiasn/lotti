@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -50,6 +51,9 @@ void main() {
       final affectedIds = invocation.positionalArguments.first as Set<String>;
       return affectedIds.where((id) => id.startsWith('project-')).toSet();
     });
+    when(
+      () => repository.getEntity(any()),
+    ).thenAnswer((_) async => makeTestIdentity(kind: AgentKinds.projectAgent));
 
     monitor = ProjectActivityMonitor(
       notifications: notifications,
@@ -66,6 +70,200 @@ void main() {
   });
 
   group('ProjectActivityMonitor', () {
+    test(
+      'failed cancellation restores eligibility for the older activity batch',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+
+        await expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: (_) async => throw StateError('rollback'),
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isTrue);
+        expect(activityPersisted, isTrue);
+      },
+    );
+
+    test(
+      'confirmed commit keeps the cutoff when later work throws',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+
+        await expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: (confirmCommit) async {
+              confirmCommit();
+              throw StateError('outbox flush failed');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isFalse);
+        expect(activityPersisted, isFalse);
+      },
+    );
+
+    test(
+      'overlapping failed cancellations leave no stale activity cutoff',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+        final firstStarted = Completer<void>();
+        final releaseFirst = Completer<void>();
+        final secondStarted = Completer<void>();
+        final releaseSecond = Completer<void>();
+
+        final firstExpectation = expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: (_) async {
+              firstStarted.complete();
+              await releaseFirst.future;
+              throw StateError('first rollback');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+        await firstStarted.future;
+        final secondExpectation = expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: (_) async {
+              secondStarted.complete();
+              await releaseSecond.future;
+              throw StateError('second rollback');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        releaseFirst.complete();
+        await firstExpectation;
+        await secondStarted.future;
+        releaseSecond.complete();
+        await secondExpectation;
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isTrue);
+        expect(activityPersisted, isTrue);
+      },
+    );
+
+    test(
+      'cancellation rejects an older batch still resolving project links',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final linksStarted = Completer<void>();
+        final releaseLinks = Completer<void>();
+        final link = AgentLink.agentProject(
+          id: 'link-cancel-race',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        var state = makeTestState(
+          agentId: 'agent-1',
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: now.subtract(
+              const Duration(minutes: 5),
+            ),
+          ),
+          nextWakeAt: now.add(const Duration(minutes: 2)),
+          scheduledWakeAt: DateTime(2026, 3, 23, 6),
+        );
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async {
+          linksStarted.complete();
+          await releaseLinks.future;
+          return [link];
+        });
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(() => syncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          state = invocation.positionalArguments.single as AgentStateEntity;
+        });
+
+        final orchestrator = MockWakeOrchestrator();
+        when(() => orchestrator.clearThrottle('agent-1')).thenReturn(null);
+        when(
+          () => orchestrator.cancelPendingWakes(
+            'agent-1',
+            allWorkspaces: true,
+          ),
+        ).thenReturn(const []);
+        final projectService = ProjectAgentService(
+          agentService: MockAgentService(),
+          repository: repository,
+          orchestrator: orchestrator,
+          syncService: syncService,
+          cancellationCoordinator: coordinator,
+        );
+        final raceMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          clock: Clock.fixed(now),
+          cancellationCoordinator: coordinator,
+        );
+        addTearDown(raceMonitor.stop);
+
+        raceMonitor.start();
+        updateController.add({'project-1'});
+        await linksStarted.future;
+
+        await withClock(
+          Clock.fixed(now.add(const Duration(minutes: 1))),
+          () => projectService.cancelScheduledWake('agent-1'),
+        );
+        releaseLinks.complete();
+        await pumpEventQueue(times: 3);
+
+        expect(state.slots.pendingProjectActivityAt, isNull);
+        expect(state.nextWakeAt, isNull);
+        expect(state.scheduledWakeAt, isNull);
+        verify(() => syncService.upsertEntity(any())).called(1);
+      },
+    );
+
     glados.Glados(
       glados.any.projectActivityScenario,
       glados.ExploreConfig(numRuns: 180),
@@ -105,6 +303,11 @@ void main() {
           expect(
             state.slots.pendingProjectActivityAt,
             hGeneratedProjectActivityNow,
+            reason: '$scenario',
+          );
+          expect(
+            state.scheduledWakeAt,
+            DateTime(2026, 4, 4, 6),
             reason: '$scenario',
           );
           expect(state.updatedAt, hGeneratedProjectActivityNow);
@@ -176,11 +379,96 @@ void main() {
               as AgentStateEntity;
       expect(captured.slots.activeProjectId, 'project-1');
       expect(captured.slots.pendingProjectActivityAt, now);
+      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
 
       verify(
         () => notifications.notifyUiOnly({'agent-1', agentNotification}),
       ).called(1);
     });
+
+    test(
+      'preserves a stale watermark written while activity is resolved',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-stale-race',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final snapshot = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final staleAt = now.subtract(const Duration(minutes: 1));
+        final concurrent = snapshot.copyWith(reportStaleAt: staleAt);
+        var stateRead = 0;
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => stateRead++ == 0 ? snapshot : concurrent);
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 3);
+
+        final persisted =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(persisted.reportStaleAt, staleAt);
+        expect(persisted.slots.pendingProjectActivityAt, now);
+      },
+    );
+
+    test(
+      'does not rearm activity already covered by a completed wake',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-completed-wake',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final beforeWake = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final completedWake = beforeWake.copyWith(
+          lastWakeAt: now.add(const Duration(minutes: 1)),
+        );
+        var stateRead = 0;
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer(
+          (_) async => stateRead++ == 0 ? beforeWake : completedWake,
+        );
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 3);
+
+        verifyNever(() => syncService.upsertEntity(any()));
+        verifyNever(
+          () => notifications.notifyUiOnly(any()),
+        );
+      },
+    );
 
     test('resolves project IDs from updated task IDs', () async {
       final link = AgentLink.agentProject(
@@ -220,7 +508,99 @@ void main() {
               ).captured.single
               as AgentStateEntity;
       expect(captured.slots.pendingProjectActivityAt, now);
+      expect(captured.scheduledWakeAt, DateTime(2026, 3, 23, 6));
     });
+
+    test(
+      'preserves an existing explicit wake while refreshing activity',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-existing-wake',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final existingWake = DateTime(2026, 3, 22, 18);
+        final state = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+          scheduledWakeAt: existingWake,
+        );
+
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 2);
+
+        final captured =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(captured.scheduledWakeAt, existingWake);
+        expect(captured.slots.pendingProjectActivityAt, now);
+      },
+    );
+
+    test(
+      'marks activity stale without arming a wake when automation is off',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-automation-off',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final state = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(
+          () => repository.getEntity('agent-1'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            agentId: 'agent-1',
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          ),
+        );
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 2);
+
+        final captured =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(captured.slots.pendingProjectActivityAt, now);
+        expect(captured.scheduledWakeAt, isNull);
+      },
+    );
 
     test('skips deleted agents', () async {
       final link = AgentLink.agentProject(

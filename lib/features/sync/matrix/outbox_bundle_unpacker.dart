@@ -15,15 +15,28 @@ class PreparedOutboxSyncBundle {
   final List<PreparedSyncEvent> children;
 }
 
+/// A deserialized bundle paired with the original JSON envelope for each
+/// child. The raw envelopes preserve wire-level field presence that is lost
+/// when older payloads are deserialized with new nullable fields.
+class ResolvedOutboxSyncBundle {
+  ResolvedOutboxSyncBundle({
+    required this.bundle,
+    required this.rawChildren,
+  });
+
+  final SyncOutboxBundle bundle;
+  final List<Map<String, dynamic>?> rawChildren;
+}
+
 /// Resolves the bundle's manifest payload (when [jsonPath] points at one)
-/// and returns the rehydrated [SyncOutboxBundle] with its children inline.
+/// and returns the rehydrated [SyncOutboxBundle] plus each raw child envelope.
 ///
 /// The resolver is responsible for any side effects required so the per-
 /// child prepare path can run unchanged — most importantly, materializing
 /// each `SyncJournalEntity` child's JSON to its on-disk cache before
 /// dispatch. The unpacker itself is filesystem-agnostic.
 typedef OutboxBundleSidecarResolver =
-    Future<SyncOutboxBundle?> Function({
+    Future<ResolvedOutboxSyncBundle?> Function({
       required String? jsonPath,
       String? attachmentEventId,
     });
@@ -31,7 +44,11 @@ typedef OutboxBundleSidecarResolver =
 /// Runs the parent processor's per-type prepare on a single child of an
 /// outbox bundle. Returns the resolved [PreparedSyncEvent] for that child.
 typedef OutboxBundleChildPreparer =
-    Future<PreparedSyncEvent> Function(Event event, SyncMessage syncMessage);
+    Future<PreparedSyncEvent> Function(
+      Event event,
+      SyncMessage syncMessage,
+      Map<String, dynamic>? rawMessageJson,
+    );
 
 /// Runs the parent processor's per-type apply on a single child.
 typedef OutboxBundleChildApplier =
@@ -59,8 +76,10 @@ class OutboxBundleUnpacker {
 
   /// Reconstructs the children of [msg] (downloading the sidecar attachment
   /// when the inline list was stripped at send time) and recursively prepares
-  /// each child via [prepareChild]. Returns null when the bundle's payload
-  /// is unresolvable — callers should treat this as a terminal skip.
+  /// each child via [prepareChild]. [rawChildren] retains field-presence data
+  /// for inline children; sidecar resolution supplies the equivalent manifest
+  /// envelopes. Returns null when the bundle's payload is unresolvable —
+  /// callers should treat this as a terminal skip.
   ///
   /// Per-child fault isolation:
   /// - Any [IOException] (including [FileSystemException], [SocketException],
@@ -74,19 +93,23 @@ class OutboxBundleUnpacker {
     required SyncOutboxBundle msg,
     required OutboxBundleSidecarResolver resolveSidecar,
     required OutboxBundleChildPreparer prepareChild,
+    List<Map<String, dynamic>?> rawChildren = const [],
   }) async {
     var bundle = msg;
+    var resolvedRawChildren = rawChildren;
     if (bundle.children.isEmpty) {
       final resolved = await resolveSidecar(
         jsonPath: msg.jsonPath,
         attachmentEventId: msg.attachmentEventId,
       );
       if (resolved == null) return null;
-      bundle = resolved;
+      bundle = resolved.bundle;
+      resolvedRawChildren = resolved.rawChildren;
     }
 
     final prepared = <PreparedSyncEvent>[];
-    for (final child in bundle.children) {
+    for (var index = 0; index < bundle.children.length; index++) {
+      final child = bundle.children[index];
       // Defensive: guard against a malformed payload where a bundle is
       // nested inside another bundle. The sender enforces this invariant
       // at construction time, so reaching this branch means the wire
@@ -99,7 +122,13 @@ class OutboxBundleUnpacker {
         continue;
       }
       try {
-        final childPrepared = await prepareChild(event, child);
+        final childPrepared = await prepareChild(
+          event,
+          child,
+          index < resolvedRawChildren.length
+              ? resolvedRawChildren[index]
+              : null,
+        );
         prepared.add(childPrepared);
       } on IOException {
         // Catches FileSystemException, SocketException, HttpException,

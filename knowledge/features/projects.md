@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-14
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
@@ -20,7 +20,7 @@ sources:
 
 Projects group related tasks, power the projects tab, and integrate with the
 agent system so a project accumulates health signals, recommendations and
-scheduled digests instead of just acting as a nicer folder.
+update-driven reports instead of just acting as a nicer folder.
 
 **The visible experience is gated by `enableProjectsFlag`.** With it off there is
 no top-level tab, no category projects section and no task project chip. Routes
@@ -182,34 +182,34 @@ health state** rather than falling back to invented local heuristics.
 
 # When the project agent actually wakes
 
-The project agent is deliberately **not** woken by every ripple in a linked task.
+Project agents are stale and non-waking by default. They have no recurring
+daily schedule; meaningful project activity, agent-assigned work, or an
+explicit request creates one-shot work instead.
 
 ```mermaid
 flowchart TD
-  Create["Create project agent"] --> CreationWake["Enqueue creation wake now"]
-  Create --> NextDigest["Set scheduledWakeAt to next local digest"]
+  Activity["Meaningful project or linked-task activity"] --> Pending["Persist pending work"]
+  Pending --> Deferred["Persist one-shot wake deadline"]
 
-  DirectEdit["Direct project edit"] --> DirectSub["projectEntityUpdateNotification(projectId)"]
-  DirectSub --> Orchestrator["WakeOrchestrator"]
-  Orchestrator --> ImmediateWake["Immediate project-agent wake"]
+  Creation["Create project agent"] --> CreationFallback["Persist creation fallback"]
+  Creation --> Queue["Queue wake now"]
+  Manual["Manual wake request"] --> Queue
 
-  TaskActivity["Linked task activity"] --> Monitor["ProjectActivityMonitor"]
-  Monitor --> Mark["Set pendingProjectActivityAt"]
-  Mark --> Due["Wait for scheduled digest"]
-
-  NextDigest --> Due
-  Due --> Scheduler["ScheduledWakeManager checks due wakes roughly hourly"]
-  Scheduler --> ScheduledWake["Scheduled project-agent wake"]
-
-  ScheduledWake --> Stale{"pendingProjectActivityAt set?"}
-  Stale -->|no| Skip["Skip model run, advance scheduledWakeAt"]
-  Stale -->|yes| FullRun["Load project, linked tasks, reports, run LLM"]
-  FullRun --> Persist["Persist fresh report + recommendations"]
-  Persist --> Clear["Clear pendingProjectActivityAt, set lastDailyWakeAt"]
+  Deferred --> DueQueue["Queue wake when deadline is due"]
+  CreationFallback --> DueQueue
+  DueQueue --> FullRun["Load project, linked tasks, reports, run LLM"]
+  Queue --> FullRun
+  FullRun --> Outcome{"Wake succeeds?"}
+  Outcome -->|yes| Persist["Persist fresh report + recommendations"]
+  Outcome -->|no| Retry["Keep pending work and re-arm fallback"]
+  Retry --> Deferred
+  Persist --> Clear["Clear consumed work and deadlines"]
+  Clear --> Stale["Stale / non-waking"]
 ```
 
-**The third path is the key design choice**: task churn marks the summary stale
-*now*, and the digest decides *later* whether the model should spend tokens.
+The project detail read model exposes the active one-shot wake deadline beside
+the agent report. Legacy recurring rows are retired by the agent subsystem and
+do not become new daily wakes.
 
 See [project and event agents](agents/project-and-event-agents.md) for the
 workflow side.

@@ -46,6 +46,7 @@
         <p>Fixed: asking the goal agent in chat to change its report now changes it. Telling the agent to make its report shorter, sectioned, or less repetitive used to produce only a chat reply while the standing report stayed exactly as it was; the request now rewrites the report itself, and an explicit refusal to change it is respected.</p>
         <p>Changed: goal agent pages get the whole screen on phones. The bottom navigation bar slides away on a goal's detail page, its chat, and the create and edit wizards, the way it already does for project details, so the day sheet's record button and the wizard's Continue band dock at the bottom edge instead of sitting under the bar.</p>
         <p>Fixed: project agents no longer keep an empty daily 06:00 wake alive. Digest work is scheduled only after relevant project or linked-task activity, and existing dormant schedules disappear from the Wake tab on startup.</p>
+        <p>Fixed: pending project-agent work now survives failures, restarts, and every sync arrival order. Meaningful one-shot fallback wakes stay visible in the project report countdown until the work succeeds or you cancel it, and cancellation cannot be re-armed by an in-flight wake.</p>
       </description>
     </release>
     <release version="1.0.9" date="2026-08-13">

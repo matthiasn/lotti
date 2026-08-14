@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -34,6 +36,52 @@ import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
+
+const Symbol _transactionZoneKey = #projectWakeTransactionTest;
+
+/// Minimal stateful sync double used to prove cross-service transaction order.
+class _SerializingStateSyncService extends MockAgentSyncService {
+  _SerializingStateSyncService(this.state);
+
+  AgentStateEntity state;
+  final failureWriteStarted = Completer<void>();
+  final releaseFailureWrite = Completer<void>();
+  Future<void> _transactionTail = Future<void>.value();
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    if (Zone.current[_transactionZoneKey] == true) return action();
+
+    final previous = _transactionTail;
+    final turnCompleted = Completer<void>();
+    _transactionTail = turnCompleted.future;
+    await previous;
+    try {
+      return await runZoned(
+        action,
+        zoneValues: {_transactionZoneKey: true},
+      );
+    } finally {
+      turnCompleted.complete();
+    }
+  }
+
+  @override
+  Future<AgentStateEntity?> reconciledAgentState(String agentId) async => state;
+
+  @override
+  Future<void> upsertEntity(
+    AgentDomainEntity entity, {
+    bool fromSync = false,
+  }) async {
+    if (entity is! AgentStateEntity) return;
+    if (entity.consecutiveFailureCount > state.consecutiveFailureCount) {
+      if (!failureWriteStarted.isCompleted) failureWriteStarted.complete();
+      await releaseFailureWrite.future;
+    }
+    await runInTransaction(() async => state = entity);
+  }
+}
 
 void main() {
   late MockAgentRepository mockAgentRepository;
@@ -110,6 +158,7 @@ void main() {
     AgentInputCaptureService? inputCaptureService,
     SoulDocumentService? soulDocumentService,
     DomainLogger? domainLogger,
+    void Function(String agentId)? onPersistedStateChanged,
   }) {
     return ProjectAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -123,6 +172,7 @@ void main() {
       inputCaptureService: inputCaptureService,
       soulDocumentService: soulDocumentService,
       domainLogger: domainLogger,
+      onPersistedStateChanged: onPersistedStateChanged,
     );
   }
 
@@ -149,6 +199,9 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     stubAppendMilestone(mockSyncService);
     stubReconciledAgentState(mockSyncService, mockAgentRepository);
+    when(
+      () => mockAgentRepository.getEntity(agentId),
+    ).thenAnswer((_) async => testAgentIdentity);
 
     // `_collectObservationPayloads` now batches via `getEntitiesByIds`.
     // Route the default stub through the per-id `getEntity` stubs so
@@ -216,44 +269,82 @@ void main() {
       });
 
       test('returns failure when no active project ID in slots', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentStateNoProject.copyWith(
+          slots: testAgentStateNoProject.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentStateNoProject);
+        ).thenAnswer((_) async => dueState);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('No active project ID'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.consecutiveFailureCount, 1);
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when project entity not found', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
+        ).thenAnswer((_) async => dueState);
         when(
           () => mockJournalRepository.getJournalEntityById(projectId),
         ).thenAnswer((_) async => null);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('Project not found'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when no template resolved', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
+        ).thenAnswer((_) async => dueState);
         when(
           () => mockJournalRepository.getJournalEntityById(projectId),
         ).thenAnswer((_) async => _fakeProjectEntity());
@@ -270,15 +361,23 @@ void main() {
           () => mockTemplateService.getTemplateForAgent(agentId),
         ).thenAnswer((_) async => null);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('No inference provider'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when profile resolution fails', () async {
@@ -840,6 +939,181 @@ void main() {
         },
       );
 
+      test(
+        'retains a next-day fallback for activity arriving during a due wake',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 6, 30);
+          final initialState = makeTestState(
+            slots: AgentSlots(
+              activeProjectId: projectId,
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 5),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          final newerState = initialState.copyWith(
+            slots: initialState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 6, 31),
+            ),
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? initialState : newerState,
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(
+            updatedState.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 20, 6, 31),
+          );
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        },
+      );
+
+      test(
+        'does not synthesize a fallback after an automation-off manual wake',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 10);
+          final newerActivityState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 10, 1),
+            ),
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? testAgentState : newerActivityState,
+          );
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer((_) async => disabledIdentity);
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(
+            updatedState.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 20, 10, 1),
+          );
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
+
+      test(
+        'rechecks automation before retaining newer activity after a wake',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 10);
+          final newerActivityState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 10, 1),
+            ),
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? testAgentState : newerActivityState,
+          );
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer(
+            (_) async => testAgentIdentity.copyWith(
+              config: testAgentIdentity.config.copyWith(
+                automaticUpdatesEnabled: false,
+              ),
+            ),
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.slots.pendingProjectActivityAt, isNotNull);
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
+
+      test(
+        'preserves a future explicit schedule when automation is off',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 10);
+          final explicitSchedule = DateTime(2026, 3, 20, 14);
+          final newerActivityState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 10, 1),
+            ),
+            scheduledWakeAt: explicitSchedule,
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? testAgentState : newerActivityState,
+          );
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer((_) async => disabledIdentity);
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, explicitSchedule);
+        },
+      );
+
       test('records template provenance on wake run', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -980,8 +1254,18 @@ void main() {
       );
 
       test(
-        'soul resolution failure propagates as exception',
+        'soul resolution failure returns failure and advances a due fallback',
         () async {
+          final now = DateTime(2026, 3, 20, 10);
+          final dueState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
           final mockSoulService = MockSoulDocumentService();
           when(
             () => mockSoulService.resolveActiveSoulForTemplate(
@@ -993,21 +1277,63 @@ void main() {
             soulDocumentService: mockSoulService,
           );
 
-          await expectLater(
-            soulWorkflow.execute(
+          final result = await withClock(Clock.fixed(now), () {
+            return soulWorkflow.execute(
               agentIdentity: testAgentIdentity,
               runKey: runKey,
               triggerTokens: {'entity-a'},
               threadId: threadId,
-            ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('Soul DB error'),
-              ),
-            ),
+            );
+          });
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('Soul DB error'));
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        },
+      );
+
+      test(
+        'first legacy creation failure advances its markerless fallback',
+        () async {
+          final now = DateTime(2026, 3, 20, 10);
+          final legacyCreationState = testAgentState.copyWith(
+            lastWakeAt: null,
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
           );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => legacyCreationState);
+          final mockSoulService = MockSoulDocumentService();
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenThrow(Exception('Soul DB error'));
+
+          final soulWorkflow = buildWorkflow(
+            soulDocumentService: mockSoulService,
+          );
+
+          final result = await withClock(Clock.fixed(now), () {
+            return soulWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+          });
+
+          expect(result.success, isFalse);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
         },
       );
 
@@ -1115,6 +1441,14 @@ void main() {
       });
 
       test('increments failure count on error', () async {
+        final pendingState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+        );
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => pendingState);
         mockConversationRepository.sendMessageDelegate =
             ({
               required conversationId,
@@ -1130,12 +1464,14 @@ void main() {
               throw Exception('LLM error');
             };
 
-        await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         // Verify state was updated with incremented failure count.
         // The state update outside the transaction (for failure) is the 3rd
@@ -1148,7 +1484,264 @@ void main() {
           (s) => s.consecutiveFailureCount > 0,
         );
         expect(stateUpdates, isNotEmpty);
+        expect(stateUpdates.single.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        expect(
+          stateUpdates.single.slots.pendingProjectActivityAt,
+          DateTime(2026, 3, 20, 9),
+        );
       });
+
+      test('advances an overdue fallback after a failed wake', () async {
+        final overdueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => overdueState);
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error');
+            };
+        final notifiedAgentIds = <String>[];
+        final notifyingWorkflow = buildWorkflow(
+          onPersistedStateChanged: notifiedAgentIds.add,
+        );
+
+        await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+          return notifyingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
+          (state) => state.consecutiveFailureCount > 0,
+        );
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        expect(notifiedAgentIds, [agentId]);
+      });
+
+      test(
+        'a concurrent cancellation wins over failed-wake retry persistence',
+        () async {
+          final pendingState = testAgentStateNoProject.copyWith(
+            slots: testAgentStateNoProject.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          final statefulSync = _SerializingStateSyncService(pendingState);
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => statefulSync.state);
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer((_) async => testAgentIdentity);
+          final raceWorkflow = ProjectAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            syncService: statefulSync,
+            templateService: mockTemplateService,
+          );
+          final orchestrator = MockWakeOrchestrator();
+          when(
+            () => orchestrator.cancelPendingWakes(
+              any(),
+              allWorkspaces: any(named: 'allWorkspaces'),
+            ),
+          ).thenReturn(const []);
+          final projectService = ProjectAgentService(
+            agentService: MockAgentService(),
+            repository: mockAgentRepository,
+            orchestrator: orchestrator,
+            syncService: statefulSync,
+          );
+
+          final wake = withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+            return raceWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+          await statefulSync.failureWriteStarted.future;
+          final cancellation = projectService.cancelScheduledWake(agentId);
+          await pumpEventQueue();
+          statefulSync.releaseFailureWrite.complete();
+          await Future.wait([wake, cancellation]);
+
+          expect(statefulSync.state.slots.pendingProjectActivityAt, isNull);
+          expect(statefulSync.state.nextWakeAt, isNull);
+          expect(statefulSync.state.scheduledWakeAt, isNull);
+        },
+      );
+
+      test('does not restore state deleted during a failed wake', () async {
+        when(
+          () => mockSyncService.reconciledAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => null);
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error after state deletion');
+            };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isFalse);
+        final persisted = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(persisted.whereType<AgentStateEntity>(), isEmpty);
+      });
+
+      test(
+        'does not synthesize a retry after an automation-off manual failure',
+        () async {
+          final pendingState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => pendingState);
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                throw Exception('LLM error');
+              };
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer((_) async => disabledIdentity);
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+            return workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
+            (state) => state.consecutiveFailureCount > 0,
+          );
+          expect(updatedState.slots.pendingProjectActivityAt, isNotNull);
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
+
+      test(
+        'rechecks automation before rearming a failed wake',
+        () async {
+          final pendingState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockAgentRepository.getEntity(agentId),
+          ).thenAnswer(
+            (_) async => testAgentIdentity.copyWith(
+              config: testAgentIdentity.config.copyWith(
+                automaticUpdatesEnabled: false,
+              ),
+            ),
+          );
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                throw Exception('LLM error');
+              };
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+            return workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
+            (state) => state.consecutiveFailureCount > 0,
+          );
+          expect(updatedState.slots.pendingProjectActivityAt, isNotNull);
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
       test('includes linked task context in user message', () async {
         final linkedTask = _fakeTaskEntity(
           title: 'Implement API',

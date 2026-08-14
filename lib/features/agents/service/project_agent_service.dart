@@ -2,13 +2,16 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -27,11 +30,14 @@ class ProjectAgentService {
     required this.syncService,
     this.domainLogger,
     this.onPersistedStateChanged,
-  });
+    ProjectActivityCancellationCoordinator? cancellationCoordinator,
+  }) : _cancellationCoordinator =
+           cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
 
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+  final ProjectActivityCancellationCoordinator _cancellationCoordinator;
 
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
@@ -52,7 +58,7 @@ class ProjectAgentService {
   /// 2. Update the agent's state with `activeProjectId = projectId`.
   /// 3. Create an [AgentProjectLink] from agentId → projectId.
   /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Enqueue a creation wake.
+  /// 5. Enqueue a creation wake with a one-shot persisted fallback.
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
@@ -106,7 +112,17 @@ class ProjectAgentService {
 
       final now = clock.now();
       final updatedState = state.copyWith(
-        slots: state.slots.copyWith(activeProjectId: projectId),
+        slots: state.slots.copyWith(
+          activeProjectId: projectId,
+          pendingProjectActivityAt: now,
+        ),
+        // The creation wake is queued in memory for immediate execution. This
+        // one-shot fallback makes that explicit work durable across a process
+        // exit and is cleared by the first successful wake; it never recurs.
+        scheduledWakeAt: nextOccurrenceOf(
+          now,
+          hour: AgentSchedules.projectDailyDigestHour,
+        ),
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);
@@ -200,17 +216,80 @@ class ProjectAgentService {
 
   /// Cancel a scheduled wake for [agentId].
   ///
-  /// Clears the throttle deadline, cancels the deferred drain timer, and
-  /// removes any queued subscription jobs — so no automatic wake will fire.
+  /// Deletes both persisted deadline fields and the pending activity marker in
+  /// one state write before clearing the throttle timer and queued jobs.
+  ///
+  /// Persistence is intentionally first: if the transaction rolls back, the
+  /// runtime work remains available and the UI can report that cancellation
+  /// did not complete instead of displaying state that disagrees with storage.
+  /// If only the post-commit sync flush fails, runtime cleanup still follows
+  /// the committed state before the sync error is surfaced to the caller.
   /// Mirrors `TaskAgentService.cancelScheduledWake` so the project AI Report
   /// header's cancel × has the same semantics as the task AI summary one.
-  void cancelScheduledWake(String agentId) {
+  Future<void> cancelScheduledWake(String agentId) async {
     domainLogger?.log(
       LogDomain.agentRuntime,
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    agentService.cancelPendingWake(agentId);
+    final cancelledAt = clock.now();
+    await _cancellationCoordinator.runCancellation(
+      agentId: agentId,
+      action: (confirmCancellationCommit) async {
+        void clearRuntimeWake() {
+          orchestrator
+            ..clearThrottle(agentId)
+            ..cancelPendingWakes(agentId, allWorkspaces: true);
+        }
+
+        var persistedCancellation = false;
+        try {
+          await syncService.runInTransaction(() async {
+            final state = await repository.getAgentState(agentId);
+            if (state == null ||
+                (state.nextWakeAt == null &&
+                    state.scheduledWakeAt == null &&
+                    state.slots.pendingProjectActivityAt == null)) {
+              return;
+            }
+            await syncService.upsertEntity(
+              state.copyWith(
+                slots: state.slots.copyWith(pendingProjectActivityAt: null),
+                nextWakeAt: null,
+                scheduledWakeAt: null,
+                updatedAt: cancelledAt,
+              ),
+            );
+            persistedCancellation = true;
+          });
+        } catch (error, stackTrace) {
+          var cancellationCommitted = false;
+          if (persistedCancellation) {
+            try {
+              final current = await repository.getAgentState(agentId);
+              cancellationCommitted =
+                  current == null ||
+                  (current.nextWakeAt == null &&
+                      current.scheduledWakeAt == null &&
+                      current.slots.pendingProjectActivityAt == null);
+            } catch (_) {
+              // Preserve the original transaction/sync failure. If the state
+              // cannot be confirmed, leaving runtime work intact is the safe
+              // side.
+            }
+          }
+          if (cancellationCommitted) {
+            confirmCancellationCommit();
+            onPersistedStateChanged?.call(agentId);
+            clearRuntimeWake();
+          }
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+        if (persistedCancellation) onPersistedStateChanged?.call(agentId);
+
+        clearRuntimeWake();
+      },
+    );
   }
 
   /// Restore project-agent runtime state after app startup.
@@ -248,12 +327,24 @@ class ProjectAgentService {
     for (final agent in projectAgents) {
       try {
         final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
-        final state = await _retireDormantDailySchedule(
+        var state = await _retireDormantDailySchedule(
           statesByAgentId[agent.agentId],
         );
-        _hydrateThrottleDeadlineFromState(agent.agentId, state);
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
+        }
+        final reconciliation = await _reconcilePendingActivityFallback(
+          agentId: agent.agentId,
+        );
+        state = reconciliation.state;
+        if (reconciliation.automaticWakesAllowed) {
+          orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
+          _hydrateThrottleDeadlineFromState(agent.agentId, state);
+        } else {
+          if (!reconciliation.active) {
+            orchestrator.removeSubscriptions(agent.agentId);
+          }
+          orchestrator.disableAutomaticUpdatesRuntime(agent.agentId);
         }
         count++;
       } catch (e, s) {
@@ -295,27 +386,120 @@ class ProjectAgentService {
     );
   }
 
+  /// Reconciles a project agent's device-local fallback with current policy.
+  ///
+  /// The bulk startup snapshots are only hints. Identity policy is re-read in
+  /// the same transaction that may arm or clear a fallback so a concurrent
+  /// opt-out or lifecycle change controls both persistence and runtime state.
+  Future<
+    ({
+      AgentStateEntity? state,
+      bool active,
+      bool automaticWakesAllowed,
+    })
+  >
+  _reconcilePendingActivityFallback({
+    required String agentId,
+  }) async {
+    AgentStateEntity? result;
+    var active = false;
+    var automaticWakesAllowed = false;
+    var changed = false;
+    await repository.runInTransaction(() async {
+      final currentIdentity = await repository.getEntity(agentId);
+      if (currentIdentity is AgentIdentityEntity) {
+        active = currentIdentity.lifecycle == AgentLifecycle.active;
+        automaticWakesAllowed = projectAgentAutomaticWakesAllowed(
+          config: currentIdentity.config,
+          lifecycle: currentIdentity.lifecycle,
+        );
+      }
+      final current = await repository.getAgentState(agentId);
+      result = current;
+      if (current == null || current.deletedAt != null) {
+        return;
+      }
+
+      final DateTime? scheduledWakeAt;
+      if (automaticWakesAllowed) {
+        if (current.slots.pendingProjectActivityAt == null ||
+            current.scheduledWakeAt != null) {
+          result = current;
+          return;
+        }
+        scheduledWakeAt = nextOccurrenceOf(
+          clock.now(),
+          hour: AgentSchedules.projectDailyDigestHour,
+        );
+      } else {
+        if (current.scheduledWakeAt == null) {
+          result = current;
+          return;
+        }
+        scheduledWakeAt = null;
+      }
+
+      // This deadline exists only on this device. Do not advance the synced
+      // vector clock or LWW timestamp: doing so could make an obsolete pending
+      // marker beat another device's successful completion during merge.
+      final updated = current.copyWith(scheduledWakeAt: scheduledWakeAt);
+      await repository.upsertEntity(updated);
+      result = updated;
+      changed = true;
+    });
+    if (changed) onPersistedStateChanged?.call(agentId);
+    return (
+      state: result,
+      active: active,
+      automaticWakesAllowed: automaticWakesAllowed,
+    );
+  }
+
   /// Removes the legacy always-on daily digest from an idle project agent.
   ///
-  /// Project updates already persist an event-driven subscription wake in
-  /// `nextWakeAt`. Retaining a separate `scheduledWakeAt` when there is no
+  /// Project updates persist an event-driven wake only while work is pending.
+  /// Retaining `scheduledWakeAt` after a completed wake when there is no
   /// pending project activity only keeps a meaningless 06:00 row alive in the
-  /// Wake tab. A schedule that still has pending activity is left intact as a
-  /// one-time migration safety net and is retired by the next successful wake.
+  /// Wake tab. Never-woken agents and schedules with pending activity remain
+  /// one-shot durability fallbacks and are retired by a successful wake.
   Future<AgentStateEntity?> _retireDormantDailySchedule(
     AgentStateEntity? state,
   ) async {
     if (state == null ||
         state.scheduledWakeAt == null ||
+        state.lastWakeAt == null ||
         state.slots.pendingProjectActivityAt != null) {
       return state;
     }
 
-    final updatedState = state.copyWith(
-      scheduledWakeAt: null,
-      updatedAt: clock.now(),
-    );
-    await syncService.upsertEntity(updatedState);
+    AgentStateEntity? result;
+    var changed = false;
+    await repository.runInTransaction(() async {
+      // The monitor or a user can write after the bulk snapshot above. Re-read
+      // and validate inside the same local transaction as the write so
+      // cleanup cannot erase newer activity or a manual schedule.
+      final currentState = await repository.getAgentState(state.agentId);
+      final snapshotChanged =
+          currentState?.updatedAt != state.updatedAt ||
+          currentState?.vectorClock != state.vectorClock;
+      if (snapshotChanged ||
+          currentState == null ||
+          currentState.scheduledWakeAt == null ||
+          currentState.lastWakeAt == null ||
+          currentState.slots.pendingProjectActivityAt != null) {
+        result = currentState;
+        return;
+      }
+
+      // This retirement is device-local scheduling maintenance. Preserve the
+      // synced LWW timestamp and vector clock so a stale device cannot publish
+      // cleanup as a newer whole-row state version.
+      final updatedState = currentState.copyWith(scheduledWakeAt: null);
+      await repository.upsertEntity(updatedState);
+      result = updatedState;
+      changed = true;
+    });
+    if (!changed) return result;
     onPersistedStateChanged?.call(state.agentId);
     domainLogger?.log(
       LogDomain.agentRuntime,
@@ -323,7 +507,7 @@ class ProjectAgentService {
       '${DomainLogger.sanitizeId(state.agentId)}',
       subDomain: 'restore',
     );
-    return updatedState;
+    return result;
   }
 
   void _hydrateThrottleDeadlineFromState(
@@ -331,7 +515,12 @@ class ProjectAgentService {
     AgentStateEntity? state,
   ) {
     final deadline = state?.nextWakeAt;
-    if (deadline != null) {
+    final hasPendingActivity = state?.slots.pendingProjectActivityAt != null;
+    final hasPendingCreation =
+        state != null &&
+        state.lastWakeAt == null &&
+        state.scheduledWakeAt != null;
+    if (deadline != null && (hasPendingActivity || hasPendingCreation)) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
   }

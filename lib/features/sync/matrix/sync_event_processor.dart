@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
@@ -18,10 +19,13 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
@@ -352,7 +356,11 @@ class SyncEventProcessor {
 
       // `await` so exceptions from prepare flow through the `catch` below
       // (Dart does not hook `catch` onto a returned future without it).
-      return await _prepareForMessage(event: event, syncMessage: syncMessage);
+      return await _prepareForMessage(
+        event: event,
+        syncMessage: syncMessage,
+        rawMessageJson: messageJson,
+      );
     } on UnrecoverableSyncPayloadException catch (error) {
       _trace(
         'skipping unrecoverable sync payload: $error '
@@ -475,6 +483,7 @@ class SyncEventProcessor {
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
+    Map<String, dynamic>? rawMessageJson,
   }) async {
     // Self-echo short-circuit: every Matrix event the local host sends
     // loops back through `/sync` (and again on catch-up after a
@@ -502,11 +511,16 @@ class SyncEventProcessor {
       case final SyncJournalEntity msg:
         return _prepareJournalEntity(event: event, syncMessage: msg);
       case final SyncAgentEntity msg:
-        final resolved = await _resolveAgentEntity(msg);
+        final resolved = await _resolveAgentEntity(
+          msg,
+          rawMessageJson: rawMessageJson,
+        );
         return PreparedSyncEvent._(
           event: event,
           syncMessage: msg,
-          resolvedAgentEntity: resolved,
+          resolvedAgentEntity: resolved.entity,
+          pendingProjectActivityAtWasPresent:
+              resolved.pendingProjectActivityAtWasPresent,
         );
       case final SyncAgentLink msg:
         final resolved = await _resolveAgentLink(msg);
@@ -537,9 +551,19 @@ class SyncEventProcessor {
         );
         return PreparedSyncEvent._(event: event, syncMessage: msg);
       case final SyncOutboxBundle msg:
+        final rawChildren = switch (rawMessageJson?['children']) {
+          final List<dynamic> children =>
+            children
+                .map(
+                  (child) => child is Map<String, dynamic> ? child : null,
+                )
+                .toList(),
+          _ => const <Map<String, dynamic>?>[],
+        };
         final resolved = await _outboxBundleUnpacker.prepare(
           event: event,
           msg: msg,
+          rawChildren: rawChildren,
           resolveSidecar:
               ({
                 required jsonPath,
@@ -548,8 +572,11 @@ class SyncEventProcessor {
                 jsonPath,
                 attachmentEventId: attachmentEventId,
               ),
-          prepareChild: (childEvent, childMsg) =>
-              _prepareForMessage(event: childEvent, syncMessage: childMsg),
+          prepareChild: (childEvent, childMsg, childJson) => _prepareForMessage(
+            event: childEvent,
+            syncMessage: childMsg,
+            rawMessageJson: childJson,
+          ),
         );
         return PreparedSyncEvent._(
           event: event,
@@ -565,10 +592,10 @@ class SyncEventProcessor {
   Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(
     String? jsonPath, {
     String? attachmentEventId,
-  }) => _resolveOutboxBundleManifest(
+  }) async => (await _resolveOutboxBundleManifest(
     jsonPath,
     attachmentEventId: attachmentEventId,
-  );
+  ))?.bundle;
 
   late final OutboxBundleUnpacker _outboxBundleUnpacker = OutboxBundleUnpacker(
     loggingService: _loggingService,

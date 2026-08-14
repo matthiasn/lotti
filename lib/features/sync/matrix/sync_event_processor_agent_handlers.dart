@@ -59,6 +59,7 @@ extension _AgentHandlers on SyncEventProcessor {
     required String? attachmentEventId,
     required T Function(Map<String, dynamic>) fromJson,
     required String typeName,
+    void Function(Map<String, dynamic>)? inspectJson,
   }) async {
     if (inline != null) return inline;
     final jp = jsonPath;
@@ -97,7 +98,9 @@ extension _AgentHandlers on SyncEventProcessor {
     );
     if (fetched != null) {
       try {
-        return fromJson(json.decode(fetched) as Map<String, dynamic>);
+        final decoded = json.decode(fetched) as Map<String, dynamic>;
+        inspectJson?.call(decoded);
+        return fromJson(decoded);
       } catch (e, st) {
         _loggingService.error(
           LogDomain.sync,
@@ -119,7 +122,9 @@ extension _AgentHandlers on SyncEventProcessor {
     // No descriptor available on a legacy envelope — fall back to disk.
     try {
       final jsonString = await file.readAsString();
-      return fromJson(json.decode(jsonString) as Map<String, dynamic>);
+      final decoded = json.decode(jsonString) as Map<String, dynamic>;
+      inspectJson?.call(decoded);
+      return fromJson(decoded);
     } on FileSystemException {
       // Attachment file not yet available — rethrow so the pipeline retries
       // and registers the pending descriptor path for catch-up.
@@ -135,15 +140,45 @@ extension _AgentHandlers on SyncEventProcessor {
     }
   }
 
-  Future<AgentDomainEntity?> _resolveAgentEntity(
-    SyncAgentEntity msg,
-  ) => _resolveAgentPayload(
-    inline: msg.agentEntity,
-    jsonPath: msg.jsonPath,
-    attachmentEventId: msg.attachmentEventId,
-    fromJson: AgentDomainEntity.fromJson,
-    typeName: 'agentEntity',
-  );
+  Future<
+    ({
+      AgentDomainEntity? entity,
+      bool? pendingProjectActivityAtWasPresent,
+    })
+  >
+  _resolveAgentEntity(
+    SyncAgentEntity msg, {
+    Map<String, dynamic>? rawMessageJson,
+  }) async {
+    bool? pendingProjectActivityAtWasPresent;
+    if (msg.agentEntity != null) {
+      pendingProjectActivityAtWasPresent = _pendingProjectActivityAtWasPresent(
+        rawMessageJson?['agentEntity'],
+      );
+    }
+    final entity = await _resolveAgentPayload(
+      inline: msg.agentEntity,
+      jsonPath: msg.jsonPath,
+      attachmentEventId: msg.attachmentEventId,
+      fromJson: AgentDomainEntity.fromJson,
+      typeName: 'agentEntity',
+      inspectJson: (decoded) {
+        pendingProjectActivityAtWasPresent =
+            _pendingProjectActivityAtWasPresent(decoded);
+      },
+    );
+    return (
+      entity: entity,
+      pendingProjectActivityAtWasPresent: pendingProjectActivityAtWasPresent,
+    );
+  }
+
+  bool? _pendingProjectActivityAtWasPresent(Object? entityJson) {
+    if (entityJson is! Map<String, dynamic>) return null;
+    final slots = entityJson['slots'];
+    if (slots is! Map<String, dynamic>) return null;
+    return slots.containsKey('pendingProjectActivityAt');
+  }
 
   Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) =>
       _resolveAgentPayload(
@@ -157,6 +192,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
+    bool? pendingProjectActivityAtWasPresent,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     if (resolvedEntity == null) {
@@ -195,6 +231,33 @@ extension _AgentHandlers on SyncEventProcessor {
             jsonPath: msg.jsonPath,
             prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
           )) {
+        AgentIdentityEntity? projectIdentity;
+        if (wakeOrchestrator != null) {
+          if (resolvedEntity is AgentIdentityEntity &&
+              resolvedEntity.kind == AgentKinds.projectAgent) {
+            projectIdentity = resolvedEntity;
+          } else if (resolvedEntity is AgentStateEntity) {
+            final identity = await _localAgentEntityFor(
+              resolvedEntity.agentId,
+              prefetchedAgentEntitiesById,
+            );
+            if (identity is AgentIdentityEntity &&
+                identity.kind == AgentKinds.projectAgent) {
+              projectIdentity = identity;
+            }
+          }
+        }
+        if (projectIdentity != null) {
+          final scheduleChanged = await _reconcileProjectAgentRuntime(
+            projectIdentity,
+          );
+          if (scheduleChanged) {
+            _updateNotifications.notify(
+              {resolvedEntity.agentId, agentNotification},
+              fromSync: true,
+            );
+          }
+        }
         await _projectAgentAttribution(resolvedEntity);
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
@@ -205,18 +268,28 @@ extension _AgentHandlers on SyncEventProcessor {
       // wakes, so a remote AgentStateEntity must never overwrite this device's
       // nextWakeAt / sleepUntil / scheduledWakeAt. Overlay the local values onto
       // the row about to be persisted; everything else still syncs as usual.
+      var projectActivityWasConsumed = false;
       if (entityToApply is AgentStateEntity) {
-        entityToApply = await _preserveLocalScheduling(
+        final preserved = await _preserveLocalScheduling(
           incoming: entityToApply,
+          pendingProjectActivityAtWasPresent:
+              pendingProjectActivityAtWasPresent,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
+        entityToApply = preserved.entity;
+        projectActivityWasConsumed = preserved.projectActivityWasConsumed;
       } else if (entityToApply is AgentIdentityEntity) {
-        entityToApply = await _preserveLocalTaskAgentConfigFields(
+        entityToApply = await _preserveLocalAgentConfigFields(
           incoming: entityToApply,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
       }
       await agentRepository!.upsertEntity(entityToApply);
+      if (projectActivityWasConsumed) {
+        wakeOrchestrator?.cancelPendingAutomaticWakes(
+          entityToApply.agentId,
+        );
+      }
       await _projectAgentAttribution(entityToApply);
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
         prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
@@ -263,26 +336,27 @@ extension _AgentHandlers on SyncEventProcessor {
               );
             }
           }
-        } else if (appliedIdentity.kind == 'project_agent') {
-          if (appliedIdentity.lifecycle != AgentLifecycle.active) {
-            wakeOrchestrator!.removeSubscriptions(appliedIdentity.agentId);
-          } else {
-            final links = await agentRepository!.getLinksFrom(
-              appliedIdentity.agentId,
-              type: 'agent_project',
-            );
-            for (final link in links.whereType<AgentProjectLink>()) {
-              if (link.deletedAt == null) {
-                _addProjectSubscription(link);
-              }
-            }
-          }
+        } else if (appliedIdentity.kind == AgentKinds.projectAgent) {
+          await _reconcileProjectAgentRuntime(appliedIdentity);
         }
         // Plug-in kinds (goal agents today): offer the identity to each
         // registered runtime-maintenance contributor, so the owning
         // feature mirrors its subscriptions without this file hard-coding
         // another kind branch. Contributors contain their own failures.
         await _offerIdentityToRuntimeMaintenance(appliedIdentity);
+      }
+      // The identity may already be present when its state arrives. Sync
+      // notifications do not enter the local project-update stream, so repair
+      // the device-local fallback here instead of waiting for a restart.
+      if (wakeOrchestrator != null && entityToApply is AgentStateEntity) {
+        final identity = await _localAgentEntityFor(
+          entityToApply.agentId,
+          prefetchedAgentEntitiesById,
+        );
+        if (identity is AgentIdentityEntity &&
+            identity.kind == AgentKinds.projectAgent) {
+          await _reconcileProjectAgentRuntime(identity);
+        }
       }
       // Ordering: creation bundles emit the identity BEFORE its spec rows,
       // so the identity-time mirror can find no criteria yet. When the
@@ -346,16 +420,16 @@ extension _AgentHandlers on SyncEventProcessor {
     await AttributionCarrierProjector(repository).projectAgentEntity(entity);
   }
 
-  /// Keeps explicit task-agent fields when an older client sends a rewrite
-  /// that omitted keys it could not deserialize.
+  /// Keeps explicit task/project-agent fields when an older client sends a
+  /// rewrite that omitted keys it could not deserialize.
   ///
   /// Explicit incoming true/false and configured/disabled values always win;
   /// only null (field absent in old JSON) is overlaid from the local row.
-  Future<AgentIdentityEntity> _preserveLocalTaskAgentConfigFields({
+  Future<AgentIdentityEntity> _preserveLocalAgentConfigFields({
     required AgentIdentityEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    if (incoming.kind != 'task_agent' ||
+    if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
             incoming.config.inferenceSetup != null)) {
       return incoming;
@@ -441,9 +515,8 @@ extension _AgentHandlers on SyncEventProcessor {
         } else {
           final agent = await agentRepository!.getEntity(resolvedLink.fromId);
           if (agent is AgentIdentityEntity &&
-              agent.lifecycle == AgentLifecycle.active &&
-              agent.kind == 'project_agent') {
-            _addProjectSubscription(resolvedLink);
+              agent.kind == AgentKinds.projectAgent) {
+            await _reconcileProjectAgentRuntime(agent);
           }
         }
       }
@@ -467,6 +540,81 @@ extension _AgentHandlers on SyncEventProcessor {
 
   String _projectSubscriptionId(AgentProjectLink link) =>
       '${link.fromId}_project_direct_${link.toId}';
+
+  /// Reconciles receiver-local project scheduling and runtime after sync.
+  Future<bool> _reconcileProjectAgentRuntime(
+    AgentIdentityEntity identity,
+  ) async {
+    var policy = (active: false, automaticWakesAllowed: false);
+    var scheduleChanged = false;
+    await agentRepository!.runInTransaction(() async {
+      final currentIdentity = await agentRepository!.getEntity(identity.id);
+      final currentProjectIdentity =
+          currentIdentity is AgentIdentityEntity &&
+              currentIdentity.kind == AgentKinds.projectAgent
+          ? currentIdentity
+          : null;
+      final active = currentProjectIdentity?.lifecycle == AgentLifecycle.active;
+      final automaticWakesAllowed =
+          currentProjectIdentity != null &&
+          projectAgentAutomaticWakesAllowed(
+            config: currentProjectIdentity.config,
+            lifecycle: currentProjectIdentity.lifecycle,
+          );
+      policy = (
+        active: active,
+        automaticWakesAllowed: automaticWakesAllowed,
+      );
+      final state = await agentRepository!.getAgentState(identity.agentId);
+      if (state == null || state.deletedAt != null) {
+        return;
+      }
+
+      final shouldArm =
+          automaticWakesAllowed &&
+          state.slots.pendingProjectActivityAt != null &&
+          state.scheduledWakeAt == null;
+      final shouldClear =
+          !automaticWakesAllowed && state.scheduledWakeAt != null;
+      if (!shouldArm && !shouldClear) {
+        return;
+      }
+
+      // Scheduling fields are device-local. Keep synced LWW metadata intact
+      // so this repair cannot win a peer conflict for unrelated state fields.
+      await agentRepository!.upsertEntity(
+        state.copyWith(
+          scheduledWakeAt: shouldArm
+              ? nextOccurrenceOf(
+                  clock.now(),
+                  hour: AgentSchedules.projectDailyDigestHour,
+                )
+              : null,
+        ),
+      );
+      scheduleChanged = true;
+    });
+
+    if (!policy.active) {
+      wakeOrchestrator!
+        ..removeSubscriptions(identity.agentId)
+        ..disableAutomaticUpdatesRuntime(identity.agentId);
+      return scheduleChanged;
+    }
+    if (policy.automaticWakesAllowed) {
+      wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
+    } else {
+      wakeOrchestrator!.disableAutomaticUpdatesRuntime(identity.agentId);
+    }
+    final links = await agentRepository!.getLinksFrom(
+      identity.agentId,
+      type: AgentLinkTypes.agentProject,
+    );
+    for (final link in links.whereType<AgentProjectLink>()) {
+      if (link.deletedAt == null) _addProjectSubscription(link);
+    }
+    return scheduleChanged;
+  }
 
   void _addProjectSubscription(AgentProjectLink link) {
     wakeOrchestrator?.addSubscription(
@@ -658,21 +806,65 @@ extension _AgentHandlers on SyncEventProcessor {
   /// `AgentStateEntity` about to be applied from sync, so device-local
   /// scheduling (`nextWakeAt` / `sleepUntil` / `scheduledWakeAt`) is never
   /// clobbered by a peer's row (PR 4 B4). When there is no local state row yet
-  /// (a brand-new agent on this device) the incoming values are kept as the
-  /// bootstrap schedule; the device reschedules itself from there.
-  Future<AgentStateEntity> _preserveLocalScheduling({
+  /// (a brand-new agent on this device), non-project agents keep the incoming
+  /// bootstrap schedule. Project fallback deadlines are instead cleared and
+  /// rebuilt below from this device's automation policy and local clock.
+  Future<({AgentStateEntity entity, bool projectActivityWasConsumed})>
+  _preserveLocalScheduling({
     required AgentStateEntity incoming,
+    bool? pendingProjectActivityAtWasPresent,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final local = await _localAgentEntityFor(
       incoming.id,
       prefetchedAgentEntitiesById,
     );
-    if (local is! AgentStateEntity) return incoming;
-    return incoming.copyWith(
-      nextWakeAt: local.nextWakeAt,
-      sleepUntil: local.sleepUntil,
-      scheduledWakeAt: local.scheduledWakeAt,
+    final identity = await _localAgentEntityFor(
+      incoming.agentId,
+      prefetchedAgentEntitiesById,
+    );
+    if (local is! AgentStateEntity) {
+      final isProjectState =
+          (identity is AgentIdentityEntity &&
+              identity.kind == AgentKinds.projectAgent) ||
+          incoming.slots.activeProjectId != null;
+      return (
+        entity: isProjectState
+            ? incoming.copyWith(
+                nextWakeAt: null,
+                sleepUntil: null,
+                scheduledWakeAt: null,
+              )
+            : incoming,
+        projectActivityWasConsumed: false,
+      );
+    }
+    final isProjectState =
+        (identity is AgentIdentityEntity &&
+            identity.kind == AgentKinds.projectAgent) ||
+        local.slots.activeProjectId != null ||
+        incoming.slots.activeProjectId != null;
+    final preserveLegacyPendingActivity =
+        isProjectState && pendingProjectActivityAtWasPresent == false;
+    final projectActivityWasConsumed =
+        isProjectState &&
+        !preserveLegacyPendingActivity &&
+        local.slots.pendingProjectActivityAt != null &&
+        incoming.slots.pendingProjectActivityAt == null;
+    return (
+      entity: incoming.copyWith(
+        slots: preserveLegacyPendingActivity
+            ? incoming.slots.copyWith(
+                pendingProjectActivityAt: local.slots.pendingProjectActivityAt,
+              )
+            : incoming.slots,
+        nextWakeAt: local.nextWakeAt,
+        sleepUntil: local.sleepUntil,
+        scheduledWakeAt: projectActivityWasConsumed
+            ? null
+            : local.scheduledWakeAt,
+      ),
+      projectActivityWasConsumed: projectActivityWasConsumed,
     );
   }
 

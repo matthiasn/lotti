@@ -60,7 +60,7 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
           ? null
           : await ref.watch(agentStateProvider(identity.agentId).future);
       final nextWakeAt = agentState?.mapOrNull(
-        agentState: (value) => value.nextWakeAt,
+        agentState: (value) => value.nextWakeAt ?? value.scheduledWakeAt,
       );
 
       final aiSummary = _resolveAiSummary(project, report);

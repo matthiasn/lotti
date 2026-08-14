@@ -211,6 +211,38 @@ void main() {
       );
 
       test(
+        'cancelPendingAutomaticWakes drops automation but preserves user job',
+        () {
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'automatic',
+                agentId: 'agent-1',
+                reason: WakeReason.subscription.name,
+                initiator: WakeInitiator.automation,
+                triggerTokens: const {'project-1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'user',
+                agentId: 'agent-1',
+                reason: WakeReason.reanalysis.name,
+                initiator: WakeInitiator.user,
+                triggerTokens: const {},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          orchestrator.cancelPendingAutomaticWakes('agent-1');
+
+          expect(queue.length, 1);
+          expect(queue.dequeue()?.runKey, 'user');
+        },
+      );
+
+      test(
         'disabled automation retains subscriptions and marks matching changes '
         'stale without queueing inference',
         () async {
@@ -298,6 +330,53 @@ void main() {
       );
 
       test(
+        'atomic stale update preserves concurrently-added project activity',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          final pendingAt = DateTime(2026, 8, 12, 18, 29);
+          final fallbackAt = DateTime(2026, 8, 13, 6);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeProjectId: 'entity-1'),
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncAgentStateUpdater: (agentId, update) async {
+              expect(agentId, 'agent-1');
+              state = state.copyWith(
+                slots: state.slots.copyWith(
+                  pendingProjectActivityAt: pendingAt,
+                ),
+                scheduledWakeAt: fallbackAt,
+              );
+              final updated = await update(state);
+              if (updated == null) return false;
+              state = updated;
+              return true;
+            },
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: signalAt,
+          );
+
+          expect(state.reportStaleAt, signalAt);
+          expect(state.slots.pendingProjectActivityAt, pendingAt);
+          expect(state.scheduledWakeAt, fallbackAt);
+          verifyNever(() => mockRepository.getAgentState(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+        },
+      );
+
+      test(
         'markReportStale persists the supplied evidence-arrival timestamp '
         'without queueing work',
         () async {
@@ -333,6 +412,46 @@ void main() {
           expect(state.reportStaleAt, signalAt);
           expect(state.reportFreshAt, DateTime(2026, 8, 12, 18, 15));
           expect(state.isReportStale, isTrue);
+        },
+      );
+
+      test(
+        'markReportStale ignores older evidence through the atomic updater',
+        () async {
+          final persistedAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    reportStaleAt: persistedAt,
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          final persistedNotifications = <String>[];
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncAgentStateUpdater: (agentId, update) async {
+              final updated = await update(state);
+              if (updated == null) return false;
+              state = updated;
+              return true;
+            },
+            onPersistedStateChanged: persistedNotifications.add,
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: persistedAt.subtract(const Duration(minutes: 1)),
+          );
+
+          expect(state.reportStaleAt, persistedAt);
+          expect(persistedNotifications, isEmpty);
+          verifyNever(() => mockRepository.getAgentState(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
         },
       );
 
@@ -479,6 +598,25 @@ void main() {
           runner.release('agent-1');
         },
       );
+
+      test('scheduled manual enqueue is classified as automation', () async {
+        orchestrator = WakeOrchestrator(
+          repository: mockRepository,
+          queue: queue,
+          runner: runner,
+        );
+        expect(await runner.tryAcquire('agent-1'), isTrue);
+
+        orchestrator.enqueueManualWake(
+          agentId: 'agent-1',
+          reason: WakeReason.scheduled.name,
+        );
+        await pumpEventQueue();
+
+        final job = queue.dequeue();
+        expect(job?.initiator, WakeInitiator.automation);
+        runner.release('agent-1');
+      });
 
       test(
         'successful manual wake acknowledges changes seen before it began',

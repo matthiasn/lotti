@@ -14,6 +14,11 @@ import '../../../mocks/mocks.dart';
 PreparedSyncEvent _preparedFor(Event event, SyncMessage msg) =>
     PreparedSyncEvent.forTesting(event: event, syncMessage: msg);
 
+ResolvedOutboxSyncBundle _resolved(
+  SyncOutboxBundle bundle, {
+  List<Map<String, dynamic>?> rawChildren = const [],
+}) => ResolvedOutboxSyncBundle(bundle: bundle, rawChildren: rawChildren);
+
 enum _GeneratedBundleChildOutcome {
   ok,
   nested,
@@ -159,14 +164,24 @@ void main() {
             SyncMessage.aiConfigDelete(id: 'cfg-3'),
           ],
         );
+        final rawChildren = [
+          {'runtimeType': 'aiConfigDelete', 'id': 'cfg-1'},
+          {'runtimeType': 'aiConfigDelete', 'id': 'cfg-2'},
+          {'runtimeType': 'aiConfigDelete', 'id': 'cfg-3'},
+        ];
+        final preparedRawChildren = <Map<String, dynamic>?>[];
 
         final result = await unpacker.prepare(
           event: event,
           msg: bundle,
+          rawChildren: rawChildren,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async {
             fail('sidecar resolution must not run when children are inline');
           },
-          prepareChild: (e, m) async => _preparedFor(e, m),
+          prepareChild: (e, m, raw) async {
+            preparedRawChildren.add(raw);
+            return _preparedFor(e, m);
+          },
         );
 
         expect(result, isNotNull);
@@ -174,6 +189,7 @@ void main() {
             .map((c) => (c.syncMessage as SyncAiConfigDelete).id)
             .toList();
         expect(ids, ['cfg-1', 'cfg-2', 'cfg-3']);
+        expect(preparedRawChildren, rawChildren);
       },
     );
 
@@ -193,6 +209,11 @@ void main() {
           ],
           jsonPath: '/outbox_bundles/abc-123.json',
         );
+        final rawChild = {
+          'runtimeType': 'aiConfigDelete',
+          'id': 'from-disk',
+        };
+        Map<String, dynamic>? preparedRawChild;
 
         final result = await unpacker.prepare(
           event: event,
@@ -200,9 +221,12 @@ void main() {
           resolveSidecar: ({required jsonPath, attachmentEventId}) async {
             expect(jsonPath, '/outbox_bundles/abc-123.json');
             expect(attachmentEventId, 'bundle-file-event');
-            return fullBundle;
+            return _resolved(fullBundle, rawChildren: [rawChild]);
           },
-          prepareChild: (e, m) async => _preparedFor(e, m),
+          prepareChild: (e, m, raw) async {
+            preparedRawChild = raw;
+            return _preparedFor(e, m);
+          },
         );
 
         expect(result, isNotNull);
@@ -211,6 +235,7 @@ void main() {
           (result.children.single.syncMessage as SyncAiConfigDelete).id,
           'from-disk',
         );
+        expect(preparedRawChild, rawChild);
       },
     );
 
@@ -229,7 +254,7 @@ void main() {
           msg: stripped,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               null,
-          prepareChild: (e, m) async {
+          prepareChild: (e, m, _) async {
             fail('prepareChild must not run when sidecar resolution fails');
           },
         );
@@ -254,8 +279,8 @@ void main() {
             event: event,
             msg: bundle,
             resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
-                bundle,
-            prepareChild: (_, _) async =>
+                _resolved(bundle),
+            prepareChild: (_, _, _) async =>
                 throw const FileSystemException('descriptor not yet available'),
           ),
           throwsA(isA<FileSystemException>()),
@@ -288,8 +313,8 @@ void main() {
           event: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
-              bundle,
-          prepareChild: (e, m) async {
+              _resolved(bundle),
+          prepareChild: (e, m, _) async {
             final id = (m as SyncAiConfigDelete).id;
             if (id == 'boom') throw StateError('child blew up');
             return _preparedFor(e, m);
@@ -329,8 +354,8 @@ void main() {
           event: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
-              bundle,
-          prepareChild: (e, m) async => _preparedFor(e, m),
+              _resolved(bundle),
+          prepareChild: (e, m, _) async => _preparedFor(e, m),
         );
 
         expect(result, isNotNull);
@@ -362,8 +387,8 @@ void main() {
           event: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
-              bundle,
-          prepareChild: (e, m) async {
+              _resolved(bundle),
+          prepareChild: (e, m, _) async {
             final id = (m as SyncAiConfigDelete).id;
             final generated = scenario.children.singleWhere(
               (child) => child.id == id,

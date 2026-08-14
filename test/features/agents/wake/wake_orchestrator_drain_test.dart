@@ -79,6 +79,130 @@ void main() {
       );
 
       test(
+        'automatic project-agent wake is dropped when updates are off',
+        () async {
+          when(() => mockRepository.getEntity('project-agent-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-agent-1',
+              agentId: 'project-agent-1',
+              kind: 'project_agent',
+              config: const AgentConfig(automaticUpdatesEnabled: false),
+            ),
+          );
+          var executions = 0;
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'project-automatic-off',
+              agentId: 'project-agent-1',
+              reason: WakeReason.scheduled.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 0);
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+        },
+      );
+
+      test(
+        'user project-agent wake remains allowed when updates are off',
+        () async {
+          when(() => mockRepository.getEntity('project-agent-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-agent-1',
+              agentId: 'project-agent-1',
+              kind: 'project_agent',
+              config: const AgentConfig(automaticUpdatesEnabled: false),
+            ),
+          );
+          var executions = 0;
+          orchestrator.wakeExecutor = (_, _, _, _) async {
+            executions++;
+            return null;
+          };
+          queue.enqueue(
+            WakeJob(
+              runKey: 'project-manual-off',
+              agentId: 'project-agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.user,
+              triggerTokens: const {},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 1);
+          verify(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).called(1);
+        },
+      );
+
+      test(
+        'automatic project wake is dropped when policy changes before inference',
+        () async {
+          var automaticUpdatesEnabled = true;
+          when(() => mockRepository.getEntity('project-agent-1')).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: 'project-agent-1',
+              agentId: 'project-agent-1',
+              kind: 'project_agent',
+              config: AgentConfig(
+                automaticUpdatesEnabled: automaticUpdatesEnabled,
+              ),
+            ),
+          );
+          var executions = 0;
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            onWakeStart: (agentId, runKey, threadId) async {
+              automaticUpdatesEnabled = false;
+            },
+            wakeExecutor: (_, _, _, _) async {
+              executions++;
+              return null;
+            },
+          );
+          queue.enqueue(
+            WakeJob(
+              runKey: 'project-policy-race',
+              agentId: 'project-agent-1',
+              reason: WakeReason.scheduled.name,
+              initiator: WakeInitiator.automation,
+              triggerTokens: const {},
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
+
+          await orchestrator.processNext();
+
+          expect(executions, 0);
+          verify(
+            () => mockRepository.updateWakeRunStatus(
+              'project-policy-race',
+              WakeRunStatus.aborted.name,
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'repository policy lookup failure does not abort the wake',
         () async {
           when(

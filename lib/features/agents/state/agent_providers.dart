@@ -283,6 +283,8 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),
+    syncAgentStateUpdater: (agentId, update) =>
+        ref.read(agentSyncServiceProvider).updateAgentState(agentId, update),
     onWakeStart: onWakeStart,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
@@ -384,6 +386,12 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
 
 /// Tracks local project/task changes and marks project reports stale while the
 /// project subscription chooses the appropriate short or morning wake delay.
+final projectActivityCancellationCoordinatorProvider =
+    Provider<ProjectActivityCancellationCoordinator>(
+      (_) => ProjectActivityCancellationCoordinator(),
+      name: 'projectActivityCancellationCoordinatorProvider',
+    );
+
 final projectActivityMonitorProvider = Provider<ProjectActivityMonitor>(
   projectActivityMonitor,
   name: 'projectActivityMonitorProvider',
@@ -395,6 +403,9 @@ ProjectActivityMonitor projectActivityMonitor(Ref ref) {
     projectRepository: ref.watch(projectRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    cancellationCoordinator: ref.watch(
+      projectActivityCancellationCoordinatorProvider,
+    ),
   );
   ref.onDispose(() {
     unawaited(monitor.stop());

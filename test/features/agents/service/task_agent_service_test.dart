@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -17,6 +18,14 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+class _PostCommitFailingAgentSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed after commit');
+  }
+}
 
 enum _GeneratedTaskTemplateSlot {
   explicitValid,
@@ -244,6 +253,7 @@ void main() {
     // Stub syncService write methods
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(
       () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
     ).thenReturn(null);
@@ -270,6 +280,18 @@ void main() {
     when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => mockRepository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockRepository.getLinksFrom(
+        any(),
+        type: AgentLinkTypes.agentProject,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockAgentService.getAgent('agent-1'),
+    ).thenAnswer((_) async => makeIdentity());
 
     mockUpdateNotifications = MockUpdateNotifications();
     when(() => mockUpdateNotifications.notifyUiOnly(any())).thenReturn(null);
@@ -1345,6 +1367,136 @@ void main() {
     });
 
     group('restoreSubscriptionsForAgent', () {
+      test(
+        'routes a resumed project agent through project restoration',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 3}),
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: 'agent-1',
+            toId: 'project-1',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: true,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+
+          await withClock(Clock.fixed(now), () {
+            return service.restoreSubscriptionsForAgent('agent-1');
+          });
+
+          final subscription =
+              verify(
+                    () => mockOrchestrator.addSubscription(captureAny()),
+                  ).captured.single
+                  as AgentSubscription;
+          expect(subscription.id, 'agent-1_project_direct_project-1');
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(persisted.updatedAt, pendingState.updatedAt);
+          expect(persisted.vectorClock, pendingState.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'keeps a resumed opted-out project agent local and non-waking',
+        () async {
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 4}),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: false,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.restoreSubscriptionsForAgent('agent-1');
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, isNotNull);
+          expect(persisted.updatedAt, state.updatedAt);
+          expect(persisted.vectorClock, state.vectorClock);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
       test('registers subscriptions for a single agent', () async {
         final link1 = AgentLink.agentTask(
           id: 'link-1',
@@ -2142,6 +2294,153 @@ void main() {
         );
       });
 
+      test(
+        'disabling project inference clears its local fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          const disabledSetup = AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          );
+          final disabledIdentity = identity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            config: identity.config.copyWith(
+              profileId: null,
+              inferenceSetup: disabledSetup,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1 ? identity : disabledIdentity;
+          });
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAgentInferenceSetup(
+              agentId: 'agent-1',
+              setup: disabledSetup,
+            );
+          });
+
+          final clearedState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(clearedState.scheduledWakeAt, isNull);
+          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verify(
+            () => mockOrchestrator.removeSubscriptions('agent-1'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'post-commit inference disable failure still clears project runtime',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          const disabledSetup = AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          );
+          final disabledIdentity = identity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            config: identity.config.copyWith(
+              profileId: null,
+              inferenceSetup: disabledSetup,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => identityReads++ == 0 ? identity : disabledIdentity,
+          );
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final failingSync = _PostCommitFailingAgentSyncService();
+          when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
+          final failingService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSync,
+            updateNotifications: mockUpdateNotifications,
+          );
+
+          await expectLater(
+            withClock(Clock.fixed(now), () {
+              return failingService.updateAgentInferenceSetup(
+                agentId: 'agent-1',
+                setup: disabledSetup,
+              );
+            }),
+            throwsA(isA<StateError>()),
+          );
+
+          final clearedState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(clearedState.scheduledWakeAt, isNull);
+          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verify(
+            () => mockOrchestrator.removeSubscriptions('agent-1'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
       test('direct model override preserves the base profile origin', () async {
         final identity = makeIdentity(
           config: const AgentConfig(
@@ -2472,6 +2771,566 @@ void main() {
           () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
         );
       });
+
+      test(
+        'turning on a dormant project agent does not arm a fallback',
+        () async {
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              lifecycle: AgentLifecycle.dormant,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: false,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          final persistedStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(persistedStates, isEmpty);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          );
+        },
+      );
+
+      test(
+        'turning on a project agent arms pending activity for next 06:00',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 7}),
+          );
+          final initialIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? initialIdentity
+                : initialIdentity.copyWith(
+                    config: initialIdentity.config.copyWith(
+                      automaticUpdatesEnabled: true,
+                    ),
+                    updatedAt: now,
+                  );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              AgentLink.agentProject(
+                id: 'project-link-1',
+                fromId: 'agent-1',
+                toId: 'project-1',
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              ),
+            ],
+          );
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: true,
+            );
+          });
+
+          final syncedEntities = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(syncedEntities.whereType<AgentStateEntity>(), isEmpty);
+          final writtenStates = verify(
+            () => mockRepository.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(
+            writtenStates.single.scheduledWakeAt,
+            DateTime(2026, 8, 15, 6),
+          );
+          expect(
+            writtenStates.single.slots.pendingProjectActivityAt,
+            DateTime(2026, 8, 14, 11),
+          );
+          expect(writtenStates.single.updatedAt, state.updatedAt);
+          expect(writtenStates.single.vectorClock, state.vectorClock);
+          final subscription =
+              verify(
+                    () => mockOrchestrator.addSubscription(captureAny()),
+                  ).captured.single
+                  as AgentSubscription;
+          expect(subscription.id, 'agent-1_project_direct_project-1');
+          expect(subscription.agentId, 'agent-1');
+          expect(
+            subscription.matchEntityIds,
+            {projectEntityUpdateNotification('project-1')},
+          );
+          verify(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.automation,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'project fallback arming rechecks a concurrent opt-out',
+        () async {
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          final initialIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? initialIdentity
+                : initialIdentity.copyWith(
+                    config: initialIdentity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: DateTime(2026, 8, 14, 12, 1),
+                  );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          expect(identityReads, 2);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          );
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'project fallback clearing rechecks a concurrent opt-in',
+        () async {
+          final currentIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => currentIdentity);
+          final scheduledAt = DateTime(2026, 8, 15, 6);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            scheduledWakeAt: scheduledAt,
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: false,
+          );
+
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          );
+        },
+      );
+
+      test(
+        'turning off marks a project report stale without a freshness '
+        'watermark and clears only its automatic fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 8}),
+          );
+          final existingReport =
+              AgentDomainEntity.agentReport(
+                    id: 'project-report-1',
+                    agentId: 'agent-1',
+                    scope: AgentReportScopes.current,
+                    createdAt: DateTime(2026, 8, 14, 10, 30),
+                    vectorClock: null,
+                    content: 'Existing project report',
+                    confidence: 0.9,
+                  )
+                  as AgentReportEntity;
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? identity
+                : identity.copyWith(
+                    config: identity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: now,
+                  );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLatestReport(
+              'agent-1',
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async => existingReport);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: false,
+            );
+          });
+
+          final syncedStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(syncedStates.single.reportStaleAt, now);
+          expect(syncedStates.single.isReportStale, isTrue);
+          final writtenStates = verify(
+            () => mockRepository.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(writtenStates.single.scheduledWakeAt, isNull);
+          expect(
+            writtenStates.single.slots.pendingProjectActivityAt,
+            pendingAt,
+          );
+          expect(writtenStates.single.updatedAt, state.updatedAt);
+          expect(writtenStates.single.vectorClock, state.vectorClock);
+        },
+      );
+
+      test(
+        'turning off clears a markerless project creation fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 9}),
+          );
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? identity
+                : identity.copyWith(
+                    config: identity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: now,
+                  );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: false,
+            );
+          });
+
+          final syncedStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(syncedStates, isEmpty);
+          final writtenState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(writtenState.scheduledWakeAt, isNull);
+          expect(writtenState.slots.pendingProjectActivityAt, isNull);
+          expect(writtenState.updatedAt, state.updatedAt);
+          expect(writtenState.vectorClock, state.vectorClock);
+        },
+      );
+
+      test(
+        'post-commit enable failure still restores project runtime',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          final disabledIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          final enabledIdentity = disabledIdentity.copyWith(
+            config: disabledIdentity.config.copyWith(
+              automaticUpdatesEnabled: true,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async =>
+                identityReads++ == 0 ? disabledIdentity : enabledIdentity,
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              AgentLink.agentProject(
+                id: 'project-link-1',
+                fromId: 'agent-1',
+                toId: 'project-1',
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              ),
+            ],
+          );
+          final failingSync = _PostCommitFailingAgentSyncService();
+          when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
+          final failingService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSync,
+            updateNotifications: mockUpdateNotifications,
+          );
+
+          await expectLater(
+            withClock(Clock.fixed(now), () {
+              return failingService.updateAutomaticUpdates(
+                agentId: 'agent-1',
+                enabled: true,
+              );
+            }),
+            throwsA(isA<StateError>()),
+          );
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
+        },
+      );
+
+      test(
+        'post-commit disable failure still clears project runtime',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          final enabledIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          final disabledIdentity = enabledIdentity.copyWith(
+            config: enabledIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async =>
+                identityReads++ == 0 ? enabledIdentity : disabledIdentity,
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          final failingSync = _PostCommitFailingAgentSyncService();
+          when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
+          final failingService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSync,
+            updateNotifications: mockUpdateNotifications,
+          );
+
+          await expectLater(
+            withClock(Clock.fixed(now), () {
+              return failingService.updateAutomaticUpdates(
+                agentId: 'agent-1',
+                enabled: false,
+              );
+            }),
+            throwsA(isA<StateError>()),
+          );
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, pendingAt);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
 
       test('turning off never wakes', () async {
         stubEnablePath(state: makeState());

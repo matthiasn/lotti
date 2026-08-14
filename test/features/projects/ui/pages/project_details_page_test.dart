@@ -17,6 +17,7 @@ import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
@@ -467,7 +468,7 @@ void main() {
 
       testWidgets(
         'wires onRefreshReport to projectAgentService.triggerReanalysis and '
-        'onCancelScheduledReportWake to cancelScheduledWake when an agent '
+        'handles cancelScheduledWake persistence failures when an agent '
         'identity is present',
         (tester) async {
           final agentService = MockProjectAgentService();
@@ -476,7 +477,7 @@ void main() {
           ).thenReturn(null);
           when(
             () => agentService.cancelScheduledWake(any()),
-          ).thenReturn(null);
+          ).thenAnswer((_) => Future<void>.error(StateError('write failed')));
 
           final identity = makeTestIdentity(agentId: 'agent-project-1');
 
@@ -540,9 +541,13 @@ void main() {
           verifyNever(() => agentService.cancelScheduledWake(any()));
 
           content.onCancelScheduledReportWake!();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           verify(
             () => agentService.cancelScheduledWake('agent-project-1'),
           ).called(1);
+          final context = tester.element(find.byType(ProjectDetailsPage));
+          expect(find.text(context.messages.commonError), findsOneWidget);
         },
       );
 

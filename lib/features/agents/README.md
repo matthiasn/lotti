@@ -26,8 +26,11 @@ applied until the user confirms it.
 - **Withdraws its own stale suggestions.** When a proposal no longer makes sense,
   the agent retracts it rather than leaving it in the list.
 - **Summarizes at other scopes too.** A project agent refreshes its digest after
-  relevant project or linked-task activity; an event agent writes a recap of a
-  trip or gathering from its photos and notes; the Daily OS planner plans a day.
+  relevant project or linked-task activity, with a one-shot persisted fallback
+  until that work succeeds. The fallback honors automation opt-out and is not
+  duplicated while equivalent work is queued or running; an event agent writes
+  a recap of a trip or gathering from its photos and notes; the Daily OS planner
+  plans a day.
 - **Learns from feedback.** Agents periodically hold a "one-on-one" — a
   conversation where the user's accumulated feedback is reviewed and the agent's
   own instructions are revised, with every change approved by the user first.

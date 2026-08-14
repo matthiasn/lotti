@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/ai/model/ai_runtime_settings.dart
     title: Concurrency bounds
     last_modified: 2026-07-15
+  - id: agent-sync
+    resource: ../../../lib/features/agents/sync/agent_sync_service.dart
+    title: Transactional agent-state updates
+    last_modified: 2026-08-14
   - id: adr-0002
     resource: ../../../docs/adr/0002-wake-scheduling-and-throttling-policy.md
     title: ADR 0002 — Wake scheduling and throttling policy
@@ -131,12 +135,50 @@ Project-agent subscriptions use that path, so linked-task churn waits for the
 scheduled project digest; task-agent subscriptions opt out, so child-entry and
 task-context updates refresh on the normal coalesced path.
 
-That deferred subscription job is the project agent's only normal clock-based
-wake. Project agents start with no `scheduledWakeAt`; local project activity
-creates `nextWakeAt` only while a queued job exists, direct project edits use
-the shorter coalescing deadline, and manual requests bypass throttling. The
-scheduled-wake manager only recognizes state-level project schedules as legacy:
-it clears dormant ones instead of rolling them to another day.
+Project agents never carry a recurring clock wake. Their subscription job uses
+`nextWakeAt` only while queued, while `ProjectActivityMonitor` arms a one-shot
+state-level `scheduledWakeAt` whenever local project-linked work becomes
+pending. Creation uses the same one-shot field as a restart fallback for its
+immediate in-memory job, and a failed project wake re-arms it for the next local
+06:00, advancing an already-overdue deadline instead of retrying every scan.
+The shared project-agent automation policy gates local monitoring, startup and
+sync-restored subscriptions, and workflow fallback creation. With explicit
+opt-out, observation subscriptions remain registered but their matches cannot
+queue or persist automatic wakes, and a manually requested wake cannot
+synthesize a new fallback afterward. Opt-out clears every existing project
+fallback, including markerless creation rows from older state. Direct project
+edits still use the shorter
+coalescing deadline when automation is allowed, while manual requests bypass
+throttling. A successful wake with no remaining creation or project activity
+clears `scheduledWakeAt`. The scheduled-wake manager separately clears legacy
+completed rows only after at least one successful wake and only when no pending
+activity remains; it preserves never-woken creation work and rows whose pending
+marker proves that work remains, and skips enqueue while equivalent work is
+already queued or running. Retirement re-reads the state at the write boundary
+and rechecks that its schedule is still due and dormant, so an activity marker,
+deferred deadline, or replacement manual schedule written during the scan is
+never erased. A successful wake retains a future fallback when
+newer activity landed during the run. Every failure after state
+resolution—including setup failures before inference—uses the same
+create-or-advance deadline policy. Explicit cancellation persists removal of
+`pendingProjectActivityAt`, `nextWakeAt`, and `scheduledWakeAt` atomically, then
+clears queued work, so an in-flight
+failure cannot re-arm cancelled work and a storage failure cannot leave the UI
+falsely showing a completed cancellation. A post-commit outbox failure still
+clears runtime work to honor the committed cancellation before surfacing the
+sync error; an ambiguous transaction failure first re-reads the row and leaves
+runtime work intact unless those fields are confirmed absent. Retry and success paths read the
+current identity policy inside that same persistence transaction, so toggling
+automation during a long wake cannot be undone by policy captured at wake
+start. The drain also re-reads policy immediately before executor launch, after
+runner acquisition, content gating, run persistence, and the pre-wake hook, so
+an automatic job already removed from the queue cannot race a late opt-out into
+paid inference.
+
+Persisted throttle set/clear operations re-read and write the state inside the
+same repository transaction as other partial state writers. This keeps the
+device-local `nextWakeAt` mutation from restoring a consumed project marker or
+erasing activity that was persisted by the project monitor concurrently.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the
@@ -181,7 +223,11 @@ Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its
 `WakeRunner` agent lock. Workflows and conversation managers are created per
 wake; agent sync transaction buffers are zone-local; Drift serialises database
-work on its connection.
+work on its connection. Independent partial state writers use
+`AgentSyncService.updateAgentState` or an equivalent transaction-scoped re-read
+and merge. In particular, report-stale watermarks cannot erase project activity
+markers, and project activity cannot erase a concurrently-written freshness
+watermark.
 
 The bounded limit also keeps provider, API and database pressure finite. A
 downstream provider rate-limit or connection failure continues through the
@@ -204,4 +250,19 @@ outcome remains the `wake_run_log` row.
 All three scheduling fields — `nextWakeAt`, `sleepUntil`, `scheduledWakeAt` —
 are device-local. Each device schedules its own wakes, so the sync apply path
 preserves the local row's scheduling rather than letting a peer's
-`AgentStateEntity` overwrite it (`_preserveLocalScheduling`).
+`AgentStateEntity` overwrite it (`_preserveLocalScheduling`). When a peer state
+consumes project activity, the local one-shot fallback is cleared rather than
+preserved; the receiving device also clears its throttle and removes queued
+automatic work for that batch while preserving explicit user wakes. On a
+project state's first arrival, the peer fallback is likewise
+discarded and rebuilt only when local policy and a pending marker require one,
+using the receiving device's clock. `activeProjectId` supplies the project-row
+signal when state arrives before identity. Startup and sync-arrival repairs that add or remove only that
+fallback write directly through the repository without changing `updatedAt` or
+the vector clock. This applies to both fallback repair and dormant-schedule
+retirement: local scheduling maintenance must never become a newer synced
+version of otherwise stale state. Settings opt-in/opt-out and resumed-agent
+restoration follow the same raw local transaction rule. Startup also removes
+markerless or pending fallbacks unconditionally when the project agent has
+explicitly opted out; the completed-wake guard applies only to legacy cleanup
+for agents whose automation remains allowed.

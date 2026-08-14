@@ -284,6 +284,13 @@ extension WakeDrainEngine on WakeOrchestrator {
     if (entity is! AgentIdentityEntity) {
       return true;
     }
+    if (entity.kind == AgentKinds.projectAgent) {
+      return projectAgentWakeAllowed(
+        config: entity.config,
+        lifecycle: entity.lifecycle,
+        initiator: job.initiator,
+      );
+    }
     if (entity.kind != AgentKinds.taskAgent) {
       return entity.lifecycle == AgentLifecycle.active;
     }
@@ -369,6 +376,24 @@ extension WakeDrainEngine on WakeOrchestrator {
             stackTrace: s,
           );
         }
+      }
+
+      // Policy may change while this job awaits runner acquisition, content
+      // gating, run persistence, or the pre-wake hook. Re-read immediately
+      // before executor setup so disabling automation cannot launch paid work
+      // from a job that has already left the queue.
+      if (!await _wakeAllowedByCurrentPolicy(job)) {
+        _log(
+          'pre-execution policy dropped automatic/disabled wake for '
+          '${DomainLogger.sanitizeId(job.agentId)}',
+          subDomain: 'drain',
+        );
+        await _safeUpdateStatus(
+          job.runKey,
+          WakeRunStatus.aborted.name,
+        );
+        _emitRunCompletion(job, WakeRunStatus.aborted);
+        return;
       }
 
       final startTime = clock.now();
