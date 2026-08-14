@@ -165,6 +165,66 @@ void main() {
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
+    testWidgets('a report whose body is empty still shows its summary', (
+      tester,
+    ) async {
+      // The goal pipeline splits the tiers: the summary lives in `tldr` and
+      // `content` holds the sections alone, which can be empty. Gating the
+      // block on `content` alone rendered nothing at all for such a report.
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-summary-only',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: '',
+          tldr: 'Blood pressure is on target today.',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Blood pressure is on target today.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the collapsed preview prefers the explicit summary over the '
+        'first body section', (tester) async {
+      final reports = <AgentDomainEntity>[
+        makeTestReport(
+          id: 'report-tiered',
+          createdAt: DateTime(2024, 3, 15, 10),
+          content: 'Logging is complete today.\n\nThe rolling average lags.',
+          tldr: 'On target today, still behind for the week.',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        buildReportHistory(reportsValue: AsyncValue.data(reports)),
+      );
+      await tester.pumpAndSettle();
+
+      // Index 0 starts expanded: summary above the body it introduces.
+      expect(
+        find.textContaining('On target today, still behind for the week.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('The rolling average lags.'), findsOneWidget);
+
+      // Collapsed, only the summary — never the first body section, which is
+      // what deriving the preview from `content` produced.
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('On target today, still behind for the week.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('The rolling average lags.'), findsNothing);
+    });
+
     testWidgets('collapsed report shows only TLDR section', (tester) async {
       final reports = <AgentDomainEntity>[
         makeTestReport(

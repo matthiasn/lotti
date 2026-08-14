@@ -132,6 +132,11 @@ void main() {
               // running a newer one.
               'rating': 'thriving',
               'note': 'Felt strong today',
+              'dimensionRatings': {
+                'habit-gym': 'met',
+                'health-weight': 'thriving',
+                'health-steps': 7,
+              },
               'provenance': 'ratedByUser',
             },
           ),
@@ -158,6 +163,12 @@ void main() {
       expect(records, hasLength(1));
       expect(records.single.rating, GoalAssessmentRating.mixed);
       expect(records.single.note, 'Felt strong today');
+      // Per-dimension verdicts degrade the same way, and a non-string value
+      // is dropped as corruption rather than guessed at.
+      expect(records.single.dimensionRatings, {
+        'habit-gym': GoalAssessmentRating.met,
+        'health-weight': GoalAssessmentRating.mixed,
+      });
     },
   );
 

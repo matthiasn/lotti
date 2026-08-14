@@ -227,6 +227,7 @@ void main() {
           days: week,
           cellSize: ControlSizes.iconChipCompact,
           lastDay: today,
+          onDaySelected: (_) {},
           ratingsByDay: {
             today.subtract(const Duration(days: 3)): GoalAssessmentRating.met,
             today.subtract(const Duration(days: 2)):
@@ -268,6 +269,17 @@ void main() {
     expect(
       fillAt(6),
       goalAssessmentRatingFill(tokens, GoalAssessmentRating.missed),
+    );
+
+    // The verdict is what a screen reader hears too, not just what the eye
+    // sees — the colour is the only visual difference between these cells.
+    expect(
+      find.bySemanticsLabel(
+        '${DateFormat.MMMEd().format(
+          today.subtract(const Duration(days: 2)),
+        )}: Improving',
+      ),
+      findsOneWidget,
     );
 
     // All four are distinguishable, and none of them is the grey of a day

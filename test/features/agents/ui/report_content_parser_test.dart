@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:glados/glados.dart'
     show
         Any,
@@ -415,6 +416,56 @@ void main() {
         expect(result.tldr, contains('Heading version.'));
         expect(result.additional, contains('Achieved'));
       });
+    });
+  });
+
+  group('explicit report tiers', () {
+    AgentReportEntity report({String? tldr, String content = ''}) =>
+        AgentDomainEntity.agentReport(
+              id: 'report-1',
+              agentId: 'agent-1',
+              scope: 'current',
+              createdAt: DateTime(2026, 8, 14),
+              vectorClock: null,
+              content: content,
+              tldr: tldr,
+            )
+            as AgentReportEntity;
+
+    test('a report with no tldr has none to offer', () {
+      // Older reports keep the parsed-from-markdown behaviour; nothing may
+      // be invented for them.
+      expect(explicitReportTldr(report(content: '## Body')), isNull);
+      expect(explicitReportTldr(report(tldr: '   ')), isNull);
+    });
+
+    test('an explicit tldr is returned trimmed', () {
+      expect(explicitReportTldr(report(tldr: '  On track.  ')), 'On track.');
+    });
+
+    test('the body renders the summary above the sections it introduces', () {
+      expect(
+        reportBodyWithTldr(
+          report(tldr: 'On track.', content: '## Today\nFine'),
+        ),
+        'On track.\n\n## Today\nFine',
+      );
+    });
+
+    test('a summary with nothing behind it stands alone', () {
+      // The goal pipeline can produce a report whose sections are empty. The
+      // summary must still render rather than the view showing nothing.
+      expect(reportBodyWithTldr(report(tldr: 'On track.')), 'On track.');
+      expect(
+        reportBodyWithTldr(report(tldr: 'On track.', content: 'On track.')),
+        'On track.',
+        reason: 'a body identical to the summary must not be printed twice',
+      );
+    });
+
+    test('a report with no tldr renders its content untouched', () {
+      const markdown = '## 📋 TLDR\nAll good.';
+      expect(reportBodyWithTldr(report(content: markdown)), markdown);
     });
   });
 }
