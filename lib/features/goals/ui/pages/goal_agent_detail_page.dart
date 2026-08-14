@@ -811,6 +811,21 @@ class _GoalReportCardState extends State<_GoalReportCard>
               ),
             ),
           ),
+          // The actions sit with the summary, not behind Show more. Inside
+          // the expanded body they were reachable only by a tap most readers
+          // never make — the one part of a standing report that asks
+          // something of you, gated behind the part that only informs.
+          if (_actionsOf(sections) case final actions?) ...[
+            SizedBox(height: tokens.spacing.step3),
+            SelectionArea(
+              child: AgentMarkdownView(
+                [for (final action in actions) '- $action'].join('\n'),
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+            ),
+          ],
           if (expandable) ...[
             AnimatedBuilder(
               animation: _revealCurve,
@@ -1154,6 +1169,22 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   }
 }
 
+/// The report's current actions, or null when it has none.
+///
+/// Read by the card directly so they can sit with the summary rather than
+/// inside the expandable body: an action reachable only behind "Show more"
+/// is an action most readers never see.
+List<String>? _actionsOf(Map<String, Object?>? sections) {
+  if (sections == null) return null;
+  final actions = <String>[
+    if (sections[GoalReportSectionKeys.nextActions] case final List<Object?> a)
+      for (final item in a)
+        if (item case final String text when text.trim().isNotEmpty)
+          text.trim(),
+  ];
+  return actions.isEmpty ? null : actions;
+}
+
 /// The structured sections a report carries, or null when it has none —
 /// a free-form report, or one written before sections were persisted.
 Map<String, Object?>? _sectionsOf(AgentReportEntity? report) {
@@ -1216,17 +1247,6 @@ class _GoalReportSections extends StatelessWidget {
         if (sections[key] case final String body when body.trim().isNotEmpty)
           (heading, body.trim()),
     ];
-    // Pattern-matched, not cast. Provenance arrives from persisted or synced
-    // JSON, so a report written by another client version could carry a
-    // String or a Map here and take the card down with a TypeError the first
-    // time it was expanded. The section bodies above already guard this way.
-    final actions = <String>[
-      if (sections[GoalReportSectionKeys.nextActions]
-          case final List<Object?> raw)
-        for (final action in raw)
-          if (action case final String text when text.trim().isNotEmpty)
-            text.trim(),
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1246,30 +1266,6 @@ class _GoalReportSections extends StatelessWidget {
           // which made the summary read as a duplicated first paragraph.
           AgentMarkdownView(
             body,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-        ],
-        if (actions.isNotEmpty) ...[
-          SizedBox(height: tokens.spacing.step4),
-          Text(
-            messages.goalReportSectionNext,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          // A markdown list, not a hand-built Row per action. The bullet
-          // then sits on the text's own baseline — a drawn dot beside an
-          // `AgentMarkdownView` hung above the line, because the markdown
-          // view carries its own leading that the sibling did not know about.
-          //
-          // Run together as prose, the actions were the part of the report
-          // most likely to be skimmed past, which is the opposite of what an
-          // action is for.
-          AgentMarkdownView(
-            [for (final action in actions) '- $action'].join('\n'),
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),

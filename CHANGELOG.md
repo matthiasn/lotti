@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggests nothing at all.
 
 ### Changed
+- **The seven-day rows line up.** The whole-goal week, the habit squares and
+  the step bars are the same week drawn one card apart; they now share one
+  column grid, one cell shape and one legend shape, so a day sits in the same
+  place all the way down the page.
+- **The reflection sheet is spaced deliberately.** One gap scale instead of
+  five arbitrary ones, the measured evidence fenced in its own card, and the
+  per-dimension row no longer floating between the note and the button.
 - **Day verdicts show on the Goal Agents list too.** A day you filed as missed
   used to sit there in the grey of a day nobody looked at, so one goal read
   two different ways depending which screen you were on.
@@ -47,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
 
 ### Fixed
+- **A reading inside its target no longer shows as missed.** The day sheet
+  printed "122" against a 125 ceiling and crossed it out, because the mark
+  came from the rolling average rather than the reading beside it — directly
+  contradicting the report one card above.
 - **The card and the report now quote the same number.** The dimension card
   recomputed its own weekly average over a different set of days than the
   agent's, so the headline figure and the report beside it could disagree

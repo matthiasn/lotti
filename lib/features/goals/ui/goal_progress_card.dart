@@ -128,50 +128,42 @@ class GoalCompactWindowStrip extends StatelessWidget {
       );
     }
 
-    // Read-only, the strip is a figure and hugs its content. Tappable, it
-    // spans its parent instead: seven cells each demanding the 48px touch
-    // floor would overflow a phone card, so the cells share the measure and
-    // every one of them still clears the floor.
-    final row = Row(
-      mainAxisSize: onDaySelected == null ? MainAxisSize.min : MainAxisSize.max,
-      children: [
-        for (var index = 0; index < visible.length; index++) ...[
-          if (index > 0) SizedBox(width: tokens.spacing.step1),
-          if (onDaySelected == null)
-            cellAt(index)
-          else
-            Expanded(child: cellAt(index)),
-        ],
-      ],
-    );
-
-    final locale2 = Localizations.localeOf(context);
-    final weekday = DateFormat.E(locale2.toLanguageTag());
-    final labelled = onDaySelected == null || lastDay == null
-        ? row
-        : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // The habit strip one card below names its days; this one used
-              // to be seven bare squares that each opened a specific date's
-              // sheet. You could not tell which day you were about to open.
-              Row(
-                children: [
-                  for (var index = 0; index < visible.length; index++)
-                    Expanded(
-                      child: Text(
-                        weekday.format(_dateAt(index, visible.length)),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ),
-                ],
+    // On the page's shared seven-column track when it carries dates, so the
+    // whole-goal week lines up column-for-column with the habit squares and
+    // the metric bars below it. Three grids for one week meant a reader
+    // could not follow a Wednesday down the page.
+    //
+    // The pitch is narrower than the 48px touch floor — seven of those do not
+    // fit a phone card — so, exactly as the habit cells already do, the slot
+    // takes the full pitch horizontally and clears the floor vertically.
+    final trackDays = lastDay == null
+        ? null
+        : [
+            for (var index = 0; index < visible.length; index++)
+              GoalProgressDay(
+                day: _dateAt(index, visible.length),
+                value: 0,
               ),
-              row,
+          ];
+    final row = trackDays == null
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < visible.length; index++) ...[
+                if (index > 0) SizedBox(width: tokens.spacing.step1),
+                cellAt(index),
+              ],
+            ],
+          )
+        : _DayTrack(
+            height: onDaySelected == null
+                ? cellSize + tokens.spacing.step2
+                : TapTargets.minimum,
+            itemExtent: cellSize,
+            pitch: _dayTrackPitch(context, trackDays),
+            children: [
+              for (var index = 0; index < visible.length; index++)
+                cellAt(index),
             ],
           );
 
@@ -184,12 +176,44 @@ class GoalCompactWindowStrip extends StatelessWidget {
             for (var index = 0; index < visible.length; index++)
               if (_ratingAt(index, visible.length) case final rating?)
                 context.messages.goalProgressHabitDaySemantics(
-                  DateFormat.MMMEd(
-                    Localizations.localeOf(context).toLanguageTag(),
-                  ).format(_dateAt(index, visible.length)),
+                  DateFormat.MMMEd(locale).format(
+                    _dateAt(index, visible.length),
+                  ),
                   goalAssessmentRatingLabel(context, rating),
                 ),
           ].join(', ');
+
+    final labelled = trackDays == null
+        ? row
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Same track as the cells, so a label always sits over its own
+              // column. This strip used to be seven bare squares that each
+              // opened a specific date's sheet, with no way to tell which.
+              _DayTrack(
+                height: math.max(
+                  IconSizes.s,
+                  _weekdayLabelMetrics(context, trackDays).height,
+                ),
+                itemExtent: cellSize,
+                pitch: _dayTrackPitch(context, trackDays),
+                children: [
+                  for (final day in trackDays)
+                    Text(
+                      DateFormat.E(locale).format(day.day),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                ],
+              ),
+              row,
+            ],
+          );
 
     return Semantics(
       label: placeholder
@@ -212,25 +236,13 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ].join('. '),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
+      // The track sizes itself to `pitch * days`, so no cap is needed: it can
+      // neither scatter across a desktop card nor overflow a phone one.
       child: onDaySelected == null
-          ? ExcludeSemantics(child: row)
-          // Capped, and left-aligned: spread across a desktop card the seven
-          // cells drifted cell-widths apart and read as scattered confetti
-          // rather than a week.
+          ? ExcludeSemantics(child: labelled)
           : Align(
               alignment: AlignmentDirectional.centerStart,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  // The gaps count. Capped at seven touch targets alone, the
-                  // six `step1` gaps came out of the cells and each one
-                  // landed at ~46px — under the floor the cap existed to
-                  // guarantee.
-                  maxWidth:
-                      TapTargets.minimum * visible.length +
-                      tokens.spacing.step1 * (visible.length - 1),
-                ),
-                child: labelled,
-              ),
+              child: labelled,
             ),
     );
   }
@@ -251,7 +263,7 @@ class _PlaceholderDayCell extends StatelessWidget {
       padding: EdgeInsets.all(tokens.spacing.step1),
       child: DsDashedBorder(
         color: tokens.colors.text.lowEmphasis,
-        radius: tokens.radii.xs,
+        radius: goalDayCellRadius(tokens),
         child: SizedBox(width: size, height: size),
       ),
     );
@@ -297,7 +309,7 @@ class _CompactDayCell extends StatelessWidget {
         color: rating == null
             ? goalDayStateFill(tokens, state)
             : goalAssessmentRatingFill(tokens, rating),
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
       ),
       child: showsPartialDot
           ? Center(
@@ -336,7 +348,7 @@ class _CompactDayCell extends StatelessWidget {
     final decorated = today
         ? DsDashedBorder(
             color: tokens.colors.text.lowEmphasis,
-            radius: tokens.radii.xs,
+            radius: goalDayCellRadius(tokens),
             child: padded,
           )
         : padded;
@@ -421,6 +433,13 @@ num _roundGoalAggregate(num value) {
       ? value.roundToDouble()
       : (value * 10).roundToDouble() / 10;
 }
+
+/// The corner radius every day cell on this page shares.
+///
+/// The whole-goal strip drew its squares at `radii.xs` while the habit
+/// squares — the identical footprint, one card below — drew theirs at
+/// `radii.s`. Same instrument, same week, two shapes.
+double goalDayCellRadius(DsTokens tokens) => tokens.radii.s;
 
 /// Shared fill for a day cell: the full-strength success hue when the goal
 /// requirement held as of that day, a lighter wash of the same hue for a
@@ -1518,6 +1537,16 @@ String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
   return (width: width, height: height);
 }
 
+/// The column pitch every seven-day row on this page shares.
+///
+/// One pitch, one origin, one width: the whole-goal verdict strip, the habit
+/// squares and the metric bars all draw the SAME week, and drawn on three
+/// different grids the same Wednesday landed in three different places on one
+/// scroll. A reader cannot follow a day across the page unless the columns
+/// line up.
+///
+/// Wide enough for the weekday label at raised text scales, which is what
+/// makes the axis readable rather than merely aligned.
 double _dayTrackPitch(BuildContext context, List<GoalProgressDay> days) {
   final tokens = context.designTokens;
   final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
@@ -2404,7 +2433,9 @@ class _CategoryBandSeries extends StatelessWidget {
                           color: _startsInBand(session.dateFrom, range)
                               ? tokens.colors.alert.warning.defaultColor
                               : tokens.colors.interactive.enabled,
-                          borderRadius: BorderRadius.circular(tokens.radii.xs),
+                          borderRadius: BorderRadius.circular(
+                            goalDayCellRadius(tokens),
+                          ),
                         ),
                       ),
                     ),
@@ -2547,9 +2578,10 @@ class _ProgressLegend extends StatelessWidget {
           border: outlined
               ? Border.all(color: color, width: BorderWidths.emphasis)
               : null,
-          borderRadius: BorderRadius.circular(tokens.radii.xs),
+          borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
         ),
-        // The legend swatch carries the same non-color cue as the cells.
+        // The legend swatch carries the same shape and non-color cue as the
+        // cells it keys — at `radii.xs` it was a different shape from both.
         child: dotted
             ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step1))
             : null,
@@ -2557,7 +2589,7 @@ class _ProgressLegend extends StatelessWidget {
       if (dashed) {
         swatch = DsDashedBorder(
           color: color,
-          radius: tokens.radii.xs,
+          radius: goalDayCellRadius(tokens),
           child: swatch,
         );
       }
