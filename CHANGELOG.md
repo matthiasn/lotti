@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Fixed
+- **The goal agent's report opens short and expands.** The report card has
+  always had a short summary and a Show more toggle, but the goal agent never
+  filled them in separately, so every report arrived as one unbroken wall of
+  text with nothing to collapse. It now leads with a one- or two-sentence
+  summary and opens the full report on demand.
+- **No more internal ids or status codes in the report.** Lines like "Close
+  the gap on habit 71ca84b0" and "the overall status is insufficientData" are
+  gone: criteria are named by their title, and internal codes stay out of the
+  writing entirely. Links to tasks are untouched.
 - **Asking the goal agent to change its report now changes it.** Telling the
   agent in chat to make its report shorter, sectioned, or less repetitive used
   to produce only a chat reply while the standing report stayed as it was. The
@@ -13,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is respected.
 
 ### Changed
+- **Agent update controls read as one deliberate control on phones.** The
+  freshness word, Update now and the automatic-updates switch used to sit
+  crammed together on three left-aligned lines. Status and its refresh button
+  now span the row, a rule separates them from the switch, and the button
+  lines up with the switch above it. Task agents get the same treatment.
+- **Step bars are coloured by the goal they were measured against.** A day at
+  or above the target now wears the same green as a met day square instead of
+  the same muted slab as a day at half the goal. The bars are also slimmer, so
+  they no longer dominate the card.
 - **Goal agent pages get the whole screen on phones.** The bottom navigation
   bar slides away on a goal's detail page, its chat, and the create and edit
   wizards, the way it already does for project details. Those pages dock their
