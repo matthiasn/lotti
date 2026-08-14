@@ -183,8 +183,14 @@ class _GoalAgentRow extends ConsumerWidget {
     final progress = health?.spec == null
         ? null
         : ref.watch(goalAgentProgressViewProvider(identity.agentId)).value;
+    // A row whose one-liner already summarises the goal must not also claim
+    // there is not enough data to summarise it.
     final coarse = healthAsync.hasValue
-        ? coarseHealthOf(health?.trackStatus)
+        ? coarseHealthChip(
+            health?.trackStatus,
+            hasStandingAssessment:
+                health?.reportOneLiner?.trim().isNotEmpty ?? false,
+          )
         : null;
     final color = coarse == null
         ? tokens.colors.text.lowEmphasis

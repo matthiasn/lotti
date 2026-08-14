@@ -6054,12 +6054,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration de IA';
+    return '$duration a pensar';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Tempo total de processamento do agente em $calls chamadas ao modelo.';
+    return 'Tempo total que o modelo deste agente trabalhou, em $calls chamadas.';
   }
 
   @override
@@ -6117,7 +6117,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sugerido pelo seu agente de meta, aceito por você';
 
   @override
+  String get goalAssessmentSuggestionHint =>
+      'Sugerido a partir do que foi medido — muda-o se não concordares.';
+
+  @override
   String get goalAssessmentUserProvenance => 'Avaliado por você';
+
+  @override
+  String get goalAssessmentVerdictTitle => 'Como correu o dia?';
 
   @override
   String goalAttainmentLabel(int percent) {
@@ -6358,6 +6365,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDimensionHealthSource => 'Dados de saúde';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Ainda não, mas a última medição aproximou-se do objetivo.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Seu mensurável';
 
   @override
@@ -6376,7 +6387,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalDimensionNeedsAttentionNote =>
-      'Esta dimensão necessita de atenção; sua própria evidência permanece visível.';
+      'Abaixo do objetivo neste período.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'Precisa de atenção';
@@ -6903,6 +6914,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 semanas';
   }
+
+  @override
+  String get goalReportSectionChange => 'Última alteração';
+
+  @override
+  String get goalReportSectionCoverage => 'Cobertura de dados';
+
+  @override
+  String get goalReportSectionNext => 'O que se segue';
+
+  @override
+  String get goalReportSectionStanding => 'Como estás';
+
+  @override
+  String get goalReportSectionWindow => 'A janela mais ampla';
 
   @override
   String get goalStatusAchieved => 'Alcançado';

@@ -16,6 +16,12 @@ class _MockGoalAssessmentService extends Mock
     implements GoalAssessmentService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(GoalAssessmentRating.met);
+    registerFallbackValue(GoalAssessmentProvenance.ratedByUser);
+    registerFallbackValue(DateTime(2026));
+  });
+
   final day = DateTime(2026, 8, 11);
 
   testWidgets('a failed assessment remains editable and can be retried', (
@@ -413,5 +419,190 @@ void main() {
     for (final verdict in ['Met', 'Improving', 'Mixed', 'Missed']) {
       expect(find.text(verdict), findsWidgets, reason: verdict);
     }
+  });
+
+  testWidgets('a fresh reflection opens on what the evidence suggests', (
+    tester,
+  ) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    when(
+      () => service.record(
+        agentId: any(named: 'agentId'),
+        day: any(named: 'day'),
+        specVersionId: any(named: 'specVersionId'),
+        rating: any(named: 'rating'),
+        dimensionRatings: any(named: 'dimensionRatings'),
+        note: any(named: 'note'),
+        provenance: any(named: 'provenance'),
+      ),
+    ).thenAnswer((_) async => 'record-1');
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(
+              today: day,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'gym',
+                  name: 'Gym',
+                  targetCount: 7,
+                  days: [GoalProgressDay(day: day, value: 0)],
+                  successfulWeeks: 0,
+                ),
+              ],
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 10000,
+                  days: [GoalProgressDay(day: day, value: 3000)],
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Everything was logged and nothing met its target. Opening on Met — as
+    // it always did — contradicted the numbers printed directly above.
+    final toggle = tester.widget<DsSegmentedToggle<GoalAssessmentRating>>(
+      find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+    );
+    expect(toggle.selected, GoalAssessmentRating.missed);
+    expect(
+      find.text(
+        'Suggested from what was measured — change it if you disagree.',
+      ),
+      findsOneWidget,
+    );
+
+    // Saving an untouched suggestion is an acceptance, and is recorded as one
+    // — a provenance the history could already render but nothing produced.
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Record for Tuesday'),
+    );
+    await tester.pumpAndSettle();
+    verify(
+      () => service.record(
+        agentId: 'goal-1',
+        day: day,
+        specVersionId: 'goal-1:spec-v1',
+        rating: GoalAssessmentRating.missed,
+        dimensionRatings: any(named: 'dimensionRatings'),
+        // ignore: avoid_redundant_argument_values
+        note: null,
+        provenance: GoalAssessmentProvenance.suggestedAndAccepted,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('changing the verdict drops the suggestion hint and its '
+      'provenance', (tester) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(
+              today: day,
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 10000,
+                  days: [GoalProgressDay(day: day, value: 3000)],
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Suggested from what was measured — change it if you disagree.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Met').first);
+    await tester.pumpAndSettle();
+
+    // Once the user has moved off it, saying where the old value came from is
+    // noise — and the save is no longer an acceptance of anything.
+    expect(
+      find.text(
+        'Suggested from what was measured — change it if you disagree.',
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('choosing the suggested verdict deliberately is not an '
+      'acceptance', (tester) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(
+              today: day,
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 10000,
+                  days: [GoalProgressDay(day: day, value: 3000)],
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The same verdict the app suggested — but chosen, not left standing.
+    // Comparing values alone cannot tell those apart, and filing an active
+    // choice as "suggested and accepted" credits the agent for the user's
+    // own call.
+    tester
+        .widget<DsSegmentedToggle<GoalAssessmentRating>>(
+          find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+        )
+        .onChanged(GoalAssessmentRating.missed);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Suggested from what was measured — change it if you disagree.',
+      ),
+      findsNothing,
+    );
   });
 }

@@ -68,6 +68,21 @@ abstract final class GoalReportSectionKeys {
   ];
 }
 
+/// Provenance keys under which a goal report's structured sections are
+/// persisted on the report entity.
+///
+/// The sections are model-authored sentences in the USER'S language, so the
+/// composer cannot wrap them in headings without injecting English. Persisting
+/// them separately lets the card render localized headings at display time,
+/// which is also what makes the report re-render correctly when the app
+/// language changes.
+///
+/// Same pattern the project agent uses for its health verdict: structured
+/// facts ride on the report as provenance so the UI never reparses markdown.
+abstract final class GoalReportProvenanceKeys {
+  static const sections = 'goal_report_sections';
+}
+
 /// Keys that separate actions proven due in the evaluated period from later
 /// focus areas. This prevents a lagging rolling habit from becoming a false
 /// "do it today" instruction.
@@ -176,6 +191,27 @@ class GoalStructuredReport {
   /// just finished reading.
   ///
   /// Only explicitly authorized current actions are included.
+  /// The sections as data, for persistence alongside the composed markdown.
+  ///
+  /// Ordered, and empty slots dropped: the card renders a heading for each
+  /// entry present, so an empty one would render a heading with nothing under
+  /// it.
+  Map<String, Object?> toProvenance({
+    required Set<String> allowedCurrentActionCriterionIds,
+  }) => {
+    GoalReportSectionKeys.currentPeriod: currentPeriod,
+    GoalReportSectionKeys.rollingWindow: rollingWindow,
+    if (latestChange.isNotEmpty)
+      GoalReportSectionKeys.latestChange: latestChange,
+    if (coverage.isNotEmpty) GoalReportSectionKeys.coverage: coverage,
+    GoalReportSectionKeys.nextActions: [
+      for (final item in now)
+        if (allowedCurrentActionCriterionIds.contains(item.criterionId))
+          item.action,
+      ...later,
+    ],
+  };
+
   String visibleSummary({
     required Set<String> allowedCurrentActionCriterionIds,
   }) => [

@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -61,14 +62,39 @@ class _GoalDayAssessmentSheetState
   var _saving = false;
   String? _error;
 
+  /// What the evidence suggests for this day. Null when there is nothing to
+  /// judge, in which case the sheet opens on Met as it always did.
+  GoalAssessmentRating? _suggested;
+
   @override
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _rating = existing?.rating ?? GoalAssessmentRating.met;
+    _suggested = suggestedDayVerdict(widget.progress, widget.day);
+    // A day already reflected on opens on what was recorded. Otherwise the
+    // evidence picks the starting point — the verdict used to default to Met
+    // regardless of what the numbers directly above it said.
+    _rating = existing?.rating ?? _suggested ?? GoalAssessmentRating.met;
     _note.text = existing?.note ?? '';
     if (existing != null) _dimensionRatings.addAll(existing.dimensionRatings);
   }
+
+  /// Whether the user has operated the verdict control at all.
+  ///
+  /// Distinguishes leaving the suggestion standing from choosing the same
+  /// verdict deliberately. Comparing values alone cannot: an active choice
+  /// that happens to agree with the suggestion is still the user's own
+  /// judgement, and filing it as "suggested and accepted" would credit the
+  /// agent for a call the user made.
+  bool _touchedVerdict = false;
+
+  /// True while the user has left the suggestion untouched on a fresh
+  /// reflection — which is an acceptance, and worth recording as one.
+  bool get _acceptedSuggestion =>
+      widget.existing == null &&
+      _suggested != null &&
+      !_touchedVerdict &&
+      _rating == _suggested;
 
   @override
   void dispose() {
@@ -92,6 +118,9 @@ class _GoalDayAssessmentSheetState
             rating: _rating,
             dimensionRatings: _dimensionRatings,
             note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+            provenance: _acceptedSuggestion
+                ? GoalAssessmentProvenance.suggestedAndAccepted
+                : GoalAssessmentProvenance.ratedByUser,
           );
     } on Object {
       if (mounted) {
@@ -136,10 +165,24 @@ class _GoalDayAssessmentSheetState
                   color: tokens.colors.text.lowEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step4),
+              SizedBox(height: tokens.spacing.step5),
+              // The measured evidence is one read-only group, fenced off from
+              // the decision below it. Loose on the page, its rows and its
+              // "not editable" caption interleaved with the verdict control
+              // and its hint — four fine-print lines with nothing saying
+              // which belonged to what.
               Text(
                 context.messages.goalAssessmentMeasuredTitle,
-                style: tokens.typography.styles.subtitle.subtitle2,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                context.messages.goalAssessmentMeasuredReadOnly,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
               SizedBox(height: tokens.spacing.step2),
               for (final row in measured)
@@ -156,14 +199,25 @@ class _GoalDayAssessmentSheetState
                             ? Icons.check_circle_rounded
                             : Icons.cancel_rounded,
                         size: IconSizes.xs,
+                        // A cross is the MISSED mark in the verdict
+                        // vocabulary, so it must not wear the warning hue
+                        // that vocabulary gives to Mixed.
                         color: row.met == null
                             ? tokens.colors.text.lowEmphasis
                             : row.met!
                             ? tokens.colors.alert.success.ink
-                            : tokens.colors.alert.warning.ink,
+                            : tokens.colors.alert.error.ink,
                       ),
                       SizedBox(width: tokens.spacing.step2),
-                      Expanded(child: Text(row.name)),
+                      Expanded(
+                        child: Text(
+                          row.name,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ),
                       Text(
                         row.value,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -173,20 +227,41 @@ class _GoalDayAssessmentSheetState
                     ],
                   ),
                 ),
-              SizedBox(height: tokens.spacing.step2),
+              SizedBox(height: tokens.spacing.step5),
+              // The one decision this sheet exists for, and the only block
+              // that had no heading — while both OPTIONAL inputs below it had
+              // one.
               Text(
-                context.messages.goalAssessmentMeasuredReadOnly,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+                context.messages.goalAssessmentVerdictTitle,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
+              SizedBox(height: tokens.spacing.step2),
               DsSegmentedToggle<GoalAssessmentRating>(
                 expand: true,
                 selected: _rating,
-                onChanged: (value) => setState(() => _rating = value),
+                onChanged: (value) => setState(() {
+                  _rating = value;
+                  _touchedVerdict = true;
+                }),
                 segments: _ratingSegments(context),
               ),
+              // Only while the suggestion still stands. Once the user has
+              // moved off it, saying where the old value came from is noise.
+              if (_acceptedSuggestion) ...[
+                SizedBox(height: tokens.spacing.step2),
+                // On the rail, like every other block. Behind a leading icon
+                // it was the one line in the sheet that started somewhere
+                // else, and the word "Suggested" already carries the meaning
+                // the sparkle was there to add.
+                Text(
+                  context.messages.goalAssessmentSuggestionHint,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
               SizedBox(height: tokens.spacing.step4),
               DesignSystemTextarea(
                 controller: _note,
@@ -207,7 +282,15 @@ class _GoalDayAssessmentSheetState
                       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
                       child: Row(
                         children: [
-                          Expanded(child: Text(row.name)),
+                          Expanded(
+                            child: Text(
+                              row.name,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                          ),
                           SizedBox(
                             width: tokens.spacing.step13 * 3,
                             child: DsSegmentedToggle<GoalAssessmentRating>(

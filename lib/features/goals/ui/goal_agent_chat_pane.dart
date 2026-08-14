@@ -45,12 +45,20 @@ class GoalAgentChatPane extends ConsumerWidget {
     // all is well. Only a RESOLVED health record carries a verdict — while
     // the first load is in flight (or has failed with no prior value) the
     // header shows no label rather than a false "Not enough data".
-    final coarseHealthLabel = healthAsync.hasValue
-        ? goalCoarseHealthLabel(
-            context.messages,
-            coarseHealthOf(health?.trackStatus),
+    // Same suppression the detail header and the list rows apply: beside a
+    // published assessment, "Not enough data" is the app disagreeing with
+    // itself in one viewport. On desktop this pane sits directly next to that
+    // header, which is where the contradiction was most visible.
+    final coarse = healthAsync.hasValue
+        ? coarseHealthChip(
+            health?.trackStatus,
+            hasStandingAssessment:
+                health?.reportOneLiner?.trim().isNotEmpty ?? false,
           )
         : null;
+    final coarseHealthLabel = coarse == null
+        ? null
+        : goalCoarseHealthLabel(context.messages, coarse);
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final now = clock.now();

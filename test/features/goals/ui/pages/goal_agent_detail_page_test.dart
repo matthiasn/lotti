@@ -31,6 +31,7 @@ import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -245,6 +246,187 @@ void main() {
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
+  testWidgets('a sections payload with nothing in it falls back to the flat '
+      'text, and a malformed one does not crash the card', (tester) async {
+    final probeSpec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-probe',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    Future<void> pump(Object? sections) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two days in.',
+              pendingProposals: 0,
+              spec: probeSpec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith(
+            (ref) async =>
+                AgentDomainEntity.agentReport(
+                      id: 'report-x',
+                      agentId: 'goal-1',
+                      scope: AgentReportScopes.current,
+                      createdAt: DateTime(2026, 8, 10),
+                      vectorClock: null,
+                      oneLiner: 'Two days in.',
+                      tldr: 'Two days in.',
+                      content: 'The rolling window is still filling up.',
+                      provenance: {
+                        'specVersionId': 'goal-1:spec-probe',
+                        GoalReportProvenanceKeys.sections: sections,
+                      },
+                    )
+                    as AgentReportEntity,
+          ),
+        ],
+      ),
+    );
+
+    // Every slot empty is not a sectioned report. Treated as one, the card
+    // rendered zero headings and zero actions while `content` still held the
+    // real text — an empty expansion instead of a fallback.
+    await pump({
+      GoalReportSectionKeys.currentPeriod: '',
+      GoalReportSectionKeys.nextActions: <Object?>[],
+    });
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
+    // No section headings: an all-empty payload is not a sectioned report,
+    // and treating it as one rendered an empty expansion while `content`
+    // still held the real text.
+    expect(find.text('Where things stand'), findsNothing);
+    expect(find.text('Data coverage'), findsNothing);
+
+    // Provenance arrives from persisted or synced JSON, so another client
+    // version could write a String where a List belongs. That used to be a
+    // TypeError the first time the card was expanded.
+    await pump({
+      GoalReportSectionKeys.currentPeriod: 'Logged today.',
+      GoalReportSectionKeys.nextActions: 'walk more',
+    });
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
+    // A String where a List belongs used to be a TypeError the first time
+    // the card built its sections.
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a published assessment silences the Not-enough-data chip, and '
+      'a sectionless report still expands to its flat text', (tester) async {
+    final legacySpec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final legacyReport =
+        AgentDomainEntity.agentReport(
+              id: 'report-legacy',
+              agentId: 'goal-1',
+              scope: AgentReportScopes.current,
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              oneLiner: 'Two days in.',
+              tldr: 'Two days in.',
+              content: 'The rolling window is still filling up.',
+              provenance: const {'specVersionId': 'goal-1:spec-v1'},
+            )
+            as AgentReportEntity;
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.insufficientData,
+              attainment: 0.3,
+              reportOneLiner: 'Two days in.',
+              pendingProposals: 0,
+              spec: legacySpec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider(
+            'goal-1',
+          ).overrideWith((ref) async => legacyReport),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The header sits directly above a report that assesses the goal, so it
+    // must not also claim there is not enough data to have written one.
+    expect(find.text('Not enough data'), findsNothing);
+    expect(find.text('Two days in.'), findsOneWidget);
+
+    // No sections persisted — a report written before they existed — so the
+    // composed flat text remains the fallback rendering.
+    await tester.tap(find.text('Show more'));
+    await tester.pump();
+    expect(
+      find.textContaining('The rolling window is still filling up.'),
+      findsOneWidget,
+    );
+    expect(find.text('Where things stand'), findsNothing);
+  });
+
   testWidgets('a stale goal report uses the shared countdown, skip, toggle, '
       'and manual refresh controls', (tester) async {
     final now = DateTime(2026, 8, 13, 12);
@@ -445,6 +627,14 @@ void main() {
               tldr: '**Three walks** remain before Sunday.',
               content:
                   '## Full report\n\nThe current routine needs three walks.',
+              provenance: const {
+                GoalReportProvenanceKeys.sections: {
+                  GoalReportSectionKeys.currentPeriod: 'One walk logged today.',
+                  GoalReportSectionKeys.rollingWindow: 'Two of three so far.',
+                  GoalReportSectionKeys.coverage: '',
+                  GoalReportSectionKeys.nextActions: ['Walk on Saturday.'],
+                },
+              },
             )
             as AgentReportEntity;
     final delayedHistoricalReport = report.copyWith(
@@ -528,7 +718,18 @@ void main() {
     expect(find.textContaining('The current routine needs'), findsNothing);
     await tester.tap(find.text('Show more'));
     await tester.pump();
-    expect(find.textContaining('The current routine needs'), findsOneWidget);
+    // Sections, under headings the APP supplies — the sentences are authored
+    // in the user's language, so the composer could never wrap them in
+    // headings without injecting English.
+    expect(find.text('Where things stand'), findsOneWidget);
+    expect(find.text('One walk logged today.'), findsOneWidget);
+    expect(find.text('The wider window'), findsOneWidget);
+    expect(find.text("What's next"), findsOneWidget);
+    expect(find.text('Walk on Saturday.'), findsOneWidget);
+    // A slot the model left empty gets no heading rather than an empty one.
+    expect(find.text('Data coverage'), findsNothing);
+    // The flat composed text is the fallback, not the rendering.
+    expect(find.textContaining('The current routine needs'), findsNothing);
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
 

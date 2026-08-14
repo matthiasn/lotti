@@ -4784,4 +4784,28 @@ void main() {
       expect(upserts.whereType<AgentReportEntity>(), isEmpty);
     },
   );
+  test('persisted sections are sanitized like every other visible string', () {
+    final sections = sanitizeReportSectionsForTest({
+      GoalReportSectionKeys.currentPeriod:
+          'Close the gap on habit-71ca84b0 today.',
+      GoalReportSectionKeys.nextActions: [
+        'Log habit 3f2a9c1d now.',
+        42,
+      ],
+      'unexpected': 7,
+    });
+
+    // The card PREFERS these over the sanitized flat `content`, so leaving
+    // them raw put the ids the sanitizer exists to remove straight back in
+    // front of the reader.
+    expect(
+      sections![GoalReportSectionKeys.currentPeriod],
+      'Close the gap on today.',
+    );
+    expect(sections[GoalReportSectionKeys.nextActions], [
+      'Log habit now.',
+      42,
+    ]);
+    expect(sections['unexpected'], 7);
+  });
 }

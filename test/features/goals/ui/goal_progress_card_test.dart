@@ -291,6 +291,15 @@ void main() {
         findsOneWidget,
         reason: '${rating.name} has no shape of its own',
       );
+      // Two inks per verdict, for two backgrounds. On its own saturated fill
+      // the glyph takes the on-alert ink; on a plain card — the reflect row —
+      // it takes its family's ink, because the on-alert ink is near-invisible
+      // there by design.
+      expect(
+        goalAssessmentRatingSurfaceInk(tokens, rating),
+        isNot(goalAssessmentRatingInk(tokens, rating)),
+        reason: '${rating.name} uses one ink for both surfaces',
+      );
     }
     expect(
       {
@@ -310,6 +319,227 @@ void main() {
       verdicts,
       isNot(contains(goalDayStateFill(tokens, GoalCompactDayState.none))),
     );
+  });
+
+  group('formatGoalAggregate', () {
+    final number = NumberFormat.decimalPattern('en');
+
+    test('a step average rounds to the hundred it can actually carry', () {
+      // The seven-day mean arrives as 7684.428571…. Rendering "7,684.429" —
+      // or even "7,684" — invites the reader to believe the trailing digits
+      // mean something about a habit average. They do not.
+      expect(formatGoalAggregate(number, 7684.428571), '7,700');
+      expect(formatGoalAggregate(number, 12449), '12,400');
+      expect(formatGoalAggregate(number, 10000), '10,000');
+    });
+
+    test('rounding never moves a value onto the wrong side of its target', () {
+      // 9,950 against a 10,000 target would read "10,000 of 10,000" directly
+      // above a "Needs attention" line. Where the coarse step would erase the
+      // difference, the finer one is kept.
+      expect(
+        formatGoalAggregate(number, 9950, against: 10000),
+        isNot(formatGoalAggregate(number, 10000, against: 9950)),
+      );
+      expect(formatGoalAggregate(number, 9950, against: 10000), '9,950');
+      // Equal values still round together — there is no miss to preserve.
+      expect(formatGoalAggregate(number, 10000, against: 10000), '10,000');
+      // And a difference the coarse step already survives keeps the coarse
+      // step: 7,700 vs 10,000 needs no extra digits.
+      expect(
+        formatGoalAggregate(number, 7684.428571, against: 10000),
+        '7,700',
+      );
+      // Below 100 the finer step is a tenth, so a weight just under its
+      // target keeps the decimal that distinguishes them.
+      expect(formatGoalAggregate(number, 87.96, against: 88), '88');
+      expect(formatGoalAggregate(number, 87.94, against: 88), '87.9');
+    });
+
+    test('blood pressure keeps whole numbers', () {
+      expect(formatGoalAggregate(number, 127.3), '127');
+      expect(formatGoalAggregate(number, 84.6), '84.6');
+    });
+
+    test('weight keeps the one decimal that means something', () {
+      // 94.5 kg is a real distinction; 94.53 is not.
+      expect(formatGoalAggregate(number, 94.53), '94.5');
+      expect(formatGoalAggregate(number, 88), '88');
+    });
+
+    test('a target rounds by the same rule as the value it is compared to', () {
+      // Rounded differently, a value could appear to miss a target it meets.
+      expect(
+        formatGoalAggregate(number, 10000),
+        formatGoalAggregate(number, 10000.4),
+      );
+    });
+  });
+
+  testWidgets('the habit streak rides the label row rather than a row of its '
+      'own', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 4,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Alone under the day squares it was an orphan: a two-word stat against
+    // the right edge with a card's width of nothing beside it.
+    final streak = find.text('4 / 6 weeks');
+    expect(streak, findsOneWidget);
+    expect(
+      tester.getCenter(streak).dy,
+      lessThan(
+        tester.getCenter(find.text('This rolling week')).dy +
+            tester.getSize(find.text('This rolling week')).height * 2,
+      ),
+      reason: 'the streak dropped to a row of its own',
+    );
+    // ...and it terminates on the trailing rail rather than floating.
+    expect(
+      tester.getBottomRight(streak).dx,
+      greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+    );
+  });
+
+  testWidgets('a period-total target draws no per-day threshold line', (
+    tester,
+  ) async {
+    Future<void> pump(GoalAggregation aggregation) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Focus',
+              target: 10,
+              aggregation: aggregation,
+              days: [day(1, 6), day(0, 6)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    int rules() => find
+        .descendant(
+          of: find.byType(GoalProgressCard),
+          matching: find.byKey(const ValueKey('goal-metric-target-rule')),
+        )
+        .evaluate()
+        .length;
+
+    // A per-day target is comparable to a bar, so the line is drawn.
+    await pump(GoalAggregation.dailySumThenAverage);
+    expect(rules(), 1);
+
+    // A `sum` target belongs to the WINDOW: two six-minute days already clear
+    // a ten-minute total, yet a line at 10 would put both bars under it.
+    await pump(GoalAggregation.sum);
+    expect(rules(), 0);
+  });
+
+  testWidgets('the reflect row sits with the week it closes off, and names '
+      'the verdict once recorded', (tester) async {
+    final tapped = <DateTime>[];
+    Future<void> pump({GoalAssessmentRating? recorded}) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: tapped.add,
+          ratingsByDay: recorded == null ? const {} : {today: recorded},
+        ),
+      ),
+    );
+
+    await pump();
+    // Inside the whole-goal card, under the strip. Stranded at the bottom of
+    // the page it was the quietest row on the surface, and nothing connected
+    // it to the cells that open the same sheet.
+    final strip = tester.getRect(find.byType(GoalCompactWindowStrip));
+    final reflect = tester.getRect(find.text('Reflect on today'));
+    expect(reflect.top, greaterThan(strip.top));
+    expect(
+      reflect.top - strip.bottom,
+      lessThan(tester.getSize(find.byType(GoalProgressCard)).height / 4),
+      reason: 'the reflect row drifted away from its strip',
+    );
+
+    await tester.tap(find.text('Reflect on today'));
+    expect(tapped, [today]);
+
+    // Once the day is judged the row states the verdict instead of inviting
+    // an action the user already took.
+    await pump(recorded: GoalAssessmentRating.improving);
+    expect(find.text('Reflect on today'), findsNothing);
+    expect(find.text('Improving'), findsOneWidget);
+  });
+
+  testWidgets('the day-cell legend rides inside the last habit card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              for (final name in ['Gym', 'Read'])
+                GoalHabitProgressView(
+                  habitId: name,
+                  name: name,
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Once per goal, not once per habit — and inside the card whose squares
+    // it keys. On the page background between two cards it was equidistant
+    // from both and read as annotating the chart below, which it does not
+    // explain at all.
+    expect(find.text('done · target met'), findsOneWidget);
+    final legend = tester.getRect(find.text('done · target met'));
+    final cards = find.byType(DesignSystemSectionCard);
+    final lastHabitCard = tester.getRect(cards.at(1));
+    expect(legend.top, greaterThan(lastHabitCard.top));
+    expect(legend.bottom, lessThan(lastHabitCard.bottom));
   });
 
   testWidgets('a goal with no composite rule still gets a reflectable week', (
@@ -387,17 +617,27 @@ void main() {
       ),
     );
 
-    final strips = find.byType(GoalCompactWindowStrip);
-    final readOnly = tester.getSize(strips.at(0)).width;
-    final tappable = tester.getSize(strips.at(1)).width;
-    // Read-only the strip is a figure and stays out of the list row's way;
-    // tappable it takes the whole measure, so seven cells can each clear the
-    // touch floor without overflowing a phone card.
-    expect(readOnly, lessThan(tappable));
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip).at(1),
+      matching: find.byType(InkWell),
+    );
+    var covered = 0.0;
+    for (var index = 0; index < 7; index++) {
+      covered += tester.getSize(cells.at(index)).width;
+    }
+    // Read-only the strip hugs its content. Tappable it grows to seven touch
+    // targets and stops there: handed a whole desktop card it used to spread
+    // the cells cell-widths apart, reading as scattered confetti rather than
+    // a week.
     expect(
-      tappable,
-      tester.getSize(find.byType(Column).last).width,
-      reason: 'the tappable strip did not span its parent',
+      tester.getSize(find.byType(GoalCompactWindowStrip).at(0)).width,
+      lessThan(covered),
+    );
+    expect(covered, lessThanOrEqualTo(TapTargets.minimum * 7));
+    expect(
+      covered,
+      greaterThan(TapTargets.minimum * 7 * 0.9),
+      reason: 'the tappable cells no longer fill their capped strip',
     );
   });
 
@@ -502,21 +742,19 @@ void main() {
         reason: 'cell $index is under the touch floor',
       );
     }
-    // The targets tile the row with no dead space between them. Seven cells
-    // inside a card's rail cannot each reach 48px wide, so every pixel that
-    // would have gone to a gap goes to a target instead.
-    // The targets tile the row rather than sitting as islands in it. Seven
-    // cells inside a card's rail cannot each reach 48px wide, so every pixel
-    // that would have gone to a declared gap goes to a target instead.
+    // The targets tile the strip rather than sitting as islands in it: every
+    // pixel that would have gone to a declared gap goes to a target instead.
     var covered = 0.0;
     for (var index = 0; index < 7; index++) {
       covered += tester.getSize(cells.at(index)).width;
     }
+    final span =
+        tester.getRect(cells.at(6)).right - tester.getRect(cells.at(0)).left;
+    // Better than 95% of the span: the small residual is the ink slot inside
+    // each cell, not a declared gap between them.
     expect(
       covered,
-      greaterThan(
-        tester.getSize(find.byType(GoalCompactWindowStrip)).width * 0.98,
-      ),
+      greaterThan(span * 0.95),
       reason: 'dead space sits between the day targets',
     );
 
@@ -1371,10 +1609,13 @@ void main() {
       goalDayStateFill(tokens, GoalCompactDayState.full),
       reason: '12,400 steps beat the 10,000 target',
     );
+    // Short, but MEASURED. `background.level03` is what the legend calls
+    // absence, so a logged day that fell short wears the muted wash of the
+    // success family instead — three states, three fills.
     expect(
       barColor('2026-08-11'),
-      goalDayStateFill(tokens, GoalCompactDayState.none),
-      reason: '5,262 steps fell short',
+      goalDayStateFill(tokens, GoalCompactDayState.partial),
+      reason: '5,262 steps fell short but were still logged',
     );
 
     // Seven bars filling a full-width card rendered ~40px slabs. Each one now
@@ -1904,16 +2145,24 @@ void main() {
     );
 
     final title = find.text('This rolling week');
-    final caption = find.text('slides at midnight');
+    final streak = find.text('2 / 6 weeks');
     final name = find.text('Gym');
     final cadence = find.text('4× per 7 days');
     final firstCell = find.byKey(
       const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
     );
 
+    // Narrow, the streak takes the caption's place on the heading line rather
+    // than costing a row of its own below the day squares. The title already
+    // says the window is a rolling week, which is what the caption added;
+    // the streak is data, and marooned on its own row it read as an accident.
+    expect(find.text('slides at midnight'), findsNothing);
+    // Same band as the heading — the streak is a two-part figure (bars over a
+    // label) so its centre sits lower than the title's, but the two overlap
+    // rather than stacking.
     expect(
-      tester.getCenter(title).dy,
-      closeTo(tester.getCenter(caption).dy, 0.01),
+      tester.getTopLeft(streak).dy,
+      lessThan(tester.getBottomLeft(title).dy),
       reason: 'the compact handoff keeps its card heading on one line',
     );
     expect(
@@ -1926,6 +2175,47 @@ void main() {
       greaterThan(tester.getBottomLeft(cadence).dy),
       reason: 'the mobile grid follows the dimension metadata',
     );
+    // Nothing below the squares: the orphan row is gone.
+    expect(
+      tester.getTopLeft(streak).dy,
+      lessThan(tester.getTopLeft(firstCell).dy),
+      reason: 'the streak dropped back below the grid',
+    );
+  });
+
+  testWidgets('a habit with no streak keeps its caption on the heading line', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 358,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'gym',
+                    name: 'Gym',
+                    targetCount: 4,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, 0),
+                    ],
+                    successfulWeeks: null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Only the streak displaces it. With nothing to show there, the caption
+    // that explains the sliding window stays.
+    expect(find.text('slides at midnight'), findsOneWidget);
   });
 
   testWidgets('a narrow authored cadence moves intact below the habit name', (

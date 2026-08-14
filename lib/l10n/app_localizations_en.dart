@@ -5969,12 +5969,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration AI time';
+    return '$duration thinking';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Lifetime agent compute time across $calls model calls.';
+    return 'Total time this agent\'s model spent working, across $calls calls.';
   }
 
   @override
@@ -6032,7 +6032,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your goal agent suggested, you accepted';
 
   @override
+  String get goalAssessmentSuggestionHint =>
+      'Suggested from what was measured — change it if you disagree.';
+
+  @override
   String get goalAssessmentUserProvenance => 'Rated by you';
+
+  @override
+  String get goalAssessmentVerdictTitle => 'How did the day go?';
 
   @override
   String goalAttainmentLabel(int percent) {
@@ -6266,6 +6273,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDimensionHealthSource => 'Health data';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Not there yet, but the last reading moved toward the target.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Your measurable';
 
   @override
@@ -6284,7 +6295,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalDimensionNeedsAttentionNote =>
-      'This dimension needs attention; its own evidence stays visible.';
+      'Behind target for this window.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'Needs attention';
@@ -6808,6 +6819,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 weeks';
   }
+
+  @override
+  String get goalReportSectionChange => 'Latest change';
+
+  @override
+  String get goalReportSectionCoverage => 'Data coverage';
+
+  @override
+  String get goalReportSectionNext => 'What\'s next';
+
+  @override
+  String get goalReportSectionStanding => 'Where things stand';
+
+  @override
+  String get goalReportSectionWindow => 'The wider window';
 
   @override
   String get goalStatusAchieved => 'Achieved';

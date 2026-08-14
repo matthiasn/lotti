@@ -188,6 +188,44 @@ void main() {
       },
     );
 
+    test('sections are persisted as data for the card to render', () {
+      final report = GoalStructuredReport.tryParse(validReport())!;
+      final sections = report.toProvenance(
+        allowedCurrentActionCriterionIds: const {'health-weight'},
+      );
+
+      // The sentences are model-authored in the user's language, so the
+      // composer cannot wrap them in headings without injecting English.
+      // Persisting them separately is what lets the card supply localized
+      // headings at display time.
+      expect(
+        sections[GoalReportSectionKeys.currentPeriod],
+        'Logging is complete today.',
+      );
+      expect(sections[GoalReportSectionKeys.nextActions], [
+        'Log weight.',
+        'Keep the weekly habit moving.',
+      ]);
+      // Empty slots are absent rather than present-and-blank: the card draws
+      // a heading per entry, and a heading with nothing under it is worse
+      // than no heading.
+      expect(sections.containsKey(GoalReportSectionKeys.latestChange), isFalse);
+      expect(sections.containsKey(GoalReportSectionKeys.coverage), isFalse);
+    });
+
+    test('the current-action gate applies to the persisted sections too', () {
+      final report = GoalStructuredReport.tryParse(validReport())!;
+      final sections = report.toProvenance(
+        allowedCurrentActionCriterionIds: const {},
+      );
+
+      // An action the deterministic filter removed must not reappear just
+      // because the card reads sections instead of the composed text.
+      expect(sections[GoalReportSectionKeys.nextActions], [
+        'Keep the weekly habit moving.',
+      ]);
+    });
+
     test('rejects empty required standing sections', () {
       for (final key in ['tldr', 'currentPeriod', 'rollingWindow']) {
         final value = validReport()..[key] = '  ';

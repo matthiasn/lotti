@@ -36,7 +36,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('€0.42 · 12 Wh · 3.4 g'), findsOneWidget);
-    expect(find.text('1h 1m AI time'), findsOneWidget);
+    expect(find.text('1h 1m thinking'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('goal-agent-lifetime-pills')),
       findsOneWidget,
@@ -61,7 +61,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Unter 1 Min. KI-Zeit'), findsOneWidget);
+    expect(find.text('Unter 1 Min. Denkzeit'), findsOneWidget);
   });
 
   testWidgets('hides governance pills when the agent has no calls', (

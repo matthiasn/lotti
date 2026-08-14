@@ -89,6 +89,7 @@ class GoalAgentStrategy extends ConversationStrategy
   String? _reportOneLiner;
   String? _reportTldr;
   String? _reportContent;
+  Map<String, Object?>? _reportSections;
   String? _finalResponse;
   String? _replyToUser;
   final _createdAds = <GoalAdRequest>[];
@@ -102,6 +103,10 @@ class GoalAgentStrategy extends ConversationStrategy
   String? get reportOneLiner => _reportOneLiner;
   String? get reportTldr => _reportTldr;
   String? get reportContent => _reportContent;
+
+  /// The report's sections as data, for the card to render under localized
+  /// headings. Null for a free-form report, which has none.
+  Map<String, Object?>? get reportSections => _reportSections;
   String? get finalResponse => _finalResponse;
   String? get replyToUser => _replyToUser;
   bool get hasReport => _reportStatus != null;
@@ -283,6 +288,12 @@ class GoalAgentStrategy extends ConversationStrategy
             allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
           )
         : (content.isEmpty ? null : content);
+    // Persisted beside the composed markdown, not instead of it: the flat
+    // text stays the fallback for any surface that has only `content`, and
+    // for reports written before sections existed.
+    _reportSections = structured?.toProvenance(
+      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
+    );
     await _accept(call, manager, 'Goal report updated.');
   }
 

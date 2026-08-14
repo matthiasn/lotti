@@ -6061,12 +6061,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration času AI';
+    return '$duration přemýšlení';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Celoživotní výpočetní čas agenta pro $calls volání modelu.';
+    return 'Celkový čas, který model tohoto agenta strávil prací, za $calls volání.';
   }
 
   @override
@@ -6124,7 +6124,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Agent cíle navrhl, ty jsi přijal(a)';
 
   @override
+  String get goalAssessmentSuggestionHint =>
+      'Návrh podle naměřených dat — pokud nesouhlasíš, změň ho.';
+
+  @override
   String get goalAssessmentUserProvenance => 'Hodnoceno tebou';
+
+  @override
+  String get goalAssessmentVerdictTitle => 'Jak den dopadl?';
 
   @override
   String goalAttainmentLabel(int percent) {
@@ -6361,6 +6368,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDimensionHealthSource => 'Zdravotní údaje';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Ještě ne u cíle, ale poslední hodnota se k němu posunula.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Tvoje měřitelná veličina';
 
   @override
@@ -6378,8 +6389,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalDimensionNeedsAttentionNote =>
-      'Tato dimenze vyžaduje pozornost; jeho vlastní důkazy zůstávají viditelné.';
+  String get goalDimensionNeedsAttentionNote => 'Za cílem pro toto období.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'Vyžaduje pozornost';
@@ -6909,6 +6919,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 týdnů';
   }
+
+  @override
+  String get goalReportSectionChange => 'Poslední změna';
+
+  @override
+  String get goalReportSectionCoverage => 'Pokrytí dat';
+
+  @override
+  String get goalReportSectionNext => 'Co dál';
+
+  @override
+  String get goalReportSectionStanding => 'Jak to vypadá';
+
+  @override
+  String get goalReportSectionWindow => 'Širší okno';
 
   @override
   String get goalStatusAchieved => 'Splněno';
