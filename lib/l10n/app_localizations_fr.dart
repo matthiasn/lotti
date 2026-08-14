@@ -6092,12 +6092,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration d\'IA';
+    return '$duration de réflexion';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Temps de calcul cumulé de l\'agent sur $calls appels de modèle.';
+    return 'Temps total de travail du modèle de cet agent, sur $calls appels.';
   }
 
   @override
@@ -6153,6 +6153,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get goalAssessmentSuggestedProvenanceGeneric =>
       'Ton agent d’objectif a suggéré cette évaluation, que tu as acceptée';
+
+  @override
+  String get goalAssessmentSuggestionHint =>
+      'Suggéré d\'après les mesures — change-le si tu n\'es pas d\'accord.';
 
   @override
   String get goalAssessmentUserProvenance => 'Évalué par toi';
@@ -6398,6 +6402,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalDimensionHealthSource => 'Données de santé';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Pas encore, mais la dernière mesure s\'est rapprochée de la cible.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Ta mesure';
 
   @override
@@ -6416,7 +6424,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalDimensionNeedsAttentionNote =>
-      'Cette dimension nécessite une attention particulière ; ses propres preuves restent visibles.';
+      'En retard sur la cible pour cette période.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'A besoin d\'attention';
@@ -6944,6 +6952,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 semaines';
   }
+
+  @override
+  String get goalReportSectionChange => 'Dernier changement';
+
+  @override
+  String get goalReportSectionCoverage => 'Couverture des données';
+
+  @override
+  String get goalReportSectionNext => 'La suite';
+
+  @override
+  String get goalReportSectionStanding => 'Où tu en es';
+
+  @override
+  String get goalReportSectionWindow => 'La fenêtre plus large';
 
   @override
   String get goalStatusAchieved => 'Atteint';

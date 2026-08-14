@@ -3240,7 +3240,7 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
-  "goalAgentLifetimeTimePill": "{duration} AI time",
+  "goalAgentLifetimeTimePill": "{duration} thinking",
   "@goalAgentLifetimeTimePill": {
     "description": "Top-level pill containing a goal agent's lifetime model compute duration.",
     "placeholders": {
@@ -3249,7 +3249,7 @@
       }
     }
   },
-  "goalAgentLifetimeTimeTooltip": "Lifetime agent compute time across {calls} model calls.",
+  "goalAgentLifetimeTimeTooltip": "Total time this agent's model spent working, across {calls} calls.",
   "@goalAgentLifetimeTimeTooltip": {
     "description": "Tooltip for a goal agent's lifetime model compute duration.",
     "placeholders": {
@@ -3294,6 +3294,7 @@
     }
   },
   "goalAssessmentSuggestedProvenanceGeneric": "Your goal agent suggested, you accepted",
+  "goalAssessmentSuggestionHint": "Suggested from what was measured — change it if you disagree.",
   "goalAssessmentUserProvenance": "Rated by you",
   "goalAttainmentLabel": "{percent}% of target",
   "@goalAttainmentLabel": {
@@ -3542,6 +3543,7 @@
   },
   "goalDimensionHabitSource": "Habit completions",
   "goalDimensionHealthSource": "Health data",
+  "goalDimensionImprovingNote": "Not there yet, but the last reading moved toward the target.",
   "goalDimensionMeasurableSource": "Your measurable",
   "goalDimensionMetricReading": "{currentValue} of {targetValue}",
   "@goalDimensionMetricReading": {
@@ -3568,7 +3570,7 @@
       }
     }
   },
-  "goalDimensionNeedsAttentionNote": "This dimension needs attention; its own evidence stays visible.",
+  "goalDimensionNeedsAttentionNote": "Behind target for this window.",
   "goalDimensionNeedsAttentionStatus": "Needs attention",
   "goalDimensionNoDataNote": "There is not enough data to judge this dimension yet.",
   "goalDimensionOnTargetTodayNote": "Today's latest reading is on target; keep it going.",
@@ -4002,6 +4004,11 @@
       }
     }
   },
+  "goalReportSectionChange": "Latest change",
+  "goalReportSectionCoverage": "Data coverage",
+  "goalReportSectionNext": "What's next",
+  "goalReportSectionStanding": "Where things stand",
+  "goalReportSectionWindow": "The wider window",
   "goalStatusAchieved": "Achieved",
   "@goalStatusAchieved": {
     "description": "Goal track status chip: target date passed with criteria met."

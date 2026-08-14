@@ -10298,13 +10298,13 @@ abstract class AppLocalizations {
   /// Top-level pill containing a goal agent's lifetime model compute duration.
   ///
   /// In en, this message translates to:
-  /// **'{duration} AI time'**
+  /// **'{duration} thinking'**
   String goalAgentLifetimeTimePill(String duration);
 
   /// Tooltip for a goal agent's lifetime model compute duration.
   ///
   /// In en, this message translates to:
-  /// **'Lifetime agent compute time across {calls} model calls.'**
+  /// **'Total time this agent\'s model spent working, across {calls} calls.'**
   String goalAgentLifetimeTimeTooltip(String calls);
 
   /// No description provided for @goalAssessmentHistoryTitle.
@@ -10396,6 +10396,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your goal agent suggested, you accepted'**
   String get goalAssessmentSuggestedProvenanceGeneric;
+
+  /// No description provided for @goalAssessmentSuggestionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested from what was measured — change it if you disagree.'**
+  String get goalAssessmentSuggestionHint;
 
   /// No description provided for @goalAssessmentUserProvenance.
   ///
@@ -10773,6 +10779,12 @@ abstract class AppLocalizations {
   /// **'Health data'**
   String get goalDimensionHealthSource;
 
+  /// No description provided for @goalDimensionImprovingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Not there yet, but the last reading moved toward the target.'**
+  String get goalDimensionImprovingNote;
+
   /// No description provided for @goalDimensionMeasurableSource.
   ///
   /// In en, this message translates to:
@@ -10798,7 +10810,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalDimensionNeedsAttentionNote.
   ///
   /// In en, this message translates to:
-  /// **'This dimension needs attention; its own evidence stays visible.'**
+  /// **'Behind target for this window.'**
   String get goalDimensionNeedsAttentionNote;
 
   /// No description provided for @goalDimensionNeedsAttentionStatus.
@@ -11579,6 +11591,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{achieved} / 6 weeks'**
   String goalReliabilityWeeks(int achieved);
+
+  /// No description provided for @goalReportSectionChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest change'**
+  String get goalReportSectionChange;
+
+  /// No description provided for @goalReportSectionCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Data coverage'**
+  String get goalReportSectionCoverage;
+
+  /// No description provided for @goalReportSectionNext.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s next'**
+  String get goalReportSectionNext;
+
+  /// No description provided for @goalReportSectionStanding.
+  ///
+  /// In en, this message translates to:
+  /// **'Where things stand'**
+  String get goalReportSectionStanding;
+
+  /// No description provided for @goalReportSectionWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'The wider window'**
+  String get goalReportSectionWindow;
 
   /// Goal track status chip: target date passed with criteria met.
   ///

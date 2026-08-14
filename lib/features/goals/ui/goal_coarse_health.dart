@@ -22,6 +22,34 @@ GoalCoarseHealth coarseHealthOf(GoalTrackStatus? status) => switch (status) {
   GoalTrackStatus.insufficientData || null => GoalCoarseHealth.notEnoughData,
 };
 
+/// The chip a surface should show for [status], or null when it must show
+/// none.
+///
+/// "Not enough data" is a statement about the agent's ability to judge. Once
+/// it HAS judged — once a standing report is on the same screen saying blood
+/// pressure and weight are above target while steps and one habit lag — the
+/// chip contradicts the very thing it sits beside, and the reader has to
+/// decide which of the two to believe.
+///
+/// Coverage can still be genuinely thin, and the report says so in its own
+/// coverage sentence. That is a caveat inside an assessment, which is honest;
+/// a headline replacing the assessment is not.
+///
+/// Deliberately a display rule rather than a change to the evaluator:
+/// [GoalTrackStatus.insufficientData] still means what it always meant, and
+/// everything keyed off it — nudge tone, the contract's "name the gap; do not
+/// chide" — is untouched.
+GoalCoarseHealth? coarseHealthChip(
+  GoalTrackStatus? status, {
+  required bool hasStandingAssessment,
+}) {
+  final coarse = coarseHealthOf(status);
+  if (coarse == GoalCoarseHealth.notEnoughData && hasStandingAssessment) {
+    return null;
+  }
+  return coarse;
+}
+
 String goalCoarseHealthLabel(AppLocalizations messages, GoalCoarseHealth h) =>
     switch (h) {
       GoalCoarseHealth.healthy => messages.goalCoarseHealthHealthy,

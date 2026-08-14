@@ -31,6 +31,7 @@ import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -237,6 +238,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           health: health,
           healthAvailable: healthAsync.hasValue,
           spec: spec,
+          hasStandingAssessment:
+              (latestReport?.tldr?.trim().isNotEmpty ?? false) ||
+              latestReport?.content.trim().isNotEmpty == true,
         ),
         // The agent's voice — standing report and active banners — stays
         // grouped with the goal definition at the top; the evidence
@@ -380,7 +384,20 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
               duration: MotionDurations.short3,
               child: child,
             ),
-            child: Text(spec?.title ?? goalIdentity.displayName),
+            // Two lines at a compact size rather than one truncated line.
+            // "Blood Pressure managed 🫀" arrived as "Blood Pressure manage…",
+            // which is the one thing an app-bar title exists to avoid, and
+            // goal names are user-written so they are routinely this long.
+            // Two lines of subtitle2 clear the toolbar height; a third would
+            // not, so the ellipsis remains as the last resort it should be.
+            child: Text(
+              spec?.title ?? goalIdentity.displayName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
           ),
           actions: [
             // The conversation is the feature's second half — phones get a
@@ -430,6 +447,7 @@ class _GoalHeader extends StatelessWidget {
     required this.health,
     required this.healthAvailable,
     required this.spec,
+    required this.hasStandingAssessment,
     super.key,
   });
 
@@ -439,11 +457,24 @@ class _GoalHeader extends StatelessWidget {
   final bool healthAvailable;
   final GoalSpecVersionEntity? spec;
 
+  /// Whether the agent has already published an assessment of this goal.
+  /// Suppresses the "Not enough data" chip, which would otherwise sit
+  /// directly above a report that plainly does assess the goal.
+  final bool hasStandingAssessment;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final coarse = coarseHealthOf(health?.trackStatus);
-    final color = goalCoarseHealthColor(coarse, tokens.colors);
+    // A header that sits directly above a populated report must not claim
+    // there is not enough data to have written one.
+    final coarse = coarseHealthChip(
+      health?.trackStatus,
+      hasStandingAssessment: hasStandingAssessment,
+    );
+    final color = goalCoarseHealthColor(
+      coarse ?? coarseHealthOf(health?.trackStatus),
+      tokens.colors,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -474,7 +505,8 @@ class _GoalHeader extends StatelessWidget {
                       color: tokens.colors.text.highEmphasis,
                     ),
                   ),
-                  if (healthAvailable) GoalCoarseHealthChip(health: coarse),
+                  if (healthAvailable && coarse != null)
+                    GoalCoarseHealthChip(health: coarse),
                   if (health?.direction case final direction?)
                     GoalHealthDirectionChip(direction: direction),
                 ],
@@ -704,12 +736,21 @@ class _GoalReportCardState extends State<_GoalReportCard> {
           if (expandable) ...[
             if (_expanded) ...[
               SizedBox(height: tokens.spacing.step3),
-              AgentMarkdownView(
-                content,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+              // Sections when the report carries them, the flat text when it
+              // does not. The sentences are model-authored in the user's own
+              // language, so the composer cannot wrap them in headings without
+              // injecting English — the headings are added here instead, which
+              // also means they follow the app language rather than whichever
+              // one the report was written in.
+              if (_sectionsOf(report) case final sections?)
+                _GoalReportSections(sections: sections)
+              else
+                AgentMarkdownView(
+                  content,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
                 ),
-              ),
             ],
             SizedBox(height: tokens.spacing.step1),
             DesignSystemButton(
@@ -1004,5 +1045,115 @@ class _GoalActionsMenuButton extends ConsumerWidget {
           );
       }
     }
+  }
+}
+
+/// The structured sections a report carries, or null when it has none —
+/// a free-form report, or one written before sections were persisted.
+Map<String, Object?>? _sectionsOf(AgentReportEntity? report) {
+  final raw = report?.provenance[GoalReportProvenanceKeys.sections];
+  if (raw is! Map) return null;
+  final sections = <String, Object?>{};
+  for (final entry in raw.entries) {
+    if (entry.key is String) sections[entry.key as String] = entry.value;
+  }
+  return sections.isEmpty ? null : sections;
+}
+
+/// The expanded report, rendered as titled sections.
+///
+/// Headings come from the app's catalogs rather than the model, so they read
+/// in the user's language whatever language the report was written in, and a
+/// section the model left empty is simply absent rather than a heading with
+/// nothing beneath it.
+class _GoalReportSections extends StatelessWidget {
+  const _GoalReportSections({required this.sections});
+
+  final Map<String, Object?> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final ordered = <(String, String)>[
+      for (final (key, heading) in <(String, String)>[
+        (
+          GoalReportSectionKeys.currentPeriod,
+          messages.goalReportSectionStanding,
+        ),
+        (GoalReportSectionKeys.rollingWindow, messages.goalReportSectionWindow),
+        (GoalReportSectionKeys.latestChange, messages.goalReportSectionChange),
+        (GoalReportSectionKeys.coverage, messages.goalReportSectionCoverage),
+      ])
+        if (sections[key] case final String body when body.trim().isNotEmpty)
+          (heading, body.trim()),
+    ];
+    final actions = <String>[
+      for (final action
+          in (sections[GoalReportSectionKeys.nextActions] as List<Object?>? ??
+              const <Object?>[]))
+        if (action is String && action.trim().isNotEmpty) action.trim(),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (index, (heading, body)) in ordered.indexed) ...[
+          if (index > 0) SizedBox(height: tokens.spacing.step4),
+          Text(
+            heading,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          AgentMarkdownView(
+            body,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+        ],
+        if (actions.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step4),
+          Text(
+            messages.goalReportSectionNext,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          // A list, because that is what it is. Run together as prose, the
+          // actions were the part of the report most likely to be skimmed
+          // past — which is the opposite of what an action is for.
+          for (final action in actions)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step1),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      size: IconSizes.s,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step1),
+                  Expanded(
+                    child: AgentMarkdownView(
+                      action,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
   }
 }

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -31,7 +32,15 @@ class GoalAgentChatPage extends ConsumerWidget {
         leading: BackButton(
           onPressed: () => beamToNamed(detailPath),
         ),
-        title: Text(name),
+        // Same rule as the detail page: a user-written goal name is routinely
+        // long enough to truncate on one line.
+        title: Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: context.designTokens.typography.styles.subtitle.subtitle2
+              .copyWith(color: context.designTokens.colors.text.highEmphasis),
+        ),
       ),
       body: SafeArea(
         child: !identityAsync.hasValue && !identityAsync.hasError

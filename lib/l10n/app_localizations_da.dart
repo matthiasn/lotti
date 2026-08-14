@@ -5997,12 +5997,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration AI-tid';
+    return '$duration tænketid';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Samlet beregningstid for agenten på tværs af $calls modelkald.';
+    return 'Den samlede tid, denne agents model har arbejdet, over $calls kald.';
   }
 
   @override
@@ -6058,6 +6058,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalAssessmentSuggestedProvenanceGeneric =>
       'Foreslået af din målagent, accepteret af dig';
+
+  @override
+  String get goalAssessmentSuggestionHint =>
+      'Foreslået ud fra det målte — ret det, hvis du er uenig.';
 
   @override
   String get goalAssessmentUserProvenance => 'Bedømt af dig';
@@ -6294,6 +6298,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDimensionHealthSource => 'Sundhedsdata';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Ikke i mål endnu, men den seneste måling bevægede sig mod målet.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Dine målbare';
 
   @override
@@ -6312,7 +6320,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDimensionNeedsAttentionNote =>
-      'Denne dimension kræver opmærksomhed; dets egne beviser forbliver synlige.';
+      'Bagud i forhold til målet i denne periode.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'Har brug for opmærksomhed';
@@ -6834,6 +6842,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 uger';
   }
+
+  @override
+  String get goalReportSectionChange => 'Seneste ændring';
+
+  @override
+  String get goalReportSectionCoverage => 'Datadækning';
+
+  @override
+  String get goalReportSectionNext => 'Hvad nu';
+
+  @override
+  String get goalReportSectionStanding => 'Sådan står det';
+
+  @override
+  String get goalReportSectionWindow => 'Det bredere vindue';
 
   @override
   String get goalStatusAchieved => 'Opnået';

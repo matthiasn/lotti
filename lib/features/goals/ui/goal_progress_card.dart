@@ -625,7 +625,7 @@ class _HabitDimensionCard extends StatelessWidget {
                     color: tokens.colors.text.lowEmphasis,
                   ),
                 );
-                return compact
+                final label = compact
                     ? Row(
                         children: [
                           Flexible(child: title),
@@ -638,6 +638,20 @@ class _HabitDimensionCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [title, caption],
                       );
+                // The streak rides on the trailing edge of the label it
+                // qualifies. On its own row below the day squares it was an
+                // orphan: a two-word stat marooned against the right edge
+                // with a card's width of nothing beside it and a gap under
+                // it, which read as a layout accident rather than a figure.
+                if (compact || successfulWeeks == null) return label;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: label),
+                    SizedBox(width: tokens.spacing.step4),
+                    _Reliability(successfulWeeks: successfulWeeks),
+                  ],
+                );
               },
             ),
             SizedBox(height: tokens.spacing.step2),
@@ -647,13 +661,22 @@ class _HabitDimensionCard extends StatelessWidget {
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
           ),
-          if (successfulWeeks != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _Reliability(successfulWeeks: successfulWeeks),
+          // Narrow, the streak cannot share the label's line and keeps a row
+          // of its own — the only width where that is not wasted space.
+          if (successfulWeeks != null)
+            LayoutBuilder(
+              builder: (context, constraints) =>
+                  constraints.maxWidth <
+                      tokens.spacing.step13 * 2 + tokens.spacing.step5
+                  ? Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step3),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _Reliability(successfulWeeks: successfulWeeks),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
-          ],
         ],
       ),
     );
@@ -671,6 +694,7 @@ typedef _MetricSummary = ({
   bool hasData,
   bool latestOnTargetToday,
   bool met,
+  bool improving,
 });
 
 _BloodPressureMetrics? _bloodPressureMetrics(
@@ -733,6 +757,19 @@ _MetricSummary _metricSummary(
       latestDay != null &&
       DateUtils.isSameDay(latestDay.day, today) &&
       _valueMeetsTarget(latestDay.value, metric.target, metric.direction);
+  // Whether the most recent observation moved TOWARD the target relative to
+  // the one before it. Not a trend — two points never are — but it is the
+  // difference between "behind" and "behind and getting worse", and it is the
+  // one thing the seven bars above cannot say on their own.
+  final previousDay = observed.length < 2
+      ? null
+      : observed[observed.length - 2];
+  final improving =
+      latestDay != null &&
+      previousDay != null &&
+      (metric.direction == GoalDirection.atLeast
+          ? latestDay.value > previousDay.value
+          : latestDay.value < previousDay.value);
   return (
     current: current,
     // The most recent observation. Point-sample vitals display this instead
@@ -742,6 +779,7 @@ _MetricSummary _metricSummary(
     latest: observed.isEmpty ? 0 : observed.last.value,
     hasData: observed.isNotEmpty,
     latestOnTargetToday: latestOnTargetToday,
+    improving: improving,
     met:
         observed.isNotEmpty &&
         (meetsPeriodTarget ||
@@ -787,6 +825,9 @@ class _BloodPressureDimensionCard extends StatelessWidget {
     final met = hasData && systolic.met && diastolic.met;
     final onTargetToday =
         systolic.latestOnTargetToday && diastolic.latestOnTargetToday;
+    // Both halves have to be moving the right way. One improving while the
+    // other slips is not a reading that improved.
+    final improving = systolic.improving && diastolic.improving;
     final systolicColor = tokens.colors.alert.error.defaultColor;
     final diastolicColor = tokens.colors.alert.info.defaultColor;
     final range = _metricDateRange([metrics.systolic, metrics.diastolic]);
@@ -876,6 +917,8 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 ? context.messages.goalDimensionOnTargetTodayNote
                 : met
                 ? context.messages.goalDimensionOnTrackNote
+                : improving
+                ? context.messages.goalDimensionImprovingNote
                 : context.messages.goalDimensionNeedsAttentionNote,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,
@@ -1005,6 +1048,10 @@ class _MetricDimensionCard extends StatelessWidget {
                 ? context.messages.goalDimensionOnTargetTodayNote
                 : summary.met
                 ? context.messages.goalDimensionOnTrackNote
+                : summary.improving
+                // Behind, but moving the right way — worth saying, and the
+                // one thing the bars above cannot.
+                ? context.messages.goalDimensionImprovingNote
                 : context.messages.goalDimensionNeedsAttentionNote,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.mediumEmphasis,

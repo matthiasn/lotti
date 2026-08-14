@@ -1322,6 +1322,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
               'trackStatus': strategy.reportStatus!.name,
               'periodKey': derivation.periodKey,
               'specVersionId': derivation.version.id,
+              GoalReportProvenanceKeys.sections: ?strategy.reportSections,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },

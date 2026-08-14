@@ -6096,12 +6096,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalAgentLifetimeTimePill(String duration) {
-    return '$duration timp AI';
+    return '$duration de gândire';
   }
 
   @override
   String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Timp total de calcul al agentului pentru $calls apeluri de model.';
+    return 'Timpul total în care modelul acestui agent a lucrat, în $calls apeluri.';
   }
 
   @override
@@ -6157,6 +6157,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalAssessmentSuggestedProvenanceGeneric =>
       'Sugerat de agentul dvs. de obiectiv, acceptat de dvs.';
+
+  @override
+  String get goalAssessmentSuggestionHint =>
+      'Sugerat pe baza datelor măsurate — schimbă-l dacă nu ești de acord.';
 
   @override
   String get goalAssessmentUserProvenance => 'Evaluat de dvs.';
@@ -6413,6 +6417,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDimensionHealthSource => 'Date de sănătate';
 
   @override
+  String get goalDimensionImprovingNote =>
+      'Încă nu, dar ultima măsurătoare s-a apropiat de țintă.';
+
+  @override
   String get goalDimensionMeasurableSource => 'Măsurătoarea dvs.';
 
   @override
@@ -6431,7 +6439,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDimensionNeedsAttentionNote =>
-      'Această dimensiune necesită atenție; propriile sale dovezi rămân vizibile.';
+      'Sub țintă în această perioadă.';
 
   @override
   String get goalDimensionNeedsAttentionStatus => 'Necesită atenție';
@@ -6962,6 +6970,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalReliabilityWeeks(int achieved) {
     return '$achieved / 6 săptămâni';
   }
+
+  @override
+  String get goalReportSectionChange => 'Ultima schimbare';
+
+  @override
+  String get goalReportSectionCoverage => 'Acoperirea datelor';
+
+  @override
+  String get goalReportSectionNext => 'Ce urmează';
+
+  @override
+  String get goalReportSectionStanding => 'Cum stați';
+
+  @override
+  String get goalReportSectionWindow => 'Fereastra mai largă';
 
   @override
   String get goalStatusAchieved => 'Atins';
