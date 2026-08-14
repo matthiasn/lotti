@@ -480,8 +480,13 @@ class TaskAgentService {
           final pendingWake = state?.nextWakeAt;
           if (state != null) {
             var updatedState = state;
-            if (pendingWake != null &&
-                pendingWake.isAfter(now) &&
+            final hasPendingTaskWake =
+                pendingWake != null && pendingWake.isAfter(now);
+            final hasPendingProjectWake =
+                identity.kind == AgentKinds.projectAgent &&
+                state.scheduledWakeAt != null &&
+                state.reportFreshAt != null;
+            if ((hasPendingTaskWake || hasPendingProjectWake) &&
                 !state.isReportStale) {
               updatedState = updatedState.copyWith(reportStaleAt: now);
             }

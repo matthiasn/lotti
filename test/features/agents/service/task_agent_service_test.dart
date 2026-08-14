@@ -3018,7 +3018,8 @@ void main() {
       );
 
       test(
-        'turning off a project agent clears only its automatic fallback',
+        'turning off a project agent marks its report stale and clears only '
+        'its automatic fallback',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final pendingAt = DateTime(2026, 8, 14, 11);
@@ -3028,6 +3029,7 @@ void main() {
               pendingProjectActivityAt: pendingAt,
             ),
             scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            reportFreshAt: DateTime(2026, 8, 14, 10, 30),
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 8}),
           );
@@ -3070,7 +3072,8 @@ void main() {
           final syncedStates = verify(
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured.whereType<AgentStateEntity>();
-          expect(syncedStates, isEmpty);
+          expect(syncedStates.single.reportStaleAt, now);
+          expect(syncedStates.single.isReportStale, isTrue);
           final writtenStates = verify(
             () => mockRepository.upsertEntity(captureAny()),
           ).captured.whereType<AgentStateEntity>();

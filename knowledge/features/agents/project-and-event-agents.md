@@ -166,10 +166,13 @@ resume-time restoration routes by agent kind, restores the direct-project
 subscription, and arms it after the lifecycle becomes active. Settings-driven
 opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
 synced state timestamp and vector clock so scheduling maintenance cannot
-resurrect a peer-completed activity marker. If an automation-preference or
-inference-setup identity transaction commits but its outbox flush fails, the
-service confirms the persisted identity, performs the matching runtime and
-fallback reconciliation, and then rethrows the sync failure. Pausing or
+resurrect a peer-completed activity marker. Before opt-out removes a project
+fallback, it marks an otherwise-current report stale so a later opt-in requests
+an immediate catch-up instead of waiting for the next morning. If an
+automation-preference or inference-setup identity transaction commits but its
+outbox flush fails, the service confirms the persisted identity, performs the
+matching runtime and fallback reconciliation, and then rethrows the sync
+failure. Pausing or
 destroying a project agent clears the same local
 fallback inside the lifecycle transaction while retaining the pending marker
 for a later resume. A pause or destroy received from sync also clears this
