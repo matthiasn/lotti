@@ -284,6 +284,13 @@ extension WakeDrainEngine on WakeOrchestrator {
     if (entity is! AgentIdentityEntity) {
       return true;
     }
+    if (entity.kind == AgentKinds.projectAgent) {
+      return projectAgentWakeAllowed(
+        config: entity.config,
+        lifecycle: entity.lifecycle,
+        initiator: job.initiator,
+      );
+    }
     if (entity.kind != AgentKinds.taskAgent) {
       return entity.lifecycle == AgentLifecycle.active;
     }

@@ -1380,6 +1380,69 @@ void main() {
         },
       );
 
+      test(
+        'arms pending activity that has no local fallback after restart',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-pending');
+          final link = AgentLink.agentProject(
+            id: 'link-pending',
+            fromId: 'pa-pending',
+            toId: 'project-pending',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final pendingState =
+              makeState(
+                id: 'state-pa-pending',
+                agentId: 'pa-pending',
+                activeProjectId: 'project-pending',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-pending',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-pending']),
+          ).thenAnswer((_) async => {'pa-pending': pendingState});
+          when(
+            () => mockRepository.getAgentState('pa-pending'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-pending'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-pending': [link],
+            },
+          );
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 22, 10)), () {
+            return service.restoreSubscriptions();
+          });
+
+          final persisted =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, DateTime(2026, 3, 23, 6));
+          expect(
+            persisted.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 22, 9),
+          );
+          expect(notifiedAgentIds, ['pa-pending']);
+        },
+      );
+
       test('aborts before per-agent work when state preload fails', () async {
         final first = makeIdentity(agentId: 'pa-1');
         final second = makeIdentity(agentId: 'pa-2');

@@ -137,4 +137,47 @@ void main() {
       },
     );
   });
+
+  group('projectAgentWakeAllowed', () {
+    test('automatic opt-out still permits an explicit user wake', () {
+      const config = AgentConfig(automaticUpdatesEnabled: false);
+
+      expect(
+        projectAgentWakeAllowed(
+          config: config,
+          lifecycle: AgentLifecycle.active,
+          initiator: WakeInitiator.automation,
+        ),
+        isFalse,
+      );
+      expect(
+        projectAgentWakeAllowed(
+          config: config,
+          lifecycle: AgentLifecycle.active,
+          initiator: WakeInitiator.user,
+        ),
+        isTrue,
+      );
+    });
+
+    test('disabled setup blocks user and automatic wakes', () {
+      const config = AgentConfig(
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.disabled,
+          origin: AgentInferenceSetupOrigin.user,
+        ),
+      );
+
+      for (final initiator in WakeInitiator.values) {
+        expect(
+          projectAgentWakeAllowed(
+            config: config,
+            lifecycle: AgentLifecycle.active,
+            initiator: initiator,
+          ),
+          isFalse,
+        );
+      }
+    });
+  });
 }

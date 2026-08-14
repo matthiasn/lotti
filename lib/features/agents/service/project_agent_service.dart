@@ -279,7 +279,7 @@ class ProjectAgentService {
     for (final agent in projectAgents) {
       try {
         final links = linksByAgentId[agent.agentId] ?? const <AgentLink>[];
-        final state = await _retireDormantDailySchedule(
+        var state = await _retireDormantDailySchedule(
           statesByAgentId[agent.agentId],
         );
         for (final link in links) {
@@ -289,6 +289,7 @@ class ProjectAgentService {
           config: agent.config,
           lifecycle: agent.lifecycle,
         )) {
+          state = await _armPendingActivityFallback(state);
           orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
           _hydrateThrottleDeadlineFromState(agent.agentId, state);
         } else {
@@ -332,6 +333,41 @@ class ProjectAgentService {
         matchEntityIds: {projectEntityUpdateNotification(projectId)},
       ),
     );
+  }
+
+  /// Restores a missing local fallback for already-pending project activity.
+  ///
+  /// The startup snapshot is only a hint. Re-read immediately before writing
+  /// so a cancellation, completion, or manual schedule that lands during
+  /// restoration wins instead of being overwritten by the stale snapshot.
+  Future<AgentStateEntity?> _armPendingActivityFallback(
+    AgentStateEntity? snapshot,
+  ) async {
+    if (snapshot == null ||
+        snapshot.slots.pendingProjectActivityAt == null ||
+        snapshot.scheduledWakeAt != null) {
+      return snapshot;
+    }
+
+    final current = await repository.getAgentState(snapshot.agentId);
+    if (current == null ||
+        current.deletedAt != null ||
+        current.slots.pendingProjectActivityAt == null ||
+        current.scheduledWakeAt != null) {
+      return current;
+    }
+
+    final now = clock.now();
+    final updated = current.copyWith(
+      scheduledWakeAt: nextOccurrenceOf(
+        now,
+        hour: AgentSchedules.projectDailyDigestHour,
+      ),
+      updatedAt: now,
+    );
+    await syncService.upsertEntity(updated);
+    onPersistedStateChanged?.call(current.agentId);
+    return updated;
   }
 
   /// Removes the legacy always-on daily digest from an idle project agent.

@@ -138,7 +138,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
-  /// Records one failed attempt and advances a due automatic fallback.
+  /// Records one failed attempt and creates or advances its automatic fallback.
   ///
   /// This is shared by inference failures inside [executeImpl] and setup
   /// failures caught by [execute], so an exception before conversation
@@ -148,7 +148,6 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     required String runKey,
     required Object error,
     required StackTrace stackTrace,
-    AgentStateEntity? fallbackState,
   }) async {
     logError('wake failed', error: error, stackTrace: stackTrace);
 
@@ -162,9 +161,9 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
     try {
       final failureAt = clock.now();
-      final latestState =
-          await agentRepository.getAgentState(agentIdentity.agentId) ??
-          fallbackState;
+      final latestState = await agentRepository.getAgentState(
+        agentIdentity.agentId,
+      );
       if (latestState != null) {
         final hasPendingActivity =
             latestState.slots.pendingProjectActivityAt != null;

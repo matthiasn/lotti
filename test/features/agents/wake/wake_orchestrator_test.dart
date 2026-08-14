@@ -480,6 +480,25 @@ void main() {
         },
       );
 
+      test('scheduled manual enqueue is classified as automation', () async {
+        orchestrator = WakeOrchestrator(
+          repository: mockRepository,
+          queue: queue,
+          runner: runner,
+        );
+        expect(await runner.tryAcquire('agent-1'), isTrue);
+
+        orchestrator.enqueueManualWake(
+          agentId: 'agent-1',
+          reason: WakeReason.scheduled.name,
+        );
+        await pumpEventQueue();
+
+        final job = queue.dequeue();
+        expect(job?.initiator, WakeInitiator.automation);
+        runner.release('agent-1');
+      });
+
       test(
         'successful manual wake acknowledges changes seen before it began',
         () async {

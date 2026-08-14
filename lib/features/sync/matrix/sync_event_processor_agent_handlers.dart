@@ -274,6 +274,7 @@ extension _AgentHandlers on SyncEventProcessor {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(
                 appliedIdentity.agentId,
               );
+              await _armPendingProjectActivityFallback(appliedIdentity);
             } else {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(
                 appliedIdentity.agentId,
@@ -487,6 +488,35 @@ extension _AgentHandlers on SyncEventProcessor {
 
   String _projectSubscriptionId(AgentProjectLink link) =>
       '${link.fromId}_project_direct_${link.toId}';
+
+  /// Arms work observed after the state/link arrived but before the identity.
+  ///
+  /// Scheduling fields are device-local, so this direct repository write is
+  /// the sync-apply counterpart of the local project-activity monitor. The
+  /// marker itself already arrived through sync; only its local deadline was
+  /// withheld while the automation policy could not yet be evaluated.
+  Future<void> _armPendingProjectActivityFallback(
+    AgentIdentityEntity identity,
+  ) async {
+    final state = await agentRepository!.getAgentState(identity.agentId);
+    if (state == null ||
+        state.deletedAt != null ||
+        state.slots.pendingProjectActivityAt == null ||
+        state.scheduledWakeAt != null) {
+      return;
+    }
+
+    final now = clock.now();
+    await agentRepository!.upsertEntity(
+      state.copyWith(
+        scheduledWakeAt: nextOccurrenceOf(
+          now,
+          hour: AgentSchedules.projectDailyDigestHour,
+        ),
+        updatedAt: now,
+      ),
+    );
+  }
 
   void _addProjectSubscription(AgentProjectLink link) {
     wakeOrchestrator?.addSubscription(

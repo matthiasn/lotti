@@ -1382,6 +1382,42 @@ void main() {
         expect(notifiedAgentIds, [agentId]);
       });
 
+      test('does not restore state deleted during a failed wake', () async {
+        when(
+          () => mockSyncService.reconciledAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => null);
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error after state deletion');
+            };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isFalse);
+        final persisted = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(persisted.whereType<AgentStateEntity>(), isEmpty);
+      });
+
       test(
         'does not synthesize a retry after an automation-off manual failure',
         () async {

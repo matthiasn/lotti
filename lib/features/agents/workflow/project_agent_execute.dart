@@ -570,7 +570,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         runKey: runKey,
         error: e,
         stackTrace: s,
-        fallbackState: state,
       );
     } finally {
       conversationRepository.deleteConversation(conversationId);

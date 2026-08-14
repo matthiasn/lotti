@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/features/agents/state/agent_providers.dart
     title: Wake executor routing, content checkers and persistedStateChangedNotifier
     last_modified: 2026-07-26
+  - id: sync-runtime
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Synced project-agent runtime reconciliation
+    last_modified: 2026-08-14
   - id: project-detail-record
     resource: ../../../lib/features/projects/state/project_detail_record_provider.dart
     title: Project detail report read model
@@ -114,6 +118,9 @@ stateDiagram-v2
   active legacy project agent with no stored preference retains its shipped-on
   behavior; explicit opt-out, inactive lifecycle, and disabled inference block
   automatic subscription and fallback wakes while observation remains wired.
+  If a state and project link arrive before their synced identity, identity
+  reconciliation arms the already-pending marker once that policy becomes
+  evaluable; startup restoration performs the same repair after a restart.
 
 ## Dormant-by-default scheduling
 

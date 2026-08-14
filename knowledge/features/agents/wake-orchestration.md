@@ -143,13 +143,15 @@ opt-out, observation subscriptions remain registered but their matches cannot
 queue or persist automatic wakes, and a manually requested wake cannot
 synthesize a new fallback afterward. Direct project edits still use the shorter
 coalescing deadline when automation is allowed, while manual requests bypass
-throttling. The scheduled-wake manager clears completed dormant rows instead of
-rolling them forward,
-preserves never-woken creation work and rows whose pending marker proves that
-work remains, and skips enqueue while equivalent work is already queued or
-running. A successful wake retains a future fallback when newer activity landed
-during the run. Every failure after state resolution—including setup failures
-before inference—uses the same overdue-deadline advancement. Explicit
+throttling. A successful wake with no remaining creation or project activity
+clears `scheduledWakeAt`. The scheduled-wake manager separately clears legacy
+completed rows only after at least one successful wake and only when no pending
+activity remains; it preserves never-woken creation work and rows whose pending
+marker proves that work remains, and skips enqueue while equivalent work is
+already queued or running. A successful wake retains a future fallback when
+newer activity landed during the run. Every failure after state
+resolution—including setup failures before inference—uses the same
+create-or-advance deadline policy. Explicit
 cancellation persists `nextWakeAt` and `scheduledWakeAt` removal atomically,
 then clears queued work, so a storage failure cannot leave the UI falsely
 showing a completed cancellation.

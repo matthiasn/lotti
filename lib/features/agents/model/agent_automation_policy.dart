@@ -30,7 +30,25 @@ bool taskAgentWakeAllowed({
 bool projectAgentAutomaticWakesAllowed({
   required AgentConfig config,
   required AgentLifecycle lifecycle,
-}) =>
-    lifecycle == AgentLifecycle.active &&
-    config.automaticUpdatesEnabled != false &&
-    config.inferenceSetup?.mode != AgentInferenceSetupMode.disabled;
+}) => projectAgentWakeAllowed(
+  config: config,
+  lifecycle: lifecycle,
+  initiator: WakeInitiator.automation,
+);
+
+/// Whether a queued project-agent wake still satisfies the current policy.
+///
+/// User-requested work bypasses the automatic-updates preference, but neither
+/// user nor automation work may run for an inactive agent or disabled setup.
+bool projectAgentWakeAllowed({
+  required AgentConfig config,
+  required AgentLifecycle lifecycle,
+  required WakeInitiator initiator,
+}) {
+  if (lifecycle != AgentLifecycle.active ||
+      config.inferenceSetup?.mode == AgentInferenceSetupMode.disabled) {
+    return false;
+  }
+  return initiator == WakeInitiator.user ||
+      config.automaticUpdatesEnabled != false;
+}

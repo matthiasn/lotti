@@ -748,7 +748,9 @@ class WakeOrchestrator with AgentErrorLogging {
   ///
   /// Unlike notification-driven wakes, this bypasses subscription matching and
   /// self-notification suppression.  Used for initial creation wakes and
-  /// manual re-analysis triggers.
+  /// manual re-analysis triggers. Scheduled work defaults to an automation
+  /// initiator so current policy is rechecked at drain time; other callers
+  /// default to a user initiator unless they explicitly say otherwise.
   ///
   /// Returns the wake's deterministic run key so callers can correlate the
   /// enqueued job with its [runCompletions] event.
@@ -799,7 +801,11 @@ class WakeOrchestrator with AgentErrorLogging {
       triggerTokens: triggerTokens,
       workspaceKey: workspaceKey,
       createdAt: now,
-      initiator: initiator ?? WakeInitiator.user,
+      initiator:
+          initiator ??
+          (reason == WakeReason.scheduled.name
+              ? WakeInitiator.automation
+              : WakeInitiator.user),
     );
 
     queue.enqueue(job);
