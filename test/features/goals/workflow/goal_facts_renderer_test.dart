@@ -1014,9 +1014,15 @@ void main() {
     );
     final children = (json['of']! as List<dynamic>)
         .cast<Map<String, dynamic>>();
-    expect(children[0]['habit'], 'gym-habit');
+    // Neither the habit id nor the measurable's data-type id reaches the
+    // model: both are UUIDs in production, and a model handed one writes it
+    // into prose ("Close the gap on habit 71ca84b0"). `criterionId` is the
+    // handle every tool call references, and `title` is what names the thing.
+    expect(children[0]['habit'], isNull);
+    expect(children[0]['criterionId'], 'gym');
     expect(children[0]['window'], 'calendar week (Mon-Sun)');
-    expect(children[1]['measurable'], 'water-id');
+    expect(children[1]['measurable'], isNull);
+    expect(children[1]['criterionId'], 'water');
     expect(children[1]['window'], 'day');
     expect(
       ((children[2]['anyOf'] as List<dynamic>).single

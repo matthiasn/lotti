@@ -248,21 +248,18 @@ String buildComplexHealthFacts({bool bpMedsBehind = false}) {
           {
             'criterionId': 'habit-measure-bp',
             'title': 'Measure Blood Pressure',
-            'habit': 'habit-measure-bp',
             'window': 'rolling 7 days',
             'targetCount': 5,
           },
           {
             'criterionId': 'habit-bp-meds',
             'title': 'BP meds',
-            'habit': 'habit-bp-meds',
             'window': 'rolling 7 days',
             'targetCount': 7,
           },
           {
             'criterionId': 'habit-weigh',
             'title': 'Weigh myself',
-            'habit': 'habit-weigh',
             'window': 'rolling 7 days',
             'targetCount': 3,
           },
@@ -518,7 +515,7 @@ String buildCompositeFacts({
           },
           {
             'criterionId': 'gym',
-            'habit': 'station gym session',
+            'title': 'station gym session',
             'window': 'calendar week (Mon-Sun)',
             'targetCount': gGymTargetCount,
           },
@@ -589,7 +586,7 @@ String buildGymFacts({
       'id': 'goal-gym-g2',
       'statement': 'Train at the station gym three times per calendar week.',
       'criteria': {
-        'habit': 'station gym session',
+        'title': 'station gym session',
         'window': 'calendar week (Mon-Sun)',
         'targetCount': gGymTargetCount,
       },

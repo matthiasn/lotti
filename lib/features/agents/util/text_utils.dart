@@ -36,10 +36,39 @@ final _reportIdAnnotationPatterns = <RegExp>[
   RegExp('\\s*\\(\\s*$_uuid\\s*\\)'),
 ];
 
+/// A bare internal id fragment echoed into prose.
+///
+/// Goal criterion ids are minted as `habit-<habitId>` (`goal_form_mapping`),
+/// so the handle the model legitimately needs for `nextActions[].criterionId`
+/// carries a UUID inside it. Weaker models copy it into the sentence — "Close
+/// the gap on habit 71ca84b0 — 2 more completions needed".
+///
+/// Matched by shape rather than by a preceding noun, because the noun is
+/// whatever the report's language calls a habit. Deliberately narrow on three
+/// axes, so nothing legitimate is caught:
+///
+///  * **A whole UUID, or eight or more hex digits with at least one letter.**
+///    A pure-digit run of that length is a plausible measurement and never
+///    matches.
+///  * **Preceded by whitespace.** URLs contain none, so a UUID inside a
+///    `/tasks/<id>` path or a markdown link target can never be reached — the
+///    same guarantee [_reportIdAnnotationPatterns] makes, and one this shared
+///    sanitizer owes its task and project callers.
+///  * **Not followed by `-`, a word character or `/`.** That leaves a full
+///    UUID and any longer token intact rather than beheading them.
+///
+/// The leading space goes with it, so "on habit 71ca84b0 — 2 more" closes up
+/// to "on habit — 2 more" rather than leaving a double space behind.
+final _bareIdFragmentPattern = RegExp(
+  '\\s`?(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
+  '`?(?![-\\w/])',
+);
+
 /// Removes internal entity ids a model echoed into a user-facing agent report.
 ///
-/// See [_reportIdAnnotationPatterns] for what is stripped and why links are
-/// preserved. Trailing whitespace a removal leaves on a line is trimmed, but
+/// See [_reportIdAnnotationPatterns] for the annotated shapes, and
+/// [_bareIdFragmentPattern] for the bare id fragment; both leave links
+/// untouched. Trailing whitespace a removal leaves on a line is trimmed, but
 /// only on lines a removal actually touched — a line that still appears
 /// verbatim in the input keeps its trailing spaces, so a deliberate Markdown
 /// hard break (two trailing spaces) elsewhere in the report survives.
@@ -50,6 +79,7 @@ String sanitizeAgentReportText(String text) {
   for (final pattern in _reportIdAnnotationPatterns) {
     out = out.replaceAll(pattern, '');
   }
+  out = out.replaceAll(_bareIdFragmentPattern, '');
   if (out == text) return text;
   // A removal only deletes characters (a pattern's leading `\s*` can also eat a
   // preceding newline, merging two lines), so any line still present verbatim

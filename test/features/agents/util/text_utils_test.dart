@@ -146,6 +146,46 @@ void main() {
       expect(sanitizeAgentReportText(input), input);
     });
 
+    test(
+      'strips the truncated criterion id the goal agent writes into prose',
+      () {
+        // Verbatim from the shipped report: goal criterion ids are minted as
+        // `habit-<habitId>`, so the handle the model needs for
+        // nextActions[].criterionId carries a UUID the model then echoes.
+        expect(
+          sanitizeAgentReportText(
+            'Close the gap on habit 71ca84b0 — 2 more completions needed',
+          ),
+          'Close the gap on habit — 2 more completions needed',
+        );
+        expect(
+          sanitizeAgentReportText('Close the gap on habit `71ca84b0` today'),
+          'Close the gap on habit today',
+        );
+      },
+    );
+
+    test('strips a bare UUID standing in prose', () {
+      expect(sanitizeAgentReportText('Ship $uuid now'), 'Ship now');
+    });
+
+    test('leaves a bare id inside a link path alone', () {
+      // The whitespace the pattern requires cannot occur inside a URL, which
+      // is what keeps proof-of-work links whole without an explicit carve-out.
+      const bare = 'See https://lotti.app/tasks/$uuid for context';
+      expect(sanitizeAgentReportText(bare), bare);
+      const head = 'See /tasks/71ca84b0 for context';
+      expect(sanitizeAgentReportText(head), head);
+    });
+
+    test('leaves long digit runs and ordinary words alone', () {
+      // A step count is the exact shape a coach reports, and must survive.
+      const steps = 'You walked 12345678 steps this week.';
+      expect(sanitizeAgentReportText(steps), steps);
+      const prose = 'Consistency improved and the streak held.';
+      expect(sanitizeAgentReportText(prose), prose);
+    });
+
     test('preserves a Markdown hard break on an untouched line while '
         'trimming the line a removal actually touched', () {
       // The first line carries a deliberate two-space hard break; a later line
