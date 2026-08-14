@@ -195,10 +195,18 @@ class GoalCompactWindowStrip extends StatelessWidget {
       label: placeholder
           ? context.messages.goalProgressStripLoading
           : [
+              // Counted with the verdicts applied. Taken from the measured
+              // states alone, the strip could announce "1 successful day"
+              // and name that same date as Missed in the next breath, while
+              // the cell itself correctly showed the verdict.
               context.messages.goalProgressCompactSemantics(
-                visible
-                    .where((state) => state != GoalCompactDayState.none)
-                    .length,
+                [
+                  for (var index = 0; index < visible.length; index++)
+                    if (_ratingAt(index, visible.length) case final rating?)
+                      rating == GoalAssessmentRating.met
+                    else
+                      visible[index] != GoalCompactDayState.none,
+                ].where((successful) => successful).length,
               ),
               if (verdictSummary.isNotEmpty) verdictSummary,
             ].join('. '),
@@ -302,20 +310,15 @@ class _CompactDayCell extends StatelessWidget {
                     : tokens.spacing.step2,
               ),
             )
-          // A dot stands in below the size a glyph survives. The list rows'
-          // 12px cells cannot hold a tick, but "judged, and not a clean day"
-          // still has to reach a reader who cannot separate the hues.
-          : rating != null && size < ControlSizes.iconChipCompact
-          ? (rating == GoalAssessmentRating.met
-                ? null
-                : Center(
-                    child: goalPartialDayDot(tokens, tokens.spacing.step1),
-                  ))
-          : rating != null && size >= ControlSizes.iconChipCompact
+          : rating != null
+          // The verdict's own shape at every size. Collapsing the three
+          // non-met verdicts into one dot on the list's 12px cells left
+          // Improving, Mixed and Missed distinguishable by hue alone —
+          // which is the one thing the shapes exist to avoid.
           ? Center(
               child: Icon(
                 goalAssessmentRatingGlyph(rating),
-                size: size * 0.6,
+                size: size * 0.75,
                 // The ink of the fill's OWN family. Painting every glyph in
                 // the success ink put a green tick's colour on a red missed
                 // cell and an orange mixed one.
@@ -391,14 +394,18 @@ String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
   // 10,000" directly above a "Needs attention" line. Where the coarse step
   // would erase the difference, keep the finer one.
   if (against != null && value != against) {
-    // Step down the scale until the two stop reading as the same number.
-    // One step was not enough: 9,999.6 against 10,000 still rounded to
-    // 10,000 and rendered "10,000 of 10,000" above a "Needs attention" line.
-    for (final step in const [1, 0.1, 0.01]) {
-      if (rounded != _roundGoalAggregate(against)) break;
-      rounded = (value / step).roundToDouble() * step;
-      if (rounded == (against / step).roundToDouble() * step) continue;
-      break;
+    // Keep adding decimals until the two stop reading as the same number.
+    // A fixed ladder always has a last rung: [1, 0.1, 0.01] still rendered
+    // "88 of 88" for 87.996, the exact contradiction this guard exists to
+    // prevent. Bounded at six places, well past any real measurement, so a
+    // pathological pair cannot spin here.
+    if (rounded == _roundGoalAggregate(against)) {
+      for (var places = 0; places <= 6; places++) {
+        if (value.toStringAsFixed(places) != against.toStringAsFixed(places)) {
+          rounded = double.parse(value.toStringAsFixed(places));
+          break;
+        }
+      }
     }
   }
   return number.format(
@@ -2288,47 +2295,51 @@ class _MetricProgressSeries extends StatelessWidget {
         number.format(metric.target),
       ),
       child: ExcludeSemantics(
-        child: FractionallySizedBox(
-          key: ValueKey(
-            'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
-          ),
-          heightFactor: heightFactor,
-          alignment: Alignment.bottomCenter,
-          child: metric.agentRecordedDays.contains(day.day)
-              ? Stack(
-                  fit: StackFit.expand,
-                  clipBehavior: Clip.none,
-                  children: [
-                    barFill,
-                    // Inside the bar, not floating above it. A negative
-                    // offset put the badge over whatever sat above the
-                    // chart — the period caption, and on a full-height bar
-                    // the card header itself.
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Tooltip(
-                        message: provenance == null
-                            ? context.messages.goalDimensionRecordedByAgent
-                            : context.messages
-                                  .goalDimensionRecordedByAgentDetails(
-                                    provenance.agentName,
-                                    DateFormat.MMMEd(locale).add_jm().format(
-                                      provenance.recordedAt,
-                                    ),
-                                  ),
-                        child: Icon(
-                          Icons.edit_note_rounded,
-                          size: IconSizes.xs,
-                          color: GoalAccentHues.aurora(
-                            Theme.of(context).brightness,
+        child: Stack(
+          // Expand, so the fractional bar still measures against the plot
+          // height rather than shrink-wrapping to nothing.
+          fit: StackFit.expand,
+          children: [
+            FractionallySizedBox(
+              key: ValueKey(
+                'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
+              ),
+              heightFactor: heightFactor,
+              alignment: Alignment.bottomCenter,
+              child: barFill,
+            ),
+            // A full-height sibling of the bar, not a child of it. Inside the
+            // fractional box a short bar — 4px against a 12px icon — hosted
+            // most of the badge outside its own bounds, so the visible part
+            // could not be hovered. Anchored from the bottom instead, it sits
+            // at the bar's top when there is room and rests on the baseline
+            // when there is not.
+            if (metric.agentRecordedDays.contains(day.day))
+              Positioned(
+                right: 0,
+                bottom: math.max(
+                  0,
+                  _chartHeight(tokens) * heightFactor - IconSizes.xs,
+                ),
+                child: Tooltip(
+                  message: provenance == null
+                      ? context.messages.goalDimensionRecordedByAgent
+                      : context.messages.goalDimensionRecordedByAgentDetails(
+                          provenance.agentName,
+                          DateFormat.MMMEd(locale).add_jm().format(
+                            provenance.recordedAt,
                           ),
                         ),
-                      ),
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    size: IconSizes.xs,
+                    color: GoalAccentHues.aurora(
+                      Theme.of(context).brightness,
                     ),
-                  ],
-                )
-              : barFill,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

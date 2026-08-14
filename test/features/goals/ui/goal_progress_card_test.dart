@@ -199,27 +199,18 @@ void main() {
     expect(label, contains('Met'));
     expect(label, contains('Missed'));
 
-    // And at 12px, where a glyph cannot survive, a dot still separates
-    // "judged, and not a clean day" from a met one for a reader who cannot
-    // tell the hues apart.
+    // Each verdict keeps its OWN shape even on the list's 12px cells.
+    // Collapsing the three non-met verdicts into one dot left Improving,
+    // Mixed and Missed separable by hue alone, which is the single thing the
+    // shapes exist to prevent.
     expect(
-      find.descendant(
-        of: find.byType(GoalCompactWindowStrip),
-        matching: find.byType(Container),
-      ),
-      findsWidgets,
+      find.byIcon(goalAssessmentRatingGlyph(GoalAssessmentRating.met)),
+      findsOneWidget,
     );
-    final dots = tester
-        .widgetList<Container>(
-          find.descendant(
-            of: find.byType(GoalCompactWindowStrip),
-            matching: find.byType(Container),
-          ),
-        )
-        .where(
-          (c) => (c.decoration as BoxDecoration?)?.shape == BoxShape.circle,
-        );
-    expect(dots, hasLength(1));
+    expect(
+      find.byIcon(goalAssessmentRatingGlyph(GoalAssessmentRating.missed)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a tappable strip reports the day each cell stands for, '
@@ -404,6 +395,9 @@ void main() {
       // Below 100 the same rule keeps whatever decimal it takes.
       expect(formatGoalAggregate(number, 87.94, against: 88), '87.9');
       expect(formatGoalAggregate(number, 87.96, against: 88), '87.96');
+      // A fixed ladder always has a last rung: [1, 0.1, 0.01] still rendered
+      // "88 of 88" here, the exact contradiction the guard exists to stop.
+      expect(formatGoalAggregate(number, 87.996, against: 88), '87.996');
     });
 
     test('blood pressure keeps whole numbers', () {

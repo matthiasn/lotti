@@ -40,7 +40,6 @@ void main() {
           'goal-1',
           type: AgentEntityTypes.agentMessage,
           subtype: AgentMessageKind.action.name,
-          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [action('older'), action('newer')]);
       when(() => repository.getEntitiesByIds(any())).thenAnswer(
@@ -102,7 +101,6 @@ void main() {
           'goal-1',
           type: AgentEntityTypes.agentMessage,
           subtype: AgentMessageKind.action.name,
-          limit: any(named: 'limit'),
         ),
       ).thenAnswer(
         (_) async => [
@@ -175,6 +173,20 @@ void main() {
       });
     },
   );
+
+  test('the service provider builds on the shared sync service', () {
+    final container = ProviderContainer(
+      overrides: [
+        agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(goalAssessmentServiceProvider),
+      isA<GoalAssessmentService>(),
+    );
+  });
 
   group('latestRatingsByDay', () {
     GoalAssessmentRecord record({
