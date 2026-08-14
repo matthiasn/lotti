@@ -399,6 +399,48 @@ void main() {
       },
     );
 
+    test(
+      'does not rearm activity already covered by a completed wake',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-completed-wake',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final beforeWake = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final completedWake = beforeWake.copyWith(
+          lastWakeAt: now.add(const Duration(minutes: 1)),
+        );
+        var stateRead = 0;
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer(
+          (_) async => stateRead++ == 0 ? beforeWake : completedWake,
+        );
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 3);
+
+        verifyNever(() => syncService.upsertEntity(any()));
+        verifyNever(
+          () => notifications.notifyUiOnly(any()),
+        );
+      },
+    );
+
     test('resolves project IDs from updated task IDs', () async {
       final link = AgentLink.agentProject(
         id: 'link-1',

@@ -134,8 +134,10 @@ stateDiagram-v2
   receiving device drops its retained fallback, local throttle, and queued
   automatic job while leaving explicit user wakes alone.
   Missing-fallback repair re-reads the current identity policy inside the same
-  local transaction as the state write; a concurrent opt-out therefore wins
-  instead of being overwritten by a stale sync-reconciliation decision. Local
+  local transaction as the state write; concurrent opt-in and opt-out changes
+  therefore win instead of being overwritten by a stale sync-reconciliation
+  decision. Equal or locally dominated identity replays still run this local
+  repair, so a transient receiver-side failure can recover on redelivery. Local
   settings, resume-time fallback repair, and startup restoration use the same
   transaction-local policy recheck before enabling runtime; a lifecycle change
   that wins during startup also removes the stale observation subscriptions.
@@ -164,10 +166,11 @@ resume-time restoration routes by agent kind, restores the direct-project
 subscription, and arms it after the lifecycle becomes active. Settings-driven
 opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
 synced state timestamp and vector clock so scheduling maintenance cannot
-resurrect a peer-completed activity marker. If the identity transaction commits
-but its outbox flush fails, the service confirms the persisted preference,
-performs the matching runtime and fallback reconciliation, and then rethrows
-the sync failure. Pausing or destroying a project agent clears the same local
+resurrect a peer-completed activity marker. If an automation-preference or
+inference-setup identity transaction commits but its outbox flush fails, the
+service confirms the persisted identity, performs the matching runtime and
+fallback reconciliation, and then rethrows the sync failure. Pausing or
+destroying a project agent clears the same local
 fallback inside the lifecycle transaction while retaining the pending marker
 for a later resume. A pause or destroy received from sync also clears this
 device's local fallback and disables runtime because the sender cannot clear a
@@ -186,7 +189,10 @@ activity monitor also captures when each local update batch was observed and
 serializes its final write with cancellation. A cancellation cutoff rejects
 older batches still resolving links, while newer post-cancel edits remain
 eligible; rolled-back cancellations remove only their own pending cutoffs, so
-even overlapping failures leave no phantom cancellation behind. The
+even overlapping failures leave no phantom cancellation behind. The final
+write also compares the observation time with the current `lastWakeAt`, so a
+batch delayed until after a successful wake cannot re-arm already-processed
+activity. The
 workflow also re-reads the current identity policy inside its final persistence
 transaction; an automation toggle made during inference therefore controls
 whether success or failure may create another fallback. Consequently the
@@ -201,9 +207,11 @@ cannot be overwritten. Both retirement and missing-fallback repair change only
 `scheduledWakeAt`, preserving the synced `updatedAt` and vector clock so local
 scheduling maintenance cannot win a later peer merge.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
-That due-scan cleanup is a raw local transaction which preserves `updatedAt`
-and the vector clock, so retiring an obsolete deadline cannot win a concurrent
-merge and erase activity from another device.
+That due-scan cleanup re-reads lifecycle and state in a raw local transaction,
+clears only `scheduledWakeAt`, and preserves the current `nextWakeAt`, pending
+marker, `updatedAt`, and vector clock. An obsolete due-query snapshot therefore
+cannot restore consumed scheduling data, erase newer activity, or win a peer
+merge.
 Explicitly opted-out agents are stricter: startup clears every fallback,
 including a never-woken markerless creation row left by an interrupted upgrade.
 Otherwise, never-woken agents and agents with pending activity retain the row

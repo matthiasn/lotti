@@ -329,32 +329,51 @@ class TaskAgentService {
 
     late AgentIdentityEntity previous;
     late AgentIdentityEntity updated;
-    await syncService.runInTransaction(() async {
-      final identity = await agentService.getAgent(agentId);
-      if (identity == null) {
-        throw StateError('Agent $agentId not found');
+    AgentIdentityEntity? attemptedUpdate;
+    Object? postCommitSyncError;
+    StackTrace? postCommitSyncStackTrace;
+    try {
+      await syncService.runInTransaction(() async {
+        final identity = await agentService.getAgent(agentId);
+        if (identity == null) {
+          throw StateError('Agent $agentId not found');
+        }
+        previous = identity;
+        final wasInferenceDisabled =
+            identity.config.inferenceSetup?.mode ==
+            AgentInferenceSetupMode.disabled;
+        final lifecycle = setup.mode == AgentInferenceSetupMode.disabled
+            ? AgentLifecycle.dormant
+            : wasInferenceDisabled &&
+                  identity.lifecycle == AgentLifecycle.dormant
+            ? AgentLifecycle.active
+            : identity.lifecycle;
+        updated = identity.copyWith(
+          lifecycle: lifecycle,
+          config: identity.config.copyWith(
+            profileId: setup.mode == AgentInferenceSetupMode.configured
+                ? setup.baseProfileId
+                : null,
+            inferenceSetup: setup,
+          ),
+          updatedAt: clock.now(),
+        );
+        attemptedUpdate = updated;
+        await syncService.upsertEntity(updated);
+      });
+    } catch (error, stackTrace) {
+      final attempted = attemptedUpdate;
+      if (attempted == null) rethrow;
+      final persisted = await agentService.getAgent(agentId);
+      if (persisted?.config != attempted.config ||
+          persisted?.lifecycle != attempted.lifecycle ||
+          persisted?.updatedAt != attempted.updatedAt) {
+        rethrow;
       }
-      previous = identity;
-      final wasInferenceDisabled =
-          identity.config.inferenceSetup?.mode ==
-          AgentInferenceSetupMode.disabled;
-      final lifecycle = setup.mode == AgentInferenceSetupMode.disabled
-          ? AgentLifecycle.dormant
-          : wasInferenceDisabled && identity.lifecycle == AgentLifecycle.dormant
-          ? AgentLifecycle.active
-          : identity.lifecycle;
-      updated = identity.copyWith(
-        lifecycle: lifecycle,
-        config: identity.config.copyWith(
-          profileId: setup.mode == AgentInferenceSetupMode.configured
-              ? setup.baseProfileId
-              : null,
-          inferenceSetup: setup,
-        ),
-        updatedAt: clock.now(),
-      );
-      await syncService.upsertEntity(updated);
-    });
+      updated = persisted!;
+      postCommitSyncError = error;
+      postCommitSyncStackTrace = stackTrace;
+    }
 
     if (previous.kind == AgentKinds.projectAgent) {
       await _reconcileProjectRuntime(agentId);
@@ -371,6 +390,13 @@ class TaskAgentService {
       } else {
         orchestrator.disableAutomaticUpdatesRuntime(agentId);
       }
+    }
+
+    if (postCommitSyncError != null) {
+      Error.throwWithStackTrace(
+        postCommitSyncError,
+        postCommitSyncStackTrace!,
+      );
     }
 
     domainLogger?.log(

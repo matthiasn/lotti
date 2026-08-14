@@ -251,6 +251,18 @@ class ScheduledWakeManager with AgentErrorLogging {
         // invocation.
         if (!handled.agentIds.add(state.agentId)) continue;
         try {
+          // The due query is only a snapshot. A cancellation or activity
+          // write may replace the row while this pass awaits an earlier item,
+          // so inspect the current local schedule before making lifecycle or
+          // retirement decisions from it.
+          final currentState = await _repository.getAgentState(state.agentId);
+          final currentSchedule = currentState?.scheduledWakeAt;
+          if (currentState == null ||
+              currentSchedule == null ||
+              currentSchedule.isAfter(now)) {
+            continue;
+          }
+
           // Defense-in-depth (ADR 0022): the due query filters on
           // `scheduledWakeAt` only — not lifecycle — so an archived or missing
           // identity could still surface here. An archived agent must never
@@ -259,13 +271,13 @@ class ScheduledWakeManager with AgentErrorLogging {
           // (e.g. a never-synced local `day_agent`) kept a live wake that would
           // otherwise re-fire and fail every cycle.
           if (!await _isActiveAgent(state.agentId)) {
-            await _clearStaleScheduledWake(state, now);
+            await _clearStaleScheduledWake(state.agentId, now);
             skippedArchived++;
             continue;
           }
 
-          if (_shouldRetireDormantProjectSchedule(state)) {
-            if (await _retireDormantProjectSchedule(state, now)) {
+          if (_shouldRetireDormantProjectSchedule(currentState)) {
+            if (await _retireDormantProjectSchedule(currentState, now)) {
               retired++;
               continue;
             }
@@ -275,9 +287,9 @@ class ScheduledWakeManager with AgentErrorLogging {
           // durable schedule while this pass awaits the identity lookup (or a
           // prior item), so re-read at the enqueue boundary. Without this
           // guard a canceled creation fallback can still launch one paid wake.
-          final currentState = await _repository.getAgentState(state.agentId);
-          final currentSchedule = currentState?.scheduledWakeAt;
-          if (currentSchedule == null || currentSchedule.isAfter(now)) {
+          final enqueueState = await _repository.getAgentState(state.agentId);
+          final enqueueSchedule = enqueueState?.scheduledWakeAt;
+          if (enqueueSchedule == null || enqueueSchedule.isAfter(now)) {
             continue;
           }
 
@@ -572,20 +584,37 @@ class ScheduledWakeManager with AgentErrorLogging {
     onPersistedStateChanged?.call(record.agentId);
   }
 
-  /// Clears an archived agent's stale `scheduledWakeAt` so the due query stops
-  /// returning it every cycle (synced upsert, LWW-convergent).
+  /// Clears an archived agent's device-local `scheduledWakeAt` so the due
+  /// query stops returning it every cycle.
+  ///
+  /// Lifecycle and state are re-read inside the same transaction as the raw
+  /// repository write. This prevents the stale due-query snapshot from
+  /// restoring unrelated local scheduling fields or erasing a newer pending
+  /// project marker, and avoids syncing a device-local cleanup.
   Future<void> _clearStaleScheduledWake(
-    AgentStateEntity state,
+    String agentId,
     DateTime now,
   ) async {
-    if (state.scheduledWakeAt == null) return;
-    await _syncService.upsertEntity(
-      state.copyWith(scheduledWakeAt: null, updatedAt: now),
-    );
-    onPersistedStateChanged?.call(state.agentId);
+    var cleared = false;
+    await _repository.runInTransaction(() async {
+      if (await _isActiveAgent(agentId)) return;
+      final currentState = await _repository.getAgentState(agentId);
+      final currentSchedule = currentState?.scheduledWakeAt;
+      if (currentState == null ||
+          currentSchedule == null ||
+          currentSchedule.isAfter(now)) {
+        return;
+      }
+      await _repository.upsertEntity(
+        currentState.copyWith(scheduledWakeAt: null),
+      );
+      cleared = true;
+    });
+    if (!cleared) return;
+    onPersistedStateChanged?.call(agentId);
     _log(
       'cleared stale scheduledWakeAt for archived '
-      '${DomainLogger.sanitizeId(state.agentId)}',
+      '${DomainLogger.sanitizeId(agentId)}',
     );
   }
 

@@ -231,6 +231,11 @@ extension _AgentHandlers on SyncEventProcessor {
             jsonPath: msg.jsonPath,
             prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
           )) {
+        if (wakeOrchestrator != null &&
+            resolvedEntity is AgentIdentityEntity &&
+            resolvedEntity.kind == AgentKinds.projectAgent) {
+          await _reconcileProjectAgentRuntime(resolvedEntity);
+        }
         await _projectAgentAttribution(resolvedEntity);
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
@@ -309,45 +314,8 @@ extension _AgentHandlers on SyncEventProcessor {
               );
             }
           }
-        } else if (appliedIdentity.kind == 'project_agent') {
-          if (appliedIdentity.lifecycle != AgentLifecycle.active) {
-            wakeOrchestrator!
-              ..removeSubscriptions(appliedIdentity.agentId)
-              ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
-            await _clearDisabledProjectActivityFallback(appliedIdentity);
-          } else {
-            if (projectAgentAutomaticWakesAllowed(
-              config: appliedIdentity.config,
-              lifecycle: appliedIdentity.lifecycle,
-            )) {
-              final stillAllowed = await _armPendingProjectActivityFallback(
-                appliedIdentity,
-              );
-              if (stillAllowed) {
-                wakeOrchestrator!.enableAutomaticUpdatesRuntime(
-                  appliedIdentity.agentId,
-                );
-              } else {
-                wakeOrchestrator!.disableAutomaticUpdatesRuntime(
-                  appliedIdentity.agentId,
-                );
-              }
-            } else {
-              wakeOrchestrator!.disableAutomaticUpdatesRuntime(
-                appliedIdentity.agentId,
-              );
-              await _clearDisabledProjectActivityFallback(appliedIdentity);
-            }
-            final links = await agentRepository!.getLinksFrom(
-              appliedIdentity.agentId,
-              type: 'agent_project',
-            );
-            for (final link in links.whereType<AgentProjectLink>()) {
-              if (link.deletedAt == null) {
-                _addProjectSubscription(link);
-              }
-            }
-          }
+        } else if (appliedIdentity.kind == AgentKinds.projectAgent) {
+          await _reconcileProjectAgentRuntime(appliedIdentity);
         }
         // Plug-in kinds (goal agents today): offer the identity to each
         // registered runtime-maintenance contributor, so the owning
@@ -364,19 +332,8 @@ extension _AgentHandlers on SyncEventProcessor {
           prefetchedAgentEntitiesById,
         );
         if (identity is AgentIdentityEntity &&
-            identity.kind == 'project_agent' &&
-            projectAgentAutomaticWakesAllowed(
-              config: identity.config,
-              lifecycle: identity.lifecycle,
-            )) {
-          final stillAllowed = await _armPendingProjectActivityFallback(
-            identity,
-          );
-          if (stillAllowed) {
-            wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
-          } else {
-            wakeOrchestrator!.disableAutomaticUpdatesRuntime(identity.agentId);
-          }
+            identity.kind == AgentKinds.projectAgent) {
+          await _reconcileProjectAgentRuntime(identity);
         }
       }
       // Ordering: creation bundles emit the identity BEFORE its spec rows,
@@ -536,27 +493,8 @@ extension _AgentHandlers on SyncEventProcessor {
         } else {
           final agent = await agentRepository!.getEntity(resolvedLink.fromId);
           if (agent is AgentIdentityEntity &&
-              agent.lifecycle == AgentLifecycle.active &&
-              agent.kind == 'project_agent') {
-            if (projectAgentAutomaticWakesAllowed(
-              config: agent.config,
-              lifecycle: agent.lifecycle,
-            )) {
-              final stillAllowed = await _armPendingProjectActivityFallback(
-                agent,
-              );
-              if (stillAllowed) {
-                wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
-              } else {
-                wakeOrchestrator!.disableAutomaticUpdatesRuntime(
-                  agent.agentId,
-                );
-              }
-            } else {
-              wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
-              await _clearDisabledProjectActivityFallback(agent);
-            }
-            _addProjectSubscription(resolvedLink);
+              agent.kind == AgentKinds.projectAgent) {
+            await _reconcileProjectAgentRuntime(agent);
           }
         }
       }
@@ -581,68 +519,76 @@ extension _AgentHandlers on SyncEventProcessor {
   String _projectSubscriptionId(AgentProjectLink link) =>
       '${link.fromId}_project_direct_${link.toId}';
 
-  /// Repairs a missing fallback when identity, state, or link data arrives last.
-  ///
-  /// Scheduling fields are device-local, so this direct repository write is
-  /// the sync-apply counterpart of the local project-activity monitor. The
-  /// marker itself already arrived through sync; only its local deadline was
-  /// withheld while the automation policy could not yet be evaluated.
-  Future<bool> _armPendingProjectActivityFallback(
+  /// Reconciles receiver-local project scheduling and runtime after sync.
+  Future<void> _reconcileProjectAgentRuntime(
     AgentIdentityEntity identity,
   ) async {
-    var automaticWakesAllowed = false;
+    var policy = (active: false, automaticWakesAllowed: false);
     await agentRepository!.runInTransaction(() async {
       final currentIdentity = await agentRepository!.getEntity(identity.id);
-      if (currentIdentity is! AgentIdentityEntity ||
-          !projectAgentAutomaticWakesAllowed(
-            config: currentIdentity.config,
-            lifecycle: currentIdentity.lifecycle,
-          )) {
-        return;
-      }
-      automaticWakesAllowed = true;
+      final currentProjectIdentity =
+          currentIdentity is AgentIdentityEntity &&
+              currentIdentity.kind == AgentKinds.projectAgent
+          ? currentIdentity
+          : null;
+      final active = currentProjectIdentity?.lifecycle == AgentLifecycle.active;
+      final automaticWakesAllowed =
+          currentProjectIdentity != null &&
+          projectAgentAutomaticWakesAllowed(
+            config: currentProjectIdentity.config,
+            lifecycle: currentProjectIdentity.lifecycle,
+          );
+      policy = (
+        active: active,
+        automaticWakesAllowed: automaticWakesAllowed,
+      );
       final state = await agentRepository!.getAgentState(identity.agentId);
-      if (state == null ||
-          state.deletedAt != null ||
-          state.slots.pendingProjectActivityAt == null ||
-          state.scheduledWakeAt != null) {
+      if (state == null || state.deletedAt != null) {
         return;
       }
 
-      // Scheduling fields are device-local. Keep the synced vector clock and
-      // LWW timestamp unchanged so this repair cannot win a peer conflict for
-      // unrelated state fields.
+      final shouldArm =
+          automaticWakesAllowed &&
+          state.slots.pendingProjectActivityAt != null &&
+          state.scheduledWakeAt == null;
+      final shouldClear =
+          !automaticWakesAllowed && state.scheduledWakeAt != null;
+      if (!shouldArm && !shouldClear) {
+        return;
+      }
+
+      // Scheduling fields are device-local. Keep synced LWW metadata intact
+      // so this repair cannot win a peer conflict for unrelated state fields.
       await agentRepository!.upsertEntity(
         state.copyWith(
-          scheduledWakeAt: nextOccurrenceOf(
-            clock.now(),
-            hour: AgentSchedules.projectDailyDigestHour,
-          ),
+          scheduledWakeAt: shouldArm
+              ? nextOccurrenceOf(
+                  clock.now(),
+                  hour: AgentSchedules.projectDailyDigestHour,
+                )
+              : null,
         ),
       );
     });
-    return automaticWakesAllowed;
-  }
 
-  /// Removes a device-local automatic fallback after a synced policy opt-out.
-  ///
-  /// The pending marker remains so re-enabling automation can arm a fresh
-  /// deadline. As a scheduling-only repair, this must not change synced LWW
-  /// metadata or emit another sync event.
-  Future<void> _clearDisabledProjectActivityFallback(
-    AgentIdentityEntity identity,
-  ) async {
-    await agentRepository!.runInTransaction(() async {
-      final state = await agentRepository!.getAgentState(identity.agentId);
-      if (state == null ||
-          state.deletedAt != null ||
-          state.scheduledWakeAt == null) {
-        return;
-      }
-      await agentRepository!.upsertEntity(
-        state.copyWith(scheduledWakeAt: null),
-      );
-    });
+    if (!policy.active) {
+      wakeOrchestrator!
+        ..removeSubscriptions(identity.agentId)
+        ..disableAutomaticUpdatesRuntime(identity.agentId);
+      return;
+    }
+    if (policy.automaticWakesAllowed) {
+      wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
+    } else {
+      wakeOrchestrator!.disableAutomaticUpdatesRuntime(identity.agentId);
+    }
+    final links = await agentRepository!.getLinksFrom(
+      identity.agentId,
+      type: AgentLinkTypes.agentProject,
+    );
+    for (final link in links.whereType<AgentProjectLink>()) {
+      if (link.deletedAt == null) _addProjectSubscription(link);
+    }
   }
 
   void _addProjectSubscription(AgentProjectLink link) {

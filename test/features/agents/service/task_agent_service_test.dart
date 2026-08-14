@@ -2360,6 +2360,84 @@ void main() {
         },
       );
 
+      test(
+        'post-commit inference disable failure still clears project runtime',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          const disabledSetup = AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          );
+          final disabledIdentity = identity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            config: identity.config.copyWith(
+              profileId: null,
+              inferenceSetup: disabledSetup,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => identityReads++ == 0 ? identity : disabledIdentity,
+          );
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          final failingSync = _PostCommitFailingAgentSyncService();
+          when(() => failingSync.upsertEntity(any())).thenAnswer((_) async {});
+          final failingService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSync,
+            updateNotifications: mockUpdateNotifications,
+          );
+
+          await expectLater(
+            withClock(Clock.fixed(now), () {
+              return failingService.updateAgentInferenceSetup(
+                agentId: 'agent-1',
+                setup: disabledSetup,
+              );
+            }),
+            throwsA(isA<StateError>()),
+          );
+
+          final clearedState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(clearedState.scheduledWakeAt, isNull);
+          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verify(
+            () => mockOrchestrator.removeSubscriptions('agent-1'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
       test('direct model override preserves the base profile origin', () async {
         final identity = makeIdentity(
           config: const AgentConfig(

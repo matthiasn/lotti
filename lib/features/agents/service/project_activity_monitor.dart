@@ -203,7 +203,8 @@ class ProjectActivityMonitor with AgentErrorLogging {
         return;
       }
 
-      final persisted = await _cancellationCoordinator.runActivityWrite(
+      var activityPersisted = false;
+      final accepted = await _cancellationCoordinator.runActivityWrite(
         agentId: agentId,
         observedSequence: observedSequence,
         action: () => _syncService.runInTransaction(() async {
@@ -213,6 +214,8 @@ class ProjectActivityMonitor with AgentErrorLogging {
           // mutations from erasing one another.
           final current = await _agentRepository.getAgentState(agentId);
           if (current == null || current.deletedAt != null) return;
+          final lastWakeAt = current.lastWakeAt;
+          if (lastWakeAt != null && !now.isAfter(lastWakeAt)) return;
           final currentPendingActivityAt =
               current.slots.pendingProjectActivityAt;
           if (currentPendingActivityAt != null &&
@@ -246,9 +249,10 @@ class ProjectActivityMonitor with AgentErrorLogging {
               updatedAt: now,
             ),
           );
+          activityPersisted = true;
         }),
       );
-      if (!persisted) return;
+      if (!accepted || !activityPersisted) return;
 
       _notifications.notifyUiOnly({agentId, agentNotification});
 

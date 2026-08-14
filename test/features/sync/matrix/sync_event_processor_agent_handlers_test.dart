@@ -9,6 +9,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -2668,6 +2669,170 @@ void main() {
         },
       );
 
+      test(
+        'stale synced opt-out does not clear a newer local opt-in fallback',
+        () async {
+          final pendingAt = DateTime(2026, 8, 14, 9);
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-opt-in-race',
+                    agentId: 'project-agent-opt-in-race',
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: pendingAt,
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'local': 4}),
+                  )
+                  as AgentStateEntity;
+          final incomingDormant =
+              AgentDomainEntity.agent(
+                    id: 'project-agent-opt-in-race',
+                    agentId: 'project-agent-opt-in-race',
+                    kind: AgentKinds.projectAgent,
+                    displayName: 'Project Agent',
+                    lifecycle: AgentLifecycle.dormant,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: state.id,
+                    config: const AgentConfig(automaticUpdatesEnabled: false),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2026, 8, 14, 10),
+                    vectorClock: const VectorClock({'remote': 2}),
+                  )
+                  as AgentIdentityEntity;
+          final newerOptIn = incomingDormant.copyWith(
+            lifecycle: AgentLifecycle.active,
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+            updatedAt: DateTime(2026, 8, 14, 11),
+            vectorClock: const VectorClock({'remote': 2, 'local': 1}),
+          );
+          final link = AgentLink.agentProject(
+            id: 'project-link-opt-in-race',
+            fromId: incomingDormant.agentId,
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          AgentIdentityEntity? storedIdentity;
+          when(
+            () => mockAgentRepo.getEntity(incomingDormant.id),
+          ).thenAnswer((_) async => storedIdentity);
+          when(
+            () => mockAgentRepo.getAgentState(incomingDormant.agentId),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              incomingDormant.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [link]);
+          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final entity =
+                invocation.positionalArguments.single as AgentDomainEntity;
+            if (entity is AgentIdentityEntity) storedIdentity = newerOptIn;
+          });
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: incomingDormant,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final stateWrites = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(stateWrites, isEmpty);
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(
+              incomingDormant.agentId,
+            ),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.addSubscription(any()),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
+          );
+        },
+      );
+
+      test(
+        'equal project identity replay retries local fallback repair',
+        () async {
+          final now = DateTime(2026, 8, 14, 10);
+          const vectorClock = VectorClock({'remote': 2});
+          final identity =
+              AgentDomainEntity.agent(
+                    id: 'project-agent-equal-replay',
+                    agentId: 'project-agent-equal-replay',
+                    kind: AgentKinds.projectAgent,
+                    displayName: 'Project Agent',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: 'state-project-equal-replay',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: vectorClock,
+                  )
+                  as AgentIdentityEntity;
+          final pendingState =
+              AgentDomainEntity.agentState(
+                    id: identity.currentStateId,
+                    agentId: identity.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'remote': 3}),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockAgentRepo.getEntity(identity.id),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockAgentRepo.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => pendingState);
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: identity,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await withClock(Clock.fixed(now), () {
+            return processor.process(event: event, journalDb: journalDb);
+          });
+
+          final repaired =
+              verify(
+                    () => mockAgentRepo.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(repaired.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(repaired.updatedAt, pendingState.updatedAt);
+          expect(repaired.vectorClock, pendingState.vectorClock);
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(
+              identity.agentId,
+            ),
+          ).called(1);
+        },
+      );
+
       test('restores subscriptions for active task_agent', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-active',
@@ -2759,6 +2924,9 @@ void main() {
               type: 'agent_project',
             ),
           ).thenAnswer((_) async => [projectLink]);
+          when(
+            () => mockAgentRepo.getEntity(entity.id),
+          ).thenAnswer((_) async => entity);
           final message = SyncMessage.agentEntity(
             agentEntity: entity,
             status: SyncEntryStatus.update,
@@ -3374,6 +3542,9 @@ void main() {
             () => mockAgentRepo.getAgentState(entity.agentId),
           ).thenAnswer((_) async => pendingState);
           when(
+            () => mockAgentRepo.getEntity(entity.id),
+          ).thenAnswer((_) async => entity);
+          when(
             () => mockAgentRepo.getLinksFrom(
               'project-agent-manual',
               type: 'agent_project',
@@ -3672,6 +3843,12 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              activeAgent.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [link]);
           final message = SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,
@@ -3880,7 +4057,7 @@ void main() {
 
           await processor.process(event: event, journalDb: journalDb);
 
-          verify(() => mockAgentRepo.getEntity('project-agent-1')).called(1);
+          verify(() => mockAgentRepo.getEntity('project-agent-1')).called(2);
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },
       );
@@ -3926,6 +4103,12 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              manualAgent.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [link]);
           final message = SyncMessage.agentLink(
             agentLink: link,
             status: SyncEntryStatus.update,
