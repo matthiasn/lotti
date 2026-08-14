@@ -212,8 +212,8 @@ class ProjectAgentService {
 
   /// Cancel a scheduled wake for [agentId].
   ///
-  /// Deletes both persisted deadline fields in one state write before clearing
-  /// the throttle timer and queued subscription jobs.
+  /// Deletes both persisted deadline fields and the pending activity marker in
+  /// one state write before clearing the throttle timer and queued jobs.
   ///
   /// Persistence is intentionally first: if that write fails, the runtime
   /// work remains available and the UI can report that cancellation did not
@@ -228,9 +228,12 @@ class ProjectAgentService {
     );
     final state = await repository.getAgentState(agentId);
     if (state != null &&
-        (state.nextWakeAt != null || state.scheduledWakeAt != null)) {
+        (state.nextWakeAt != null ||
+            state.scheduledWakeAt != null ||
+            state.slots.pendingProjectActivityAt != null)) {
       await syncService.upsertEntity(
         state.copyWith(
+          slots: state.slots.copyWith(pendingProjectActivityAt: null),
           nextWakeAt: null,
           scheduledWakeAt: null,
           updatedAt: clock.now(),

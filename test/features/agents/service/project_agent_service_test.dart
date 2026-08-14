@@ -933,6 +933,10 @@ void main() {
         'atomically clears both deadlines before dropping queued work',
         () async {
           final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
             nextWakeAt: DateTime(2026, 3, 20, 12, 2),
             scheduledWakeAt: DateTime(2026, 3, 21, 6),
           );
@@ -949,6 +953,7 @@ void main() {
                   as AgentStateEntity;
           expect(persisted.nextWakeAt, isNull);
           expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, isNull);
           verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
           verify(
             () => mockOrchestrator.cancelPendingWakes(

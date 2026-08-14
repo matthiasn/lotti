@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-14
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
@@ -189,11 +189,20 @@ explicit request creates one-shot work instead.
 ```mermaid
 flowchart TD
   Activity["Meaningful project or linked-task activity"] --> Pending["Persist pending work"]
-  Request["Creation / manual wake request"] --> Queue["Queue wake now"]
   Pending --> Deferred["Persist one-shot wake deadline"]
-  Deferred --> Queue
-  Queue --> FullRun["Load project, linked tasks, reports, run LLM"]
-  FullRun --> Persist["Persist fresh report + recommendations"]
+
+  Creation["Create project agent"] --> CreationFallback["Persist creation fallback"]
+  Creation --> Queue["Queue wake now"]
+  Manual["Manual wake request"] --> Queue
+
+  Deferred --> DueQueue["Queue wake when deadline is due"]
+  CreationFallback --> DueQueue
+  DueQueue --> FullRun["Load project, linked tasks, reports, run LLM"]
+  Queue --> FullRun
+  FullRun --> Outcome{"Wake succeeds?"}
+  Outcome -->|yes| Persist["Persist fresh report + recommendations"]
+  Outcome -->|no| Retry["Keep pending work and re-arm fallback"]
+  Retry --> Deferred
   Persist --> Clear["Clear consumed work and deadlines"]
   Clear --> Stale["Stale / non-waking"]
 ```

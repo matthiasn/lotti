@@ -152,9 +152,10 @@ already queued or running. A successful wake retains a future fallback when
 newer activity landed during the run. Every failure after state
 resolution—including setup failures before inference—uses the same
 create-or-advance deadline policy. Explicit
-cancellation persists `nextWakeAt` and `scheduledWakeAt` removal atomically,
-then clears queued work, so a storage failure cannot leave the UI falsely
-showing a completed cancellation.
+cancellation persists `pendingProjectActivityAt`, `nextWakeAt`, and
+`scheduledWakeAt` removal atomically, then clears queued work, so an in-flight
+failure cannot re-arm cancelled work and a storage failure cannot leave the UI
+falsely showing a completed cancellation.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the

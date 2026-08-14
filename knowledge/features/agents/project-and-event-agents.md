@@ -134,9 +134,10 @@ provider setup before inference starts. An overdue fallback advances to the
 next morning rather than remaining due on every hourly scan. When automation is
 disabled, a manual wake may preserve an already-future explicit schedule but
 cannot synthesize a new morning fallback on success or failure. Explicit
-cancellation clears `nextWakeAt` and `scheduledWakeAt` in one persisted state
-write before clearing queued work; a failed write therefore leaves the runtime
-work intact and surfaces an error in the project detail UI. Consequently the
+cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
+`scheduledWakeAt` in one persisted state write before clearing queued work; a
+failed write therefore leaves the runtime work intact and surfaces an error in
+the project detail UI. Consequently the
 Wake tab contains a project-agent row only while actual work or a retry is
 pending.
 
