@@ -1109,13 +1109,19 @@ void main() {
       reason: '5,262 steps fell short',
     );
 
-    // Seven bars filling a full-width card rendered ~40px slabs. Each one is
-    // now capped at the same width the scrollable variant uses.
+    // Seven bars filling a full-width card rendered ~40px slabs. Each one now
+    // sits at exactly the width the scrollable variant uses.
+    //
+    // Asserted as an equality on purpose: `lessThanOrEqualTo` also accepts
+    // zero, and zero is precisely what a loose width constraint produces
+    // here — `_bar` is a FractionallySizedBox with no widthFactor, so it
+    // passes the constraint through to a DecoratedBox with no intrinsic
+    // width and the whole chart disappears.
     expect(
       tester
           .getSize(find.byKey(const ValueKey('goal-metric-bar-2026-08-11')))
           .width,
-      lessThanOrEqualTo(ControlSizes.iconChipCompact),
+      ControlSizes.iconChipCompact,
     );
   });
 

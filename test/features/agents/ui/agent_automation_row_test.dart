@@ -706,6 +706,14 @@ void main() {
         final ruleY = tester.getCenter(find.byKey(rule)).dy;
         expect(ruleY, greaterThan(tester.getCenter(trigger()).dy));
         expect(ruleY, lessThan(tester.getCenter(toggle()).dy));
+        // The schedule readout belongs to the switch that governs it, so it
+        // sits below the rule too. Above it, the countdown read as a footnote
+        // to the manual trigger — the one control it has nothing to do with.
+        expect(
+          tester.getCenter(scheduleLabel()).dy,
+          greaterThan(ruleY),
+          reason: 'the schedule line left the automation band',
+        );
 
         // One line needs no rule: the two questions are already at opposite
         // ends of the same row, and a horizontal rule cannot separate them.

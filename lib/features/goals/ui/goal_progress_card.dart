@@ -1742,10 +1742,12 @@ class _MetricProgressSeries extends StatelessWidget {
           // read nothing like the day squares above them.
           Expanded(
             child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: ControlSizes.iconChipCompact,
-                ),
+              // A tight width, not a maximum. `_bar` is a FractionallySizedBox
+              // with no widthFactor, so a loose constraint passes straight
+              // through to a DecoratedBox with no intrinsic width and every
+              // bar collapses to zero — an invisible chart.
+              child: SizedBox(
+                width: ControlSizes.iconChipCompact,
                 child: _bar(context, metric.days[index], maxValue),
               ),
             ),

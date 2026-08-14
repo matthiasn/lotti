@@ -332,13 +332,18 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             stackedState,
-            ?schedule,
             Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
               child: const DesignSystemDivider(
                 key: ValueKey('taskAgentAutomationRowRule'),
               ),
             ),
+            // Below the rule, with the switch: the countdown describes and
+            // cancels the *automatic* run, so it belongs to the toggle that
+            // governs it. Above the rule it read as a footnote to the manual
+            // trigger — which is the one thing it has nothing to do with.
+            // The wide layout groups the two the same way.
+            ?schedule,
             setting,
           ],
         );

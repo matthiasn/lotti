@@ -155,35 +155,55 @@ void main() {
         expect(
           sanitizeAgentReportText(
             'Close the gap on habit 71ca84b0 — 2 more completions needed',
+            stripBareIds: true,
           ),
           'Close the gap on habit — 2 more completions needed',
         );
         expect(
-          sanitizeAgentReportText('Close the gap on habit `71ca84b0` today'),
+          sanitizeAgentReportText(
+            'Close the gap on habit `71ca84b0` today',
+            stripBareIds: true,
+          ),
           'Close the gap on habit today',
         );
       },
     );
 
     test('strips a bare UUID standing in prose', () {
-      expect(sanitizeAgentReportText('Ship $uuid now'), 'Ship now');
+      expect(
+        sanitizeAgentReportText('Ship $uuid now', stripBareIds: true),
+        'Ship now',
+      );
+    });
+
+    test('leaves bare id fragments alone unless asked', () {
+      // Shape alone cannot separate an internal id from a git SHA, a checksum
+      // or any other hex value a task or project report may legitimately
+      // quote — and silently deleting one of those would be worse than the
+      // leak this fixes. Only goal reports opt in.
+      const sha = 'Fixed in deadbeef on Friday';
+      expect(sanitizeAgentReportText(sha), sha);
+      expect(
+        sanitizeAgentReportText(sha, stripBareIds: true),
+        'Fixed in on Friday',
+      );
     });
 
     test('leaves a bare id inside a link path alone', () {
       // The whitespace the pattern requires cannot occur inside a URL, which
       // is what keeps proof-of-work links whole without an explicit carve-out.
       const bare = 'See https://lotti.app/tasks/$uuid for context';
-      expect(sanitizeAgentReportText(bare), bare);
+      expect(sanitizeAgentReportText(bare, stripBareIds: true), bare);
       const head = 'See /tasks/71ca84b0 for context';
-      expect(sanitizeAgentReportText(head), head);
+      expect(sanitizeAgentReportText(head, stripBareIds: true), head);
     });
 
     test('leaves long digit runs and ordinary words alone', () {
       // A step count is the exact shape a coach reports, and must survive.
       const steps = 'You walked 12345678 steps this week.';
-      expect(sanitizeAgentReportText(steps), steps);
+      expect(sanitizeAgentReportText(steps, stripBareIds: true), steps);
       const prose = 'Consistency improved and the streak held.';
-      expect(sanitizeAgentReportText(prose), prose);
+      expect(sanitizeAgentReportText(prose, stripBareIds: true), prose);
     });
 
     test('preserves a Markdown hard break on an untouched line while '
