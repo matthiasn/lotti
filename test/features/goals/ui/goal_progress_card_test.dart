@@ -312,6 +312,38 @@ void main() {
     );
   });
 
+  group('formatGoalAggregate', () {
+    final number = NumberFormat.decimalPattern('en');
+
+    test('a step average rounds to the hundred it can actually carry', () {
+      // The seven-day mean arrives as 7684.428571…. Rendering "7,684.429" —
+      // or even "7,684" — invites the reader to believe the trailing digits
+      // mean something about a habit average. They do not.
+      expect(formatGoalAggregate(number, 7684.428571), '7,700');
+      expect(formatGoalAggregate(number, 12449), '12,400');
+      expect(formatGoalAggregate(number, 10000), '10,000');
+    });
+
+    test('blood pressure keeps whole numbers', () {
+      expect(formatGoalAggregate(number, 127.3), '127');
+      expect(formatGoalAggregate(number, 84.6), '84.6');
+    });
+
+    test('weight keeps the one decimal that means something', () {
+      // 94.5 kg is a real distinction; 94.53 is not.
+      expect(formatGoalAggregate(number, 94.53), '94.5');
+      expect(formatGoalAggregate(number, 88), '88');
+    });
+
+    test('a target rounds by the same rule as the value it is compared to', () {
+      // Rounded differently, a value could appear to miss a target it meets.
+      expect(
+        formatGoalAggregate(number, 10000),
+        formatGoalAggregate(number, 10000.4),
+      );
+    });
+  });
+
   testWidgets('the habit streak rides the label row rather than a row of its '
       'own', (tester) async {
     await tester.pumpWidget(

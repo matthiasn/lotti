@@ -290,16 +290,28 @@ class _CompactDayCell extends StatelessWidget {
   }
 }
 
-/// Formats an aggregate for display, without spraying false precision.
+/// Formats an aggregate for display at a precision the number can actually
+/// carry.
 ///
 /// The rolling aggregates are means, so a step average arrives as
-/// 7684.428571… and `decimalPattern` renders it "7,684.429" — three decimals
-/// of a quantity that only exists in whole numbers. Weight and blood pressure
-/// do want a fraction, so the rule is scale rather than data type: below 100,
-/// one decimal and only when it is not a whole number; at 100 and above, none,
-/// where a tenth is noise beside the number it qualifies.
+/// 7684.428571… and `decimalPattern` renders every digit of it. The rule is
+/// scale rather than data type, because the same function formats step counts,
+/// kilograms and millimetres of mercury:
+///
+///  * **1000 and above → nearest hundred.** A seven-day step average is an
+///    estimate of a habit, not a measurement; "7,684" invites a reader to
+///    believe the last two digits mean something, and they do not.
+///  * **100 to 999 → whole numbers.** A blood pressure of 127.3 is 127.
+///  * **Below 100 → one decimal, and only when there is one.** Weight is the
+///    case that needs it: 94.5 kg is a real distinction, 94.53 is not.
+///
+/// Targets go through the same rule so a value can never appear to miss a
+/// target it actually meets, purely because the two were rounded differently.
 String formatGoalAggregate(NumberFormat number, num value) {
-  final rounded = value.abs() >= 100
+  final magnitude = value.abs();
+  final rounded = magnitude >= 1000
+      ? (value / 100).roundToDouble() * 100
+      : magnitude >= 100
       ? value.roundToDouble()
       : (value * 10).roundToDouble() / 10;
   return number.format(

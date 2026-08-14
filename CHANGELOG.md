@@ -33,8 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Averages no longer show false precision.** A step average rendered as
-  "7,684.429 of 10,000"; large aggregates now read as whole numbers while
-  weight keeps its decimal.
+  "7,684.429 of 10,000" and now reads "7,700 of 10,000" — a weekly average is
+  an estimate of a habit, and its last two digits never meant anything. Blood
+  pressure stays whole, weight keeps the decimal that does mean something.
 - **The day-verdict labels were mistranslated in seven languages.** "Met" was
   rendered as the past tense of meeting a *person* — "Getroffen" in German,
   "Ontmoet" in Dutch, "Conheci" in Portuguese — and left untranslated in
