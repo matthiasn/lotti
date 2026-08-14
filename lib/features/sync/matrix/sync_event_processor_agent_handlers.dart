@@ -231,11 +231,25 @@ extension _AgentHandlers on SyncEventProcessor {
             jsonPath: msg.jsonPath,
             prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
           )) {
-        if (wakeOrchestrator != null &&
-            resolvedEntity is AgentIdentityEntity &&
-            resolvedEntity.kind == AgentKinds.projectAgent) {
+        AgentIdentityEntity? projectIdentity;
+        if (wakeOrchestrator != null) {
+          if (resolvedEntity is AgentIdentityEntity &&
+              resolvedEntity.kind == AgentKinds.projectAgent) {
+            projectIdentity = resolvedEntity;
+          } else if (resolvedEntity is AgentStateEntity) {
+            final identity = await _localAgentEntityFor(
+              resolvedEntity.agentId,
+              prefetchedAgentEntitiesById,
+            );
+            if (identity is AgentIdentityEntity &&
+                identity.kind == AgentKinds.projectAgent) {
+              projectIdentity = identity;
+            }
+          }
+        }
+        if (projectIdentity != null) {
           final scheduleChanged = await _reconcileProjectAgentRuntime(
-            resolvedEntity,
+            projectIdentity,
           );
           if (scheduleChanged) {
             _updateNotifications.notify(

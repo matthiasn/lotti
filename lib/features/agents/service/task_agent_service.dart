@@ -482,10 +482,18 @@ class TaskAgentService {
             var updatedState = state;
             final hasPendingTaskWake =
                 pendingWake != null && pendingWake.isAfter(now);
-            final hasPendingProjectWake =
-                identity.kind == AgentKinds.projectAgent &&
-                state.scheduledWakeAt != null &&
-                state.reportFreshAt != null;
+            var hasPendingProjectWake = false;
+            if (identity.kind == AgentKinds.projectAgent &&
+                state.scheduledWakeAt != null) {
+              final hasCompletedReport =
+                  state.reportFreshAt != null ||
+                  await repository.getLatestReport(
+                        agentId,
+                        AgentReportScopes.current,
+                      ) !=
+                      null;
+              hasPendingProjectWake = hasCompletedReport;
+            }
             if ((hasPendingTaskWake || hasPendingProjectWake) &&
                 !state.isReportStale) {
               updatedState = updatedState.copyWith(reportStaleAt: now);
@@ -552,7 +560,11 @@ class TaskAgentService {
     // catch-up wake cannot race its own scheduling setup. Inactive agents and
     // disabled setups never reach here.
     if (activating && wakeOnEnable) {
-      triggerReanalysis(agentId);
+      orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: WakeReason.reanalysis.name,
+        initiator: WakeInitiator.automation,
+      );
     }
   }
 

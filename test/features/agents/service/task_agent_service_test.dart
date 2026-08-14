@@ -281,6 +281,9 @@ void main() {
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
     when(
+      () => mockRepository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
       () => mockRepository.getLinksFrom(
         any(),
         type: AgentLinkTypes.agentProject,
@@ -2904,6 +2907,13 @@ void main() {
             subscription.matchEntityIds,
             {projectEntityUpdateNotification('project-1')},
           );
+          verify(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: 'agent-1',
+              reason: WakeReason.reanalysis.name,
+              initiator: WakeInitiator.automation,
+            ),
+          ).called(1);
         },
       );
 
@@ -3018,8 +3028,8 @@ void main() {
       );
 
       test(
-        'turning off a project agent marks its report stale and clears only '
-        'its automatic fallback',
+        'turning off marks a project report stale without a freshness '
+        'watermark and clears only its automatic fallback',
         () async {
           final now = DateTime(2026, 8, 14, 12);
           final pendingAt = DateTime(2026, 8, 14, 11);
@@ -3029,10 +3039,20 @@ void main() {
               pendingProjectActivityAt: pendingAt,
             ),
             scheduledWakeAt: DateTime(2026, 8, 15, 6),
-            reportFreshAt: DateTime(2026, 8, 14, 10, 30),
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 8}),
           );
+          final existingReport =
+              AgentDomainEntity.agentReport(
+                    id: 'project-report-1',
+                    agentId: 'agent-1',
+                    scope: AgentReportScopes.current,
+                    createdAt: DateTime(2026, 8, 14, 10, 30),
+                    vectorClock: null,
+                    content: 'Existing project report',
+                    confidence: 0.9,
+                  )
+                  as AgentReportEntity;
           final identity = makeIdentity(
             kind: AgentKinds.projectAgent,
             config: const AgentConfig(
@@ -3061,6 +3081,12 @@ void main() {
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLatestReport(
+              'agent-1',
+              AgentReportScopes.current,
+            ),
+          ).thenAnswer((_) async => existingReport);
 
           await withClock(Clock.fixed(now), () {
             return service.updateAutomaticUpdates(

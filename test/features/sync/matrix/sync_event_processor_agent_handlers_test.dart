@@ -2839,6 +2839,78 @@ void main() {
         },
       );
 
+      test(
+        'equal project state replay retries local fallback repair',
+        () async {
+          final now = DateTime(2026, 8, 14, 10);
+          const vectorClock = VectorClock({'remote': 3});
+          final identity =
+              AgentDomainEntity.agent(
+                    id: 'project-agent-state-replay',
+                    agentId: 'project-agent-state-replay',
+                    kind: AgentKinds.projectAgent,
+                    displayName: 'Project Agent',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: 'state-project-state-replay',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'remote': 2}),
+                  )
+                  as AgentIdentityEntity;
+          final pendingState =
+              AgentDomainEntity.agentState(
+                    id: identity.currentStateId,
+                    agentId: identity.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: vectorClock,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockAgentRepo.getEntity(pendingState.id),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockAgentRepo.getEntity(identity.id),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockAgentRepo.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => pendingState);
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: pendingState,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await withClock(Clock.fixed(now), () {
+            return processor.process(event: event, journalDb: journalDb);
+          });
+
+          final repaired =
+              verify(
+                    () => mockAgentRepo.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(repaired.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(repaired.updatedAt, pendingState.updatedAt);
+          expect(repaired.vectorClock, pendingState.vectorClock);
+          verify(
+            () => updateNotifications.notify(
+              {identity.agentId, 'AGENT_CHANGED'},
+              fromSync: true,
+            ),
+          ).called(1);
+        },
+      );
+
       test('restores subscriptions for active task_agent', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-active',

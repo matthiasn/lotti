@@ -136,10 +136,10 @@ stateDiagram-v2
   Missing-fallback repair re-reads the current identity policy inside the same
   local transaction as the state write; concurrent opt-in and opt-out changes
   therefore win instead of being overwritten by a stale sync-reconciliation
-  decision. Equal or locally dominated identity replays still run this local
-  repair, so a transient receiver-side failure can recover on redelivery; when
-  that repair changes the fallback, it also notifies local listeners so the
-  visible countdown updates immediately. Local
+  decision. Equal or locally dominated identity and state replays still run
+  this local repair, so a transient receiver-side failure can recover on
+  redelivery; when that repair changes the fallback, it also notifies local
+  listeners so the visible countdown updates immediately. Local
   settings, resume-time fallback repair, and startup restoration use the same
   transaction-local policy recheck before enabling runtime; a lifecycle change
   that wins during startup also removes the stale observation subscriptions.
@@ -170,7 +170,11 @@ opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
 synced state timestamp and vector clock so scheduling maintenance cannot
 resurrect a peer-completed activity marker. Before opt-out removes a project
 fallback, it marks an otherwise-current report stale so a later opt-in requests
-an immediate catch-up instead of waiting for the next morning. If an
+an immediate catch-up instead of waiting for the next morning. The report row
+itself is authoritative when an older first report has no freshness watermark.
+The settings-triggered catch-up uses an automation initiator, so another
+opt-out can remove it before dispatch while explicit manual wakes remain
+eligible. If an
 automation-preference or inference-setup identity transaction commits but its
 outbox flush fails, the service confirms the persisted identity, performs the
 matching runtime and fallback reconciliation, and then rethrows the sync
