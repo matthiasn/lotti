@@ -334,7 +334,6 @@ class ProjectAgentService {
         }
         final reconciliation = await _reconcilePendingActivityFallback(
           agentId: agent.agentId,
-          snapshot: state,
         );
         state = reconciliation.state;
         if (reconciliation.automaticWakesAllowed) {
@@ -400,9 +399,8 @@ class ProjectAgentService {
   >
   _reconcilePendingActivityFallback({
     required String agentId,
-    required AgentStateEntity? snapshot,
   }) async {
-    var result = snapshot;
+    AgentStateEntity? result;
     var active = false;
     var automaticWakesAllowed = false;
     var changed = false;
@@ -415,17 +413,9 @@ class ProjectAgentService {
           lifecycle: currentIdentity.lifecycle,
         );
       }
-      final shouldArm =
-          automaticWakesAllowed &&
-          snapshot?.slots.pendingProjectActivityAt != null &&
-          snapshot?.scheduledWakeAt == null;
-      final shouldClear =
-          !automaticWakesAllowed && snapshot?.scheduledWakeAt != null;
-      if (!shouldArm && !shouldClear) return;
-
       final current = await repository.getAgentState(agentId);
+      result = current;
       if (current == null || current.deletedAt != null) {
-        result = current;
         return;
       }
 
@@ -524,7 +514,12 @@ class ProjectAgentService {
     AgentStateEntity? state,
   ) {
     final deadline = state?.nextWakeAt;
-    if (deadline != null) {
+    final hasPendingActivity = state?.slots.pendingProjectActivityAt != null;
+    final hasPendingCreation =
+        state != null &&
+        state.lastWakeAt == null &&
+        state.scheduledWakeAt != null;
+    if (deadline != null && (hasPendingActivity || hasPendingCreation)) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
   }

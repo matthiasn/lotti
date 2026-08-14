@@ -22,7 +22,8 @@ import 'package:lotti/services/domain_logging.dart';
 /// cancellation removes only its own cutoff so it cannot silently consume
 /// activity when persistence rolled back.
 class ProjectActivityCancellationCoordinator {
-  final Map<String, _ProjectActivityCancellation> _cancellations = {};
+  final Map<String, int> _committedCancellationSequences = {};
+  final Map<String, Set<int>> _pendingCancellationSequences = {};
   final Map<String, Future<void>> _tails = {};
   var _sequence = 0;
 
@@ -32,22 +33,27 @@ class ProjectActivityCancellationCoordinator {
   Future<T> runCancellation<T>({
     required String agentId,
     required Future<T> Function() action,
-  }) async {
-    final previous = _cancellations[agentId];
-    final cancellation = _ProjectActivityCancellation(++_sequence);
-    _cancellations[agentId] = cancellation;
-    try {
-      return await _serialize(agentId, action);
-    } catch (_) {
-      if (identical(_cancellations[agentId], cancellation)) {
-        if (previous == null) {
-          _cancellations.remove(agentId);
-        } else {
-          _cancellations[agentId] = previous;
+  }) {
+    final cancellationSequence = ++_sequence;
+    (_pendingCancellationSequences[agentId] ??= {}).add(
+      cancellationSequence,
+    );
+    return _serialize(agentId, () async {
+      try {
+        final result = await action();
+        final committed = _committedCancellationSequences[agentId];
+        if (committed == null || cancellationSequence > committed) {
+          _committedCancellationSequences[agentId] = cancellationSequence;
+        }
+        return result;
+      } finally {
+        final pending = _pendingCancellationSequences[agentId];
+        pending?.remove(cancellationSequence);
+        if (pending?.isEmpty ?? false) {
+          _pendingCancellationSequences.remove(agentId);
         }
       }
-      rethrow;
-    }
+    });
   }
 
   Future<bool> runActivityWrite({
@@ -55,13 +61,22 @@ class ProjectActivityCancellationCoordinator {
     required int observedSequence,
     required Future<void> Function() action,
   }) => _serialize(agentId, () async {
-    final cancellation = _cancellations[agentId];
-    if (cancellation != null && observedSequence <= cancellation.sequence) {
+    final cancellationCutoff = _cancellationCutoff(agentId);
+    if (cancellationCutoff != null && observedSequence <= cancellationCutoff) {
       return false;
     }
     await action();
     return true;
   });
+
+  int? _cancellationCutoff(String agentId) {
+    var cutoff = _committedCancellationSequences[agentId];
+    for (final sequence
+        in _pendingCancellationSequences[agentId] ?? const <int>{}) {
+      if (cutoff == null || sequence > cutoff) cutoff = sequence;
+    }
+    return cutoff;
+  }
 
   Future<T> _serialize<T>(
     String agentId,
@@ -81,12 +96,6 @@ class ProjectActivityCancellationCoordinator {
       }
     }
   }
-}
-
-class _ProjectActivityCancellation {
-  const _ProjectActivityCancellation(this.sequence);
-
-  final int sequence;
 }
 
 /// Tracks local project-linked activity and marks project summaries stale.

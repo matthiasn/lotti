@@ -196,6 +196,9 @@ void main() {
     when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => mockRepository.getAgentState(any()),
+    ).thenAnswer((_) async => null);
     when(() => mockRepository.getEntity(any())).thenAnswer((invocation) async {
       return makeIdentity(
         agentId: invocation.positionalArguments.single as String,
@@ -1175,6 +1178,12 @@ void main() {
             vectorClock: null,
           );
           final nextWakeAt = DateTime(2026, 3, 23, 8);
+          final state = makeState(agentId: 'pa-1').copyWith(
+            slots: AgentSlots(
+              pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+            ),
+            nextWakeAt: nextWakeAt,
+          );
 
           when(
             () => mockAgentService.listAgents(
@@ -1194,12 +1203,11 @@ void main() {
           when(
             () => mockRepository.getAgentStatesByAgentIds(any()),
           ).thenAnswer(
-            (_) async => {
-              'pa-1': makeState(agentId: 'pa-1').copyWith(
-                nextWakeAt: nextWakeAt,
-              ),
-            },
+            (_) async => {'pa-1': state},
           );
+          when(
+            () => mockRepository.getAgentState('pa-1'),
+          ).thenAnswer((_) async => state);
 
           await service.restoreSubscriptions();
 
@@ -1237,7 +1245,62 @@ void main() {
                   ).captured.single
                   as List<String>;
           expect(requestedAgentIds, ['pa-1']);
-          verifyNever(() => mockRepository.getAgentState('pa-1'));
+          verify(() => mockRepository.getAgentState('pa-1')).called(1);
+        },
+      );
+
+      test(
+        'does not hydrate a startup batch consumed after the bulk snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-consumed-race');
+          final nextWakeAt = DateTime(2026, 3, 23, 8);
+          final snapshot =
+              makeState(
+                agentId: 'pa-consumed-race',
+                activeProjectId: 'project-consumed-race',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-consumed-race',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+                nextWakeAt: nextWakeAt,
+                scheduledWakeAt: DateTime(2026, 3, 23, 6),
+              );
+          final current = snapshot.copyWith(
+            slots: snapshot.slots.copyWith(pendingProjectActivityAt: null),
+            nextWakeAt: null,
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 3, 22, 10),
+          );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds([
+              'pa-consumed-race',
+            ]),
+          ).thenAnswer((_) async => {'pa-consumed-race': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-consumed-race'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-consumed-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const {});
+
+          await service.restoreSubscriptions();
+
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
+          verifyNever(() => mockRepository.upsertEntity(any()));
         },
       );
 
@@ -1487,7 +1550,7 @@ void main() {
           verifyNever(() => mockRepository.upsertEntity(any()));
           verify(
             () => mockRepository.getAgentState('pa-racing'),
-          ).called(1);
+          ).called(2);
         },
       );
 
@@ -1546,7 +1609,7 @@ void main() {
           verifyNever(() => mockRepository.upsertEntity(any()));
           verify(
             () => mockRepository.getAgentState('pa-manual-race'),
-          ).called(1);
+          ).called(2);
         },
       );
 

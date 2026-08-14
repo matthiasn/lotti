@@ -356,7 +356,9 @@ class TaskAgentService {
       await syncService.upsertEntity(updated);
     });
 
-    if (setup.mode == AgentInferenceSetupMode.disabled) {
+    if (previous.kind == AgentKinds.projectAgent) {
+      await _reconcileProjectRuntime(agentId);
+    } else if (setup.mode == AgentInferenceSetupMode.disabled) {
       orchestrator
         ..removeSubscriptions(agentId)
         ..disableAutomaticUpdatesRuntime(agentId);
@@ -406,8 +408,6 @@ class TaskAgentService {
   }) async {
     late AgentIdentityEntity identity;
     var wakeOnEnable = false;
-    var armProjectFallbackOnEnable = false;
-    var clearProjectFallbackOnDisable = false;
     Object? postCommitSyncError;
     StackTrace? postCommitSyncStackTrace;
     AgentIdentityEntity? attemptedIdentityUpdate;
@@ -423,14 +423,6 @@ class TaskAgentService {
         // its card would otherwise sit empty until the next task edit.
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
-        armProjectFallbackOnEnable =
-            current.kind == AgentKinds.projectAgent &&
-            projectAgentAutomaticWakesAllowed(
-              config: current.config,
-              lifecycle: current.lifecycle,
-            );
-      } else {
-        clearProjectFallbackOnDisable = current.kind == AgentKinds.projectAgent;
       }
     }
 
@@ -498,32 +490,17 @@ class TaskAgentService {
       postCommitSyncStackTrace = stackTrace;
     }
 
-    ({bool active, bool automaticWakesAllowed})? currentProjectPolicy;
-    if (armProjectFallbackOnEnable) {
-      currentProjectPolicy = await _reconcilePendingProjectActivityFallback(
-        agentId,
-      );
-    } else if (clearProjectFallbackOnDisable) {
-      await _clearProjectActivityFallback(agentId);
-    }
-
-    final activating = identity.kind == AgentKinds.projectAgent
-        ? enabled &&
-              (currentProjectPolicy?.automaticWakesAllowed ??
-                  projectAgentAutomaticWakesAllowed(
-                    config: identity.config,
-                    lifecycle: identity.lifecycle,
-                  ))
-        : enabled && identity.lifecycle == AgentLifecycle.active;
-    if (activating) {
-      orchestrator.enableAutomaticUpdatesRuntime(agentId);
-      if (identity.kind == AgentKinds.projectAgent) {
-        await _restoreProjectSubscriptionsForAgent(agentId);
-      } else {
-        await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
-      }
+    final bool activating;
+    if (identity.kind == AgentKinds.projectAgent) {
+      activating = await _reconcileProjectRuntime(agentId);
     } else {
-      orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      activating = enabled && identity.lifecycle == AgentLifecycle.active;
+      if (activating) {
+        orchestrator.enableAutomaticUpdatesRuntime(agentId);
+        await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+      } else {
+        orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      }
     }
 
     if (postCommitSyncError != null) {
@@ -672,9 +649,12 @@ class TaskAgentService {
     await repository.runInTransaction(() async {
       final state = await repository.getAgentState(agentId);
       final currentIdentity = await agentService.getAgent(agentId);
-      final active = currentIdentity?.lifecycle == AgentLifecycle.active;
+      final active =
+          currentIdentity?.kind == AgentKinds.projectAgent &&
+          currentIdentity?.lifecycle == AgentLifecycle.active;
       final automaticWakesAllowed =
           currentIdentity != null &&
+          currentIdentity.kind == AgentKinds.projectAgent &&
           projectAgentAutomaticWakesAllowed(
             config: currentIdentity.config,
             lifecycle: currentIdentity.lifecycle,
@@ -715,22 +695,20 @@ class TaskAgentService {
     return policy;
   }
 
-  /// Removes a project agent's device-local automatic fallback.
-  Future<void> _clearProjectActivityFallback(String agentId) async {
-    var changed = false;
-    await repository.runInTransaction(() async {
-      final state = await repository.getAgentState(agentId);
-      if (state == null ||
-          state.deletedAt != null ||
-          state.scheduledWakeAt == null) {
-        return;
-      }
-      await repository.upsertEntity(state.copyWith(scheduledWakeAt: null));
-      changed = true;
-    });
-    if (changed) {
-      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+  /// Applies the current persisted project policy to local runtime state.
+  Future<bool> _reconcileProjectRuntime(String agentId) async {
+    final policy = await _reconcilePendingProjectActivityFallback(agentId);
+    if (policy.active) {
+      await _restoreProjectSubscriptionsForAgent(agentId);
+    } else {
+      orchestrator.removeSubscriptions(agentId);
     }
+    if (policy.automaticWakesAllowed) {
+      orchestrator.enableAutomaticUpdatesRuntime(agentId);
+      return true;
+    }
+    orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    return false;
   }
 
   /// Re-register wake subscriptions for a single resumed agent.
@@ -744,16 +722,7 @@ class TaskAgentService {
   }) async {
     final identity = await agentService.getAgent(agentId);
     if (identity?.kind == AgentKinds.projectAgent) {
-      await _restoreProjectSubscriptionsForAgent(agentId);
-      final policy = await _reconcilePendingProjectActivityFallback(agentId);
-      if (policy.automaticWakesAllowed) {
-        orchestrator.enableAutomaticUpdatesRuntime(agentId);
-      } else {
-        if (!policy.active) {
-          orchestrator.removeSubscriptions(agentId);
-        }
-        orchestrator.disableAutomaticUpdatesRuntime(agentId);
-      }
+      await _reconcileProjectRuntime(agentId);
       return;
     }
 

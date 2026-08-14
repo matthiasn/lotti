@@ -139,6 +139,11 @@ stateDiagram-v2
   settings, resume-time fallback repair, and startup restoration use the same
   transaction-local policy recheck before enabling runtime; a lifecycle change
   that wins during startup also removes the stale observation subscriptions.
+  Disabling the inference setup routes through this reconciliation too, so it
+  cannot leave a receiver-local fallback visible after making the agent
+  dormant. Startup also re-reads the current state before queue hydration and
+  restores a throttle only for still-pending activity or an unfinished initial
+  creation wake.
 
 ## Dormant-by-default scheduling
 
@@ -180,7 +185,8 @@ cannot restore a marker or deadline that cancellation already removed. The
 activity monitor also captures when each local update batch was observed and
 serializes its final write with cancellation. A cancellation cutoff rejects
 older batches still resolving links, while newer post-cancel edits remain
-eligible; a rolled-back cancellation removes its cutoff. The
+eligible; rolled-back cancellations remove only their own pending cutoffs, so
+even overlapping failures leave no phantom cancellation behind. The
 workflow also re-reads the current identity policy inside its final persistence
 transaction; an automation toggle made during inference therefore controls
 whether success or failure may create another fallback. Consequently the

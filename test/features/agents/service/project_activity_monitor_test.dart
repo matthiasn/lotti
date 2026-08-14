@@ -97,6 +97,58 @@ void main() {
     );
 
     test(
+      'overlapping failed cancellations leave no stale activity cutoff',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+        final firstStarted = Completer<void>();
+        final releaseFirst = Completer<void>();
+        final secondStarted = Completer<void>();
+        final releaseSecond = Completer<void>();
+
+        final firstExpectation = expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: () async {
+              firstStarted.complete();
+              await releaseFirst.future;
+              throw StateError('first rollback');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+        await firstStarted.future;
+        final secondExpectation = expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: () async {
+              secondStarted.complete();
+              await releaseSecond.future;
+              throw StateError('second rollback');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        releaseFirst.complete();
+        await firstExpectation;
+        await secondStarted.future;
+        releaseSecond.complete();
+        await secondExpectation;
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isTrue);
+        expect(activityPersisted, isTrue);
+      },
+    );
+
+    test(
       'cancellation rejects an older batch still resolving project links',
       () async {
         final coordinator = ProjectActivityCancellationCoordinator();

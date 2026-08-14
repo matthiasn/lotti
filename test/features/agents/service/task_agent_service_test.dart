@@ -281,6 +281,12 @@ void main() {
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
     when(
+      () => mockRepository.getLinksFrom(
+        any(),
+        type: AgentLinkTypes.agentProject,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
       () => mockAgentService.getAgent('agent-1'),
     ).thenAnswer((_) async => makeIdentity());
 
@@ -2285,6 +2291,75 @@ void main() {
         );
       });
 
+      test(
+        'disabling project inference clears its local fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          const disabledSetup = AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.disabled,
+            origin: AgentInferenceSetupOrigin.user,
+          );
+          final disabledIdentity = identity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            config: identity.config.copyWith(
+              profileId: null,
+              inferenceSetup: disabledSetup,
+            ),
+            updatedAt: now,
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1 ? identity : disabledIdentity;
+          });
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAgentInferenceSetup(
+              agentId: 'agent-1',
+              setup: disabledSetup,
+            );
+          });
+
+          final clearedState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(clearedState.scheduledWakeAt, isNull);
+          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          verify(
+            () => mockOrchestrator.removeSubscriptions('agent-1'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
       test('direct model override preserves the base profile origin', () async {
         final identity = makeIdentity(
           config: const AgentConfig(
@@ -2815,6 +2890,56 @@ void main() {
       );
 
       test(
+        'project fallback clearing rechecks a concurrent opt-in',
+        () async {
+          final currentIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          when(
+            () => mockAgentService.getAgent('agent-1'),
+          ).thenAnswer((_) async => currentIdentity);
+          final scheduledAt = DateTime(2026, 8, 15, 6);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            scheduledWakeAt: scheduledAt,
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: false,
+          );
+
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          );
+        },
+      );
+
+      test(
         'turning off a project agent clears only its automatic fallback',
         () async {
           final now = DateTime(2026, 8, 14, 12);
@@ -2828,19 +2953,31 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 8}),
           );
-          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
-            (_) async => makeIdentity(
-              kind: AgentKinds.projectAgent,
-              config: const AgentConfig(
-                automaticUpdatesEnabled: true,
-                inferenceSetup: AgentInferenceSetup(
-                  mode: AgentInferenceSetupMode.configured,
-                  origin: AgentInferenceSetupOrigin.user,
-                  baseProfileId: 'profile-1',
-                ),
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
               ),
             ),
           );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? identity
+                : identity.copyWith(
+                    config: identity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: now,
+                  );
+          });
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
@@ -2881,19 +3018,31 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 9}),
           );
-          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
-            (_) async => makeIdentity(
-              kind: AgentKinds.projectAgent,
-              config: const AgentConfig(
-                automaticUpdatesEnabled: true,
-                inferenceSetup: AgentInferenceSetup(
-                  mode: AgentInferenceSetupMode.configured,
-                  origin: AgentInferenceSetupOrigin.user,
-                  baseProfileId: 'profile-1',
-                ),
+          final identity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
               ),
             ),
           );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? identity
+                : identity.copyWith(
+                    config: identity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: now,
+                  );
+          });
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
