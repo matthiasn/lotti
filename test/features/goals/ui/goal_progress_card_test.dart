@@ -312,6 +312,48 @@ void main() {
     );
   });
 
+  testWidgets('the habit streak rides the label row rather than a row of its '
+      'own', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 4,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Alone under the day squares it was an orphan: a two-word stat against
+    // the right edge with a card's width of nothing beside it.
+    final streak = find.text('4 / 6 weeks');
+    expect(streak, findsOneWidget);
+    expect(
+      tester.getCenter(streak).dy,
+      lessThan(
+        tester.getCenter(find.text('This rolling week')).dy +
+            tester.getSize(find.text('This rolling week')).height * 2,
+      ),
+      reason: 'the streak dropped to a row of its own',
+    );
+    // ...and it terminates on the trailing rail rather than floating.
+    expect(
+      tester.getBottomRight(streak).dx,
+      greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+    );
+  });
+
   testWidgets('a goal with no composite rule still gets a reflectable week', (
     tester,
   ) async {

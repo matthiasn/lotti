@@ -238,9 +238,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           health: health,
           healthAvailable: healthAsync.hasValue,
           spec: spec,
+          // Whatever the page is ACTUALLY showing as an assessment — the
+          // spec-matched report when there is one, otherwise the one-liner
+          // the card falls back to. Keying only off the report let the chip
+          // reappear on exactly the surfaces still displaying a summary.
           hasStandingAssessment:
               (latestReport?.tldr?.trim().isNotEmpty ?? false) ||
-              latestReport?.content.trim().isNotEmpty == true,
+              latestReport?.content.trim().isNotEmpty == true ||
+              (health?.reportOneLiner?.trim().isNotEmpty ?? false),
         ),
         // The agent's voice — standing report and active banners — stays
         // grouped with the goal definition at the top; the evidence

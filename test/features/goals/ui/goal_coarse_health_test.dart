@@ -213,4 +213,46 @@ void main() {
       });
     }
   });
+
+  group('coarseHealthChip', () {
+    test('hides Not enough data once an assessment exists', () {
+      // The chip is a claim about the agent's ability to judge. Beside a
+      // report that plainly does judge the goal, it forces the reader to
+      // decide which of the two to believe.
+      expect(
+        coarseHealthChip(
+          GoalTrackStatus.insufficientData,
+          hasStandingAssessment: true,
+        ),
+        isNull,
+      );
+      expect(
+        coarseHealthChip(null, hasStandingAssessment: true),
+        isNull,
+      );
+    });
+
+    test('keeps Not enough data when nothing has been assessed', () {
+      expect(
+        coarseHealthChip(
+          GoalTrackStatus.insufficientData,
+          hasStandingAssessment: false,
+        ),
+        GoalCoarseHealth.notEnoughData,
+      );
+    });
+
+    test('never suppresses a chip that is not Not enough data', () {
+      // A goal can be behind AND thin on data; only the "cannot judge" claim
+      // conflicts with a published judgement.
+      for (final status in GoalTrackStatus.values) {
+        if (status == GoalTrackStatus.insufficientData) continue;
+        expect(
+          coarseHealthChip(status, hasStandingAssessment: true),
+          coarseHealthOf(status),
+          reason: status.name,
+        );
+      }
+    });
+  });
 }
