@@ -106,8 +106,9 @@ GoalAssessmentRating? _decodeRating(Object? raw) {
 ///
 /// A day can carry several records — the user reflects, then revises — so the
 /// most recently created one wins. Ties on [GoalAssessmentRecord.createdAt]
-/// keep the first seen, which makes the result stable rather than dependent on
-/// however the store happened to order two writes in the same instant.
+/// fall back to the higher record id: the query orders by timestamp alone, so
+/// tied rows come back in no defined order and two devices would otherwise
+/// colour the same day differently from identical data.
 ///
 /// [specVersionId] restricts the result to reflections recorded against one
 /// version of the goal. Spec versions are immutable and the history keeps them
@@ -128,9 +129,12 @@ Map<DateTime, GoalAssessmentRecord> latestAssessmentsByDay(
       record.day.day,
     );
     final held = latest[day];
-    if (held == null || record.createdAt.isAfter(held.createdAt)) {
-      latest[day] = record;
-    }
+    final wins =
+        held == null ||
+        record.createdAt.isAfter(held.createdAt) ||
+        (record.createdAt == held.createdAt &&
+            record.id.compareTo(held.id) > 0);
+    if (wins) latest[day] = record;
   }
   return latest;
 }

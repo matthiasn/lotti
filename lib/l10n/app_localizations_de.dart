@@ -6050,7 +6050,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Tägliche Reflexionen';
 
   @override
-  String get goalAssessmentImproving => 'Auf dem Weg';
+  String get goalAssessmentImproving => 'Verbessert sich';
 
   @override
   String get goalAssessmentMeasuredReadOnly =>

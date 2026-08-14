@@ -208,6 +208,29 @@ void main() {
       expect(ratings, {day: GoalAssessmentRating.improving});
     });
 
+    test('records written in the same instant resolve the same way twice', () {
+      final day = DateTime.utc(2026, 8, 10);
+      final at = DateTime.utc(2026, 8, 10, 21);
+      final a = record(
+        id: 'aaa',
+        day: day,
+        rating: GoalAssessmentRating.met,
+        createdAt: at,
+      );
+      final b = record(
+        id: 'bbb',
+        day: day,
+        rating: GoalAssessmentRating.missed,
+        createdAt: at,
+      );
+
+      // The query orders by timestamp alone, so tied rows arrive in no
+      // defined order. Without a stable tie-break two devices colour the same
+      // day differently from identical data.
+      expect(latestRatingsByDay([a, b]), {day: GoalAssessmentRating.missed});
+      expect(latestRatingsByDay([b, a]), {day: GoalAssessmentRating.missed});
+    });
+
     test('a local timestamp still keys by its UTC calendar day', () {
       final ratings = latestRatingsByDay([
         record(

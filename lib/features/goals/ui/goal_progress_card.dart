@@ -209,8 +209,9 @@ class _CompactDayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final rating = this.rating;
-    // The dot is the measured-partial cue. A recorded verdict has four hues
-    // of its own and needs no second encoding on top of them.
+    // The dot is the measured-partial cue; a recorded verdict wears its own
+    // glyph instead. Either way the cell says something a reader who cannot
+    // separate the hues can still act on.
     final showsPartialDot =
         rating == null && state == GoalCompactDayState.partial;
     final cell = Container(
@@ -231,6 +232,17 @@ class _CompactDayCell extends StatelessWidget {
                 size <= IconSizes.xs
                     ? tokens.spacing.step1
                     : tokens.spacing.step2,
+              ),
+            )
+          // Only where the square is big enough to hold it. On the list rows'
+          // 12px cells a glyph is a smudge, and those strips carry no recorded
+          // verdicts anyway.
+          : rating != null && size >= ControlSizes.iconChipCompact
+          ? Center(
+              child: Icon(
+                goalAssessmentRatingGlyph(rating),
+                size: size * 0.6,
+                color: tokens.colors.alert.success.ink,
               ),
             )
           : null,
@@ -315,6 +327,21 @@ Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
       GoalAssessmentRating.improving => tokens.colors.alert.info.defaultColor,
       GoalAssessmentRating.mixed => tokens.colors.alert.warning.defaultColor,
       GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
+    };
+
+/// The glyph that names a recorded verdict without relying on its hue.
+///
+/// Four fills that differ only by colour are four fills a red-green colour
+/// deficiency cannot tell apart, and the strip's whole job is to be read at a
+/// glance. Each verdict therefore carries a shape as well: a tick for met, a
+/// rising arrow for improving, a half-filled circle for mixed, a cross for
+/// missed.
+IconData goalAssessmentRatingGlyph(GoalAssessmentRating rating) =>
+    switch (rating) {
+      GoalAssessmentRating.met => Icons.check_rounded,
+      GoalAssessmentRating.improving => Icons.trending_up_rounded,
+      GoalAssessmentRating.mixed => Icons.contrast_rounded,
+      GoalAssessmentRating.missed => Icons.close_rounded,
     };
 
 /// The localized name of a day verdict, shared by the strip's semantics and

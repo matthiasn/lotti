@@ -2806,7 +2806,7 @@
   "goalAgentLifetimeTimePill": "{duration} AI-tijd",
   "goalAgentLifetimeTimeTooltip": "Totale rekentijd van de agent voor {calls} modelaanroepen.",
   "goalAssessmentHistoryTitle": "Dagelijkse reflecties",
-  "goalAssessmentImproving": "Verbetert",
+  "goalAssessmentImproving": "Verbeterend",
   "goalAssessmentMeasuredReadOnly": "Gemeten door Lotti — dit deel kan niet worden bewerkt.",
   "goalAssessmentMeasuredTitle": "Wat Lotti heeft gemeten",
   "goalAssessmentMet": "Behaald",

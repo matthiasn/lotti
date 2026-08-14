@@ -2550,7 +2550,7 @@
   "goalAgentLifetimeTimePill": "{duration} KI-Zeit",
   "goalAgentLifetimeTimeTooltip": "Gesamte Rechenzeit des Agenten über {calls} Modellaufrufe.",
   "goalAssessmentHistoryTitle": "Tägliche Reflexionen",
-  "goalAssessmentImproving": "Auf dem Weg",
+  "goalAssessmentImproving": "Verbessert sich",
   "goalAssessmentMeasuredReadOnly": "Gemessen von Lotti – dieser Teil kann nicht bearbeitet werden.",
   "goalAssessmentMeasuredTitle": "Was Lotti gemessen hat",
   "goalAssessmentMet": "Erreicht",

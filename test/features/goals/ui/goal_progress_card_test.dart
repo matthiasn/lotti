@@ -282,6 +282,25 @@ void main() {
       findsOneWidget,
     );
 
+    // Colour alone is not enough: four fills that differ only by hue are four
+    // fills a red-green deficiency cannot separate, and reading the week at a
+    // glance is the strip's entire job. Each verdict wears a shape too.
+    for (final rating in GoalAssessmentRating.values) {
+      expect(
+        find.byIcon(goalAssessmentRatingGlyph(rating)),
+        findsOneWidget,
+        reason: '${rating.name} has no shape of its own',
+      );
+    }
+    expect(
+      {
+        for (final rating in GoalAssessmentRating.values)
+          goalAssessmentRatingGlyph(rating),
+      },
+      hasLength(GoalAssessmentRating.values.length),
+      reason: 'two verdicts share a glyph',
+    );
+
     // All four are distinguishable, and none of them is the grey of a day
     // nobody looked at — "I decided this was missed" and "no data" are
     // different facts and the strip has to be able to say which.

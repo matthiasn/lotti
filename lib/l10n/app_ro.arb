@@ -2550,7 +2550,7 @@
   "goalAgentLifetimeTimePill": "{duration} timp AI",
   "goalAgentLifetimeTimeTooltip": "Timp total de calcul al agentului pentru {calls} apeluri de model.",
   "goalAssessmentHistoryTitle": "Reflecții zilnice",
-  "goalAssessmentImproving": "În progres",
+  "goalAssessmentImproving": "Se îmbunătățește",
   "goalAssessmentMeasuredReadOnly": "Măsurat de Lotti - această parte nu este editabilă.",
   "goalAssessmentMeasuredTitle": "Ce a măsurat Lotti",
   "goalAssessmentMet": "Îndeplinit",

@@ -222,6 +222,10 @@ void main() {
         find.textContaining('On target today, still behind for the week.'),
         findsOneWidget,
       );
+      // BOTH body sections must be gone. Excluding only the second would let
+      // a collapsed view that still rendered the first section pass, which is
+      // exactly the defect this covers.
+      expect(find.textContaining('Logging is complete today.'), findsNothing);
       expect(find.textContaining('The rolling average lags.'), findsNothing);
     });
 

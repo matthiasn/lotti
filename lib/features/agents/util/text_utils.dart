@@ -64,10 +64,15 @@ final _reportIdAnnotationPatterns = <RegExp>[
 /// vocabulary, so [sanitizeAgentReportText] takes it as a flag rather than
 /// applying it to every caller of a shared sanitizer.
 ///
-/// The leading space goes with it, so "on habit 71ca84b0 — 2 more" closes up
-/// to "on habit — 2 more" rather than leaving a double space behind.
+/// A leading space goes with it, so "on habit 71ca84b0 — 2 more" closes up to
+/// "on habit — 2 more" rather than leaving a double space behind. Only
+/// horizontal whitespace, though: swallowing a newline would weld the
+/// paragraph or list item above onto the one the id opened.
 final _bareIdFragmentPattern = RegExp(
-  r'\s`?(?:[A-Za-z]+-)*'
+  // Horizontal whitespace only, or a zero-width match at the start of a line.
+  // A bare `\s` also ate the newline before an id that opened a paragraph,
+  // welding two paragraphs — or two list items — into one.
+  r'(?:[ \t]|(?<=^)|(?<=\n))`?(?:[A-Za-z]+-)*'
   '(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
   r'`?(?![-\w/])',
 );

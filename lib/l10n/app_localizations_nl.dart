@@ -6028,7 +6028,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Dagelijkse reflecties';
 
   @override
-  String get goalAssessmentImproving => 'Verbetert';
+  String get goalAssessmentImproving => 'Verbeterend';
 
   @override
   String get goalAssessmentMeasuredReadOnly =>

@@ -216,6 +216,24 @@ void main() {
       );
     });
 
+    test('an id opening a line does not weld it onto the line above', () {
+      expect(
+        sanitizeAgentReportText(
+          'Summary.\n\nhabit-71ca84b0 is behind.',
+          stripBareIds: true,
+        ),
+        'Summary.\n\n is behind.',
+      );
+      // List structure survives too.
+      expect(
+        sanitizeAgentReportText(
+          '- 71ca84b0 first\n- second',
+          stripBareIds: true,
+        ),
+        '- first\n- second',
+      );
+    });
+
     test('leaves a bare id inside a link path alone', () {
       // The whitespace the pattern requires cannot occur inside a URL, which
       // is what keeps proof-of-work links whole without an explicit carve-out.

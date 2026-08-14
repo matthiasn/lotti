@@ -6108,7 +6108,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
 
   @override
-  String get goalAssessmentImproving => 'În progres';
+  String get goalAssessmentImproving => 'Se îmbunătățește';
 
   @override
   String get goalAssessmentMeasuredReadOnly =>
