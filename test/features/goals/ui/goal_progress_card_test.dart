@@ -461,17 +461,27 @@ void main() {
       ),
     );
 
-    final strips = find.byType(GoalCompactWindowStrip);
-    final readOnly = tester.getSize(strips.at(0)).width;
-    final tappable = tester.getSize(strips.at(1)).width;
-    // Read-only the strip is a figure and stays out of the list row's way;
-    // tappable it takes the whole measure, so seven cells can each clear the
-    // touch floor without overflowing a phone card.
-    expect(readOnly, lessThan(tappable));
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip).at(1),
+      matching: find.byType(InkWell),
+    );
+    var covered = 0.0;
+    for (var index = 0; index < 7; index++) {
+      covered += tester.getSize(cells.at(index)).width;
+    }
+    // Read-only the strip hugs its content. Tappable it grows to seven touch
+    // targets and stops there: handed a whole desktop card it used to spread
+    // the cells cell-widths apart, reading as scattered confetti rather than
+    // a week.
     expect(
-      tappable,
-      tester.getSize(find.byType(Column).last).width,
-      reason: 'the tappable strip did not span its parent',
+      tester.getSize(find.byType(GoalCompactWindowStrip).at(0)).width,
+      lessThan(covered),
+    );
+    expect(covered, lessThanOrEqualTo(TapTargets.minimum * 7));
+    expect(
+      covered,
+      greaterThan(TapTargets.minimum * 7 * 0.9),
+      reason: 'the tappable cells no longer fill their capped strip',
     );
   });
 
@@ -576,21 +586,19 @@ void main() {
         reason: 'cell $index is under the touch floor',
       );
     }
-    // The targets tile the row with no dead space between them. Seven cells
-    // inside a card's rail cannot each reach 48px wide, so every pixel that
-    // would have gone to a gap goes to a target instead.
-    // The targets tile the row rather than sitting as islands in it. Seven
-    // cells inside a card's rail cannot each reach 48px wide, so every pixel
-    // that would have gone to a declared gap goes to a target instead.
+    // The targets tile the strip rather than sitting as islands in it: every
+    // pixel that would have gone to a declared gap goes to a target instead.
     var covered = 0.0;
     for (var index = 0; index < 7; index++) {
       covered += tester.getSize(cells.at(index)).width;
     }
+    final span =
+        tester.getRect(cells.at(6)).right - tester.getRect(cells.at(0)).left;
+    // Better than 95% of the span: the small residual is the ink slot inside
+    // each cell, not a declared gap between them.
     expect(
       covered,
-      greaterThan(
-        tester.getSize(find.byType(GoalCompactWindowStrip)).width * 0.98,
-      ),
+      greaterThan(span * 0.95),
       reason: 'dead space sits between the day targets',
     );
 
@@ -1445,10 +1453,13 @@ void main() {
       goalDayStateFill(tokens, GoalCompactDayState.full),
       reason: '12,400 steps beat the 10,000 target',
     );
+    // Short, but MEASURED. `background.level03` is what the legend calls
+    // absence, so a logged day that fell short wears the muted wash of the
+    // success family instead — three states, three fills.
     expect(
       barColor('2026-08-11'),
-      goalDayStateFill(tokens, GoalCompactDayState.none),
-      reason: '5,262 steps fell short',
+      goalDayStateFill(tokens, GoalCompactDayState.partial),
+      reason: '5,262 steps fell short but were still logged',
     );
 
     // Seven bars filling a full-width card rendered ~40px slabs. Each one now

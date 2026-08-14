@@ -336,12 +336,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             ),
           ),
         ],
-        SizedBox(height: tokens.spacing.cardItemSpacing),
-        if (isActive)
+        // The gap belongs to the card, not to the position: emitted
+        // unconditionally it doubled up with the next section's own gap
+        // whenever this card had nothing to show.
+        if (isActive) ...[
+          SizedBox(height: tokens.spacing.cardItemSpacing),
           ChangeSetSummaryCard.selfTargeted(
             agentId: agentId,
             confirmationProvider: goalChangeSetConfirmationServiceProvider,
           ),
+        ],
         if (progress != null && progress.dimensionCount > 0) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           _WatchingSection(progress: progress),
@@ -428,7 +432,23 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           child: desktop && chatAvailable
               ? Row(
                   children: [
-                    Expanded(flex: 3, child: detailList(showChatAction: false)),
+                    Expanded(
+                      flex: 3,
+                      // A reading measure, not a column width. Unbounded, the
+                      // report's section bodies ran ~90 characters per line
+                      // on a wide window — roughly twice a comfortable
+                      // measure — and the automation row's spaceBetween
+                      // opened a void across the same span.
+                      child: Align(
+                        alignment: AlignmentDirectional.topStart,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: tokens.spacing.step13 * 4,
+                          ),
+                          child: detailList(showChatAction: false),
+                        ),
+                      ),
+                    ),
                     VerticalDivider(
                       color: tokens.colors.decorative.level01,
                     ),
@@ -512,8 +532,16 @@ class _GoalHeader extends StatelessWidget {
                   ),
                   if (healthAvailable && coarse != null)
                     GoalCoarseHealthChip(health: coarse),
-                  if (health?.direction case final direction?)
-                    GoalHealthDirectionChip(direction: direction),
+                  // Gated on the RAW health, not the displayed chip: `coarse`
+                  // is null exactly when the not-enough-data chip is being
+                  // suppressed, so comparing against it never fired. With too
+                  // little data to judge the goal, a green "Trending up" was
+                  // the most confident statement in the header and the least
+                  // supported by the evidence under it.
+                  if (coarseHealthOf(health?.trackStatus) !=
+                      GoalCoarseHealth.notEnoughData)
+                    if (health?.direction case final direction?)
+                      GoalHealthDirectionChip(direction: direction),
                 ],
               ),
             ),
@@ -1112,9 +1140,13 @@ class _GoalReportSections extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
+          // One step below the TLDR above them. Set at bodyMedium the section
+          // bodies were LARGER than the subtitle2 headings labelling them —
+          // an inverted ramp — and identical to the summary they expand on,
+          // which made the summary read as a duplicated first paragraph.
           AgentMarkdownView(
             body,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
+            style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),
           ),
@@ -1128,35 +1160,20 @@ class _GoalReportSections extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
-          // A list, because that is what it is. Run together as prose, the
-          // actions were the part of the report most likely to be skimmed
-          // past — which is the opposite of what an action is for.
-          for (final action in actions)
-            Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step1),
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      size: IconSizes.s,
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step1),
-                  Expanded(
-                    child: AgentMarkdownView(
-                      action,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          // A markdown list, not a hand-built Row per action. The bullet
+          // then sits on the text's own baseline — a drawn dot beside an
+          // `AgentMarkdownView` hung above the line, because the markdown
+          // view carries its own leading that the sibling did not know about.
+          //
+          // Run together as prose, the actions were the part of the report
+          // most likely to be skimmed past, which is the opposite of what an
+          // action is for.
+          AgentMarkdownView(
+            [for (final action in actions) '- $action'].join('\n'),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
+          ),
         ],
       ],
     );

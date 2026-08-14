@@ -145,6 +145,36 @@ class GoalCompactWindowStrip extends StatelessWidget {
       ],
     );
 
+    final locale2 = Localizations.localeOf(context);
+    final weekday = DateFormat.E(locale2.toLanguageTag());
+    final labelled = onDaySelected == null || lastDay == null
+        ? row
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // The habit strip one card below names its days; this one used
+              // to be seven bare squares that each opened a specific date's
+              // sheet. You could not tell which day you were about to open.
+              Row(
+                children: [
+                  for (var index = 0; index < visible.length; index++)
+                    Expanded(
+                      child: Text(
+                        weekday.format(_dateAt(index, visible.length)),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.clip,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              row,
+            ],
+          );
+
     return Semantics(
       label: placeholder
           ? context.messages.goalProgressStripLoading
@@ -155,7 +185,20 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
-      child: onDaySelected == null ? ExcludeSemantics(child: row) : row,
+      child: onDaySelected == null
+          ? ExcludeSemantics(child: row)
+          // Capped, and left-aligned: spread across a desktop card the seven
+          // cells drifted cell-widths apart and read as scattered confetti
+          // rather than a week.
+          : Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: TapTargets.minimum * visible.length,
+                ),
+                child: labelled,
+              ),
+            ),
     );
   }
 }
@@ -242,7 +285,10 @@ class _CompactDayCell extends StatelessWidget {
               child: Icon(
                 goalAssessmentRatingGlyph(rating),
                 size: size * 0.6,
-                color: tokens.colors.alert.success.ink,
+                // The ink of the fill's OWN family. Painting every glyph in
+                // the success ink put a green tick's colour on a red missed
+                // cell and an orange mixed one.
+                color: goalAssessmentRatingInk(tokens, rating),
               ),
             )
           : null,
@@ -356,6 +402,19 @@ Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
       GoalAssessmentRating.improving => tokens.colors.alert.info.defaultColor,
       GoalAssessmentRating.mixed => tokens.colors.alert.warning.defaultColor,
       GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
+    };
+
+/// The ink that reads against [goalAssessmentRatingFill] for the same verdict.
+///
+/// Each alert family ships a matched `defaultColor` / `ink` pair; borrowing
+/// one family's ink for another family's fill is how a green tick ends up on
+/// a red cell.
+Color goalAssessmentRatingInk(DsTokens tokens, GoalAssessmentRating rating) =>
+    switch (rating) {
+      GoalAssessmentRating.met => tokens.colors.alert.success.ink,
+      GoalAssessmentRating.improving => tokens.colors.alert.info.ink,
+      GoalAssessmentRating.mixed => tokens.colors.alert.warning.ink,
+      GoalAssessmentRating.missed => tokens.colors.alert.error.ink,
     };
 
 /// The glyph that names a recorded verdict without relying on its hue.
@@ -1917,18 +1976,39 @@ class _MetricProgressSeries extends StatelessWidget {
         SizedBox(height: tokens.spacing.step3),
         SizedBox(
           height: _chartHeight(tokens),
-          child: metric.days.length <= 7
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: _bars(context, maxValue, expanded: true),
-                )
-              : SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: _bars(context, maxValue, expanded: false),
+          child: Stack(
+            children: [
+              // The target, drawn. Without it the colour flip between a green
+              // bar and a muted one has no visible cause on the chart itself —
+              // the threshold lived only in the header sentence above.
+              if (maxValue > 0)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom:
+                      _chartHeight(tokens) *
+                      (metric.target / maxValue).clamp(0, 1),
+                  child: SizedBox(
+                    height: 1,
+                    child: ColoredBox(color: tokens.colors.decorative.level01),
                   ),
                 ),
+              Positioned.fill(
+                child: metric.days.length <= 7
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: _bars(context, maxValue, expanded: true),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: _bars(context, maxValue, expanded: false),
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -1989,17 +2069,19 @@ class _MetricProgressSeries extends StatelessWidget {
         : rawHeightFactor;
     final barFill = DecoratedBox(
       decoration: BoxDecoration(
-        // The same fill the day cells above use, for the same meaning: this
-        // day met the goal. The bars wore `alert.info` — a blue that carried
-        // no threshold meaning at all, so a 12,000-step day and a 5,000-step
-        // day were told apart only by height, and the day the user actually
-        // beat their target looked no different from the day they missed it.
-        color: goalDayStateFill(
-          tokens,
-          metric.meetsTarget(day)
-              ? GoalCompactDayState.full
-              : GoalCompactDayState.none,
-        ),
+        // Three states, three fills. `background.level03` is what the legend
+        // one card above defines as ABSENCE, so a logged day that fell short
+        // must not wear it — it was measured, and that is a different fact
+        // from a day with no data. Met is the day-cell success fill; short is
+        // the muted wash of the same family; unobserved keeps the neutral.
+        color: !day.isObserved
+            ? goalDayStateFill(tokens, GoalCompactDayState.none)
+            : goalDayStateFill(
+                tokens,
+                metric.meetsTarget(day)
+                    ? GoalCompactDayState.full
+                    : GoalCompactDayState.partial,
+              ),
         border: !day.isObserved
             ? Border.all(
                 color: tokens.colors.text.lowEmphasis,

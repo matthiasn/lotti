@@ -173,11 +173,14 @@ class _GoalDayAssessmentSheetState
                             ? Icons.check_circle_rounded
                             : Icons.cancel_rounded,
                         size: IconSizes.xs,
+                        // A cross is the MISSED mark in the verdict
+                        // vocabulary, so it must not wear the warning hue
+                        // that vocabulary gives to Mixed.
                         color: row.met == null
                             ? tokens.colors.text.lowEmphasis
                             : row.met!
                             ? tokens.colors.alert.success.ink
-                            : tokens.colors.alert.warning.ink,
+                            : tokens.colors.alert.error.ink,
                       ),
                       SizedBox(width: tokens.spacing.step2),
                       Expanded(child: Text(row.name)),
