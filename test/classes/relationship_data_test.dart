@@ -133,60 +133,6 @@ void main() {
         expect(restored, variant);
       }
     });
-
-    test('toDbString returns correct strings', () {
-      expect(
-        RelationshipStatus.active(
-          id: 'rs-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).toDbString,
-        'ACTIVE',
-      );
-      expect(
-        RelationshipStatus.dormant(
-          id: 'rs-2',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).toDbString,
-        'DORMANT',
-      );
-      expect(
-        RelationshipStatus.archived(
-          id: 'rs-3',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).toDbString,
-        'ARCHIVED',
-      );
-    });
-
-    test('label returns human-readable labels', () {
-      expect(
-        RelationshipStatus.active(
-          id: 'rs-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).label,
-        'Active',
-      );
-      expect(
-        RelationshipStatus.dormant(
-          id: 'rs-2',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).label,
-        'Dormant',
-      );
-      expect(
-        RelationshipStatus.archived(
-          id: 'rs-3',
-          createdAt: testDate,
-          utcOffset: 0,
-        ).label,
-        'Archived',
-      );
-    });
   });
 
   group('ContactChannel', () {

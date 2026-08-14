@@ -3113,6 +3113,75 @@ class AppLocalizationsEs extends AppLocalizations {
       'La grabación se guardó, pero la transcripción falló. Inténtalo de nuevo.';
 
   @override
+  String get checkInAvoidLabel => 'Mejor evitar';
+
+  @override
+  String get checkInDateLabel => '¿Cuándo?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      '¿Eliminar este registro? Esta acción no se puede deshacer.';
+
+  @override
+  String get checkInEditTitle => 'Editar registro';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'No se pudo guardar el registro. Inténtalo de nuevo.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'No se pudo eliminar el registro. Inténtalo de nuevo.';
+
+  @override
+  String get checkInInteractionCall => 'Llamada';
+
+  @override
+  String get checkInInteractionInPerson => 'En persona';
+
+  @override
+  String get checkInInteractionLabel => '¿Cómo contactasteis?';
+
+  @override
+  String get checkInInteractionMessage => 'Mensaje';
+
+  @override
+  String get checkInInteractionOther => 'Otro';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videollamada';
+
+  @override
+  String get checkInNarrativeLabel => '¿De qué hablasteis?';
+
+  @override
+  String get checkInPayAttentionLabel => 'La próxima vez, presta atención a';
+
+  @override
+  String get checkInSentimentDelightful => 'Genial';
+
+  @override
+  String get checkInSentimentDifficult => 'Difícil';
+
+  @override
+  String get checkInSentimentGood => 'Bien';
+
+  @override
+  String get checkInSentimentLabel => '¿Cómo te sentiste?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutral';
+
+  @override
+  String get checkInSentimentStrained => 'Tenso';
+
+  @override
+  String get checkInTopicsHint => 'Separados por comas, p. ej. trabajo, viajes';
+
+  @override
+  String get checkInTopicsLabel => 'Temas';
+
+  @override
   String get checklistAddItem => 'Agregar un nuevo elemento';
 
   @override
@@ -3327,6 +3396,13 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Mostrar funciones de gestión de proyectos para organizar tareas en proyectos.';
+
+  @override
+  String get configFlagEnableRelationships => 'Activar la página Personas';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Muestra la pestaña Personas para cuidar tus relaciones personales.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -9051,6 +9127,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navTabTitleMore => 'Más';
 
   @override
+  String get navTabTitlePeople => 'Personas';
+
+  @override
   String get navTabTitleProjects => 'Proyectos';
 
   @override
@@ -10158,6 +10237,107 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Omitir';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Cada $days días',
+      one: 'Cada día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Cada dos semanas';
+
+  @override
+  String get relationshipCadenceLabel => 'Frecuencia de contacto';
+
+  @override
+  String get relationshipCadenceMonthly => 'Mensual';
+
+  @override
+  String get relationshipCadenceNone => 'Sin frecuencia';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Trimestral';
+
+  @override
+  String get relationshipCadenceWeekly => 'Semanal';
+
+  @override
+  String get relationshipCreateTitle => 'Añadir persona';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'También se eliminarán todos sus registros. Esta acción no se puede deshacer.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return '¿Eliminar a $name?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Editar persona';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'No se pudo guardar la persona. Inténtalo de nuevo.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'No se pudo eliminar la persona. Inténtalo de nuevo.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'No se pudieron guardar los cambios. Inténtalo de nuevo.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Recuérdame mantener el contacto';
+
+  @override
+  String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String get relationshipLogCheckIn => 'Registrar contacto';
+
+  @override
+  String get relationshipNameLabel => 'Nombre';
+
+  @override
+  String get relationshipNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get relationshipNicknameLabel => 'Apodo';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Aún no hay registros: añade uno tras vuestra próxima conversación.';
+
+  @override
+  String get relationshipNotFound => 'Esta persona ya no está en tu lista.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Añade a las personas de las que quieres estar cerca.';
+
+  @override
+  String get relationshipsPageTitle => 'Personas';
+
+  @override
+  String get relationshipStatusActive => 'Activa';
+
+  @override
+  String get relationshipStatusArchived => 'Archivada';
+
+  @override
+  String get relationshipStatusDormant => 'En reposo';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Estado';
 
   @override
   String get saveButton => 'Guardar';
@@ -13208,133 +13388,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get navTabTitlePeople => 'Personas';
-
-  @override
-  String get relationshipsPageTitle => 'Personas';
-
-  @override
-  String get configFlagEnableRelationships => 'Activar la página Personas';
-
-  @override
-  String get configFlagEnableRelationshipsDescription =>
-      'Muestra la pestaña Personas para cuidar tus relaciones personales.';
-
-  @override
-  String get relationshipsEmptyState =>
-      'Añade a las personas de las que quieres estar cerca.';
-
-  @override
-  String get relationshipCreateTitle => 'Añadir persona';
-
-  @override
-  String get relationshipNameLabel => 'Nombre';
-
-  @override
-  String get relationshipNicknameLabel => 'Apodo';
-
-  @override
-  String get relationshipNameRequired => 'El nombre es obligatorio';
-
-  @override
-  String get relationshipImportantLabel => 'Importante';
-
-  @override
-  String get relationshipImportantDescription =>
-      'Recuérdame mantener el contacto';
-
-  @override
-  String get relationshipCadenceLabel => 'Frecuencia de contacto';
-
-  @override
-  String get relationshipCadenceNone => 'Sin frecuencia';
-
-  @override
-  String get relationshipCadenceWeekly => 'Semanal';
-
-  @override
-  String get relationshipCadenceFortnightly => 'Cada dos semanas';
-
-  @override
-  String get relationshipCadenceMonthly => 'Mensual';
-
-  @override
-  String get relationshipCadenceQuarterly => 'Trimestral';
-
-  @override
-  String get relationshipErrorCreateFailed =>
-      'No se pudo guardar la persona. Inténtalo de nuevo.';
-
-  @override
-  String get relationshipLogCheckIn => 'Registrar contacto';
-
-  @override
-  String get relationshipNoCheckIns =>
-      'Aún no hay registros: añade uno tras vuestra próxima conversación.';
-
-  @override
-  String get relationshipStatusActive => 'Activa';
-
-  @override
-  String get relationshipStatusDormant => 'En reposo';
-
-  @override
-  String get relationshipStatusArchived => 'Archivada';
-
-  @override
-  String get checkInInteractionLabel => '¿Cómo hablasteis?';
-
-  @override
-  String get checkInInteractionInPerson => 'En persona';
-
-  @override
-  String get checkInInteractionCall => 'Llamada';
-
-  @override
-  String get checkInInteractionVideoCall => 'Videollamada';
-
-  @override
-  String get checkInInteractionMessage => 'Mensaje';
-
-  @override
-  String get checkInInteractionOther => 'Otro';
-
-  @override
-  String get checkInSentimentLabel => '¿Cómo te sentiste?';
-
-  @override
-  String get checkInSentimentDelightful => 'Genial';
-
-  @override
-  String get checkInSentimentGood => 'Bien';
-
-  @override
-  String get checkInSentimentNeutral => 'Neutral';
-
-  @override
-  String get checkInSentimentStrained => 'Tenso';
-
-  @override
-  String get checkInSentimentDifficult => 'Difícil';
-
-  @override
-  String get checkInTopicsLabel => 'Temas';
-
-  @override
-  String get checkInTopicsHint => 'Separados por comas, p. ej. trabajo, viajes';
-
-  @override
-  String get checkInNarrativeLabel => '¿De qué hablasteis?';
-
-  @override
-  String get checkInPayAttentionLabel => 'La próxima vez, presta atención a';
-
-  @override
-  String get checkInAvoidLabel => 'Mejor evitar';
-
-  @override
-  String get checkInErrorCreateFailed =>
-      'No se pudo guardar el registro. Inténtalo de nuevo.';
 }

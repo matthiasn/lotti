@@ -50,13 +50,18 @@ void main() {
     });
 
     testWidgets(
-      'returns null for basic/rating/project — no phrasing choice',
+      'returns null for basic/rating/project/relationship — no phrasing '
+      'choice',
       (tester) async {
         final context = await pumpContext(tester);
 
         expect(relationshipPhrasePair(context, EntryLinkType.basic), isNull);
         expect(relationshipPhrasePair(context, EntryLinkType.rating), isNull);
         expect(relationshipPhrasePair(context, EntryLinkType.project), isNull);
+        expect(
+          relationshipPhrasePair(context, EntryLinkType.relationship),
+          isNull,
+        );
       },
     );
   });

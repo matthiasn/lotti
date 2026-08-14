@@ -1870,7 +1870,11 @@
   "chatInputStopTranscribe": "Stop and transcribe",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
   "checkInAvoidLabel": "Better to avoid",
+  "checkInDateLabel": "When?",
+  "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
+  "checkInEditTitle": "Edit check-in",
   "checkInErrorCreateFailed": "Could not save the check-in. Please try again.",
+  "checkInErrorDeleteFailed": "Could not delete the check-in. Please try again.",
   "checkInInteractionCall": "Call",
   "checkInInteractionInPerson": "In person",
   "checkInInteractionLabel": "How did you connect?",
@@ -5689,6 +5693,14 @@
   },
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
+  "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
+  "@relationshipCadenceEveryNDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipCadenceFortnightly": "Every two weeks",
   "relationshipCadenceLabel": "Check-in cadence",
   "relationshipCadenceMonthly": "Monthly",
@@ -5696,7 +5708,19 @@
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
   "relationshipCreateTitle": "Add person",
+  "relationshipDeleteConfirmMessage": "Their check-ins are deleted too. This cannot be undone.",
+  "relationshipDeleteConfirmTitle": "Delete {name}?",
+  "@relationshipDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipEditTitle": "Edit person",
   "relationshipErrorCreateFailed": "Could not save this person. Please try again.",
+  "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
+  "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
   "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Important",
   "relationshipLogCheckIn": "Log check-in",
@@ -5704,11 +5728,13 @@
   "relationshipNameRequired": "A name is required",
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
+  "relationshipNotFound": "This person is no longer tracked.",
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsPageTitle": "People",
   "relationshipStatusActive": "Active",
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
+  "relationshipStatusFieldLabel": "Status",
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveLabel": "Save",

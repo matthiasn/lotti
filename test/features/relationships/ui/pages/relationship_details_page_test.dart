@@ -11,8 +11,10 @@ import 'package:lotti/features/relationships/ui/pages/relationship_details_page.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -33,6 +35,7 @@ void main() {
   RelationshipEntry relationship({
     bool important = false,
     int? cadenceDays,
+    RelationshipStatus? status,
   }) => RelationshipEntry(
     meta: meta('rel-1'),
     data: RelationshipData(
@@ -40,11 +43,13 @@ void main() {
       nickname: 'Sis',
       important: important,
       checkInCadenceDays: cadenceDays,
-      status: RelationshipStatus.active(
-        id: 'status-1',
-        createdAt: testDate,
-        utcOffset: 0,
-      ),
+      status:
+          status ??
+          RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
     ),
   );
 
@@ -63,6 +68,8 @@ void main() {
     ),
     entryText: narrative == null ? null : EntryText(plainText: narrative),
   );
+
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockRepository = MockRelationshipRepository();
@@ -126,6 +133,69 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a synced cadence outside the presets reads as "every N days" rather '
+    'than being rounded into one',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(cadenceDays: 3),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Every 3 days'), findsOneWidget);
+      expect(find.text('Weekly'), findsNothing);
+    },
+  );
+
+  testWidgets('the status chip names every status kind', (tester) async {
+    final statuses = <String, RelationshipStatus>{
+      'Active': RelationshipStatus.active(
+        id: 'st-a',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+      'Dormant': RelationshipStatus.dormant(
+        id: 'st-d',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+      'Archived': RelationshipStatus.archived(
+        id: 'st-r',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    };
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    for (final entry in statuses.entries) {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(status: entry.value),
+      );
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text(entry.key), findsOneWidget, reason: entry.key);
+      for (final other in statuses.keys.where((k) => k != entry.key)) {
+        expect(
+          find.text(other),
+          findsNothing,
+          reason: '$other vs ${entry.key}',
+        );
+      }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    }
+  });
+
   testWidgets('renders the no-check-ins hint when the log is empty', (
     tester,
   ) async {
@@ -147,9 +217,8 @@ void main() {
     expect(find.byIcon(Icons.star_rounded), findsNothing);
   });
 
-  testWidgets('shows the error text when the relationship is gone', (
-    tester,
-  ) async {
+  testWidgets('says the person is no longer tracked when the id is gone — '
+      'a synced delete is not an error', (tester) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
       (_) async => null,
     );
@@ -157,6 +226,267 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
+    expect(find.text('This person is no longer tracked.'), findsOneWidget);
+    expect(find.text('Error'), findsNothing);
+  });
+
+  testWidgets('shows the error text when loading actually fails', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipById('rel-1'),
+    ).thenThrow(Exception('db gone'));
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
     expect(find.text('Error'), findsOneWidget);
+  });
+
+  testWidgets('edit action opens the form prefilled with the person', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(cadenceDays: 14),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.edit_rounded));
+    await tester.pumpAndSettle();
+
+    // Prefilled name and nickname fields, and the edit-only status picker.
+    expect(
+      find.widgetWithText(TextField, 'Anna'),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(TextField, 'Sis'),
+      findsOneWidget,
+    );
+    expect(find.text('Status'), findsOneWidget);
+  });
+
+  testWidgets(
+    'delete action confirms, cascades through the repository, and beams '
+    'back to the list',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenAnswer((_) async => true);
+
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+
+      // Confirmation modal names the person; nothing deleted before consent.
+      expect(find.text('Delete Anna?'), findsOneWidget);
+      verifyNever(() => mockRepository.deleteRelationship(any()));
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockRepository.deleteRelationship('rel-1')).called(1);
+      expect(beamedTo, ['/people']);
+    },
+  );
+
+  testWidgets(
+    'a refused delete keeps the page open and reports the failure',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenAnswer((_) async => false);
+
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not delete this person. Please try again.'),
+        findsOneWidget,
+      );
+      // Crucially: no navigation away from a person who still exists.
+      expect(beamedTo, isEmpty);
+      expect(find.text('Anna'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a delete that throws reports the failure too', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.deleteRelationship('rel-1'),
+    ).thenThrow(Exception('db gone'));
+
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not delete this person. Please try again.'),
+      findsOneWidget,
+    );
+    expect(beamedTo, isEmpty);
+  });
+
+  testWidgets('the FAB opens the check-in capture sheet for this person', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockRepository.createCheckIn(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        dateFrom: any(named: 'dateFrom'),
+      ),
+    ).thenAnswer((_) async => checkIn('check-new'));
+
+    // The capture sheet is taller than the default 800x600 surface, so its
+    // Save button would sit off-screen and never receive the tap.
+    setTestSurfaceSize(tester, const Size(1000, 1400));
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Log check-in'));
+    await tester.pumpAndSettle();
+
+    // Create mode, titled for logging rather than editing.
+    expect(find.text('How did you connect?'), findsOneWidget);
+    expect(find.text('Edit check-in'), findsNothing);
+
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // The sheet saved against this page's relationship, not some other id.
+    final data =
+        verify(
+              () => mockRepository.createCheckIn(
+                data: captureAny(named: 'data'),
+                entryText: any(named: 'entryText'),
+                dateFrom: any(named: 'dateFrom'),
+              ),
+            ).captured.single
+            as CheckInData;
+    expect(data.relationshipId, 'rel-1');
+  });
+
+  testWidgets('each interaction type gets its own glyph on the check-in row', (
+    tester,
+  ) async {
+    const glyphs = {
+      CheckInInteractionType.inPerson: Icons.people_rounded,
+      CheckInInteractionType.call: Icons.call_rounded,
+      CheckInInteractionType.videoCall: Icons.videocam_rounded,
+      CheckInInteractionType.message: Icons.chat_rounded,
+      CheckInInteractionType.other: Icons.forum_rounded,
+    };
+
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(() => mockRepository.getCheckInsForRelationship('rel-1')).thenAnswer(
+      (_) async => [
+        for (final type in glyphs.keys)
+          CheckInEntry(
+            meta: meta('check-${type.name}'),
+            data: CheckInData(
+              relationshipId: 'rel-1',
+              interactionType: type,
+            ),
+          ),
+      ],
+    );
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    for (final entry in glyphs.entries) {
+      expect(
+        find.byIcon(entry.value),
+        findsOneWidget,
+        reason: '${entry.key} row glyph',
+      );
+    }
+  });
+
+  testWidgets('tapping a check-in row opens the edit sheet prefilled', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer(
+      (_) async => [
+        checkIn('check-1', narrative: 'Planned the summer trip.'),
+      ],
+    );
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Planned the summer trip.'));
+    await tester.pumpAndSettle();
+
+    // The edit sheet is up with the narrative prefilled in a text field
+    // and the delete affordance that only edit mode carries.
+    expect(find.text('Edit check-in'), findsOneWidget);
+    expect(
+      find.widgetWithText(TextField, 'Planned the summer trip.'),
+      findsOneWidget,
+    );
+    // Exactly two: the page's own app-bar action, which was already there
+    // before the sheet opened, plus the sheet's edit-only one. `findsWidgets`
+    // here would pass on the app-bar icon alone and prove nothing.
+    expect(find.byIcon(Icons.delete_outline_rounded), findsNWidgets(2));
   });
 }

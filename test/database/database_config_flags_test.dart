@@ -85,6 +85,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableRelationshipsFlag,
+    description: 'Enable People Page?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableSessionRatingsFlag,
     description: 'Enable session ratings?',
     status: false,

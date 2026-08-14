@@ -480,13 +480,14 @@ class NavService {
 /// The linked-entity id a global create command should attach to for
 /// [route], or null for an unlinked start.
 ///
-/// Goals routes carry an AGENT id: no journal parent exists there, so
-/// creation must start unlinked instead of pointing a new entry at a goal
-/// agent.
+/// Goals routes carry an agent id, so no journal parent exists there. People
+/// routes carry a relationship id, but global create commands write a plain
+/// `BasicLink` while relationships use `RelationshipLink`. Both surfaces
+/// therefore start global creation unlinked.
 @visibleForTesting
 String? creationContextIdForRoute(String? route) {
   if (route == null) return null;
-  if (route.startsWith('/goals')) return null;
+  if (route.startsWith('/goals') || route.startsWith('/people')) return null;
   final regExp = RegExp(
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,

@@ -3098,6 +3098,75 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aufnahme wurde gespeichert, aber die Transkription ist fehlgeschlagen. Bitte versuche es erneut.';
 
   @override
+  String get checkInAvoidLabel => 'Besser vermeiden';
+
+  @override
+  String get checkInDateLabel => 'Wann?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Diesen Check-in löschen? Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get checkInEditTitle => 'Check-in bearbeiten';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Check-in konnte nicht gespeichert werden. Bitte versuch es erneut.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Check-in konnte nicht gelöscht werden. Bitte versuch es erneut.';
+
+  @override
+  String get checkInInteractionCall => 'Anruf';
+
+  @override
+  String get checkInInteractionInPerson => 'Persönlich';
+
+  @override
+  String get checkInInteractionLabel => 'Wie hattet ihr Kontakt?';
+
+  @override
+  String get checkInInteractionMessage => 'Nachricht';
+
+  @override
+  String get checkInInteractionOther => 'Anderes';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videoanruf';
+
+  @override
+  String get checkInNarrativeLabel => 'Worüber habt ihr gesprochen?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Nächstes Mal darauf achten';
+
+  @override
+  String get checkInSentimentDelightful => 'Wunderbar';
+
+  @override
+  String get checkInSentimentDifficult => 'Schwierig';
+
+  @override
+  String get checkInSentimentGood => 'Gut';
+
+  @override
+  String get checkInSentimentLabel => 'Wie hat es sich angefühlt?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutral';
+
+  @override
+  String get checkInSentimentStrained => 'Angespannt';
+
+  @override
+  String get checkInTopicsHint => 'Kommagetrennt, z. B. Arbeit, Reisen';
+
+  @override
+  String get checkInTopicsLabel => 'Themen';
+
+  @override
   String get checklistAddItem => 'Neues Element hinzufügen';
 
   @override
@@ -3309,6 +3378,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.';
+
+  @override
+  String get configFlagEnableRelationships => 'Menschen-Seite aktivieren';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Zeigt den Menschen-Tab zur Pflege deiner persönlichen Beziehungen.';
 
   @override
   String get configFlagEnableSessionRatings => 'Sitzungsbewertungen aktivieren';
@@ -8969,6 +9045,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navTabTitleMore => 'Mehr';
 
   @override
+  String get navTabTitlePeople => 'Menschen';
+
+  @override
   String get navTabTitleProjects => 'Projekte';
 
   @override
@@ -10063,6 +10142,108 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Überspringen';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Alle $days Tage',
+      one: 'Jeden Tag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Alle zwei Wochen';
+
+  @override
+  String get relationshipCadenceLabel => 'Check-in-Rhythmus';
+
+  @override
+  String get relationshipCadenceMonthly => 'Monatlich';
+
+  @override
+  String get relationshipCadenceNone => 'Kein Rhythmus';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Vierteljährlich';
+
+  @override
+  String get relationshipCadenceWeekly => 'Wöchentlich';
+
+  @override
+  String get relationshipCreateTitle => 'Person hinzufügen';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return '$name löschen?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Person bearbeiten';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Person konnte nicht gespeichert werden. Bitte versuch es erneut.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Person konnte nicht gelöscht werden. Bitte versuch es erneut.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Änderungen konnten nicht gespeichert werden. Bitte versuch es erneut.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Erinnere mich, in Kontakt zu bleiben';
+
+  @override
+  String get relationshipImportantLabel => 'Wichtig';
+
+  @override
+  String get relationshipLogCheckIn => 'Check-in erfassen';
+
+  @override
+  String get relationshipNameLabel => 'Name';
+
+  @override
+  String get relationshipNameRequired => 'Ein Name ist erforderlich';
+
+  @override
+  String get relationshipNicknameLabel => 'Spitzname';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.';
+
+  @override
+  String get relationshipNotFound =>
+      'Diese Person ist nicht mehr in deiner Liste.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Füge die Menschen hinzu, denen du nah bleiben willst.';
+
+  @override
+  String get relationshipsPageTitle => 'Menschen';
+
+  @override
+  String get relationshipStatusActive => 'Aktiv';
+
+  @override
+  String get relationshipStatusArchived => 'Archiviert';
+
+  @override
+  String get relationshipStatusDormant => 'Ruhend';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Status';
 
   @override
   String get saveButton => 'Speichern';
@@ -13106,133 +13287,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get navTabTitlePeople => 'Menschen';
-
-  @override
-  String get relationshipsPageTitle => 'Menschen';
-
-  @override
-  String get configFlagEnableRelationships => 'Menschen-Seite aktivieren';
-
-  @override
-  String get configFlagEnableRelationshipsDescription =>
-      'Zeigt den Menschen-Tab zur Pflege deiner persönlichen Beziehungen.';
-
-  @override
-  String get relationshipsEmptyState =>
-      'Füge die Menschen hinzu, denen du nah bleiben willst.';
-
-  @override
-  String get relationshipCreateTitle => 'Person hinzufügen';
-
-  @override
-  String get relationshipNameLabel => 'Name';
-
-  @override
-  String get relationshipNicknameLabel => 'Spitzname';
-
-  @override
-  String get relationshipNameRequired => 'Ein Name ist erforderlich';
-
-  @override
-  String get relationshipImportantLabel => 'Wichtig';
-
-  @override
-  String get relationshipImportantDescription =>
-      'Erinnere mich, in Kontakt zu bleiben';
-
-  @override
-  String get relationshipCadenceLabel => 'Check-in-Rhythmus';
-
-  @override
-  String get relationshipCadenceNone => 'Kein Rhythmus';
-
-  @override
-  String get relationshipCadenceWeekly => 'Wöchentlich';
-
-  @override
-  String get relationshipCadenceFortnightly => 'Alle zwei Wochen';
-
-  @override
-  String get relationshipCadenceMonthly => 'Monatlich';
-
-  @override
-  String get relationshipCadenceQuarterly => 'Vierteljährlich';
-
-  @override
-  String get relationshipErrorCreateFailed =>
-      'Person konnte nicht gespeichert werden. Bitte versuch es erneut.';
-
-  @override
-  String get relationshipLogCheckIn => 'Check-in erfassen';
-
-  @override
-  String get relationshipNoCheckIns =>
-      'Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.';
-
-  @override
-  String get relationshipStatusActive => 'Aktiv';
-
-  @override
-  String get relationshipStatusDormant => 'Ruhend';
-
-  @override
-  String get relationshipStatusArchived => 'Archiviert';
-
-  @override
-  String get checkInInteractionLabel => 'Wie habt ihr gesprochen?';
-
-  @override
-  String get checkInInteractionInPerson => 'Persönlich';
-
-  @override
-  String get checkInInteractionCall => 'Anruf';
-
-  @override
-  String get checkInInteractionVideoCall => 'Videoanruf';
-
-  @override
-  String get checkInInteractionMessage => 'Nachricht';
-
-  @override
-  String get checkInInteractionOther => 'Anderes';
-
-  @override
-  String get checkInSentimentLabel => 'Wie hat es sich angefühlt?';
-
-  @override
-  String get checkInSentimentDelightful => 'Wunderbar';
-
-  @override
-  String get checkInSentimentGood => 'Gut';
-
-  @override
-  String get checkInSentimentNeutral => 'Neutral';
-
-  @override
-  String get checkInSentimentStrained => 'Angespannt';
-
-  @override
-  String get checkInSentimentDifficult => 'Schwierig';
-
-  @override
-  String get checkInTopicsLabel => 'Themen';
-
-  @override
-  String get checkInTopicsHint => 'Kommagetrennt, z. B. Arbeit, Reisen';
-
-  @override
-  String get checkInNarrativeLabel => 'Worüber habt ihr gesprochen?';
-
-  @override
-  String get checkInPayAttentionLabel => 'Nächstes Mal achten auf';
-
-  @override
-  String get checkInAvoidLabel => 'Besser vermeiden';
-
-  @override
-  String get checkInErrorCreateFailed =>
-      'Check-in konnte nicht gespeichert werden. Bitte versuch es erneut.';
 }

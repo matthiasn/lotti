@@ -105,18 +105,3 @@ abstract class RelationshipData with _$RelationshipData {
   factory RelationshipData.fromJson(Map<String, dynamic> json) =>
       _$RelationshipDataFromJson(json);
 }
-
-extension RelationshipStatusExtension on RelationshipStatus {
-  String get toDbString => switch (this) {
-    RelationshipActive() => 'ACTIVE',
-    RelationshipDormant() => 'DORMANT',
-    RelationshipArchived() => 'ARCHIVED',
-  };
-
-  /// Human-readable label for display and agent output.
-  String get label => switch (this) {
-    RelationshipActive() => 'Active',
-    RelationshipDormant() => 'Dormant',
-    RelationshipArchived() => 'Archived',
-  };
-}

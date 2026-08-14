@@ -42,6 +42,11 @@ void main() {
         ),
       );
 
+  RelationshipListItem item(String id, {DateTime? lastCheckInAt}) => (
+    relationship: relationship(id),
+    lastCheckInAt: lastCheckInAt,
+  );
+
   CheckInEntry checkIn(String id, String relationshipId) => CheckInEntry(
     meta: meta(id),
     data: CheckInData(
@@ -53,7 +58,13 @@ void main() {
   setUp(() {
     mockRepository = MockRelationshipRepository();
     mockNotifications = MockUpdateNotifications();
-    updateStreamController = StreamController<Set<String>>.broadcast();
+    // Synchronous delivery: `add` runs the controllers' listeners (and their
+    // `invalidateSelf`) before it returns, so a refetch assertion needs no
+    // wait at all — no `Future.delayed`, no dependence on event-loop
+    // ordering under the batched test runner.
+    updateStreamController = StreamController<Set<String>>.broadcast(
+      sync: true,
+    );
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
@@ -73,24 +84,26 @@ void main() {
 
   group('relationshipsListControllerProvider', () {
     test('loads relationships from the repository', () async {
-      when(() => mockRepository.getRelationships()).thenAnswer(
-        (_) async => [relationship('rel-1'), relationship('rel-2')],
+      when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+        (_) async => [item('rel-1', lastCheckInAt: testDate), item('rel-2')],
       );
 
       final result = await container.read(
         relationshipsListControllerProvider.future,
       );
 
-      expect(result.map((r) => r.id), ['rel-1', 'rel-2']);
+      expect(result.map((i) => i.relationship.id), ['rel-1', 'rel-2']);
+      expect(result.first.lastCheckInAt, testDate);
+      expect(result.last.lastCheckInAt, isNull);
     });
 
     test('refetches when a relationship notification arrives', () async {
       var calls = 0;
-      when(() => mockRepository.getRelationships()).thenAnswer((_) async {
+      when(() => mockRepository.getRelationshipsByRecency()).thenAnswer((
+        _,
+      ) async {
         calls++;
-        return calls == 1
-            ? [relationship('rel-1')]
-            : [relationship('rel-1'), relationship('rel-2')];
+        return calls == 1 ? [item('rel-1')] : [item('rel-1'), item('rel-2')];
       });
 
       // Keep the provider alive across the invalidation.
@@ -107,7 +120,6 @@ void main() {
       );
 
       updateStreamController.add({relationshipNotification});
-      await Future<void>.delayed(Duration.zero);
 
       expect(
         (await container.read(
@@ -121,9 +133,11 @@ void main() {
 
     test('refetches when a check-in notification arrives', () async {
       var calls = 0;
-      when(() => mockRepository.getRelationships()).thenAnswer((_) async {
+      when(() => mockRepository.getRelationshipsByRecency()).thenAnswer((
+        _,
+      ) async {
         calls++;
-        return [relationship('rel-1')];
+        return [item('rel-1')];
       });
 
       final subscription = container.listen(
@@ -133,18 +147,51 @@ void main() {
       await container.read(relationshipsListControllerProvider.future);
 
       updateStreamController.add({checkInNotification});
-      await Future<void>.delayed(Duration.zero);
       await container.read(relationshipsListControllerProvider.future);
 
       expect(calls, 2);
       subscription.close();
     });
 
+    test('refetches when the private-entries flag is toggled', () async {
+      var calls = 0;
+      when(() => mockRepository.getRelationshipsByRecency()).thenAnswer((
+        _,
+      ) async {
+        calls++;
+        return calls == 1 ? [item('rel-private'), item('rel-public')] : [];
+      });
+
+      final subscription = container.listen(
+        relationshipsListControllerProvider,
+        (_, _) {},
+      );
+      expect(
+        (await container.read(
+          relationshipsListControllerProvider.future,
+        )).length,
+        2,
+      );
+
+      // Hiding private entries changes what the private-filtered read
+      // returns, with no relationship or check-in write involved.
+      updateStreamController.add({privateToggleNotification});
+
+      expect(
+        await container.read(relationshipsListControllerProvider.future),
+        isEmpty,
+      );
+      expect(calls, 2);
+      subscription.close();
+    });
+
     test('ignores unrelated notifications', () async {
       var calls = 0;
-      when(() => mockRepository.getRelationships()).thenAnswer((_) async {
+      when(() => mockRepository.getRelationshipsByRecency()).thenAnswer((
+        _,
+      ) async {
         calls++;
-        return [relationship('rel-1')];
+        return [item('rel-1')];
       });
 
       final subscription = container.listen(
@@ -154,7 +201,6 @@ void main() {
       await container.read(relationshipsListControllerProvider.future);
 
       updateStreamController.add({'TASK'});
-      await Future<void>.delayed(Duration.zero);
       await container.read(relationshipsListControllerProvider.future);
 
       expect(calls, 1);
@@ -216,12 +262,121 @@ void main() {
 
       // A saved check-in notifies its relationship id via affectedIds.
       updateStreamController.add({'rel-1', checkInNotification});
-      await Future<void>.delayed(Duration.zero);
       await container.read(
         relationshipDetailControllerProvider('rel-1').future,
       );
 
       expect(calls, 2);
+      subscription.close();
+    });
+
+    test(
+      'refetches on the prefixed entity-update token alone — a person edit '
+      'emits that, not the bare id',
+      () async {
+        var calls = 0;
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          return relationship('rel-1', title: calls == 1 ? 'Anna' : 'Annika');
+        });
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => []);
+
+        final subscription = container.listen(
+          relationshipDetailControllerProvider('rel-1'),
+          (_, _) {},
+        );
+        expect(
+          (await container.read(
+            relationshipDetailControllerProvider('rel-1').future,
+          ))?.relationship.data.title,
+          'Anna',
+        );
+
+        updateStreamController.add({
+          relationshipEntityUpdateNotification('rel-1'),
+        });
+
+        expect(
+          (await container.read(
+            relationshipDetailControllerProvider('rel-1').future,
+          ))?.relationship.data.title,
+          'Annika',
+        );
+        subscription.close();
+      },
+    );
+
+    test(
+      'refetches when the private-entries flag is toggled — an open private '
+      'person must resolve to "no longer tracked"',
+      () async {
+        var calls = 0;
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          return calls == 1 ? relationship('rel-1') : null;
+        });
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => []);
+
+        final subscription = container.listen(
+          relationshipDetailControllerProvider('rel-1'),
+          (_, _) {},
+        );
+        expect(
+          await container.read(
+            relationshipDetailControllerProvider('rel-1').future,
+          ),
+          isNotNull,
+        );
+
+        updateStreamController.add({privateToggleNotification});
+
+        expect(
+          await container.read(
+            relationshipDetailControllerProvider('rel-1').future,
+          ),
+          isNull,
+        );
+        subscription.close();
+      },
+    );
+
+    test('ignores a notification for a different relationship', () async {
+      var calls = 0;
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+        _,
+      ) async {
+        calls++;
+        return relationship('rel-1');
+      });
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+
+      final subscription = container.listen(
+        relationshipDetailControllerProvider('rel-1'),
+        (_, _) {},
+      );
+      await container.read(
+        relationshipDetailControllerProvider('rel-1').future,
+      );
+
+      updateStreamController.add({
+        'rel-2',
+        relationshipEntityUpdateNotification('rel-2'),
+      });
+      await container.read(
+        relationshipDetailControllerProvider('rel-1').future,
+      );
+
+      expect(calls, 1);
       subscription.close();
     });
   });

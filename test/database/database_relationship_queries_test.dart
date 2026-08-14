@@ -228,5 +228,110 @@ void main() {
         );
       },
     );
+
+    test(
+      'getAllCheckInsForRelationship ignores the private filter, so the '
+      'delete cascade cannot leave hidden check-ins behind',
+      () async {
+        await db!.updateJournalEntity(
+          checkIn('check-public', relationshipId: 'rel-a', at: baseTime),
+        );
+        await db!.updateJournalEntity(
+          checkIn(
+            'check-private',
+            relationshipId: 'rel-a',
+            at: baseTime.add(const Duration(days: 1)),
+            private: true,
+          ),
+        );
+        await db!.updateJournalEntity(
+          checkIn(
+            'check-deleted',
+            relationshipId: 'rel-a',
+            at: baseTime.add(const Duration(days: 2)),
+            deletedAt: baseTime.add(const Duration(days: 3)),
+          ),
+        );
+        await db!.updateJournalEntity(
+          checkIn('check-other-rel', relationshipId: 'rel-b', at: baseTime),
+        );
+
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: privateFlag,
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        // The browsing query hides the private check-in at this setting…
+        expect(
+          (await db!.getCheckInsForRelationship('rel-a')).map((c) => c.id),
+          ['check-public'],
+        );
+        // …while the cascade query still sees it. Tombstones and other
+        // people's check-ins stay out of both.
+        expect(
+          (await db!.getAllCheckInsForRelationship('rel-a')).map((c) => c.id),
+          ['check-private', 'check-public'],
+        );
+      },
+    );
+
+    test(
+      'latestCheckInTimes aggregates the newest live check-in per '
+      'relationship and respects the private filter',
+      () async {
+        await db!.updateJournalEntity(
+          checkIn('a-old', relationshipId: 'rel-a', at: baseTime),
+        );
+        await db!.updateJournalEntity(
+          checkIn(
+            'a-new',
+            relationshipId: 'rel-a',
+            at: baseTime.add(const Duration(days: 2)),
+          ),
+        );
+        // Deleted check-ins never count toward recency.
+        await db!.updateJournalEntity(
+          checkIn(
+            'a-deleted',
+            relationshipId: 'rel-a',
+            at: baseTime.add(const Duration(days: 5)),
+            deletedAt: baseTime.add(const Duration(days: 6)),
+          ),
+        );
+        // rel-b's only check-in is private.
+        await db!.updateJournalEntity(
+          checkIn(
+            'b-private',
+            relationshipId: 'rel-b',
+            at: baseTime.add(const Duration(days: 1)),
+            private: true,
+          ),
+        );
+
+        Future<void> setPrivateFlag({required bool status}) =>
+            db!.upsertConfigFlag(
+              ConfigFlag(
+                name: privateFlag,
+                description: 'Show private entries?',
+                status: status,
+              ),
+            );
+
+        await setPrivateFlag(status: true);
+        expect(await db!.latestCheckInTimes(), {
+          'rel-a': baseTime.add(const Duration(days: 2)),
+          'rel-b': baseTime.add(const Duration(days: 1)),
+        });
+
+        // With private entries hidden, rel-b's recency must not leak.
+        await setPrivateFlag(status: false);
+        expect(await db!.latestCheckInTimes(), {
+          'rel-a': baseTime.add(const Duration(days: 2)),
+        });
+      },
+    );
   });
 }

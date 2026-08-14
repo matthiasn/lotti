@@ -703,6 +703,12 @@ class MockNavService extends Mock implements NavService {
 
   @override
   bool get isUnifiedGoalsPageEnabled => unifiedGoalsPageEnabled;
+
+  /// Same pattern for the People tab (`enable_relationships`).
+  bool relationshipsPageEnabled = false;
+
+  @override
+  bool get isRelationshipsPageEnabled => relationshipsPageEnabled;
 }
 
 class MockWindowService extends Mock implements WindowService {}

@@ -792,6 +792,67 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('the flag-gated People destination appears in the desktop '
+        'sidebar when enabled, and not otherwise', (tester) async {
+      final mockNavService = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      final relationshipsDelegate = await _createEmptyDelegate('/people');
+      when(
+        () => mockNavService.relationshipsDelegate,
+      ).thenReturn(relationshipsDelegate);
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      final peopleGlyph = find.byWidgetPredicate(
+        (w) =>
+            w is Icon &&
+            (w.icon == Icons.people_outlined || w.icon == Icons.people_rounded),
+      );
+      expect(peopleGlyph, findsWidgets);
+      // Mounted but not active, so its Beamer child sits offstage in the
+      // shell's IndexedStack.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Beamer && w.routerDelegate == relationshipsDelegate,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+
+      // Turning the flag off removes both the destination and its Beamer.
+      mockNavService.relationshipsPageEnabled = false;
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(peopleGlyph, findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Beamer && w.routerDelegate == relationshipsDelegate,
+          skipOffstage: false,
+        ),
+        findsNothing,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
     testWidgets(
       'routes Projects into the More sheet after a flag-driven nav update',
       (tester) async {

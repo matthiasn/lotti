@@ -3113,6 +3113,75 @@ class AppLocalizationsIt extends AppLocalizations {
       'La registrazione è stata acquisita, ma la trascrizione non è riuscita. Riprova.';
 
   @override
+  String get checkInAvoidLabel => 'Meglio evitare';
+
+  @override
+  String get checkInDateLabel => 'Quando?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Eliminare questo check-in? L\'azione non si può annullare.';
+
+  @override
+  String get checkInEditTitle => 'Modifica check-in';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Impossibile salvare il check-in. Riprova.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Impossibile eliminare il check-in. Riprova.';
+
+  @override
+  String get checkInInteractionCall => 'Chiamata';
+
+  @override
+  String get checkInInteractionInPerson => 'Di persona';
+
+  @override
+  String get checkInInteractionLabel => 'Come vi siete messi in contatto?';
+
+  @override
+  String get checkInInteractionMessage => 'Messaggio';
+
+  @override
+  String get checkInInteractionOther => 'Altro';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videochiamata';
+
+  @override
+  String get checkInNarrativeLabel => 'Di cosa avete parlato?';
+
+  @override
+  String get checkInPayAttentionLabel => 'La prossima volta fai attenzione a';
+
+  @override
+  String get checkInSentimentDelightful => 'Splendido';
+
+  @override
+  String get checkInSentimentDifficult => 'Difficile';
+
+  @override
+  String get checkInSentimentGood => 'Bene';
+
+  @override
+  String get checkInSentimentLabel => 'Com\'è andata?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutro';
+
+  @override
+  String get checkInSentimentStrained => 'Teso';
+
+  @override
+  String get checkInTopicsHint => 'Separati da virgole, ad es. lavoro, viaggi';
+
+  @override
+  String get checkInTopicsLabel => 'Argomenti';
+
+  @override
   String get checklistAddItem => 'Aggiungi un nuovo articolo';
 
   @override
@@ -3327,6 +3396,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Mostra le caratteristiche di gestione del progetto per l\'organizzazione dei compiti in progetti.';
+
+  @override
+  String get configFlagEnableRelationships => 'Attiva la pagina Persone';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Mostra la scheda Persone per coltivare le tue relazioni personali.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -5845,7 +5921,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Risposta dell\'IA';
 
   @override
-  String get entryTypeLabelCheckIn => 'Contatto';
+  String get entryTypeLabelCheckIn => 'Check-in';
 
   @override
   String get entryTypeLabelChecklist => 'Lista di controllo';
@@ -9036,6 +9112,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navTabTitleMore => 'Altro';
 
   @override
+  String get navTabTitlePeople => 'Persone';
+
+  @override
   String get navTabTitleProjects => 'Progetti';
 
   @override
@@ -10140,6 +10219,108 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Salta!';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Ogni $days giorni',
+      one: 'Ogni giorno',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Ogni due settimane';
+
+  @override
+  String get relationshipCadenceLabel => 'Ritmo dei check-in';
+
+  @override
+  String get relationshipCadenceMonthly => 'Ogni mese';
+
+  @override
+  String get relationshipCadenceNone => 'Nessun ritmo';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Ogni trimestre';
+
+  @override
+  String get relationshipCadenceWeekly => 'Ogni settimana';
+
+  @override
+  String get relationshipCreateTitle => 'Aggiungi persona';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Verranno eliminati anche tutti i suoi check-in. L\'azione non si può annullare.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return 'Eliminare $name?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Modifica persona';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Impossibile salvare la persona. Riprova.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Impossibile eliminare la persona. Riprova.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Impossibile salvare le modifiche. Riprova.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Ricordami di restare in contatto';
+
+  @override
+  String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String get relationshipLogCheckIn => 'Registra un check-in';
+
+  @override
+  String get relationshipNameLabel => 'Nome';
+
+  @override
+  String get relationshipNameRequired => 'Il nome è obbligatorio';
+
+  @override
+  String get relationshipNicknameLabel => 'Soprannome';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nessun check-in registrato — registrane uno dopo la prossima conversazione.';
+
+  @override
+  String get relationshipNotFound =>
+      'Questa persona non è più nella tua lista.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Aggiungi le persone a cui vuoi restare vicino.';
+
+  @override
+  String get relationshipsPageTitle => 'Persone';
+
+  @override
+  String get relationshipStatusActive => 'Attiva';
+
+  @override
+  String get relationshipStatusArchived => 'Archiviata';
+
+  @override
+  String get relationshipStatusDormant => 'In pausa';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Stato';
 
   @override
   String get saveButton => 'Salva';
@@ -13194,133 +13375,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get navTabTitlePeople => 'Persone';
-
-  @override
-  String get relationshipsPageTitle => 'Persone';
-
-  @override
-  String get configFlagEnableRelationships => 'Attiva la pagina Persone';
-
-  @override
-  String get configFlagEnableRelationshipsDescription =>
-      'Mostra la scheda Persone per coltivare le tue relazioni personali.';
-
-  @override
-  String get relationshipsEmptyState =>
-      'Aggiungi le persone a cui vuoi restare vicino.';
-
-  @override
-  String get relationshipCreateTitle => 'Aggiungi persona';
-
-  @override
-  String get relationshipNameLabel => 'Nome';
-
-  @override
-  String get relationshipNicknameLabel => 'Soprannome';
-
-  @override
-  String get relationshipNameRequired => 'Il nome è obbligatorio';
-
-  @override
-  String get relationshipImportantLabel => 'Importante';
-
-  @override
-  String get relationshipImportantDescription =>
-      'Ricordami di restare in contatto';
-
-  @override
-  String get relationshipCadenceLabel => 'Ritmo dei contatti';
-
-  @override
-  String get relationshipCadenceNone => 'Nessun ritmo';
-
-  @override
-  String get relationshipCadenceWeekly => 'Ogni settimana';
-
-  @override
-  String get relationshipCadenceFortnightly => 'Ogni due settimane';
-
-  @override
-  String get relationshipCadenceMonthly => 'Ogni mese';
-
-  @override
-  String get relationshipCadenceQuarterly => 'Ogni trimestre';
-
-  @override
-  String get relationshipErrorCreateFailed =>
-      'Impossibile salvare la persona. Riprova.';
-
-  @override
-  String get relationshipLogCheckIn => 'Registra un contatto';
-
-  @override
-  String get relationshipNoCheckIns =>
-      'Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.';
-
-  @override
-  String get relationshipStatusActive => 'Attiva';
-
-  @override
-  String get relationshipStatusDormant => 'In pausa';
-
-  @override
-  String get relationshipStatusArchived => 'Archiviata';
-
-  @override
-  String get checkInInteractionLabel => 'Come avete parlato?';
-
-  @override
-  String get checkInInteractionInPerson => 'Di persona';
-
-  @override
-  String get checkInInteractionCall => 'Chiamata';
-
-  @override
-  String get checkInInteractionVideoCall => 'Videochiamata';
-
-  @override
-  String get checkInInteractionMessage => 'Messaggio';
-
-  @override
-  String get checkInInteractionOther => 'Altro';
-
-  @override
-  String get checkInSentimentLabel => 'Com\'è andata?';
-
-  @override
-  String get checkInSentimentDelightful => 'Splendido';
-
-  @override
-  String get checkInSentimentGood => 'Bene';
-
-  @override
-  String get checkInSentimentNeutral => 'Neutro';
-
-  @override
-  String get checkInSentimentStrained => 'Teso';
-
-  @override
-  String get checkInSentimentDifficult => 'Difficile';
-
-  @override
-  String get checkInTopicsLabel => 'Argomenti';
-
-  @override
-  String get checkInTopicsHint => 'Separati da virgole, ad es. lavoro, viaggi';
-
-  @override
-  String get checkInNarrativeLabel => 'Di cosa avete parlato?';
-
-  @override
-  String get checkInPayAttentionLabel => 'La prossima volta fai attenzione a';
-
-  @override
-  String get checkInAvoidLabel => 'Meglio evitare';
-
-  @override
-  String get checkInErrorCreateFailed =>
-      'Impossibile salvare il contatto. Riprova.';
 }

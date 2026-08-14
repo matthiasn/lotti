@@ -9,6 +9,7 @@ import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 
@@ -90,6 +91,34 @@ void main() {
         for (final path in ['/settings/goals', '/mygoals']) {
           expect(
             goalsBeamerDelegate.locationBuilder(
+              RouteInformation(uri: Uri.parse(path)),
+              null,
+            ),
+            isA<NotFound>(),
+            reason: path,
+          );
+        }
+      },
+    );
+
+    test(
+      'relationshipsBeamerDelegate root-matches (not substring) the people '
+      'path',
+      () {
+        for (final path in ['/people', '/people/rel-1']) {
+          expect(
+            relationshipsBeamerDelegate.locationBuilder(
+              RouteInformation(uri: Uri.parse(path)),
+              null,
+            ),
+            isA<RelationshipsLocation>(),
+            reason: path,
+          );
+        }
+        // Unrelated paths that merely contain "people" do not resolve here.
+        for (final path in ['/settings/people', '/peoples']) {
+          expect(
+            relationshipsBeamerDelegate.locationBuilder(
               RouteInformation(uri: Uri.parse(path)),
               null,
             ),

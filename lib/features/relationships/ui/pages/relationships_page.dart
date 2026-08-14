@@ -3,26 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_create_modal.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-/// The People tab: every tracked relationship, newest tracking start first,
-/// with an add-person FAB. Tapping a row beams to `/people/<id>`.
+/// The People tab: every tracked relationship, most recently interacted-with
+/// first (people without a check-in sort by tracking start), with an
+/// add-person FAB. Tapping a row beams to `/people/<id>`.
 class RelationshipsPage extends ConsumerWidget {
   const RelationshipsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final relationshipsAsync = ref.watch(relationshipsListControllerProvider);
+    final itemsAsync = ref.watch(relationshipsListControllerProvider);
     // Never flash the established list during a background reload — keep the
     // previous value while the refetch runs.
-    final relationships = relationshipsAsync.value;
-    final failedFirstLoad =
-        relationships == null && relationshipsAsync.hasError;
+    final items = itemsAsync.value;
+    final failedFirstLoad = items == null && itemsAsync.hasError;
 
     return Scaffold(
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
@@ -51,7 +52,7 @@ class RelationshipsPage extends ConsumerWidget {
                     DesignSystemBottomNavigationBar.occupiedHeight(context) +
                     tokens.spacing.step12,
               ),
-              sliver: switch (relationships) {
+              sliver: switch (items) {
                 null when failedFirstLoad => SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
@@ -64,14 +65,20 @@ class RelationshipsPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-                null => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                // First load, nothing rendered yet. A background reload keeps
+                // the previous list (`items` stays non-null) and never
+                // reaches this arm.
+                null => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator.adaptive()),
+                ),
                 [] => const SliverToBoxAdapter(child: _EmptyState()),
                 final list => SliverList.separated(
                   itemCount: list.length,
                   separatorBuilder: (_, _) =>
                       SizedBox(height: tokens.spacing.cardItemSpacing),
                   itemBuilder: (context, index) =>
-                      _RelationshipRow(relationship: list[index]),
+                      _RelationshipRow(item: list[index]),
                 ),
               },
             ),
@@ -112,13 +119,14 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _RelationshipRow extends StatelessWidget {
-  const _RelationshipRow({required this.relationship});
+  const _RelationshipRow({required this.item});
 
-  final RelationshipEntry relationship;
+  final RelationshipListItem item;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final relationship = item.relationship;
     final data = relationship.data;
 
     return ListTile(
@@ -135,8 +143,13 @@ class _RelationshipRow extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
+      // Last-check-in recency (plan v2 phase 2); tracking start until the
+      // first check-in exists.
       subtitle: Text(
-        entryDateLabel(context, relationship.meta.dateFrom),
+        entryDateLabel(
+          context,
+          item.lastCheckInAt ?? relationship.meta.dateFrom,
+        ),
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.lowEmphasis,
         ),
