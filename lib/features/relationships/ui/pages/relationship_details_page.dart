@@ -313,20 +313,10 @@ class _LinkedTasksSection extends ConsumerWidget {
             child: TaskSearchPickerBody(
               excludeIds: {relationshipId, ...linkedIds},
               onTaskSelected: (task) async {
-                var linked = false;
-                try {
-                  linked = await repository.linkTask(
-                    relationshipId: relationshipId,
-                    taskId: task.meta.id,
-                  );
-                } catch (error, stackTrace) {
-                  developer.log(
-                    'Failed to link task to relationship',
-                    name: 'RelationshipDetailsPage',
-                    error: error,
-                    stackTrace: stackTrace,
-                  );
-                }
+                final linked = await repository.linkTask(
+                  relationshipId: relationshipId,
+                  taskId: task.meta.id,
+                );
                 if (!modalContext.mounted) return;
                 Navigator.of(modalContext).pop();
                 // `createLink` answers false when the upsert changed no row,
@@ -361,29 +351,14 @@ class _LinkedTasksSection extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
-    try {
-      final removed = await ref
-          .read(relationshipRepositoryProvider)
-          .unlinkTask(relationshipId: relationshipId, taskId: task.meta.id);
-      if (!removed && context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.unlinkTaskFailedMessage,
-        );
-      }
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to unlink task from relationship',
-        name: 'RelationshipDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
+    final removed = await ref
+        .read(relationshipRepositoryProvider)
+        .unlinkTask(relationshipId: relationshipId, taskId: task.meta.id);
+    if (!removed && context.mounted) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.unlinkTaskFailedMessage,
       );
-      if (context.mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.unlinkTaskFailedMessage,
-        );
-      }
     }
   }
 

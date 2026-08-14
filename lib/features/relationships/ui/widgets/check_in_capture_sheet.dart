@@ -17,10 +17,6 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Upper bound on the form's height as a fraction of the viewport — the
-/// create-modal sizing shared with `ProjectCreateForm`.
-const double _modalMaxHeightFraction = 0.9;
-
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
 String checkInInteractionLabel(
@@ -320,7 +316,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+        maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

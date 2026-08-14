@@ -16,7 +16,9 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
   }
 
   /// Returns all non-deleted check-ins belonging to [relationshipId],
-  /// newest interaction first.
+  /// newest interaction first. Respects the private-entry filter — this is a
+  /// display query. A *mutation* over the same set must use
+  /// [getAllCheckInsForRelationship] instead.
   Future<List<CheckInEntry>> getCheckInsForRelationship(
     String relationshipId,
   ) async {
@@ -28,13 +30,13 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
     return rows.map(fromDbEntity).whereType<CheckInEntry>().toList();
   }
 
-  /// Returns every non-deleted check-in belonging to [relationshipId],
-  /// newest interaction first, **ignoring private visibility**.
+  /// Every non-deleted check-in belonging to [relationshipId], private ones
+  /// included — the delete cascade's view of the person's data.
   ///
-  /// Only the delete cascade may use this: tombstoning a relationship over
-  /// the filtered view would leave its private check-ins alive under a
-  /// deleted person. Everything that renders check-ins must go through
-  /// [getCheckInsForRelationship] instead.
+  /// Deliberately NOT private-filtered: "Show private entries" is a display
+  /// preference, and scoping a deletion by it would tombstone the person
+  /// while leaving their private check-ins live and syncing, with no live
+  /// relationship left to reach them from (ADR 0037 §5).
   Future<List<CheckInEntry>> getAllCheckInsForRelationship(
     String relationshipId,
   ) async {
@@ -88,7 +90,6 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
             var predicate =
                 t.id.isIn(idList) &
                 t.type.equals('Task') &
-                t.task.equals(true) &
                 t.deleted.equals(false);
             if (privateStatuses != null) {
               predicate = predicate & t.private.isIn(privateStatuses);

@@ -66,11 +66,11 @@ reach](#what-the-cascade-does-not-reach).
 relationship to its check-ins *and* to its linked tasks, so a link row alone does
 not say which it is. `RelationshipRepository.getLinkedTasks` therefore reads the
 typed link rows, then resolves the task subset through
-`JournalDb.getLiveTasksByIds`, which filters on the indexed journal `type` and
-`task` marker columns — a person's whole check-in history is never deserialized
-only to be discarded. Scoping the read to `RelationshipLink` also keeps it in
-step with `unlinkTask`: a task surfaced through some other link type would
-render an unlink action that could never succeed.
+`JournalDb.getLiveTasksByIds`, which filters on the indexed journal `type`
+column — a person's whole check-in history is never deserialized only to be
+discarded. Scoping the read to `RelationshipLink` also keeps it in step with
+`unlinkTask`, which removes exactly that type: a task surfaced through some
+other link type would render an unlink action that could never succeed.
 
 # Recency without an N+1
 
@@ -136,34 +136,27 @@ sequenceDiagram
   alt not a relationship
     R-->>UI: false
   else
-    R->>DB: getAllCheckInsForRelationship(id)
-    loop each check-in
-      R->>P: tombstone the check-in
-    end
-    alt any check-in write rejected
+    R->>DB: getCheckInsForRelationship(id)
+    R->>P: tombstone the relationship
+    alt write rejected
       R-->>UI: false
-      Note over UI: person stays visible, retry resumes the cascade
-    else all check-ins tombstoned
-      R->>P: tombstone the relationship
-      alt relationship write rejected
-        R-->>UI: false
-      else
-        R-->>UI: true
-        Note over UI: beams back to /people
+      Note over UI: stays on the page, shows an error
+    else
+      loop each check-in
+        R->>P: tombstone the check-in
+        Note over R: a rejected tombstone is logged,<br/>not surfaced — the person is<br/>already unreachable
       end
+      R-->>UI: true
+      Note over UI: beams back to /people
     end
   end
 ```
 
-**Check-ins are tombstoned first, deliberately.** The relationship remains
-visible until every child write succeeds, so a rejected or interrupted cascade
-cannot strand live third-party data under an unreachable person. The operation
-is idempotent: a retry resumes with the check-ins that remain live and only
-tombstones the relationship once all of them are gone.
-
-The cascade uses the unfiltered check-in query. Browsing hides private rows
-while private mode is off, but deletion must still reach them; otherwise they
-would resurface as orphans the next time private entries are shown.
+**The relationship is tombstoned first, deliberately.** An interruption
+mid-cascade then reads as "gone" rather than "live with a partially deleted
+timeline" — and because check-ins are resolved through `subtype` rather than
+link traversal, once the relationship is gone no list or detail query reaches
+them.
 
 Every tombstone checks its result. `PersistenceLogic.updateDbEntity` answers
 `false` when the vector-clock comparison loses to a concurrent sync and `null`
@@ -187,8 +180,7 @@ already carries **the entity's own id** plus a per-kind constant, and
 
 | Write | Tokens emitted | Woken by |
 |-------|----------------|----------|
-| relationship create/delete | `{relationshipId, RELATIONSHIP}` | list via `RELATIONSHIP`, detail via the id |
-| relationship edit | the entity tokens plus `RELATIONSHIP_ENTITY_UPDATE:{id}` | list and detail also accept the explicit edit token |
+| relationship create/edit/delete | `{relationshipId, RELATIONSHIP}` | list via `RELATIONSHIP`, detail via the id |
 | check-in create/edit/delete | `{checkInId, relationshipId, CHECK_IN}` | list via `CHECK_IN`, detail via the relationship id |
 | link/unlink task | `{relationshipId, taskId, LINK}` | detail via the relationship id |
 
@@ -199,13 +191,11 @@ additionally remembers the ids of the tasks its last build saw, so a title or
 status edit **on the task side** refreshes the section without a relationship
 write.
 
-`unlinkTask` reads the live `RelationshipLink` rows in either direction and
-soft-deletes and hides each through `JournalRepository.updateLink`. Marking the
-tombstone hidden is also what lets the generic link upsert replace it when the
-same task is linked again. The update path assigns a new vector clock, enqueues
-the tombstone for sync, and notifies both endpoints; a raw `deleteTypedLink`
-would make the unlink local-only and allow the remote link to return on the next
-synchronization.
+`unlinkTask` is the one place that notifies by hand, because
+`JournalDb.deleteTypedLink` is a raw row delete with no entity write behind it.
+It is not routed through `JournalRepository.removeTypedLink`, which notifies
+unconditionally per call: the two-direction removal here would emit two
+notifications even for a no-op unlink.
 
 # Privacy
 
