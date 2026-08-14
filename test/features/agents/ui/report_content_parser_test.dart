@@ -485,5 +485,25 @@ void main() {
       // heading and does need the summary prepended.
       expect(contentCarriesItsOwnTldr('Logging is complete today.'), isFalse);
     });
+
+    test('a TLDR heading further down does not count as the opening', () {
+      // Suppressing the explicit summary here would bury the report's opening
+      // line partway down the page — the opposite of what it is for.
+      const late = 'Some preamble first.\n\n## 📋 TLDR\nAll good.';
+      expect(contentCarriesItsOwnTldr(late), isFalse);
+      expect(
+        reportBodyWithTldr(report(tldr: 'All good.', content: late)),
+        'All good.\n\n$late',
+      );
+    });
+
+    test('a leading H1 does not hide the opening TLDR beneath it', () {
+      const titled = '# Weekly report\n\n## 📋 TLDR\nAll good.';
+      expect(contentCarriesItsOwnTldr(titled), isTrue);
+      expect(
+        reportBodyWithTldr(report(tldr: 'All good.', content: titled)),
+        titled,
+      );
+    });
   });
 }

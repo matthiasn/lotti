@@ -13,17 +13,22 @@ String? explicitReportTldr(AgentReportEntity report) {
   return tldr == null || tldr.isEmpty ? null : tldr;
 }
 
-/// True when [content] already opens with its own TLDR section.
+/// True when [content] **opens** with its own TLDR section.
 ///
 /// Task and project agents author `content` as the COMPLETE report, starting
 /// with a `## 📋 TLDR` heading, and set [AgentReportEntity.tldr] to the same
 /// summary alongside it. Goal agents split the two: the summary lives only in
-/// the field and `content` is the body. The heading is what tells the two
-/// formats apart.
+/// the field and `content` is the body. That opening heading is what tells the
+/// two formats apart.
+///
+/// Anchored deliberately. A heading found anywhere would also match a body
+/// that says something first and reaches its TLDR later — and suppressing the
+/// explicit summary there would bury the report's opening line partway down
+/// the page, which is the opposite of what it is for.
 bool contentCarriesItsOwnTldr(String content) =>
-    _tldrHeadingRegex.hasMatch(stripLeadingH1(content));
+    stripLeadingH1(content).trimLeft().startsWith(_tldrHeading);
 
-final _tldrHeadingRegex = RegExp(r'## 📋 TLDR\n', multiLine: true);
+const _tldrHeading = '## 📋 TLDR';
 
 /// The full rendering of a report: its summary, then the body it introduces.
 ///
