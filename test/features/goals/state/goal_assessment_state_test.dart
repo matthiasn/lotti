@@ -36,9 +36,11 @@ void main() {
               )
               as AgentMessageEntity;
       when(
-        () => repository.getEntitiesByAgentId(
+        () => repository.getEntitiesByAgentIdAndSubtype(
           'goal-1',
           type: AgentEntityTypes.agentMessage,
+          subtype: AgentMessageKind.action.name,
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => [action('older'), action('newer')]);
       when(() => repository.getEntitiesByIds(any())).thenAnswer(
@@ -96,9 +98,11 @@ void main() {
     () async {
       final repository = MockAgentRepository();
       when(
-        () => repository.getEntitiesByAgentId(
+        () => repository.getEntitiesByAgentIdAndSubtype(
           'goal-1',
           type: AgentEntityTypes.agentMessage,
+          subtype: AgentMessageKind.action.name,
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer(
         (_) async => [

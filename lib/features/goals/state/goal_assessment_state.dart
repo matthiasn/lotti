@@ -2,9 +2,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
+
+/// How many recent actions are scanned for reflections.
+///
+/// Generous next to any real reflection history — a daily reflection for two
+/// years is about 730 records — while keeping the query bounded for an agent
+/// whose action log is dominated by other tools.
+const _assessmentHistoryLimit = 2000;
 
 final goalAssessmentServiceProvider = Provider<GoalAssessmentService>(
   (ref) => GoalAssessmentService(ref.watch(agentSyncServiceProvider)),
@@ -17,9 +25,16 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
       (ref, agentId) async {
         ref.watch(agentUpdateStreamProvider(agentId));
         final repository = ref.watch(agentRepositoryProvider);
-        final entities = await repository.getEntitiesByAgentId(
+        // ACTIONS only, and bounded. Reading every message meant a long-lived
+        // agent's whole conversation was materialized and decoded just to
+        // find its reflections — once per goal on the Agents list, and again
+        // after any agent update. The message kind is the indexed subtype, so
+        // this is a narrow lookup rather than a scan.
+        final entities = await repository.getEntitiesByAgentIdAndSubtype(
           agentId,
           type: AgentEntityTypes.agentMessage,
+          subtype: AgentMessageKind.action.name,
+          limit: _assessmentHistoryLimit,
         );
         final actions = entities.whereType<AgentMessageEntity>().where(
           (action) =>

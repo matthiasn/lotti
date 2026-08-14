@@ -779,8 +779,12 @@ class _GoalReportCardState extends State<_GoalReportCard>
     final hasContent = content != null && content.isNotEmpty;
     // A full text identical to the TLDR would make Show more a no-op that
     // merely repeats the same paragraph — hide the toggle instead.
-    final expandable = hasTldr && hasContent && content != tldr;
     final sections = _sectionsOf(report);
+    // A renderable sections payload is expandable even when the flat text
+    // happens to equal the TLDR: without this the toggle vanished and the
+    // sections became unreachable.
+    final expandable =
+        hasTldr && (sections != null || (hasContent && content != tldr));
     final primary = hasTldr
         ? tldr
         : hasContent
@@ -829,8 +833,10 @@ class _GoalReportCardState extends State<_GoalReportCard>
                   SelectionArea(
                     child: sections != null
                         ? _GoalReportSections(sections: sections)
+                        // Non-null by construction: with no sections,
+                        // `expandable` is only true when there IS content.
                         : AgentMarkdownView(
-                            content,
+                            content!,
                             style: tokens.typography.styles.body.bodySmall
                                 .copyWith(
                                   color: tokens.colors.text.highEmphasis,

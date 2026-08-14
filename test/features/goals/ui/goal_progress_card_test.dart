@@ -174,6 +174,54 @@ void main() {
     expect(find.byType(DsDashedBorder), findsOneWidget);
   });
 
+  testWidgets('a read-only strip announces its verdicts and marks non-met '
+      'days with a shape', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: List.filled(3, GoalCompactDayState.none),
+          lastDay: today,
+          ratingsByDay: {
+            today.subtract(const Duration(days: 2)): GoalAssessmentRating.met,
+            today.subtract(const Duration(days: 1)):
+                GoalAssessmentRating.missed,
+          },
+        ),
+      ),
+    );
+
+    // A read-only strip publishes one summary rather than seven nodes, so the
+    // verdicts have to reach it there — otherwise the list announced a
+    // measured day count while showing four verdict hues.
+    final label = tester
+        .getSemantics(find.byType(GoalCompactWindowStrip))
+        .label;
+    expect(label, contains('Met'));
+    expect(label, contains('Missed'));
+
+    // And at 12px, where a glyph cannot survive, a dot still separates
+    // "judged, and not a clean day" from a met one for a reader who cannot
+    // tell the hues apart.
+    expect(
+      find.descendant(
+        of: find.byType(GoalCompactWindowStrip),
+        matching: find.byType(Container),
+      ),
+      findsWidgets,
+    );
+    final dots = tester
+        .widgetList<Container>(
+          find.descendant(
+            of: find.byType(GoalCompactWindowStrip),
+            matching: find.byType(Container),
+          ),
+        )
+        .where(
+          (c) => (c.decoration as BoxDecoration?)?.shape == BoxShape.circle,
+        );
+    expect(dots, hasLength(1));
+  });
+
   testWidgets('a tappable strip reports the day each cell stands for, '
       'counting back from the last', (tester) async {
     final tapped = <DateTime>[];
@@ -438,19 +486,21 @@ void main() {
       ),
     );
 
-    // Both days qualify: the second adds exactly one to the count whatever
-    // its magnitude, so a bigger number is not an improvement.
+    // Both days count: the second adds exactly one to the tally whatever its
+    // magnitude, so a bigger number is not an improvement.
     await pump(1, 9);
     expect(
       find.text('Not there yet, but the last reading moved toward the target.'),
       findsNothing,
     );
 
-    // Gaining a qualifying day where there was none IS the improvement.
+    // And a zero-value day still counts for a plain metric — the evaluator
+    // only requires a positive value for CATEGORY TIME — so 0 to 1 is not an
+    // improvement in its tally either.
     await pump(0, 1);
     expect(
       find.text('Not there yet, but the last reading moved toward the target.'),
-      findsOneWidget,
+      findsNothing,
     );
   });
 

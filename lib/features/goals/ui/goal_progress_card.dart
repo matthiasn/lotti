@@ -175,14 +175,33 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ],
           );
 
+    // A read-only strip publishes one summary rather than seven nodes, so any
+    // recorded verdicts have to reach it there — otherwise the list announces
+    // a measured day count while showing four verdict hues.
+    final verdictSummary = ratingsByDay.isEmpty || lastDay == null
+        ? ''
+        : [
+            for (var index = 0; index < visible.length; index++)
+              if (_ratingAt(index, visible.length) case final rating?)
+                context.messages.goalProgressHabitDaySemantics(
+                  DateFormat.MMMEd(
+                    Localizations.localeOf(context).toLanguageTag(),
+                  ).format(_dateAt(index, visible.length)),
+                  goalAssessmentRatingLabel(context, rating),
+                ),
+          ].join(', ');
+
     return Semantics(
       label: placeholder
           ? context.messages.goalProgressStripLoading
-          : context.messages.goalProgressCompactSemantics(
-              visible
-                  .where((state) => state != GoalCompactDayState.none)
-                  .length,
-            ),
+          : [
+              context.messages.goalProgressCompactSemantics(
+                visible
+                    .where((state) => state != GoalCompactDayState.none)
+                    .length,
+              ),
+              if (verdictSummary.isNotEmpty) verdictSummary,
+            ].join('. '),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
       child: onDaySelected == null
@@ -283,9 +302,15 @@ class _CompactDayCell extends StatelessWidget {
                     : tokens.spacing.step2,
               ),
             )
-          // Only where the square is big enough to hold it. On the list rows'
-          // 12px cells a glyph is a smudge, and those strips carry no recorded
-          // verdicts anyway.
+          // A dot stands in below the size a glyph survives. The list rows'
+          // 12px cells cannot hold a tick, but "judged, and not a clean day"
+          // still has to reach a reader who cannot separate the hues.
+          : rating != null && size < ControlSizes.iconChipCompact
+          ? (rating == GoalAssessmentRating.met
+                ? null
+                : Center(
+                    child: goalPartialDayDot(tokens, tokens.spacing.step1),
+                  ))
           : rating != null && size >= ControlSizes.iconChipCompact
           ? Center(
               child: Icon(
@@ -919,8 +944,16 @@ _BloodPressureMetrics? _bloodPressureMetrics(
   return (systolic: systolic, diastolic: diastolic);
 }
 
-/// Whether a day counts toward a `count` criterion at all.
-bool _qualifies(GoalProgressDay day) => day.isObserved && day.value > 0;
+/// Whether a day counts toward a `count` criterion, by the SAME rule the
+/// evaluator uses.
+///
+/// `GoalProgressEvaluator` passes `countPositiveValues: true` for category
+/// time alone; every other kind counts each observed day whatever its value.
+/// Applying the positive-value rule everywhere made a zero-to-positive metric
+/// day read as progress the evaluator's own tally never saw.
+bool _countsTowardTally(GoalMetricProgressView metric, GoalProgressDay day) =>
+    day.isObserved &&
+    (metric.kind != GoalDimensionKind.categoryTime || day.value > 0);
 
 _MetricSummary _metricSummary(
   GoalMetricProgressView metric, {
@@ -941,7 +974,10 @@ _MetricSummary _metricSummary(
           observed.first.value,
           (value, day) => math.max(value, day.value),
         ),
-        GoalAggregation.count => observed.length,
+        // The same qualification rule as the improvement check above, so the
+        // number shown and the sentence under it cannot disagree about a day.
+        GoalAggregation.count =>
+          observed.where((day) => _countsTowardTally(metric, day)).length,
         _ => observed.fold<num>(0, (sum, day) => sum + day.value),
       };
   final meetsPeriodTarget = switch (metric.direction) {
@@ -972,7 +1008,8 @@ _MetricSummary _metricSummary(
       latestDay != null &&
       previousDay != null &&
       (metric.aggregation == GoalAggregation.count
-          ? _qualifies(latestDay) && !_qualifies(previousDay)
+          ? _countsTowardTally(metric, latestDay) &&
+                !_countsTowardTally(metric, previousDay)
           : metric.direction == GoalDirection.atLeast
           ? latestDay.value > previousDay.value
           : latestDay.value < previousDay.value);
