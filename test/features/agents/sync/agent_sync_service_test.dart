@@ -527,6 +527,87 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   group('AgentSyncService', () {
+    group('updateAgentState', () {
+      test(
+        'updates the latest row while preserving the append-owned head',
+        () async {
+          final current = (testStateEntity as AgentStateEntity).copyWith(
+            recentHeadMessageId: 'current-head',
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => current);
+
+          final changed = await syncService.updateAgentState(
+            'agent-1',
+            (state) => state.copyWith(
+              recentHeadMessageId: 'stale-head',
+              scheduledWakeAt: null,
+            ),
+          );
+
+          expect(changed, isTrue);
+          final written =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(written.scheduledWakeAt, isNull);
+          expect(written.recentHeadMessageId, 'current-head');
+          expect(written.vectorClock, testClock);
+          verify(
+            () => mockOutboxService.enqueueMessage(
+              any(
+                that: isA<SyncAgentEntity>().having(
+                  (message) => message.agentEntity,
+                  'agentEntity',
+                  written,
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('does not write when the row is absent or unchanged', () async {
+        expect(
+          await syncService.updateAgentState('agent-1', (state) => state),
+          isFalse,
+        );
+
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => testStateEntity as AgentStateEntity);
+        expect(
+          await syncService.updateAgentState('agent-1', (state) => state),
+          isFalse,
+        );
+
+        verifyNever(() => mockRepository.upsertEntity(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      });
+
+      test(
+        'rejects a transform that replaces the state row identity',
+        () async {
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => testStateEntity as AgentStateEntity);
+
+          await expectLater(
+            () => syncService.updateAgentState(
+              'agent-1',
+              (state) => state.copyWith(id: 'different-state'),
+            ),
+            throwsArgumentError,
+          );
+
+          verifyNever(() => mockRepository.upsertEntity(any()));
+        },
+      );
+    });
+
     group('upsertEntity', () {
       test('stamps vector clock before persisting and enqueuing', () async {
         await syncService.upsertEntity(testEntity);

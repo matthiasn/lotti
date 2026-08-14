@@ -59,11 +59,6 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     final now = clock.now();
-    final automaticFallbackAllowed = projectAgentAutomaticWakesAllowed(
-      config: agentIdentity.config,
-      lifecycle: agentIdentity.lifecycle,
-    );
-
     // 2. Load the latest report and decide whether a due scheduled wake can be
     // skipped cheaply because no new project activity was recorded.
     final lastReport = await agentRepository.getLatestReport(
@@ -352,6 +347,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       await syncService.runInTransaction(() async {
         final latestState =
             await agentRepository.getAgentState(agentId) ?? state;
+        final automaticFallbackAllowed = await _automaticFallbackAllowed(
+          agentId,
+        );
 
         // Persist thought.
         final thoughtText = strategy.finalResponse;

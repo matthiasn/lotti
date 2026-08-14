@@ -91,6 +91,17 @@ typedef AgentContentChecker = Future<bool> Function(String entityId);
 /// state mutation that must propagate to other devices.
 typedef SyncEntityWriter = Future<void> Function(AgentDomainEntity entity);
 
+/// Transactional, sync-aware agent-state transformer.
+///
+/// The callback receives the latest persisted state inside the write
+/// transaction, preventing independent state writers from overwriting fields
+/// they did not own.
+typedef SyncAgentStateUpdater =
+    Future<bool> Function(
+      String agentId,
+      FutureOr<AgentStateEntity?> Function(AgentStateEntity current) update,
+    );
+
 /// Optional hook run **once per wake, just before the executor**. Used by fork
 /// healing (ADR 0018 rule 8): collapse a surviving multi-head `messagePrev` fork
 /// into one continuation node before the wake acts, so context and the
@@ -188,6 +199,7 @@ class WakeOrchestrator with AgentErrorLogging {
     this.taskContentChecker,
     this.eventContentChecker,
     this.syncEntityWriter,
+    this.syncAgentStateUpdater,
     this.onWakeStart,
     this.maxConcurrentWakes = _defaultMaxConcurrentWakes,
   }) {
@@ -236,6 +248,9 @@ class WakeOrchestrator with AgentErrorLogging {
   /// propagate across devices (e.g. clearing the `awaitingContent` flag).
   /// When null, falls back to the raw [repository] write.
   SyncEntityWriter? syncEntityWriter;
+
+  /// Optional transactional state updater for partial state mutations.
+  SyncAgentStateUpdater? syncAgentStateUpdater;
 
   /// Optional pre-wake hook (fork healing, ADR 0018 rule 8) run just before the
   /// executor for each wake. When null (the default), wakes run exactly as

@@ -298,6 +298,51 @@ void main() {
       );
 
       test(
+        'atomic stale update preserves concurrently-added project activity',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          final pendingAt = DateTime(2026, 8, 12, 18, 29);
+          final fallbackAt = DateTime(2026, 8, 13, 6);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: AgentSlots(
+                      activeProjectId: 'entity-1',
+                      pendingProjectActivityAt: pendingAt,
+                    ),
+                    scheduledWakeAt: fallbackAt,
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncAgentStateUpdater: (agentId, update) async {
+              expect(agentId, 'agent-1');
+              final updated = await update(state);
+              if (updated == null) return false;
+              state = updated;
+              return true;
+            },
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: signalAt,
+          );
+
+          expect(state.reportStaleAt, signalAt);
+          expect(state.slots.pendingProjectActivityAt, pendingAt);
+          expect(state.scheduledWakeAt, fallbackAt);
+          verifyNever(() => mockRepository.getAgentState(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+        },
+      );
+
+      test(
         'markReportStale persists the supplied evidence-arrival timestamp '
         'without queueing work',
         () async {

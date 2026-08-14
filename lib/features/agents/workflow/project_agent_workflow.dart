@@ -138,6 +138,19 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
+  /// Reads the current identity policy at the point a fallback is persisted.
+  ///
+  /// A wake can outlive an automation toggle, so the identity passed at wake
+  /// start is not authoritative for retry or follow-up scheduling.
+  Future<bool> _automaticFallbackAllowed(String agentId) async {
+    final currentIdentity = await agentRepository.getEntity(agentId);
+    return currentIdentity is AgentIdentityEntity &&
+        projectAgentAutomaticWakesAllowed(
+          config: currentIdentity.config,
+          lifecycle: currentIdentity.lifecycle,
+        );
+  }
+
   /// Records one failed attempt and creates or advances its automatic fallback.
   ///
   /// This is shared by inference failures inside [executeImpl] and setup
@@ -161,10 +174,12 @@ class ProjectAgentWorkflow with AgentErrorLogging {
 
     try {
       final failureAt = clock.now();
-      final latestState = await agentRepository.getAgentState(
-        agentIdentity.agentId,
-      );
-      if (latestState != null) {
+      var persistedFailure = false;
+      await syncService.runInTransaction(() async {
+        final latestState = await agentRepository.getAgentState(
+          agentIdentity.agentId,
+        );
+        if (latestState == null) return;
         final hasPendingActivity =
             latestState.slots.pendingProjectActivityAt != null;
         await syncService.upsertEntity(
@@ -174,9 +189,8 @@ class ProjectAgentWorkflow with AgentErrorLogging {
               pendingActivityAt: hasPendingActivity
                   ? latestState.slots.pendingProjectActivityAt
                   : null,
-              automaticFallbackAllowed: projectAgentAutomaticWakesAllowed(
-                config: agentIdentity.config,
-                lifecycle: agentIdentity.lifecycle,
+              automaticFallbackAllowed: await _automaticFallbackAllowed(
+                agentIdentity.agentId,
               ),
               now: failureAt,
             ),
@@ -184,6 +198,9 @@ class ProjectAgentWorkflow with AgentErrorLogging {
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
           ),
         );
+        persistedFailure = true;
+      });
+      if (persistedFailure) {
         onPersistedStateChanged?.call(agentIdentity.agentId);
       }
     } catch (stateError, stateStackTrace) {

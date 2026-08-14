@@ -2792,6 +2792,76 @@ void main() {
             persistedStates.map((state) => state.scheduledWakeAt),
             contains(DateTime(2026, 8, 15, 6)),
           );
+          final repaired = persistedStates.singleWhere(
+            (state) => state.scheduledWakeAt != null,
+          );
+          expect(
+            repaired.updatedAt,
+            pendingState.updatedAt,
+            reason: 'A device-local deadline must not change synced LWW data.',
+          );
+        },
+      );
+
+      test(
+        'project state completion clears the retained local fallback',
+        () async {
+          final identity = AgentDomainEntity.agent(
+            id: 'project-agent-completed',
+            agentId: 'project-agent-completed',
+            kind: 'project_agent',
+            displayName: 'Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-project-completed',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final local =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-completed',
+                    agentId: identity.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'local': 1}),
+                  )
+                  as AgentStateEntity;
+          final incoming = local.copyWith(
+            slots: local.slots.copyWith(pendingProjectActivityAt: null),
+            lastWakeAt: DateTime(2026, 8, 14, 10),
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'local': 1, 'remote': 1}),
+          );
+          when(
+            () => mockAgentRepo.getEntity(local.id),
+          ).thenAnswer((_) async => local);
+          when(
+            () => mockAgentRepo.getEntity(identity.agentId),
+          ).thenAnswer((_) async => identity);
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: incoming,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final applied = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().first;
+          expect(applied.slots.pendingProjectActivityAt, isNull);
+          expect(applied.scheduledWakeAt, isNull);
         },
       );
 
@@ -2857,6 +2927,22 @@ void main() {
             updatedAt: DateTime(2024, 3, 15),
             vectorClock: null,
           );
+          final pendingState =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-agent-manual',
+                    agentId: entity.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: projectLink.toId,
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockAgentRepo.getAgentState(entity.agentId),
+          ).thenAnswer((_) async => pendingState);
           when(
             () => mockAgentRepo.getLinksFrom(
               'project-agent-manual',
@@ -2879,6 +2965,15 @@ void main() {
           verify(() => mockOrchestrator.addSubscription(any())).called(1);
           verifyNever(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+          final persistedStates = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().toList();
+          expect(persistedStates, hasLength(1));
+          expect(persistedStates.single.scheduledWakeAt, isNull);
+          expect(
+            persistedStates.single.slots.pendingProjectActivityAt,
+            pendingState.slots.pendingProjectActivityAt,
           );
         },
       );

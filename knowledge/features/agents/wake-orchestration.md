@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/ai/model/ai_runtime_settings.dart
     title: Concurrency bounds
     last_modified: 2026-07-15
+  - id: agent-sync
+    resource: ../../../lib/features/agents/sync/agent_sync_service.dart
+    title: Transactional agent-state updates
+    last_modified: 2026-08-14
   - id: adr-0002
     resource: ../../../docs/adr/0002-wake-scheduling-and-throttling-policy.md
     title: ADR 0002 — Wake scheduling and throttling policy
@@ -158,7 +162,10 @@ create-or-advance deadline policy. Explicit
 cancellation persists `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` removal atomically, then clears queued work, so an in-flight
 failure cannot re-arm cancelled work and a storage failure cannot leave the UI
-falsely showing a completed cancellation.
+falsely showing a completed cancellation. Retry and success paths read the
+current identity policy inside that same persistence transaction, so toggling
+automation during a long wake cannot be undone by policy captured at wake
+start.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the
@@ -203,7 +210,11 @@ Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its
 `WakeRunner` agent lock. Workflows and conversation managers are created per
 wake; agent sync transaction buffers are zone-local; Drift serialises database
-work on its connection.
+work on its connection. Independent partial state writers use
+`AgentSyncService.updateAgentState` or an equivalent transaction-scoped re-read
+and merge. In particular, report-stale watermarks cannot erase project activity
+markers, and project activity cannot erase a concurrently-written freshness
+watermark.
 
 The bounded limit also keeps provider, API and database pressure finite. A
 downstream provider rate-limit or connection failure continues through the
@@ -226,4 +237,9 @@ outcome remains the `wake_run_log` row.
 All three scheduling fields — `nextWakeAt`, `sleepUntil`, `scheduledWakeAt` —
 are device-local. Each device schedules its own wakes, so the sync apply path
 preserves the local row's scheduling rather than letting a peer's
-`AgentStateEntity` overwrite it (`_preserveLocalScheduling`).
+`AgentStateEntity` overwrite it (`_preserveLocalScheduling`). When a peer state
+consumes project activity, the local one-shot fallback is cleared rather than
+preserved. Startup and sync-arrival repairs that add or remove only that
+fallback write directly through the repository without changing `updatedAt` or
+the vector clock; the local scheduling repair must never become a newer synced
+version of otherwise stale state.

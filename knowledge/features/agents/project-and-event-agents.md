@@ -121,6 +121,10 @@ stateDiagram-v2
   Identity, state, and project-link apply paths all reconcile the marker, so
   every valid sync arrival order arms already-pending work once policy becomes
   evaluable; startup restoration performs the same repair after a restart.
+  A synced opt-out clears the device-local automatic fallback but retains the
+  pending marker, so re-enabling can arm it again without losing evidence. A
+  synced completion does the inverse: when the incoming state consumes the
+  pending marker, the receiving device drops its retained fallback too.
 
 ## Dormant-by-default scheduling
 
@@ -137,7 +141,12 @@ cannot synthesize a new morning fallback on success or failure. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
 failed write therefore leaves the runtime work intact and surfaces an error in
-the project detail UI. Consequently the
+the project detail UI. Failure persistence and cancellation share the same
+serialized sync transaction path, so a retry computed from an older snapshot
+cannot restore a marker or deadline that cancellation already removed. The
+workflow also re-reads the current identity policy inside its final persistence
+transaction; an automation toggle made during inference therefore controls
+whether success or failure may create another fallback. Consequently the
 Wake tab contains a project-agent row only while actual work or a retry is
 pending.
 
@@ -145,7 +154,10 @@ Older installations can still contain the former daily schedule. Startup
 restoration clears it when the agent has completed at least one wake and
 `pendingProjectActivityAt` is null. It re-reads current state and compares the
 row's update/vector-clock metadata with the startup snapshot before writing, so
-concurrent activity or manual scheduling cannot be overwritten.
+concurrent activity or manual scheduling cannot be overwritten. Repairing a
+missing fallback is deliberately a raw, device-local repository write: it
+changes only `scheduledWakeAt`, preserving the synced `updatedAt` and vector
+clock so an obsolete pending marker cannot win a later peer merge.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
 Never-woken agents and agents with pending activity retain the row as a one-shot
 safety net. Before retiring a row, the manager re-reads state and rechecks both
@@ -168,7 +180,9 @@ During the final state transition, `pendingProjectActivityAt` is cleared **only
 when no newer activity arrived during the wake**. If fresh activity lands
 mid-run, the newer timestamp and a future one-shot fallback are retained so the
 next digest still knows the summary is stale even if the in-memory follow-up is
-lost to suspension.
+lost to suspension. Activity and report-freshness writers both re-read the
+latest state inside their write transactions, so either update preserves fields
+the other committed while it was waiting.
 
 ## Wake flow
 

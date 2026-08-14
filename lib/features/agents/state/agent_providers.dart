@@ -283,6 +283,8 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     onPersistedStateChanged: onPersistedStateChanged,
     syncEntityWriter: (entity) =>
         ref.read(agentSyncServiceProvider).upsertEntity(entity),
+    syncAgentStateUpdater: (agentId, update) =>
+        ref.read(agentSyncServiceProvider).updateAgentState(agentId, update),
     onWakeStart: onWakeStart,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);

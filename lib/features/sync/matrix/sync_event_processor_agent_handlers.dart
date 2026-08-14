@@ -279,6 +279,7 @@ extension _AgentHandlers on SyncEventProcessor {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(
                 appliedIdentity.agentId,
               );
+              await _clearDisabledProjectActivityFallback(appliedIdentity);
             }
             final links = await agentRepository!.getLinksFrom(
               appliedIdentity.agentId,
@@ -482,6 +483,7 @@ extension _AgentHandlers on SyncEventProcessor {
               await _armPendingProjectActivityFallback(agent);
             } else {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
+              await _clearDisabledProjectActivityFallback(agent);
             }
             _addProjectSubscription(resolvedLink);
           }
@@ -517,24 +519,49 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<void> _armPendingProjectActivityFallback(
     AgentIdentityEntity identity,
   ) async {
-    final state = await agentRepository!.getAgentState(identity.agentId);
-    if (state == null ||
-        state.deletedAt != null ||
-        state.slots.pendingProjectActivityAt == null ||
-        state.scheduledWakeAt != null) {
-      return;
-    }
+    await agentRepository!.runInTransaction(() async {
+      final state = await agentRepository!.getAgentState(identity.agentId);
+      if (state == null ||
+          state.deletedAt != null ||
+          state.slots.pendingProjectActivityAt == null ||
+          state.scheduledWakeAt != null) {
+        return;
+      }
 
-    final now = clock.now();
-    await agentRepository!.upsertEntity(
-      state.copyWith(
-        scheduledWakeAt: nextOccurrenceOf(
-          now,
-          hour: AgentSchedules.projectDailyDigestHour,
+      // Scheduling fields are device-local. Keep the synced vector clock and
+      // LWW timestamp unchanged so this repair cannot win a peer conflict for
+      // unrelated state fields.
+      await agentRepository!.upsertEntity(
+        state.copyWith(
+          scheduledWakeAt: nextOccurrenceOf(
+            clock.now(),
+            hour: AgentSchedules.projectDailyDigestHour,
+          ),
         ),
-        updatedAt: now,
-      ),
-    );
+      );
+    });
+  }
+
+  /// Removes a device-local automatic fallback after a synced policy opt-out.
+  ///
+  /// The pending marker remains so re-enabling automation can arm a fresh
+  /// deadline. As a scheduling-only repair, this must not change synced LWW
+  /// metadata or emit another sync event.
+  Future<void> _clearDisabledProjectActivityFallback(
+    AgentIdentityEntity identity,
+  ) async {
+    await agentRepository!.runInTransaction(() async {
+      final state = await agentRepository!.getAgentState(identity.agentId);
+      if (state == null ||
+          state.deletedAt != null ||
+          state.slots.pendingProjectActivityAt == null ||
+          state.scheduledWakeAt == null) {
+        return;
+      }
+      await agentRepository!.upsertEntity(
+        state.copyWith(scheduledWakeAt: null),
+      );
+    });
   }
 
   void _addProjectSubscription(AgentProjectLink link) {
@@ -738,10 +765,21 @@ extension _AgentHandlers on SyncEventProcessor {
       prefetchedAgentEntitiesById,
     );
     if (local is! AgentStateEntity) return incoming;
+    final identity = await _localAgentEntityFor(
+      incoming.agentId,
+      prefetchedAgentEntitiesById,
+    );
+    final projectActivityWasConsumed =
+        identity is AgentIdentityEntity &&
+        identity.kind == AgentKinds.projectAgent &&
+        local.slots.pendingProjectActivityAt != null &&
+        incoming.slots.pendingProjectActivityAt == null;
     return incoming.copyWith(
       nextWakeAt: local.nextWakeAt,
       sleepUntil: local.sleepUntil,
-      scheduledWakeAt: local.scheduledWakeAt,
+      scheduledWakeAt: projectActivityWasConsumed
+          ? null
+          : local.scheduledWakeAt,
     );
   }
 

@@ -176,6 +176,7 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
     when(
       () => mockOrchestrator.cancelPendingWakes(
@@ -1467,7 +1468,7 @@ void main() {
 
           final persisted =
               verify(
-                    () => mockSyncService.upsertEntity(captureAny()),
+                    () => mockRepository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(persisted.scheduledWakeAt, DateTime(2026, 3, 23, 6));
@@ -1475,6 +1476,12 @@ void main() {
             persisted.slots.pendingProjectActivityAt,
             DateTime(2026, 3, 22, 9),
           );
+          expect(
+            persisted.updatedAt,
+            pendingState.updatedAt,
+            reason: 'A local-only deadline must not affect synced LWW data.',
+          );
+          verifyNever(() => mockSyncService.upsertEntity(any()));
           expect(notifiedAgentIds, ['pa-pending']);
         },
       );

@@ -2473,6 +2473,107 @@ void main() {
         );
       });
 
+      test(
+        'turning on a project agent arms pending activity for next 06:00',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: false,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: true,
+            );
+          });
+
+          final writtenStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(
+            writtenStates.single.scheduledWakeAt,
+            DateTime(2026, 8, 15, 6),
+          );
+          expect(
+            writtenStates.single.slots.pendingProjectActivityAt,
+            DateTime(2026, 8, 14, 11),
+          );
+        },
+      );
+
+      test(
+        'turning off a project agent clears only its automatic fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingAt = DateTime(2026, 8, 14, 11);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: pendingAt,
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: true,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: false,
+            );
+          });
+
+          final writtenStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(writtenStates.single.scheduledWakeAt, isNull);
+          expect(
+            writtenStates.single.slots.pendingProjectActivityAt,
+            pendingAt,
+          );
+        },
+      );
+
       test('turning off never wakes', () async {
         stubEnablePath(state: makeState());
 

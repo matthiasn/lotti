@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
         WakeInitiator,
         WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -393,6 +394,11 @@ class TaskAgentService {
   /// marked stale so removing the timer cannot make the card claim that the
   /// older report is up to date. Subscriptions continue observing later
   /// changes and marking the report stale while automation remains off.
+  ///
+  /// Project-agent settings use the same preference mutation. Their pending
+  /// activity marker is retained across an opt-out, while its device-local
+  /// automatic fallback is removed; opting back in arms a fresh next-morning
+  /// fallback when that marker still represents unfinished work.
   Future<void> updateAutomaticUpdates({
     required String agentId,
     required bool enabled,
@@ -428,15 +434,38 @@ class TaskAgentService {
         // its card would otherwise sit empty until the next task edit.
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
+        if (identity.kind == AgentKinds.projectAgent &&
+            state != null &&
+            state.slots.pendingProjectActivityAt != null &&
+            state.scheduledWakeAt == null) {
+          await syncService.upsertEntity(
+            state.copyWith(
+              scheduledWakeAt: nextOccurrenceOf(
+                now,
+                hour: AgentSchedules.projectDailyDigestHour,
+              ),
+              updatedAt: now,
+            ),
+          );
+        }
       } else {
         final pendingWake = state?.nextWakeAt;
-        if (state != null &&
-            pendingWake != null &&
-            pendingWake.isAfter(now) &&
-            !state.isReportStale) {
-          await syncService.upsertEntity(
-            state.copyWith(reportStaleAt: now, updatedAt: now),
-          );
+        if (state != null) {
+          var updatedState = state;
+          if (pendingWake != null &&
+              pendingWake.isAfter(now) &&
+              !state.isReportStale) {
+            updatedState = updatedState.copyWith(reportStaleAt: now);
+          }
+          if (identity.kind == AgentKinds.projectAgent &&
+              state.slots.pendingProjectActivityAt != null) {
+            updatedState = updatedState.copyWith(scheduledWakeAt: null);
+          }
+          if (updatedState != state) {
+            await syncService.upsertEntity(
+              updatedState.copyWith(updatedAt: now),
+            );
+          }
         }
       }
     });

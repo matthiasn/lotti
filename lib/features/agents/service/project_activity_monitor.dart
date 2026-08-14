@@ -91,43 +91,54 @@ class ProjectActivityMonitor with AgentErrorLogging {
       if (links.isEmpty) return;
 
       final agentId = links.selectPrimary().fromId;
-      final state = await _agentRepository.getAgentState(agentId);
-      if (state == null || state.deletedAt != null) return;
-      final identity = await _agentRepository.getEntity(agentId);
-      final automaticUpdatesAllowed =
-          identity is AgentIdentityEntity &&
-          projectAgentAutomaticWakesAllowed(
-            config: identity.config,
-            lifecycle: identity.lifecycle,
-          );
-
+      final snapshot = await _agentRepository.getAgentState(agentId);
+      if (snapshot == null || snapshot.deletedAt != null) return;
       final now = _clock.now();
-      final pendingActivityAt = state.slots.pendingProjectActivityAt;
+      final pendingActivityAt = snapshot.slots.pendingProjectActivityAt;
       if (pendingActivityAt != null && !pendingActivityAt.isBefore(now)) {
         return;
       }
 
-      await _syncService.upsertEntity(
-        state.copyWith(
-          slots: state.slots.copyWith(
-            pendingProjectActivityAt: now,
+      await _syncService.runInTransaction(() async {
+        // Re-read inside the same transaction as the write. The wake router
+        // may have persisted `reportStaleAt` after the snapshot above; using
+        // that current row keeps the independent freshness and activity
+        // mutations from erasing one another.
+        final current = await _agentRepository.getAgentState(agentId);
+        if (current == null || current.deletedAt != null) return;
+        final currentPendingActivityAt = current.slots.pendingProjectActivityAt;
+        if (currentPendingActivityAt != null &&
+            !currentPendingActivityAt.isBefore(now)) {
+          return;
+        }
+
+        final identity = await _agentRepository.getEntity(agentId);
+        final automaticUpdatesAllowed =
+            identity is AgentIdentityEntity &&
+            projectAgentAutomaticWakesAllowed(
+              config: identity.config,
+              lifecycle: identity.lifecycle,
+            );
+        await _syncService.upsertEntity(
+          current.copyWith(
+            slots: current.slots.copyWith(
+              pendingProjectActivityAt: now,
+            ),
+            // Project activity owns a single durable morning fallback. A
+            // successful wake clears it; another activity update can arm a
+            // new one, but no workflow rolls it forward unconditionally.
+            scheduledWakeAt:
+                current.scheduledWakeAt ??
+                (automaticUpdatesAllowed
+                    ? nextOccurrenceOf(
+                        now,
+                        hour: AgentSchedules.projectDailyDigestHour,
+                      )
+                    : null),
+            updatedAt: now,
           ),
-          // Project activity owns a single durable morning fallback. A
-          // successful wake clears it; another activity update can arm a new
-          // one, but no workflow rolls it forward unconditionally. Preserve
-          // an explicit existing schedule when automation is off, but do not
-          // create an automatic fallback against the user's opt-out.
-          scheduledWakeAt:
-              state.scheduledWakeAt ??
-              (automaticUpdatesAllowed
-                  ? nextOccurrenceOf(
-                      now,
-                      hour: AgentSchedules.projectDailyDigestHour,
-                    )
-                  : null),
-          updatedAt: now,
-        ),
-      );
+        );
+      });
 
       _notifications.notifyUiOnly({agentId, agentNotification});
 

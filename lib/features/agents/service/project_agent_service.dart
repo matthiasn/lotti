@@ -226,11 +226,15 @@ class ProjectAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    final state = await repository.getAgentState(agentId);
-    if (state != null &&
-        (state.nextWakeAt != null ||
-            state.scheduledWakeAt != null ||
-            state.slots.pendingProjectActivityAt != null)) {
+    var persistedCancellation = false;
+    await syncService.runInTransaction(() async {
+      final state = await repository.getAgentState(agentId);
+      if (state == null ||
+          (state.nextWakeAt == null &&
+              state.scheduledWakeAt == null &&
+              state.slots.pendingProjectActivityAt == null)) {
+        return;
+      }
       await syncService.upsertEntity(
         state.copyWith(
           slots: state.slots.copyWith(pendingProjectActivityAt: null),
@@ -239,8 +243,9 @@ class ProjectAgentService {
           updatedAt: clock.now(),
         ),
       );
-      onPersistedStateChanged?.call(agentId);
-    }
+      persistedCancellation = true;
+    });
+    if (persistedCancellation) onPersistedStateChanged?.call(agentId);
 
     orchestrator
       ..clearThrottle(agentId)
@@ -352,25 +357,33 @@ class ProjectAgentService {
       return snapshot;
     }
 
-    final current = await repository.getAgentState(snapshot.agentId);
-    if (current == null ||
-        current.deletedAt != null ||
-        current.slots.pendingProjectActivityAt == null ||
-        current.scheduledWakeAt != null) {
-      return current;
-    }
+    AgentStateEntity? result;
+    var changed = false;
+    await repository.runInTransaction(() async {
+      final current = await repository.getAgentState(snapshot.agentId);
+      if (current == null ||
+          current.deletedAt != null ||
+          current.slots.pendingProjectActivityAt == null ||
+          current.scheduledWakeAt != null) {
+        result = current;
+        return;
+      }
 
-    final now = clock.now();
-    final updated = current.copyWith(
-      scheduledWakeAt: nextOccurrenceOf(
-        now,
-        hour: AgentSchedules.projectDailyDigestHour,
-      ),
-      updatedAt: now,
-    );
-    await syncService.upsertEntity(updated);
-    onPersistedStateChanged?.call(current.agentId);
-    return updated;
+      // This deadline exists only on this device. Do not advance the synced
+      // vector clock or LWW timestamp: doing so could make an obsolete pending
+      // marker beat another device's successful completion during merge.
+      final updated = current.copyWith(
+        scheduledWakeAt: nextOccurrenceOf(
+          clock.now(),
+          hour: AgentSchedules.projectDailyDigestHour,
+        ),
+      );
+      await repository.upsertEntity(updated);
+      result = updated;
+      changed = true;
+    });
+    if (changed) onPersistedStateChanged?.call(snapshot.agentId);
+    return result;
   }
 
   /// Removes the legacy always-on daily digest from an idle project agent.

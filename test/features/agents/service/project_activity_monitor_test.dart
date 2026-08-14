@@ -191,6 +191,48 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'preserves a stale watermark written while activity is resolved',
+      () async {
+        final link = AgentLink.agentProject(
+          id: 'link-stale-race',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final snapshot = makeTestState(
+          agentId: 'agent-1',
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final staleAt = now.subtract(const Duration(minutes: 1));
+        final concurrent = snapshot.copyWith(reportStaleAt: staleAt);
+        var stateRead = 0;
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => stateRead++ == 0 ? snapshot : concurrent);
+
+        monitor.start();
+        updateController.add({'project-1'});
+        await pumpEventQueue(times: 3);
+
+        final persisted =
+            verify(
+                  () => syncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(persisted.reportStaleAt, staleAt);
+        expect(persisted.slots.pendingProjectActivityAt, now);
+      },
+    );
+
     test('resolves project IDs from updated task IDs', () async {
       final link = AgentLink.agentProject(
         id: 'link-1',
