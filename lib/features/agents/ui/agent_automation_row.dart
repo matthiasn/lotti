@@ -38,9 +38,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// survive. Nothing here truncates a number.
 ///
 /// **The two questions stay visibly separate.** Wide, they sit at opposite
-/// ends of one line. Stacked, a rule divides them and both the manual trigger
-/// and the switch terminate on the same trailing rail, so the band reads as
-/// two deliberate bands rather than a pile of controls.
+/// ends of one line. Stacked, a rule divides them — the freshness word and its
+/// trigger above it, the schedule readout and the switch it governs below —
+/// so the band reads as two deliberate groups rather than a pile of controls.
+/// While the state pair still fits one line, the trigger terminates on the
+/// same trailing rail as the switch, and the two line up. Once it does not
+/// (the narrowest tier, where the word goes above the button), the trigger
+/// keeps the leading rail with everything else and only the rule separates
+/// the groups.
 ///
 /// **Ticking digits move nothing.** The schedule label reserves the width of
 /// the wording captured when the deadline was set, and the layout decision is
