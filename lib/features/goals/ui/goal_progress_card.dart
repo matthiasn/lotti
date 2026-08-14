@@ -194,7 +194,13 @@ class GoalCompactWindowStrip extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: TapTargets.minimum * visible.length,
+                  // The gaps count. Capped at seven touch targets alone, the
+                  // six `step1` gaps came out of the cells and each one
+                  // landed at ~46px — under the floor the cap existed to
+                  // guarantee.
+                  maxWidth:
+                      TapTargets.minimum * visible.length +
+                      tokens.spacing.step1 * (visible.length - 1),
                 ),
                 child: labelled,
               ),
@@ -353,16 +359,31 @@ class _CompactDayCell extends StatelessWidget {
 ///
 /// Targets go through the same rule so a value can never appear to miss a
 /// target it actually meets, purely because the two were rounded differently.
-String formatGoalAggregate(NumberFormat number, num value) {
+String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
+  var rounded = _roundGoalAggregate(value);
+  // Never round a value onto the wrong side of the number it is compared
+  // with: 9,950 against a 10,000 target would otherwise read "10,000 of
+  // 10,000" directly above a "Needs attention" line. Where the coarse step
+  // would erase the difference, keep the finer one.
+  if (against != null && value != against) {
+    if (rounded == _roundGoalAggregate(against)) {
+      rounded = value.abs() >= 100
+          ? value.roundToDouble()
+          : (value * 10).roundToDouble() / 10;
+    }
+  }
+  return number.format(
+    rounded == rounded.roundToDouble() ? rounded.toInt() : rounded,
+  );
+}
+
+num _roundGoalAggregate(num value) {
   final magnitude = value.abs();
-  final rounded = magnitude >= 1000
+  return magnitude >= 1000
       ? (value / 100).roundToDouble() * 100
       : magnitude >= 100
       ? value.roundToDouble()
       : (value * 10).roundToDouble() / 10;
-  return number.format(
-    rounded == rounded.roundToDouble() ? rounded.toInt() : rounded,
-  );
 }
 
 /// Shared fill for a day cell: the full-strength success hue when the goal
@@ -414,6 +435,22 @@ Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
 /// design system's ink for exactly this: text over a saturated alert fill.
 Color goalAssessmentRatingInk(DsTokens tokens, GoalAssessmentRating rating) =>
     tokens.colors.text.onInteractiveAlert;
+
+/// The verdict's ink for a glyph drawn on an ordinary card surface.
+///
+/// Distinct from [goalAssessmentRatingInk], which is for a glyph sitting on
+/// that verdict's own saturated fill. Using the on-alert ink here paints
+/// near-background on background; using this one on a fill would be its own
+/// hue on itself.
+Color goalAssessmentRatingSurfaceInk(
+  DsTokens tokens,
+  GoalAssessmentRating rating,
+) => switch (rating) {
+  GoalAssessmentRating.met => tokens.colors.alert.success.ink,
+  GoalAssessmentRating.improving => tokens.colors.alert.info.ink,
+  GoalAssessmentRating.mixed => tokens.colors.alert.warning.ink,
+  GoalAssessmentRating.missed => tokens.colors.alert.error.ink,
+};
 
 /// The glyph that names a recorded verdict without relying on its hue.
 ///
@@ -676,9 +713,13 @@ class _ReflectTodayRow extends StatelessWidget {
                 recorded == null
                     ? Icons.edit_note_rounded
                     : goalAssessmentRatingGlyph(recorded),
+                // The verdict's own family ink, NOT the on-alert ink: this
+                // glyph sits on the card surface, where the on-alert ink is
+                // near-invisible by design — it is tuned for glyphs drawn on
+                // a saturated fill, which is where the strip uses it.
                 color: recorded == null
                     ? tokens.colors.interactive.enabled
-                    : goalAssessmentRatingInk(tokens, recorded),
+                    : goalAssessmentRatingSurfaceInk(tokens, recorded),
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
@@ -1150,12 +1191,12 @@ class _MetricDimensionCard extends StatelessWidget {
     final displayValue = _metricDisplayValue(metric, summary);
     final reading = unit == null || unit.isEmpty
         ? context.messages.goalDimensionMetricReading(
-            formatGoalAggregate(number, displayValue),
-            formatGoalAggregate(number, metric.target),
+            formatGoalAggregate(number, displayValue, against: metric.target),
+            formatGoalAggregate(number, metric.target, against: displayValue),
           )
         : context.messages.goalDimensionMetricReadingWithUnit(
-            formatGoalAggregate(number, displayValue),
-            formatGoalAggregate(number, metric.target),
+            formatGoalAggregate(number, displayValue, against: metric.target),
+            formatGoalAggregate(number, metric.target, against: displayValue),
             unit,
           );
     return DesignSystemSectionCard(
@@ -2005,6 +2046,17 @@ class _MetricTrendSeries extends StatelessWidget {
   }
 }
 
+/// Whether a metric's target is comparable to a single day's bar.
+///
+/// `dailySumThenAverage` and the point-sample aggregations describe one day's
+/// value, so a day can be read against the target directly. `sum` and `count`
+/// accumulate ACROSS the window, and their target belongs to the period
+/// rather than to any bar in it.
+bool _targetIsPerDay(GoalAggregation aggregation) => switch (aggregation) {
+  GoalAggregation.sum || GoalAggregation.count => false,
+  _ => true,
+};
+
 class _MetricProgressSeries extends StatelessWidget {
   const _MetricProgressSeries({required this.metric});
 
@@ -2035,11 +2087,14 @@ class _MetricProgressSeries extends StatelessWidget {
           height: _chartHeight(tokens),
           child: Stack(
             children: [
-              // The target, drawn. Without it the colour flip between a green
-              // bar and a muted one has no visible cause on the chart itself —
-              // the threshold lived only in the header sentence above.
-              if (maxValue > 0)
+              // The target, drawn — but only where it is a PER-DAY quantity.
+              // For a `sum` or `count` criterion the target is a period-level
+              // total while these bars are single days, so a line at the
+              // target would put two already-sufficient days under a
+              // threshold they jointly cleared.
+              if (maxValue > 0 && _targetIsPerDay(metric.aggregation))
                 Positioned(
+                  key: const ValueKey('goal-metric-target-rule'),
                   left: 0,
                   right: 0,
                   bottom:

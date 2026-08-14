@@ -62,11 +62,14 @@ GoalAssessmentRating? suggestedDayVerdict(
   }
   if (today.met == today.total) return GoalAssessmentRating.met;
   if (today.met == 0) return GoalAssessmentRating.missed;
-  final yesterday = goalDayOutcome(
-    progress,
-    day.subtract(const Duration(days: 1)),
-  );
-  return today.met > yesterday.met
+  // Improving is a comparison, so it needs something to compare against. With
+  // no observations yesterday its met count is zero for want of DATA, not for
+  // want of effort, and calling today an improvement on it would be inventing
+  // a baseline — then recording that invention as a suggestion the user
+  // accepted.
+  final previousDay = day.subtract(const Duration(days: 1));
+  if (!_anyEvidence(progress, previousDay)) return GoalAssessmentRating.mixed;
+  return today.met > goalDayOutcome(progress, previousDay).met
       ? GoalAssessmentRating.improving
       : GoalAssessmentRating.mixed;
 }
@@ -80,7 +83,14 @@ bool _anyEvidence(GoalProgressView progress, DateTime day) {
     final entry = habit.days
         .where((value) => DateUtils.isSameDay(value.day, day))
         .firstOrNull;
-    if (entry != null && entry.hasValue) return true;
+    // A deliberately recorded FAILURE is evidence too. It carries no value,
+    // so checking `hasValue` alone read a day the user explicitly marked as
+    // missed as a day they never opened — and the sheet then fell back to
+    // suggesting Met.
+    if (entry != null &&
+        (entry.hasValue || entry.habitCompletionType != null)) {
+      return true;
+    }
   }
   for (final metric in progress.metrics) {
     final entry = metric.days

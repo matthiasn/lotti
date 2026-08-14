@@ -1322,7 +1322,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
               'trackStatus': strategy.reportStatus!.name,
               'periodKey': derivation.periodKey,
               'specVersionId': derivation.version.id,
-              GoalReportProvenanceKeys.sections: ?strategy.reportSections,
+              // Sanitized like every other visible string on this entity.
+              // The card PREFERS these sections over the flat `content`, so
+              // leaving them raw put the internal ids the sanitizer exists to
+              // remove straight back in front of the reader — and made the
+              // sections disagree with the sanitized fallback beneath them.
+              GoalReportProvenanceKeys.sections: ?_sanitizeReportSections(
+                strategy.reportSections,
+              ),
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },
@@ -1936,3 +1943,36 @@ Map<String, String> _withoutGoalBannerSnooze(
         entry.key != 'snoozedAt')
       entry.key: entry.value,
 };
+
+/// Applies the goal report sanitizer to every string in the structured
+/// sections, including each `nextActions` entry.
+///
+/// The values arrive as model-authored prose, exactly like `content` and
+/// `tldr`, and are rendered directly.
+Map<String, Object?>? _sanitizeReportSections(Map<String, Object?>? sections) {
+  if (sections == null) return null;
+  return {
+    for (final entry in sections.entries)
+      entry.key: switch (entry.value) {
+        final String text => sanitizeAgentReportText(
+          text,
+          stripBareIds: true,
+        ),
+        final List<Object?> items => [
+          for (final item in items)
+            if (item case final String text)
+              sanitizeAgentReportText(text, stripBareIds: true)
+            else
+              item,
+        ],
+        final Object? other => other,
+      },
+  };
+}
+
+/// Test seam for [_sanitizeReportSections] — the sanitization contract is
+/// worth pinning directly rather than only through a full wake.
+@visibleForTesting
+Map<String, Object?>? sanitizeReportSectionsForTest(
+  Map<String, Object?>? sections,
+) => _sanitizeReportSections(sections);

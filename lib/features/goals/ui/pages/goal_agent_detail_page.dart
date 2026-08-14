@@ -1134,11 +1134,16 @@ class _GoalReportSections extends StatelessWidget {
         if (sections[key] case final String body when body.trim().isNotEmpty)
           (heading, body.trim()),
     ];
+    // Pattern-matched, not cast. Provenance arrives from persisted or synced
+    // JSON, so a report written by another client version could carry a
+    // String or a Map here and take the card down with a TypeError the first
+    // time it was expanded. The section bodies above already guard this way.
     final actions = <String>[
-      for (final action
-          in (sections[GoalReportSectionKeys.nextActions] as List<Object?>? ??
-              const <Object?>[]))
-        if (action is String && action.trim().isNotEmpty) action.trim(),
+      if (sections[GoalReportSectionKeys.nextActions]
+          case final List<Object?> raw)
+        for (final action in raw)
+          if (action case final String text when text.trim().isNotEmpty)
+            text.trim(),
     ];
 
     return Column(

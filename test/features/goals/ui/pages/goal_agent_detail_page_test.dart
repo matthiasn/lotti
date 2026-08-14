@@ -246,6 +246,103 @@ void main() {
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
+  testWidgets('a sections payload with nothing in it falls back to the flat '
+      'text, and a malformed one does not crash the card', (tester) async {
+    final probeSpec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-probe',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    Future<void> pump(Object? sections) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two days in.',
+              pendingProposals: 0,
+              spec: probeSpec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith(
+            (ref) async =>
+                AgentDomainEntity.agentReport(
+                      id: 'report-x',
+                      agentId: 'goal-1',
+                      scope: AgentReportScopes.current,
+                      createdAt: DateTime(2026, 8, 10),
+                      vectorClock: null,
+                      oneLiner: 'Two days in.',
+                      tldr: 'Two days in.',
+                      content: 'The rolling window is still filling up.',
+                      provenance: {
+                        'specVersionId': 'goal-1:spec-probe',
+                        GoalReportProvenanceKeys.sections: sections,
+                      },
+                    )
+                    as AgentReportEntity,
+          ),
+        ],
+      ),
+    );
+
+    // Every slot empty is not a sectioned report. Treated as one, the card
+    // rendered zero headings and zero actions while `content` still held the
+    // real text — an empty expansion instead of a fallback.
+    await pump({
+      GoalReportSectionKeys.currentPeriod: '',
+      GoalReportSectionKeys.nextActions: <Object?>[],
+    });
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
+    // No section headings: an all-empty payload is not a sectioned report,
+    // and treating it as one rendered an empty expansion while `content`
+    // still held the real text.
+    expect(find.text('Where things stand'), findsNothing);
+    expect(find.text('Data coverage'), findsNothing);
+
+    // Provenance arrives from persisted or synced JSON, so another client
+    // version could write a String where a List belongs. That used to be a
+    // TypeError the first time the card was expanded.
+    await pump({
+      GoalReportSectionKeys.currentPeriod: 'Logged today.',
+      GoalReportSectionKeys.nextActions: 'walk more',
+    });
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
+    // A String where a List belongs used to be a TypeError the first time
+    // the card built its sections.
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('a published assessment silences the Not-enough-data chip, and '
       'a sectionless report still expands to its flat text', (tester) async {
     final legacySpec =

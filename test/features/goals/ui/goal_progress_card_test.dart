@@ -291,6 +291,15 @@ void main() {
         findsOneWidget,
         reason: '${rating.name} has no shape of its own',
       );
+      // Two inks per verdict, for two backgrounds. On its own saturated fill
+      // the glyph takes the on-alert ink; on a plain card — the reflect row —
+      // it takes its family's ink, because the on-alert ink is near-invisible
+      // there by design.
+      expect(
+        goalAssessmentRatingSurfaceInk(tokens, rating),
+        isNot(goalAssessmentRatingInk(tokens, rating)),
+        reason: '${rating.name} uses one ink for both surfaces',
+      );
     }
     expect(
       {
@@ -322,6 +331,29 @@ void main() {
       expect(formatGoalAggregate(number, 7684.428571), '7,700');
       expect(formatGoalAggregate(number, 12449), '12,400');
       expect(formatGoalAggregate(number, 10000), '10,000');
+    });
+
+    test('rounding never moves a value onto the wrong side of its target', () {
+      // 9,950 against a 10,000 target would read "10,000 of 10,000" directly
+      // above a "Needs attention" line. Where the coarse step would erase the
+      // difference, the finer one is kept.
+      expect(
+        formatGoalAggregate(number, 9950, against: 10000),
+        isNot(formatGoalAggregate(number, 10000, against: 9950)),
+      );
+      expect(formatGoalAggregate(number, 9950, against: 10000), '9,950');
+      // Equal values still round together — there is no miss to preserve.
+      expect(formatGoalAggregate(number, 10000, against: 10000), '10,000');
+      // And a difference the coarse step already survives keeps the coarse
+      // step: 7,700 vs 10,000 needs no extra digits.
+      expect(
+        formatGoalAggregate(number, 7684.428571, against: 10000),
+        '7,700',
+      );
+      // Below 100 the finer step is a tenth, so a weight just under its
+      // target keeps the decimal that distinguishes them.
+      expect(formatGoalAggregate(number, 87.96, against: 88), '88');
+      expect(formatGoalAggregate(number, 87.94, against: 88), '87.9');
     });
 
     test('blood pressure keeps whole numbers', () {
@@ -384,6 +416,43 @@ void main() {
       tester.getBottomRight(streak).dx,
       greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
     );
+  });
+
+  testWidgets('a period-total target draws no per-day threshold line', (
+    tester,
+  ) async {
+    Future<void> pump(GoalAggregation aggregation) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Focus',
+              target: 10,
+              aggregation: aggregation,
+              days: [day(1, 6), day(0, 6)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    int rules() => find
+        .descendant(
+          of: find.byType(GoalProgressCard),
+          matching: find.byKey(const ValueKey('goal-metric-target-rule')),
+        )
+        .evaluate()
+        .length;
+
+    // A per-day target is comparable to a bar, so the line is drawn.
+    await pump(GoalAggregation.dailySumThenAverage);
+    expect(rules(), 1);
+
+    // A `sum` target belongs to the WINDOW: two six-minute days already clear
+    // a ten-minute total, yet a line at 10 would put both bars under it.
+    await pump(GoalAggregation.sum);
+    expect(rules(), 0);
   });
 
   testWidgets('the reflect row sits with the week it closes off, and names '

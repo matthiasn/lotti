@@ -556,4 +556,53 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('choosing the suggested verdict deliberately is not an '
+      'acceptance', (tester) async {
+    final day = DateTime.utc(2026, 8, 11);
+    final service = _MockGoalAssessmentService();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalDayAssessmentSheet(
+            agentId: 'goal-1',
+            specVersionId: 'goal-1:spec-v1',
+            specVersion: 1,
+            day: day,
+            progress: GoalProgressView(
+              today: day,
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 10000,
+                  days: [GoalProgressDay(day: day, value: 3000)],
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The same verdict the app suggested — but chosen, not left standing.
+    // Comparing values alone cannot tell those apart, and filing an active
+    // choice as "suggested and accepted" credits the agent for the user's
+    // own call.
+    tester
+        .widget<DsSegmentedToggle<GoalAssessmentRating>>(
+          find.byType(DsSegmentedToggle<GoalAssessmentRating>).first,
+        )
+        .onChanged(GoalAssessmentRating.missed);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Suggested from what was measured — change it if you disagree.',
+      ),
+      findsNothing,
+    );
+  });
 }

@@ -79,10 +79,22 @@ class _GoalDayAssessmentSheetState
     if (existing != null) _dimensionRatings.addAll(existing.dimensionRatings);
   }
 
+  /// Whether the user has operated the verdict control at all.
+  ///
+  /// Distinguishes leaving the suggestion standing from choosing the same
+  /// verdict deliberately. Comparing values alone cannot: an active choice
+  /// that happens to agree with the suggestion is still the user's own
+  /// judgement, and filing it as "suggested and accepted" would credit the
+  /// agent for a call the user made.
+  bool _touchedVerdict = false;
+
   /// True while the user has left the suggestion untouched on a fresh
   /// reflection — which is an acceptance, and worth recording as one.
   bool get _acceptedSuggestion =>
-      widget.existing == null && _suggested != null && _rating == _suggested;
+      widget.existing == null &&
+      _suggested != null &&
+      !_touchedVerdict &&
+      _rating == _suggested;
 
   @override
   void dispose() {
@@ -229,7 +241,10 @@ class _GoalDayAssessmentSheetState
               DsSegmentedToggle<GoalAssessmentRating>(
                 expand: true,
                 selected: _rating,
-                onChanged: (value) => setState(() => _rating = value),
+                onChanged: (value) => setState(() {
+                  _rating = value;
+                  _touchedVerdict = true;
+                }),
                 segments: _ratingSegments(context),
               ),
               // Only while the suggestion still stands. Once the user has
