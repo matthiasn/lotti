@@ -551,9 +551,19 @@ class SyncEventProcessor {
         );
         return PreparedSyncEvent._(event: event, syncMessage: msg);
       case final SyncOutboxBundle msg:
+        final rawChildren = switch (rawMessageJson?['children']) {
+          final List<dynamic> children =>
+            children
+                .map(
+                  (child) => child is Map<String, dynamic> ? child : null,
+                )
+                .toList(),
+          _ => const <Map<String, dynamic>?>[],
+        };
         final resolved = await _outboxBundleUnpacker.prepare(
           event: event,
           msg: msg,
+          rawChildren: rawChildren,
           resolveSidecar:
               ({
                 required jsonPath,
@@ -562,8 +572,11 @@ class SyncEventProcessor {
                 jsonPath,
                 attachmentEventId: attachmentEventId,
               ),
-          prepareChild: (childEvent, childMsg) =>
-              _prepareForMessage(event: childEvent, syncMessage: childMsg),
+          prepareChild: (childEvent, childMsg, childJson) => _prepareForMessage(
+            event: childEvent,
+            syncMessage: childMsg,
+            rawMessageJson: childJson,
+          ),
         );
         return PreparedSyncEvent._(
           event: event,
@@ -579,10 +592,10 @@ class SyncEventProcessor {
   Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(
     String? jsonPath, {
     String? attachmentEventId,
-  }) => _resolveOutboxBundleManifest(
+  }) async => (await _resolveOutboxBundleManifest(
     jsonPath,
     attachmentEventId: attachmentEventId,
-  );
+  ))?.bundle;
 
   late final OutboxBundleUnpacker _outboxBundleUnpacker = OutboxBundleUnpacker(
     loggingService: _loggingService,

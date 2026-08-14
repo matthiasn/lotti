@@ -182,12 +182,17 @@ class ProjectAgentWorkflow with AgentErrorLogging {
         if (latestState == null) return;
         final hasPendingActivity =
             latestState.slots.pendingProjectActivityAt != null;
+        final isUnfinishedLegacyCreation =
+            latestState.lastWakeAt == null &&
+            latestState.scheduledWakeAt != null;
         await syncService.upsertEntity(
           latestState.copyWith(
             scheduledWakeAt: _nextProjectActivityFallback(
               currentSchedule: latestState.scheduledWakeAt,
               pendingActivityAt: hasPendingActivity
                   ? latestState.slots.pendingProjectActivityAt
+                  : isUnfinishedLegacyCreation
+                  ? latestState.scheduledWakeAt
                   : null,
               automaticFallbackAllowed: await _automaticFallbackAllowed(
                 agentIdentity.agentId,

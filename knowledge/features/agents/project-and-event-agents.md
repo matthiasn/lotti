@@ -144,8 +144,10 @@ may additionally persist `nextWakeAt` for its queued job. A successful wake
 clears the pending marker and both deadlines when no newer activity remains. A
 failed wake with pending activity re-arms the one-shot morning fallback instead
 of waiting for another edit; this includes failures during project/template/
-provider setup before inference starts. An overdue fallback advances to the
-next morning rather than remaining due on every hourly scan. When automation is
+provider setup before inference starts. A failed first-ever legacy creation wake
+also advances its markerless scheduled row because `lastWakeAt == null` proves
+that creation work has not completed. An overdue fallback advances to the next
+morning rather than remaining due on every hourly scan. When automation is
 disabled, a manual wake may preserve an already-future explicit schedule but
 cannot synthesize a new morning fallback on success or failure. Enabling
 automation while the identity is inactive likewise leaves the fallback absent;
@@ -213,7 +215,9 @@ Older project-state payloads may likewise omit `pendingProjectActivityAt`.
 Sync apply detects field presence before deserialization: omission preserves
 the receiving device's pending marker and fallback, while an explicit null
 still records that the originating device consumed the work and cancels the
-receiving device's automatic wake.
+receiving device's automatic wake. Outbox bundles retain each raw child
+envelope beside its deserialized message, including file-backed manifest
+children, so bundling cannot erase that omission signal.
 
 Failure persistence notifies state consumers only after the retry deadline is
 successfully written. The project detail report prefers the subscription

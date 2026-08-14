@@ -24,7 +24,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
   /// instead of an older bundled payload. The envelope is still surfaced to
   /// the unpacker so duplicate detection and sequence-log accounting run as
   /// they do for individually-delivered entities.
-  Future<SyncOutboxBundle?> _resolveOutboxBundleManifest(
+  Future<ResolvedOutboxSyncBundle?> _resolveOutboxBundleManifest(
     String? jsonPath, {
     String? attachmentEventId,
   }) async {
@@ -180,7 +180,11 @@ extension _OutboxBundleHandler on SyncEventProcessor {
         continue;
       }
       parsedEntries.add(
-        _OutboxBundleManifestEntry(envelope: envelope, payload: raw['payload']),
+        _OutboxBundleManifestEntry(
+          envelope: envelope,
+          envelopeJson: envelopeJson,
+          payload: raw['payload'],
+        ),
       );
       if (envelope is SyncJournalEntity) {
         journalEntityIds.add(envelope.id);
@@ -209,6 +213,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     // next pass).
     final writePlans = <_OutboxBundleWritePlan>[];
     final children = <SyncMessage>[];
+    final rawChildren = <Map<String, dynamic>>[];
     for (final parsed in parsedEntries) {
       final envelope = parsed.envelope;
       final payload = parsed.payload;
@@ -282,6 +287,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       }
 
       children.add(envelope);
+      rawChildren.add(parsed.envelopeJson);
     }
 
     // Issue per-child writes serially. The earlier parallel `Future.wait`
@@ -321,9 +327,12 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       subDomain: 'processor.resolve.outboxBundle.timing',
     );
 
-    return SyncOutboxBundle(
-      children: children,
-      jsonPath: jp,
+    return ResolvedOutboxSyncBundle(
+      bundle: SyncOutboxBundle(
+        children: children,
+        jsonPath: jp,
+      ),
+      rawChildren: rawChildren,
     );
   }
 }
@@ -333,16 +342,21 @@ extension _OutboxBundleHandler on SyncEventProcessor {
 /// children — agent and inline-only families carry their data inside the
 /// envelope itself).
 class _OutboxBundleManifestEntry {
-  _OutboxBundleManifestEntry({required this.envelope, required this.payload});
+  _OutboxBundleManifestEntry({
+    required this.envelope,
+    required this.envelopeJson,
+    required this.payload,
+  });
 
   final SyncMessage envelope;
+  final Map<String, dynamic> envelopeJson;
   final Object? payload;
 }
 
 /// One pending on-disk JSON cache write planned by the outbox bundle
 /// resolver. The resolver builds a list of plans up-front (rejecting the
-/// whole bundle on malformed entries) and dispatches them via
-/// `Future.wait` so 50 atomic writes overlap instead of running serially.
+/// whole bundle on malformed entries) and dispatches them serially to keep
+/// filesystem pressure bounded.
 class _OutboxBundleWritePlan {
   _OutboxBundleWritePlan({
     required this.envelopeId,

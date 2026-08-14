@@ -3097,6 +3097,69 @@ void main() {
       );
 
       test(
+        'bundled legacy project state without activity marker preserves '
+        'local work',
+        () async {
+          final local =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-bundled-legacy',
+                    agentId: 'project-agent-bundled-legacy',
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'local': 1}),
+                  )
+                  as AgentStateEntity;
+          final incoming = local.copyWith(
+            slots: local.slots.copyWith(pendingProjectActivityAt: null),
+            lastWakeAt: DateTime(2026, 8, 14, 10),
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'local': 1, 'remote': 1}),
+          );
+          final bundle = SyncMessage.outboxBundle(
+            children: [
+              SyncMessage.agentEntity(
+                agentEntity: incoming,
+                status: SyncEntryStatus.update,
+              ),
+            ],
+          );
+          final bundleJson =
+              json.decode(json.encode(bundle.toJson())) as Map<String, dynamic>;
+          final childrenJson = bundleJson['children'] as List<dynamic>;
+          final childJson = childrenJson.single as Map<String, dynamic>;
+          final entityJson = childJson['agentEntity'] as Map<String, dynamic>;
+          final slotsJson = entityJson['slots'] as Map<String, dynamic>;
+          slotsJson.remove('pendingProjectActivityAt');
+
+          when(
+            () => mockAgentRepo.getEntitiesByIds(any()),
+          ).thenAnswer((_) async => {local.id: local});
+          when(() => event.text).thenReturn(
+            base64.encode(utf8.encode(json.encode(bundleJson))),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final applied = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().single;
+          expect(
+            applied.slots.pendingProjectActivityAt,
+            local.slots.pendingProjectActivityAt,
+          );
+          expect(applied.scheduledWakeAt, local.scheduledWakeAt);
+          verifyNever(
+            () => mockOrchestrator.cancelPendingAutomaticWakes(any()),
+          );
+        },
+      );
+
+      test(
         'project identity classifies marker-only state completion',
         () async {
           final identity = AgentDomainEntity.agent(

@@ -1297,6 +1297,47 @@ void main() {
       );
 
       test(
+        'first legacy creation failure advances its markerless fallback',
+        () async {
+          final now = DateTime(2026, 3, 20, 10);
+          final legacyCreationState = testAgentState.copyWith(
+            lastWakeAt: null,
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => legacyCreationState);
+          final mockSoulService = MockSoulDocumentService();
+          when(
+            () => mockSoulService.resolveActiveSoulForTemplate(
+              testTemplate.id,
+            ),
+          ).thenThrow(Exception('Soul DB error'));
+
+          final soulWorkflow = buildWorkflow(
+            soulDocumentService: mockSoulService,
+          );
+
+          final result = await withClock(Clock.fixed(now), () {
+            return soulWorkflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+          });
+
+          expect(result.success, isFalse);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+          expect(updatedState.slots.pendingProjectActivityAt, isNull);
+        },
+      );
+
+      test(
         'token usage and wake run record soul provenance',
         () async {
           final splitVersion = makeTestTemplateVersion(
