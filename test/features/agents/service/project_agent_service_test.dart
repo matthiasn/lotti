@@ -178,6 +178,12 @@ void main() {
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
     when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
     when(
+      () => mockOrchestrator.cancelPendingWakes(
+        any(),
+        allWorkspaces: any(named: 'allWorkspaces'),
+      ),
+    ).thenReturn(const []);
+    when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
 
@@ -924,29 +930,47 @@ void main() {
 
     group('cancelScheduledWake', () {
       test(
-        'clears both queued work and the persisted fallback',
+        'atomically clears both deadlines before dropping queued work',
         () async {
+          final state = makeState().copyWith(
+            nextWakeAt: DateTime(2026, 3, 20, 12, 2),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
           when(
-            () => mockAgentService.cancelPendingWake(any()),
-          ).thenReturn(null);
-          when(
-            () => mockAgentService.clearScheduledWake(any()),
-          ).thenAnswer((_) async {});
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
 
           await service.cancelScheduledWake('agent-1');
 
-          verifyInOrder([
-            () => mockAgentService.clearScheduledWake('agent-1'),
-            () => mockAgentService.cancelPendingWake('agent-1'),
-          ]);
+          final persisted =
+              verify(
+                    () => mockSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.nextWakeAt, isNull);
+          expect(persisted.scheduledWakeAt, isNull);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
         },
       );
 
       test(
         'keeps queued work intact when persisted cancellation fails',
         () async {
+          final state = makeState().copyWith(
+            nextWakeAt: DateTime(2026, 3, 20, 12, 2),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
           when(
-            () => mockAgentService.clearScheduledWake(any()),
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockSyncService.upsertEntity(any()),
           ).thenThrow(StateError('write failed'));
 
           await expectLater(
@@ -954,7 +978,13 @@ void main() {
             throwsA(isA<StateError>()),
           );
 
-          verifyNever(() => mockAgentService.cancelPendingWake(any()));
+          verifyNever(() => mockOrchestrator.clearThrottle(any()));
+          verifyNever(
+            () => mockOrchestrator.cancelPendingWakes(
+              any(),
+              allWorkspaces: any(named: 'allWorkspaces'),
+            ),
+          );
         },
       );
     });
@@ -1060,6 +1090,58 @@ void main() {
                   as List<String>;
           expect(requestedAgentIds, ['pa-1']);
           verifyNever(() => mockRepository.getAgentState('pa-1'));
+        },
+      );
+
+      test(
+        'keeps observation but suppresses countdown hydration when automation '
+        'is off',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-manual').copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          );
+          final link = AgentLink.agentProject(
+            id: 'link-manual',
+            fromId: 'pa-manual',
+            toId: 'project-manual',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final state = makeState(agentId: 'pa-manual').copyWith(
+            nextWakeAt: DateTime(2026, 3, 22, 12),
+          );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-manual']),
+          ).thenAnswer((_) async => {'pa-manual': state});
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-manual'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-manual': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('pa-manual'),
+          ).called(1);
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
+          verifyNever(
+            () => mockOrchestrator.restorePendingWake(
+              agentId: any(named: 'agentId'),
+              dueAt: any(named: 'dueAt'),
+            ),
+          );
         },
       );
 

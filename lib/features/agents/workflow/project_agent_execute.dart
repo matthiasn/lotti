@@ -24,14 +24,6 @@ DateTime? _nextProjectActivityFallback({
   );
 }
 
-/// Legacy project agents omitted the automation preference and shipped with
-/// event-driven wakes enabled, while explicit opt-out and disabled inference
-/// must prevent the workflow from synthesizing a new automatic fallback.
-bool _automaticProjectFallbackAllowed(AgentIdentityEntity identity) =>
-    identity.lifecycle == AgentLifecycle.active &&
-    identity.config.automaticUpdatesEnabled != false &&
-    identity.config.inferenceSetup?.mode != AgentInferenceSetupMode.disabled;
-
 /// The full wake-cycle execution of [ProjectAgentWorkflow]. Extracted into a
 /// part-file extension to keep the workflow under the size limit; the class
 /// keeps a thin public [ProjectAgentWorkflow.execute] delegator so mocks keep
@@ -70,8 +62,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     final now = clock.now();
-    final automaticFallbackAllowed = _automaticProjectFallbackAllowed(
-      agentIdentity,
+    final automaticFallbackAllowed = projectAgentAutomaticWakesAllowed(
+      config: agentIdentity.config,
+      lifecycle: agentIdentity.lifecycle,
     );
 
     // 2. Load the latest report and decide whether a due scheduled wake can be
@@ -149,10 +142,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         'project not found in journal — aborting wake',
         subDomain: 'execute',
       );
-      return const WakeResult(
-        success: false,
-        error: 'Project not found',
-      );
+      throw StateError('Project not found');
     }
 
     // 4. Load observations.
@@ -180,10 +170,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         'no provider configured — aborting wake',
         subDomain: 'execute',
       );
-      return const WakeResult(
-        success: false,
-        error: 'No inference provider configured',
-      );
+      throw StateError('No inference provider configured');
     }
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
@@ -578,48 +565,13 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
       return const WakeResult(success: true);
     } catch (e, s) {
-      logError('wake failed', error: e, stackTrace: s);
-
-      await finalizeCarrierlessAgentAttribution(
+      return _handleWakeFailure(
+        agentIdentity: agentIdentity,
         runKey: runKey,
-        logger: this,
-        status: AiWorkStatus.failed,
-        errorCode: e.runtimeType.toString(),
-        errorSummary: e.toString(),
+        error: e,
+        stackTrace: s,
+        fallbackState: state,
       );
-
-      try {
-        final failureAt = clock.now();
-        final latestState =
-            await agentRepository.getAgentState(agentId) ?? state;
-        final hasPendingActivity =
-            latestState.slots.pendingProjectActivityAt != null;
-        await syncService.upsertEntity(
-          latestState.copyWith(
-            // A failed subscription wake has already left the in-memory
-            // queue. Keep real pending work durable for a one-shot morning
-            // retry instead of relying on another user edit to revive it.
-            scheduledWakeAt: _nextProjectActivityFallback(
-              currentSchedule: latestState.scheduledWakeAt,
-              pendingActivityAt: hasPendingActivity
-                  ? latestState.slots.pendingProjectActivityAt
-                  : null,
-              automaticFallbackAllowed: automaticFallbackAllowed,
-              now: failureAt,
-            ),
-            updatedAt: failureAt,
-            consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
-          ),
-        );
-      } catch (stateError, s) {
-        logError(
-          'failed to update failure count',
-          error: stateError,
-          stackTrace: s,
-        );
-      }
-
-      return WakeResult(success: false, error: e.toString());
     } finally {
       conversationRepository.deleteConversation(conversationId);
     }

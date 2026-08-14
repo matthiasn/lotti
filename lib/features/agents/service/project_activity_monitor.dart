@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -96,10 +96,10 @@ class ProjectActivityMonitor with AgentErrorLogging {
       final identity = await _agentRepository.getEntity(agentId);
       final automaticUpdatesAllowed =
           identity is AgentIdentityEntity &&
-          identity.lifecycle == AgentLifecycle.active &&
-          identity.config.automaticUpdatesEnabled != false &&
-          identity.config.inferenceSetup?.mode !=
-              AgentInferenceSetupMode.disabled;
+          projectAgentAutomaticWakesAllowed(
+            config: identity.config,
+            lifecycle: identity.lifecycle,
+          );
 
       final now = _clock.now();
       final pendingActivityAt = state.slots.pendingProjectActivityAt;

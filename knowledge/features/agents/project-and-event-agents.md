@@ -105,6 +105,11 @@ stateDiagram-v2
   coalescing path, so an explicit project edit does not wait until morning.
 - **Explicit requests** (`creation` and manual `reanalysis`) bypass the
   subscription throttle and enqueue immediately.
+- **Automation policy** is shared across local monitoring, workflow fallback
+  creation, startup restoration, and synced identity/link restoration. An
+  active legacy project agent with no stored preference retains its shipped-on
+  behavior; explicit opt-out, inactive lifecycle, and disabled inference block
+  automatic subscription and fallback wakes while observation remains wired.
 
 ## Dormant-by-default scheduling
 
@@ -113,14 +118,16 @@ local activity may create a one-shot state schedule, and subscription routing
 may additionally persist `nextWakeAt` for its queued job. A successful wake
 clears the pending marker and both deadlines when no newer activity remains. A
 failed wake with pending activity re-arms the one-shot morning fallback instead
-of waiting for another edit; an overdue fallback advances to the next morning
-rather than remaining due on every hourly scan. When automation is disabled, a
-manual wake may preserve an already-future explicit schedule but cannot
-synthesize a new morning fallback on success or failure. Explicit cancellation
-persists removal of the fallback before clearing queued subscription work; a
-failed write therefore leaves the runtime work intact and surfaces an error in
-the project detail UI. Consequently the Wake tab contains a project-agent row
-only while actual work or a retry is pending.
+of waiting for another edit; this includes failures during project/template/
+provider setup before inference starts. An overdue fallback advances to the
+next morning rather than remaining due on every hourly scan. When automation is
+disabled, a manual wake may preserve an already-future explicit schedule but
+cannot synthesize a new morning fallback on success or failure. Explicit
+cancellation clears `nextWakeAt` and `scheduledWakeAt` in one persisted state
+write before clearing queued work; a failed write therefore leaves the runtime
+work intact and surfaces an error in the project detail UI. Consequently the
+Wake tab contains a project-agent row only while actual work or a retry is
+pending.
 
 Older installations can still contain the former daily schedule. Startup
 restoration clears it when the agent has completed at least one wake and

@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -211,8 +212,8 @@ class ProjectAgentService {
 
   /// Cancel a scheduled wake for [agentId].
   ///
-  /// Deletes the persisted one-shot fallback before clearing the throttle
-  /// deadline, deferred drain timer, and queued subscription jobs.
+  /// Deletes both persisted deadline fields in one state write before clearing
+  /// the throttle timer and queued subscription jobs.
   ///
   /// Persistence is intentionally first: if that write fails, the runtime
   /// work remains available and the UI can report that cancellation did not
@@ -225,8 +226,22 @@ class ProjectAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    await agentService.clearScheduledWake(agentId);
-    agentService.cancelPendingWake(agentId);
+    final state = await repository.getAgentState(agentId);
+    if (state != null &&
+        (state.nextWakeAt != null || state.scheduledWakeAt != null)) {
+      await syncService.upsertEntity(
+        state.copyWith(
+          nextWakeAt: null,
+          scheduledWakeAt: null,
+          updatedAt: clock.now(),
+        ),
+      );
+      onPersistedStateChanged?.call(agentId);
+    }
+
+    orchestrator
+      ..clearThrottle(agentId)
+      ..cancelPendingWakes(agentId, allWorkspaces: true);
   }
 
   /// Restore project-agent runtime state after app startup.
@@ -267,9 +282,17 @@ class ProjectAgentService {
         final state = await _retireDormantDailySchedule(
           statesByAgentId[agent.agentId],
         );
-        _hydrateThrottleDeadlineFromState(agent.agentId, state);
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
+        }
+        if (projectAgentAutomaticWakesAllowed(
+          config: agent.config,
+          lifecycle: agent.lifecycle,
+        )) {
+          orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
+          _hydrateThrottleDeadlineFromState(agent.agentId, state);
+        } else {
+          orchestrator.disableAutomaticUpdatesRuntime(agent.agentId);
         }
         count++;
       } catch (e, s) {

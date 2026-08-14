@@ -232,28 +232,50 @@ void main() {
       });
 
       test('returns failure when project entity not found', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
+        ).thenAnswer((_) async => dueState);
         when(
           () => mockJournalRepository.getJournalEntityById(projectId),
         ).thenAnswer((_) async => null);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('Project not found'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when no template resolved', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentState.copyWith(
+          slots: testAgentState.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
+        ).thenAnswer((_) async => dueState);
         when(
           () => mockJournalRepository.getJournalEntityById(projectId),
         ).thenAnswer((_) async => _fakeProjectEntity());
@@ -270,15 +292,23 @@ void main() {
           () => mockTemplateService.getTemplateForAgent(agentId),
         ).thenAnswer((_) async => null);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('No inference provider'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when profile resolution fails', () async {
@@ -1106,8 +1136,18 @@ void main() {
       );
 
       test(
-        'soul resolution failure propagates as exception',
+        'soul resolution failure returns failure and advances a due fallback',
         () async {
+          final now = DateTime(2026, 3, 20, 10);
+          final dueState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 20, 6),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
           final mockSoulService = MockSoulDocumentService();
           when(
             () => mockSoulService.resolveActiveSoulForTemplate(
@@ -1119,21 +1159,22 @@ void main() {
             soulDocumentService: mockSoulService,
           );
 
-          await expectLater(
-            soulWorkflow.execute(
+          final result = await withClock(Clock.fixed(now), () {
+            return soulWorkflow.execute(
               agentIdentity: testAgentIdentity,
               runKey: runKey,
               triggerTokens: {'entity-a'},
               threadId: threadId,
-            ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('Soul DB error'),
-              ),
-            ),
-          );
+            );
+          });
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('Soul DB error'));
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
         },
       );
 

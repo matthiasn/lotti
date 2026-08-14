@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -117,14 +118,84 @@ class ProjectAgentWorkflow with AgentErrorLogging {
     required String runKey,
     required Set<String> triggerTokens,
     required String threadId,
-  }) => executeImpl(
-    agentIdentity: agentIdentity,
-    runKey: runKey,
-    triggerTokens: triggerTokens,
-    threadId: threadId,
-  );
+  }) async {
+    try {
+      return await executeImpl(
+        agentIdentity: agentIdentity,
+        runKey: runKey,
+        triggerTokens: triggerTokens,
+        threadId: threadId,
+      );
+    } catch (error, stackTrace) {
+      return _handleWakeFailure(
+        agentIdentity: agentIdentity,
+        runKey: runKey,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
   // ── Private helpers ────────────────────────────────────────────────────────
+
+  /// Records one failed attempt and advances a due automatic fallback.
+  ///
+  /// This is shared by inference failures inside [executeImpl] and setup
+  /// failures caught by [execute], so an exception before conversation
+  /// creation cannot leave an overdue fallback firing on every scheduler scan.
+  Future<WakeResult> _handleWakeFailure({
+    required AgentIdentityEntity agentIdentity,
+    required String runKey,
+    required Object error,
+    required StackTrace stackTrace,
+    AgentStateEntity? fallbackState,
+  }) async {
+    logError('wake failed', error: error, stackTrace: stackTrace);
+
+    await finalizeCarrierlessAgentAttribution(
+      runKey: runKey,
+      logger: this,
+      status: AiWorkStatus.failed,
+      errorCode: error.runtimeType.toString(),
+      errorSummary: error.toString(),
+    );
+
+    try {
+      final failureAt = clock.now();
+      final latestState =
+          await agentRepository.getAgentState(agentIdentity.agentId) ??
+          fallbackState;
+      if (latestState != null) {
+        final hasPendingActivity =
+            latestState.slots.pendingProjectActivityAt != null;
+        await syncService.upsertEntity(
+          latestState.copyWith(
+            scheduledWakeAt: _nextProjectActivityFallback(
+              currentSchedule: latestState.scheduledWakeAt,
+              pendingActivityAt: hasPendingActivity
+                  ? latestState.slots.pendingProjectActivityAt
+                  : null,
+              automaticFallbackAllowed: projectAgentAutomaticWakesAllowed(
+                config: agentIdentity.config,
+                lifecycle: agentIdentity.lifecycle,
+              ),
+              now: failureAt,
+            ),
+            updatedAt: failureAt,
+            consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
+          ),
+        );
+      }
+    } catch (stateError, stateStackTrace) {
+      logError(
+        'failed to update failure count',
+        error: stateError,
+        stackTrace: stateStackTrace,
+      );
+    }
+
+    return WakeResult(success: false, error: error.toString());
+  }
 
   Future<void> _skipDormantScheduledWake({
     required AgentStateEntity state,

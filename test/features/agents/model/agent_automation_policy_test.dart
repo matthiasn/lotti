@@ -92,4 +92,49 @@ void main() {
     },
     tags: 'glados',
   );
+
+  group('projectAgentAutomaticWakesAllowed', () {
+    test('keeps the legacy null preference enabled for active agents', () {
+      expect(
+        projectAgentAutomaticWakesAllowed(
+          config: const AgentConfig(),
+          lifecycle: AgentLifecycle.active,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'rejects explicit opt-out, inactive lifecycle, and disabled setup',
+      () {
+        expect(
+          projectAgentAutomaticWakesAllowed(
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+            lifecycle: AgentLifecycle.active,
+          ),
+          isFalse,
+        );
+        expect(
+          projectAgentAutomaticWakesAllowed(
+            config: const AgentConfig(automaticUpdatesEnabled: true),
+            lifecycle: AgentLifecycle.dormant,
+          ),
+          isFalse,
+        );
+        expect(
+          projectAgentAutomaticWakesAllowed(
+            config: const AgentConfig(
+              automaticUpdatesEnabled: true,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.disabled,
+                origin: AgentInferenceSetupOrigin.user,
+              ),
+            ),
+            lifecycle: AgentLifecycle.active,
+          ),
+          isFalse,
+        );
+      },
+    );
+  });
 }

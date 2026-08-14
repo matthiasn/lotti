@@ -20,3 +20,17 @@ bool taskAgentWakeAllowed({
   return config.automaticUpdatesEnabledEffective &&
       lifecycle == AgentLifecycle.active;
 }
+
+/// Whether a project agent may schedule subscription or fallback wakes.
+///
+/// Project agents shipped with event-driven automation before the preference
+/// was persisted, so a missing legacy value remains enabled. An explicit
+/// opt-out, inactive lifecycle, or disabled inference blocks automatic work;
+/// user-requested wakes are handled separately by the orchestrator.
+bool projectAgentAutomaticWakesAllowed({
+  required AgentConfig config,
+  required AgentLifecycle lifecycle,
+}) =>
+    lifecycle == AgentLifecycle.active &&
+    config.automaticUpdatesEnabled != false &&
+    config.inferenceSetup?.mode != AgentInferenceSetupMode.disabled;

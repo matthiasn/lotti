@@ -2706,6 +2706,57 @@ void main() {
       );
 
       test(
+        'project_agent identity with automation off keeps observation only',
+        () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'project-agent-manual',
+            agentId: 'project-agent-manual',
+            kind: 'project_agent',
+            displayName: 'Manual Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-manual',
+            fromId: 'project-agent-manual',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getLinksFrom(
+              'project-agent-manual',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          final message = SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'project-agent-manual',
+            ),
+          ).called(1);
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+        },
+      );
+
+      test(
         'retains observation for active task_agent with automation off',
         () async {
           final entity = AgentDomainEntity.agent(
@@ -3035,6 +3086,54 @@ void main() {
 
           verify(() => mockAgentRepo.getEntity('project-agent-1')).called(1);
           verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
+      test(
+        'agent_project link applies the project automation opt-out',
+        () async {
+          final manualAgent = AgentDomainEntity.agent(
+            id: 'project-agent-manual',
+            agentId: 'project-agent-manual',
+            kind: 'project_agent',
+            displayName: 'Manual Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepo.getEntity('project-agent-manual'),
+          ).thenAnswer((_) async => manualAgent);
+          final link = AgentLink.agentProject(
+            id: 'project-link-manual',
+            fromId: 'project-agent-manual',
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'project-agent-manual',
+            ),
+          ).called(1);
+          verify(() => mockOrchestrator.addSubscription(any())).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
         },
       );
 

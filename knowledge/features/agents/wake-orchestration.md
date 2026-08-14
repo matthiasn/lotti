@@ -137,17 +137,22 @@ state-level `scheduledWakeAt` whenever local project-linked work becomes
 pending. Creation uses the same one-shot field as a restart fallback for its
 immediate in-memory job, and a failed project wake re-arms it for the next local
 06:00, advancing an already-overdue deadline instead of retrying every scan.
-The monitor does not arm this automatic fallback when the project agent has an
-explicit automation opt-out, and a manually requested wake cannot synthesize a
-new automatic fallback afterward. Direct project edits still use the shorter
-coalescing deadline and manual requests bypass throttling. The scheduled-wake
-manager clears completed dormant rows instead of rolling them forward,
+The shared project-agent automation policy gates local monitoring, startup and
+sync-restored subscriptions, and workflow fallback creation. With explicit
+opt-out, observation subscriptions remain registered but their matches cannot
+queue or persist automatic wakes, and a manually requested wake cannot
+synthesize a new fallback afterward. Direct project edits still use the shorter
+coalescing deadline when automation is allowed, while manual requests bypass
+throttling. The scheduled-wake manager clears completed dormant rows instead of
+rolling them forward,
 preserves never-woken creation work and rows whose pending marker proves that
 work remains, and skips enqueue while equivalent work is already queued or
 running. A successful wake retains a future fallback when newer activity landed
-during the run. Explicit cancellation persists fallback removal first, then
-clears queued work, so a storage failure cannot leave the UI falsely showing a
-completed cancellation.
+during the run. Every failure after state resolution—including setup failures
+before inference—uses the same overdue-deadline advancement. Explicit
+cancellation persists `nextWakeAt` and `scheduledWakeAt` removal atomically,
+then clears queued work, so a storage failure cannot leave the UI falsely
+showing a completed cancellation.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the

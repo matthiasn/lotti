@@ -267,6 +267,18 @@ extension _AgentHandlers on SyncEventProcessor {
           if (appliedIdentity.lifecycle != AgentLifecycle.active) {
             wakeOrchestrator!.removeSubscriptions(appliedIdentity.agentId);
           } else {
+            if (projectAgentAutomaticWakesAllowed(
+              config: appliedIdentity.config,
+              lifecycle: appliedIdentity.lifecycle,
+            )) {
+              wakeOrchestrator!.enableAutomaticUpdatesRuntime(
+                appliedIdentity.agentId,
+              );
+            } else {
+              wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+                appliedIdentity.agentId,
+              );
+            }
             final links = await agentRepository!.getLinksFrom(
               appliedIdentity.agentId,
               type: 'agent_project',
@@ -443,6 +455,14 @@ extension _AgentHandlers on SyncEventProcessor {
           if (agent is AgentIdentityEntity &&
               agent.lifecycle == AgentLifecycle.active &&
               agent.kind == 'project_agent') {
+            if (projectAgentAutomaticWakesAllowed(
+              config: agent.config,
+              lifecycle: agent.lifecycle,
+            )) {
+              wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
+            } else {
+              wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
+            }
             _addProjectSubscription(resolvedLink);
           }
         }
