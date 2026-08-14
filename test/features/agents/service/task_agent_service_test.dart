@@ -2670,19 +2670,31 @@ void main() {
             updatedAt: DateTime(2026, 8, 14, 10),
             vectorClock: const VectorClock({'peer-a': 7}),
           );
-          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
-            (_) async => makeIdentity(
-              kind: AgentKinds.projectAgent,
-              config: const AgentConfig(
-                automaticUpdatesEnabled: false,
-                inferenceSetup: AgentInferenceSetup(
-                  mode: AgentInferenceSetupMode.configured,
-                  origin: AgentInferenceSetupOrigin.user,
-                  baseProfileId: 'profile-1',
-                ),
+          final initialIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
               ),
             ),
           );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? initialIdentity
+                : initialIdentity.copyWith(
+                    config: initialIdentity.config.copyWith(
+                      automaticUpdatesEnabled: true,
+                    ),
+                    updatedAt: now,
+                  );
+          });
           when(
             () => mockRepository.getAgentState('agent-1'),
           ).thenAnswer((_) async => state);
@@ -2739,6 +2751,66 @@ void main() {
             subscription.matchEntityIds,
             {projectEntityUpdateNotification('project-1')},
           );
+        },
+      );
+
+      test(
+        'project fallback arming rechecks a concurrent opt-out',
+        () async {
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          final initialIdentity = makeIdentity(
+            kind: AgentKinds.projectAgent,
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          var identityReads = 0;
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer((
+            _,
+          ) async {
+            identityReads += 1;
+            return identityReads == 1
+                ? initialIdentity
+                : initialIdentity.copyWith(
+                    config: initialIdentity.config.copyWith(
+                      automaticUpdatesEnabled: false,
+                    ),
+                    updatedAt: DateTime(2026, 8, 14, 12, 1),
+                  );
+          });
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          expect(identityReads, 2);
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          );
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
         },
       );
 

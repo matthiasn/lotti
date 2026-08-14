@@ -17,6 +17,9 @@ ProjectAgentService projectAgentService(Ref ref) {
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    cancellationCoordinator: ref.watch(
+      projectActivityCancellationCoordinatorProvider,
+    ),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
 }

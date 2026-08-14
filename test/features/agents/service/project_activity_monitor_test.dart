@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -69,6 +70,119 @@ void main() {
   });
 
   group('ProjectActivityMonitor', () {
+    test(
+      'failed cancellation restores eligibility for the older activity batch',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final observedSequence = coordinator.captureActivity();
+
+        await expectLater(
+          coordinator.runCancellation<void>(
+            agentId: 'agent-1',
+            action: () async => throw StateError('rollback'),
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        var activityPersisted = false;
+        final accepted = await coordinator.runActivityWrite(
+          agentId: 'agent-1',
+          observedSequence: observedSequence,
+          action: () async => activityPersisted = true,
+        );
+
+        expect(accepted, isTrue);
+        expect(activityPersisted, isTrue);
+      },
+    );
+
+    test(
+      'cancellation rejects an older batch still resolving project links',
+      () async {
+        final coordinator = ProjectActivityCancellationCoordinator();
+        final linksStarted = Completer<void>();
+        final releaseLinks = Completer<void>();
+        final link = AgentLink.agentProject(
+          id: 'link-cancel-race',
+          fromId: 'agent-1',
+          toId: 'project-1',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        var state = makeTestState(
+          agentId: 'agent-1',
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: now.subtract(
+              const Duration(minutes: 5),
+            ),
+          ),
+          nextWakeAt: now.add(const Duration(minutes: 2)),
+          scheduledWakeAt: DateTime(2026, 3, 23, 6),
+        );
+        when(
+          () => repository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async {
+          linksStarted.complete();
+          await releaseLinks.future;
+          return [link];
+        });
+        when(
+          () => repository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
+        when(() => syncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          state = invocation.positionalArguments.single as AgentStateEntity;
+        });
+
+        final orchestrator = MockWakeOrchestrator();
+        when(() => orchestrator.clearThrottle('agent-1')).thenReturn(null);
+        when(
+          () => orchestrator.cancelPendingWakes(
+            'agent-1',
+            allWorkspaces: true,
+          ),
+        ).thenReturn(const []);
+        final projectService = ProjectAgentService(
+          agentService: MockAgentService(),
+          repository: repository,
+          orchestrator: orchestrator,
+          syncService: syncService,
+          cancellationCoordinator: coordinator,
+        );
+        final raceMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          clock: Clock.fixed(now),
+          cancellationCoordinator: coordinator,
+        );
+        addTearDown(raceMonitor.stop);
+
+        raceMonitor.start();
+        updateController.add({'project-1'});
+        await linksStarted.future;
+
+        await withClock(
+          Clock.fixed(now.add(const Duration(minutes: 1))),
+          () => projectService.cancelScheduledWake('agent-1'),
+        );
+        releaseLinks.complete();
+        await pumpEventQueue(times: 3);
+
+        expect(state.slots.pendingProjectActivityAt, isNull);
+        expect(state.nextWakeAt, isNull);
+        expect(state.scheduledWakeAt, isNull);
+        verify(() => syncService.upsertEntity(any())).called(1);
+      },
+    );
+
     glados.Glados(
       glados.any.projectActivityScenario,
       glados.ExploreConfig(numRuns: 180),

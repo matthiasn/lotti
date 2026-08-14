@@ -122,10 +122,11 @@ stateDiagram-v2
   every valid sync arrival order arms already-pending work once policy becomes
   evaluable; startup restoration performs the same repair after a restart.
   A first state import discards the sender's project fallback deadline and
-  derives a replacement from the receiving device's policy, clock, and pending
-  marker instead of treating another device's 06:00 as local work. Before the
+  its throttle fields (`nextWakeAt` and `sleepUntil`), then derives any
+  replacement from the receiving device's policy, clock, and pending marker
+  instead of treating another device's deadlines as local work. Before the
   identity arrives, `activeProjectId` identifies the row as project state so
-  the peer deadline is still stripped.
+  all peer scheduling fields are still stripped.
   A synced or local opt-out clears every device-local automatic fallback,
   including markerless creation rows, but retains any pending marker so
   re-enabling can arm it again without losing evidence. A synced completion
@@ -134,7 +135,9 @@ stateDiagram-v2
   automatic job while leaving explicit user wakes alone.
   Missing-fallback repair re-reads the current identity policy inside the same
   local transaction as the state write; a concurrent opt-out therefore wins
-  instead of being overwritten by a stale sync-reconciliation decision.
+  instead of being overwritten by a stale sync-reconciliation decision. Local
+  settings and resume-time fallback repair use the same transaction-local
+  policy recheck before enabling runtime.
 
 ## Dormant-by-default scheduling
 
@@ -160,7 +163,9 @@ but its outbox flush fails, the service confirms the persisted preference,
 performs the matching runtime and fallback reconciliation, and then rethrows
 the sync failure. Pausing or destroying a project agent clears the same local
 fallback inside the lifecycle transaction while retaining the pending marker
-for a later resume. Explicit
+for a later resume. A pause or destroy received from sync also clears this
+device's local fallback and disables runtime because the sender cannot clear a
+receiver-owned scheduling field. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
 transaction rollback therefore leaves the runtime work intact and surfaces an
@@ -171,6 +176,10 @@ but before commit, the error path re-reads storage and clears runtime work only
 when the cancellation fields are actually absent. Failure persistence and cancellation share the same
 serialized sync transaction path, so a retry computed from an older snapshot
 cannot restore a marker or deadline that cancellation already removed. The
+activity monitor also captures when each local update batch was observed and
+serializes its final write with cancellation. A cancellation cutoff rejects
+older batches still resolving links, while newer post-cancel edits remain
+eligible; a rolled-back cancellation removes its cutoff. The
 workflow also re-reads the current identity policy inside its final persistence
 transaction; an automation toggle made during inference therefore controls
 whether success or failure may create another fallback. Consequently the

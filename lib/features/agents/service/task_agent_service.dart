@@ -498,13 +498,23 @@ class TaskAgentService {
       postCommitSyncStackTrace = stackTrace;
     }
 
+    ({bool active, bool automaticWakesAllowed})? currentProjectPolicy;
     if (armProjectFallbackOnEnable) {
-      await _armPendingProjectActivityFallback(agentId);
+      currentProjectPolicy = await _reconcilePendingProjectActivityFallback(
+        agentId,
+      );
     } else if (clearProjectFallbackOnDisable) {
       await _clearProjectActivityFallback(agentId);
     }
 
-    final activating = enabled && identity.lifecycle == AgentLifecycle.active;
+    final activating = identity.kind == AgentKinds.projectAgent
+        ? enabled &&
+              (currentProjectPolicy?.automaticWakesAllowed ??
+                  projectAgentAutomaticWakesAllowed(
+                    config: identity.config,
+                    lifecycle: identity.lifecycle,
+                  ))
+        : enabled && identity.lifecycle == AgentLifecycle.active;
     if (activating) {
       orchestrator.enableAutomaticUpdatesRuntime(agentId);
       if (identity.kind == AgentKinds.projectAgent) {
@@ -655,13 +665,37 @@ class TaskAgentService {
   /// The pending marker is synced, but its scheduling deadline is not. Re-read
   /// and write inside one repository transaction so a concurrent completion
   /// wins, while preserving the synced timestamp and vector clock.
-  Future<void> _armPendingProjectActivityFallback(String agentId) async {
+  Future<({bool active, bool automaticWakesAllowed})>
+  _reconcilePendingProjectActivityFallback(String agentId) async {
     var changed = false;
+    var policy = (active: false, automaticWakesAllowed: false);
     await repository.runInTransaction(() async {
       final state = await repository.getAgentState(agentId);
-      if (state == null ||
-          state.deletedAt != null ||
-          state.slots.pendingProjectActivityAt == null ||
+      final currentIdentity = await agentService.getAgent(agentId);
+      final active = currentIdentity?.lifecycle == AgentLifecycle.active;
+      final automaticWakesAllowed =
+          currentIdentity != null &&
+          projectAgentAutomaticWakesAllowed(
+            config: currentIdentity.config,
+            lifecycle: currentIdentity.lifecycle,
+          );
+      policy = (
+        active: active,
+        automaticWakesAllowed: automaticWakesAllowed,
+      );
+      if (state == null || state.deletedAt != null) {
+        return;
+      }
+      if (!automaticWakesAllowed) {
+        if (state.scheduledWakeAt != null) {
+          await repository.upsertEntity(
+            state.copyWith(scheduledWakeAt: null),
+          );
+          changed = true;
+        }
+        return;
+      }
+      if (state.slots.pendingProjectActivityAt == null ||
           state.scheduledWakeAt != null) {
         return;
       }
@@ -678,6 +712,7 @@ class TaskAgentService {
     if (changed) {
       updateNotifications?.notifyUiOnly({agentId, agentNotification});
     }
+    return policy;
   }
 
   /// Removes a project agent's device-local automatic fallback.
@@ -710,14 +745,13 @@ class TaskAgentService {
     final identity = await agentService.getAgent(agentId);
     if (identity?.kind == AgentKinds.projectAgent) {
       await _restoreProjectSubscriptionsForAgent(agentId);
-      if (projectAgentAutomaticWakesAllowed(
-        config: identity!.config,
-        lifecycle: identity.lifecycle,
-      )) {
+      final policy = await _reconcilePendingProjectActivityFallback(agentId);
+      if (policy.automaticWakesAllowed) {
         orchestrator.enableAutomaticUpdatesRuntime(agentId);
-        await _armPendingProjectActivityFallback(agentId);
       } else {
-        await _clearProjectActivityFallback(agentId);
+        if (!policy.active) {
+          orchestrator.removeSubscriptions(agentId);
+        }
         orchestrator.disableAutomaticUpdatesRuntime(agentId);
       }
       return;

@@ -13,6 +13,82 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Serializes project-activity writes with explicit wake cancellation.
+///
+/// Activity batches capture a causal sequence before asynchronous project and
+/// link resolution. A later cancellation installs a cutoff immediately,
+/// then both paths rendezvous here before writing. Older batches are rejected;
+/// batches observed after the cancellation remain eligible. A failed
+/// cancellation removes only its own cutoff so it cannot silently consume
+/// activity when persistence rolled back.
+class ProjectActivityCancellationCoordinator {
+  final Map<String, _ProjectActivityCancellation> _cancellations = {};
+  final Map<String, Future<void>> _tails = {};
+  var _sequence = 0;
+
+  /// Captures the causal position of a notification before async resolution.
+  int captureActivity() => ++_sequence;
+
+  Future<T> runCancellation<T>({
+    required String agentId,
+    required Future<T> Function() action,
+  }) async {
+    final previous = _cancellations[agentId];
+    final cancellation = _ProjectActivityCancellation(++_sequence);
+    _cancellations[agentId] = cancellation;
+    try {
+      return await _serialize(agentId, action);
+    } catch (_) {
+      if (identical(_cancellations[agentId], cancellation)) {
+        if (previous == null) {
+          _cancellations.remove(agentId);
+        } else {
+          _cancellations[agentId] = previous;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> runActivityWrite({
+    required String agentId,
+    required int observedSequence,
+    required Future<void> Function() action,
+  }) => _serialize(agentId, () async {
+    final cancellation = _cancellations[agentId];
+    if (cancellation != null && observedSequence <= cancellation.sequence) {
+      return false;
+    }
+    await action();
+    return true;
+  });
+
+  Future<T> _serialize<T>(
+    String agentId,
+    Future<T> Function() action,
+  ) async {
+    final previous = _tails[agentId] ?? Future<void>.value();
+    final completed = Completer<void>();
+    final tail = completed.future;
+    _tails[agentId] = tail;
+    await previous;
+    try {
+      return await action();
+    } finally {
+      completed.complete();
+      if (identical(_tails[agentId], tail)) {
+        final _ = _tails.remove(agentId);
+      }
+    }
+  }
+}
+
+class _ProjectActivityCancellation {
+  const _ProjectActivityCancellation(this.sequence);
+
+  final int sequence;
+}
+
 /// Tracks local project-linked activity and marks project summaries stale.
 ///
 /// Linked-task activity does not wake project agents immediately. This monitor
@@ -30,12 +106,15 @@ class ProjectActivityMonitor with AgentErrorLogging {
     required this._syncService,
     this.domainLogger,
     this._clock = const Clock(),
-  });
+    ProjectActivityCancellationCoordinator? cancellationCoordinator,
+  }) : _cancellationCoordinator =
+           cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
 
   final UpdateNotifications _notifications;
   final AgentRepository _agentRepository;
   final ProjectRepository _projectRepository;
   final AgentSyncService _syncService;
+  final ProjectActivityCancellationCoordinator _cancellationCoordinator;
   @override
   final DomainLogger? domainLogger;
 
@@ -57,7 +136,9 @@ class ProjectActivityMonitor with AgentErrorLogging {
   void start() {
     _subscription?.cancel();
     _subscription = _notifications.localUpdateStream.listen((affectedIds) {
-      unawaited(_handleBatch(affectedIds));
+      final observedAt = _clock.now();
+      final observedSequence = _cancellationCoordinator.captureActivity();
+      unawaited(_handleBatch(affectedIds, observedAt, observedSequence));
     });
   }
 
@@ -67,7 +148,11 @@ class ProjectActivityMonitor with AgentErrorLogging {
     _subscription = null;
   }
 
-  Future<void> _handleBatch(Set<String> affectedIds) async {
+  Future<void> _handleBatch(
+    Set<String> affectedIds,
+    DateTime observedAt,
+    int observedSequence,
+  ) async {
     if (affectedIds.isEmpty) return;
 
     final projectIds = await _projectRepository.resolveAffectedProjectIds(
@@ -78,11 +163,21 @@ class ProjectActivityMonitor with AgentErrorLogging {
     // Only project IDs with an `agent_project` link matter here. Generic
     // notification tokens are filtered out by the project repository.
     await Future.wait(
-      projectIds.map(_markProjectActivityIfNeeded),
+      projectIds.map(
+        (projectId) => _markProjectActivityIfNeeded(
+          projectId,
+          observedAt,
+          observedSequence,
+        ),
+      ),
     );
   }
 
-  Future<void> _markProjectActivityIfNeeded(String projectId) async {
+  Future<void> _markProjectActivityIfNeeded(
+    String projectId,
+    DateTime observedAt,
+    int observedSequence,
+  ) async {
     try {
       final links = await _agentRepository.getLinksTo(
         projectId,
@@ -93,52 +188,58 @@ class ProjectActivityMonitor with AgentErrorLogging {
       final agentId = links.selectPrimary().fromId;
       final snapshot = await _agentRepository.getAgentState(agentId);
       if (snapshot == null || snapshot.deletedAt != null) return;
-      final now = _clock.now();
+      final now = observedAt;
       final pendingActivityAt = snapshot.slots.pendingProjectActivityAt;
       if (pendingActivityAt != null && !pendingActivityAt.isBefore(now)) {
         return;
       }
 
-      await _syncService.runInTransaction(() async {
-        // Re-read inside the same transaction as the write. The wake router
-        // may have persisted `reportStaleAt` after the snapshot above; using
-        // that current row keeps the independent freshness and activity
-        // mutations from erasing one another.
-        final current = await _agentRepository.getAgentState(agentId);
-        if (current == null || current.deletedAt != null) return;
-        final currentPendingActivityAt = current.slots.pendingProjectActivityAt;
-        if (currentPendingActivityAt != null &&
-            !currentPendingActivityAt.isBefore(now)) {
-          return;
-        }
+      final persisted = await _cancellationCoordinator.runActivityWrite(
+        agentId: agentId,
+        observedSequence: observedSequence,
+        action: () => _syncService.runInTransaction(() async {
+          // Re-read inside the same transaction as the write. The wake router
+          // may have persisted `reportStaleAt` after the snapshot above; using
+          // that current row keeps the independent freshness and activity
+          // mutations from erasing one another.
+          final current = await _agentRepository.getAgentState(agentId);
+          if (current == null || current.deletedAt != null) return;
+          final currentPendingActivityAt =
+              current.slots.pendingProjectActivityAt;
+          if (currentPendingActivityAt != null &&
+              !currentPendingActivityAt.isBefore(now)) {
+            return;
+          }
 
-        final identity = await _agentRepository.getEntity(agentId);
-        final automaticUpdatesAllowed =
-            identity is AgentIdentityEntity &&
-            projectAgentAutomaticWakesAllowed(
-              config: identity.config,
-              lifecycle: identity.lifecycle,
-            );
-        await _syncService.upsertEntity(
-          current.copyWith(
-            slots: current.slots.copyWith(
-              pendingProjectActivityAt: now,
+          final identity = await _agentRepository.getEntity(agentId);
+          final automaticUpdatesAllowed =
+              identity is AgentIdentityEntity &&
+              projectAgentAutomaticWakesAllowed(
+                config: identity.config,
+                lifecycle: identity.lifecycle,
+              );
+          await _syncService.upsertEntity(
+            current.copyWith(
+              slots: current.slots.copyWith(
+                pendingProjectActivityAt: now,
+              ),
+              // Project activity owns a single durable morning fallback. A
+              // successful wake clears it; another activity update can arm a
+              // new one, but no workflow rolls it forward unconditionally.
+              scheduledWakeAt:
+                  current.scheduledWakeAt ??
+                  (automaticUpdatesAllowed
+                      ? nextOccurrenceOf(
+                          now,
+                          hour: AgentSchedules.projectDailyDigestHour,
+                        )
+                      : null),
+              updatedAt: now,
             ),
-            // Project activity owns a single durable morning fallback. A
-            // successful wake clears it; another activity update can arm a
-            // new one, but no workflow rolls it forward unconditionally.
-            scheduledWakeAt:
-                current.scheduledWakeAt ??
-                (automaticUpdatesAllowed
-                    ? nextOccurrenceOf(
-                        now,
-                        hour: AgentSchedules.projectDailyDigestHour,
-                      )
-                    : null),
-            updatedAt: now,
-          ),
-        );
-      });
+          );
+        }),
+      );
+      if (!persisted) return;
 
       _notifications.notifyUiOnly({agentId, agentNotification});
 

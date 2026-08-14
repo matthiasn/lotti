@@ -311,7 +311,10 @@ extension _AgentHandlers on SyncEventProcessor {
           }
         } else if (appliedIdentity.kind == 'project_agent') {
           if (appliedIdentity.lifecycle != AgentLifecycle.active) {
-            wakeOrchestrator!.removeSubscriptions(appliedIdentity.agentId);
+            wakeOrchestrator!
+              ..removeSubscriptions(appliedIdentity.agentId)
+              ..disableAutomaticUpdatesRuntime(appliedIdentity.agentId);
+            await _clearDisabledProjectActivityFallback(appliedIdentity);
           } else {
             if (projectAgentAutomaticWakesAllowed(
               config: appliedIdentity.config,
@@ -856,7 +859,11 @@ extension _AgentHandlers on SyncEventProcessor {
           incoming.slots.activeProjectId != null;
       return (
         entity: isProjectState
-            ? incoming.copyWith(scheduledWakeAt: null)
+            ? incoming.copyWith(
+                nextWakeAt: null,
+                sleepUntil: null,
+                scheduledWakeAt: null,
+              )
             : incoming,
         projectActivityWasConsumed: false,
       );

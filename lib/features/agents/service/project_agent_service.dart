@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart'
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -29,11 +30,14 @@ class ProjectAgentService {
     required this.syncService,
     this.domainLogger,
     this.onPersistedStateChanged,
-  });
+    ProjectActivityCancellationCoordinator? cancellationCoordinator,
+  }) : _cancellationCoordinator =
+           cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
 
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+  final ProjectActivityCancellationCoordinator _cancellationCoordinator;
 
   /// Sync-aware write service. All entity/link writes go through this so
   /// they are automatically enqueued for cross-device sync.
@@ -228,56 +232,63 @@ class ProjectAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    void clearRuntimeWake() {
-      orchestrator
-        ..clearThrottle(agentId)
-        ..cancelPendingWakes(agentId, allWorkspaces: true);
-    }
-
-    var persistedCancellation = false;
-    try {
-      await syncService.runInTransaction(() async {
-        final state = await repository.getAgentState(agentId);
-        if (state == null ||
-            (state.nextWakeAt == null &&
-                state.scheduledWakeAt == null &&
-                state.slots.pendingProjectActivityAt == null)) {
-          return;
+    final cancelledAt = clock.now();
+    await _cancellationCoordinator.runCancellation(
+      agentId: agentId,
+      action: () async {
+        void clearRuntimeWake() {
+          orchestrator
+            ..clearThrottle(agentId)
+            ..cancelPendingWakes(agentId, allWorkspaces: true);
         }
-        await syncService.upsertEntity(
-          state.copyWith(
-            slots: state.slots.copyWith(pendingProjectActivityAt: null),
-            nextWakeAt: null,
-            scheduledWakeAt: null,
-            updatedAt: clock.now(),
-          ),
-        );
-        persistedCancellation = true;
-      });
-    } catch (error, stackTrace) {
-      var cancellationCommitted = false;
-      if (persistedCancellation) {
+
+        var persistedCancellation = false;
         try {
-          final current = await repository.getAgentState(agentId);
-          cancellationCommitted =
-              current == null ||
-              (current.nextWakeAt == null &&
-                  current.scheduledWakeAt == null &&
-                  current.slots.pendingProjectActivityAt == null);
-        } catch (_) {
-          // Preserve the original transaction/sync failure. If the state
-          // cannot be confirmed, leaving runtime work intact is the safe side.
+          await syncService.runInTransaction(() async {
+            final state = await repository.getAgentState(agentId);
+            if (state == null ||
+                (state.nextWakeAt == null &&
+                    state.scheduledWakeAt == null &&
+                    state.slots.pendingProjectActivityAt == null)) {
+              return;
+            }
+            await syncService.upsertEntity(
+              state.copyWith(
+                slots: state.slots.copyWith(pendingProjectActivityAt: null),
+                nextWakeAt: null,
+                scheduledWakeAt: null,
+                updatedAt: cancelledAt,
+              ),
+            );
+            persistedCancellation = true;
+          });
+        } catch (error, stackTrace) {
+          var cancellationCommitted = false;
+          if (persistedCancellation) {
+            try {
+              final current = await repository.getAgentState(agentId);
+              cancellationCommitted =
+                  current == null ||
+                  (current.nextWakeAt == null &&
+                      current.scheduledWakeAt == null &&
+                      current.slots.pendingProjectActivityAt == null);
+            } catch (_) {
+              // Preserve the original transaction/sync failure. If the state
+              // cannot be confirmed, leaving runtime work intact is the safe
+              // side.
+            }
+          }
+          if (cancellationCommitted) {
+            onPersistedStateChanged?.call(agentId);
+            clearRuntimeWake();
+          }
+          Error.throwWithStackTrace(error, stackTrace);
         }
-      }
-      if (cancellationCommitted) {
-        onPersistedStateChanged?.call(agentId);
-        clearRuntimeWake();
-      }
-      Error.throwWithStackTrace(error, stackTrace);
-    }
-    if (persistedCancellation) onPersistedStateChanged?.call(agentId);
+        if (persistedCancellation) onPersistedStateChanged?.call(agentId);
 
-    clearRuntimeWake();
+        clearRuntimeWake();
+      },
+    );
   }
 
   /// Restore project-agent runtime state after app startup.

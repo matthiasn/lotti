@@ -2605,6 +2605,69 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'synced dormant project identity clears the local fallback',
+        () async {
+          final pendingAt = DateTime(2026, 8, 14, 9);
+          final localState =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-dormant',
+                    agentId: 'project-agent-dormant',
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: pendingAt,
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 8),
+                    vectorClock: const VectorClock({'local': 4}),
+                  )
+                  as AgentStateEntity;
+          final identity = AgentDomainEntity.agent(
+            id: 'project-agent-dormant',
+            agentId: 'project-agent-dormant',
+            kind: 'project_agent',
+            displayName: 'Dormant Project Agent',
+            lifecycle: AgentLifecycle.dormant,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: localState.id,
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'remote': 2}),
+          );
+          when(
+            () => mockAgentRepo.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => localState);
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: identity,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final clearedState = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().single;
+          expect(clearedState.scheduledWakeAt, isNull);
+          expect(clearedState.slots.pendingProjectActivityAt, pendingAt);
+          expect(clearedState.updatedAt, localState.updatedAt);
+          expect(clearedState.vectorClock, localState.vectorClock);
+          verify(
+            () => mockOrchestrator.removeSubscriptions(identity.agentId),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              identity.agentId,
+            ),
+          ).called(1);
+        },
+      );
+
       test('restores subscriptions for active task_agent', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-active',
@@ -2947,6 +3010,8 @@ void main() {
                         const Duration(minutes: 5),
                       ),
                     ),
+                    nextWakeAt: DateTime(2026, 8, 14, 10, 2),
+                    sleepUntil: DateTime(2026, 8, 14, 10, 5),
                     scheduledWakeAt: remoteFallback,
                     updatedAt: now.subtract(const Duration(minutes: 5)),
                     vectorClock: null,
@@ -2968,6 +3033,8 @@ void main() {
                     () => mockAgentRepo.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
+          expect(persisted.nextWakeAt, isNull);
+          expect(persisted.sleepUntil, isNull);
           expect(persisted.scheduledWakeAt, isNull);
           expect(persisted.slots.pendingProjectActivityAt, isNotNull);
         },
