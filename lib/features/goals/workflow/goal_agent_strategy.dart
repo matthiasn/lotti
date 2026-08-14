@@ -206,9 +206,9 @@ class GoalAgentStrategy extends ConversationStrategy
         .firstOrNull;
     final oneLiner = _trimmed(args['oneLiner']);
     final hasStructuredReport = args.containsKey('report');
-    final structuredTldr = _composeStructuredReport(args['report']);
+    final structured = GoalStructuredReport.tryParse(args['report']);
     final tldr = hasStructuredReport
-        ? structuredTldr ?? ''
+        ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);
     if (status == null || oneLiner.isEmpty || tldr.isEmpty) {
       await _reject(
@@ -238,10 +238,20 @@ class GoalAgentStrategy extends ConversationStrategy
     _reportOneLiner = oneLiner;
     _reportTldr = tldr;
     final content = _trimmed(args['content']);
-    // Structured reports are already the complete visible narrative. Ignore
-    // duplicated free-form content so it cannot reintroduce an action that
-    // the deterministic current-action filter removed.
-    _reportContent = hasStructuredReport || content.isEmpty ? null : content;
+    // A structured report supplies both tiers: `tldr` is the collapsed view
+    // above, and the composed sections are the body behind "Show more". Any
+    // free-form `content` alongside it is ignored, so it cannot reintroduce
+    // an action the deterministic current-action filter removed.
+    //
+    // Composing the sections into `tldr` instead — which is what this did —
+    // left `content` null, and the card's expandable test (`content != tldr`)
+    // then found nothing to expand. The whole report rendered collapsed, as
+    // one unbroken wall of text with no affordance to shorten it.
+    _reportContent = hasStructuredReport
+        ? structured?.visibleSummary(
+            allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
+          )
+        : (content.isEmpty ? null : content);
     await _accept(call, manager, 'Goal report updated.');
   }
 
@@ -469,12 +479,6 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     _observations.add(ObservationRecord(text: note));
     await _accept(call, manager, 'Observation recorded.');
-  }
-
-  String? _composeStructuredReport(Object? value) {
-    return GoalStructuredReport.tryParse(value)?.visibleSummary(
-      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
-    );
   }
 
   String _trimmed(Object? value) => value is String ? value.trim() : '';

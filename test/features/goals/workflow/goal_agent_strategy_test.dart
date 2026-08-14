@@ -132,6 +132,7 @@ void main() {
               'status': 'insufficientData',
               'oneLiner': 'Today is handled; the rolling window still lags.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod':
                     'Blood pressure logging is complete today at 125/84.',
                 'rollingWindow':
@@ -152,15 +153,23 @@ void main() {
       );
 
       expect(strategy.hasReport, isTrue);
+      // The two tiers are distinct, which is the whole point: the card shows
+      // the TLDR collapsed and opens the composed body behind "Show more".
+      // Composing the sections into the TLDR left the content null, and the
+      // card's `content != tldr` test then found nothing to expand — the
+      // report rendered as one unbroken wall with no way to shorten it.
+      expect(strategy.reportTldr, 'Where the goal stands right now.');
       expect(
-        strategy.reportTldr,
+        strategy.reportContent,
         'Blood pressure logging is complete today at 125/84.\n\n'
         'Rolling averages remain above target at 127/89.\n\n'
         'Blood pressure improved from 129/94 to 125/84.\n\n'
         'Two readings make the series sparse.\n\n'
         'Keep taking the medication tomorrow.',
       );
-      expect(strategy.reportContent, isNull);
+      // The free-form `content` argument is still ignored alongside a
+      // structured report, so it cannot reintroduce a filtered action.
+      expect(strategy.reportContent, isNot(contains('Take medication today.')));
     },
   );
 
@@ -183,6 +192,7 @@ void main() {
               'status': 'insufficientData',
               'oneLiner': 'One measurement remains.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': 'Weight is not measured today.',
                 'rollingWindow': 'The rolling weight average is above target.',
                 'latestChange': '',
@@ -207,8 +217,8 @@ void main() {
         manager: manager,
       );
 
-      expect(gated.reportTldr, contains('Log weight today.'));
-      expect(gated.reportTldr, isNot(contains('Take medication today.')));
+      expect(gated.reportContent, contains('Log weight today.'));
+      expect(gated.reportContent, isNot(contains('Take medication today.')));
     },
   );
 
@@ -222,6 +232,7 @@ void main() {
               'status': 'offTrack',
               'oneLiner': 'Behind.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': emptyKey == 'currentPeriod'
                     ? ''
                     : 'Nothing completed.',
@@ -257,6 +268,7 @@ void main() {
               'status': 'offTrack',
               'oneLiner': 'Behind.',
               'report': {
+                'tldr': 'Where the goal stands right now.',
                 'currentPeriod': 'Nothing completed.',
                 'rollingWindow': 'The rolling window is behind.',
                 'latestChange': '',

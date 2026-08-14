@@ -61,7 +61,7 @@ final _reportIdAnnotationPatterns = <RegExp>[
 /// to "on habit — 2 more" rather than leaving a double space behind.
 final _bareIdFragmentPattern = RegExp(
   '\\s`?(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
-  '`?(?![-\\w/])',
+  r'`?(?![-\w/])',
 );
 
 /// Removes internal entity ids a model echoed into a user-facing agent report.

@@ -48,6 +48,10 @@ final List<String> goalTrackStatusNames = [
 /// Stable keys of the structured standing-report payload. The strategy
 /// renders these slots into the persisted user-visible summary in this order.
 abstract final class GoalReportSectionKeys {
+  /// The collapsed view of the report card, and the only slot that is not
+  /// part of the full narrative. Everything below composes into the expanded
+  /// body; this one has to stand alone above it.
+  static const tldr = 'tldr';
   static const currentPeriod = 'currentPeriod';
   static const rollingWindow = 'rollingWindow';
   static const latestChange = 'latestChange';
@@ -55,6 +59,7 @@ abstract final class GoalReportSectionKeys {
   static const nextActions = 'nextActions';
 
   static const List<String> values = [
+    tldr,
     currentPeriod,
     rollingWindow,
     latestChange,
@@ -90,6 +95,7 @@ class GoalReportCurrentAction {
 /// against the same completeness rules the runtime enforces.
 class GoalStructuredReport {
   const GoalStructuredReport({
+    required this.tldr,
     required this.currentPeriod,
     required this.rollingWindow,
     required this.latestChange,
@@ -98,6 +104,8 @@ class GoalStructuredReport {
     required this.later,
   });
 
+  /// One or two sentences summarising the whole report, shown collapsed.
+  final String tldr;
   final String currentPeriod;
   final String rollingWindow;
   final String latestChange;
@@ -107,6 +115,7 @@ class GoalStructuredReport {
 
   static GoalStructuredReport? tryParse(Object? value) {
     if (value is! Map<String, dynamic>) return null;
+    final tldr = _requiredReportString(value[GoalReportSectionKeys.tldr]);
     final currentPeriod = _requiredReportString(
       value[GoalReportSectionKeys.currentPeriod],
     );
@@ -120,7 +129,8 @@ class GoalStructuredReport {
       value[GoalReportSectionKeys.coverage],
     );
     final actions = value[GoalReportSectionKeys.nextActions];
-    if (currentPeriod == null ||
+    if (tldr == null ||
+        currentPeriod == null ||
         rollingWindow == null ||
         latestChange == null ||
         coverage == null ||
@@ -149,6 +159,7 @@ class GoalStructuredReport {
     }
 
     return GoalStructuredReport(
+      tldr: tldr,
       currentPeriod: currentPeriod,
       rollingWindow: rollingWindow,
       latestChange: latestChange,
@@ -158,8 +169,13 @@ class GoalStructuredReport {
     );
   }
 
-  /// Composes model-authored localized sentences without injecting English
-  /// headings. Only explicitly authorized current actions are included.
+  /// Composes the **expanded** report body from model-authored localized
+  /// sentences, without injecting English headings. [tldr] is deliberately
+  /// absent: it is the collapsed view shown above this, and repeating it as
+  /// the first paragraph would make "Show more" open with what the reader
+  /// just finished reading.
+  ///
+  /// Only explicitly authorized current actions are included.
   String visibleSummary({
     required Set<String> allowedCurrentActionCriterionIds,
   }) => [
@@ -314,6 +330,14 @@ final List<AgentToolDefinition> goalAgentTools = [
               'not repeat the same fact across slots. Return a JSON object, '
               'never an encoded JSON string.',
           'properties': {
+            GoalReportSectionKeys.tldr: {
+              'type': 'string',
+              'description':
+                  'One or two sentences summarising the whole report, shown '
+                  'on its own before the reader expands the rest. Lead with '
+                  'where the goal stands. Do not repeat it verbatim in any '
+                  'other slot.',
+            },
             GoalReportSectionKeys.currentPeriod: {
               'type': 'string',
               'description':

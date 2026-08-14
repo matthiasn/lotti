@@ -138,6 +138,7 @@ void main() {
 
   group('GoalStructuredReport', () {
     Map<String, Object?> validReport() => {
+      'tldr': 'On target today, still above the weekly average.',
       'currentPeriod': 'Logging is complete today.',
       'rollingWindow': 'The rolling average remains above target.',
       'latestChange': '',
@@ -157,7 +158,20 @@ void main() {
 
         expect(report, isNotNull);
         expect(
-          report!.visibleSummary(
+          report!.tldr,
+          'On target today, still above the weekly average.',
+        );
+        // The composed body deliberately omits the TLDR: it is rendered above
+        // this, and repeating it would open "Show more" with what the reader
+        // just read.
+        expect(
+          report.visibleSummary(
+            allowedCurrentActionCriterionIds: const {'health-weight'},
+          ),
+          isNot(contains(report.tldr)),
+        );
+        expect(
+          report.visibleSummary(
             allowedCurrentActionCriterionIds: const {'health-weight'},
           ),
           'Logging is complete today.\n\n'
@@ -175,7 +189,7 @@ void main() {
     );
 
     test('rejects empty required standing sections', () {
-      for (final key in ['currentPeriod', 'rollingWindow']) {
+      for (final key in ['tldr', 'currentPeriod', 'rollingWindow']) {
         final value = validReport()..[key] = '  ';
         expect(
           GoalStructuredReport.tryParse(value),
