@@ -350,10 +350,12 @@ void main() {
         formatGoalAggregate(number, 7684.428571, against: 10000),
         '7,700',
       );
-      // Below 100 the finer step is a tenth, so a weight just under its
-      // target keeps the decimal that distinguishes them.
-      expect(formatGoalAggregate(number, 87.96, against: 88), '88');
+      // Precision steps down until the two genuinely read differently — one
+      // step was not enough: 9,999.6 against 10,000 still rounded to 10,000.
+      expect(formatGoalAggregate(number, 9999.6, against: 10000), '9,999.6');
+      // Below 100 the same rule keeps whatever decimal it takes.
       expect(formatGoalAggregate(number, 87.94, against: 88), '87.9');
+      expect(formatGoalAggregate(number, 87.96, against: 88), '87.96');
     });
 
     test('blood pressure keeps whole numbers', () {
@@ -415,6 +417,40 @@ void main() {
     expect(
       tester.getBottomRight(streak).dx,
       greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+    );
+  });
+
+  testWidgets('a count criterion improves by gaining a day, not by a bigger '
+      'number', (tester) async {
+    Future<void> pump(num yesterday, num today_) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Sessions',
+              target: 5,
+              aggregation: GoalAggregation.count,
+              days: [day(1, yesterday), day(0, today_)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Both days qualify: the second adds exactly one to the count whatever
+    // its magnitude, so a bigger number is not an improvement.
+    await pump(1, 9);
+    expect(
+      find.text('Not there yet, but the last reading moved toward the target.'),
+      findsNothing,
+    );
+
+    // Gaining a qualifying day where there was none IS the improvement.
+    await pump(0, 1);
+    expect(
+      find.text('Not there yet, but the last reading moved toward the target.'),
+      findsOneWidget,
     );
   });
 

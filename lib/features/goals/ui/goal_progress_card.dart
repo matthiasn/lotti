@@ -366,10 +366,14 @@ String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
   // 10,000" directly above a "Needs attention" line. Where the coarse step
   // would erase the difference, keep the finer one.
   if (against != null && value != against) {
-    if (rounded == _roundGoalAggregate(against)) {
-      rounded = value.abs() >= 100
-          ? value.roundToDouble()
-          : (value * 10).roundToDouble() / 10;
+    // Step down the scale until the two stop reading as the same number.
+    // One step was not enough: 9,999.6 against 10,000 still rounded to
+    // 10,000 and rendered "10,000 of 10,000" above a "Needs attention" line.
+    for (final step in const [1, 0.1, 0.01]) {
+      if (rounded != _roundGoalAggregate(against)) break;
+      rounded = (value / step).roundToDouble() * step;
+      if (rounded == (against / step).roundToDouble() * step) continue;
+      break;
     }
   }
   return number.format(
@@ -703,40 +707,47 @@ class _ReflectTodayRow extends StatelessWidget {
       child: InkWell(
         onTap: onReflect,
         borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            children: [
-              // The sparkle stays exclusive to agent suggestions; this row is
-              // the USER writing a reflection.
-              Icon(
-                recorded == null
-                    ? Icons.edit_note_rounded
-                    : goalAssessmentRatingGlyph(recorded),
-                // The verdict's own family ink, NOT the on-alert ink: this
-                // glyph sits on the card surface, where the on-alert ink is
-                // near-invisible by design — it is tuned for glyphs drawn on
-                // a saturated fill, which is where the strip uses it.
-                color: recorded == null
-                    ? tokens.colors.interactive.enabled
-                    : goalAssessmentRatingSurfaceInk(tokens, recorded),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
+        child: ConstrainedBox(
+          // Moving this out of a tappable section card into an inner InkWell
+          // left the row's own height as the target: two icons plus `step2`
+          // padding is about 32px, under the floor — on the ONE action the
+          // user is meant to take daily.
+          constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            child: Row(
+              children: [
+                // The sparkle stays exclusive to agent suggestions; this row is
+                // the USER writing a reflection.
+                Icon(
                   recorded == null
-                      ? context.messages.goalAssessmentReflectToday
-                      : goalAssessmentRatingLabel(context, recorded),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                      ? Icons.edit_note_rounded
+                      : goalAssessmentRatingGlyph(recorded),
+                  // The verdict's own family ink, NOT the on-alert ink: this
+                  // glyph sits on the card surface, where the on-alert ink is
+                  // near-invisible by design — it is tuned for glyphs drawn on
+                  // a saturated fill, which is where the strip uses it.
+                  color: recorded == null
+                      ? tokens.colors.interactive.enabled
+                      : goalAssessmentRatingSurfaceInk(tokens, recorded),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    recorded == null
+                        ? context.messages.goalAssessmentReflectToday
+                        : goalAssessmentRatingLabel(context, recorded),
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -908,22 +919,31 @@ _BloodPressureMetrics? _bloodPressureMetrics(
   return (systolic: systolic, diastolic: diastolic);
 }
 
+/// Whether a day counts toward a `count` criterion at all.
+bool _qualifies(GoalProgressDay day) => day.isObserved && day.value > 0;
+
 _MetricSummary _metricSummary(
   GoalMetricProgressView metric, {
   required DateTime today,
 }) {
   final observed = metric.days.where((day) => day.isObserved).toList()
     ..sort((a, b) => a.day.compareTo(b.day));
-  final current = switch (metric.aggregation) {
-    GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
-      observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
-    GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
-      observed.first.value,
-      (value, day) => math.max(value, day.value),
-    ),
-    GoalAggregation.count => observed.length,
-    _ => observed.fold<num>(0, (sum, day) => sum + day.value),
-  };
+  // The evaluator's own figure wins. Recomputing here produced a different
+  // number over a different set of days, so the card's headline and the
+  // agent's report could quote two values for one week.
+  final current =
+      metric.evaluatedActual ??
+      switch (metric.aggregation) {
+        GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
+          observed.fold<num>(0, (sum, day) => sum + day.value) /
+              observed.length,
+        GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
+          observed.first.value,
+          (value, day) => math.max(value, day.value),
+        ),
+        GoalAggregation.count => observed.length,
+        _ => observed.fold<num>(0, (sum, day) => sum + day.value),
+      };
   final meetsPeriodTarget = switch (metric.direction) {
     GoalDirection.atLeast => current >= metric.target,
     GoalDirection.atMost => current <= metric.target,
@@ -944,10 +964,16 @@ _MetricSummary _metricSummary(
   final previousDay = observed.length < 2
       ? null
       : observed[observed.length - 2];
+  // For a `count` criterion a day either qualifies or it does not — its
+  // magnitude carries no progress at all — so comparing raw values called a
+  // bigger qualifying day an improvement over a smaller one that moved the
+  // count by exactly as much.
   final improving =
       latestDay != null &&
       previousDay != null &&
-      (metric.direction == GoalDirection.atLeast
+      (metric.aggregation == GoalAggregation.count
+          ? _qualifies(latestDay) && !_qualifies(previousDay)
+          : metric.direction == GoalDirection.atLeast
           ? latestDay.value > previousDay.value
           : latestDay.value < previousDay.value);
   return (
@@ -2097,11 +2123,18 @@ class _MetricProgressSeries extends StatelessWidget {
                   key: const ValueKey('goal-metric-target-rule'),
                   left: 0,
                   right: 0,
-                  bottom:
-                      _chartHeight(tokens) *
-                      (metric.target / maxValue).clamp(0, 1),
+                  // Clamped to leave the rule's own thickness inside the plot.
+                  // When nothing beats the target, `maxValue` IS the target
+                  // and the offset became the full height — putting the line
+                  // on the clipped top edge, invisible in exactly the case it
+                  // matters most: a goal that is still behind.
+                  bottom: math.min(
+                    _chartHeight(tokens) *
+                        (metric.target / maxValue).clamp(0, 1),
+                    _chartHeight(tokens) - BorderWidths.hairline,
+                  ),
                   child: SizedBox(
-                    height: 1,
+                    height: BorderWidths.hairline,
                     child: ColoredBox(color: tokens.colors.decorative.level01),
                   ),
                 ),
@@ -2230,8 +2263,12 @@ class _MetricProgressSeries extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     barFill,
+                    // Inside the bar, not floating above it. A negative
+                    // offset put the badge over whatever sat above the
+                    // chart — the period caption, and on a full-height bar
+                    // the card header itself.
                     Positioned(
-                      top: -tokens.spacing.step3,
+                      top: 0,
                       right: 0,
                       child: Tooltip(
                         message: provenance == null

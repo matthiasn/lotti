@@ -6,7 +6,9 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
@@ -218,6 +220,16 @@ class _GoalAgentRow extends ConsumerWidget {
       _ => null,
     };
     final stripPlaceholder = resolvedDays == null;
+    // The same verdicts the detail strip shows. Without them a day the user
+    // filed as missed sat here in the neutral grey of a day nobody looked at,
+    // so one goal read two different ways depending which screen you were on.
+    final rowRatings = health?.spec == null
+        ? const <DateTime, GoalAssessmentRating>{}
+        : latestRatingsByDay(
+            ref.watch(goalAssessmentHistoryProvider(identity.agentId)).value ??
+                const [],
+            specVersionId: health!.spec!.id,
+          );
     final days =
         resolvedDays ??
         List<GoalCompactDayState>.filled(7, GoalCompactDayState.none);
@@ -312,6 +324,8 @@ class _GoalAgentRow extends ConsumerWidget {
                         GoalCompactWindowStrip(
                           days: days,
                           placeholder: stripPlaceholder,
+                          lastDay: progress?.today,
+                          ratingsByDay: rowRatings,
                         ),
                         if (hintText != null) ...[
                           SizedBox(height: tokens.spacing.step1),
@@ -339,6 +353,8 @@ class _GoalAgentRow extends ConsumerWidget {
                         GoalCompactWindowStrip(
                           days: days,
                           placeholder: stripPlaceholder,
+                          lastDay: progress?.today,
+                          ratingsByDay: rowRatings,
                         ),
                       ],
                     ),

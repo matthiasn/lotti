@@ -107,6 +107,7 @@ class GoalMetricProgressView {
     this.agentRecordedProvenanceByDay = const {},
     this.categoryTimeSessions = const [],
     this.projectedOnTrack = false,
+    this.evaluatedActual,
   });
 
   final String name;
@@ -123,6 +124,15 @@ class GoalMetricProgressView {
   final num target;
   final List<GoalProgressDay> days;
   final GoalAggregation aggregation;
+
+  /// The aggregate the EVALUATOR computed for this criterion — the same
+  /// number the agent is handed in FACTS and quotes in its report.
+  ///
+  /// The card used to recompute its own from the visible days, which is a
+  /// different calculation over a different set (observed days only, versus
+  /// the evaluator's series), so the headline figure on the card and the one
+  /// in the report beside it could disagree about the same week.
+  final num? evaluatedActual;
   final GoalWindow window;
   final GoalDirection direction;
 
@@ -629,6 +639,10 @@ GoalMetricProgressView _numericProgressView({
   final range = window.periodRange(reference);
   final today = GoalWindow.dayUtc(reference);
   return GoalMetricProgressView(
+    evaluatedActual: const GoalProgressEvaluator()
+        .evaluate(criterion, signals, reference)
+        .results[criterionId]
+        ?.actual,
     criterionId: criterionId,
     sourceId: sourceId,
     kind: kind,
