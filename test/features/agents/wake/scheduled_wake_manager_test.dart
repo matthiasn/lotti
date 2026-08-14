@@ -239,6 +239,13 @@ void main() {
     when(
       () => repository.getEntity(any()),
     ).thenAnswer((_) async => makeTestIdentity());
+    when(() => repository.getAgentState(any())).thenAnswer((invocation) async {
+      final agentId = invocation.positionalArguments.single as String;
+      return makeTestState(
+        agentId: agentId,
+        scheduledWakeAt: DateTime(2000),
+      );
+    });
     // Default run-key stub so unstubbed enqueueManualWake calls (this test
     // file mostly asserts via `verify`, not `when`) don't throw on the
     // now-non-void return type.
@@ -359,6 +366,12 @@ void main() {
             when(
               () => generatedRepository.getEntity(any()),
             ).thenAnswer((_) async => makeTestIdentity());
+            when(
+              () => generatedRepository.getAgentState(any()),
+            ).thenAnswer((invocation) async {
+              final agentId = invocation.positionalArguments.single as String;
+              return states.where((state) => state.agentId == agentId).first;
+            });
             when(
               () => generatedOrchestrator.hasPendingOrActiveWake(
                 any(),
@@ -1834,6 +1847,42 @@ void main() {
               ),
             ).called(1);
             verifyNever(() => syncService.upsertEntity(any()));
+
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
+      'does not enqueue a creation fallback canceled during the due scan',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final neverWokenState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 14, 6),
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => [neverWokenState]);
+            when(
+              () => repository.getAgentState(kTestAgentId),
+            ).thenAnswer(
+              (_) async => neverWokenState.copyWith(scheduledWakeAt: null),
+            );
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: any(named: 'reason'),
+              ),
+            );
 
             manager.stop();
           });

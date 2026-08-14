@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/features/agents/state/agent_providers.dart
     title: Wake executor routing, content checkers and persistedStateChangedNotifier
     last_modified: 2026-07-26
+  - id: project-detail-record
+    resource: ../../../lib/features/projects/state/project_detail_record_provider.dart
+    title: Project detail report read model
+    last_modified: 2026-08-14
 ---
 
 # Project agents
@@ -140,7 +144,14 @@ safety net; every successful workflow run clears `scheduledWakeAt` when it
 consumed the newest activity.
 Before enqueueing a due fallback, the manager checks for queued or running work
 for the same agent and leaves the fallback durable instead of stacking a second
-inference.
+inference. It then re-reads the authoritative state at the enqueue boundary;
+if cancellation cleared the deadline or moved it into the future while the
+scan was awaiting, the stale due snapshot cannot launch a wake.
+
+Failure persistence notifies state consumers only after the retry deadline is
+successfully written. The project detail report prefers the subscription
+deadline and falls back to the durable state schedule, so retry and creation
+fallbacks remain visible through the existing countdown and cancel control.
 
 During the final state transition, `pendingProjectActivityAt` is cleared **only
 when no newer activity arrived during the wake**. If fresh activity lands

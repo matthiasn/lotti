@@ -684,6 +684,33 @@ void main() {
 
         expect(result!.reportNextWakeAt, nextWake);
       });
+
+      test('reportNextWakeAt falls back to the durable schedule', () async {
+        final project = makeTestProject(
+          id: projectId,
+          categoryId: categoryId,
+        );
+        final agent = makeAgent();
+        final scheduledWake = DateTime(2026, 4, 5, 10);
+        final state = makeTestState(
+          agentId: agentId,
+          scheduledWakeAt: scheduledWake,
+        );
+
+        final container = createContainer(
+          detailState: makeDetailState(
+            project: project,
+          ),
+          agent: agent,
+          agentState: state,
+        );
+
+        final result = await container.read(
+          projectDetailRecordProvider(projectId).future,
+        );
+
+        expect(result!.reportNextWakeAt, scheduledWake);
+      });
     });
 
     group('task sorting via highlightedTaskSummaries order', () {

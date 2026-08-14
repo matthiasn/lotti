@@ -110,6 +110,7 @@ void main() {
     AgentInputCaptureService? inputCaptureService,
     SoulDocumentService? soulDocumentService,
     DomainLogger? domainLogger,
+    void Function(String agentId)? onPersistedStateChanged,
   }) {
     return ProjectAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -123,6 +124,7 @@ void main() {
       inputCaptureService: inputCaptureService,
       soulDocumentService: soulDocumentService,
       domainLogger: domainLogger,
+      onPersistedStateChanged: onPersistedStateChanged,
     );
   }
 
@@ -1356,9 +1358,13 @@ void main() {
             }) async {
               throw Exception('LLM error');
             };
+        final notifiedAgentIds = <String>[];
+        final notifyingWorkflow = buildWorkflow(
+          onPersistedStateChanged: notifiedAgentIds.add,
+        );
 
         await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
-          return workflow.execute(
+          return notifyingWorkflow.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
             triggerTokens: {'entity-a'},
@@ -1373,6 +1379,7 @@ void main() {
           (state) => state.consecutiveFailureCount > 0,
         );
         expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
+        expect(notifiedAgentIds, [agentId]);
       });
 
       test(

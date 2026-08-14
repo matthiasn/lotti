@@ -278,6 +278,16 @@ class ScheduledWakeManager with AgentErrorLogging {
             continue;
           }
 
+          // The due query is only a snapshot. A cancellation may clear the
+          // durable schedule while this pass awaits the identity lookup (or a
+          // prior item), so re-read at the enqueue boundary. Without this
+          // guard a canceled creation fallback can still launch one paid wake.
+          final currentState = await _repository.getAgentState(state.agentId);
+          final currentSchedule = currentState?.scheduledWakeAt;
+          if (currentSchedule == null || currentSchedule.isAfter(now)) {
+            continue;
+          }
+
           _orchestrator.enqueueManualWake(
             agentId: state.agentId,
             reason: WakeReason.scheduled.name,

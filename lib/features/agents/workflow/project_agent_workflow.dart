@@ -185,6 +185,7 @@ class ProjectAgentWorkflow with AgentErrorLogging {
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
           ),
         );
+        onPersistedStateChanged?.call(agentIdentity.agentId);
       }
     } catch (stateError, stateStackTrace) {
       logError(
