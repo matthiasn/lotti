@@ -2638,6 +2638,48 @@ void main() {
         },
       );
 
+      test(
+        'turning off clears a markerless project creation fallback',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: true,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await withClock(Clock.fixed(now), () {
+            return service.updateAutomaticUpdates(
+              agentId: 'agent-1',
+              enabled: false,
+            );
+          });
+
+          final writtenState = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().single;
+          expect(writtenState.scheduledWakeAt, isNull);
+          expect(writtenState.slots.pendingProjectActivityAt, isNull);
+        },
+      );
+
       test('turning off never wakes', () async {
         stubEnablePath(state: makeState());
 

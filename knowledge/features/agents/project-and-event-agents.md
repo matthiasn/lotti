@@ -126,10 +126,12 @@ stateDiagram-v2
   marker instead of treating another device's 06:00 as local work. Before the
   identity arrives, `activeProjectId` identifies the row as project state so
   the peer deadline is still stripped.
-  A synced opt-out clears the device-local automatic fallback but retains the
-  pending marker, so re-enabling can arm it again without losing evidence. A
-  synced completion does the inverse: when the incoming state consumes the
-  pending marker, the receiving device drops its retained fallback too.
+  A synced or local opt-out clears every device-local automatic fallback,
+  including markerless creation rows, but retains any pending marker so
+  re-enabling can arm it again without losing evidence. A synced completion
+  does the inverse: when the incoming state consumes the pending marker, the
+  receiving device drops its retained fallback, local throttle, and queued
+  automatic job while leaving explicit user wakes alone.
 
 ## Dormant-by-default scheduling
 
@@ -163,12 +165,11 @@ pending.
 
 Older installations can still contain the former daily schedule. Startup
 restoration clears it when the agent has completed at least one wake and
-`pendingProjectActivityAt` is null. It re-reads current state and compares the
-row's update/vector-clock metadata with the startup snapshot before writing, so
-concurrent activity or manual scheduling cannot be overwritten. Repairing a
-missing fallback is deliberately a raw, device-local repository write: it
-changes only `scheduledWakeAt`, preserving the synced `updatedAt` and vector
-clock so an obsolete pending marker cannot win a later peer merge.
+`pendingProjectActivityAt` is null. It re-reads, validates, and writes current
+state in one raw local transaction, so concurrent activity or manual scheduling
+cannot be overwritten. Both retirement and missing-fallback repair change only
+`scheduledWakeAt`, preserving the synced `updatedAt` and vector clock so local
+scheduling maintenance cannot win a later peer merge.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
 Never-woken agents and agents with pending activity retain the row as a one-shot
 safety net. Before retiring a row, the manager re-reads state and rechecks both

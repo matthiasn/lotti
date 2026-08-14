@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -1308,6 +1309,8 @@ void main() {
               ).copyWith(
                 lastWakeAt: DateTime(2026, 3, 20, 6),
                 scheduledWakeAt: legacySchedule,
+                updatedAt: DateTime(2026, 3, 20, 7),
+                vectorClock: const VectorClock({'peer-a': 4}),
               );
 
           when(
@@ -1338,12 +1341,14 @@ void main() {
 
           final repaired =
               verify(
-                    () => mockSyncService.upsertEntity(captureAny()),
+                    () => mockRepository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(repaired.scheduledWakeAt, isNull);
           expect(repaired.slots.pendingProjectActivityAt, isNull);
-          expect(repaired.updatedAt, DateTime(2026, 3, 22, 10));
+          expect(repaired.updatedAt, state.updatedAt);
+          expect(repaired.vectorClock, state.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
           expect(notifiedAgentIds, ['pa-dormant']);
           verifyNever(
             () => mockOrchestrator.restorePendingWake(

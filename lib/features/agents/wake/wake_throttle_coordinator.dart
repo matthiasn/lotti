@@ -82,13 +82,16 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     // throttle state is per-device and should NOT be synced to other devices.
     // Each device maintains its own wake cooldown window independently.
     try {
-      final state = await repository.getAgentState(agentId);
-      if (state != null) {
+      var changed = false;
+      await repository.runInTransaction(() async {
+        final state = await repository.getAgentState(agentId);
+        if (state == null) return;
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: deadline, updatedAt: clock.now()),
         );
-        onPersistedStateChanged?.call(agentId);
-      }
+        changed = true;
+      });
+      if (changed) onPersistedStateChanged?.call(agentId);
     } catch (e, s) {
       logError(
         'failed to persist throttle deadline '
@@ -139,16 +142,21 @@ class WakeThrottleCoordinator with AgentErrorLogging {
     try {
       if (_throttleDeadlines.containsKey(agentId)) return;
 
-      final state = await repository.getAgentState(agentId);
-
-      if (_throttleDeadlines.containsKey(agentId)) return;
-
-      if (state != null && state.nextWakeAt != null) {
+      var changed = false;
+      await repository.runInTransaction(() async {
+        if (_throttleDeadlines.containsKey(agentId)) return;
+        final state = await repository.getAgentState(agentId);
+        if (_throttleDeadlines.containsKey(agentId) ||
+            state == null ||
+            state.nextWakeAt == null) {
+          return;
+        }
         await repository.upsertEntity(
           state.copyWith(nextWakeAt: null, updatedAt: clock.now()),
         );
-        onPersistedStateChanged?.call(agentId);
-      }
+        changed = true;
+      });
+      if (changed) onPersistedStateChanged?.call(agentId);
     } catch (e, s) {
       logError(
         'failed to clear persisted throttle '

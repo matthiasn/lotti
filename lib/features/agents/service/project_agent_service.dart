@@ -431,34 +431,42 @@ class ProjectAgentService {
       return state;
     }
 
-    // The monitor or a user can write after the bulk snapshot above. Re-read
-    // before a whole-row upsert, and only migrate the exact snapshot we
-    // inspected, so cleanup cannot erase newer activity or a manual schedule.
-    final currentState = await repository.getAgentState(state.agentId);
-    final snapshotChanged =
-        currentState?.updatedAt != state.updatedAt ||
-        currentState?.vectorClock != state.vectorClock;
-    if (snapshotChanged) return currentState;
-    if (currentState == null ||
-        currentState.scheduledWakeAt == null ||
-        currentState.lastWakeAt == null ||
-        currentState.slots.pendingProjectActivityAt != null) {
-      return currentState;
-    }
+    AgentStateEntity? result;
+    var changed = false;
+    await repository.runInTransaction(() async {
+      // The monitor or a user can write after the bulk snapshot above. Re-read
+      // and validate inside the same local transaction as the write so
+      // cleanup cannot erase newer activity or a manual schedule.
+      final currentState = await repository.getAgentState(state.agentId);
+      final snapshotChanged =
+          currentState?.updatedAt != state.updatedAt ||
+          currentState?.vectorClock != state.vectorClock;
+      if (snapshotChanged ||
+          currentState == null ||
+          currentState.scheduledWakeAt == null ||
+          currentState.lastWakeAt == null ||
+          currentState.slots.pendingProjectActivityAt != null) {
+        result = currentState;
+        return;
+      }
 
-    final updatedState = currentState.copyWith(
-      scheduledWakeAt: null,
-      updatedAt: clock.now(),
-    );
-    await syncService.upsertEntity(updatedState);
-    onPersistedStateChanged?.call(currentState.agentId);
+      // This retirement is device-local scheduling maintenance. Preserve the
+      // synced LWW timestamp and vector clock so a stale device cannot publish
+      // cleanup as a newer whole-row state version.
+      final updatedState = currentState.copyWith(scheduledWakeAt: null);
+      await repository.upsertEntity(updatedState);
+      result = updatedState;
+      changed = true;
+    });
+    if (!changed) return result;
+    onPersistedStateChanged?.call(state.agentId);
     domainLogger?.log(
       LogDomain.agentRuntime,
       'retired dormant daily schedule for '
-      '${DomainLogger.sanitizeId(currentState.agentId)}',
+      '${DomainLogger.sanitizeId(state.agentId)}',
       subDomain: 'restore',
     );
-    return updatedState;
+    return result;
   }
 
   void _hydrateThrottleDeadlineFromState(

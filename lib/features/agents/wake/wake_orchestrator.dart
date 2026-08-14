@@ -502,6 +502,28 @@ class WakeOrchestrator with AgentErrorLogging {
   /// user-initiated wakes remain available.
   void disableAutomaticUpdatesRuntime(String agentId) {
     _automaticUpdatesDisabledAgents.add(agentId);
+    _cancelPendingAutomaticWakes(
+      agentId,
+      reason: 'automatic wake removed because updates were disabled',
+    );
+  }
+
+  /// Clears this device's automatic countdown and queued automation jobs.
+  ///
+  /// Unlike [disableAutomaticUpdatesRuntime], this does not change the
+  /// automation policy. Sync uses it when a peer has already consumed the
+  /// pending project activity represented by a local subscription wake.
+  void cancelPendingAutomaticWakes(String agentId) {
+    _cancelPendingAutomaticWakes(
+      agentId,
+      reason: 'automatic wake removed because project work was consumed',
+    );
+  }
+
+  void _cancelPendingAutomaticWakes(
+    String agentId, {
+    required String reason,
+  }) {
     clearThrottle(agentId);
     final removed = queue.removeByAgentWhere(
       agentId,
@@ -509,7 +531,7 @@ class WakeOrchestrator with AgentErrorLogging {
     );
     _emitRemovedRunCompletions(
       removed,
-      reason: 'automatic wake removed because updates were disabled',
+      reason: reason,
     );
   }
 

@@ -463,7 +463,7 @@ class TaskAgentService {
             updatedState = updatedState.copyWith(reportStaleAt: now);
           }
           if (identity.kind == AgentKinds.projectAgent &&
-              state.slots.pendingProjectActivityAt != null) {
+              state.scheduledWakeAt != null) {
             updatedState = updatedState.copyWith(scheduledWakeAt: null);
           }
           if (updatedState != state) {

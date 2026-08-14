@@ -205,11 +205,14 @@ extension _AgentHandlers on SyncEventProcessor {
       // wakes, so a remote AgentStateEntity must never overwrite this device's
       // nextWakeAt / sleepUntil / scheduledWakeAt. Overlay the local values onto
       // the row about to be persisted; everything else still syncs as usual.
+      var projectActivityWasConsumed = false;
       if (entityToApply is AgentStateEntity) {
-        entityToApply = await _preserveLocalScheduling(
+        final preserved = await _preserveLocalScheduling(
           incoming: entityToApply,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
+        entityToApply = preserved.entity;
+        projectActivityWasConsumed = preserved.projectActivityWasConsumed;
       } else if (entityToApply is AgentIdentityEntity) {
         entityToApply = await _preserveLocalTaskAgentConfigFields(
           incoming: entityToApply,
@@ -217,6 +220,11 @@ extension _AgentHandlers on SyncEventProcessor {
         );
       }
       await agentRepository!.upsertEntity(entityToApply);
+      if (projectActivityWasConsumed) {
+        wakeOrchestrator?.cancelPendingAutomaticWakes(
+          entityToApply.agentId,
+        );
+      }
       await _projectAgentAttribution(entityToApply);
       if (prefetchedAgentEntitiesById?.containsKey(entityToApply.id) ?? false) {
         prefetchedAgentEntitiesById![entityToApply.id] = entityToApply;
@@ -554,7 +562,6 @@ extension _AgentHandlers on SyncEventProcessor {
       final state = await agentRepository!.getAgentState(identity.agentId);
       if (state == null ||
           state.deletedAt != null ||
-          state.slots.pendingProjectActivityAt == null ||
           state.scheduledWakeAt == null) {
         return;
       }
@@ -757,7 +764,8 @@ extension _AgentHandlers on SyncEventProcessor {
   /// (a brand-new agent on this device), non-project agents keep the incoming
   /// bootstrap schedule. Project fallback deadlines are instead cleared and
   /// rebuilt below from this device's automation policy and local clock.
-  Future<AgentStateEntity> _preserveLocalScheduling({
+  Future<({AgentStateEntity entity, bool projectActivityWasConsumed})>
+  _preserveLocalScheduling({
     required AgentStateEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
@@ -774,21 +782,31 @@ extension _AgentHandlers on SyncEventProcessor {
           (identity is AgentIdentityEntity &&
               identity.kind == AgentKinds.projectAgent) ||
           incoming.slots.activeProjectId != null;
-      return isProjectState
-          ? incoming.copyWith(scheduledWakeAt: null)
-          : incoming;
+      return (
+        entity: isProjectState
+            ? incoming.copyWith(scheduledWakeAt: null)
+            : incoming,
+        projectActivityWasConsumed: false,
+      );
     }
+    final isProjectState =
+        (identity is AgentIdentityEntity &&
+            identity.kind == AgentKinds.projectAgent) ||
+        local.slots.activeProjectId != null ||
+        incoming.slots.activeProjectId != null;
     final projectActivityWasConsumed =
-        identity is AgentIdentityEntity &&
-        identity.kind == AgentKinds.projectAgent &&
+        isProjectState &&
         local.slots.pendingProjectActivityAt != null &&
         incoming.slots.pendingProjectActivityAt == null;
-    return incoming.copyWith(
-      nextWakeAt: local.nextWakeAt,
-      sleepUntil: local.sleepUntil,
-      scheduledWakeAt: projectActivityWasConsumed
-          ? null
-          : local.scheduledWakeAt,
+    return (
+      entity: incoming.copyWith(
+        nextWakeAt: local.nextWakeAt,
+        sleepUntil: local.sleepUntil,
+        scheduledWakeAt: projectActivityWasConsumed
+            ? null
+            : local.scheduledWakeAt,
+      ),
+      projectActivityWasConsumed: projectActivityWasConsumed,
     );
   }
 

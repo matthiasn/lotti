@@ -211,6 +211,38 @@ void main() {
       );
 
       test(
+        'cancelPendingAutomaticWakes drops automation but preserves user job',
+        () {
+          queue
+            ..enqueue(
+              WakeJob(
+                runKey: 'automatic',
+                agentId: 'agent-1',
+                reason: WakeReason.subscription.name,
+                initiator: WakeInitiator.automation,
+                triggerTokens: const {'project-1'},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            )
+            ..enqueue(
+              WakeJob(
+                runKey: 'user',
+                agentId: 'agent-1',
+                reason: WakeReason.reanalysis.name,
+                initiator: WakeInitiator.user,
+                triggerTokens: const {},
+                createdAt: DateTime(2024, 3, 15),
+              ),
+            );
+
+          orchestrator.cancelPendingAutomaticWakes('agent-1');
+
+          expect(queue.length, 1);
+          expect(queue.dequeue()?.runKey, 'user');
+        },
+      );
+
+      test(
         'disabled automation retains subscriptions and marks matching changes '
         'stale without queueing inference',
         () async {

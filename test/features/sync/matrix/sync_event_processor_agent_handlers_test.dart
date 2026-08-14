@@ -2918,7 +2918,8 @@ void main() {
       );
 
       test(
-        'project state completion clears the retained local fallback',
+        'project state completion clears local automatic work before identity '
+        'arrives',
         () async {
           final identity = AgentDomainEntity.agent(
             id: 'project-agent-completed',
@@ -2942,6 +2943,7 @@ void main() {
                       activeProjectId: 'project-42',
                       pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
                     ),
+                    nextWakeAt: DateTime(2026, 8, 14, 9, 2),
                     scheduledWakeAt: DateTime(2026, 8, 15, 6),
                     updatedAt: DateTime(2026, 8, 14, 9),
                     vectorClock: const VectorClock({'local': 1}),
@@ -2957,9 +2959,6 @@ void main() {
           when(
             () => mockAgentRepo.getEntity(local.id),
           ).thenAnswer((_) async => local);
-          when(
-            () => mockAgentRepo.getEntity(identity.agentId),
-          ).thenAnswer((_) async => identity);
           when(() => event.text).thenReturn(
             encodeMessage(
               SyncMessage.agentEntity(
@@ -2976,6 +2975,11 @@ void main() {
           ).captured.whereType<AgentStateEntity>().first;
           expect(applied.slots.pendingProjectActivityAt, isNull);
           expect(applied.scheduledWakeAt, isNull);
+          verify(
+            () => mockOrchestrator.cancelPendingAutomaticWakes(
+              local.agentId,
+            ),
+          ).called(1);
         },
       );
 
@@ -3515,6 +3519,19 @@ void main() {
           when(
             () => mockAgentRepo.getEntity('project-agent-manual'),
           ).thenAnswer((_) async => manualAgent);
+          final markerlessFallback =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-agent-manual',
+                    agentId: 'project-agent-manual',
+                    slots: const AgentSlots(activeProjectId: 'project-42'),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'peer-a': 2}),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockAgentRepo.getAgentState('project-agent-manual'),
+          ).thenAnswer((_) async => markerlessFallback);
           final link = AgentLink.agentProject(
             id: 'project-link-manual',
             fromId: 'project-agent-manual',
@@ -3540,6 +3557,13 @@ void main() {
           verifyNever(
             () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
           );
+          final clearedFallback = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().single;
+          expect(clearedFallback.scheduledWakeAt, isNull);
+          expect(clearedFallback.slots.pendingProjectActivityAt, isNull);
+          expect(clearedFallback.updatedAt, markerlessFallback.updatedAt);
+          expect(clearedFallback.vectorClock, markerlessFallback.vectorClock);
         },
       );
 

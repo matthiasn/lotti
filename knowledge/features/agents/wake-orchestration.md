@@ -145,7 +145,9 @@ The shared project-agent automation policy gates local monitoring, startup and
 sync-restored subscriptions, and workflow fallback creation. With explicit
 opt-out, observation subscriptions remain registered but their matches cannot
 queue or persist automatic wakes, and a manually requested wake cannot
-synthesize a new fallback afterward. Direct project edits still use the shorter
+synthesize a new fallback afterward. Opt-out clears every existing project
+fallback, including markerless creation rows from older state. Direct project
+edits still use the shorter
 coalescing deadline when automation is allowed, while manual requests bypass
 throttling. A successful wake with no remaining creation or project activity
 clears `scheduledWakeAt`. The scheduled-wake manager separately clears legacy
@@ -172,6 +174,11 @@ start. The drain also re-reads policy immediately before executor launch, after
 runner acquisition, content gating, run persistence, and the pre-wake hook, so
 an automatic job already removed from the queue cannot race a late opt-out into
 paid inference.
+
+Persisted throttle set/clear operations re-read and write the state inside the
+same repository transaction as other partial state writers. This keeps the
+device-local `nextWakeAt` mutation from restoring a consumed project marker or
+erasing activity that was persisted by the project monitor concurrently.
 
 A subscription can instead opt **out of the window entirely** with
 `AgentSubscription.drainImmediately`: matches enqueue and dispatch once the
@@ -245,10 +252,13 @@ are device-local. Each device schedules its own wakes, so the sync apply path
 preserves the local row's scheduling rather than letting a peer's
 `AgentStateEntity` overwrite it (`_preserveLocalScheduling`). When a peer state
 consumes project activity, the local one-shot fallback is cleared rather than
-preserved. On a project state's first arrival, the peer fallback is likewise
+preserved; the receiving device also clears its throttle and removes queued
+automatic work for that batch while preserving explicit user wakes. On a
+project state's first arrival, the peer fallback is likewise
 discarded and rebuilt only when local policy and a pending marker require one,
 using the receiving device's clock. `activeProjectId` supplies the project-row
 signal when state arrives before identity. Startup and sync-arrival repairs that add or remove only that
 fallback write directly through the repository without changing `updatedAt` or
-the vector clock; the local scheduling repair must never become a newer synced
+the vector clock. This applies to both fallback repair and dormant-schedule
+retirement: local scheduling maintenance must never become a newer synced
 version of otherwise stale state.
