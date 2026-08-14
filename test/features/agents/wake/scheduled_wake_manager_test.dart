@@ -39,7 +39,7 @@ enum _GeneratedScheduledWakeFailureSlot {
 
 enum _GeneratedScheduledWakeManagerOperationKind { start, stop, tick }
 
-class _TrackingTransactionSyncService extends MockAgentSyncService {
+class _TrackingTransactionRepository extends MockAgentRepository {
   bool insideTransaction = false;
 
   @override
@@ -260,6 +260,7 @@ void main() {
         scheduledWakeAt: DateTime(2000),
       );
     });
+    when(() => repository.upsertEntity(any())).thenAnswer((_) async {});
     // Default run-key stub so unstubbed enqueueManualWake calls (this test
     // file mostly asserts via `verify`, not `when`) don't throw on the
     // now-non-void return type.
@@ -402,14 +403,14 @@ void main() {
                 initiator: any(named: 'initiator'),
               ),
             ).thenReturn('generated-run-key');
-            when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
+            when(() => generatedRepository.upsertEntity(any())).thenAnswer((
               invocation,
             ) async {
               final entity =
                   invocation.positionalArguments.single as AgentStateEntity;
               attemptedRetirementWrites.add(entity);
               if (failingRetirementIds.contains(entity.agentId)) {
-                throw StateError('generated sync failure');
+                throw StateError('generated local write failure');
               }
             });
 
@@ -462,9 +463,18 @@ void main() {
             );
 
             for (final write in attemptedRetirementWrites) {
+              final original = states.singleWhere(
+                (state) => state.agentId == write.agentId,
+              );
               expect(write.scheduledWakeAt, isNull, reason: '$scenario');
-              expect(write.updatedAt, _generatedScheduledWakeNow);
+              expect(write.updatedAt, original.updatedAt, reason: '$scenario');
+              expect(
+                write.vectorClock,
+                original.vectorClock,
+                reason: '$scenario',
+              );
             }
+            verifyNever(() => generatedSyncService.upsertEntity(any()));
 
             expect(notifiedAgentIds, expectedNotifiedIds, reason: '$scenario');
 
@@ -1811,10 +1821,6 @@ void main() {
           when(
             () => repository.getAgentState(kTestAgentId),
           ).thenAnswer((_) async => dormantState);
-          when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           final manager = createAndStart();
           async.flushMicrotasks();
 
@@ -1827,10 +1833,13 @@ void main() {
 
           final captured =
               verify(
-                    () => syncService.upsertEntity(captureAny()),
+                    () => repository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(captured.scheduledWakeAt, isNull);
+          expect(captured.updatedAt, dormantState.updatedAt);
+          expect(captured.vectorClock, dormantState.vectorClock);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -1894,32 +1903,38 @@ void main() {
           ),
           nextWakeAt: DateTime(2024, 3, 15, 10, 35),
         );
-        final trackingSyncService = _TrackingTransactionSyncService();
+        final trackingRepository = _TrackingTransactionRepository();
         when(
-          () => trackingSyncService.upsertEntity(any()),
+          () => trackingRepository.upsertEntity(any()),
         ).thenAnswer((_) async {});
+        when(
+          () => trackingRepository.getDueScheduledWakeRecords(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => trackingRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestIdentity());
 
         fakeAsync((async) {
           withClock(Clock.fixed(now), () {
             when(
-              () => repository.getDueScheduledAgentStates(any()),
+              () => trackingRepository.getDueScheduledAgentStates(any()),
             ).thenAnswer((_) async => [dormantSnapshot]);
             when(
-              () => repository.getAgentState(kTestAgentId),
+              () => trackingRepository.getAgentState(kTestAgentId),
             ).thenAnswer(
-              (_) async => trackingSyncService.insideTransaction
+              (_) async => trackingRepository.insideTransaction
                   ? activeState
                   : dormantSnapshot,
             );
 
             final manager = ScheduledWakeManager(
-              repository: repository,
+              repository: trackingRepository,
               orchestrator: orchestrator,
-              syncService: trackingSyncService,
+              syncService: syncService,
             )..start();
             async.flushMicrotasks();
 
-            verifyNever(() => trackingSyncService.upsertEntity(any()));
+            verifyNever(() => trackingRepository.upsertEntity(any()));
             manager.stop();
           });
         });
@@ -2030,10 +2045,6 @@ void main() {
               agentId == dormantId ? dormantState : activeState,
             );
           });
-          when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           final manager = createAndStart();
           async.flushMicrotasks();
 
@@ -2053,8 +2064,9 @@ void main() {
             ),
           );
 
-          // Dormant schedule retired via syncService.
-          verify(() => syncService.upsertEntity(any())).called(1);
+          // Dormant schedule retired as device-local state only.
+          verify(() => repository.upsertEntity(any())).called(1);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -2078,10 +2090,6 @@ void main() {
           when(
             () => repository.getAgentState(kTestAgentId),
           ).thenAnswer((_) async => dormantState);
-          when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           final manager = ScheduledWakeManager(
             repository: repository,
             orchestrator: orchestrator,
@@ -2258,19 +2266,18 @@ void main() {
           when(
             () => repository.getAgentState(kTestAgentId),
           ).thenAnswer((_) async => dormantState);
-          when(
-            () => syncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           final manager = createAndStart();
           async.flushMicrotasks();
 
           final captured =
               verify(
-                    () => syncService.upsertEntity(captureAny()),
+                    () => repository.upsertEntity(captureAny()),
                   ).captured.single
                   as AgentStateEntity;
           expect(captured.scheduledWakeAt, isNull);
+          expect(captured.updatedAt, dormantState.updatedAt);
+          expect(captured.vectorClock, dormantState.vectorClock);
+          verifyNever(() => syncService.upsertEntity(any()));
 
           manager.stop();
         });
@@ -2306,9 +2313,9 @@ void main() {
               agentId == failingId ? failingState : succeedingState,
             );
           });
-          // First agent's upsert fails.
+          // First agent's local scheduling write fails.
           when(
-            () => syncService.upsertEntity(any()),
+            () => repository.upsertEntity(any()),
           ).thenThrow(Exception('sync error'));
 
           final manager = createAndStart();

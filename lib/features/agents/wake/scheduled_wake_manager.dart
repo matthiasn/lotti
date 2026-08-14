@@ -607,7 +607,7 @@ class ScheduledWakeManager with AgentErrorLogging {
     DateTime now,
   ) async {
     AgentStateEntity? retiredState;
-    await _syncService.runInTransaction(() async {
+    await _repository.runInTransaction(() async {
       // Re-read inside the same transaction as the whole-row write. Activity
       // or a replacement schedule that commits before this transaction wins;
       // a concurrent writer cannot land between this decision and persistence.
@@ -620,11 +620,11 @@ class ScheduledWakeManager with AgentErrorLogging {
         return;
       }
 
-      await _syncService.upsertEntity(
-        currentState.copyWith(
-          scheduledWakeAt: null,
-          updatedAt: now,
-        ),
+      // The fallback is device-local. Preserve the synced timestamp and vector
+      // clock so this scheduling-only cleanup cannot win a concurrent merge
+      // and erase project activity recorded by another device.
+      await _repository.upsertEntity(
+        currentState.copyWith(scheduledWakeAt: null),
       );
       retiredState = currentState;
     });

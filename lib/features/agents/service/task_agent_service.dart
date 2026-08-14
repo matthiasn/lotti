@@ -408,28 +408,14 @@ class TaskAgentService {
     var wakeOnEnable = false;
     var armProjectFallbackOnEnable = false;
     var clearProjectFallbackOnDisable = false;
-    await syncService.runInTransaction(() async {
-      final current = await agentService.getAgent(agentId);
-      if (current == null) {
-        throw StateError('Agent $agentId not found');
-      }
-      identity = current;
-      if (enabled &&
-          identity.config.inferenceSetup?.mode ==
-              AgentInferenceSetupMode.disabled) {
-        throw StateError(
-          'Choose an inference setup before enabling automation',
-        );
-      }
+    Object? postCommitSyncError;
+    StackTrace? postCommitSyncStackTrace;
+    AgentIdentityEntity? attemptedIdentityUpdate;
 
-      final now = clock.now();
-      final updated = identity.copyWith(
-        config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updated);
-
-      final state = await repository.getAgentState(agentId);
+    void planLocalReconciliation(
+      AgentIdentityEntity current,
+      AgentStateEntity? state,
+    ) {
       if (enabled) {
         // Catch-up wake decision, taken here while the state row is already
         // loaded. "Nothing to catch up on" is a report that exists and is
@@ -438,30 +424,79 @@ class TaskAgentService {
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
         armProjectFallbackOnEnable =
-            identity.kind == AgentKinds.projectAgent &&
+            current.kind == AgentKinds.projectAgent &&
             projectAgentAutomaticWakesAllowed(
-              config: updated.config,
-              lifecycle: updated.lifecycle,
+              config: current.config,
+              lifecycle: current.lifecycle,
             );
       } else {
-        final pendingWake = state?.nextWakeAt;
-        if (state != null) {
-          var updatedState = state;
-          if (pendingWake != null &&
-              pendingWake.isAfter(now) &&
-              !state.isReportStale) {
-            updatedState = updatedState.copyWith(reportStaleAt: now);
-          }
-          if (updatedState != state) {
-            await syncService.upsertEntity(
-              updatedState.copyWith(updatedAt: now),
-            );
+        clearProjectFallbackOnDisable = current.kind == AgentKinds.projectAgent;
+      }
+    }
+
+    try {
+      await syncService.runInTransaction(() async {
+        final current = await agentService.getAgent(agentId);
+        if (current == null) {
+          throw StateError('Agent $agentId not found');
+        }
+        identity = current;
+        if (enabled &&
+            identity.config.inferenceSetup?.mode ==
+                AgentInferenceSetupMode.disabled) {
+          throw StateError(
+            'Choose an inference setup before enabling automation',
+          );
+        }
+
+        final now = clock.now();
+        final updated = identity.copyWith(
+          config: identity.config.copyWith(automaticUpdatesEnabled: enabled),
+          updatedAt: now,
+        );
+        attemptedIdentityUpdate = updated;
+        await syncService.upsertEntity(updated);
+
+        final state = await repository.getAgentState(agentId);
+        if (!enabled) {
+          final pendingWake = state?.nextWakeAt;
+          if (state != null) {
+            var updatedState = state;
+            if (pendingWake != null &&
+                pendingWake.isAfter(now) &&
+                !state.isReportStale) {
+              updatedState = updatedState.copyWith(reportStaleAt: now);
+            }
+            if (updatedState != state) {
+              await syncService.upsertEntity(
+                updatedState.copyWith(updatedAt: now),
+              );
+            }
           }
         }
-        clearProjectFallbackOnDisable =
-            identity.kind == AgentKinds.projectAgent;
+        identity = updated;
+        planLocalReconciliation(updated, state);
+      });
+    } catch (error, stackTrace) {
+      // AgentSyncService commits the database transaction before flushing its
+      // outbox. If that flush fails, the preference is already durable even
+      // though the call throws. Confirm that exact state before reconciling
+      // device-local subscriptions and fallback deadlines, then rethrow below.
+      final attempted = attemptedIdentityUpdate;
+      if (attempted == null) rethrow;
+      final persisted = await agentService.getAgent(agentId);
+      if (persisted?.config != attempted.config ||
+          persisted?.updatedAt != attempted.updatedAt) {
+        rethrow;
       }
-    });
+      identity = persisted!;
+      planLocalReconciliation(
+        identity,
+        await repository.getAgentState(agentId),
+      );
+      postCommitSyncError = error;
+      postCommitSyncStackTrace = stackTrace;
+    }
 
     if (armProjectFallbackOnEnable) {
       await _armPendingProjectActivityFallback(agentId);
@@ -479,6 +514,13 @@ class TaskAgentService {
       }
     } else {
       orchestrator.disableAutomaticUpdatesRuntime(agentId);
+    }
+
+    if (postCommitSyncError != null) {
+      Error.throwWithStackTrace(
+        postCommitSyncError,
+        postCommitSyncStackTrace!,
+      );
     }
 
     domainLogger?.log(

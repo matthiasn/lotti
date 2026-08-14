@@ -317,10 +317,18 @@ extension _AgentHandlers on SyncEventProcessor {
               config: appliedIdentity.config,
               lifecycle: appliedIdentity.lifecycle,
             )) {
-              wakeOrchestrator!.enableAutomaticUpdatesRuntime(
-                appliedIdentity.agentId,
+              final stillAllowed = await _armPendingProjectActivityFallback(
+                appliedIdentity,
               );
-              await _armPendingProjectActivityFallback(appliedIdentity);
+              if (stillAllowed) {
+                wakeOrchestrator!.enableAutomaticUpdatesRuntime(
+                  appliedIdentity.agentId,
+                );
+              } else {
+                wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+                  appliedIdentity.agentId,
+                );
+              }
             } else {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(
                 appliedIdentity.agentId,
@@ -358,8 +366,14 @@ extension _AgentHandlers on SyncEventProcessor {
               config: identity.config,
               lifecycle: identity.lifecycle,
             )) {
-          wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
-          await _armPendingProjectActivityFallback(identity);
+          final stillAllowed = await _armPendingProjectActivityFallback(
+            identity,
+          );
+          if (stillAllowed) {
+            wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
+          } else {
+            wakeOrchestrator!.disableAutomaticUpdatesRuntime(identity.agentId);
+          }
         }
       }
       // Ordering: creation bundles emit the identity BEFORE its spec rows,
@@ -525,8 +539,16 @@ extension _AgentHandlers on SyncEventProcessor {
               config: agent.config,
               lifecycle: agent.lifecycle,
             )) {
-              wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
-              await _armPendingProjectActivityFallback(agent);
+              final stillAllowed = await _armPendingProjectActivityFallback(
+                agent,
+              );
+              if (stillAllowed) {
+                wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
+              } else {
+                wakeOrchestrator!.disableAutomaticUpdatesRuntime(
+                  agent.agentId,
+                );
+              }
             } else {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
               await _clearDisabledProjectActivityFallback(agent);
@@ -562,10 +584,20 @@ extension _AgentHandlers on SyncEventProcessor {
   /// the sync-apply counterpart of the local project-activity monitor. The
   /// marker itself already arrived through sync; only its local deadline was
   /// withheld while the automation policy could not yet be evaluated.
-  Future<void> _armPendingProjectActivityFallback(
+  Future<bool> _armPendingProjectActivityFallback(
     AgentIdentityEntity identity,
   ) async {
+    var automaticWakesAllowed = false;
     await agentRepository!.runInTransaction(() async {
+      final currentIdentity = await agentRepository!.getEntity(identity.id);
+      if (currentIdentity is! AgentIdentityEntity ||
+          !projectAgentAutomaticWakesAllowed(
+            config: currentIdentity.config,
+            lifecycle: currentIdentity.lifecycle,
+          )) {
+        return;
+      }
+      automaticWakesAllowed = true;
       final state = await agentRepository!.getAgentState(identity.agentId);
       if (state == null ||
           state.deletedAt != null ||
@@ -586,6 +618,7 @@ extension _AgentHandlers on SyncEventProcessor {
         ),
       );
     });
+    return automaticWakesAllowed;
   }
 
   /// Removes a device-local automatic fallback after a synced policy opt-out.

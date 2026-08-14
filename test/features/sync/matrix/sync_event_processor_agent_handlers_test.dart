@@ -2760,6 +2760,9 @@ void main() {
             () => mockAgentRepo.getAgentState('project-agent-1'),
           ).thenAnswer((_) async => pendingState);
           when(
+            () => mockAgentRepo.getEntity('project-agent-1'),
+          ).thenAnswer((_) async => entity);
+          when(
             () => event.text,
           ).thenReturn(
             encodeMessage(
@@ -3634,6 +3637,80 @@ void main() {
                   ).captured.single
                   as AgentStateEntity;
           expect(persistedState.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+        },
+      );
+
+      test(
+        'agent_project fallback repair rechecks a concurrent opt-out',
+        () async {
+          final activeAgent =
+              AgentDomainEntity.agent(
+                    id: 'project-agent-race',
+                    agentId: 'project-agent-race',
+                    kind: 'project_agent',
+                    displayName: 'Project Agent',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: 'state-race',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                    vectorClock: null,
+                  )
+                  as AgentIdentityEntity;
+          final optedOutAgent = activeAgent.copyWith(
+            config: const AgentConfig(automaticUpdatesEnabled: false),
+          );
+          final pendingState =
+              AgentDomainEntity.agentState(
+                    id: 'state-race',
+                    agentId: activeAgent.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'peer-a': 2}),
+                  )
+                  as AgentStateEntity;
+          var identityReads = 0;
+          when(
+            () => mockAgentRepo.getEntity(activeAgent.id),
+          ).thenAnswer(
+            (_) async => identityReads++ == 0 ? activeAgent : optedOutAgent,
+          );
+          when(
+            () => mockAgentRepo.getAgentState(activeAgent.agentId),
+          ).thenAnswer((_) async => pendingState);
+          final link = AgentLink.agentProject(
+            id: 'project-link-race',
+            fromId: activeAgent.agentId,
+            toId: 'project-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentLink(
+                agentLink: link,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              activeAgent.agentId,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
         },
       );
 

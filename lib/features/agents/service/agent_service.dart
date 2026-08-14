@@ -222,8 +222,8 @@ class AgentService {
     onPersistedStateChanged?.call(agentId);
   }
 
-  /// Transition agent to [AgentLifecycle.dormant] and unregister
-  /// wake subscriptions.
+  /// Transition agent to [AgentLifecycle.dormant], unregister wake
+  /// subscriptions, and remove any device-local project fallback.
   ///
   /// Returns `true` if the agent was found and paused, `false` if the agent
   /// does not exist.
@@ -328,6 +328,17 @@ class AgentService {
         destroyedAt: lifecycle == AgentLifecycle.destroyed ? now : null,
       );
       await syncService.upsertEntity(updated);
+      if (identity.kind == AgentKinds.projectAgent &&
+          lifecycle != AgentLifecycle.active) {
+        final state = await repository.getAgentState(agentId);
+        if (state != null && state.scheduledWakeAt != null) {
+          // Project fallback deadlines are device-local. Clear them in the
+          // same database transaction without advancing synced LWW metadata.
+          await repository.upsertEntity(
+            state.copyWith(scheduledWakeAt: null),
+          );
+        }
+      }
       return true;
     });
     // Pause/resume/destroy must reach every agent surface: the goal

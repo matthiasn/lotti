@@ -132,6 +132,9 @@ stateDiagram-v2
   does the inverse: when the incoming state consumes the pending marker, the
   receiving device drops its retained fallback, local throttle, and queued
   automatic job while leaving explicit user wakes alone.
+  Missing-fallback repair re-reads the current identity policy inside the same
+  local transaction as the state write; a concurrent opt-out therefore wins
+  instead of being overwritten by a stale sync-reconciliation decision.
 
 ## Dormant-by-default scheduling
 
@@ -150,7 +153,12 @@ resume-time restoration routes by agent kind, restores the direct-project
 subscription, and arms it after the lifecycle becomes active. Settings-driven
 opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
 synced state timestamp and vector clock so scheduling maintenance cannot
-resurrect a peer-completed activity marker. Explicit
+resurrect a peer-completed activity marker. If the identity transaction commits
+but its outbox flush fails, the service confirms the persisted preference,
+performs the matching runtime and fallback reconciliation, and then rethrows
+the sync failure. Pausing or destroying a project agent clears the same local
+fallback inside the lifecycle transaction while retaining the pending marker
+for a later resume. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
 transaction rollback therefore leaves the runtime work intact and surfaces an
@@ -175,6 +183,9 @@ cannot be overwritten. Both retirement and missing-fallback repair change only
 `scheduledWakeAt`, preserving the synced `updatedAt` and vector clock so local
 scheduling maintenance cannot win a later peer merge.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
+That due-scan cleanup is a raw local transaction which preserves `updatedAt`
+and the vector clock, so retiring an obsolete deadline cannot win a concurrent
+merge and erase activity from another device.
 Explicitly opted-out agents are stricter: startup clears every fallback,
 including a never-woken markerless creation row left by an interrupted upgrade.
 Otherwise, never-woken agents and agents with pending activity retain the row
