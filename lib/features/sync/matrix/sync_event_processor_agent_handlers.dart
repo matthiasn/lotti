@@ -301,8 +301,9 @@ extension _AgentHandlers on SyncEventProcessor {
       // notifications do not enter the local project-update stream, so repair
       // the device-local fallback here instead of waiting for a restart.
       if (wakeOrchestrator != null && entityToApply is AgentStateEntity) {
-        final identity = await agentRepository!.getEntity(
+        final identity = await _localAgentEntityFor(
           entityToApply.agentId,
+          prefetchedAgentEntitiesById,
         );
         if (identity is AgentIdentityEntity &&
             identity.kind == 'project_agent' &&
@@ -507,7 +508,7 @@ extension _AgentHandlers on SyncEventProcessor {
   String _projectSubscriptionId(AgentProjectLink link) =>
       '${link.fromId}_project_direct_${link.toId}';
 
-  /// Arms work observed after the state/link arrived but before the identity.
+  /// Repairs a missing fallback when identity, state, or link data arrives last.
   ///
   /// Scheduling fields are device-local, so this direct repository write is
   /// the sync-apply counterpart of the local project-activity monitor. The
