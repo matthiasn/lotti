@@ -2804,6 +2804,79 @@ void main() {
       );
 
       test(
+        'project state rebuilds an imported fallback from the local clock',
+        () async {
+          final now = DateTime(2026, 8, 14, 10);
+          final remoteFallback = DateTime(2026, 8, 14, 4);
+          final identity = AgentDomainEntity.agent(
+            id: 'project-agent-imported',
+            agentId: 'project-agent-imported',
+            kind: 'project_agent',
+            displayName: 'Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-imported',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final incoming =
+              AgentDomainEntity.agentState(
+                    id: 'state-imported',
+                    agentId: identity.agentId,
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: now.subtract(
+                        const Duration(minutes: 5),
+                      ),
+                    ),
+                    scheduledWakeAt: remoteFallback,
+                    updatedAt: now.subtract(const Duration(minutes: 5)),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          AgentStateEntity? storedState;
+          when(
+            () => mockAgentRepo.getEntity(identity.agentId),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockAgentRepo.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => storedState);
+          when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+            invocation,
+          ) async {
+            final entity =
+                invocation.positionalArguments.single as AgentDomainEntity;
+            if (entity is AgentStateEntity) storedState = entity;
+          });
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: incoming,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await withClock(Clock.fixed(now), () {
+            return processor.process(event: event, journalDb: journalDb);
+          });
+
+          final persistedStates = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().toList();
+          expect(
+            persistedStates.map((state) => state.scheduledWakeAt),
+            isNot(contains(remoteFallback)),
+          );
+          expect(storedState?.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(storedState?.updatedAt, incoming.updatedAt);
+        },
+      );
+
+      test(
         'project state completion clears the retained local fallback',
         () async {
           final identity = AgentDomainEntity.agent(

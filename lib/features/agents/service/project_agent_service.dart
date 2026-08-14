@@ -215,9 +215,11 @@ class ProjectAgentService {
   /// Deletes both persisted deadline fields and the pending activity marker in
   /// one state write before clearing the throttle timer and queued jobs.
   ///
-  /// Persistence is intentionally first: if that write fails, the runtime
-  /// work remains available and the UI can report that cancellation did not
-  /// complete instead of displaying state that disagrees with storage.
+  /// Persistence is intentionally first: if the transaction rolls back, the
+  /// runtime work remains available and the UI can report that cancellation
+  /// did not complete instead of displaying state that disagrees with storage.
+  /// If only the post-commit sync flush fails, runtime cleanup still follows
+  /// the committed state before the sync error is surfaced to the caller.
   /// Mirrors `TaskAgentService.cancelScheduledWake` so the project AI Report
   /// header's cancel × has the same semantics as the task AI summary one.
   Future<void> cancelScheduledWake(String agentId) async {
@@ -226,30 +228,42 @@ class ProjectAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
+    void clearRuntimeWake() {
+      orchestrator
+        ..clearThrottle(agentId)
+        ..cancelPendingWakes(agentId, allWorkspaces: true);
+    }
+
     var persistedCancellation = false;
-    await syncService.runInTransaction(() async {
-      final state = await repository.getAgentState(agentId);
-      if (state == null ||
-          (state.nextWakeAt == null &&
-              state.scheduledWakeAt == null &&
-              state.slots.pendingProjectActivityAt == null)) {
-        return;
+    try {
+      await syncService.runInTransaction(() async {
+        final state = await repository.getAgentState(agentId);
+        if (state == null ||
+            (state.nextWakeAt == null &&
+                state.scheduledWakeAt == null &&
+                state.slots.pendingProjectActivityAt == null)) {
+          return;
+        }
+        await syncService.upsertEntity(
+          state.copyWith(
+            slots: state.slots.copyWith(pendingProjectActivityAt: null),
+            nextWakeAt: null,
+            scheduledWakeAt: null,
+            updatedAt: clock.now(),
+          ),
+        );
+        persistedCancellation = true;
+      });
+    } catch (_) {
+      if (persistedCancellation) {
+        onPersistedStateChanged?.call(agentId);
+        clearRuntimeWake();
       }
-      await syncService.upsertEntity(
-        state.copyWith(
-          slots: state.slots.copyWith(pendingProjectActivityAt: null),
-          nextWakeAt: null,
-          scheduledWakeAt: null,
-          updatedAt: clock.now(),
-        ),
-      );
-      persistedCancellation = true;
-    });
+      rethrow;
+    }
     if (persistedCancellation) onPersistedStateChanged?.call(agentId);
 
-    orchestrator
-      ..clearThrottle(agentId)
-      ..cancelPendingWakes(agentId, allWorkspaces: true);
+    clearRuntimeWake();
   }
 
   /// Restore project-agent runtime state after app startup.

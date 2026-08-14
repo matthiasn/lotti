@@ -31,6 +31,14 @@ enum _GeneratedProjectProfileSlot { none, profile }
 
 enum _GeneratedProjectCategorySlot { empty, single, pair }
 
+class _PostCommitFailingAgentSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed');
+  }
+}
+
 class _GeneratedProjectAgentCreateScenario {
   const _GeneratedProjectAgentCreateScenario({
     required this.templateSlot,
@@ -991,6 +999,50 @@ void main() {
               allWorkspaces: any(named: 'allWorkspaces'),
             ),
           );
+        },
+      );
+
+      test(
+        'drops queued work when cancellation commits before sync flush fails',
+        () async {
+          final failingSyncService = _PostCommitFailingAgentSyncService();
+          when(
+            () => failingSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          service = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSyncService,
+            onPersistedStateChanged: notifiedAgentIds.add,
+          );
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verify(
+            () => failingSyncService.upsertEntity(any()),
+          ).called(1);
+          verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+          verify(
+            () => mockOrchestrator.cancelPendingWakes(
+              'agent-1',
+              allWorkspaces: true,
+            ),
+          ).called(1);
+          expect(notifiedAgentIds, ['agent-1']);
         },
       );
 

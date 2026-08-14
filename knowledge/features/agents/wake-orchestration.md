@@ -162,7 +162,9 @@ create-or-advance deadline policy. Explicit
 cancellation persists `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` removal atomically, then clears queued work, so an in-flight
 failure cannot re-arm cancelled work and a storage failure cannot leave the UI
-falsely showing a completed cancellation. Retry and success paths read the
+falsely showing a completed cancellation. A post-commit outbox failure still
+clears runtime work to honor the committed cancellation before surfacing the
+sync error. Retry and success paths read the
 current identity policy inside that same persistence transaction, so toggling
 automation during a long wake cannot be undone by policy captured at wake
 start.
@@ -239,7 +241,9 @@ are device-local. Each device schedules its own wakes, so the sync apply path
 preserves the local row's scheduling rather than letting a peer's
 `AgentStateEntity` overwrite it (`_preserveLocalScheduling`). When a peer state
 consumes project activity, the local one-shot fallback is cleared rather than
-preserved. Startup and sync-arrival repairs that add or remove only that
+preserved. On a project state's first arrival, the peer fallback is likewise
+discarded and rebuilt only when local policy and a pending marker require one,
+using the receiving device's clock. Startup and sync-arrival repairs that add or remove only that
 fallback write directly through the repository without changing `updatedAt` or
 the vector clock; the local scheduling repair must never become a newer synced
 version of otherwise stale state.

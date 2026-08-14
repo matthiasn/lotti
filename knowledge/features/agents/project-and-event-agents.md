@@ -121,6 +121,9 @@ stateDiagram-v2
   Identity, state, and project-link apply paths all reconcile the marker, so
   every valid sync arrival order arms already-pending work once policy becomes
   evaluable; startup restoration performs the same repair after a restart.
+  A first state import discards the sender's project fallback deadline and
+  derives a replacement from the receiving device's policy, clock, and pending
+  marker instead of treating another device's 06:00 as local work.
   A synced opt-out clears the device-local automatic fallback but retains the
   pending marker, so re-enabling can arm it again without losing evidence. A
   synced completion does the inverse: when the incoming state consumes the
@@ -140,8 +143,10 @@ disabled, a manual wake may preserve an already-future explicit schedule but
 cannot synthesize a new morning fallback on success or failure. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
-failed write therefore leaves the runtime work intact and surfaces an error in
-the project detail UI. Failure persistence and cancellation share the same
+transaction rollback therefore leaves the runtime work intact and surfaces an
+error in the project detail UI. If the state commits but the subsequent outbox
+flush fails, runtime work is still cleared to match storage before that sync
+error is surfaced. Failure persistence and cancellation share the same
 serialized sync transaction path, so a retry computed from an older snapshot
 cannot restore a marker or deadline that cancellation already removed. The
 workflow also re-reads the current identity policy inside its final persistence

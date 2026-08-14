@@ -754,8 +754,9 @@ extension _AgentHandlers on SyncEventProcessor {
   /// `AgentStateEntity` about to be applied from sync, so device-local
   /// scheduling (`nextWakeAt` / `sleepUntil` / `scheduledWakeAt`) is never
   /// clobbered by a peer's row (PR 4 B4). When there is no local state row yet
-  /// (a brand-new agent on this device) the incoming values are kept as the
-  /// bootstrap schedule; the device reschedules itself from there.
+  /// (a brand-new agent on this device), non-project agents keep the incoming
+  /// bootstrap schedule. Project fallback deadlines are instead cleared and
+  /// rebuilt below from this device's automation policy and local clock.
   Future<AgentStateEntity> _preserveLocalScheduling({
     required AgentStateEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
@@ -764,11 +765,16 @@ extension _AgentHandlers on SyncEventProcessor {
       incoming.id,
       prefetchedAgentEntitiesById,
     );
-    if (local is! AgentStateEntity) return incoming;
     final identity = await _localAgentEntityFor(
       incoming.agentId,
       prefetchedAgentEntitiesById,
     );
+    if (local is! AgentStateEntity) {
+      return identity is AgentIdentityEntity &&
+              identity.kind == AgentKinds.projectAgent
+          ? incoming.copyWith(scheduledWakeAt: null)
+          : incoming;
+    }
     final projectActivityWasConsumed =
         identity is AgentIdentityEntity &&
         identity.kind == AgentKinds.projectAgent &&
