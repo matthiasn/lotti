@@ -263,7 +263,7 @@ class _PlaceholderDayCell extends StatelessWidget {
       padding: EdgeInsets.all(tokens.spacing.step1),
       child: DsDashedBorder(
         color: tokens.colors.text.lowEmphasis,
-        radius: goalDayCellRadius(tokens),
+        radius: goalDayCellRadius(tokens, size),
         child: SizedBox(width: size, height: size),
       ),
     );
@@ -309,7 +309,7 @@ class _CompactDayCell extends StatelessWidget {
         color: rating == null
             ? goalDayStateFill(tokens, state)
             : goalAssessmentRatingFill(tokens, rating),
-        borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
+        borderRadius: BorderRadius.circular(goalDayCellRadius(tokens, size)),
       ),
       child: showsPartialDot
           ? Center(
@@ -348,7 +348,7 @@ class _CompactDayCell extends StatelessWidget {
     final decorated = today
         ? DsDashedBorder(
             color: tokens.colors.text.lowEmphasis,
-            radius: goalDayCellRadius(tokens),
+            radius: goalDayCellRadius(tokens, size),
             child: padded,
           )
         : padded;
@@ -434,12 +434,21 @@ num _roundGoalAggregate(num value) {
       : (value * 10).roundToDouble() / 10;
 }
 
-/// The corner radius every day cell on this page shares.
+/// The corner radius a day cell of [size] takes, so every one reads as the
+/// same SHAPE rather than the same number.
 ///
 /// The whole-goal strip drew its squares at `radii.xs` while the habit
 /// squares — the identical footprint, one card below — drew theirs at
 /// `radii.s`. Same instrument, same week, two shapes.
-double goalDayCellRadius(DsTokens tokens) => tokens.radii.s;
+///
+/// Proportional because a fixed radius is not a fixed shape: `radii.s` on the
+/// 28px cell is a softly rounded square and on the 12px legend swatch is a
+/// circle, so the key stopped looking like the thing it keys.
+double goalDayCellRadius(DsTokens tokens, [double size = _dayCellRefSize]) =>
+    tokens.radii.s * (size / _dayCellRefSize);
+
+/// The cell size the shared radius is authored against.
+const double _dayCellRefSize = ControlSizes.iconChipCompact;
 
 /// Shared fill for a day cell: the full-strength success hue when the goal
 /// requirement held as of that day, a lighter wash of the same hue for a
@@ -2578,7 +2587,9 @@ class _ProgressLegend extends StatelessWidget {
           border: outlined
               ? Border.all(color: color, width: BorderWidths.emphasis)
               : null,
-          borderRadius: BorderRadius.circular(goalDayCellRadius(tokens)),
+          borderRadius: BorderRadius.circular(
+            goalDayCellRadius(tokens, IconSizes.xs),
+          ),
         ),
         // The legend swatch carries the same shape and non-color cue as the
         // cells it keys — at `radii.xs` it was a different shape from both.
@@ -2589,7 +2600,7 @@ class _ProgressLegend extends StatelessWidget {
       if (dashed) {
         swatch = DsDashedBorder(
           color: color,
-          radius: goalDayCellRadius(tokens),
+          radius: goalDayCellRadius(tokens, IconSizes.xs),
           child: swatch,
         );
       }
