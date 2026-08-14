@@ -38,9 +38,7 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
           if (payload is! AgentMessagePayloadEntity) continue;
           final content = payload.content;
           final day = DateTime.tryParse(content['day'] as String? ?? '');
-          final rating = GoalAssessmentRating.values
-              .where((value) => value.name == content['rating'])
-              .firstOrNull;
+          final rating = _decodeRating(content['rating']);
           final specVersionId = content['specVersionId'];
           if (day == null || rating == null || specVersionId is! String) {
             continue;
@@ -50,9 +48,7 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
           if (rawDimensions is Map) {
             for (final entry in rawDimensions.entries) {
               if (entry.key is! String || entry.value is! String) continue;
-              final value = GoalAssessmentRating.values
-                  .where((rating) => rating.name == entry.value)
-                  .firstOrNull;
+              final value = _decodeRating(entry.value);
               if (value != null) dimensionRatings[entry.key as String] = value;
             }
           }
@@ -82,3 +78,47 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
       },
       name: 'goalAssessmentHistoryProvider',
     );
+
+/// Decodes a persisted rating name, degrading rather than dropping.
+///
+/// A record whose rating cannot be read is skipped entirely by the caller, so
+/// an unknown name would make the whole day's reflection — note, per-dimension
+/// verdicts and all — vanish from a device running an older build. A value
+/// this build does not know is therefore read as [GoalAssessmentRating.mixed],
+/// the honest middle: the day was reflected on and it was not a clean sweep.
+///
+/// Returns null only for a value that is not a string at all, which is
+/// corruption rather than a version skew.
+GoalAssessmentRating? _decodeRating(Object? raw) {
+  if (raw is! String) return null;
+  return GoalAssessmentRating.values
+          .where((value) => value.name == raw)
+          .firstOrNull ??
+      GoalAssessmentRating.mixed;
+}
+
+/// The verdict that stands for each day, keyed by UTC day.
+///
+/// A day can carry several records — the user reflects, then revises — so the
+/// most recently created one wins. Ties on [GoalAssessmentRecord.createdAt]
+/// keep the first seen, which makes the result stable rather than dependent on
+/// however the store happened to order two writes in the same instant.
+Map<DateTime, GoalAssessmentRating> latestRatingsByDay(
+  Iterable<GoalAssessmentRecord> records,
+) {
+  final latest = <DateTime, GoalAssessmentRecord>{};
+  for (final record in records) {
+    final day = DateTime.utc(
+      record.day.year,
+      record.day.month,
+      record.day.day,
+    );
+    final held = latest[day];
+    if (held == null || record.createdAt.isAfter(held.createdAt)) {
+      latest[day] = record;
+    }
+  }
+  return {
+    for (final entry in latest.entries) entry.key: entry.value.rating,
+  };
+}

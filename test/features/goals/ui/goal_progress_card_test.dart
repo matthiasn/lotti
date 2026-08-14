@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -212,6 +213,69 @@ void main() {
     );
 
     expect(tapped, [today.subtract(const Duration(days: 6)), today]);
+  });
+
+  testWidgets('a recorded verdict outranks the measured state, and each '
+      'verdict has its own colour', (tester) async {
+    final week = List.filled(7, GoalCompactDayState.none);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: week,
+          cellSize: ControlSizes.iconChipCompact,
+          lastDay: today,
+          ratingsByDay: {
+            today.subtract(const Duration(days: 3)): GoalAssessmentRating.met,
+            today.subtract(const Duration(days: 2)):
+                GoalAssessmentRating.improving,
+            today.subtract(const Duration(days: 1)): GoalAssessmentRating.mixed,
+            today: GoalAssessmentRating.missed,
+          },
+        ),
+      ),
+    );
+
+    final tokens = tester
+        .element(find.byType(GoalCompactWindowStrip))
+        .designTokens;
+    final cells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(Container),
+    );
+    Color fillAt(int index) =>
+        (tester.widget<Container>(cells.at(index)).decoration! as BoxDecoration)
+            .color!;
+
+    // Every measured day here is `none` — grey. The user's own verdict is what
+    // decides the colour, because the measurement is evidence about a day and
+    // the reflection is their ruling on it.
+    expect(fillAt(0), goalDayStateFill(tokens, GoalCompactDayState.none));
+    expect(
+      fillAt(3),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.met),
+    );
+    expect(
+      fillAt(4),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.improving),
+    );
+    expect(
+      fillAt(5),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.mixed),
+    );
+    expect(
+      fillAt(6),
+      goalAssessmentRatingFill(tokens, GoalAssessmentRating.missed),
+    );
+
+    // All four are distinguishable, and none of them is the grey of a day
+    // nobody looked at — "I decided this was missed" and "no data" are
+    // different facts and the strip has to be able to say which.
+    final verdicts = {fillAt(3), fillAt(4), fillAt(5), fillAt(6)};
+    expect(verdicts, hasLength(4));
+    expect(
+      verdicts,
+      isNot(contains(goalDayStateFill(tokens, GoalCompactDayState.none))),
+    );
   });
 
   testWidgets('a read-only strip hugs its cells while a tappable one spans '

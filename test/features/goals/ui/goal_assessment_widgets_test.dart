@@ -298,7 +298,10 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(
       tester.getSize(provenance).height,
-      greaterThan(tester.getSize(find.text('Getroffen')).height),
+      // "Erreicht", not "Getroffen": the German label used to be the past
+      // tense of meeting a *person*, which is not what a met goal criterion
+      // is.
+      greaterThan(tester.getSize(find.text('Erreicht')).height),
       reason: 'the long provenance copy must wrap instead of overflowing',
     );
   });

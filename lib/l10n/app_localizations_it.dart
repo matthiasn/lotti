@@ -6083,6 +6083,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Riflessioni quotidiane';
 
   @override
+  String get goalAssessmentImproving => 'In miglioramento';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Misurato da Lotti: questa parte non è modificabile.';
 
@@ -6090,7 +6093,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalAssessmentMeasuredTitle => 'Ciò che Lotti ha misurato';
 
   @override
-  String get goalAssessmentMet => 'Incontrato';
+  String get goalAssessmentMet => 'Raggiunto';
 
   @override
   String get goalAssessmentMissed => 'Mancato';

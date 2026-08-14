@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Fixed
+- **The day-verdict labels were mistranslated in seven languages.** "Met" was
+  rendered as the past tense of meeting a *person* — "Getroffen" in German,
+  "Ontmoet" in Dutch, "Conheci" in Portuguese — and left untranslated in
+  Romanian. All four verdict labels now say what they mean in every language.
 - **The goal agent's report opens short and expands.** The report card has
   always had a short summary and a Show more toggle, but the goal agent never
   filled them in separately, so every report arrived as one unbroken wall of
@@ -22,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is respected.
 
 ### Changed
+- **Every day in the seven-day goal strip is tappable, including past days.**
+  The squares now match the habit day squares in size, and tapping one opens
+  that day's reflection — previously the only way in was a "Reflect on today"
+  row, so a day could never be closed off once it had passed.
+- **Your own verdict for a day decides its colour.** A day you have reflected
+  on takes the colour of the verdict you gave it rather than what the app
+  measured, and there is a new "Improving" verdict for a day that missed some
+  of the goal but moved the right way. Met, Improving, Mixed and Missed each
+  have their own colour, and none of them is the grey of a day with no data.
 - **Agent update controls read as one deliberate control on phones.** The
   freshness word, Update now and the automatic-updates switch used to sit
   crammed together on three left-aligned lines. Status and its refresh button

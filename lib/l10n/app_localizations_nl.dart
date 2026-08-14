@@ -6028,6 +6028,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Dagelijkse reflecties';
 
   @override
+  String get goalAssessmentImproving => 'Verbetert';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Gemeten door Lotti — dit deel kan niet worden bewerkt.';
 
@@ -6035,10 +6038,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalAssessmentMeasuredTitle => 'Wat Lotti heeft gemeten';
 
   @override
-  String get goalAssessmentMet => 'Ontmoet';
+  String get goalAssessmentMet => 'Behaald';
 
   @override
-  String get goalAssessmentMissed => 'Gemist';
+  String get goalAssessmentMissed => 'Niet behaald';
 
   @override
   String get goalAssessmentMixed => 'Gemengd';

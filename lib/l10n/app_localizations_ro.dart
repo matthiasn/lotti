@@ -6108,6 +6108,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
 
   @override
+  String get goalAssessmentImproving => 'În progres';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Măsurat de Lotti - această parte nu este editabilă.';
 
@@ -6115,13 +6118,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalAssessmentMeasuredTitle => 'Ce a măsurat Lotti';
 
   @override
-  String get goalAssessmentMet => 'Met';
+  String get goalAssessmentMet => 'Îndeplinit';
 
   @override
-  String get goalAssessmentMissed => 'ratat';
+  String get goalAssessmentMissed => 'Neîndeplinit';
 
   @override
-  String get goalAssessmentMixed => 'Amestecat';
+  String get goalAssessmentMixed => 'Mixt';
 
   @override
   String get goalAssessmentNote => 'Notă (opțional)';

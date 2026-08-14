@@ -269,6 +269,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
+              // The user's own verdict outranks the measurement in the strip:
+              // a day they filed as missed must not keep rendering as the
+              // neutral grey of a day with no data.
+              ratingsByDay: latestRatingsByDay(assessments),
               onReflectDay: !isActive || spec == null
                   ? null
                   : (day) => showModalBottomSheet<void>(

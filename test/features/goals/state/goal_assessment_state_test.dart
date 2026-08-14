@@ -89,4 +89,153 @@ void main() {
       verifyNever(() => repository.getEntity(any()));
     },
   );
+
+  test(
+    'a rating a newer build wrote degrades to mixed instead of deleting the '
+    'whole reflection',
+    () async {
+      final repository = MockAgentRepository();
+      when(
+        () => repository.getEntitiesByAgentId(
+          'goal-1',
+          type: AgentEntityTypes.agentMessage,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.agentMessage(
+                id: 'action-future',
+                agentId: 'goal-1',
+                threadId: 'future',
+                kind: AgentMessageKind.action,
+                createdAt: DateTime(2026, 8, 12, 9),
+                vectorClock: null,
+                contentEntryId: 'payload-future',
+                metadata: const AgentMessageMetadata(
+                  toolName: GoalAssessmentToolNames.record,
+                ),
+              )
+              as AgentMessageEntity,
+        ],
+      );
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (_) async => {
+          'payload-future': AgentDomainEntity.agentMessagePayload(
+            id: 'payload-future',
+            agentId: 'goal-1',
+            createdAt: DateTime(2026, 8, 12, 9),
+            vectorClock: null,
+            content: {
+              'recordId': 'future',
+              'day': DateTime.utc(2026, 8, 12).toIso8601String(),
+              'specVersionId': 'spec-1',
+              // A verdict this build has never heard of, synced from a device
+              // running a newer one.
+              'rating': 'thriving',
+              'note': 'Felt strong today',
+              'provenance': 'ratedByUser',
+            },
+          ),
+        },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentUpdateStreamProvider(
+            'goal-1',
+          ).overrideWith((ref) => const Stream.empty()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final records = await container.read(
+        goalAssessmentHistoryProvider('goal-1').future,
+      );
+
+      // Dropping the record would take the note and the day with it, so an
+      // older device would show the day as never reflected on at all. Reading
+      // it as the honest middle keeps the reflection and its note.
+      expect(records, hasLength(1));
+      expect(records.single.rating, GoalAssessmentRating.mixed);
+      expect(records.single.note, 'Felt strong today');
+    },
+  );
+
+  group('latestRatingsByDay', () {
+    GoalAssessmentRecord record({
+      required String id,
+      required DateTime day,
+      required GoalAssessmentRating rating,
+      required DateTime createdAt,
+    }) => GoalAssessmentRecord(
+      id: id,
+      day: day,
+      specVersionId: 'spec-1',
+      rating: rating,
+      createdAt: createdAt,
+      provenance: GoalAssessmentProvenance.ratedByUser,
+    );
+
+    test('the most recent record decides the day', () {
+      final day = DateTime.utc(2026, 8, 10);
+      final ratings = latestRatingsByDay([
+        record(
+          id: 'first',
+          day: day,
+          rating: GoalAssessmentRating.missed,
+          createdAt: DateTime.utc(2026, 8, 10, 9),
+        ),
+        // The user reflected, then thought better of it. The revision stands.
+        record(
+          id: 'revised',
+          day: day,
+          rating: GoalAssessmentRating.improving,
+          createdAt: DateTime.utc(2026, 8, 10, 21),
+        ),
+      ]);
+
+      expect(ratings, {day: GoalAssessmentRating.improving});
+    });
+
+    test('a local timestamp still keys by its UTC calendar day', () {
+      final ratings = latestRatingsByDay([
+        record(
+          id: 'a',
+          day: DateTime.utc(2026, 8, 10, 23, 30),
+          rating: GoalAssessmentRating.met,
+          createdAt: DateTime.utc(2026, 8, 11),
+        ),
+      ]);
+
+      // The strip looks days up by their bare UTC date, so a record carrying
+      // a time of day has to normalise to the same key or it never matches.
+      expect(ratings.keys.single, DateTime.utc(2026, 8, 10));
+    });
+
+    test('days are independent of one another', () {
+      final ratings = latestRatingsByDay([
+        record(
+          id: 'a',
+          day: DateTime.utc(2026, 8, 9),
+          rating: GoalAssessmentRating.met,
+          createdAt: DateTime.utc(2026, 8, 9),
+        ),
+        record(
+          id: 'b',
+          day: DateTime.utc(2026, 8, 10),
+          rating: GoalAssessmentRating.mixed,
+          createdAt: DateTime.utc(2026, 8, 10),
+        ),
+      ]);
+
+      expect(ratings, {
+        DateTime.utc(2026, 8, 9): GoalAssessmentRating.met,
+        DateTime.utc(2026, 8, 10): GoalAssessmentRating.mixed,
+      });
+    });
+
+    test('no records means no colours to override the measurement', () {
+      expect(latestRatingsByDay(const []), isEmpty);
+    });
+  });
 }

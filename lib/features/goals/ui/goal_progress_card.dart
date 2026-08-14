@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -30,6 +31,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
     this.cellSize = IconSizes.xs,
     this.lastDay,
     this.onDaySelected,
+    this.ratingsByDay = const {},
     super.key,
   }) : assert(
          onDaySelected == null || lastDay != null,
@@ -59,8 +61,23 @@ class GoalCompactWindowStrip extends StatelessWidget {
   /// which is what the list rows want, since a tap there navigates.
   final ValueChanged<DateTime>? onDaySelected;
 
+  /// Day verdicts the user has recorded, keyed by UTC day. Ignored without a
+  /// [lastDay] to line them up against.
+  ///
+  /// A recorded verdict wins over the measured state for that cell. The
+  /// measurement is evidence about a day; the reflection is the user's ruling
+  /// on it, and a strip that kept showing grey after they filed the day as
+  /// missed would be contradicting them.
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
+
   DateTime _dateAt(int index, int length) =>
       lastDay!.subtract(Duration(days: length - 1 - index));
+
+  GoalAssessmentRating? _ratingAt(int index, int length) {
+    if (ratingsByDay.isEmpty || lastDay == null) return null;
+    final date = _dateAt(index, length);
+    return ratingsByDay[DateTime.utc(date.year, date.month, date.day)];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,21 +90,27 @@ class GoalCompactWindowStrip extends StatelessWidget {
     Widget cellAt(int index) {
       if (placeholder) return _PlaceholderDayCell(size: cellSize);
       final today = index == visible.length - 1;
+      final rating = _ratingAt(index, visible.length);
       if (onDaySelected == null) {
         return _CompactDayCell(
           state: visible[index],
           today: today,
           size: cellSize,
+          rating: rating,
         );
       }
       final date = _dateAt(index, visible.length);
+      final dayName = DateFormat.MMMEd(locale).format(date);
       return _CompactDayCell(
         state: visible[index],
         today: today,
         size: cellSize,
-        label: context.messages.goalAssessmentRecordFor(
-          DateFormat.MMMEd(locale).format(date),
-        ),
+        rating: rating,
+        // A judged day says so before it offers to be re-judged: the verdict
+        // is the fact, and re-opening the sheet is what you do about it.
+        label: rating == null
+            ? context.messages.goalAssessmentRecordFor(dayName)
+            : '$dayName: ${goalAssessmentRatingLabel(context, rating)}',
         onTap: () => onDaySelected(date),
       );
     }
@@ -153,12 +176,17 @@ class _CompactDayCell extends StatelessWidget {
     this.size = IconSizes.xs,
     this.onTap,
     this.label,
+    this.rating,
   });
 
   final GoalCompactDayState state;
   final bool today;
   final double size;
   final VoidCallback? onTap;
+
+  /// The user's verdict for this day, when they have recorded one. It decides
+  /// the fill; [state] is only what the app measured.
+  final GoalAssessmentRating? rating;
 
   /// Spoken and hovered name for a tappable cell. Null on a read-only strip,
   /// whose semantics are carried by the summary above it.
@@ -167,14 +195,21 @@ class _CompactDayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final rating = this.rating;
+    // The dot is the measured-partial cue. A recorded verdict has four hues
+    // of its own and needs no second encoding on top of them.
+    final showsPartialDot =
+        rating == null && state == GoalCompactDayState.partial;
     final cell = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: goalDayStateFill(tokens, state),
+        color: rating == null
+            ? goalDayStateFill(tokens, state)
+            : goalAssessmentRatingFill(tokens, rating),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
-      child: state == GoalCompactDayState.partial
+      child: showsPartialDot
           ? Center(
               child: goalPartialDayDot(
                 tokens,
@@ -246,6 +281,40 @@ Color goalDayStateFill(DsTokens tokens, GoalCompactDayState state) =>
       GoalCompactDayState.none => tokens.colors.background.level03,
     };
 
+/// Hue for a day the user has actually judged, which outranks what the app
+/// measured: a reflection is a statement about the day, and the measurement is
+/// only evidence toward one.
+///
+/// Four distinct hues, all existing alert tokens, and the same three the
+/// reflections-history pill has always used — extended with the blue a
+/// restarting agent wears for [GoalAssessmentRating.improving], which is
+/// progress that is not yet arrival. Sharing one scheme is the point: the
+/// strip and the history are two views of the same verdict, and a day filed
+/// as missed must not be grey in one place and red in another.
+///
+/// Notably [GoalAssessmentRating.missed] is not the neutral grey a day with no
+/// data wears. Deciding a day was missed and never looking at it are different
+/// facts, and the strip has to be able to say which.
+Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
+    switch (rating) {
+      GoalAssessmentRating.met => tokens.colors.alert.success.defaultColor,
+      GoalAssessmentRating.improving => tokens.colors.alert.info.defaultColor,
+      GoalAssessmentRating.mixed => tokens.colors.alert.warning.defaultColor,
+      GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
+    };
+
+/// The localized name of a day verdict, shared by the strip's semantics and
+/// the reflection sheet's own toggle so the two can never drift apart.
+String goalAssessmentRatingLabel(
+  BuildContext context,
+  GoalAssessmentRating rating,
+) => switch (rating) {
+  GoalAssessmentRating.met => context.messages.goalAssessmentMet,
+  GoalAssessmentRating.improving => context.messages.goalAssessmentImproving,
+  GoalAssessmentRating.mixed => context.messages.goalAssessmentMixed,
+  GoalAssessmentRating.missed => context.messages.goalAssessmentMissed,
+};
+
 /// The non-color cue for a partial day: a full-strength dot inside the
 /// lighter wash, so full/partial/none survive without a legend (the list
 /// rows carry none) and for color-blind readers.
@@ -272,12 +341,17 @@ class GoalProgressCard extends StatelessWidget {
     required this.progress,
     this.onHabitOutcomeSelected,
     this.onReflectDay,
+    this.ratingsByDay = const {},
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
   final ValueChanged<DateTime>? onReflectDay;
+
+  /// Day verdicts the user has recorded, keyed by UTC day. They decide the
+  /// whole-goal strip's colours, outranking what the app measured.
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -295,6 +369,7 @@ class GoalProgressCard extends StatelessWidget {
           _CompositeProgressCard(
             progress: progress,
             onReflectDay: onReflectDay,
+            ratingsByDay: ratingsByDay,
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -363,13 +438,19 @@ class GoalProgressCard extends StatelessWidget {
 }
 
 class _CompositeProgressCard extends StatelessWidget {
-  const _CompositeProgressCard({required this.progress, this.onReflectDay});
+  const _CompositeProgressCard({
+    required this.progress,
+    this.onReflectDay,
+    this.ratingsByDay = const {},
+  });
 
   final GoalProgressView progress;
 
   /// Opens a day's reflection from the strip. Null while the goal cannot be
   /// reflected on — a retired agent, or a spec that has not resolved.
   final ValueChanged<DateTime>? onReflectDay;
+
+  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -415,6 +496,7 @@ class _CompositeProgressCard extends StatelessWidget {
             cellSize: ControlSizes.iconChipCompact,
             lastDay: progress.today,
             onDaySelected: onReflectDay,
+            ratingsByDay: ratingsByDay,
           ),
           SizedBox(height: tokens.spacing.step3),
           Text(

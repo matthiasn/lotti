@@ -6015,6 +6015,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalAssessmentHistoryTitle => 'Dagliga reflektioner';
 
   @override
+  String get goalAssessmentImproving => 'Förbättras';
+
+  @override
   String get goalAssessmentMeasuredReadOnly =>
       'Uppmätt av Lotti — den här delen är inte redigerbar.';
 
@@ -6022,13 +6025,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalAssessmentMeasuredTitle => 'Vad Lotti mätte';
 
   @override
-  String get goalAssessmentMet => 'Träffade';
+  String get goalAssessmentMet => 'Uppfyllt';
 
   @override
-  String get goalAssessmentMissed => 'Saknad';
+  String get goalAssessmentMissed => 'Ej uppfyllt';
 
   @override
-  String get goalAssessmentMixed => 'Blandad';
+  String get goalAssessmentMixed => 'Blandat';
 
   @override
   String get goalAssessmentNote => 'Obs (valfritt)';
