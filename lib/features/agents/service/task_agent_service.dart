@@ -473,7 +473,11 @@ class TaskAgentService {
     final activating = enabled && identity.lifecycle == AgentLifecycle.active;
     if (activating) {
       orchestrator.enableAutomaticUpdatesRuntime(agentId);
-      await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+      if (identity.kind == AgentKinds.projectAgent) {
+        await _restoreProjectSubscriptionsForAgent(agentId);
+      } else {
+        await restoreSubscriptionsForAgent(agentId, restoreCountdown: false);
+      }
     } else {
       orchestrator.disableAutomaticUpdatesRuntime(agentId);
     }
@@ -581,6 +585,28 @@ class TaskAgentService {
         deferPropagatedMatches: false,
       ),
     );
+  }
+
+  /// Re-registers the direct project subscriptions used by a project agent.
+  ///
+  /// The shared automation control can be rendered for multiple agent kinds;
+  /// project agents observe `agent_project` links and project-update tokens,
+  /// rather than the task links handled by [restoreSubscriptionsForAgent].
+  Future<void> _restoreProjectSubscriptionsForAgent(String agentId) async {
+    final links = await repository.getLinksFrom(
+      agentId,
+      type: AgentLinkTypes.agentProject,
+    );
+    for (final link in links.whereType<AgentProjectLink>()) {
+      if (link.deletedAt != null) continue;
+      orchestrator.addSubscription(
+        AgentSubscription(
+          id: '${agentId}_project_direct_${link.toId}',
+          agentId: agentId,
+          matchEntityIds: {projectEntityUpdateNotification(link.toId)},
+        ),
+      );
+    }
   }
 
   /// Re-register wake subscriptions for a single agent.

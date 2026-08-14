@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' show Locale;
 
@@ -183,6 +184,10 @@ final ChecklistItem fallbackChecklistItem = ChecklistItem(
   ),
 );
 
+FutureOr<AgentStateEntity?> _fallbackAgentStateUpdate(
+  AgentStateEntity state,
+) => state;
+
 /// Registers all commonly used fallback values for mocktail in one call.
 ///
 /// Call this in `setUpAll()` or `setUp()` instead of scattering individual
@@ -258,6 +263,7 @@ void registerAllFallbackValues() {
       vectorClock: null,
     ),
   );
+  registerFallbackValue(_fallbackAgentStateUpdate);
   registerFallbackValue(
     agent_model.AgentLink.basic(
       id: 'fallback-link-id',

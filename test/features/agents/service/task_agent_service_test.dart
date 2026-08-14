@@ -2502,9 +2502,20 @@ void main() {
           when(
             () => mockRepository.getLinksFrom(
               'agent-1',
-              type: AgentLinkTypes.agentTask,
+              type: AgentLinkTypes.agentProject,
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer(
+            (_) async => [
+              AgentLink.agentProject(
+                id: 'project-link-1',
+                fromId: 'agent-1',
+                toId: 'project-1',
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              ),
+            ],
+          );
 
           await withClock(Clock.fixed(now), () {
             return service.updateAutomaticUpdates(
@@ -2523,6 +2534,17 @@ void main() {
           expect(
             writtenStates.single.slots.pendingProjectActivityAt,
             DateTime(2026, 8, 14, 11),
+          );
+          final subscription =
+              verify(
+                    () => mockOrchestrator.addSubscription(captureAny()),
+                  ).captured.single
+                  as AgentSubscription;
+          expect(subscription.id, 'agent-1_project_direct_project-1');
+          expect(subscription.agentId, 'agent-1');
+          expect(
+            subscription.matchEntityIds,
+            {projectEntityUpdateNotification('project-1')},
           );
         },
       );
