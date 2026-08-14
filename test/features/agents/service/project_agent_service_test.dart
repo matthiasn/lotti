@@ -935,10 +935,26 @@ void main() {
 
           await service.cancelScheduledWake('agent-1');
 
-          verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
-          verify(
+          verifyInOrder([
             () => mockAgentService.clearScheduledWake('agent-1'),
-          ).called(1);
+            () => mockAgentService.cancelPendingWake('agent-1'),
+          ]);
+        },
+      );
+
+      test(
+        'keeps queued work intact when persisted cancellation fails',
+        () async {
+          when(
+            () => mockAgentService.clearScheduledWake(any()),
+          ).thenThrow(StateError('write failed'));
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(() => mockAgentService.cancelPendingWake(any()));
         },
       );
     });
@@ -1170,6 +1186,64 @@ void main() {
           verifyNever(() => mockSyncService.upsertEntity(any()));
           verify(
             () => mockRepository.getAgentState('pa-racing'),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not clear a newer manual schedule after the startup snapshot',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-manual-race');
+          final link = AgentLink.agentProject(
+            id: 'link-manual-race',
+            fromId: 'pa-manual-race',
+            toId: 'project-manual-race',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final snapshot =
+              makeState(
+                id: 'state-pa-manual-race',
+                agentId: 'pa-manual-race',
+                activeProjectId: 'project-manual-race',
+              ).copyWith(
+                lastWakeAt: DateTime(2026, 3, 20, 6),
+                scheduledWakeAt: DateTime(2026, 3, 23, 6),
+                updatedAt: DateTime(2026, 3, 22, 9),
+              );
+          final current = snapshot.copyWith(
+            scheduledWakeAt: DateTime(2026, 3, 23, 7),
+            updatedAt: DateTime(2026, 3, 22, 9, 59),
+          );
+
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-manual-race']),
+          ).thenAnswer((_) async => {'pa-manual-race': snapshot});
+          when(
+            () => mockRepository.getAgentState('pa-manual-race'),
+          ).thenAnswer((_) async => current);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-manual-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-manual-race': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockRepository.getAgentState('pa-manual-race'),
           ).called(1);
         },
       );

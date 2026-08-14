@@ -114,17 +114,23 @@ may additionally persist `nextWakeAt` for its queued job. A successful wake
 clears the pending marker and both deadlines when no newer activity remains. A
 failed wake with pending activity re-arms the one-shot morning fallback instead
 of waiting for another edit; an overdue fallback advances to the next morning
-rather than remaining due on every hourly scan. Explicit cancellation clears
-both queued subscription work and the persisted fallback. Consequently the Wake
-tab contains a project-agent row only while actual work or a retry is pending.
+rather than remaining due on every hourly scan. When automation is disabled, a
+manual wake may preserve an already-future explicit schedule but cannot
+synthesize a new morning fallback on success or failure. Explicit cancellation
+persists removal of the fallback before clearing queued subscription work; a
+failed write therefore leaves the runtime work intact and surfaces an error in
+the project detail UI. Consequently the Wake tab contains a project-agent row
+only while actual work or a retry is pending.
 
 Older installations can still contain the former daily schedule. Startup
 restoration clears it when the agent has completed at least one wake and
-`pendingProjectActivityAt` is null, re-reading current state first so a
-concurrent activity write cannot be overwritten. `ScheduledWakeManager` applies
-the same dormant cleanup to overdue rows. Never-woken agents and agents with
-pending activity retain the row as a one-shot safety net; every successful
-workflow run clears `scheduledWakeAt` when it consumed the newest activity.
+`pendingProjectActivityAt` is null. It re-reads current state and compares the
+row's update/vector-clock metadata with the startup snapshot before writing, so
+concurrent activity or manual scheduling cannot be overwritten.
+`ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
+Never-woken agents and agents with pending activity retain the row as a one-shot
+safety net; every successful workflow run clears `scheduledWakeAt` when it
+consumed the newest activity.
 Before enqueueing a due fallback, the manager checks for queued or running work
 for the same agent and leaves the fallback durable instead of stacking a second
 inference.

@@ -4,21 +4,33 @@ part of 'project_agent_workflow.dart';
 ///
 /// A due deadline has already spent its attempt, so retaining it would make
 /// every scheduler scan retry immediately. Advancing it to the next local
-/// digest window gives the pending batch a durable retry without recurrence.
+/// digest window gives the pending batch a durable retry without recurrence,
+/// but only when automatic project wakes are allowed. A future explicit
+/// schedule is always retained because it may have been requested manually.
 DateTime? _nextProjectActivityFallback({
   required DateTime? currentSchedule,
   required DateTime? pendingActivityAt,
+  required bool automaticFallbackAllowed,
   required DateTime now,
 }) {
   if (pendingActivityAt == null) return null;
   if (currentSchedule != null && currentSchedule.isAfter(now)) {
     return currentSchedule;
   }
+  if (!automaticFallbackAllowed) return null;
   return nextOccurrenceOf(
     now,
     hour: AgentSchedules.projectDailyDigestHour,
   );
 }
+
+/// Legacy project agents omitted the automation preference and shipped with
+/// event-driven wakes enabled, while explicit opt-out and disabled inference
+/// must prevent the workflow from synthesizing a new automatic fallback.
+bool _automaticProjectFallbackAllowed(AgentIdentityEntity identity) =>
+    identity.lifecycle == AgentLifecycle.active &&
+    identity.config.automaticUpdatesEnabled != false &&
+    identity.config.inferenceSetup?.mode != AgentInferenceSetupMode.disabled;
 
 /// The full wake-cycle execution of [ProjectAgentWorkflow]. Extracted into a
 /// part-file extension to keep the workflow under the size limit; the class
@@ -58,6 +70,9 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     }
 
     final now = clock.now();
+    final automaticFallbackAllowed = _automaticProjectFallbackAllowed(
+      agentIdentity,
+    );
 
     // 2. Load the latest report and decide whether a due scheduled wake can be
     // skipped cheaply because no new project activity was recorded.
@@ -505,6 +520,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
             scheduledWakeAt: _nextProjectActivityFallback(
               currentSchedule: latestState.scheduledWakeAt,
               pendingActivityAt: nextPendingActivityAt,
+              automaticFallbackAllowed: automaticFallbackAllowed,
               now: now,
             ),
             updatedAt: now,
@@ -588,6 +604,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
               pendingActivityAt: hasPendingActivity
                   ? latestState.slots.pendingProjectActivityAt
                   : null,
+              automaticFallbackAllowed: automaticFallbackAllowed,
               now: failureAt,
             ),
             updatedAt: failureAt,

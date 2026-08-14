@@ -884,6 +884,88 @@ void main() {
         },
       );
 
+      test(
+        'does not synthesize a fallback after an automation-off manual wake',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 10);
+          final newerActivityState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 10, 1),
+            ),
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? testAgentState : newerActivityState,
+          );
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(
+            updatedState.slots.pendingProjectActivityAt,
+            DateTime(2026, 3, 20, 10, 1),
+          );
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
+
+      test(
+        'preserves a future explicit schedule when automation is off',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 10);
+          final explicitSchedule = DateTime(2026, 3, 20, 14);
+          final newerActivityState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 10, 1),
+            ),
+            scheduledWakeAt: explicitSchedule,
+          );
+          var stateRead = 0;
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer(
+            (_) async => stateRead++ == 0 ? testAgentState : newerActivityState,
+          );
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, explicitSchedule);
+        },
+      );
+
       test('records template provenance on wake run', () async {
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1251,6 +1333,57 @@ void main() {
         );
         expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
+
+      test(
+        'does not synthesize a retry after an automation-off manual failure',
+        () async {
+          final pendingState = testAgentState.copyWith(
+            slots: testAgentState.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+            ),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => pendingState);
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                throw Exception('LLM error');
+              };
+          final disabledIdentity = testAgentIdentity.copyWith(
+            config: testAgentIdentity.config.copyWith(
+              automaticUpdatesEnabled: false,
+            ),
+          );
+
+          await withClock(Clock.fixed(DateTime(2026, 3, 20, 10)), () {
+            return workflow.execute(
+              agentIdentity: disabledIdentity,
+              runKey: runKey,
+              triggerTokens: {'manual'},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().lastWhere(
+            (state) => state.consecutiveFailureCount > 0,
+          );
+          expect(updatedState.slots.pendingProjectActivityAt, isNotNull);
+          expect(updatedState.scheduledWakeAt, isNull);
+        },
+      );
       test('includes linked task context in user message', () async {
         final linkedTask = _fakeTaskEntity(
           title: 'Implement API',

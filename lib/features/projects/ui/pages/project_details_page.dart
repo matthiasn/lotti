@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -101,9 +105,13 @@ class ProjectDetailsPage extends ConsumerWidget {
                         .triggerReanalysis(identity.agentId),
               onCancelScheduledReportWake: identity == null
                   ? null
-                  : () => ref
-                        .read(projectAgentServiceProvider)
-                        .cancelScheduledWake(identity.agentId),
+                  : () async {
+                      await _cancelScheduledReportWake(
+                        context,
+                        ref,
+                        identity.agentId,
+                      );
+                    },
               isRefreshingReport: isRefreshingReport,
               onTaskTap: (summary) => beamToNamed(
                 '/tasks/${summary.task.meta.id}',
@@ -113,6 +121,28 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _cancelScheduledReportWake(
+    BuildContext context,
+    WidgetRef ref,
+    String agentId,
+  ) async {
+    try {
+      await ref.read(projectAgentServiceProvider).cancelScheduledWake(agentId);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to cancel project agent scheduled wake',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+    }
   }
 
   Future<void> _pickCategory(

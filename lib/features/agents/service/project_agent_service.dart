@@ -211,8 +211,12 @@ class ProjectAgentService {
 
   /// Cancel a scheduled wake for [agentId].
   ///
-  /// Clears the throttle deadline, cancels the deferred drain timer, removes
-  /// queued subscription jobs, and deletes the persisted one-shot fallback.
+  /// Deletes the persisted one-shot fallback before clearing the throttle
+  /// deadline, deferred drain timer, and queued subscription jobs.
+  ///
+  /// Persistence is intentionally first: if that write fails, the runtime
+  /// work remains available and the UI can report that cancellation did not
+  /// complete instead of displaying state that disagrees with storage.
   /// Mirrors `TaskAgentService.cancelScheduledWake` so the project AI Report
   /// header's cancel × has the same semantics as the task AI summary one.
   Future<void> cancelScheduledWake(String agentId) async {
@@ -221,8 +225,8 @@ class ProjectAgentService {
       'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
       subDomain: 'lifecycle',
     );
-    agentService.cancelPendingWake(agentId);
     await agentService.clearScheduledWake(agentId);
+    agentService.cancelPendingWake(agentId);
   }
 
   /// Restore project-agent runtime state after app startup.
@@ -324,10 +328,14 @@ class ProjectAgentService {
       return state;
     }
 
-    // The monitor starts before restoration and can persist project activity
-    // after the bulk snapshot above. Re-read before a whole-row upsert so this
-    // migration cannot erase that newer pending marker.
+    // The monitor or a user can write after the bulk snapshot above. Re-read
+    // before a whole-row upsert, and only migrate the exact snapshot we
+    // inspected, so cleanup cannot erase newer activity or a manual schedule.
     final currentState = await repository.getAgentState(state.agentId);
+    final snapshotChanged =
+        currentState?.updatedAt != state.updatedAt ||
+        currentState?.vectorClock != state.vectorClock;
+    if (snapshotChanged) return currentState;
     if (currentState == null ||
         currentState.scheduledWakeAt == null ||
         currentState.lastWakeAt == null ||
