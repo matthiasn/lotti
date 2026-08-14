@@ -196,6 +196,11 @@ void main() {
     when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
+    when(() => mockRepository.getEntity(any())).thenAnswer((invocation) async {
+      return makeIdentity(
+        agentId: invocation.positionalArguments.single as String,
+      );
+    });
 
     service = ProjectAgentService(
       agentService: mockAgentService,
@@ -1260,6 +1265,9 @@ void main() {
             ),
           ).thenAnswer((_) async => [projectAgent]);
           when(
+            () => mockRepository.getEntity('pa-manual'),
+          ).thenAnswer((_) async => projectAgent);
+          when(
             () => mockRepository.getAgentStatesByAgentIds(['pa-manual']),
           ).thenAnswer((_) async => {'pa-manual': state});
           when(
@@ -1316,6 +1324,9 @@ void main() {
               lifecycle: AgentLifecycle.active,
             ),
           ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getEntity('pa-opted-out'),
+          ).thenAnswer((_) async => projectAgent);
           when(
             () => mockRepository.getAgentStatesByAgentIds(['pa-opted-out']),
           ).thenAnswer((_) async => {'pa-opted-out': state});
@@ -1655,6 +1666,77 @@ void main() {
           );
           verifyNever(() => mockSyncService.upsertEntity(any()));
           expect(notifiedAgentIds, ['pa-pending']);
+        },
+      );
+
+      test(
+        'startup reconciliation honors a concurrent lifecycle change',
+        () async {
+          final snapshotIdentity = makeIdentity(agentId: 'pa-paused-race');
+          final currentIdentity = snapshotIdentity.copyWith(
+            lifecycle: AgentLifecycle.dormant,
+            updatedAt: DateTime(2026, 3, 22, 10),
+          );
+          final link = AgentLink.agentProject(
+            id: 'link-paused-race',
+            fromId: 'pa-paused-race',
+            toId: 'project-paused-race',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          final pendingState =
+              makeState(
+                id: 'state-pa-paused-race',
+                agentId: 'pa-paused-race',
+                activeProjectId: 'project-paused-race',
+              ).copyWith(
+                slots: AgentSlots(
+                  activeProjectId: 'project-paused-race',
+                  pendingProjectActivityAt: DateTime(2026, 3, 22, 9),
+                ),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [snapshotIdentity]);
+          when(
+            () => mockRepository.getEntity('pa-paused-race'),
+          ).thenAnswer((_) async => currentIdentity);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-paused-race']),
+          ).thenAnswer((_) async => {'pa-paused-race': pendingState});
+          when(
+            () => mockRepository.getAgentState('pa-paused-race'),
+          ).thenAnswer((_) async => pendingState);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-paused-race'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'pa-paused-race': [link],
+            },
+          );
+
+          await service.restoreSubscriptions();
+
+          verifyNever(() => mockRepository.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.removeSubscriptions('pa-paused-race'),
+          ).called(1);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'pa-paused-race',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(
+              'pa-paused-race',
+            ),
+          );
         },
       );
 

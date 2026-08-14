@@ -136,8 +136,9 @@ stateDiagram-v2
   Missing-fallback repair re-reads the current identity policy inside the same
   local transaction as the state write; a concurrent opt-out therefore wins
   instead of being overwritten by a stale sync-reconciliation decision. Local
-  settings and resume-time fallback repair use the same transaction-local
-  policy recheck before enabling runtime.
+  settings, resume-time fallback repair, and startup restoration use the same
+  transaction-local policy recheck before enabling runtime; a lifecycle change
+  that wins during startup also removes the stale observation subscriptions.
 
 ## Dormant-by-default scheduling
 

@@ -332,15 +332,18 @@ class ProjectAgentService {
         for (final link in links) {
           _registerProjectSubscription(agent.agentId, link.toId);
         }
-        if (projectAgentAutomaticWakesAllowed(
-          config: agent.config,
-          lifecycle: agent.lifecycle,
-        )) {
-          state = await _armPendingActivityFallback(state);
+        final reconciliation = await _reconcilePendingActivityFallback(
+          agentId: agent.agentId,
+          snapshot: state,
+        );
+        state = reconciliation.state;
+        if (reconciliation.automaticWakesAllowed) {
           orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
           _hydrateThrottleDeadlineFromState(agent.agentId, state);
         } else {
-          state = await _clearDisabledActivityFallback(state);
+          if (!reconciliation.active) {
+            orchestrator.removeSubscriptions(agent.agentId);
+          }
           orchestrator.disableAutomaticUpdatesRuntime(agent.agentId);
         }
         count++;
@@ -383,76 +386,82 @@ class ProjectAgentService {
     );
   }
 
-  /// Restores a missing local fallback for already-pending project activity.
+  /// Reconciles a project agent's device-local fallback with current policy.
   ///
-  /// The startup snapshot is only a hint. Re-read immediately before writing
-  /// so a cancellation, completion, or manual schedule that lands during
-  /// restoration wins instead of being overwritten by the stale snapshot.
-  Future<AgentStateEntity?> _armPendingActivityFallback(
-    AgentStateEntity? snapshot,
-  ) async {
-    if (snapshot == null ||
-        snapshot.slots.pendingProjectActivityAt == null ||
-        snapshot.scheduledWakeAt != null) {
-      return snapshot;
-    }
-
-    AgentStateEntity? result;
+  /// The bulk startup snapshots are only hints. Identity policy is re-read in
+  /// the same transaction that may arm or clear a fallback so a concurrent
+  /// opt-out or lifecycle change controls both persistence and runtime state.
+  Future<
+    ({
+      AgentStateEntity? state,
+      bool active,
+      bool automaticWakesAllowed,
+    })
+  >
+  _reconcilePendingActivityFallback({
+    required String agentId,
+    required AgentStateEntity? snapshot,
+  }) async {
+    var result = snapshot;
+    var active = false;
+    var automaticWakesAllowed = false;
     var changed = false;
     await repository.runInTransaction(() async {
-      final current = await repository.getAgentState(snapshot.agentId);
-      if (current == null ||
-          current.deletedAt != null ||
-          current.slots.pendingProjectActivityAt == null ||
-          current.scheduledWakeAt != null) {
+      final currentIdentity = await repository.getEntity(agentId);
+      if (currentIdentity is AgentIdentityEntity) {
+        active = currentIdentity.lifecycle == AgentLifecycle.active;
+        automaticWakesAllowed = projectAgentAutomaticWakesAllowed(
+          config: currentIdentity.config,
+          lifecycle: currentIdentity.lifecycle,
+        );
+      }
+      final shouldArm =
+          automaticWakesAllowed &&
+          snapshot?.slots.pendingProjectActivityAt != null &&
+          snapshot?.scheduledWakeAt == null;
+      final shouldClear =
+          !automaticWakesAllowed && snapshot?.scheduledWakeAt != null;
+      if (!shouldArm && !shouldClear) return;
+
+      final current = await repository.getAgentState(agentId);
+      if (current == null || current.deletedAt != null) {
         result = current;
         return;
+      }
+
+      final DateTime? scheduledWakeAt;
+      if (automaticWakesAllowed) {
+        if (current.slots.pendingProjectActivityAt == null ||
+            current.scheduledWakeAt != null) {
+          result = current;
+          return;
+        }
+        scheduledWakeAt = nextOccurrenceOf(
+          clock.now(),
+          hour: AgentSchedules.projectDailyDigestHour,
+        );
+      } else {
+        if (current.scheduledWakeAt == null) {
+          result = current;
+          return;
+        }
+        scheduledWakeAt = null;
       }
 
       // This deadline exists only on this device. Do not advance the synced
       // vector clock or LWW timestamp: doing so could make an obsolete pending
       // marker beat another device's successful completion during merge.
-      final updated = current.copyWith(
-        scheduledWakeAt: nextOccurrenceOf(
-          clock.now(),
-          hour: AgentSchedules.projectDailyDigestHour,
-        ),
-      );
+      final updated = current.copyWith(scheduledWakeAt: scheduledWakeAt);
       await repository.upsertEntity(updated);
       result = updated;
       changed = true;
     });
-    if (changed) onPersistedStateChanged?.call(snapshot.agentId);
-    return result;
-  }
-
-  /// Removes any device-local fallback while project automation is disabled.
-  ///
-  /// This also covers markerless creation deadlines left by an interrupted
-  /// upgrade or shutdown. The pending activity marker, LWW timestamp, and
-  /// vector clock remain untouched so opting back in can safely re-arm work.
-  Future<AgentStateEntity?> _clearDisabledActivityFallback(
-    AgentStateEntity? snapshot,
-  ) async {
-    if (snapshot == null || snapshot.scheduledWakeAt == null) return snapshot;
-
-    AgentStateEntity? result;
-    var changed = false;
-    await repository.runInTransaction(() async {
-      final current = await repository.getAgentState(snapshot.agentId);
-      if (current == null ||
-          current.deletedAt != null ||
-          current.scheduledWakeAt == null) {
-        result = current;
-        return;
-      }
-      final updated = current.copyWith(scheduledWakeAt: null);
-      await repository.upsertEntity(updated);
-      result = updated;
-      changed = true;
-    });
-    if (changed) onPersistedStateChanged?.call(snapshot.agentId);
-    return result;
+    if (changed) onPersistedStateChanged?.call(agentId);
+    return (
+      state: result,
+      active: active,
+      automaticWakesAllowed: automaticWakesAllowed,
+    );
   }
 
   /// Removes the legacy always-on daily digest from an idle project agent.
