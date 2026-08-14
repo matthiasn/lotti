@@ -1424,6 +1424,62 @@ void main() {
         },
       );
 
+      test(
+        'keeps a resumed opted-out project agent local and non-waking',
+        () async {
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 4}),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: false,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.restoreSubscriptionsForAgent('agent-1');
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, isNotNull);
+          expect(persisted.updatedAt, state.updatedAt);
+          expect(persisted.vectorClock, state.vectorClock);
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
+          );
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
       test('registers subscriptions for a single agent', () async {
         final link1 = AgentLink.agentTask(
           id: 'link-1',

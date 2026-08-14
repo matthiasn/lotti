@@ -3037,6 +3037,75 @@ void main() {
       );
 
       test(
+        'project identity classifies marker-only state completion',
+        () async {
+          final identity = AgentDomainEntity.agent(
+            id: 'project-agent-marker-only',
+            agentId: 'project-agent-marker-only',
+            kind: 'project_agent',
+            displayName: 'Project Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-project-marker-only',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+          final local =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-marker-only',
+                    agentId: identity.agentId,
+                    slots: const AgentSlots(
+                      pendingProjectActivityAt: null,
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'local': 1}),
+                  )
+                  as AgentStateEntity;
+          final localWithPending = local.copyWith(
+            slots: local.slots.copyWith(
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+            ),
+          );
+          final incoming = local.copyWith(
+            lastWakeAt: DateTime(2026, 8, 14, 10),
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'local': 1, 'remote': 1}),
+          );
+          when(
+            () => mockAgentRepo.getEntity(local.id),
+          ).thenAnswer((_) async => localWithPending);
+          when(
+            () => mockAgentRepo.getEntity(identity.id),
+          ).thenAnswer((_) async => identity);
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: incoming,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final applied = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().first;
+          expect(applied.scheduledWakeAt, isNull);
+          verify(
+            () => mockOrchestrator.cancelPendingAutomaticWakes(
+              local.agentId,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'removes subscriptions for dormant project_agent identity',
         () async {
           final entity = AgentDomainEntity.agent(

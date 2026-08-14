@@ -416,6 +416,46 @@ void main() {
       );
 
       test(
+        'markReportStale ignores older evidence through the atomic updater',
+        () async {
+          final persistedAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    reportStaleAt: persistedAt,
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          final persistedNotifications = <String>[];
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncAgentStateUpdater: (agentId, update) async {
+              final updated = await update(state);
+              if (updated == null) return false;
+              state = updated;
+              return true;
+            },
+            onPersistedStateChanged: persistedNotifications.add,
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: persistedAt.subtract(const Duration(minutes: 1)),
+          );
+
+          expect(state.reportStaleAt, persistedAt);
+          expect(persistedNotifications, isEmpty);
+          verifyNever(() => mockRepository.getAgentState(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
+        },
+      );
+
+      test(
         'a failed stale-watermark write is contained and reported',
         () async {
           // The watermark is a hint that the report has drifted, not the report
