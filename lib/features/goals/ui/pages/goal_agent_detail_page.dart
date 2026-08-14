@@ -339,7 +339,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // The gap belongs to the card, not to the position: emitted
         // unconditionally it doubled up with the next section's own gap
         // whenever this card had nothing to show.
-        if (isActive) ...[
+        // Gated on there BEING a change set, not merely on the agent being
+        // active. The card renders nothing when nothing is pending, so an
+        // active goal with no proposal still paid a full card gap here — the
+        // one broken interval in an otherwise even stack.
+        if (isActive && (health?.pendingProposals ?? 0) > 0) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           ChangeSetSummaryCard.selfTargeted(
             agentId: agentId,
