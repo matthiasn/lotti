@@ -218,19 +218,35 @@ void main() {
       });
 
       test('returns failure when no active project ID in slots', () async {
+        final now = DateTime(2026, 3, 20, 10);
+        final dueState = testAgentStateNoProject.copyWith(
+          slots: testAgentStateNoProject.slots.copyWith(
+            pendingProjectActivityAt: DateTime(2026, 3, 20, 9),
+          ),
+          scheduledWakeAt: DateTime(2026, 3, 20, 6),
+        );
         when(
           () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentStateNoProject);
+        ).thenAnswer((_) async => dueState);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+        final result = await withClock(Clock.fixed(now), () {
+          return workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+        });
 
         expect(result.success, isFalse);
         expect(result.error, contains('No active project ID'));
+        final updatedState =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentStateEntity;
+        expect(updatedState.consecutiveFailureCount, 1);
+        expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
       });
 
       test('returns failure when project entity not found', () async {

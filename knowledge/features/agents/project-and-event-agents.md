@@ -11,7 +11,7 @@ sources:
   - id: project-workflow
     resource: ../../../lib/features/agents/workflow/project_agent_workflow.dart
     title: ProjectAgentWorkflow
-    last_modified: 2026-07-21
+    last_modified: 2026-08-14
   - id: event-workflow
     resource: ../../../lib/features/agents/workflow/event_agent_workflow.dart
     title: EventAgentWorkflow
@@ -118,8 +118,8 @@ stateDiagram-v2
   active legacy project agent with no stored preference retains its shipped-on
   behavior; explicit opt-out, inactive lifecycle, and disabled inference block
   automatic subscription and fallback wakes while observation remains wired.
-  If a state and project link arrive before their synced identity, identity
-  reconciliation arms the already-pending marker once that policy becomes
+  Identity, state, and project-link apply paths all reconcile the marker, so
+  every valid sync arrival order arms already-pending work once policy becomes
   evaluable; startup restoration performs the same repair after a restart.
 
 ## Dormant-by-default scheduling
@@ -148,7 +148,10 @@ row's update/vector-clock metadata with the startup snapshot before writing, so
 concurrent activity or manual scheduling cannot be overwritten.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
 Never-woken agents and agents with pending activity retain the row as a one-shot
-safety net; every successful workflow run clears `scheduledWakeAt` when it
+safety net. Before retiring a row, the manager re-reads state and rechecks both
+the due deadline and pending marker, so activity or a replacement schedule that
+arrives during the scan wins. Every successful workflow run clears
+`scheduledWakeAt` when it
 consumed the newest activity.
 Before enqueueing a due fallback, the manager checks for queued or running work
 for the same agent and leaves the fallback durable instead of stacking a second
@@ -175,6 +178,9 @@ entity and prior observations, resolves template/version and inference profile,
 builds linked-task context **including task-agent reports**, runs the
 conversation with `ProjectAgentStrategy`, and persists token usage, final
 thought, report, observations, deferred change set and updated state.
+State that lacks `activeProjectId` enters the same shared failure path as a
+missing project or provider, advancing any overdue fallback instead of leaving
+it due on every scheduler scan.
 Successful persistence clears `scheduledWakeAt` and
 `pendingProjectActivityAt` only when no newer activity arrived during the wake;
 otherwise it preserves a future fallback for the retained marker.

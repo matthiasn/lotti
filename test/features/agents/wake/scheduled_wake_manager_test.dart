@@ -1795,6 +1795,9 @@ void main() {
             (_) async => [dormantState],
           );
           when(
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
+          when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
 
@@ -1814,6 +1817,47 @@ void main() {
                   ).captured.single
                   as AgentStateEntity;
           expect(captured.scheduledWakeAt, isNull);
+
+          manager.stop();
+        });
+      });
+    });
+
+    test('does not retire project activity that arrives during the scan', () {
+      final now = DateTime(2024, 3, 15, 10, 30);
+      final dormantSnapshot = makeTestState(
+        scheduledWakeAt: DateTime(2024, 3, 13, 6),
+        lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+        slots: const AgentSlots(activeProjectId: 'project-1'),
+      );
+      final currentState = dormantSnapshot.copyWith(
+        slots: AgentSlots(
+          activeProjectId: 'project-1',
+          pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
+        ),
+        nextWakeAt: DateTime(2024, 3, 15, 10, 35),
+        updatedAt: DateTime(2024, 3, 15, 10, 15),
+      );
+
+      fakeAsync((async) {
+        withClock(Clock.fixed(now), () {
+          when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+            (_) async => [dormantSnapshot],
+          );
+          when(
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => currentState);
+
+          final manager = createAndStart();
+          async.flushMicrotasks();
+
+          verifyNever(() => syncService.upsertEntity(any()));
+          verify(
+            () => orchestrator.enqueueManualWake(
+              agentId: kTestAgentId,
+              reason: WakeReason.scheduled.name,
+            ),
+          ).called(1);
 
           manager.stop();
         });
@@ -1918,6 +1962,12 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState, activeState],
           );
+          when(() => repository.getAgentState(any())).thenAnswer((invocation) {
+            final agentId = invocation.positionalArguments.single as String;
+            return Future.value(
+              agentId == dormantId ? dormantState : activeState,
+            );
+          });
           when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
@@ -1963,6 +2013,9 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [dormantState],
           );
+          when(
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
           when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
@@ -2101,6 +2154,9 @@ void main() {
             (_) async => [dormantState],
           );
           when(
+            () => repository.getAgentState(kTestAgentId),
+          ).thenAnswer((_) async => dormantState);
+          when(
             () => syncService.upsertEntity(any()),
           ).thenAnswer((_) async {});
 
@@ -2142,6 +2198,12 @@ void main() {
           when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
             (_) async => [failingState, succeedingState],
           );
+          when(() => repository.getAgentState(any())).thenAnswer((invocation) {
+            final agentId = invocation.positionalArguments.single as String;
+            return Future.value(
+              agentId == failingId ? failingState : succeedingState,
+            );
+          });
           // First agent's upsert fails.
           when(
             () => syncService.upsertEntity(any()),

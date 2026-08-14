@@ -265,9 +265,10 @@ class ScheduledWakeManager with AgentErrorLogging {
           }
 
           if (_shouldRetireDormantProjectSchedule(state)) {
-            await _retireDormantProjectSchedule(state, now);
-            retired++;
-            continue;
+            if (await _retireDormantProjectSchedule(state, now)) {
+              retired++;
+              continue;
+            }
           }
 
           // A subscription or explicit wake may already be processing the
@@ -601,22 +602,35 @@ class ScheduledWakeManager with AgentErrorLogging {
   }
 
   /// Clear an obsolete project `scheduledWakeAt` without executing a wake.
-  Future<void> _retireDormantProjectSchedule(
+  Future<bool> _retireDormantProjectSchedule(
     AgentStateEntity state,
     DateTime now,
   ) async {
+    // The due query is a snapshot and the identity lookup above awaits. Use a
+    // fresh row for both the decision and the whole-row write so activity or a
+    // replacement schedule that lands during the scan cannot be erased.
+    final currentState = await _repository.getAgentState(state.agentId);
+    final currentSchedule = currentState?.scheduledWakeAt;
+    if (currentState == null ||
+        currentSchedule == null ||
+        currentSchedule.isAfter(now) ||
+        !_shouldRetireDormantProjectSchedule(currentState)) {
+      return false;
+    }
+
     await _syncService.upsertEntity(
-      state.copyWith(
+      currentState.copyWith(
         scheduledWakeAt: null,
         updatedAt: now,
       ),
     );
-    onPersistedStateChanged?.call(state.agentId);
+    onPersistedStateChanged?.call(currentState.agentId);
 
     _log(
       'retired dormant project schedule for '
-      '${DomainLogger.sanitizeId(state.agentId)}',
+      '${DomainLogger.sanitizeId(currentState.agentId)}',
     );
+    return true;
   }
 
   void _log(String message) {

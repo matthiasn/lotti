@@ -55,10 +55,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
     final projectId = state.slots.activeProjectId;
     if (projectId == null) {
       _log('no active project ID — aborting wake', subDomain: 'execute');
-      return const WakeResult(
-        success: false,
-        error: 'No active project ID',
-      );
+      throw StateError('No active project ID');
     }
 
     final now = clock.now();

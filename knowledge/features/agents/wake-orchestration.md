@@ -148,7 +148,10 @@ clears `scheduledWakeAt`. The scheduled-wake manager separately clears legacy
 completed rows only after at least one successful wake and only when no pending
 activity remains; it preserves never-woken creation work and rows whose pending
 marker proves that work remains, and skips enqueue while equivalent work is
-already queued or running. A successful wake retains a future fallback when
+already queued or running. Retirement re-reads the state at the write boundary
+and rechecks that its schedule is still due and dormant, so an activity marker,
+deferred deadline, or replacement manual schedule written during the scan is
+never erased. A successful wake retains a future fallback when
 newer activity landed during the run. Every failure after state
 resolution—including setup failures before inference—uses the same
 create-or-advance deadline policy. Explicit

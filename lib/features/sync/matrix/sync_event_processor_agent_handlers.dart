@@ -297,6 +297,23 @@ extension _AgentHandlers on SyncEventProcessor {
         // another kind branch. Contributors contain their own failures.
         await _offerIdentityToRuntimeMaintenance(appliedIdentity);
       }
+      // The identity may already be present when its state arrives. Sync
+      // notifications do not enter the local project-update stream, so repair
+      // the device-local fallback here instead of waiting for a restart.
+      if (wakeOrchestrator != null && entityToApply is AgentStateEntity) {
+        final identity = await agentRepository!.getEntity(
+          entityToApply.agentId,
+        );
+        if (identity is AgentIdentityEntity &&
+            identity.kind == 'project_agent' &&
+            projectAgentAutomaticWakesAllowed(
+              config: identity.config,
+              lifecycle: identity.lifecycle,
+            )) {
+          wakeOrchestrator!.enableAutomaticUpdatesRuntime(identity.agentId);
+          await _armPendingProjectActivityFallback(identity);
+        }
+      }
       // Ordering: creation bundles emit the identity BEFORE its spec rows,
       // so the identity-time mirror can find no criteria yet. When the
       // spec head lands, offer the (already persisted) identity again —
@@ -461,6 +478,7 @@ extension _AgentHandlers on SyncEventProcessor {
               lifecycle: agent.lifecycle,
             )) {
               wakeOrchestrator!.enableAutomaticUpdatesRuntime(agent.agentId);
+              await _armPendingProjectActivityFallback(agent);
             } else {
               wakeOrchestrator!.disableAutomaticUpdatesRuntime(agent.agentId);
             }

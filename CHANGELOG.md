@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   digest wake is now scheduled only after relevant project or linked-task
   activity, while direct edits and manual refreshes still wake them promptly.
   Existing dormant schedules are removed from the Wake tab on startup.
+- **Pending project-agent work now survives failures, restarts, and sync
+  ordering.** Meaningful one-shot fallback wakes remain visible in the project
+  report countdown until the work succeeds or you cancel it, and cancellation
+  cannot be re-armed by an in-flight wake.
 
 ## [1.0.9]
 ### Added
