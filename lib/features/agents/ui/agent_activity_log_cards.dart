@@ -107,13 +107,15 @@ class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
                   ),
                 ],
               ),
-              if (report.content.isNotEmpty)
+              if (report.content.isNotEmpty ||
+                  explicitReportTldr(report) != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
                   child: _expanded
-                      ? AgentMarkdownView(report.content)
+                      ? AgentMarkdownView(reportBodyWithTldr(report))
                       : AgentMarkdownView(
-                          parseReportContent(report.content).tldr,
+                          explicitReportTldr(report) ??
+                              parseReportContent(report.content).tldr,
                         ),
                 ),
               if (attributionEnvelope != null)

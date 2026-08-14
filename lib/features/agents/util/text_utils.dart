@@ -50,6 +50,13 @@ final _reportIdAnnotationPatterns = <RegExp>[
 /// leading whitespace is what keeps links whole — URLs contain none — and the
 /// trailing guard leaves a longer token intact rather than beheading it.
 ///
+/// An ASCII prefix is consumed with it, so the id is caught in the exact form
+/// FACTS hands over — `habit-71ca84b0`, not only the bare `71ca84b0` after a
+/// space. Those prefixes are minted in code, never translated, so matching
+/// them is safe in every language. A prefix with no hex run behind it —
+/// `health-blood-pressure-systolic` — never matches, and should not: it reads
+/// perfectly well.
+///
 /// **Opt-in, and only for goal reports.** Shape alone cannot tell an id from
 /// an eight-character git SHA, a checksum or any other hex value a task or
 /// project report may legitimately quote, and deleting one of those silently
@@ -60,7 +67,8 @@ final _reportIdAnnotationPatterns = <RegExp>[
 /// The leading space goes with it, so "on habit 71ca84b0 — 2 more" closes up
 /// to "on habit — 2 more" rather than leaving a double space behind.
 final _bareIdFragmentPattern = RegExp(
-  '\\s`?(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
+  r'\s`?(?:[A-Za-z]+-)*'
+  '(?:$_uuid|(?=[0-9a-fA-F]{8})[0-9a-fA-F]*[a-fA-F][0-9a-fA-F]*)'
   r'`?(?![-\w/])',
 );
 

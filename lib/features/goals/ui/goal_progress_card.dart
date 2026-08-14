@@ -101,16 +101,29 @@ class GoalCompactWindowStrip extends StatelessWidget {
       }
       final date = _dateAt(index, visible.length);
       final dayName = DateFormat.MMMEd(locale).format(date);
+      // Colour and an inner dot are the only thing separating these cells,
+      // and neither reaches a screen reader. Each day therefore announces its
+      // own state, not just its date — the strip's summary gives a count and
+      // cannot say WHICH days went well, which is exactly what a reader needs
+      // once every cell is individually actionable.
+      final outcome = rating != null
+          ? goalAssessmentRatingLabel(context, rating)
+          : switch (visible[index]) {
+              GoalCompactDayState.full => context.messages.goalProgressDone,
+              GoalCompactDayState.partial =>
+                context.messages.goalProgressPartial,
+              GoalCompactDayState.none =>
+                context.messages.goalProgressHabitDayNoEntry,
+            };
       return _CompactDayCell(
         state: visible[index],
         today: today,
         size: cellSize,
         rating: rating,
-        // A judged day says so before it offers to be re-judged: the verdict
-        // is the fact, and re-opening the sheet is what you do about it.
-        label: rating == null
-            ? context.messages.goalAssessmentRecordFor(dayName)
-            : '$dayName: ${goalAssessmentRatingLabel(context, rating)}',
+        label: context.messages.goalProgressHabitDaySemantics(
+          dayName,
+          outcome,
+        ),
         onTap: () => onDaySelected(date),
       );
     }
@@ -237,9 +250,10 @@ class _CompactDayCell extends StatelessWidget {
         : padded;
     final onTap = this.onTap;
     if (onTap == null) return decorated;
-    // The square keeps its size; the hit slot around it clears the touch
-    // floor. Growing the square itself to 48px would make the strip shout
-    // over the habit rows it is meant to summarise.
+    // The square keeps its size; the hit slot around it takes the full height
+    // of the touch floor and whatever width the row can spare. Growing the
+    // square itself to 48px would make the strip shout over the habit rows it
+    // is meant to summarise.
     return Semantics(
       label: label,
       button: true,

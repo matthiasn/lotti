@@ -169,6 +169,33 @@ void main() {
       },
     );
 
+    test('strips the criterion id in the exact form FACTS hands over', () {
+      // `habit-<habitId>` is what the model is given for
+      // nextActions[].criterionId, so it is the form most likely to be echoed
+      // — and the hex there follows a hyphen, not whitespace.
+      expect(
+        sanitizeAgentReportText(
+          'Close the gap on habit-71ca84b0 this week',
+          stripBareIds: true,
+        ),
+        'Close the gap on this week',
+      );
+      expect(
+        sanitizeAgentReportText(
+          'Behind on habit-$uuid today',
+          stripBareIds: true,
+        ),
+        'Behind on today',
+      );
+    });
+
+    test('leaves a readable criterion id with no hex in it alone', () {
+      // `health-blood-pressure-systolic` is a criterion id too, and it reads
+      // perfectly well — there is nothing to protect the reader from.
+      const readable = 'Systolic is health-blood-pressure-systolic today';
+      expect(sanitizeAgentReportText(readable, stripBareIds: true), readable);
+    });
+
     test('strips a bare UUID standing in prose', () {
       expect(
         sanitizeAgentReportText('Ship $uuid now', stripBareIds: true),

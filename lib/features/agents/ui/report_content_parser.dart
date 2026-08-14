@@ -1,3 +1,30 @@
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+
+/// The report's own summary, when it has one.
+///
+/// A report whose author split the tiers carries an explicit
+/// [AgentReportEntity.tldr], and its [AgentReportEntity.content] is the
+/// expanded body ALONE. Deriving a preview from that content would show the
+/// first body section instead of the summary, so the explicit field wins
+/// wherever it is set. Older reports have none and keep the
+/// parsed-from-markdown behaviour.
+String? explicitReportTldr(AgentReportEntity report) {
+  final tldr = report.tldr?.trim();
+  return tldr == null || tldr.isEmpty ? null : tldr;
+}
+
+/// The full rendering of a report: its summary, then the body it introduces.
+///
+/// A view that renders [AgentReportEntity.content] alone silently drops the
+/// summary for any report that split the tiers.
+String reportBodyWithTldr(AgentReportEntity report) {
+  final tldr = explicitReportTldr(report);
+  final content = report.content.trim();
+  if (tldr == null) return report.content;
+  if (content.isEmpty || content == tldr) return tldr;
+  return '$tldr\n\n$content';
+}
+
 /// Parses agent report markdown into structured TLDR and additional sections.
 ///
 /// Used by both the expandable report section on task detail pages and the

@@ -199,20 +199,23 @@ void main() {
     // *past* day is the point: before this, the only way to reflect on a day
     // was the "Reflect on today" row, so a day could never be closed off
     // once it had passed.
-    await tester.tap(
-      find.bySemanticsLabel(
-        'Record for ${DateFormat.MMMEd().format(
-          today.subtract(const Duration(days: 6)),
-        )}',
-      ),
-    );
-    await tester.tap(
-      find.bySemanticsLabel(
-        'Record for ${DateFormat.MMMEd().format(today)}',
-      ),
-    );
+    String cell(int daysBack, String outcome) =>
+        '${DateFormat.MMMEd().format(today.subtract(Duration(days: daysBack)))}'
+        ': $outcome';
+
+    await tester.tap(find.bySemanticsLabel(cell(6, 'done · target met')));
+    await tester.tap(find.bySemanticsLabel(cell(0, 'No entry')));
 
     expect(tapped, [today.subtract(const Duration(days: 6)), today]);
+
+    // Colour and an inner dot are the only visual difference between these
+    // cells, and neither reaches a screen reader. Each day names its own
+    // state; the strip's summary only gives a count and cannot say which
+    // days went well.
+    expect(
+      find.bySemanticsLabel(cell(4, 'done · target not met yet')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a recorded verdict outranks the measured state, and each '
@@ -422,6 +425,23 @@ void main() {
         reason: 'cell $index is under the touch floor',
       );
     }
+    // The targets tile the row with no dead space between them. Seven cells
+    // inside a card's rail cannot each reach 48px wide, so every pixel that
+    // would have gone to a gap goes to a target instead.
+    // The targets tile the row rather than sitting as islands in it. Seven
+    // cells inside a card's rail cannot each reach 48px wide, so every pixel
+    // that would have gone to a declared gap goes to a target instead.
+    var covered = 0.0;
+    for (var index = 0; index < 7; index++) {
+      covered += tester.getSize(cells.at(index)).width;
+    }
+    expect(
+      covered,
+      greaterThan(
+        tester.getSize(find.byType(GoalCompactWindowStrip)).width * 0.98,
+      ),
+      reason: 'dead space sits between the day targets',
+    );
 
     // The square itself matches the habit day squares below it — the whole
     // goal used to render at IconSizes.xs against their iconChipCompact,
