@@ -198,6 +198,11 @@ Sync apply overlays those absent fields from the local identity for both task
 and project agents; explicit incoming values still win. A legacy rewrite can
 therefore rename or otherwise update a project agent without silently undoing
 its local automation opt-out or disabled inference setup.
+Older project-state payloads may likewise omit `pendingProjectActivityAt`.
+Sync apply detects field presence before deserialization: omission preserves
+the receiving device's pending marker and fallback, while an explicit null
+still records that the originating device consumed the work and cancels the
+receiving device's automatic wake.
 
 Failure persistence notifies state consumers only after the retry deadline is
 successfully written. The project detail report prefers the subscription

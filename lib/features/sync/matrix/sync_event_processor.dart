@@ -356,7 +356,11 @@ class SyncEventProcessor {
 
       // `await` so exceptions from prepare flow through the `catch` below
       // (Dart does not hook `catch` onto a returned future without it).
-      return await _prepareForMessage(event: event, syncMessage: syncMessage);
+      return await _prepareForMessage(
+        event: event,
+        syncMessage: syncMessage,
+        rawMessageJson: messageJson,
+      );
     } on UnrecoverableSyncPayloadException catch (error) {
       _trace(
         'skipping unrecoverable sync payload: $error '
@@ -479,6 +483,7 @@ class SyncEventProcessor {
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
+    Map<String, dynamic>? rawMessageJson,
   }) async {
     // Self-echo short-circuit: every Matrix event the local host sends
     // loops back through `/sync` (and again on catch-up after a
@@ -506,11 +511,16 @@ class SyncEventProcessor {
       case final SyncJournalEntity msg:
         return _prepareJournalEntity(event: event, syncMessage: msg);
       case final SyncAgentEntity msg:
-        final resolved = await _resolveAgentEntity(msg);
+        final resolved = await _resolveAgentEntity(
+          msg,
+          rawMessageJson: rawMessageJson,
+        );
         return PreparedSyncEvent._(
           event: event,
           syncMessage: msg,
-          resolvedAgentEntity: resolved,
+          resolvedAgentEntity: resolved.entity,
+          pendingProjectActivityAtWasPresent:
+              resolved.pendingProjectActivityAtWasPresent,
         );
       case final SyncAgentLink msg:
         final resolved = await _resolveAgentLink(msg);

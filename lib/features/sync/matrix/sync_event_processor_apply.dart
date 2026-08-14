@@ -264,6 +264,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         await _applyAgentEntityMessage(
           msg: msg,
           resolvedEntity: prepared.resolvedAgentEntity,
+          pendingProjectActivityAtWasPresent:
+              prepared.pendingProjectActivityAtWasPresent,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         return null;
@@ -365,6 +367,7 @@ class PreparedSyncEvent {
     this.isSelfEcho = false,
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
+    this.pendingProjectActivityAtWasPresent,
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
@@ -378,6 +381,7 @@ class PreparedSyncEvent {
     this.isSelfEcho = false,
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
+    this.pendingProjectActivityAtWasPresent,
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
@@ -417,6 +421,11 @@ class PreparedSyncEvent {
   /// path, or descriptor-miss without a local file) — apply will treat it as
   /// a terminal skip.
   final AgentDomainEntity? resolvedAgentEntity;
+
+  /// Whether the raw incoming agent-state payload explicitly carried the
+  /// `pendingProjectActivityAt` slot. Null means the prepare path had no raw
+  /// field-presence information, as with already-typed outbox children.
+  final bool? pendingProjectActivityAtWasPresent;
 
   /// Resolved link when [syncMessage] is a [SyncAgentLink]. Same null
   /// semantics as [resolvedAgentEntity].

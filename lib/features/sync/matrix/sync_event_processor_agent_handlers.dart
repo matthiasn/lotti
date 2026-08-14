@@ -59,6 +59,7 @@ extension _AgentHandlers on SyncEventProcessor {
     required String? attachmentEventId,
     required T Function(Map<String, dynamic>) fromJson,
     required String typeName,
+    void Function(Map<String, dynamic>)? inspectJson,
   }) async {
     if (inline != null) return inline;
     final jp = jsonPath;
@@ -97,7 +98,9 @@ extension _AgentHandlers on SyncEventProcessor {
     );
     if (fetched != null) {
       try {
-        return fromJson(json.decode(fetched) as Map<String, dynamic>);
+        final decoded = json.decode(fetched) as Map<String, dynamic>;
+        inspectJson?.call(decoded);
+        return fromJson(decoded);
       } catch (e, st) {
         _loggingService.error(
           LogDomain.sync,
@@ -119,7 +122,9 @@ extension _AgentHandlers on SyncEventProcessor {
     // No descriptor available on a legacy envelope — fall back to disk.
     try {
       final jsonString = await file.readAsString();
-      return fromJson(json.decode(jsonString) as Map<String, dynamic>);
+      final decoded = json.decode(jsonString) as Map<String, dynamic>;
+      inspectJson?.call(decoded);
+      return fromJson(decoded);
     } on FileSystemException {
       // Attachment file not yet available — rethrow so the pipeline retries
       // and registers the pending descriptor path for catch-up.
@@ -135,15 +140,45 @@ extension _AgentHandlers on SyncEventProcessor {
     }
   }
 
-  Future<AgentDomainEntity?> _resolveAgentEntity(
-    SyncAgentEntity msg,
-  ) => _resolveAgentPayload(
-    inline: msg.agentEntity,
-    jsonPath: msg.jsonPath,
-    attachmentEventId: msg.attachmentEventId,
-    fromJson: AgentDomainEntity.fromJson,
-    typeName: 'agentEntity',
-  );
+  Future<
+    ({
+      AgentDomainEntity? entity,
+      bool? pendingProjectActivityAtWasPresent,
+    })
+  >
+  _resolveAgentEntity(
+    SyncAgentEntity msg, {
+    Map<String, dynamic>? rawMessageJson,
+  }) async {
+    bool? pendingProjectActivityAtWasPresent;
+    if (msg.agentEntity != null) {
+      pendingProjectActivityAtWasPresent = _pendingProjectActivityAtWasPresent(
+        rawMessageJson?['agentEntity'],
+      );
+    }
+    final entity = await _resolveAgentPayload(
+      inline: msg.agentEntity,
+      jsonPath: msg.jsonPath,
+      attachmentEventId: msg.attachmentEventId,
+      fromJson: AgentDomainEntity.fromJson,
+      typeName: 'agentEntity',
+      inspectJson: (decoded) {
+        pendingProjectActivityAtWasPresent =
+            _pendingProjectActivityAtWasPresent(decoded);
+      },
+    );
+    return (
+      entity: entity,
+      pendingProjectActivityAtWasPresent: pendingProjectActivityAtWasPresent,
+    );
+  }
+
+  bool? _pendingProjectActivityAtWasPresent(Object? entityJson) {
+    if (entityJson is! Map<String, dynamic>) return null;
+    final slots = entityJson['slots'];
+    if (slots is! Map<String, dynamic>) return null;
+    return slots.containsKey('pendingProjectActivityAt');
+  }
 
   Future<AgentLink?> _resolveAgentLink(SyncAgentLink msg) =>
       _resolveAgentPayload(
@@ -157,6 +192,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
+    bool? pendingProjectActivityAtWasPresent,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     if (resolvedEntity == null) {
@@ -209,6 +245,8 @@ extension _AgentHandlers on SyncEventProcessor {
       if (entityToApply is AgentStateEntity) {
         final preserved = await _preserveLocalScheduling(
           incoming: entityToApply,
+          pendingProjectActivityAtWasPresent:
+              pendingProjectActivityAtWasPresent,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         entityToApply = preserved.entity;
@@ -767,6 +805,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<({AgentStateEntity entity, bool projectActivityWasConsumed})>
   _preserveLocalScheduling({
     required AgentStateEntity incoming,
+    bool? pendingProjectActivityAtWasPresent,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final local = await _localAgentEntityFor(
@@ -794,12 +833,20 @@ extension _AgentHandlers on SyncEventProcessor {
             identity.kind == AgentKinds.projectAgent) ||
         local.slots.activeProjectId != null ||
         incoming.slots.activeProjectId != null;
+    final preserveLegacyPendingActivity =
+        isProjectState && pendingProjectActivityAtWasPresent == false;
     final projectActivityWasConsumed =
         isProjectState &&
+        !preserveLegacyPendingActivity &&
         local.slots.pendingProjectActivityAt != null &&
         incoming.slots.pendingProjectActivityAt == null;
     return (
       entity: incoming.copyWith(
+        slots: preserveLegacyPendingActivity
+            ? incoming.slots.copyWith(
+                pendingProjectActivityAt: local.slots.pendingProjectActivityAt,
+              )
+            : incoming.slots,
         nextWakeAt: local.nextWakeAt,
         sleepUntil: local.sleepUntil,
         scheduledWakeAt: projectActivityWasConsumed

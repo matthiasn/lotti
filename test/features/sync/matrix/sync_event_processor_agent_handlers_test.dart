@@ -3037,6 +3037,63 @@ void main() {
       );
 
       test(
+        'legacy project state without activity marker preserves local work',
+        () async {
+          final local =
+              AgentDomainEntity.agentState(
+                    id: 'state-project-legacy',
+                    agentId: 'project-agent-legacy',
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: DateTime(2026, 8, 14, 9),
+                    ),
+                    scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                    updatedAt: DateTime(2026, 8, 14, 9),
+                    vectorClock: const VectorClock({'local': 1}),
+                  )
+                  as AgentStateEntity;
+          final incoming = local.copyWith(
+            slots: local.slots.copyWith(pendingProjectActivityAt: null),
+            lastWakeAt: DateTime(2026, 8, 14, 10),
+            scheduledWakeAt: null,
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'local': 1, 'remote': 1}),
+          );
+          final message = SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          );
+          final messageJson =
+              json.decode(json.encode(message.toJson()))
+                  as Map<String, dynamic>;
+          final entityJson = messageJson['agentEntity'] as Map<String, dynamic>;
+          final slotsJson = entityJson['slots'] as Map<String, dynamic>;
+          slotsJson.remove('pendingProjectActivityAt');
+
+          when(
+            () => mockAgentRepo.getEntity(local.id),
+          ).thenAnswer((_) async => local);
+          when(() => event.text).thenReturn(
+            base64.encode(utf8.encode(json.encode(messageJson))),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final applied = verify(
+            () => mockAgentRepo.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().first;
+          expect(
+            applied.slots.pendingProjectActivityAt,
+            local.slots.pendingProjectActivityAt,
+          );
+          expect(applied.scheduledWakeAt, local.scheduledWakeAt);
+          verifyNever(
+            () => mockOrchestrator.cancelPendingAutomaticWakes(any()),
+          );
+        },
+      );
+
+      test(
         'project identity classifies marker-only state completion',
         () async {
           final identity = AgentDomainEntity.agent(
