@@ -739,8 +739,35 @@ class _GoalReportCard extends StatefulWidget {
   State<_GoalReportCard> createState() => _GoalReportCardState();
 }
 
-class _GoalReportCardState extends State<_GoalReportCard> {
+class _GoalReportCardState extends State<_GoalReportCard>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
+
+  /// Matches the task-details agent section: the body eases open rather than
+  /// appearing, so the card reads as one surface revealing more of itself.
+  late final AnimationController _reveal = AnimationController(
+    vsync: this,
+    duration: MotionDurations.medium2,
+  );
+  late final Animation<double> _revealCurve = CurvedAnimation(
+    parent: _reveal,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void dispose() {
+    _reveal.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded) {
+      _reveal.forward();
+    } else {
+      _reveal.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -752,7 +779,12 @@ class _GoalReportCardState extends State<_GoalReportCard> {
     final hasContent = content != null && content.isNotEmpty;
     // A full text identical to the TLDR would make Show more a no-op that
     // merely repeats the same paragraph — hide the toggle instead.
-    final expandable = hasTldr && hasContent && content != tldr;
+    final sections = _sectionsOf(report);
+    // A renderable sections payload is expandable even when the flat text
+    // happens to equal the TLDR: without this the toggle vanished and the
+    // sections became unreachable.
+    final expandable =
+        hasTldr && (sections != null || (hasContent && content != tldr));
     final primary = hasTldr
         ? tldr
         : hasContent
@@ -763,39 +795,63 @@ class _GoalReportCardState extends State<_GoalReportCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AgentMarkdownView(
-            primary,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: report == null && widget.fallbackMuted
-                  ? tokens.colors.text.lowEmphasis
-                  : tokens.colors.text.highEmphasis,
+          // Selectable, like the task-details agent section: a standing
+          // report carries exact readings a user may well want to copy.
+          SelectionArea(
+            child: AgentMarkdownView(
+              primary,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: report == null && widget.fallbackMuted
+                    ? tokens.colors.text.lowEmphasis
+                    : tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
           if (expandable) ...[
-            if (_expanded) ...[
-              SizedBox(height: tokens.spacing.step3),
-              // Sections when the report carries them, the flat text when it
-              // does not. The sentences are model-authored in the user's own
-              // language, so the composer cannot wrap them in headings without
-              // injecting English — the headings are added here instead, which
-              // also means they follow the app language rather than whichever
-              // one the report was written in.
-              if (_sectionsOf(report) case final sections?)
-                _GoalReportSections(sections: sections)
-              else
-                AgentMarkdownView(
-                  content,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+            AnimatedBuilder(
+              animation: _revealCurve,
+              builder: (context, child) => _revealCurve.value == 0
+                  ? const SizedBox.shrink()
+                  : ClipRect(
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        heightFactor: _revealCurve.value,
+                        child: child,
+                      ),
+                    ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: tokens.spacing.step3),
+                  // Sections when the report carries them, the flat text when
+                  // it does not. The sentences are model-authored in the
+                  // user's own language, so the composer cannot wrap them in
+                  // headings without injecting English — the headings are
+                  // added here instead, which also means they follow the app
+                  // language rather than whichever one the report was
+                  // written in.
+                  SelectionArea(
+                    child: sections != null
+                        ? _GoalReportSections(sections: sections)
+                        // Non-null by construction: with no sections,
+                        // `expandable` is only true when there IS content.
+                        : AgentMarkdownView(
+                            content!,
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                          ),
                   ),
-                ),
-            ],
+                ],
+              ),
+            ),
             SizedBox(height: tokens.spacing.step1),
             DesignSystemButton(
               label: _expanded
                   ? context.messages.aiResponseShowLess
                   : context.messages.aiResponseShowMore,
-              onPressed: () => setState(() => _expanded = !_expanded),
+              onPressed: _toggle,
               variant: DesignSystemButtonVariant.tertiary,
               size: DesignSystemButtonSize.dense,
               trailingIcon: _expanded
@@ -1103,7 +1159,29 @@ Map<String, Object?>? _sectionsOf(AgentReportEntity? report) {
   for (final entry in raw.entries) {
     if (entry.key is String) sections[entry.key as String] = entry.value;
   }
-  return sections.isEmpty ? null : sections;
+  // A payload has to RENDER something to count as a sectioned report. A map
+  // of blanks — or one carrying only keys this build does not know — passed
+  // the old non-empty check and won the branch, so the card opened on zero
+  // headings and zero actions while `content` still held the real text.
+  //
+  // Only recognized keys count, for the same reason.
+  var renderable = false;
+  for (final key in const [
+    GoalReportSectionKeys.currentPeriod,
+    GoalReportSectionKeys.rollingWindow,
+    GoalReportSectionKeys.latestChange,
+    GoalReportSectionKeys.coverage,
+  ]) {
+    if (sections[key] case final String text when text.trim().isNotEmpty) {
+      renderable = true;
+    }
+  }
+  if (sections[GoalReportSectionKeys.nextActions] case final List<Object?> a) {
+    if (a.any((item) => item is String && item.trim().isNotEmpty)) {
+      renderable = true;
+    }
+  }
+  return renderable ? sections : null;
 }
 
 /// The expanded report, rendered as titled sections.

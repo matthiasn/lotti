@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
@@ -17,9 +18,23 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
       (ref, agentId) async {
         ref.watch(agentUpdateStreamProvider(agentId));
         final repository = ref.watch(agentRepositoryProvider);
-        final entities = await repository.getEntitiesByAgentId(
+        // ACTIONS only. Reading every message meant a long-lived agent's
+        // whole conversation was materialized and decoded just to find its
+        // reflections — once per goal on the Agents list, and again after any
+        // agent update. The message kind is the indexed subtype, so this is a
+        // narrow lookup rather than a scan.
+        //
+        // Deliberately NOT row-limited. The limit would apply to every action
+        // before assessments are filtered out below, so an agent with enough
+        // newer tool calls would silently lose a reflection that is still
+        // stored — a correctness cost for a bound that the subtype filter
+        // already makes unnecessary. A truly bounded read needs an
+        // assessment-specific index, which is a schema change, not a
+        // parameter.
+        final entities = await repository.getEntitiesByAgentIdAndSubtype(
           agentId,
           type: AgentEntityTypes.agentMessage,
+          subtype: AgentMessageKind.action.name,
         );
         final actions = entities.whereType<AgentMessageEntity>().where(
           (action) =>

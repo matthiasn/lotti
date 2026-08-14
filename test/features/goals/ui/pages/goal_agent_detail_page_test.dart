@@ -419,7 +419,7 @@ void main() {
     // No sections persisted — a report written before they existed — so the
     // composed flat text remains the fallback rendering.
     await tester.tap(find.text('Show more'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(
       find.textContaining('The rolling window is still filling up.'),
       findsOneWidget,
@@ -717,7 +717,7 @@ void main() {
     expect(find.text('Show more'), findsOneWidget);
     expect(find.textContaining('The current routine needs'), findsNothing);
     await tester.tap(find.text('Show more'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     // Sections, under headings the APP supplies — the sentences are authored
     // in the user's language, so the composer could never wrap them in
     // headings without injecting English.
@@ -728,6 +728,11 @@ void main() {
     expect(find.text('Walk on Saturday.'), findsOneWidget);
     // A slot the model left empty gets no heading rather than an empty one.
     expect(find.text('Data coverage'), findsNothing);
+    // ...and it closes again, easing shut rather than snapping.
+    await tester.tap(find.text('Show less'));
+    await tester.pumpAndSettle();
+    expect(find.text('Where things stand'), findsNothing);
+    expect(find.text('Show more'), findsOneWidget);
     // The flat composed text is the fallback, not the rendering.
     expect(find.textContaining('The current routine needs'), findsNothing);
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);

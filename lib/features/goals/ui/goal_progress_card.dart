@@ -175,14 +175,41 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ],
           );
 
+    // A read-only strip publishes one summary rather than seven nodes, so any
+    // recorded verdicts have to reach it there — otherwise the list announces
+    // a measured day count while showing four verdict hues.
+    final verdictSummary = ratingsByDay.isEmpty || lastDay == null
+        ? ''
+        : [
+            for (var index = 0; index < visible.length; index++)
+              if (_ratingAt(index, visible.length) case final rating?)
+                context.messages.goalProgressHabitDaySemantics(
+                  DateFormat.MMMEd(
+                    Localizations.localeOf(context).toLanguageTag(),
+                  ).format(_dateAt(index, visible.length)),
+                  goalAssessmentRatingLabel(context, rating),
+                ),
+          ].join(', ');
+
     return Semantics(
       label: placeholder
           ? context.messages.goalProgressStripLoading
-          : context.messages.goalProgressCompactSemantics(
-              visible
-                  .where((state) => state != GoalCompactDayState.none)
-                  .length,
-            ),
+          : [
+              // Counted with the verdicts applied. Taken from the measured
+              // states alone, the strip could announce "1 successful day"
+              // and name that same date as Missed in the next breath, while
+              // the cell itself correctly showed the verdict.
+              context.messages.goalProgressCompactSemantics(
+                [
+                  for (var index = 0; index < visible.length; index++)
+                    if (_ratingAt(index, visible.length) case final rating?)
+                      rating == GoalAssessmentRating.met
+                    else
+                      visible[index] != GoalCompactDayState.none,
+                ].where((successful) => successful).length,
+              ),
+              if (verdictSummary.isNotEmpty) verdictSummary,
+            ].join('. '),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
       child: onDaySelected == null
@@ -283,14 +310,15 @@ class _CompactDayCell extends StatelessWidget {
                     : tokens.spacing.step2,
               ),
             )
-          // Only where the square is big enough to hold it. On the list rows'
-          // 12px cells a glyph is a smudge, and those strips carry no recorded
-          // verdicts anyway.
-          : rating != null && size >= ControlSizes.iconChipCompact
+          : rating != null
+          // The verdict's own shape at every size. Collapsing the three
+          // non-met verdicts into one dot on the list's 12px cells left
+          // Improving, Mixed and Missed distinguishable by hue alone —
+          // which is the one thing the shapes exist to avoid.
           ? Center(
               child: Icon(
                 goalAssessmentRatingGlyph(rating),
-                size: size * 0.6,
+                size: size * 0.75,
                 // The ink of the fill's OWN family. Painting every glyph in
                 // the success ink put a green tick's colour on a red missed
                 // cell and an orange mixed one.
@@ -366,10 +394,18 @@ String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
   // 10,000" directly above a "Needs attention" line. Where the coarse step
   // would erase the difference, keep the finer one.
   if (against != null && value != against) {
+    // Keep adding decimals until the two stop reading as the same number.
+    // A fixed ladder always has a last rung: [1, 0.1, 0.01] still rendered
+    // "88 of 88" for 87.996, the exact contradiction this guard exists to
+    // prevent. Bounded at six places, well past any real measurement, so a
+    // pathological pair cannot spin here.
     if (rounded == _roundGoalAggregate(against)) {
-      rounded = value.abs() >= 100
-          ? value.roundToDouble()
-          : (value * 10).roundToDouble() / 10;
+      for (var places = 0; places <= 6; places++) {
+        if (value.toStringAsFixed(places) != against.toStringAsFixed(places)) {
+          rounded = double.parse(value.toStringAsFixed(places));
+          break;
+        }
+      }
     }
   }
   return number.format(
@@ -703,40 +739,47 @@ class _ReflectTodayRow extends StatelessWidget {
       child: InkWell(
         onTap: onReflect,
         borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-          child: Row(
-            children: [
-              // The sparkle stays exclusive to agent suggestions; this row is
-              // the USER writing a reflection.
-              Icon(
-                recorded == null
-                    ? Icons.edit_note_rounded
-                    : goalAssessmentRatingGlyph(recorded),
-                // The verdict's own family ink, NOT the on-alert ink: this
-                // glyph sits on the card surface, where the on-alert ink is
-                // near-invisible by design — it is tuned for glyphs drawn on
-                // a saturated fill, which is where the strip uses it.
-                color: recorded == null
-                    ? tokens.colors.interactive.enabled
-                    : goalAssessmentRatingSurfaceInk(tokens, recorded),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
+        child: ConstrainedBox(
+          // Moving this out of a tappable section card into an inner InkWell
+          // left the row's own height as the target: two icons plus `step2`
+          // padding is about 32px, under the floor — on the ONE action the
+          // user is meant to take daily.
+          constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            child: Row(
+              children: [
+                // The sparkle stays exclusive to agent suggestions; this row is
+                // the USER writing a reflection.
+                Icon(
                   recorded == null
-                      ? context.messages.goalAssessmentReflectToday
-                      : goalAssessmentRatingLabel(context, recorded),
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                      ? Icons.edit_note_rounded
+                      : goalAssessmentRatingGlyph(recorded),
+                  // The verdict's own family ink, NOT the on-alert ink: this
+                  // glyph sits on the card surface, where the on-alert ink is
+                  // near-invisible by design — it is tuned for glyphs drawn on
+                  // a saturated fill, which is where the strip uses it.
+                  color: recorded == null
+                      ? tokens.colors.interactive.enabled
+                      : goalAssessmentRatingSurfaceInk(tokens, recorded),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    recorded == null
+                        ? context.messages.goalAssessmentReflectToday
+                        : goalAssessmentRatingLabel(context, recorded),
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -908,22 +951,42 @@ _BloodPressureMetrics? _bloodPressureMetrics(
   return (systolic: systolic, diastolic: diastolic);
 }
 
+/// Whether a day counts toward a `count` criterion, by the SAME rule the
+/// evaluator uses.
+///
+/// `GoalProgressEvaluator` passes `countPositiveValues: true` for category
+/// time alone; every other kind counts each observed day whatever its value.
+/// Applying the positive-value rule everywhere made a zero-to-positive metric
+/// day read as progress the evaluator's own tally never saw.
+bool _countsTowardTally(GoalMetricProgressView metric, GoalProgressDay day) =>
+    day.isObserved &&
+    (metric.kind != GoalDimensionKind.categoryTime || day.value > 0);
+
 _MetricSummary _metricSummary(
   GoalMetricProgressView metric, {
   required DateTime today,
 }) {
   final observed = metric.days.where((day) => day.isObserved).toList()
     ..sort((a, b) => a.day.compareTo(b.day));
-  final current = switch (metric.aggregation) {
-    GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
-      observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
-    GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
-      observed.first.value,
-      (value, day) => math.max(value, day.value),
-    ),
-    GoalAggregation.count => observed.length,
-    _ => observed.fold<num>(0, (sum, day) => sum + day.value),
-  };
+  // The evaluator's own figure wins. Recomputing here produced a different
+  // number over a different set of days, so the card's headline and the
+  // agent's report could quote two values for one week.
+  final current =
+      metric.evaluatedActual ??
+      switch (metric.aggregation) {
+        GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
+          observed.fold<num>(0, (sum, day) => sum + day.value) /
+              observed.length,
+        GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
+          observed.first.value,
+          (value, day) => math.max(value, day.value),
+        ),
+        // The same qualification rule as the improvement check above, so the
+        // number shown and the sentence under it cannot disagree about a day.
+        GoalAggregation.count =>
+          observed.where((day) => _countsTowardTally(metric, day)).length,
+        _ => observed.fold<num>(0, (sum, day) => sum + day.value),
+      };
   final meetsPeriodTarget = switch (metric.direction) {
     GoalDirection.atLeast => current >= metric.target,
     GoalDirection.atMost => current <= metric.target,
@@ -944,10 +1007,17 @@ _MetricSummary _metricSummary(
   final previousDay = observed.length < 2
       ? null
       : observed[observed.length - 2];
+  // For a `count` criterion a day either qualifies or it does not — its
+  // magnitude carries no progress at all — so comparing raw values called a
+  // bigger qualifying day an improvement over a smaller one that moved the
+  // count by exactly as much.
   final improving =
       latestDay != null &&
       previousDay != null &&
-      (metric.direction == GoalDirection.atLeast
+      (metric.aggregation == GoalAggregation.count
+          ? _countsTowardTally(metric, latestDay) &&
+                !_countsTowardTally(metric, previousDay)
+          : metric.direction == GoalDirection.atLeast
           ? latestDay.value > previousDay.value
           : latestDay.value < previousDay.value);
   return (
@@ -2097,11 +2167,18 @@ class _MetricProgressSeries extends StatelessWidget {
                   key: const ValueKey('goal-metric-target-rule'),
                   left: 0,
                   right: 0,
-                  bottom:
-                      _chartHeight(tokens) *
-                      (metric.target / maxValue).clamp(0, 1),
+                  // Clamped to leave the rule's own thickness inside the plot.
+                  // When nothing beats the target, `maxValue` IS the target
+                  // and the offset became the full height — putting the line
+                  // on the clipped top edge, invisible in exactly the case it
+                  // matters most: a goal that is still behind.
+                  bottom: math.min(
+                    _chartHeight(tokens) *
+                        (metric.target / maxValue).clamp(0, 1),
+                    _chartHeight(tokens) - BorderWidths.hairline,
+                  ),
                   child: SizedBox(
-                    height: 1,
+                    height: BorderWidths.hairline,
                     child: ColoredBox(color: tokens.colors.decorative.level01),
                   ),
                 ),
@@ -2218,43 +2295,51 @@ class _MetricProgressSeries extends StatelessWidget {
         number.format(metric.target),
       ),
       child: ExcludeSemantics(
-        child: FractionallySizedBox(
-          key: ValueKey(
-            'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
-          ),
-          heightFactor: heightFactor,
-          alignment: Alignment.bottomCenter,
-          child: metric.agentRecordedDays.contains(day.day)
-              ? Stack(
-                  fit: StackFit.expand,
-                  clipBehavior: Clip.none,
-                  children: [
-                    barFill,
-                    Positioned(
-                      top: -tokens.spacing.step3,
-                      right: 0,
-                      child: Tooltip(
-                        message: provenance == null
-                            ? context.messages.goalDimensionRecordedByAgent
-                            : context.messages
-                                  .goalDimensionRecordedByAgentDetails(
-                                    provenance.agentName,
-                                    DateFormat.MMMEd(locale).add_jm().format(
-                                      provenance.recordedAt,
-                                    ),
-                                  ),
-                        child: Icon(
-                          Icons.edit_note_rounded,
-                          size: IconSizes.xs,
-                          color: GoalAccentHues.aurora(
-                            Theme.of(context).brightness,
+        child: Stack(
+          // Expand, so the fractional bar still measures against the plot
+          // height rather than shrink-wrapping to nothing.
+          fit: StackFit.expand,
+          children: [
+            FractionallySizedBox(
+              key: ValueKey(
+                'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
+              ),
+              heightFactor: heightFactor,
+              alignment: Alignment.bottomCenter,
+              child: barFill,
+            ),
+            // A full-height sibling of the bar, not a child of it. Inside the
+            // fractional box a short bar — 4px against a 12px icon — hosted
+            // most of the badge outside its own bounds, so the visible part
+            // could not be hovered. Anchored from the bottom instead, it sits
+            // at the bar's top when there is room and rests on the baseline
+            // when there is not.
+            if (metric.agentRecordedDays.contains(day.day))
+              Positioned(
+                right: 0,
+                bottom: math.max(
+                  0,
+                  _chartHeight(tokens) * heightFactor - IconSizes.xs,
+                ),
+                child: Tooltip(
+                  message: provenance == null
+                      ? context.messages.goalDimensionRecordedByAgent
+                      : context.messages.goalDimensionRecordedByAgentDetails(
+                          provenance.agentName,
+                          DateFormat.MMMEd(locale).add_jm().format(
+                            provenance.recordedAt,
                           ),
                         ),
-                      ),
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    size: IconSizes.xs,
+                    color: GoalAccentHues.aurora(
+                      Theme.of(context).brightness,
                     ),
-                  ],
-                )
-              : barFill,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

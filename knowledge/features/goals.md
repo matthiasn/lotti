@@ -758,12 +758,17 @@ flowchart TD
   active agent works. They are absent after the goal leaves the active
   lifecycle.
   The detail page groups the agent's voice at the top: the standing report
-  and this goal's active banners (`_AgentSayingSection`, with the Update now
-  control) sit directly under the goal definition header, with the progress
-  evidence — habit cards first, then charts — below them, and, only while
-  active, the revision-approval card (`ChangeSetSummaryCard.selfTargeted`).
+  and this goal's active banners (`_AgentSayingSection`) sit directly under
+  the goal definition header, with the automation controls BELOW the report
+  they describe, the progress evidence — habit cards first, then charts —
+  below them, and, only while active, the revision-approval card
+  (`ChangeSetSummaryCard.selfTargeted`).
+
   The report card hides its Show more toggle when the full text is identical
-  to the TLDR. The goal statement is explicitly labelled ("Your goal") so it
+  to the TLDR **and** the report carries no renderable structured sections.
+  Sections live in provenance rather than in `content`, so a report whose
+  flat text happens to equal its TLDR would otherwise lose the toggle and
+  make its sections unreachable. The goal statement is explicitly labelled ("Your goal") so it
   cannot read as a status claim against the health chip, the persona chip
   anchors to the title's first line, the app bar reveals the goal name only
   after the header scrolls away (no doubled title in one viewport), and

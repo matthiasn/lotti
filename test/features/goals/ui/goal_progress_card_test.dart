@@ -174,6 +174,45 @@ void main() {
     expect(find.byType(DsDashedBorder), findsOneWidget);
   });
 
+  testWidgets('a read-only strip announces its verdicts and marks non-met '
+      'days with a shape', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalCompactWindowStrip(
+          days: List.filled(3, GoalCompactDayState.none),
+          lastDay: today,
+          ratingsByDay: {
+            today.subtract(const Duration(days: 2)): GoalAssessmentRating.met,
+            today.subtract(const Duration(days: 1)):
+                GoalAssessmentRating.missed,
+          },
+        ),
+      ),
+    );
+
+    // A read-only strip publishes one summary rather than seven nodes, so the
+    // verdicts have to reach it there — otherwise the list announced a
+    // measured day count while showing four verdict hues.
+    final label = tester
+        .getSemantics(find.byType(GoalCompactWindowStrip))
+        .label;
+    expect(label, contains('Met'));
+    expect(label, contains('Missed'));
+
+    // Each verdict keeps its OWN shape even on the list's 12px cells.
+    // Collapsing the three non-met verdicts into one dot left Improving,
+    // Mixed and Missed separable by hue alone, which is the single thing the
+    // shapes exist to prevent.
+    expect(
+      find.byIcon(goalAssessmentRatingGlyph(GoalAssessmentRating.met)),
+      findsOneWidget,
+    );
+    expect(
+      find.byIcon(goalAssessmentRatingGlyph(GoalAssessmentRating.missed)),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('a tappable strip reports the day each cell stands for, '
       'counting back from the last', (tester) async {
     final tapped = <DateTime>[];
@@ -350,10 +389,15 @@ void main() {
         formatGoalAggregate(number, 7684.428571, against: 10000),
         '7,700',
       );
-      // Below 100 the finer step is a tenth, so a weight just under its
-      // target keeps the decimal that distinguishes them.
-      expect(formatGoalAggregate(number, 87.96, against: 88), '88');
+      // Precision steps down until the two genuinely read differently — one
+      // step was not enough: 9,999.6 against 10,000 still rounded to 10,000.
+      expect(formatGoalAggregate(number, 9999.6, against: 10000), '9,999.6');
+      // Below 100 the same rule keeps whatever decimal it takes.
       expect(formatGoalAggregate(number, 87.94, against: 88), '87.9');
+      expect(formatGoalAggregate(number, 87.96, against: 88), '87.96');
+      // A fixed ladder always has a last rung: [1, 0.1, 0.01] still rendered
+      // "88 of 88" here, the exact contradiction the guard exists to stop.
+      expect(formatGoalAggregate(number, 87.996, against: 88), '87.996');
     });
 
     test('blood pressure keeps whole numbers', () {
@@ -415,6 +459,42 @@ void main() {
     expect(
       tester.getBottomRight(streak).dx,
       greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+    );
+  });
+
+  testWidgets('a count criterion improves by gaining a day, not by a bigger '
+      'number', (tester) async {
+    Future<void> pump(num yesterday, num today_) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Sessions',
+              target: 5,
+              aggregation: GoalAggregation.count,
+              days: [day(1, yesterday), day(0, today_)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Both days count: the second adds exactly one to the tally whatever its
+    // magnitude, so a bigger number is not an improvement.
+    await pump(1, 9);
+    expect(
+      find.text('Not there yet, but the last reading moved toward the target.'),
+      findsNothing,
+    );
+
+    // And a zero-value day still counts for a plain metric — the evaluator
+    // only requires a positive value for CATEGORY TIME — so 0 to 1 is not an
+    // improvement in its tally either.
+    await pump(0, 1);
+    expect(
+      find.text('Not there yet, but the last reading moved toward the target.'),
+      findsNothing,
     );
   });
 
