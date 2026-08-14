@@ -6215,6 +6215,42 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} word} other{{count} words}}'**
   String conflictWordCount(int count);
 
+  /// No description provided for @contactChannelLabelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label (optional)'**
+  String get contactChannelLabelLabel;
+
+  /// No description provided for @contactChannelTypeEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get contactChannelTypeEmail;
+
+  /// No description provided for @contactChannelTypeMessaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Messaging'**
+  String get contactChannelTypeMessaging;
+
+  /// No description provided for @contactChannelTypeMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get contactChannelTypeMobile;
+
+  /// No description provided for @contactChannelTypePhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get contactChannelTypePhone;
+
+  /// No description provided for @contactChannelValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number or address'**
+  String get contactChannelValueLabel;
+
   /// No description provided for @contactUsDiscordLabel.
   ///
   /// In en, this message translates to:
@@ -16981,6 +17017,12 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get referenceImageSkip;
 
+  /// No description provided for @relationshipAddChannelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add channel'**
+  String get relationshipAddChannelButton;
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -17023,6 +17065,18 @@ abstract class AppLocalizations {
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
 
+  /// No description provided for @relationshipCheckInsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get relationshipCheckInsLabel;
+
+  /// No description provided for @relationshipContactChannelsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact channels'**
+  String get relationshipContactChannelsLabel;
+
   /// No description provided for @relationshipCreateTitle.
   ///
   /// In en, this message translates to:
@@ -17059,6 +17113,12 @@ abstract class AppLocalizations {
   /// **'Could not delete this person. Please try again.'**
   String get relationshipErrorDeleteFailed;
 
+  /// No description provided for @relationshipErrorLinkTaskFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not link the task. Please try again.'**
+  String get relationshipErrorLinkTaskFailed;
+
   /// No description provided for @relationshipErrorUpdateFailed.
   ///
   /// In en, this message translates to:
@@ -17076,6 +17136,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Important'**
   String get relationshipImportantLabel;
+
+  /// No description provided for @relationshipLinkedTasksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get relationshipLinkedTasksLabel;
+
+  /// No description provided for @relationshipLinkTaskButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Link task'**
+  String get relationshipLinkTaskButton;
 
   /// No description provided for @relationshipLogCheckIn.
   ///
@@ -17106,6 +17178,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No check-ins yet — log one after you next talk.'**
   String get relationshipNoCheckIns;
+
+  /// No description provided for @relationshipNoLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks linked yet.'**
+  String get relationshipNoLinkedTasks;
 
   /// No description provided for @relationshipNotFound.
   ///

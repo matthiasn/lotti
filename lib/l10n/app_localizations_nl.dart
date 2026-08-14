@@ -3706,6 +3706,24 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Label (optioneel)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Berichten';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobiel';
+
+  @override
+  String get contactChannelTypePhone => 'Telefoon';
+
+  @override
+  String get contactChannelValueLabel => 'Nummer of adres';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10093,6 +10111,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get referenceImageSkip => 'Overslaan';
 
   @override
+  String get relationshipAddChannelButton => 'Contactgegeven toevoegen';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10122,6 +10143,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Wekelijks';
 
   @override
+  String get relationshipCheckInsLabel => 'Check-ins';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Contactgegevens';
+
+  @override
   String get relationshipCreateTitle => 'Persoon toevoegen';
 
   @override
@@ -10145,6 +10172,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de persoon niet verwijderen. Probeer het opnieuw.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Kon de taak niet koppelen. Probeer het opnieuw.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
 
@@ -10154,6 +10185,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Belangrijk';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Gekoppelde taken';
+
+  @override
+  String get relationshipLinkTaskButton => 'Taak koppelen';
 
   @override
   String get relationshipLogCheckIn => 'Check-in vastleggen';
@@ -10170,6 +10207,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Nog geen check-ins — leg er een vast na jullie volgende gesprek.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Nog geen gekoppelde taken.';
 
   @override
   String get relationshipNotFound =>

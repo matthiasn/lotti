@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/cache_extension.dart';
 
 /// The tokens that mean "the relationships list may have changed": any
 /// relationship write, any check-in write (a check-in changes the list's
@@ -55,15 +56,16 @@ final relationshipsListControllerProvider =
       name: 'relationshipsListControllerProvider',
     );
 
-/// One relationship plus its check-ins, newest first.
+/// One relationship plus its check-ins (newest first) and linked tasks.
 typedef RelationshipDetail = ({
   RelationshipEntry relationship,
   List<CheckInEntry> checkIns,
+  List<Task> linkedTasks,
 });
 
 /// Detail state for one relationship. Resolves to `null` when the id does
 /// not (or no longer) point at a live relationship. Reloads when the
-/// relationship or any of its check-ins change.
+/// relationship, any of its check-ins, or any currently linked task changes.
 ///
 /// Auto-disposes with the page that watches it: one instance exists per
 /// person id, and each keeps an `UpdateNotifications` subscription alive, so
@@ -76,14 +78,28 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   final String _relationshipId;
   StreamSubscription<Set<String>>? _subscription;
 
+  /// Ids of the tasks the last build saw as linked, so a status or title
+  /// edit on the task side refreshes the section without a relationship
+  /// write. Link/unlink writes notify the relationship id itself.
+  var _linkedTaskIds = const <String>{};
+
   @override
   Future<RelationshipDetail?> build() async {
+    ref
+      ..onDispose(() {
+        unawaited(_subscription?.cancel());
+        _subscription = null;
+      })
+      ..cacheFor(entryCacheDuration);
+
     _subscription ??= getIt<UpdateNotifications>().updateStream.listen((
       affectedIds,
     ) {
       // A check-in's affectedIds carry its relationship id (the wake-token
-      // delta from plan v2 D1), so this single membership test covers both
-      // entity edits and check-in writes. The private toggle is separate:
+      // delta from plan v2 D1), and every entity's affectedIds carry its own
+      // id, so the membership tests cover relationship edits, check-in
+      // writes, link writes and linked-task edits — local or synced. The
+      // private toggle is separate:
       // this page's person and their check-ins are private-filtered reads,
       // so hiding private entries must resolve an open private person to
       // "no longer tracked" straight away.
@@ -91,13 +107,10 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
           affectedIds.contains(privateToggleNotification) ||
           affectedIds.contains(
             relationshipEntityUpdateNotification(_relationshipId),
-          )) {
+          ) ||
+          affectedIds.any(_linkedTaskIds.contains)) {
         ref.invalidateSelf();
       }
-    });
-    ref.onDispose(() {
-      unawaited(_subscription?.cancel());
-      _subscription = null;
     });
 
     final repository = ref.read(relationshipRepositoryProvider);
@@ -106,7 +119,13 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
     final checkIns = await repository.getCheckInsForRelationship(
       _relationshipId,
     );
-    return (relationship: relationship, checkIns: checkIns);
+    final linkedTasks = await repository.getLinkedTasks(_relationshipId);
+    _linkedTaskIds = {for (final task in linkedTasks) task.id};
+    return (
+      relationship: relationship,
+      checkIns: checkIns,
+      linkedTasks: linkedTasks,
+    );
   }
 }
 

@@ -3723,6 +3723,24 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Bezeichnung (optional)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-Mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Messenger';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobil';
+
+  @override
+  String get contactChannelTypePhone => 'Telefon';
+
+  @override
+  String get contactChannelValueLabel => 'Nummer oder Adresse';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10139,6 +10157,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get referenceImageSkip => 'Überspringen';
 
   @override
+  String get relationshipAddChannelButton => 'Kontaktweg hinzufügen';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10168,6 +10189,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Wöchentlich';
 
   @override
+  String get relationshipCheckInsLabel => 'Check-ins';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Kontaktdaten';
+
+  @override
   String get relationshipCreateTitle => 'Person hinzufügen';
 
   @override
@@ -10191,6 +10218,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Person konnte nicht gelöscht werden. Bitte versuch es erneut.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Aufgabe konnte nicht verknüpft werden. Bitte versuch es erneut.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Änderungen konnten nicht gespeichert werden. Bitte versuch es erneut.';
 
@@ -10200,6 +10231,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Wichtig';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Verknüpfte Aufgaben';
+
+  @override
+  String get relationshipLinkTaskButton => 'Aufgabe verknüpfen';
 
   @override
   String get relationshipLogCheckIn => 'Check-in erfassen';
@@ -10216,6 +10253,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Noch keine Aufgaben verknüpft.';
 
   @override
   String get relationshipNotFound =>

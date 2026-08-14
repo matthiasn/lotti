@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -15,6 +14,7 @@ import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/tasks/state/checklist_completion_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
@@ -286,13 +286,7 @@ class _EntryCardContent extends StatelessWidget {
       ),
       final CheckInEntry c => _scaffold(
         context,
-        icon: switch (c.data.interactionType) {
-          CheckInInteractionType.inPerson => Icons.people_rounded,
-          CheckInInteractionType.call => Icons.call_rounded,
-          CheckInInteractionType.videoCall => Icons.videocam_rounded,
-          CheckInInteractionType.message => Icons.chat_rounded,
-          CheckInInteractionType.other => Icons.forum_rounded,
-        },
+        icon: checkInInteractionIcon(c.data.interactionType),
         iconColor: _categoryColor(context, item),
         title: _contentTitle(
           context,

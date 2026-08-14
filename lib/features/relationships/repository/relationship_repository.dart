@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -30,11 +31,13 @@ typedef RelationshipListItem = ({
 class RelationshipRepository {
   RelationshipRepository({
     required this._journalDb,
+    required this._journalRepository,
     required this._persistenceLogic,
     required this._updateNotifications,
   });
 
   final JournalDb _journalDb;
+  final JournalRepository _journalRepository;
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
 
@@ -81,6 +84,34 @@ class RelationshipRepository {
   /// Returns all non-deleted check-ins for a relationship, newest first.
   Future<List<CheckInEntry>> getCheckInsForRelationship(String relationshipId) {
     return _journalDb.getCheckInsForRelationship(relationshipId);
+  }
+
+  /// Tasks linked to the relationship in either direction (ADR 0038 §3 —
+  /// "RelationshipLink both ways"): the relationship → task links this
+  /// repository writes plus any task → relationship link created from the
+  /// task side. Newest task first.
+  ///
+  /// Scoped to live, visible `RelationshipLink` rows, so every rendered task
+  /// has a semantic link [unlinkTask] can remove — a task reachable only
+  /// through some other link type would otherwise render with an unlink
+  /// action that always fails. Link tombstones and hidden links are excluded,
+  /// matching the generic linked-entries queries.
+  Future<List<Task>> getLinkedTasks(String relationshipId) async {
+    final links = await _journalDb.typedLinksForTaskIds(
+      {relationshipId},
+      types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+    );
+    final linkedIds = <String>{
+      for (final link in links)
+        if (link.deletedAt == null && link.hidden != true)
+          if (link.fromId == relationshipId) link.toId else link.fromId,
+    }..remove(relationshipId);
+    if (linkedIds.isEmpty) return const [];
+
+    // Check-in links share the same type, so the task subset is resolved from
+    // the indexed `type` column before any payload is deserialized.
+    final tasks = await _journalDb.getLiveTasksByIds(linkedIds);
+    return tasks..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
   }
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -184,6 +215,55 @@ class RelationshipRepository {
     return result ?? false;
   }
 
+  // ── Task links ─────────────────────────────────────────────────────────────
+
+  /// Links [taskId] to the relationship with a [RelationshipLink]
+  /// (relationship → task, the direction this repository writes).
+  /// [PersistenceLogic] notifies both endpoints, so the detail providers
+  /// reload without a manual notification.
+  Future<bool> linkTask({
+    required String relationshipId,
+    required String taskId,
+  }) {
+    return _persistenceLogic.createLink(
+      fromId: relationshipId,
+      toId: taskId,
+      linkType: EntryLinkType.relationship,
+    );
+  }
+
+  /// Soft-deletes every live [RelationshipLink] between the relationship and
+  /// [taskId], in either direction, while leaving other link types intact.
+  /// Each tombstone goes through [JournalRepository.updateLink] so it receives
+  /// a new vector clock, enters the sync outbox, and notifies both endpoints.
+  Future<bool> unlinkTask({
+    required String relationshipId,
+    required String taskId,
+  }) async {
+    final links = await _journalDb.typedLinksForTaskIds(
+      {relationshipId, taskId},
+      types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+    );
+    final matchingLinks = links.where(
+      (link) =>
+          link.deletedAt == null &&
+          ((link.fromId == relationshipId && link.toId == taskId) ||
+              (link.fromId == taskId && link.toId == relationshipId)),
+    );
+    final deletedAt = DateTime.now();
+    var found = false;
+    var updated = true;
+    for (final link in matchingLinks) {
+      found = true;
+      updated =
+          await _journalRepository.updateLink(
+            link.copyWith(deletedAt: deletedAt, hidden: true),
+          ) &&
+          updated;
+    }
+    return found && updated;
+  }
+
   // ── Update ─────────────────────────────────────────────────────────────────
 
   /// Saves an updated relationship entity. Bumps the vector clock and
@@ -265,7 +345,10 @@ class RelationshipRepository {
     return _softDelete(entity, DateTime.now());
   }
 
-  /// Writes a tombstone for [entity]. Returns whether the write was applied.
+  /// Writes a tombstone for [entity]. Returns false when the write was
+  /// rejected — `updateDbEntity` answers false when the vector-clock
+  /// comparison loses to a concurrent sync, and null when it swallowed an
+  /// exception. Neither may be reported to the caller as a deletion.
   Future<bool> _softDelete(JournalEntity entity, DateTime deletedAt) async {
     final result = await _persistenceLogic.updateDbEntity(
       entity.copyWith(
@@ -282,6 +365,7 @@ class RelationshipRepository {
 final relationshipRepositoryProvider = Provider<RelationshipRepository>(
   (ref) => RelationshipRepository(
     journalDb: getIt<JournalDb>(),
+    journalRepository: getIt<JournalRepository>(),
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
   ),

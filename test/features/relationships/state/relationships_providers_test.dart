@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/get_it.dart';
@@ -55,6 +56,23 @@ void main() {
     ),
   );
 
+  Task task(String id) =>
+      JournalEntity.task(
+            meta: meta(id),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'ts-$id',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              title: 'Task $id',
+            ),
+          )
+          as Task;
+
   setUp(() {
     mockRepository = MockRelationshipRepository();
     mockNotifications = MockUpdateNotifications();
@@ -68,6 +86,9 @@ void main() {
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockRepository.getLinkedTasks(any()),
+    ).thenAnswer((_) async => []);
     getIt.registerSingleton<UpdateNotifications>(mockNotifications);
     container = ProviderContainer(
       overrides: [
@@ -209,22 +230,31 @@ void main() {
   });
 
   group('relationshipDetailControllerProvider', () {
-    test('resolves the relationship with its check-ins', () async {
-      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-        (_) async => relationship('rel-1'),
-      );
-      when(() => mockRepository.getCheckInsForRelationship('rel-1')).thenAnswer(
-        (_) async => [checkIn('check-1', 'rel-1')],
-      );
+    test(
+      'resolves the relationship with its check-ins and linked tasks',
+      () async {
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+          (_) async => relationship('rel-1'),
+        );
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer(
+          (_) async => [checkIn('check-1', 'rel-1')],
+        );
+        when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+          (_) async => [task('task-1')],
+        );
 
-      final detail = await container.read(
-        relationshipDetailControllerProvider('rel-1').future,
-      );
+        final detail = await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
 
-      expect(detail, isNotNull);
-      expect(detail!.relationship.id, 'rel-1');
-      expect(detail.checkIns.map((c) => c.id), ['check-1']);
-    });
+        expect(detail, isNotNull);
+        expect(detail!.relationship.id, 'rel-1');
+        expect(detail.checkIns.map((c) => c.id), ['check-1']);
+        expect(detail.linkedTasks.map((t) => t.id), ['task-1']);
+      },
+    );
 
     test('resolves null when the relationship does not exist', () async {
       when(() => mockRepository.getRelationshipById('rel-404')).thenAnswer(
@@ -249,6 +279,9 @@ void main() {
         return relationship('rel-1');
       });
       when(() => mockRepository.getCheckInsForRelationship('rel-1')).thenAnswer(
+        (_) async => [],
+      );
+      when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
         (_) async => [],
       );
 
@@ -348,7 +381,7 @@ void main() {
       },
     );
 
-    test('ignores a notification for a different relationship', () async {
+    test('refetches when a currently linked task changes', () async {
       var calls = 0;
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
         _,
@@ -356,9 +389,12 @@ void main() {
         calls++;
         return relationship('rel-1');
       });
-      when(
-        () => mockRepository.getCheckInsForRelationship('rel-1'),
-      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getCheckInsForRelationship('rel-1')).thenAnswer(
+        (_) async => [],
+      );
+      when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+        (_) async => [task('task-9')],
+      );
 
       final subscription = container.listen(
         relationshipDetailControllerProvider('rel-1'),
@@ -368,16 +404,52 @@ void main() {
         relationshipDetailControllerProvider('rel-1').future,
       );
 
-      updateStreamController.add({
-        'rel-2',
-        relationshipEntityUpdateNotification('rel-2'),
-      });
+      // A status edit on the task side notifies the task's own id.
+      updateStreamController.add({'task-9'});
       await container.read(
         relationshipDetailControllerProvider('rel-1').future,
       );
 
-      expect(calls, 1);
+      expect(calls, 2);
       subscription.close();
     });
+
+    test(
+      'ignores a notification for a different relationship',
+      () async {
+        var calls = 0;
+        when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
+          _,
+        ) async {
+          calls++;
+          return relationship('rel-1');
+        });
+        when(
+          () => mockRepository.getCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinkedTasks('rel-1'),
+        ).thenAnswer((_) async => []);
+
+        final subscription = container.listen(
+          relationshipDetailControllerProvider('rel-1'),
+          (_, _) {},
+        );
+        await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+
+        updateStreamController.add({
+          'rel-2',
+          relationshipEntityUpdateNotification('rel-2'),
+        });
+        await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+
+        expect(calls, 1);
+        subscription.close();
+      },
+    );
   });
 }

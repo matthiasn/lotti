@@ -3754,6 +3754,24 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Etichetă (opțională)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Mesagerie';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobil';
+
+  @override
+  String get contactChannelTypePhone => 'Telefon';
+
+  @override
+  String get contactChannelValueLabel => 'Număr sau adresă';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10290,6 +10308,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get referenceImageSkip => 'Săriți peste';
 
   @override
+  String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10320,6 +10341,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Săptămânal';
 
   @override
+  String get relationshipCheckInsLabel => 'Înregistrări';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Date de contact';
+
+  @override
   String get relationshipCreateTitle => 'Adăugați o persoană';
 
   @override
@@ -10343,6 +10370,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Persoana nu a putut fi ștearsă. Încercați din nou.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Sarcina nu a putut fi asociată. Încercați din nou.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Modificările nu au putut fi salvate. Încercați din nou.';
 
@@ -10352,6 +10383,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Sarcini';
+
+  @override
+  String get relationshipLinkTaskButton => 'Asociați o sarcină';
 
   @override
   String get relationshipLogCheckIn => 'Înregistrați un contact';
@@ -10368,6 +10405,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Nicio înregistrare încă — adăugați una după următoarea conversație.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Nicio sarcină asociată încă.';
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';

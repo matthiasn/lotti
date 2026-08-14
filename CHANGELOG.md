@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.11]
+### Added
+- **Relationships (People tab).** A personal CRM for a deliberately
+  curated set of people. One relationship entity per person, plus structured
+  check-ins (interaction type, sentiment, topics, narrative) linked to it.
+  Includes a flag-gated People tab (`enable_relationships`): the
+  recency-ordered list, the per-person detail page with status, cadence and
+  nickname, the add/edit person modal — including manually entered contact
+  channels (phone, mobile, email, messaging) on every platform — a
+  linked-tasks section that connects tasks to a person in either direction,
+  and a check-in capture sheet that is editable and deletable afterward.
+  Cascade deletion, sync, categories, and the private flag all apply. Contact
+  channels never enter AI context.
+
 ### Changed
 - **The goal page opens with the agent's read, wider, without repeating
   itself.** The AI summary now sits first with the goal-days strip beneath
@@ -36,16 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pre-selects the verdict the day's own evidence points at, and says so, rather
   than always starting on "Met". You can change it; a day with nothing recorded
   suggests nothing at all.
-- **Relationships (People tab).** A personal CRM for a deliberately
-  curated set of people. One relationship entity per person, plus structured
-  check-ins (interaction type, sentiment, topics, narrative) linked to it.
-  Includes a flag-gated People tab (`enable_relationships`): the
-  recency-ordered list, the per-person detail page with status, cadence and
-  nickname, the add/edit person modal, and a check-in capture sheet that is
-  editable and deletable afterward. Cascade deletion (removing a
-  relationship removes its check-ins), sync, categories, and the private
-  flag all apply.
-
 ### Changed
 - **Goal habit days now offer every quick status.** The day menu adds Skip and
   No entry alongside Success and Missed; clearing appends an empty latest

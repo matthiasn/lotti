@@ -3676,6 +3676,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Label (optional)';
+
+  @override
+  String get contactChannelTypeEmail => 'Email';
+
+  @override
+  String get contactChannelTypeMessaging => 'Messaging';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobile';
+
+  @override
+  String get contactChannelTypePhone => 'Phone';
+
+  @override
+  String get contactChannelValueLabel => 'Number or address';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10024,6 +10042,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referenceImageSkip => 'Skip';
 
   @override
+  String get relationshipAddChannelButton => 'Add channel';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10053,6 +10074,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Weekly';
 
   @override
+  String get relationshipCheckInsLabel => 'Check-ins';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Contact channels';
+
+  @override
   String get relationshipCreateTitle => 'Add person';
 
   @override
@@ -10076,6 +10103,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not delete this person. Please try again.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Could not link the task. Please try again.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Could not save the changes. Please try again.';
 
@@ -10084,6 +10115,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Tasks';
+
+  @override
+  String get relationshipLinkTaskButton => 'Link task';
 
   @override
   String get relationshipLogCheckIn => 'Log check-in';
@@ -10100,6 +10137,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'No check-ins yet — log one after you next talk.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'No tasks linked yet.';
 
   @override
   String get relationshipNotFound => 'This person is no longer tracked.';

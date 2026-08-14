@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/utils/consts.dart';
@@ -70,6 +72,26 @@ void main() {
     data: CheckInData(
       relationshipId: relationshipId,
       interactionType: CheckInInteractionType.call,
+    ),
+  );
+
+  JournalEntity task(
+    String id, {
+    required DateTime at,
+    bool private = false,
+    DateTime? deletedAt,
+  }) => JournalEntity.task(
+    meta: meta(id, dateFrom: at, private: private, deletedAt: deletedAt),
+    data: TaskData(
+      title: 'Task $id',
+      status: TaskStatus.open(
+        id: 'status-$id',
+        createdAt: at,
+        utcOffset: 0,
+      ),
+      statusHistory: const [],
+      dateFrom: at,
+      dateTo: at,
     ),
   );
 
@@ -333,5 +355,83 @@ void main() {
         });
       },
     );
+
+    test(
+      'getLiveTasksByIds keeps only live tasks — a check-in sharing the '
+      'RelationshipLink type is filtered out by the type column',
+      () async {
+        await db!.updateJournalEntity(
+          task('task-live', at: baseTime),
+        );
+        await db!.updateJournalEntity(
+          task(
+            'task-deleted',
+            at: baseTime,
+            deletedAt: baseTime.add(const Duration(days: 1)),
+          ),
+        );
+        // Bound to the same relationship by the same link type.
+        await db!.updateJournalEntity(
+          checkIn('check-1', relationshipId: 'rel-a', at: baseTime),
+        );
+        await db!.updateJournalEntity(
+          relationship('rel-a', trackedSince: baseTime),
+        );
+        await db!.upsertJournalDbEntity(
+          toDbEntity(task('task-without-marker', at: baseTime)).copyWith(
+            task: false,
+          ),
+        );
+
+        final tasks = await db!.getLiveTasksByIds({
+          'task-live',
+          'task-deleted',
+          'task-without-marker',
+          'check-1',
+          'rel-a',
+          'never-existed',
+        });
+
+        expect(tasks.map((t) => t.id), ['task-live']);
+      },
+    );
+
+    test('getLiveTasksByIds honours the private-entry filter', () async {
+      await db!.updateJournalEntity(task('task-open', at: baseTime));
+      await db!.updateJournalEntity(
+        task('task-private', at: baseTime, private: true),
+      );
+
+      Future<void> setPrivateFlag({required bool status}) =>
+          db!.upsertConfigFlag(
+            ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: status,
+            ),
+          );
+
+      await setPrivateFlag(status: true);
+      expect(
+        (await db!.getLiveTasksByIds({
+          'task-open',
+          'task-private',
+        })).map((t) => t.id).toSet(),
+        {'task-open', 'task-private'},
+      );
+
+      await setPrivateFlag(status: false);
+      expect(
+        (await db!.getLiveTasksByIds({
+          'task-open',
+          'task-private',
+        })).map((t) => t.id),
+        ['task-open'],
+      );
+    });
+
+    test('getLiveTasksByIds short-circuits on an empty id set', () async {
+      expect(await db!.getLiveTasksByIds(const {}), isEmpty);
+    });
   });
 }

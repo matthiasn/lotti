@@ -3741,6 +3741,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Etiqueta (opcional)';
+
+  @override
+  String get contactChannelTypeEmail => 'Correo';
+
+  @override
+  String get contactChannelTypeMessaging => 'Mensajería';
+
+  @override
+  String get contactChannelTypeMobile => 'Móvil';
+
+  @override
+  String get contactChannelTypePhone => 'Teléfono';
+
+  @override
+  String get contactChannelValueLabel => 'Número o dirección';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10234,6 +10252,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get referenceImageSkip => 'Omitir';
 
   @override
+  String get relationshipAddChannelButton => 'Añadir medio de contacto';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10263,6 +10284,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Semanal';
 
   @override
+  String get relationshipCheckInsLabel => 'Registros';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Datos de contacto';
+
+  @override
   String get relationshipCreateTitle => 'Añadir persona';
 
   @override
@@ -10286,6 +10313,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo eliminar la persona. Inténtalo de nuevo.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'No se pudo vincular la tarea. Inténtalo de nuevo.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'No se pudieron guardar los cambios. Inténtalo de nuevo.';
 
@@ -10295,6 +10326,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Tareas vinculadas';
+
+  @override
+  String get relationshipLinkTaskButton => 'Vincular tarea';
 
   @override
   String get relationshipLogCheckIn => 'Registrar contacto';
@@ -10311,6 +10348,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Aún no hay registros: añade uno tras vuestra próxima conversación.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Aún no hay tareas vinculadas.';
 
   @override
   String get relationshipNotFound => 'Esta persona ya no está en tu lista.';

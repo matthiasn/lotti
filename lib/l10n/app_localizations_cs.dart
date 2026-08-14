@@ -3741,6 +3741,24 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Popisek (volitelný)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Zprávy';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobil';
+
+  @override
+  String get contactChannelTypePhone => 'Telefon';
+
+  @override
+  String get contactChannelValueLabel => 'Číslo nebo adresa';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10220,6 +10238,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get referenceImageSkip => 'Přeskočit';
 
   @override
+  String get relationshipAddChannelButton => 'Přidat kontaktní údaj';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10250,6 +10271,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Každý týden';
 
   @override
+  String get relationshipCheckInsLabel => 'Záznamy kontaktů';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Kontaktní údaje';
+
+  @override
   String get relationshipCreateTitle => 'Přidat osobu';
 
   @override
@@ -10273,6 +10300,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Osobu se nepodařilo smazat. Zkus to prosím znovu.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Úkol se nepodařilo propojit. Zkus to prosím znovu.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
 
@@ -10281,6 +10312,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Důležité';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Propojené úkoly';
+
+  @override
+  String get relationshipLinkTaskButton => 'Propojit úkol';
 
   @override
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
@@ -10297,6 +10334,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Zatím žádné záznamy — přidej první po dalším rozhovoru.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Zatím žádné propojené úkoly.';
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';

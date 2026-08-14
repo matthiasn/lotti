@@ -36,6 +36,25 @@ String relationshipCadenceLabel(BuildContext context, int? days) =>
       final other => context.messages.relationshipCadenceEveryNDays(other),
     };
 
+/// The localized label for a contact channel type — shared by the form's
+/// channel editor and the detail page's channel list.
+String contactChannelTypeLabel(BuildContext context, ContactChannelType type) =>
+    switch (type) {
+      ContactChannelType.phone => context.messages.contactChannelTypePhone,
+      ContactChannelType.mobile => context.messages.contactChannelTypeMobile,
+      ContactChannelType.email => context.messages.contactChannelTypeEmail,
+      ContactChannelType.messaging =>
+        context.messages.contactChannelTypeMessaging,
+    };
+
+/// The icon for a contact channel type — shared with the detail page.
+IconData contactChannelTypeIcon(ContactChannelType type) => switch (type) {
+  ContactChannelType.phone => Icons.call_rounded,
+  ContactChannelType.mobile => Icons.smartphone_rounded,
+  ContactChannelType.email => Icons.mail_rounded,
+  ContactChannelType.messaging => Icons.chat_bubble_rounded,
+};
+
 /// The localized label for a relationship status — shared by the form's
 /// status picker and the detail page's status chip.
 String relationshipStatusLabel(
@@ -72,6 +91,41 @@ Future<RelationshipEntry?> showRelationshipEditModal({
   );
 }
 
+/// One editable contact-channel row: the picked type plus live controllers
+/// for value and optional label. Rows with an empty value are dropped on
+/// save, so an added-then-abandoned row never persists.
+class _ChannelDraft {
+  _ChannelDraft()
+    : type = ContactChannelType.mobile,
+      valueController = TextEditingController(),
+      labelController = TextEditingController();
+
+  _ChannelDraft.fromChannel(ContactChannel channel)
+    : type = channel.type,
+      valueController = TextEditingController(text: channel.value),
+      labelController = TextEditingController(text: channel.label ?? '');
+
+  ContactChannelType type;
+  final TextEditingController valueController;
+  final TextEditingController labelController;
+
+  ContactChannel? toChannel() {
+    final value = valueController.text.trim();
+    if (value.isEmpty) return null;
+    final label = labelController.text.trim();
+    return ContactChannel(
+      type: type,
+      value: value,
+      label: label.isEmpty ? null : label,
+    );
+  }
+
+  void dispose() {
+    valueController.dispose();
+    labelController.dispose();
+  }
+}
+
 /// The status kinds the form's picker can select between; the concrete
 /// [RelationshipStatus] instance (id, createdAt) is only minted on save,
 /// and only when the kind actually changed.
@@ -103,6 +157,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late bool _important;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
+  final List<_ChannelDraft> _channels = [];
   bool _isSaving = false;
 
   bool get _isEditing => widget.initial != null;
@@ -116,14 +171,25 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     _important = data?.important ?? false;
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
+    _channels.addAll(
+      (data?.contactChannels ?? const []).map(_ChannelDraft.fromChannel),
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _nicknameController.dispose();
+    for (final channel in _channels) {
+      channel.dispose();
+    }
     super.dispose();
   }
+
+  /// Non-empty channel rows in their edited order (ADR 0041 §2: manual
+  /// entry on every platform).
+  List<ContactChannel> get _editedChannels =>
+      _channels.map((draft) => draft.toChannel()).nonNulls.toList();
 
   RelationshipStatus _mintStatus(_StatusKind kind) {
     final now = DateTime.now();
@@ -172,6 +238,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           nickname: nickname.isEmpty ? null : nickname,
           important: _important,
           checkInCadenceDays: _cadenceDays,
+          contactChannels: _editedChannels,
         );
         // Append the replaced status to history when the kind changed — the
         // ProjectDetailController precedent.
@@ -199,6 +266,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             nickname: nickname.isEmpty ? null : nickname,
             important: _important,
             checkInCadenceDays: _cadenceDays,
+            contactChannels: _editedChannels,
             status: _mintStatus(_StatusKind.active),
           ),
         );
@@ -306,6 +374,30 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                         ),
                     ],
                   ),
+                  SizedBox(height: tokens.spacing.step5),
+                  sectionLabel(messages.relationshipContactChannelsLabel),
+                  SizedBox(height: tokens.spacing.step3),
+                  for (final (index, draft) in _channels.indexed) ...[
+                    _ChannelEditorRow(
+                      key: ObjectKey(draft),
+                      draft: draft,
+                      onTypeChanged: (type) =>
+                          setState(() => draft.type = type),
+                      onRemoved: () => setState(() {
+                        _channels.removeAt(index).dispose();
+                      }),
+                    ),
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          setState(() => _channels.add(_ChannelDraft())),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(messages.relationshipAddChannelButton),
+                    ),
+                  ),
                   if (_isEditing) ...[
                     SizedBox(height: tokens.spacing.step5),
                     sectionLabel(messages.relationshipStatusFieldLabel),
@@ -356,3 +448,85 @@ String _statusKindLabel(BuildContext context, _StatusKind kind) =>
       _StatusKind.dormant => context.messages.relationshipStatusDormant,
       _StatusKind.archived => context.messages.relationshipStatusArchived,
     };
+
+/// One channel's editor: type dropdown with a remove action, then the value
+/// and optional label fields. The keyboard follows the picked type.
+class _ChannelEditorRow extends StatelessWidget {
+  const _ChannelEditorRow({
+    required this.draft,
+    required this.onTypeChanged,
+    required this.onRemoved,
+    super.key,
+  });
+
+  final _ChannelDraft draft;
+  final ValueChanged<ContactChannelType> onTypeChanged;
+  final VoidCallback onRemoved;
+
+  TextInputType get _keyboardType => switch (draft.type) {
+    ContactChannelType.phone ||
+    ContactChannelType.mobile => TextInputType.phone,
+    ContactChannelType.email => TextInputType.emailAddress,
+    ContactChannelType.messaging => TextInputType.text,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final tokens = context.designTokens;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<ContactChannelType>(
+                initialValue: draft.type,
+                items: [
+                  for (final type in ContactChannelType.values)
+                    DropdownMenuItem(
+                      value: type,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            contactChannelTypeIcon(type),
+                            size: tokens.spacing.step4,
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
+                          SizedBox(width: tokens.spacing.step3),
+                          Text(contactChannelTypeLabel(context, type)),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: (type) {
+                  if (type != null) onTypeChanged(type);
+                },
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            IconButton(
+              tooltip: messages.deleteButton,
+              onPressed: onRemoved,
+              icon: const Icon(Icons.remove_circle_outline_rounded),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        LottiTextField(
+          controller: draft.valueController,
+          labelText: messages.contactChannelValueLabel,
+          keyboardType: _keyboardType,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        LottiTextField(
+          controller: draft.labelController,
+          labelText: messages.contactChannelLabelLabel,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+      ],
+    );
+  }
+}

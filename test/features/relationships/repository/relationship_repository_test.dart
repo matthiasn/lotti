@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -22,6 +23,7 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockJournalDb mockDb;
+  late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistence;
   late MockUpdateNotifications mockNotifications;
   late RelationshipRepository repository;
@@ -63,15 +65,42 @@ void main() {
     ),
   );
 
+  Task taskEntry(String id, {DateTime? dateFrom}) {
+    final date = dateFrom ?? testDate;
+    return JournalEntity.task(
+          meta: Metadata(
+            id: id,
+            createdAt: date,
+            updatedAt: date,
+            dateFrom: date,
+            dateTo: date,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'ts-$id',
+              createdAt: date,
+              utcOffset: 0,
+            ),
+            dateFrom: date,
+            dateTo: date,
+            statusHistory: const [],
+            title: 'Task $id',
+          ),
+        )
+        as Task;
+  }
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockDb = MockJournalDb();
+    mockJournalRepository = MockJournalRepository();
     mockPersistence = MockPersistenceLogic();
     mockNotifications = MockUpdateNotifications();
     getIt.registerSingleton<DomainLogger>(MockDomainLogger());
     repository = RelationshipRepository(
       journalDb: mockDb,
+      journalRepository: mockJournalRepository,
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
     );
@@ -609,10 +638,12 @@ void main() {
     test('wires the repository from the registered singletons', () async {
       getIt
         ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<JournalRepository>(mockJournalRepository)
         ..registerSingleton<PersistenceLogic>(mockPersistence)
         ..registerSingleton<UpdateNotifications>(mockNotifications);
       addTearDown(() async {
         await getIt.unregister<JournalDb>();
+        await getIt.unregister<JournalRepository>();
         await getIt.unregister<PersistenceLogic>();
         await getIt.unregister<UpdateNotifications>();
       });
@@ -765,6 +796,226 @@ void main() {
       );
 
       expect(await repository.deleteCheckIn('check-1'), isFalse);
+    });
+  });
+
+  group('getLinkedTasks', () {
+    EntryLink relationshipLink(
+      String id, {
+      required String fromId,
+      required String toId,
+      DateTime? deletedAt,
+      bool? hidden,
+    }) => EntryLink.relationship(
+      id: id,
+      fromId: fromId,
+      toId: toId,
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+      deletedAt: deletedAt,
+      hidden: hidden,
+    );
+
+    test(
+      'resolves both link directions, dedupes and orders newest task first',
+      () async {
+        final older = taskEntry('task-older', dateFrom: DateTime(2026, 8, 2));
+        final newer = taskEntry('task-newer', dateFrom: DateTime(2026, 8, 9));
+        when(
+          () => mockDb.typedLinksForTaskIds(
+            {'rel-001'},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            relationshipLink('l1', fromId: 'rel-001', toId: 'task-older'),
+            relationshipLink('l2', fromId: 'task-older', toId: 'rel-001'),
+            relationshipLink('l3', fromId: 'task-newer', toId: 'rel-001'),
+          ],
+        );
+        when(
+          () => mockDb.getLiveTasksByIds({'task-older', 'task-newer'}),
+        ).thenAnswer((_) async => [older, newer]);
+
+        final tasks = await repository.getLinkedTasks('rel-001');
+
+        expect(tasks.map((task) => task.id), ['task-newer', 'task-older']);
+      },
+    );
+
+    test('excludes link tombstones and hidden links', () async {
+      when(
+        () => mockDb.typedLinksForTaskIds(
+          {'rel-001'},
+          types: {'RelationshipLink'},
+        ),
+      ).thenAnswer(
+        (_) async => [
+          relationshipLink('l1', fromId: 'rel-001', toId: 'task-live'),
+          relationshipLink(
+            'l2',
+            fromId: 'rel-001',
+            toId: 'task-unlinked',
+            deletedAt: testDate,
+          ),
+          relationshipLink(
+            'l3',
+            fromId: 'rel-001',
+            toId: 'task-hidden',
+            hidden: true,
+          ),
+        ],
+      );
+      when(() => mockDb.getLiveTasksByIds({'task-live'})).thenAnswer(
+        (_) async => [taskEntry('task-live')],
+      );
+
+      final tasks = await repository.getLinkedTasks('rel-001');
+
+      expect(tasks.map((task) => task.id), ['task-live']);
+      verify(() => mockDb.getLiveTasksByIds({'task-live'})).called(1);
+    });
+
+    test('does not resolve tasks when no RelationshipLink exists', () async {
+      when(
+        () => mockDb.typedLinksForTaskIds(
+          {'rel-001'},
+          types: {'RelationshipLink'},
+        ),
+      ).thenAnswer((_) async => []);
+
+      expect(await repository.getLinkedTasks('rel-001'), isEmpty);
+      verifyNever(() => mockDb.getLiveTasksByIds(any()));
+    });
+  });
+
+  group('linkTask', () {
+    test('writes a RelationshipLink from relationship to task', () async {
+      when(
+        () => mockPersistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.linkTask(
+        relationshipId: 'rel-001',
+        taskId: 'task-1',
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => mockPersistence.createLink(
+          fromId: 'rel-001',
+          toId: 'task-1',
+          linkType: EntryLinkType.relationship,
+        ),
+      ).called(1);
+    });
+  });
+
+  group('unlinkTask', () {
+    EntryLink link(
+      String id,
+      String fromId,
+      String toId, {
+      DateTime? deletedAt,
+    }) => EntryLink.relationship(
+      id: id,
+      fromId: fromId,
+      toId: toId,
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+      deletedAt: deletedAt,
+    );
+
+    test('writes synced tombstones for links in either direction', () async {
+      when(
+        () => mockDb.typedLinksForTaskIds(
+          {'rel-001', 'task-1'},
+          types: {'RelationshipLink'},
+        ),
+      ).thenAnswer(
+        (_) async => [
+          link('forward', 'rel-001', 'task-1'),
+          link('reverse', 'task-1', 'rel-001'),
+        ],
+      );
+      when(() => mockJournalRepository.updateLink(any())).thenAnswer(
+        (_) async => true,
+      );
+
+      expect(
+        await repository.unlinkTask(
+          relationshipId: 'rel-001',
+          taskId: 'task-1',
+        ),
+        isTrue,
+      );
+
+      final tombstones = verify(
+        () => mockJournalRepository.updateLink(captureAny()),
+      ).captured.cast<EntryLink>();
+      expect(tombstones.map((item) => item.id), ['forward', 'reverse']);
+      expect(tombstones.every((item) => item.deletedAt != null), isTrue);
+      expect(tombstones.every((item) => item.hidden == true), isTrue);
+      verifyNever(() => mockDb.deleteTypedLink(any(), any(), any()));
+    });
+
+    test(
+      'returns false without writing when no live matching link exists',
+      () async {
+        when(
+          () => mockDb.typedLinksForTaskIds(
+            {'rel-001', 'task-1'},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            link('other', 'rel-001', 'task-2'),
+            link('gone', 'rel-001', 'task-1', deletedAt: testDate),
+          ],
+        );
+
+        expect(
+          await repository.unlinkTask(
+            relationshipId: 'rel-001',
+            taskId: 'task-1',
+          ),
+          isFalse,
+        );
+        verifyNever(() => mockJournalRepository.updateLink(any()));
+      },
+    );
+
+    test('attempts every tombstone and reports a rejected write', () async {
+      when(
+        () => mockDb.typedLinksForTaskIds(
+          {'rel-001', 'task-1'},
+          types: {'RelationshipLink'},
+        ),
+      ).thenAnswer(
+        (_) async => [
+          link('forward', 'rel-001', 'task-1'),
+          link('reverse', 'task-1', 'rel-001'),
+        ],
+      );
+      when(() => mockJournalRepository.updateLink(any())).thenAnswer(
+        (invocation) async =>
+            (invocation.positionalArguments.first as EntryLink).id == 'reverse',
+      );
+
+      expect(
+        await repository.unlinkTask(
+          relationshipId: 'rel-001',
+          taskId: 'task-1',
+        ),
+        isFalse,
+      );
+      verify(() => mockJournalRepository.updateLink(any())).called(2);
     });
   });
 }
