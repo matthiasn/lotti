@@ -1023,9 +1023,21 @@ void main() {
             ),
             scheduledWakeAt: DateTime(2026, 3, 21, 6),
           );
+          var stateReads = 0;
           when(
             () => mockRepository.getAgentState('agent-1'),
-          ).thenAnswer((_) async => state);
+          ).thenAnswer((_) async {
+            stateReads++;
+            return stateReads == 1
+                ? state
+                : state.copyWith(
+                    slots: state.slots.copyWith(
+                      pendingProjectActivityAt: null,
+                    ),
+                    nextWakeAt: null,
+                    scheduledWakeAt: null,
+                  );
+          });
 
           await expectLater(
             service.cancelScheduledWake('agent-1'),
@@ -1043,6 +1055,47 @@ void main() {
             ),
           ).called(1);
           expect(notifiedAgentIds, ['agent-1']);
+        },
+      );
+
+      test(
+        'keeps queued work when the transaction fails after its action',
+        () async {
+          final failingSyncService = _PostCommitFailingAgentSyncService();
+          when(
+            () => failingSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+          service = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: failingSyncService,
+            onPersistedStateChanged: notifiedAgentIds.add,
+          );
+          final state = makeState().copyWith(
+            slots: AgentSlots(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: kAgentTestDate,
+            ),
+            scheduledWakeAt: DateTime(2026, 3, 21, 6),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await expectLater(
+            service.cancelScheduledWake('agent-1'),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(() => mockOrchestrator.clearThrottle(any()));
+          verifyNever(
+            () => mockOrchestrator.cancelPendingWakes(
+              any(),
+              allWorkspaces: any(named: 'allWorkspaces'),
+            ),
+          );
+          expect(notifiedAgentIds, isEmpty);
         },
       );
 

@@ -39,6 +39,20 @@ enum _GeneratedScheduledWakeFailureSlot {
 
 enum _GeneratedScheduledWakeManagerOperationKind { start, stop, tick }
 
+class _TrackingTransactionSyncService extends MockAgentSyncService {
+  bool insideTransaction = false;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      insideTransaction = false;
+    }
+  }
+}
+
 final _generatedScheduledWakeNow = DateTime(2026, 5, 20, 10, 30);
 
 class _GeneratedScheduledWakeSpec {
@@ -1865,6 +1879,54 @@ void main() {
     });
 
     test(
+      'rechecks dormant retirement inside the write transaction',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final dormantSnapshot = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 13, 6),
+          lastWakeAt: DateTime(2024, 3, 13, 6, 5),
+          slots: const AgentSlots(activeProjectId: 'project-1'),
+        );
+        final activeState = dormantSnapshot.copyWith(
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 10, 15),
+          ),
+          nextWakeAt: DateTime(2024, 3, 15, 10, 35),
+        );
+        final trackingSyncService = _TrackingTransactionSyncService();
+        when(
+          () => trackingSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => [dormantSnapshot]);
+            when(
+              () => repository.getAgentState(kTestAgentId),
+            ).thenAnswer(
+              (_) async => trackingSyncService.insideTransaction
+                  ? activeState
+                  : dormantSnapshot,
+            );
+
+            final manager = ScheduledWakeManager(
+              repository: repository,
+              orchestrator: orchestrator,
+              syncService: trackingSyncService,
+            )..start();
+            async.flushMicrotasks();
+
+            verifyNever(() => trackingSyncService.upsertEntity(any()));
+            manager.stop();
+          });
+        });
+      },
+    );
+
+    test(
       'enqueues never-woken project schedules as creation fallbacks',
       () {
         final now = DateTime(2024, 3, 15, 10, 30);
@@ -2137,6 +2199,46 @@ void main() {
             manager.stop();
           });
         });
+      },
+    );
+
+    test(
+      'does not enqueue when equivalent work starts during the state read',
+      () async {
+        final activeState = makeTestState(
+          scheduledWakeAt: DateTime(2024, 3, 15, 6),
+          lastWakeAt: DateTime(2024, 3, 14, 6, 5),
+          slots: AgentSlots(
+            activeProjectId: 'project-1',
+            pendingProjectActivityAt: DateTime(2024, 3, 15, 8),
+          ),
+        );
+        final stateRead = Completer<AgentStateEntity?>();
+        var workStarted = false;
+        when(
+          () => repository.getDueScheduledAgentStates(any()),
+        ).thenAnswer((_) async => [activeState]);
+        when(
+          () => repository.getAgentState(kTestAgentId),
+        ).thenAnswer((_) => stateRead.future);
+        when(
+          () => orchestrator.hasPendingOrActiveWake(kTestAgentId),
+        ).thenAnswer((_) => workStarted);
+
+        final manager = createAndStart();
+        addTearDown(manager.stop);
+        await untilCalled(() => repository.getAgentState(kTestAgentId));
+
+        workStarted = true;
+        stateRead.complete(activeState);
+        await pumpEventQueue();
+
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: kTestAgentId,
+            reason: any(named: 'reason'),
+          ),
+        );
       },
     );
     test('schedule retirement does not preserve a custom legacy hour', () {

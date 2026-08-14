@@ -2474,6 +2474,48 @@ void main() {
       });
 
       test(
+        'turning on a dormant project agent does not arm a fallback',
+        () async {
+          final state = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              lifecycle: AgentLifecycle.dormant,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: false,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          await service.updateAutomaticUpdates(
+            agentId: 'agent-1',
+            enabled: true,
+          );
+
+          final persistedStates = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(persistedStates, isEmpty);
+          verifyNever(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          );
+        },
+      );
+
+      test(
         'turning on a project agent arms pending activity for next 06:00',
         () async {
           final now = DateTime(2026, 8, 14, 12);

@@ -123,7 +123,9 @@ stateDiagram-v2
   evaluable; startup restoration performs the same repair after a restart.
   A first state import discards the sender's project fallback deadline and
   derives a replacement from the receiving device's policy, clock, and pending
-  marker instead of treating another device's 06:00 as local work.
+  marker instead of treating another device's 06:00 as local work. Before the
+  identity arrives, `activeProjectId` identifies the row as project state so
+  the peer deadline is still stripped.
   A synced opt-out clears the device-local automatic fallback but retains the
   pending marker, so re-enabling can arm it again without losing evidence. A
   synced completion does the inverse: when the incoming state consumes the
@@ -140,13 +142,17 @@ of waiting for another edit; this includes failures during project/template/
 provider setup before inference starts. An overdue fallback advances to the
 next morning rather than remaining due on every hourly scan. When automation is
 disabled, a manual wake may preserve an already-future explicit schedule but
-cannot synthesize a new morning fallback on success or failure. Explicit
+cannot synthesize a new morning fallback on success or failure. Enabling
+automation while the identity is inactive likewise leaves the fallback absent;
+resume-time restoration arms it after the lifecycle becomes active. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
 transaction rollback therefore leaves the runtime work intact and surfaces an
 error in the project detail UI. If the state commits but the subsequent outbox
 flush fails, runtime work is still cleared to match storage before that sync
-error is surfaced. Failure persistence and cancellation share the same
+error is surfaced. Because a transaction can also fail after its callback ran
+but before commit, the error path re-reads storage and clears runtime work only
+when the cancellation fields are actually absent. Failure persistence and cancellation share the same
 serialized sync transaction path, so a retry computed from an older snapshot
 cannot restore a marker or deadline that cancellation already removed. The
 workflow also re-reads the current identity policy inside its final persistence
@@ -171,10 +177,14 @@ arrives during the scan wins. Every successful workflow run clears
 `scheduledWakeAt` when it
 consumed the newest activity.
 Before enqueueing a due fallback, the manager checks for queued or running work
-for the same agent and leaves the fallback durable instead of stacking a second
-inference. It then re-reads the authoritative state at the enqueue boundary;
-if cancellation cleared the deadline or moved it into the future while the
-scan was awaiting, the stale due snapshot cannot launch a wake.
+for the same agent after re-reading authoritative state at the enqueue boundary,
+leaving the fallback durable instead of stacking a second inference. That
+ordering closes the interval in which another wake can start while the state
+read is awaiting. Dormant-schedule retirement makes its fresh decision and
+whole-row write inside one transaction, so newly committed activity cannot be
+restored away by an older snapshot. If cancellation clears the deadline or
+moves it into the future while the scan is awaiting, the stale due snapshot
+cannot launch a wake.
 
 Failure persistence notifies state consumers only after the retry deadline is
 successfully written. The project detail report prefers the subscription

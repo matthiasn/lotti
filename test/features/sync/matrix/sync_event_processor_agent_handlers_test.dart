@@ -2807,7 +2807,7 @@ void main() {
         'project state rebuilds an imported fallback from the local clock',
         () async {
           final now = DateTime(2026, 8, 14, 10);
-          final remoteFallback = DateTime(2026, 8, 14, 4);
+          final remoteFallback = DateTime(2026, 8, 14, 18);
           final identity = AgentDomainEntity.agent(
             id: 'project-agent-imported',
             agentId: 'project-agent-imported',
@@ -2873,6 +2873,47 @@ void main() {
           );
           expect(storedState?.scheduledWakeAt, DateTime(2026, 8, 15, 6));
           expect(storedState?.updatedAt, incoming.updatedAt);
+        },
+      );
+
+      test(
+        'project state strips an imported fallback before identity arrives',
+        () async {
+          final now = DateTime(2026, 8, 14, 10);
+          final remoteFallback = DateTime(2026, 8, 14, 18);
+          final incoming =
+              AgentDomainEntity.agentState(
+                    id: 'state-before-identity',
+                    agentId: 'project-agent-later',
+                    slots: AgentSlots(
+                      activeProjectId: 'project-42',
+                      pendingProjectActivityAt: now.subtract(
+                        const Duration(minutes: 5),
+                      ),
+                    ),
+                    scheduledWakeAt: remoteFallback,
+                    updatedAt: now.subtract(const Duration(minutes: 5)),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(() => event.text).thenReturn(
+            encodeMessage(
+              SyncMessage.agentEntity(
+                agentEntity: incoming,
+                status: SyncEntryStatus.update,
+              ),
+            ),
+          );
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          final persisted =
+              verify(
+                    () => mockAgentRepo.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.slots.pendingProjectActivityAt, isNotNull);
         },
       );
 

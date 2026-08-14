@@ -770,8 +770,11 @@ extension _AgentHandlers on SyncEventProcessor {
       prefetchedAgentEntitiesById,
     );
     if (local is! AgentStateEntity) {
-      return identity is AgentIdentityEntity &&
-              identity.kind == AgentKinds.projectAgent
+      final isProjectState =
+          (identity is AgentIdentityEntity &&
+              identity.kind == AgentKinds.projectAgent) ||
+          incoming.slots.activeProjectId != null;
+      return isProjectState
           ? incoming.copyWith(scheduledWakeAt: null)
           : incoming;
     }

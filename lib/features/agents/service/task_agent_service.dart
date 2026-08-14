@@ -2,6 +2,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_automation_policy.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -435,6 +436,10 @@ class TaskAgentService {
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
         if (identity.kind == AgentKinds.projectAgent &&
+            projectAgentAutomaticWakesAllowed(
+              config: updated.config,
+              lifecycle: updated.lifecycle,
+            ) &&
             state != null &&
             state.slots.pendingProjectActivityAt != null &&
             state.scheduledWakeAt == null) {

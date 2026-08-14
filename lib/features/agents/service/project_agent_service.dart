@@ -254,12 +254,26 @@ class ProjectAgentService {
         );
         persistedCancellation = true;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      var cancellationCommitted = false;
       if (persistedCancellation) {
+        try {
+          final current = await repository.getAgentState(agentId);
+          cancellationCommitted =
+              current == null ||
+              (current.nextWakeAt == null &&
+                  current.scheduledWakeAt == null &&
+                  current.slots.pendingProjectActivityAt == null);
+        } catch (_) {
+          // Preserve the original transaction/sync failure. If the state
+          // cannot be confirmed, leaving runtime work intact is the safe side.
+        }
+      }
+      if (cancellationCommitted) {
         onPersistedStateChanged?.call(agentId);
         clearRuntimeWake();
       }
-      rethrow;
+      Error.throwWithStackTrace(error, stackTrace);
     }
     if (persistedCancellation) onPersistedStateChanged?.call(agentId);
 

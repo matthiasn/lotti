@@ -271,14 +271,6 @@ class ScheduledWakeManager with AgentErrorLogging {
             }
           }
 
-          // A subscription or explicit wake may already be processing the
-          // same pending project activity. Leave the durable fallback in
-          // place until that run succeeds instead of queueing a second paid
-          // inference behind it.
-          if (_orchestrator.hasPendingOrActiveWake(state.agentId)) {
-            continue;
-          }
-
           // The due query is only a snapshot. A cancellation may clear the
           // durable schedule while this pass awaits the identity lookup (or a
           // prior item), so re-read at the enqueue boundary. Without this
@@ -286,6 +278,14 @@ class ScheduledWakeManager with AgentErrorLogging {
           final currentState = await _repository.getAgentState(state.agentId);
           final currentSchedule = currentState?.scheduledWakeAt;
           if (currentSchedule == null || currentSchedule.isAfter(now)) {
+            continue;
+          }
+
+          // Check after the awaited state read: a subscription wake may have
+          // acquired the runner while that read was in flight. Nothing awaits
+          // between this check and enqueue, so equivalent work cannot slip in
+          // and leave a second paid wake queued behind it.
+          if (_orchestrator.hasPendingOrActiveWake(state.agentId)) {
             continue;
           }
 
@@ -606,29 +606,35 @@ class ScheduledWakeManager with AgentErrorLogging {
     AgentStateEntity state,
     DateTime now,
   ) async {
-    // The due query is a snapshot and the identity lookup above awaits. Use a
-    // fresh row for both the decision and the whole-row write so activity or a
-    // replacement schedule that lands during the scan cannot be erased.
-    final currentState = await _repository.getAgentState(state.agentId);
-    final currentSchedule = currentState?.scheduledWakeAt;
-    if (currentState == null ||
-        currentSchedule == null ||
-        currentSchedule.isAfter(now) ||
-        !_shouldRetireDormantProjectSchedule(currentState)) {
-      return false;
-    }
+    AgentStateEntity? retiredState;
+    await _syncService.runInTransaction(() async {
+      // Re-read inside the same transaction as the whole-row write. Activity
+      // or a replacement schedule that commits before this transaction wins;
+      // a concurrent writer cannot land between this decision and persistence.
+      final currentState = await _repository.getAgentState(state.agentId);
+      final currentSchedule = currentState?.scheduledWakeAt;
+      if (currentState == null ||
+          currentSchedule == null ||
+          currentSchedule.isAfter(now) ||
+          !_shouldRetireDormantProjectSchedule(currentState)) {
+        return;
+      }
 
-    await _syncService.upsertEntity(
-      currentState.copyWith(
-        scheduledWakeAt: null,
-        updatedAt: now,
-      ),
-    );
-    onPersistedStateChanged?.call(currentState.agentId);
+      await _syncService.upsertEntity(
+        currentState.copyWith(
+          scheduledWakeAt: null,
+          updatedAt: now,
+        ),
+      );
+      retiredState = currentState;
+    });
+    final retired = retiredState;
+    if (retired == null) return false;
+    onPersistedStateChanged?.call(retired.agentId);
 
     _log(
       'retired dormant project schedule for '
-      '${DomainLogger.sanitizeId(currentState.agentId)}',
+      '${DomainLogger.sanitizeId(retired.agentId)}',
     );
     return true;
   }
