@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -38,6 +39,8 @@ JournalDbEntity _journalDbEntity(JournalEntity entity) {
     type = 'Task';
   } else if (entity is ProjectEntry) {
     type = 'ProjectEntry';
+  } else if (entity is RelationshipEntry) {
+    type = 'Relationship';
   } else {
     type = 'JournalEntry';
   }
@@ -377,5 +380,46 @@ void main() {
       // assertion the test would pass even if every entry got filtered out.
       expect(find.byKey(ValueKey(testTextEntry.meta.id)), findsOneWidget);
     });
+
+    RelationshipEntry buildRelationship(String id) {
+      final now = DateTime(2026, 5, 5, 21);
+      return RelationshipEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: RelationshipData(
+          title: 'Anna Example',
+          status: RelationshipStatus.active(
+            id: 'relationship-status-$id',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+      'hides RelationshipEntry but keeps other linked entries — a person '
+      'links many tasks and owns a page this card cannot route to',
+      (tester) async {
+        mockLinkedFromEntries([
+          buildRelationship('relationship-mixed'),
+          testTextEntry,
+        ]);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            LinkedFromEntriesWidget(testTask),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Linked from:'), findsOneWidget);
+        expect(find.text('Anna Example'), findsNothing);
+        expect(find.byKey(ValueKey(testTextEntry.meta.id)), findsOneWidget);
+      },
+    );
   });
 }

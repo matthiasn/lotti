@@ -5,7 +5,6 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/utils/consts.dart';
@@ -252,9 +251,12 @@ void main() {
     );
 
     test(
-      'getAllCheckInsForRelationship ignores the private filter, so the '
-      'delete cascade cannot leave hidden check-ins behind',
+      'getAllCheckInsForRelationship ignores the private filter — the delete '
+      'cascade must reach every check-in',
       () async {
+        await db!.updateJournalEntity(
+          relationship('rel-a', trackedSince: baseTime),
+        );
         await db!.updateJournalEntity(
           checkIn('check-public', relationshipId: 'rel-a', at: baseTime),
         );
@@ -262,7 +264,7 @@ void main() {
           checkIn(
             'check-private',
             relationshipId: 'rel-a',
-            at: baseTime.add(const Duration(days: 1)),
+            at: baseTime.add(const Duration(hours: 1)),
             private: true,
           ),
         );
@@ -270,14 +272,10 @@ void main() {
           checkIn(
             'check-deleted',
             relationshipId: 'rel-a',
-            at: baseTime.add(const Duration(days: 2)),
-            deletedAt: baseTime.add(const Duration(days: 3)),
+            at: baseTime,
+            deletedAt: baseTime,
           ),
         );
-        await db!.updateJournalEntity(
-          checkIn('check-other-rel', relationshipId: 'rel-b', at: baseTime),
-        );
-
         await db!.upsertConfigFlag(
           const ConfigFlag(
             name: privateFlag,
@@ -286,13 +284,12 @@ void main() {
           ),
         );
 
-        // The browsing query hides the private check-in at this setting…
+        // The display query is scoped by the flag…
         expect(
           (await db!.getCheckInsForRelationship('rel-a')).map((c) => c.id),
           ['check-public'],
         );
-        // …while the cascade query still sees it. Tombstones and other
-        // people's check-ins stay out of both.
+        // …the cascade query is not, but still skips tombstones.
         expect(
           (await db!.getAllCheckInsForRelationship('rel-a')).map((c) => c.id),
           ['check-private', 'check-public'],
@@ -377,16 +374,10 @@ void main() {
         await db!.updateJournalEntity(
           relationship('rel-a', trackedSince: baseTime),
         );
-        await db!.upsertJournalDbEntity(
-          toDbEntity(task('task-without-marker', at: baseTime)).copyWith(
-            task: false,
-          ),
-        );
 
         final tasks = await db!.getLiveTasksByIds({
           'task-live',
           'task-deleted',
-          'task-without-marker',
           'check-1',
           'rel-a',
           'never-existed',

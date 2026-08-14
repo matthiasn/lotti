@@ -17,8 +17,8 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   Both ride the journal table as `JournalEntity.relationship` /
   `JournalEntity.checkIn` — payload-agnostic sync, `private` flag,
   categories, and export all apply with zero new infrastructure.
-- **Linking**: `EntryLink.relationship` binds relationship → check-in and
-  relationship ↔ task. Check-ins also carry a denormalized
+- **Linking**: `EntryLink.relationship` binds relationship → check-in (and
+  later relationship → task). Check-ins also carry a denormalized
   `relationshipId` so `affectedIds` emits a precise agent wake token and the
   journal `subtype` column supports indexed check-in queries.
 - `repository/` — `RelationshipRepository`: CRUD for both entity types
@@ -33,7 +33,7 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   cadence presets, status, and the manual contact-channel editor — desktop
   parity per ADR 0041 §2), and the check-in capture sheet (interaction
   type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,
-  narrative, next-time guidance; editable and deletable afterward).
+  narrative, next-time guidance; editable and deletable afterwards).
 
 Not yet built: the banner-channel generalization (phase 3), the relationship
 agent (phases 4–5), voice check-ins (phase 6), OS contact import/linking and
@@ -44,12 +44,7 @@ People tab is their home.
 Privacy stance (ADR 0037): relationship data is the most sensitive class the
 app holds — it describes third parties. It stays on-device, syncs only via
 the user's own end-to-end encrypted Matrix rooms, and contact channels never
-enter AI context. Concretely, `private` covers the whole person: a check-in
-inherits the relationship's `private` flag when it is created, the detail
-page resolves a private person to "no longer tracked" while private entries
-are hidden (the list filter alone would leave the `/people/<id>` route open),
-and the delete cascade reads check-ins unfiltered so hidden ones cannot
-survive the person they describe.
+enter AI context.
 
 Why check-ins are bound to a person twice, how the People list orders by
 recency without a per-person query, the status lifecycle, and what the delete

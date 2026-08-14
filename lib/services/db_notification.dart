@@ -157,12 +157,6 @@ String projectEntityUpdateNotification(String projectId) {
   return '$projectEntityUpdatePrefix$projectId';
 }
 
-const relationshipEntityUpdatePrefix = 'RELATIONSHIP_ENTITY_UPDATE:';
-
-String relationshipEntityUpdateNotification(String relationshipId) {
-  return '$relationshipEntityUpdatePrefix$relationshipId';
-}
-
 /// Prefix marking a notification token that did not originate from a
 /// direct edit of the entity it references — e.g. a parent ID added by
 /// `parentLinkedEntityIds` fan-out, or a project's update token emitted

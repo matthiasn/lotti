@@ -4,6 +4,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+/// Upper bound on a create/edit form's height as a fraction of the viewport
+/// — shared by `ProjectCreateForm`, `RelationshipForm` and `CheckInCaptureForm`
+/// so the three modals can't drift apart.
+const double modalMaxHeightFraction = 0.9;
+
 class ModalUtils {
   static bool shouldUseRootNavigatorForBottomSheet(BuildContext context) {
     return MediaQuery.of(context).size.width < WoltModalConfig.pageBreakpoint;

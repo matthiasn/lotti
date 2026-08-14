@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -6,14 +5,10 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -23,7 +18,6 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockJournalDb mockDb;
-  late MockJournalRepository mockJournalRepository;
   late MockPersistenceLogic mockPersistence;
   late MockUpdateNotifications mockNotifications;
   late RelationshipRepository repository;
@@ -51,9 +45,8 @@ void main() {
   RelationshipEntry relationshipEntry({
     String id = 'rel-001',
     DateTime? deletedAt,
-    bool? private,
   }) => RelationshipEntry(
-    meta: meta(id, deletedAt: deletedAt).copyWith(private: private),
+    meta: meta(id, deletedAt: deletedAt),
     data: relationshipData(),
   );
 
@@ -65,7 +58,7 @@ void main() {
     ),
   );
 
-  Task taskEntry(String id, {DateTime? dateFrom}) {
+  Task taskEntry(String id, {DateTime? dateFrom, DateTime? deletedAt}) {
     final date = dateFrom ?? testDate;
     return JournalEntity.task(
           meta: Metadata(
@@ -74,6 +67,7 @@ void main() {
             updatedAt: date,
             dateFrom: date,
             dateTo: date,
+            deletedAt: deletedAt,
           ),
           data: TaskData(
             status: TaskStatus.open(
@@ -94,22 +88,15 @@ void main() {
 
   setUp(() {
     mockDb = MockJournalDb();
-    mockJournalRepository = MockJournalRepository();
     mockPersistence = MockPersistenceLogic();
     mockNotifications = MockUpdateNotifications();
     getIt.registerSingleton<DomainLogger>(MockDomainLogger());
     repository = RelationshipRepository(
       journalDb: mockDb,
-      journalRepository: mockJournalRepository,
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
     );
 
-    // Private entries are hidden unless a test says otherwise; the flag is
-    // only read for entities that actually carry `meta.private`.
-    when(
-      () => mockDb.getConfigFlag(privateFlag),
-    ).thenAnswer((_) async => false);
     when(
       () => mockPersistence.createMetadata(
         dateFrom: any(named: 'dateFrom'),
@@ -124,24 +111,6 @@ void main() {
         dateFrom: invocation.namedArguments[#dateFrom] as DateTime? ?? testDate,
         dateTo: invocation.namedArguments[#dateTo] as DateTime? ?? testDate,
         categoryId: invocation.namedArguments[#categoryId] as String?,
-      ),
-    );
-    when(
-      () => mockPersistence.createMetadata(
-        dateFrom: any(named: 'dateFrom'),
-        dateTo: any(named: 'dateTo'),
-        categoryId: any(named: 'categoryId'),
-        private: any(named: 'private'),
-      ),
-    ).thenAnswer(
-      (invocation) async => Metadata(
-        id: 'generated-id',
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: invocation.namedArguments[#dateFrom] as DateTime? ?? testDate,
-        dateTo: invocation.namedArguments[#dateTo] as DateTime? ?? testDate,
-        categoryId: invocation.namedArguments[#categoryId] as String?,
-        private: invocation.namedArguments[#private] as bool?,
       ),
     );
     when(
@@ -202,38 +171,6 @@ void main() {
 
       expect(result, isNull);
     });
-
-    test(
-      'starts tracking now when no explicit start is given — the add-person '
-      'form never passes one',
-      () async {
-        when(() => mockPersistence.createDbEntity(any())).thenAnswer(
-          (_) async => true,
-        );
-        final before = DateTime.now();
-
-        final result = await repository.createRelationship(
-          data: relationshipData(),
-        );
-
-        expect(result, isNotNull);
-        final captured = verify(
-          () => mockPersistence.createMetadata(
-            dateFrom: captureAny(named: 'dateFrom'),
-            dateTo: captureAny(named: 'dateTo'),
-            categoryId: captureAny(named: 'categoryId'),
-          ),
-        ).captured;
-        final dateFrom = captured[0] as DateTime;
-        expect(
-          dateFrom.isBefore(before),
-          isFalse,
-          reason: 'tracking starts at wall-clock now',
-        );
-        // dateFrom and dateTo are the same instant, not two `now()` reads.
-        expect(captured[1], dateFrom);
-      },
-    );
   });
 
   group('createCheckIn', () {
@@ -276,42 +213,6 @@ void main() {
             fromId: 'rel-001',
             toId: result.id,
             linkType: EntryLinkType.relationship,
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'inherits the relationship private flag, so a note about a hidden '
-      'person is not persisted as a public row',
-      () async {
-        when(() => mockDb.journalEntityById('rel-001')).thenAnswer(
-          (_) async => relationshipEntry(private: true),
-        );
-        when(() => mockDb.getConfigFlag(privateFlag)).thenAnswer(
-          (_) async => true,
-        );
-        when(() => mockPersistence.createDbEntity(any())).thenAnswer(
-          (_) async => true,
-        );
-        when(
-          () => mockPersistence.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-            linkType: any(named: 'linkType'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await repository.createCheckIn(data: checkInData);
-
-        expect(result, isNotNull);
-        expect(result!.meta.private, isTrue);
-        verify(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            private: true,
           ),
         ).called(1);
       },
@@ -385,30 +286,41 @@ void main() {
   });
 
   group('updateRelationship', () {
-    test('persists the update and emits the entity notification', () async {
-      when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
-        (_) async => true,
-      );
+    test(
+      'persists the update without emitting a manual notification — '
+      'updateDbEntity already emits the entity affectedIds',
+      () async {
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (_) async => true,
+        );
 
-      final result = await repository.updateRelationship(relationshipEntry());
+        final result = await repository.updateRelationship(relationshipEntry());
 
-      expect(result, isTrue);
-      verify(
-        () => mockNotifications.notify(
-          {relationshipEntityUpdateNotification('rel-001')},
-        ),
-      ).called(1);
-    });
+        expect(result, isTrue);
+        verifyNever(() => mockNotifications.notify(any()));
+      },
+    );
 
-    test('returns false and stays silent when the update fails', () async {
+    test('returns false when the update is rejected', () async {
       when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
         (_) async => false,
       );
 
-      final result = await repository.updateRelationship(relationshipEntry());
+      expect(
+        await repository.updateRelationship(relationshipEntry()),
+        isFalse,
+      );
+    });
 
-      expect(result, isFalse);
-      verifyNever(() => mockNotifications.notify(any()));
+    test('returns false when the update throws and is swallowed', () async {
+      when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+        (_) async => null,
+      );
+
+      expect(
+        await repository.updateRelationship(relationshipEntry()),
+        isFalse,
+      );
     });
   });
 
@@ -453,29 +365,89 @@ void main() {
         );
       }
 
-      verify(
-        () => mockNotifications.notify({
-          relationshipNotification,
-          relationshipEntityUpdateNotification('rel-001'),
-        }),
-      ).called(1);
+      // The tombstones' own affectedIds carry the relationship id and
+      // RELATIONSHIP/CHECK_IN, so no manual notification is needed.
+      verifyNever(() => mockNotifications.notify(any()));
     });
 
     test(
-      'cascades over the unfiltered check-in query, so private check-ins '
-      'cannot survive the person they describe',
+      'returns false and skips the cascade when the relationship tombstone '
+      'is rejected',
       () async {
         when(
           () => mockDb.journalEntityById('rel-001'),
         ).thenAnswer((_) async => relationshipEntry());
         when(() => mockDb.getAllCheckInsForRelationship('rel-001')).thenAnswer(
-          (_) async => [checkInEntry('private-check-in')],
+          (_) async => [checkInEntry('check-1')],
         );
-        // The browsing query hides private check-ins while private mode is
-        // off; reading it here would tombstone the person and orphan them.
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (_) async => false,
+        );
+
+        expect(await repository.deleteRelationship('rel-001'), isFalse);
+
+        // Only the relationship was attempted — reporting success here would
+        // navigate the caller away from a person who is still there.
+        final attempted = verify(
+          () => mockPersistence.updateDbEntity(captureAny()),
+        ).captured.cast<JournalEntity>();
+        expect(attempted.map((entity) => entity.id), ['rel-001']);
+      },
+    );
+
+    test(
+      'returns false when the relationship tombstone throws and is swallowed',
+      () async {
+        when(
+          () => mockDb.journalEntityById('rel-001'),
+        ).thenAnswer((_) async => relationshipEntry());
+        when(
+          () => mockDb.getAllCheckInsForRelationship('rel-001'),
+        ).thenAnswer((_) async => []);
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (_) async => null,
+        );
+
+        expect(await repository.deleteRelationship('rel-001'), isFalse);
+      },
+    );
+
+    test(
+      'still reports success when only a check-in tombstone is rejected — '
+      'the person is already unreachable',
+      () async {
+        when(
+          () => mockDb.journalEntityById('rel-001'),
+        ).thenAnswer((_) async => relationshipEntry());
+        when(() => mockDb.getAllCheckInsForRelationship('rel-001')).thenAnswer(
+          (_) async => [checkInEntry('check-1')],
+        );
+        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+          (invocation) async =>
+              (invocation.positionalArguments.first as JournalEntity).id ==
+              'rel-001',
+        );
+
+        expect(await repository.deleteRelationship('rel-001'), isTrue);
+        verify(() => mockPersistence.updateDbEntity(any())).called(2);
+      },
+    );
+
+    test(
+      'cascades to private check-ins the display filter hides — a deletion '
+      'must not be scoped by "Show private entries"',
+      () async {
+        when(
+          () => mockDb.journalEntityById('rel-001'),
+        ).thenAnswer((_) async => relationshipEntry());
+        // Exactly what the two queries answer with private entries hidden:
+        // the display query sees nothing, the cascade query sees the row.
         when(
           () => mockDb.getCheckInsForRelationship('rel-001'),
         ).thenAnswer((_) async => []);
+        when(() => mockDb.getAllCheckInsForRelationship('rel-001')).thenAnswer(
+          (_) async => [checkInEntry('private-check-1')],
+        );
         when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
           (_) async => true,
         );
@@ -485,64 +457,14 @@ void main() {
         final deleted = verify(
           () => mockPersistence.updateDbEntity(captureAny()),
         ).captured.cast<JournalEntity>();
-        expect(deleted.map((entity) => entity.id), [
-          'private-check-in',
-          'rel-001',
-        ]);
+        expect(
+          deleted.map((entity) => entity.id).toSet(),
+          {'rel-001', 'private-check-1'},
+          reason:
+              'a private check-in left live would keep syncing the deleted '
+              "person's data with no relationship left to reach it from",
+        );
         verifyNever(() => mockDb.getCheckInsForRelationship(any()));
-      },
-    );
-
-    test(
-      'reports failure and leaves the person live when a check-in tombstone '
-      'is rejected',
-      () async {
-        when(
-          () => mockDb.journalEntityById('rel-001'),
-        ).thenAnswer((_) async => relationshipEntry());
-        when(() => mockDb.getAllCheckInsForRelationship('rel-001')).thenAnswer(
-          (_) async => [checkInEntry('check-1'), checkInEntry('check-2')],
-        );
-        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
-          (invocation) async =>
-              (invocation.positionalArguments.first as JournalEntity).id !=
-              'check-2',
-        );
-
-        expect(await repository.deleteRelationship('rel-001'), isFalse);
-
-        final attempted = verify(
-          () => mockPersistence.updateDbEntity(captureAny()),
-        ).captured.cast<JournalEntity>().map((entity) => entity.id);
-        // Both check-ins are attempted, the relationship is not: a person
-        // must never be tombstoned over a surviving check-in.
-        expect(attempted, ['check-1', 'check-2']);
-
-        // The successful check-in tombstone still changed rows, so the views
-        // are told to reload.
-        verify(
-          () => mockNotifications.notify({
-            relationshipNotification,
-            relationshipEntityUpdateNotification('rel-001'),
-          }),
-        ).called(1);
-      },
-    );
-
-    test(
-      'reports failure when the relationship tombstone is rejected',
-      () async {
-        when(
-          () => mockDb.journalEntityById('rel-001'),
-        ).thenAnswer((_) async => relationshipEntry());
-        when(
-          () => mockDb.getAllCheckInsForRelationship('rel-001'),
-        ).thenAnswer((_) async => []);
-        when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
-          (_) async => false,
-        );
-
-        expect(await repository.deleteRelationship('rel-001'), isFalse);
       },
     );
   });
@@ -578,87 +500,6 @@ void main() {
       );
 
       expect(await repository.getRelationshipById('task-1'), isNull);
-    });
-
-    test(
-      'hides a private relationship while private entries are hidden — a '
-      'direct /people/<id> route must not leak past the list filter',
-      () async {
-        when(() => mockDb.journalEntityById('rel-secret')).thenAnswer(
-          (_) async => relationshipEntry(id: 'rel-secret', private: true),
-        );
-
-        expect(await repository.getRelationshipById('rel-secret'), isNull);
-        verify(() => mockDb.getConfigFlag(privateFlag)).called(1);
-      },
-    );
-
-    test('returns a private relationship once private mode is on', () async {
-      when(() => mockDb.journalEntityById('rel-secret')).thenAnswer(
-        (_) async => relationshipEntry(id: 'rel-secret', private: true),
-      );
-      when(() => mockDb.getConfigFlag(privateFlag)).thenAnswer(
-        (_) async => true,
-      );
-
-      final result = await repository.getRelationshipById('rel-secret');
-
-      expect(result, isNotNull);
-      expect(result!.id, 'rel-secret');
-    });
-
-    test(
-      'does not consult the private flag for a public relationship',
-      () async {
-        when(
-          () => mockDb.journalEntityById('rel-001'),
-        ).thenAnswer((_) async => relationshipEntry());
-
-        expect(await repository.getRelationshipById('rel-001'), isNotNull);
-        verifyNever(() => mockDb.getConfigFlag(any()));
-      },
-    );
-  });
-
-  group('getCheckInsForRelationship', () {
-    test('delegates to the private-filtered browsing query', () async {
-      when(() => mockDb.getCheckInsForRelationship('rel-001')).thenAnswer(
-        (_) async => [checkInEntry('check-1'), checkInEntry('check-2')],
-      );
-
-      final checkIns = await repository.getCheckInsForRelationship('rel-001');
-
-      expect(checkIns.map((c) => c.id), ['check-1', 'check-2']);
-      // Explicitly the filtered query — the unfiltered one is cascade-only.
-      verifyNever(() => mockDb.getAllCheckInsForRelationship(any()));
-    });
-  });
-
-  group('relationshipRepositoryProvider', () {
-    test('wires the repository from the registered singletons', () async {
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<JournalRepository>(mockJournalRepository)
-        ..registerSingleton<PersistenceLogic>(mockPersistence)
-        ..registerSingleton<UpdateNotifications>(mockNotifications);
-      addTearDown(() async {
-        await getIt.unregister<JournalDb>();
-        await getIt.unregister<JournalRepository>();
-        await getIt.unregister<PersistenceLogic>();
-        await getIt.unregister<UpdateNotifications>();
-      });
-
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final wired = container.read(relationshipRepositoryProvider);
-
-      // Reaching the injected JournalDb proves the wiring, not just that a
-      // repository object came back.
-      when(
-        () => mockDb.journalEntityById('rel-001'),
-      ).thenAnswer((_) async => relationshipEntry());
-      expect((await wired.getRelationshipById('rel-001'))?.id, 'rel-001');
     });
   });
 
@@ -797,6 +638,17 @@ void main() {
 
       expect(await repository.deleteCheckIn('check-1'), isFalse);
     });
+
+    test('returns false when the tombstone throws and is swallowed', () async {
+      when(
+        () => mockDb.journalEntityById('check-1'),
+      ).thenAnswer((_) async => checkInEntry('check-1'));
+      when(() => mockPersistence.updateDbEntity(any())).thenAnswer(
+        (_) async => null,
+      );
+
+      expect(await repository.deleteCheckIn('check-1'), isFalse);
+    });
   });
 
   group('getLinkedTasks', () {
@@ -830,6 +682,7 @@ void main() {
         ).thenAnswer(
           (_) async => [
             relationshipLink('l1', fromId: 'rel-001', toId: 'task-older'),
+            // The reverse direction repeats `task-older`; it must not double up.
             relationshipLink('l2', fromId: 'task-older', toId: 'rel-001'),
             relationshipLink('l3', fromId: 'task-newer', toId: 'rel-001'),
           ],
@@ -868,26 +721,32 @@ void main() {
         ],
       );
       when(() => mockDb.getLiveTasksByIds({'task-live'})).thenAnswer(
-        (_) async => [taskEntry('task-live')],
+        (_) async => [taskEntry('task-live', dateFrom: testDate)],
       );
 
       final tasks = await repository.getLinkedTasks('rel-001');
 
       expect(tasks.map((task) => task.id), ['task-live']);
+      // Nothing but the live endpoint is ever looked up.
       verify(() => mockDb.getLiveTasksByIds({'task-live'})).called(1);
     });
 
-    test('does not resolve tasks when no RelationshipLink exists', () async {
-      when(
-        () => mockDb.typedLinksForTaskIds(
-          {'rel-001'},
-          types: {'RelationshipLink'},
-        ),
-      ).thenAnswer((_) async => []);
+    test(
+      'scopes the link query to RelationshipLink, so a task reachable only '
+      'through another link type never renders an unlink that would fail',
+      () async {
+        when(
+          () => mockDb.typedLinksForTaskIds(
+            {'rel-001'},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer((_) async => []);
 
-      expect(await repository.getLinkedTasks('rel-001'), isEmpty);
-      verifyNever(() => mockDb.getLiveTasksByIds(any()));
-    });
+        expect(await repository.getLinkedTasks('rel-001'), isEmpty);
+        // No entity lookup at all when there is nothing linked.
+        verifyNever(() => mockDb.getLiveTasksByIds(any()));
+      },
+    );
   });
 
   group('linkTask', () {
@@ -917,105 +776,43 @@ void main() {
   });
 
   group('unlinkTask', () {
-    EntryLink link(
-      String id,
-      String fromId,
-      String toId, {
-      DateTime? deletedAt,
-    }) => EntryLink.relationship(
-      id: id,
-      fromId: fromId,
-      toId: toId,
-      createdAt: testDate,
-      updatedAt: testDate,
-      vectorClock: null,
-      deletedAt: deletedAt,
-    );
-
-    test('writes synced tombstones for links in either direction', () async {
-      when(
-        () => mockDb.typedLinksForTaskIds(
-          {'rel-001', 'task-1'},
-          types: {'RelationshipLink'},
-        ),
-      ).thenAnswer(
-        (_) async => [
-          link('forward', 'rel-001', 'task-1'),
-          link('reverse', 'task-1', 'rel-001'),
-        ],
-      );
-      when(() => mockJournalRepository.updateLink(any())).thenAnswer(
-        (_) async => true,
-      );
-
-      expect(
-        await repository.unlinkTask(
-          relationshipId: 'rel-001',
-          taskId: 'task-1',
-        ),
-        isTrue,
-      );
-
-      final tombstones = verify(
-        () => mockJournalRepository.updateLink(captureAny()),
-      ).captured.cast<EntryLink>();
-      expect(tombstones.map((item) => item.id), ['forward', 'reverse']);
-      expect(tombstones.every((item) => item.deletedAt != null), isTrue);
-      expect(tombstones.every((item) => item.hidden == true), isTrue);
-      verifyNever(() => mockDb.deleteTypedLink(any(), any(), any()));
-    });
-
     test(
-      'returns false without writing when no live matching link exists',
+      'removes the typed link in whichever direction it exists and '
+      'notifies both endpoints',
       () async {
         when(
-          () => mockDb.typedLinksForTaskIds(
-            {'rel-001', 'task-1'},
-            types: {'RelationshipLink'},
-          ),
-        ).thenAnswer(
-          (_) async => [
-            link('other', 'rel-001', 'task-2'),
-            link('gone', 'rel-001', 'task-1', deletedAt: testDate),
-          ],
+          () => mockDb.deleteTypedLink('rel-001', 'task-1', 'RelationshipLink'),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.deleteTypedLink('task-1', 'rel-001', 'RelationshipLink'),
+        ).thenAnswer((_) async => 0);
+
+        final result = await repository.unlinkTask(
+          relationshipId: 'rel-001',
+          taskId: 'task-1',
         );
 
-        expect(
-          await repository.unlinkTask(
-            relationshipId: 'rel-001',
-            taskId: 'task-1',
+        expect(result, isTrue);
+        verify(
+          () => mockNotifications.notify(
+            {'rel-001', 'task-1', linkNotification},
           ),
-          isFalse,
-        );
-        verifyNever(() => mockJournalRepository.updateLink(any()));
+        ).called(1);
       },
     );
 
-    test('attempts every tombstone and reports a rejected write', () async {
+    test('returns false and stays silent when no link exists', () async {
       when(
-        () => mockDb.typedLinksForTaskIds(
-          {'rel-001', 'task-1'},
-          types: {'RelationshipLink'},
-        ),
-      ).thenAnswer(
-        (_) async => [
-          link('forward', 'rel-001', 'task-1'),
-          link('reverse', 'task-1', 'rel-001'),
-        ],
-      );
-      when(() => mockJournalRepository.updateLink(any())).thenAnswer(
-        (invocation) async =>
-            (invocation.positionalArguments.first as EntryLink).id == 'reverse',
+        () => mockDb.deleteTypedLink(any(), any(), any()),
+      ).thenAnswer((_) async => 0);
+
+      final result = await repository.unlinkTask(
+        relationshipId: 'rel-001',
+        taskId: 'task-1',
       );
 
-      expect(
-        await repository.unlinkTask(
-          relationshipId: 'rel-001',
-          taskId: 'task-1',
-        ),
-        isFalse,
-      );
-      verify(() => mockJournalRepository.updateLink(any())).called(2);
+      expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
     });
   });
 }

@@ -1049,95 +1049,126 @@ void main() {
         expect(find.byIcon(Icons.folder_rounded), findsOneWidget);
       });
 
-      testWidgets('renders relationship entry with name, note and person '
-          'glyph', (tester) async {
-        final cardDate = DateTime(2026, 8, 13);
-        final relationship = RelationshipEntry(
-          meta: Metadata(
-            id: 'test-relationship-id',
-            createdAt: cardDate,
-            updatedAt: cardDate,
-            dateFrom: cardDate,
-            dateTo: cardDate,
-            categoryId: 'test-category-id',
-          ),
-          data: RelationshipData(
-            title: 'Anna Example',
-            status: RelationshipStatus.active(
-              id: 'rs-1',
-              createdAt: cardDate,
-              utcOffset: 60,
+      testWidgets(
+        'renders relationship entry with the person name and note preview',
+        (tester) async {
+          final testRelationship = RelationshipEntry(
+            meta: Metadata(
+              id: 'test-relationship-id',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              categoryId: 'test-category-id',
             ),
-          ),
-          entryText: const EntryText(plainText: 'Met at university.'),
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(ModernJournalCard(item: relationship)),
-        );
-
-        // The person's name is the title, never the note.
-        expect(find.text('Anna Example'), findsOneWidget);
-        expect(find.text('Met at university.'), findsOneWidget);
-        expect(find.byIcon(Icons.person_rounded), findsOneWidget);
-      });
-
-      testWidgets('renders check-in entry with its narrative as the title', (
-        tester,
-      ) async {
-        final cardDate = DateTime(2026, 8, 13);
-        CheckInEntry checkIn(
-          CheckInInteractionType type, {
-          EntryText? entryText,
-        }) => CheckInEntry(
-          meta: Metadata(
-            id: 'test-check-in-id',
-            createdAt: cardDate,
-            updatedAt: cardDate,
-            dateFrom: cardDate,
-            dateTo: cardDate,
-            categoryId: 'test-category-id',
-          ),
-          data: CheckInData(relationshipId: 'rel-1', interactionType: type),
-          entryText: entryText,
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ModernJournalCard(
-              item: checkIn(
-                CheckInInteractionType.call,
-                entryText: const EntryText(plainText: 'Caught up on the move.'),
+            data: RelationshipData(
+              title: 'Anna Example',
+              status: RelationshipStatus.active(
+                id: 'rs-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 60,
               ),
             ),
-          ),
-        );
+            entryText: const EntryText(plainText: 'Met at the conference'),
+          );
 
-        expect(find.text('Caught up on the move.'), findsOneWidget);
-        expect(find.byIcon(Icons.call_rounded), findsOneWidget);
-
-        // Every interaction type gets its own glyph, and a narrative-free
-        // check-in falls back to the localized entry-type label.
-        const glyphs = {
-          CheckInInteractionType.inPerson: Icons.people_rounded,
-          CheckInInteractionType.videoCall: Icons.videocam_rounded,
-          CheckInInteractionType.message: Icons.chat_rounded,
-          CheckInInteractionType.other: Icons.forum_rounded,
-        };
-        for (final entry in glyphs.entries) {
           await tester.pumpWidget(
-            makeTestableWidget(ModernJournalCard(item: checkIn(entry.key))),
+            makeTestableWidget(
+              ModernJournalCard(item: testRelationship),
+            ),
           );
-          await tester.pump();
 
-          expect(
-            find.byIcon(entry.value),
-            findsOneWidget,
-            reason: '${entry.key}',
+          // The title is the person, not the note: free-form notes about a
+          // person live in entryText and stay a secondary preview.
+          expect(find.text('Anna Example'), findsOneWidget);
+          expect(find.text('Met at the conference'), findsOneWidget);
+          expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'check-in card titles from its narrative and picks the glyph from '
+        'the interaction type',
+        (tester) async {
+          CheckInEntry checkIn(CheckInInteractionType type, {String? text}) =>
+              CheckInEntry(
+                meta: Metadata(
+                  id: 'test-check-in-id',
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  dateFrom: DateTime(2024, 3, 15),
+                  dateTo: DateTime(2024, 3, 15),
+                  categoryId: 'test-category-id',
+                ),
+                data: CheckInData(
+                  relationshipId: 'test-relationship-id',
+                  interactionType: type,
+                ),
+                entryText: text == null ? null : EntryText(plainText: text),
+              );
+
+          await tester.pumpWidget(
+            makeTestableWidget(
+              ModernJournalCard(
+                item: checkIn(
+                  CheckInInteractionType.videoCall,
+                  text: 'Caught up about the move',
+                ),
+              ),
+            ),
           );
-          expect(find.text('Check-in'), findsOneWidget, reason: '${entry.key}');
-        }
-      });
+
+          expect(find.text('Caught up about the move'), findsOneWidget);
+          expect(find.byIcon(Icons.videocam_rounded), findsOneWidget);
+
+          // Every interaction type maps to its own glyph, shared with the
+          // relationship detail page's check-in rows.
+          const glyphs = {
+            CheckInInteractionType.inPerson: Icons.people_rounded,
+            CheckInInteractionType.call: Icons.call_rounded,
+            CheckInInteractionType.message: Icons.chat_rounded,
+            CheckInInteractionType.other: Icons.forum_rounded,
+          };
+          for (final entry in glyphs.entries) {
+            await tester.pumpWidget(
+              makeTestableWidget(
+                ModernJournalCard(item: checkIn(entry.key, text: 'Talked')),
+              ),
+            );
+            expect(
+              find.byIcon(entry.value),
+              findsOneWidget,
+              reason: '${entry.key} must render ${entry.value}',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'a check-in with no narrative falls back to the localized type label',
+        (tester) async {
+          final bare = CheckInEntry(
+            meta: Metadata(
+              id: 'bare-check-in-id',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              categoryId: 'test-category-id',
+            ),
+            data: const CheckInData(
+              relationshipId: 'test-relationship-id',
+              interactionType: CheckInInteractionType.call,
+            ),
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidget(ModernJournalCard(item: bare)),
+          );
+
+          expect(find.text('Check-in'), findsOneWidget);
+        },
+      );
 
       testWidgets('renders rating entry with label and insights glyph', (
         tester,
