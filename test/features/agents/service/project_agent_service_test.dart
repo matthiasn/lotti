@@ -1289,6 +1289,66 @@ void main() {
       );
 
       test(
+        'clears a markerless fallback for an already opted-out agent',
+        () async {
+          final projectAgent = makeIdentity(agentId: 'pa-opted-out').copyWith(
+            config: const AgentConfig(
+              automaticUpdatesEnabled: false,
+              inferenceSetup: AgentInferenceSetup(
+                mode: AgentInferenceSetupMode.configured,
+                origin: AgentInferenceSetupOrigin.user,
+                baseProfileId: 'profile-1',
+              ),
+            ),
+          );
+          final state =
+              makeState(
+                id: 'state-pa-opted-out',
+                agentId: 'pa-opted-out',
+                activeProjectId: 'project-opted-out',
+              ).copyWith(
+                scheduledWakeAt: DateTime(2026, 8, 15, 6),
+                updatedAt: DateTime(2026, 8, 14, 9),
+                vectorClock: const VectorClock({'peer-a': 4}),
+              );
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [projectAgent]);
+          when(
+            () => mockRepository.getAgentStatesByAgentIds(['pa-opted-out']),
+          ).thenAnswer((_) async => {'pa-opted-out': state});
+          when(
+            () => mockRepository.getAgentState('pa-opted-out'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getLinksFromMultiple(
+              ['pa-opted-out'],
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const {});
+
+          await service.restoreSubscriptions();
+
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, isNull);
+          expect(persisted.updatedAt, state.updatedAt);
+          expect(persisted.vectorClock, state.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.disableAutomaticUpdatesRuntime(
+              'pa-opted-out',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'clears a legacy daily schedule when no project activity is pending',
         () async {
           final projectAgent = makeIdentity(agentId: 'pa-dormant');
@@ -1413,6 +1473,7 @@ void main() {
           await service.restoreSubscriptions();
 
           verifyNever(() => mockSyncService.upsertEntity(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
           verify(
             () => mockRepository.getAgentState('pa-racing'),
           ).called(1);
@@ -1471,6 +1532,7 @@ void main() {
           await service.restoreSubscriptions();
 
           verifyNever(() => mockSyncService.upsertEntity(any()));
+          verifyNever(() => mockRepository.upsertEntity(any()));
           verify(
             () => mockRepository.getAgentState('pa-manual-race'),
           ).called(1);

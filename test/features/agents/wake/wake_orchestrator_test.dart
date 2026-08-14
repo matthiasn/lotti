@@ -339,11 +339,7 @@ void main() {
               AgentDomainEntity.agentState(
                     id: 'state-1',
                     agentId: 'agent-1',
-                    slots: AgentSlots(
-                      activeProjectId: 'entity-1',
-                      pendingProjectActivityAt: pendingAt,
-                    ),
-                    scheduledWakeAt: fallbackAt,
+                    slots: const AgentSlots(activeProjectId: 'entity-1'),
                     updatedAt: DateTime(2026, 8, 12, 18),
                     vectorClock: null,
                   )
@@ -354,6 +350,12 @@ void main() {
             runner: runner,
             syncAgentStateUpdater: (agentId, update) async {
               expect(agentId, 'agent-1');
+              state = state.copyWith(
+                slots: state.slots.copyWith(
+                  pendingProjectActivityAt: pendingAt,
+                ),
+                scheduledWakeAt: fallbackAt,
+              );
               final updated = await update(state);
               if (updated == null) return false;
               state = updated;

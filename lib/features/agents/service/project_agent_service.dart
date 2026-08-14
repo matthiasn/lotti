@@ -329,6 +329,7 @@ class ProjectAgentService {
           orchestrator.enableAutomaticUpdatesRuntime(agent.agentId);
           _hydrateThrottleDeadlineFromState(agent.agentId, state);
         } else {
+          state = await _clearDisabledActivityFallback(state);
           orchestrator.disableAutomaticUpdatesRuntime(agent.agentId);
         }
         count++;
@@ -406,6 +407,35 @@ class ProjectAgentService {
           hour: AgentSchedules.projectDailyDigestHour,
         ),
       );
+      await repository.upsertEntity(updated);
+      result = updated;
+      changed = true;
+    });
+    if (changed) onPersistedStateChanged?.call(snapshot.agentId);
+    return result;
+  }
+
+  /// Removes any device-local fallback while project automation is disabled.
+  ///
+  /// This also covers markerless creation deadlines left by an interrupted
+  /// upgrade or shutdown. The pending activity marker, LWW timestamp, and
+  /// vector clock remain untouched so opting back in can safely re-arm work.
+  Future<AgentStateEntity?> _clearDisabledActivityFallback(
+    AgentStateEntity? snapshot,
+  ) async {
+    if (snapshot == null || snapshot.scheduledWakeAt == null) return snapshot;
+
+    AgentStateEntity? result;
+    var changed = false;
+    await repository.runInTransaction(() async {
+      final current = await repository.getAgentState(snapshot.agentId);
+      if (current == null ||
+          current.deletedAt != null ||
+          current.scheduledWakeAt == null) {
+        result = current;
+        return;
+      }
+      final updated = current.copyWith(scheduledWakeAt: null);
       await repository.upsertEntity(updated);
       result = updated;
       changed = true;

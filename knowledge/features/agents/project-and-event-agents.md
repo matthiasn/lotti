@@ -146,7 +146,11 @@ next morning rather than remaining due on every hourly scan. When automation is
 disabled, a manual wake may preserve an already-future explicit schedule but
 cannot synthesize a new morning fallback on success or failure. Enabling
 automation while the identity is inactive likewise leaves the fallback absent;
-resume-time restoration arms it after the lifecycle becomes active. Explicit
+resume-time restoration routes by agent kind, restores the direct-project
+subscription, and arms it after the lifecycle becomes active. Settings-driven
+opt-in and opt-out change only the local `scheduledWakeAt`; they preserve the
+synced state timestamp and vector clock so scheduling maintenance cannot
+resurrect a peer-completed activity marker. Explicit
 cancellation clears `pendingProjectActivityAt`, `nextWakeAt`, and
 `scheduledWakeAt` in one persisted state write before clearing queued work; a
 transaction rollback therefore leaves the runtime work intact and surfaces an
@@ -171,8 +175,10 @@ cannot be overwritten. Both retirement and missing-fallback repair change only
 `scheduledWakeAt`, preserving the synced `updatedAt` and vector clock so local
 scheduling maintenance cannot win a later peer merge.
 `ScheduledWakeManager` applies the same dormant cleanup to overdue rows.
-Never-woken agents and agents with pending activity retain the row as a one-shot
-safety net. Before retiring a row, the manager re-reads state and rechecks both
+Explicitly opted-out agents are stricter: startup clears every fallback,
+including a never-woken markerless creation row left by an interrupted upgrade.
+Otherwise, never-woken agents and agents with pending activity retain the row
+as a one-shot safety net. Before retiring a row, the manager re-reads state and rechecks both
 the due deadline and pending marker, so activity or a replacement schedule that
 arrives during the scan wins. Every successful workflow run clears
 `scheduledWakeAt` when it
@@ -186,6 +192,12 @@ whole-row write inside one transaction, so newly committed activity cannot be
 restored away by an older snapshot. If cancellation clears the deadline or
 moves it into the future while the scan is awaiting, the stale due snapshot
 cannot launch a wake.
+
+Older-client identity rewrites may omit automation and inference-setup fields.
+Sync apply overlays those absent fields from the local identity for both task
+and project agents; explicit incoming values still win. A legacy rewrite can
+therefore rename or otherwise update a project agent without silently undoing
+its local automation opt-out or disabled inference setup.
 
 Failure persistence notifies state consumers only after the retry deadline is
 successfully written. The project detail report prefers the subscription

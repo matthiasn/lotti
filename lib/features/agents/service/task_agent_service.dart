@@ -406,6 +406,8 @@ class TaskAgentService {
   }) async {
     late AgentIdentityEntity identity;
     var wakeOnEnable = false;
+    var armProjectFallbackOnEnable = false;
+    var clearProjectFallbackOnDisable = false;
     await syncService.runInTransaction(() async {
       final current = await agentService.getAgent(agentId);
       if (current == null) {
@@ -435,24 +437,12 @@ class TaskAgentService {
         // its card would otherwise sit empty until the next task edit.
         wakeOnEnable =
             state == null || state.reportFreshAt == null || state.isReportStale;
-        if (identity.kind == AgentKinds.projectAgent &&
+        armProjectFallbackOnEnable =
+            identity.kind == AgentKinds.projectAgent &&
             projectAgentAutomaticWakesAllowed(
               config: updated.config,
               lifecycle: updated.lifecycle,
-            ) &&
-            state != null &&
-            state.slots.pendingProjectActivityAt != null &&
-            state.scheduledWakeAt == null) {
-          await syncService.upsertEntity(
-            state.copyWith(
-              scheduledWakeAt: nextOccurrenceOf(
-                now,
-                hour: AgentSchedules.projectDailyDigestHour,
-              ),
-              updatedAt: now,
-            ),
-          );
-        }
+            );
       } else {
         final pendingWake = state?.nextWakeAt;
         if (state != null) {
@@ -462,18 +452,22 @@ class TaskAgentService {
               !state.isReportStale) {
             updatedState = updatedState.copyWith(reportStaleAt: now);
           }
-          if (identity.kind == AgentKinds.projectAgent &&
-              state.scheduledWakeAt != null) {
-            updatedState = updatedState.copyWith(scheduledWakeAt: null);
-          }
           if (updatedState != state) {
             await syncService.upsertEntity(
               updatedState.copyWith(updatedAt: now),
             );
           }
         }
+        clearProjectFallbackOnDisable =
+            identity.kind == AgentKinds.projectAgent;
       }
     });
+
+    if (armProjectFallbackOnEnable) {
+      await _armPendingProjectActivityFallback(agentId);
+    } else if (clearProjectFallbackOnDisable) {
+      await _clearProjectActivityFallback(agentId);
+    }
 
     final activating = enabled && identity.lifecycle == AgentLifecycle.active;
     if (activating) {
@@ -614,14 +608,79 @@ class TaskAgentService {
     }
   }
 
-  /// Re-register wake subscriptions for a single agent.
+  /// Adds the device-local durability fallback for unfinished project work.
   ///
-  /// Call this after resuming a paused agent so task changes are observed for
-  /// stale detection, whether or not automatic inference is enabled.
+  /// The pending marker is synced, but its scheduling deadline is not. Re-read
+  /// and write inside one repository transaction so a concurrent completion
+  /// wins, while preserving the synced timestamp and vector clock.
+  Future<void> _armPendingProjectActivityFallback(String agentId) async {
+    var changed = false;
+    await repository.runInTransaction(() async {
+      final state = await repository.getAgentState(agentId);
+      if (state == null ||
+          state.deletedAt != null ||
+          state.slots.pendingProjectActivityAt == null ||
+          state.scheduledWakeAt != null) {
+        return;
+      }
+      await repository.upsertEntity(
+        state.copyWith(
+          scheduledWakeAt: nextOccurrenceOf(
+            clock.now(),
+            hour: AgentSchedules.projectDailyDigestHour,
+          ),
+        ),
+      );
+      changed = true;
+    });
+    if (changed) {
+      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+    }
+  }
+
+  /// Removes a project agent's device-local automatic fallback.
+  Future<void> _clearProjectActivityFallback(String agentId) async {
+    var changed = false;
+    await repository.runInTransaction(() async {
+      final state = await repository.getAgentState(agentId);
+      if (state == null ||
+          state.deletedAt != null ||
+          state.scheduledWakeAt == null) {
+        return;
+      }
+      await repository.upsertEntity(state.copyWith(scheduledWakeAt: null));
+      changed = true;
+    });
+    if (changed) {
+      updateNotifications?.notifyUiOnly({agentId, agentNotification});
+    }
+  }
+
+  /// Re-register wake subscriptions for a single resumed agent.
+  ///
+  /// Project agents restore their direct-project observation and reconcile a
+  /// pending device-local fallback. Other kinds retain the task-link behavior
+  /// used by the existing lifecycle controls.
   Future<void> restoreSubscriptionsForAgent(
     String agentId, {
     bool restoreCountdown = true,
   }) async {
+    final identity = await agentService.getAgent(agentId);
+    if (identity?.kind == AgentKinds.projectAgent) {
+      await _restoreProjectSubscriptionsForAgent(agentId);
+      if (projectAgentAutomaticWakesAllowed(
+        config: identity!.config,
+        lifecycle: identity.lifecycle,
+      )) {
+        orchestrator.enableAutomaticUpdatesRuntime(agentId);
+        await _armPendingProjectActivityFallback(agentId);
+      } else {
+        await _clearProjectActivityFallback(agentId);
+        orchestrator.disableAutomaticUpdatesRuntime(agentId);
+      }
+      return;
+    }
+
     final links = await repository.getLinksFrom(
       agentId,
       type: AgentLinkTypes.agentTask,

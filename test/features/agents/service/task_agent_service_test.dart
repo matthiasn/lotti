@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -244,6 +245,7 @@ void main() {
     // Stub syncService write methods
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
+    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
     when(
       () => mockOrchestrator.disableAutomaticUpdatesRuntime(any()),
     ).thenReturn(null);
@@ -270,6 +272,9 @@ void main() {
     when(
       () => mockRepository.getAgentStatesByAgentIds(any()),
     ).thenAnswer((_) async => const {});
+    when(
+      () => mockAgentService.getAgent('agent-1'),
+    ).thenAnswer((_) async => makeIdentity());
 
     mockUpdateNotifications = MockUpdateNotifications();
     when(() => mockUpdateNotifications.notifyUiOnly(any())).thenReturn(null);
@@ -1345,6 +1350,80 @@ void main() {
     });
 
     group('restoreSubscriptionsForAgent', () {
+      test(
+        'routes a resumed project agent through project restoration',
+        () async {
+          final now = DateTime(2026, 8, 14, 12);
+          final pendingState = makeState().copyWith(
+            slots: makeState().slots.copyWith(
+              activeProjectId: 'project-1',
+              pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
+            ),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 3}),
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: 'agent-1',
+            toId: 'project-1',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          );
+          when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
+            (_) async => makeIdentity(
+              kind: AgentKinds.projectAgent,
+              config: const AgentConfig(
+                automaticUpdatesEnabled: true,
+                inferenceSetup: AgentInferenceSetup(
+                  mode: AgentInferenceSetupMode.configured,
+                  origin: AgentInferenceSetupOrigin.user,
+                  baseProfileId: 'profile-1',
+                ),
+              ),
+            ),
+          );
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getLinksFrom(
+              'agent-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => pendingState);
+
+          await withClock(Clock.fixed(now), () {
+            return service.restoreSubscriptionsForAgent('agent-1');
+          });
+
+          final subscription =
+              verify(
+                    () => mockOrchestrator.addSubscription(captureAny()),
+                  ).captured.single
+                  as AgentSubscription;
+          expect(subscription.id, 'agent-1_project_direct_project-1');
+          final persisted =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
+          expect(persisted.scheduledWakeAt, DateTime(2026, 8, 15, 6));
+          expect(persisted.updatedAt, pendingState.updatedAt);
+          expect(persisted.vectorClock, pendingState.vectorClock);
+          verifyNever(() => mockSyncService.upsertEntity(any()));
+          verify(
+            () => mockOrchestrator.enableAutomaticUpdatesRuntime('agent-1'),
+          ).called(1);
+        },
+      );
+
       test('registers subscriptions for a single agent', () async {
         final link1 = AgentLink.agentTask(
           id: 'link-1',
@@ -2524,6 +2603,8 @@ void main() {
               activeProjectId: 'project-1',
               pendingProjectActivityAt: DateTime(2026, 8, 14, 11),
             ),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 7}),
           );
           when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
             (_) async => makeIdentity(
@@ -2566,8 +2647,12 @@ void main() {
             );
           });
 
-          final writtenStates = verify(
+          final syncedEntities = verify(
             () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(syncedEntities.whereType<AgentStateEntity>(), isEmpty);
+          final writtenStates = verify(
+            () => mockRepository.upsertEntity(captureAny()),
           ).captured.whereType<AgentStateEntity>();
           expect(
             writtenStates.single.scheduledWakeAt,
@@ -2577,6 +2662,8 @@ void main() {
             writtenStates.single.slots.pendingProjectActivityAt,
             DateTime(2026, 8, 14, 11),
           );
+          expect(writtenStates.single.updatedAt, state.updatedAt);
+          expect(writtenStates.single.vectorClock, state.vectorClock);
           final subscription =
               verify(
                     () => mockOrchestrator.addSubscription(captureAny()),
@@ -2602,6 +2689,8 @@ void main() {
               pendingProjectActivityAt: pendingAt,
             ),
             scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 8}),
           );
           when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
             (_) async => makeIdentity(
@@ -2627,14 +2716,20 @@ void main() {
             );
           });
 
-          final writtenStates = verify(
+          final syncedStates = verify(
             () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>();
+          expect(syncedStates, isEmpty);
+          final writtenStates = verify(
+            () => mockRepository.upsertEntity(captureAny()),
           ).captured.whereType<AgentStateEntity>();
           expect(writtenStates.single.scheduledWakeAt, isNull);
           expect(
             writtenStates.single.slots.pendingProjectActivityAt,
             pendingAt,
           );
+          expect(writtenStates.single.updatedAt, state.updatedAt);
+          expect(writtenStates.single.vectorClock, state.vectorClock);
         },
       );
 
@@ -2647,6 +2742,8 @@ void main() {
               activeProjectId: 'project-1',
             ),
             scheduledWakeAt: DateTime(2026, 8, 15, 6),
+            updatedAt: DateTime(2026, 8, 14, 10),
+            vectorClock: const VectorClock({'peer-a': 9}),
           );
           when(() => mockAgentService.getAgent('agent-1')).thenAnswer(
             (_) async => makeIdentity(
@@ -2672,11 +2769,19 @@ void main() {
             );
           });
 
-          final writtenState = verify(
+          final syncedStates = verify(
             () => mockSyncService.upsertEntity(captureAny()),
-          ).captured.whereType<AgentStateEntity>().single;
+          ).captured.whereType<AgentStateEntity>();
+          expect(syncedStates, isEmpty);
+          final writtenState =
+              verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AgentStateEntity;
           expect(writtenState.scheduledWakeAt, isNull);
           expect(writtenState.slots.pendingProjectActivityAt, isNull);
+          expect(writtenState.updatedAt, state.updatedAt);
+          expect(writtenState.vectorClock, state.vectorClock);
         },
       );
 

@@ -158,6 +158,59 @@ void main() {
       },
     );
 
+    test(
+      'older-client rewrite preserves an explicit project-agent opt-out',
+      () async {
+        final local =
+            AgentDomainEntity.agent(
+                  id: 'project-agent-legacy-rewrite',
+                  agentId: 'project-agent-legacy-rewrite',
+                  kind: 'project_agent',
+                  displayName: 'Project Agent',
+                  lifecycle: AgentLifecycle.active,
+                  mode: AgentInteractionMode.autonomous,
+                  allowedCategoryIds: const {},
+                  currentStateId: 'state-project-agent-legacy-rewrite',
+                  config: const AgentConfig(
+                    automaticUpdatesEnabled: false,
+                    inferenceSetup: AgentInferenceSetup(
+                      mode: AgentInferenceSetupMode.disabled,
+                      origin: AgentInferenceSetupOrigin.user,
+                    ),
+                  ),
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as AgentIdentityEntity;
+        final incoming = local.copyWith(
+          displayName: 'Renamed by older client',
+          config: const AgentConfig(),
+          updatedAt: DateTime(2024, 3, 16),
+        );
+        when(
+          () => mockAgentRepo.getEntity(incoming.id),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final applied = verify(
+          () => mockAgentRepo.upsertEntity(captureAny()),
+        ).captured.whereType<AgentIdentityEntity>().single;
+        expect(applied.displayName, 'Renamed by older client');
+        expect(applied.config.automaticUpdatesEnabled, isFalse);
+        expect(applied.config.inferenceSetup, local.config.inferenceSetup);
+      },
+    );
+
     test('explicit incoming setup fields win over local values', () async {
       final local =
           AgentDomainEntity.agent(

@@ -160,9 +160,9 @@ deferred deadline, or replacement manual schedule written during the scan is
 never erased. A successful wake retains a future fallback when
 newer activity landed during the run. Every failure after state
 resolution—including setup failures before inference—uses the same
-create-or-advance deadline policy. Explicit
-cancellation persists `pendingProjectActivityAt`, `nextWakeAt`, and
-`scheduledWakeAt` removal atomically, then clears queued work, so an in-flight
+create-or-advance deadline policy. Explicit cancellation persists removal of
+`pendingProjectActivityAt`, `nextWakeAt`, and `scheduledWakeAt` atomically, then
+clears queued work, so an in-flight
 failure cannot re-arm cancelled work and a storage failure cannot leave the UI
 falsely showing a completed cancellation. A post-commit outbox failure still
 clears runtime work to honor the committed cancellation before surfacing the
@@ -261,4 +261,8 @@ signal when state arrives before identity. Startup and sync-arrival repairs that
 fallback write directly through the repository without changing `updatedAt` or
 the vector clock. This applies to both fallback repair and dormant-schedule
 retirement: local scheduling maintenance must never become a newer synced
-version of otherwise stale state.
+version of otherwise stale state. Settings opt-in/opt-out and resumed-agent
+restoration follow the same raw local transaction rule. Startup also removes
+markerless or pending fallbacks unconditionally when the project agent has
+explicitly opted out; the completed-wake guard applies only to legacy cleanup
+for agents whose automation remains allowed.

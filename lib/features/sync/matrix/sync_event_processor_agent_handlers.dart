@@ -214,7 +214,7 @@ extension _AgentHandlers on SyncEventProcessor {
         entityToApply = preserved.entity;
         projectActivityWasConsumed = preserved.projectActivityWasConsumed;
       } else if (entityToApply is AgentIdentityEntity) {
-        entityToApply = await _preserveLocalTaskAgentConfigFields(
+        entityToApply = await _preserveLocalAgentConfigFields(
           incoming: entityToApply,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
@@ -386,16 +386,16 @@ extension _AgentHandlers on SyncEventProcessor {
     await AttributionCarrierProjector(repository).projectAgentEntity(entity);
   }
 
-  /// Keeps explicit task-agent fields when an older client sends a rewrite
-  /// that omitted keys it could not deserialize.
+  /// Keeps explicit task/project-agent fields when an older client sends a
+  /// rewrite that omitted keys it could not deserialize.
   ///
   /// Explicit incoming true/false and configured/disabled values always win;
   /// only null (field absent in old JSON) is overlaid from the local row.
-  Future<AgentIdentityEntity> _preserveLocalTaskAgentConfigFields({
+  Future<AgentIdentityEntity> _preserveLocalAgentConfigFields({
     required AgentIdentityEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    if (incoming.kind != 'task_agent' ||
+    if ((incoming.kind != 'task_agent' && incoming.kind != 'project_agent') ||
         (incoming.config.automaticUpdatesEnabled != null &&
             incoming.config.inferenceSetup != null)) {
       return incoming;
