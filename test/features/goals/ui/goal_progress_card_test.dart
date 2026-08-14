@@ -1946,16 +1946,24 @@ void main() {
     );
 
     final title = find.text('This rolling week');
-    final caption = find.text('slides at midnight');
+    final streak = find.text('2 / 6 weeks');
     final name = find.text('Gym');
     final cadence = find.text('4× per 7 days');
     final firstCell = find.byKey(
       const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
     );
 
+    // Narrow, the streak takes the caption's place on the heading line rather
+    // than costing a row of its own below the day squares. The title already
+    // says the window is a rolling week, which is what the caption added;
+    // the streak is data, and marooned on its own row it read as an accident.
+    expect(find.text('slides at midnight'), findsNothing);
+    // Same band as the heading — the streak is a two-part figure (bars over a
+    // label) so its centre sits lower than the title's, but the two overlap
+    // rather than stacking.
     expect(
-      tester.getCenter(title).dy,
-      closeTo(tester.getCenter(caption).dy, 0.01),
+      tester.getTopLeft(streak).dy,
+      lessThan(tester.getBottomLeft(title).dy),
       reason: 'the compact handoff keeps its card heading on one line',
     );
     expect(
@@ -1968,6 +1976,47 @@ void main() {
       greaterThan(tester.getBottomLeft(cadence).dy),
       reason: 'the mobile grid follows the dimension metadata',
     );
+    // Nothing below the squares: the orphan row is gone.
+    expect(
+      tester.getTopLeft(streak).dy,
+      lessThan(tester.getTopLeft(firstCell).dy),
+      reason: 'the streak dropped back below the grid',
+    );
+  });
+
+  testWidgets('a habit with no streak keeps its caption on the heading line', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 358,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'gym',
+                    name: 'Gym',
+                    targetCount: 4,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, 0),
+                    ],
+                    successfulWeeks: null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Only the streak displaces it. With nothing to show there, the caption
+    // that explains the sliding window stays.
+    expect(find.text('slides at midnight'), findsOneWidget);
   });
 
   testWidgets('a narrow authored cadence moves intact below the habit name', (

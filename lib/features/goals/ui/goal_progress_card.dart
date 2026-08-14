@@ -290,6 +290,23 @@ class _CompactDayCell extends StatelessWidget {
   }
 }
 
+/// Formats an aggregate for display, without spraying false precision.
+///
+/// The rolling aggregates are means, so a step average arrives as
+/// 7684.428571… and `decimalPattern` renders it "7,684.429" — three decimals
+/// of a quantity that only exists in whole numbers. Weight and blood pressure
+/// do want a fraction, so the rule is scale rather than data type: below 100,
+/// one decimal and only when it is not a whole number; at 100 and above, none,
+/// where a tenth is noise beside the number it qualifies.
+String formatGoalAggregate(NumberFormat number, num value) {
+  final rounded = value.abs() >= 100
+      ? value.roundToDouble()
+      : (value * 10).roundToDouble() / 10;
+  return number.format(
+    rounded == rounded.roundToDouble() ? rounded.toInt() : rounded,
+  );
+}
+
 /// Shared fill for a day cell: the full-strength success hue when the goal
 /// requirement held as of that day, a lighter wash of the same hue for a
 /// partial success (routine kept, target still building), neutral otherwise.
@@ -630,7 +647,16 @@ class _HabitDimensionCard extends StatelessWidget {
                         children: [
                           Flexible(child: title),
                           SizedBox(width: tokens.spacing.step3),
-                          Expanded(child: caption),
+                          // The streak displaces the caption rather than the
+                          // title: "This rolling week" already says the window
+                          // slides, while the streak is data that otherwise
+                          // costs a whole row of its own.
+                          if (successfulWeeks == null)
+                            Expanded(child: caption)
+                          else ...[
+                            const Spacer(),
+                            _Reliability(successfulWeeks: successfulWeeks),
+                          ],
                         ],
                       )
                     : Wrap(
@@ -643,7 +669,8 @@ class _HabitDimensionCard extends StatelessWidget {
                 // orphan: a two-word stat marooned against the right edge
                 // with a card's width of nothing beside it and a gap under
                 // it, which read as a layout accident rather than a figure.
-                if (compact || successfulWeeks == null) return label;
+                if (successfulWeeks == null) return label;
+                if (compact) return label;
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -661,22 +688,6 @@ class _HabitDimensionCard extends StatelessWidget {
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
           ),
-          // Narrow, the streak cannot share the label's line and keeps a row
-          // of its own — the only width where that is not wasted space.
-          if (successfulWeeks != null)
-            LayoutBuilder(
-              builder: (context, constraints) =>
-                  constraints.maxWidth <
-                      tokens.spacing.step13 * 2 + tokens.spacing.step5
-                  ? Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step3),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _Reliability(successfulWeeks: successfulWeeks),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
         ],
       ),
     );
@@ -844,8 +855,8 @@ class _BloodPressureDimensionCard extends StatelessWidget {
           .map((day) => day.value),
     ];
     final reading = hasData
-        ? '${number.format(_metricDisplayValue(metrics.systolic, systolic))} / '
-              '${number.format(_metricDisplayValue(metrics.diastolic, diastolic))}'
+        ? '${formatGoalAggregate(number, _metricDisplayValue(metrics.systolic, systolic))} / '
+              '${formatGoalAggregate(number, _metricDisplayValue(metrics.diastolic, diastolic))}'
               '$unitSuffix'
         : '—';
     return DesignSystemSectionCard(
@@ -1011,12 +1022,12 @@ class _MetricDimensionCard extends StatelessWidget {
     final displayValue = _metricDisplayValue(metric, summary);
     final reading = unit == null || unit.isEmpty
         ? context.messages.goalDimensionMetricReading(
-            number.format(displayValue),
-            number.format(metric.target),
+            formatGoalAggregate(number, displayValue),
+            formatGoalAggregate(number, metric.target),
           )
         : context.messages.goalDimensionMetricReadingWithUnit(
-            number.format(displayValue),
-            number.format(metric.target),
+            formatGoalAggregate(number, displayValue),
+            formatGoalAggregate(number, metric.target),
             unit,
           );
     return DesignSystemSectionCard(
