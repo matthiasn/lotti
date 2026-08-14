@@ -2566,6 +2566,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Ton agent d’objectif a suggéré cette évaluation, que tu as acceptée",
   "goalAssessmentSuggestionHint": "Suggéré d'après les mesures — change-le si tu n'es pas d'accord.",
   "goalAssessmentUserProvenance": "Évalué par toi",
+  "goalAssessmentVerdictTitle": "Comment s'est passée la journée ?",
   "goalAttainmentLabel": "{percent} % de l’objectif",
   "goalBannerActionFailed": "Ça n'a pas été enregistré — réessaie, s'il te plaît.",
   "goalBannerDismissForDay": "Masquer pour aujourd’hui",

@@ -10409,6 +10409,12 @@ abstract class AppLocalizations {
   /// **'Rated by you'**
   String get goalAssessmentUserProvenance;
 
+  /// No description provided for @goalAssessmentVerdictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How did the day go?'**
+  String get goalAssessmentVerdictTitle;
+
   /// Attainment summary on an agent card; percent is 0-100.
   ///
   /// In en, this message translates to:

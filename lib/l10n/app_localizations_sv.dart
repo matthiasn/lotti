@@ -6073,6 +6073,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalAssessmentUserProvenance => 'Betygsatt av dig';
 
   @override
+  String get goalAssessmentVerdictTitle => 'Hur gick dagen?';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % av målet';
   }

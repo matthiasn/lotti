@@ -2823,6 +2823,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Foreslået af din målagent, accepteret af dig",
   "goalAssessmentSuggestionHint": "Foreslået ud fra det målte — ret det, hvis du er uenig.",
   "goalAssessmentUserProvenance": "Bedømt af dig",
+  "goalAssessmentVerdictTitle": "Hvordan gik dagen?",
   "goalAttainmentLabel": "{percent} % af målet",
   "goalBannerActionFailed": "Det blev ikke gemt — prøv venligst igen.",
   "goalBannerDismissForDay": "Skjul resten af dagen",

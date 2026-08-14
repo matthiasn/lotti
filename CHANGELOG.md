@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggests nothing at all.
 
 ### Changed
+- **"Reflect on today" moved up to the week it closes off.** It sits inside
+  the "The whole goal" card, directly under the seven-day strip whose cells
+  open the same sheet — instead of last on the page, below every chart. It
+  also states today's verdict once you have recorded one, rather than inviting
+  you to record it again.
+- **The agent's report now leads the page.** The update controls moved below
+  it: they describe how the report is kept fresh, and ahead of it they pushed
+  what the agent actually says below the fold.
+- **The day-square key moved inside the card it explains** and now names the
+  empty state, which was the one state it left out.
 - **The goal report reads as sections.** Where things stand, the wider window,
   the latest change, data coverage and what's next each carry a heading, and
   the next actions are a list rather than a run of sentences. The headings

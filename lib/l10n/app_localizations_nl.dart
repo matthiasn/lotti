@@ -6086,6 +6086,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalAssessmentUserProvenance => 'Beoordeeld door jou';
 
   @override
+  String get goalAssessmentVerdictTitle => 'Hoe ging de dag?';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% van het doel';
   }

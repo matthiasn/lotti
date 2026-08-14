@@ -2573,6 +2573,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Agent cíle navrhl, ty jsi přijal(a)",
   "goalAssessmentSuggestionHint": "Návrh podle naměřených dat — pokud nesouhlasíš, změň ho.",
   "goalAssessmentUserProvenance": "Hodnoceno tebou",
+  "goalAssessmentVerdictTitle": "Jak den dopadl?",
   "goalAttainmentLabel": "{percent} % cíle",
   "goalBannerActionFailed": "To se neuložilo — zkus to prosím znovu.",
   "goalBannerDismissForDay": "Skrýt na dnešek",

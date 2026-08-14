@@ -2566,6 +2566,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Von deinem Ziel-Agenten vorgeschlagen, von dir angenommen",
   "goalAssessmentSuggestionHint": "Vorschlag aus den gemessenen Daten — ändere ihn, wenn du anderer Meinung bist.",
   "goalAssessmentUserProvenance": "Von dir bewertet",
+  "goalAssessmentVerdictTitle": "Wie lief der Tag?",
   "goalAttainmentLabel": "{percent} % des Ziels",
   "goalBannerActionFailed": "Das wurde nicht gespeichert — bitte versuch es noch einmal.",
   "goalBannerDismissForDay": "Für heute ausblenden",

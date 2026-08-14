@@ -386,6 +386,93 @@ void main() {
     );
   });
 
+  testWidgets('the reflect row sits with the week it closes off, and names '
+      'the verdict once recorded', (tester) async {
+    final tapped = <DateTime>[];
+    Future<void> pump({GoalAssessmentRating? recorded}) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: tapped.add,
+          ratingsByDay: recorded == null ? const {} : {today: recorded},
+        ),
+      ),
+    );
+
+    await pump();
+    // Inside the whole-goal card, under the strip. Stranded at the bottom of
+    // the page it was the quietest row on the surface, and nothing connected
+    // it to the cells that open the same sheet.
+    final strip = tester.getRect(find.byType(GoalCompactWindowStrip));
+    final reflect = tester.getRect(find.text('Reflect on today'));
+    expect(reflect.top, greaterThan(strip.top));
+    expect(
+      reflect.top - strip.bottom,
+      lessThan(tester.getSize(find.byType(GoalProgressCard)).height / 4),
+      reason: 'the reflect row drifted away from its strip',
+    );
+
+    await tester.tap(find.text('Reflect on today'));
+    expect(tapped, [today]);
+
+    // Once the day is judged the row states the verdict instead of inviting
+    // an action the user already took.
+    await pump(recorded: GoalAssessmentRating.improving);
+    expect(find.text('Reflect on today'), findsNothing);
+    expect(find.text('Improving'), findsOneWidget);
+  });
+
+  testWidgets('the day-cell legend rides inside the last habit card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              for (final name in ['Gym', 'Read'])
+                GoalHabitProgressView(
+                  habitId: name,
+                  name: name,
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Once per goal, not once per habit — and inside the card whose squares
+    // it keys. On the page background between two cards it was equidistant
+    // from both and read as annotating the chart below, which it does not
+    // explain at all.
+    expect(find.text('done · target met'), findsOneWidget);
+    final legend = tester.getRect(find.text('done · target met'));
+    final cards = find.byType(DesignSystemSectionCard);
+    final lastHabitCard = tester.getRect(cards.at(1));
+    expect(legend.top, greaterThan(lastHabitCard.top));
+    expect(legend.bottom, lessThan(lastHabitCard.bottom));
+  });
+
   testWidgets('a goal with no composite rule still gets a reflectable week', (
     tester,
   ) async {

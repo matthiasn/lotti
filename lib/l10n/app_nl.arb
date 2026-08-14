@@ -2822,6 +2822,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Je doelagent stelde het voor, jij accepteerde",
   "goalAssessmentSuggestionHint": "Voorgesteld op basis van de metingen — pas het aan als je het er niet mee eens bent.",
   "goalAssessmentUserProvenance": "Beoordeeld door jou",
+  "goalAssessmentVerdictTitle": "Hoe ging de dag?",
   "goalAttainmentLabel": "{percent}% van het doel",
   "goalBannerActionFailed": "Dat is niet opgeslagen — probeer het opnieuw.",
   "goalBannerDismissForDay": "Voor vandaag verbergen",

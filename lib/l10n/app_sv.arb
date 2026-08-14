@@ -2823,6 +2823,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Föreslaget av din målagent och accepterat av dig",
   "goalAssessmentSuggestionHint": "Föreslaget utifrån det uppmätta — ändra det om du inte håller med.",
   "goalAssessmentUserProvenance": "Betygsatt av dig",
+  "goalAssessmentVerdictTitle": "Hur gick dagen?",
   "goalAttainmentLabel": "{percent} % av målet",
   "goalBannerActionFailed": "Det sparades inte — försök igen.",
   "goalBannerDismissForDay": "Dölj resten av dagen",

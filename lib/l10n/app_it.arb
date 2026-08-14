@@ -2823,6 +2823,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Suggerito dal tuo agente obiettivo, accettato da te",
   "goalAssessmentSuggestionHint": "Suggerito dai dati misurati: cambialo se non sei d’accordo.",
   "goalAssessmentUserProvenance": "Valutato da te",
+  "goalAssessmentVerdictTitle": "Com'è andata la giornata?",
   "goalAttainmentLabel": "{percent}% dell’obiettivo",
   "goalBannerActionFailed": "Non è stato salvato: riprova per favore.",
   "goalBannerDismissForDay": "Nascondi per oggi",

@@ -6131,6 +6131,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalAssessmentUserProvenance => 'Hodnoceno tebou';
 
   @override
+  String get goalAssessmentVerdictTitle => 'Jak den dopadl?';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % cíle';
   }

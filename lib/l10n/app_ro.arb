@@ -2566,6 +2566,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Sugerat de agentul dvs. de obiectiv, acceptat de dvs.",
   "goalAssessmentSuggestionHint": "Sugerat pe baza datelor măsurate — schimbă-l dacă nu ești de acord.",
   "goalAssessmentUserProvenance": "Evaluat de dvs.",
+  "goalAssessmentVerdictTitle": "Cum a fost ziua?",
   "goalAttainmentLabel": "{percent}% din obiectiv",
   "goalBannerActionFailed": "Nu s-a salvat — vă rugăm să încercați din nou.",
   "goalBannerDismissForDay": "Ascundeți pentru azi",

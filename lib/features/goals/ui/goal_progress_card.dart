@@ -404,18 +404,16 @@ Color goalAssessmentRatingFill(DsTokens tokens, GoalAssessmentRating rating) =>
       GoalAssessmentRating.missed => tokens.colors.alert.error.defaultColor,
     };
 
-/// The ink that reads against [goalAssessmentRatingFill] for the same verdict.
+/// The ink a verdict glyph is drawn in, on top of that verdict's own fill.
 ///
-/// Each alert family ships a matched `defaultColor` / `ink` pair; borrowing
-/// one family's ink for another family's fill is how a green tick ends up on
-/// a red cell.
+/// One high-contrast ink for every verdict rather than each family's own:
+/// the families' inks are tuned to sit on a NEUTRAL surface, so a success ink
+/// on a success fill is green on green and the glyph all but disappears —
+/// which defeats the point of having a shape at all, since the shape exists
+/// for readers who cannot separate the hues. `onInteractiveAlert` is the
+/// design system's ink for exactly this: text over a saturated alert fill.
 Color goalAssessmentRatingInk(DsTokens tokens, GoalAssessmentRating rating) =>
-    switch (rating) {
-      GoalAssessmentRating.met => tokens.colors.alert.success.ink,
-      GoalAssessmentRating.improving => tokens.colors.alert.info.ink,
-      GoalAssessmentRating.mixed => tokens.colors.alert.warning.ink,
-      GoalAssessmentRating.missed => tokens.colors.alert.error.ink,
-    };
+    tokens.colors.text.onInteractiveAlert;
 
 /// The glyph that names a recorded verdict without relying on its hue.
 ///
@@ -513,25 +511,16 @@ class GoalProgressCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
-        for (final habit in progress.habits) ...[
+        for (var index = 0; index < progress.habits.length; index++) ...[
           _HabitDimensionCard(
-            habit: habit,
+            habit: progress.habits[index],
             today: progress.today,
             onHabitOutcomeSelected: onHabitOutcomeSelected,
+            showLegend: index == progress.habits.length - 1,
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
-        // ONE legend for all habit cards, aligned with their content edge —
-        // repeating it per card taxed every screenful with boilerplate.
-        if (progress.habits.isNotEmpty) ...[
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.cardPadding,
-            ),
-            child: const _ProgressLegend(),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-        ],
+
         for (final metric in progress.metrics)
           if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
             if (bloodPressure != null && metric == bloodPressure.systolic)
@@ -547,31 +536,6 @@ class GoalProgressCard extends StatelessWidget {
           _CategoryPatternCard(metric: patternMetric),
           SizedBox(height: tokens.spacing.step3),
         ],
-        if (onReflectDay != null)
-          DesignSystemSectionCard(
-            onTap: () => onReflectDay!(progress.today),
-            child: Row(
-              children: [
-                // The sparkle stays exclusive to agent suggestions; this row
-                // is the USER writing a reflection.
-                Icon(
-                  Icons.edit_note_rounded,
-                  color: tokens.colors.interactive.enabled,
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    context.messages.goalAssessmentReflectToday,
-                    style: tokens.typography.styles.body.bodySmall,
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }
@@ -638,6 +602,24 @@ class _CompositeProgressCard extends StatelessWidget {
             onDaySelected: onReflectDay,
             ratingsByDay: ratingsByDay,
           ),
+          // Directly under the week it closes off, and inside the same card.
+          // Stranded at the very bottom of the page — after every habit card,
+          // the legend and every chart — the one thing the user is meant to do
+          // daily was the quietest row on the surface, and nothing connected
+          // it to the strip whose cells open the very same sheet.
+          if (onReflectDay != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _ReflectTodayRow(
+              today: progress.today,
+              recorded:
+                  ratingsByDay[DateTime.utc(
+                    progress.today.year,
+                    progress.today.month,
+                    progress.today.day,
+                  )],
+              onReflect: () => onReflectDay!(progress.today),
+            ),
+          ],
           if (progress.compositeRule != null)
             SizedBox(height: tokens.spacing.step3),
           // "3 of 5 dimensions · 4 required" says nothing about a goal with
@@ -659,16 +641,83 @@ class _CompositeProgressCard extends StatelessWidget {
   }
 }
 
+/// The day's own reflection, docked under the week it closes off.
+///
+/// Carries today's state rather than only inviting the action: a row that
+/// says "Reflect on today" whether or not you already did is a row you have
+/// to tap to find out.
+class _ReflectTodayRow extends StatelessWidget {
+  const _ReflectTodayRow({
+    required this.today,
+    required this.recorded,
+    required this.onReflect,
+  });
+
+  final DateTime today;
+  final GoalAssessmentRating? recorded;
+  final VoidCallback onReflect;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final recorded = this.recorded;
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onReflect,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+          child: Row(
+            children: [
+              // The sparkle stays exclusive to agent suggestions; this row is
+              // the USER writing a reflection.
+              Icon(
+                recorded == null
+                    ? Icons.edit_note_rounded
+                    : goalAssessmentRatingGlyph(recorded),
+                color: recorded == null
+                    ? tokens.colors.interactive.enabled
+                    : goalAssessmentRatingInk(tokens, recorded),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  recorded == null
+                      ? context.messages.goalAssessmentReflectToday
+                      : goalAssessmentRatingLabel(context, recorded),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _HabitDimensionCard extends StatelessWidget {
   const _HabitDimensionCard({
     required this.habit,
     required this.today,
     required this.onHabitOutcomeSelected,
+    required this.showLegend,
   });
 
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  /// Whether this card carries the shared day-cell key. Set on the last habit
+  /// card only — one legend per goal, not one per habit.
+  final bool showLegend;
 
   @override
   Widget build(BuildContext context) {
@@ -759,6 +808,14 @@ class _HabitDimensionCard extends StatelessWidget {
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
           ),
+          // Inside the card, under the squares it keys. On the page background
+          // between two cards it was equidistant from both and read as
+          // annotating the chart below — which it does not explain at all.
+          // Still once per goal, not once per habit: it is the same key.
+          if (showLegend) ...[
+            SizedBox(height: tokens.spacing.step3),
+            const _ProgressLegend(),
+          ],
         ],
       ),
     );
@@ -2029,7 +2086,11 @@ class _MetricProgressSeries extends StatelessWidget {
           // seven-day week rendered ~40px slabs that dominated the card and
           // read nothing like the day squares above them.
           Expanded(
-            child: Center(
+            // Bottom-aligned: a bar chart's bars stand on a shared baseline.
+            // Centred, each one floated at its own height and the whole point
+            // of the three fills and the target rule was unreadable.
+            child: Align(
+              alignment: Alignment.bottomCenter,
               // A tight width, not a maximum. `_bar` is a FractionallySizedBox
               // with no widthFactor, so a loose constraint passes straight
               // through to a DecoratedBox with no intrinsic width and every
@@ -2396,6 +2457,13 @@ class _ProgressLegend extends StatelessWidget {
         ),
         // Quiet outline, matching the ring the cells actually draw — an
         // on-track row must not wear the alarm hue in its key either.
+        // The state most cells are actually IN. The key explained the two
+        // green ones and both edge cases while staying silent about the
+        // majority fill, which is the one a reader most needs named.
+        item(
+          tokens.colors.background.level03,
+          context.messages.goalProgressHabitDayNoEntry,
+        ),
         item(
           tokens.colors.text.lowEmphasis,
           context.messages.goalProgressAgesOut,

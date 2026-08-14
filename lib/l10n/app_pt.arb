@@ -2822,6 +2822,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Sugerido pelo seu agente de meta, aceito por você",
   "goalAssessmentSuggestionHint": "Sugerido a partir do que foi medido — muda-o se não concordares.",
   "goalAssessmentUserProvenance": "Avaliado por você",
+  "goalAssessmentVerdictTitle": "Como correu o dia?",
   "goalAttainmentLabel": "{percent}% da meta",
   "goalBannerActionFailed": "Isso não foi salvo — tente novamente.",
   "goalBannerDismissForDay": "Ocultar por hoje",

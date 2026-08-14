@@ -2566,6 +2566,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Tu agente de objetivos lo sugirió, tú lo aceptaste",
   "goalAssessmentSuggestionHint": "Sugerido a partir de lo medido: cámbialo si no estás de acuerdo.",
   "goalAssessmentUserProvenance": "Calificado por ti",
+  "goalAssessmentVerdictTitle": "¿Cómo fue el día?",
   "goalAttainmentLabel": "{percent} % del objetivo",
   "goalBannerActionFailed": "Eso no se guardó; inténtalo de nuevo.",
   "goalBannerDismissForDay": "Ocultar por hoy",

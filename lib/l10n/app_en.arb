@@ -3296,6 +3296,7 @@
   "goalAssessmentSuggestedProvenanceGeneric": "Your goal agent suggested, you accepted",
   "goalAssessmentSuggestionHint": "Suggested from what was measured — change it if you disagree.",
   "goalAssessmentUserProvenance": "Rated by you",
+  "goalAssessmentVerdictTitle": "How did the day go?",
   "goalAttainmentLabel": "{percent}% of target",
   "@goalAttainmentLabel": {
     "description": "Attainment summary on an agent card; percent is 0-100.",

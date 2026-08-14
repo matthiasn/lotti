@@ -153,10 +153,24 @@ class _GoalDayAssessmentSheetState
                   color: tokens.colors.text.lowEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step4),
+              SizedBox(height: tokens.spacing.step5),
+              // The measured evidence is one read-only group, fenced off from
+              // the decision below it. Loose on the page, its rows and its
+              // "not editable" caption interleaved with the verdict control
+              // and its hint — four fine-print lines with nothing saying
+              // which belonged to what.
               Text(
                 context.messages.goalAssessmentMeasuredTitle,
-                style: tokens.typography.styles.subtitle.subtitle2,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                context.messages.goalAssessmentMeasuredReadOnly,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
               SizedBox(height: tokens.spacing.step2),
               for (final row in measured)
@@ -183,7 +197,15 @@ class _GoalDayAssessmentSheetState
                             : tokens.colors.alert.error.ink,
                       ),
                       SizedBox(width: tokens.spacing.step2),
-                      Expanded(child: Text(row.name)),
+                      Expanded(
+                        child: Text(
+                          row.name,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ),
                       Text(
                         row.value,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -193,14 +215,17 @@ class _GoalDayAssessmentSheetState
                     ],
                   ),
                 ),
-              SizedBox(height: tokens.spacing.step2),
+              SizedBox(height: tokens.spacing.step5),
+              // The one decision this sheet exists for, and the only block
+              // that had no heading — while both OPTIONAL inputs below it had
+              // one.
               Text(
-                context.messages.goalAssessmentMeasuredReadOnly,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+                context.messages.goalAssessmentVerdictTitle,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
+              SizedBox(height: tokens.spacing.step2),
               DsSegmentedToggle<GoalAssessmentRating>(
                 expand: true,
                 selected: _rating,
@@ -211,23 +236,15 @@ class _GoalDayAssessmentSheetState
               // moved off it, saying where the old value came from is noise.
               if (_acceptedSuggestion) ...[
                 SizedBox(height: tokens.spacing.step2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: IconSizes.xs,
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Expanded(
-                      child: Text(
-                        context.messages.goalAssessmentSuggestionHint,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ),
-                  ],
+                // On the rail, like every other block. Behind a leading icon
+                // it was the one line in the sheet that started somewhere
+                // else, and the word "Suggested" already carries the meaning
+                // the sparkle was there to add.
+                Text(
+                  context.messages.goalAssessmentSuggestionHint,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
               ],
               SizedBox(height: tokens.spacing.step4),
@@ -250,7 +267,15 @@ class _GoalDayAssessmentSheetState
                       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
                       child: Row(
                         children: [
-                          Expanded(child: Text(row.name)),
+                          Expanded(
+                            child: Text(
+                              row.name,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                          ),
                           SizedBox(
                             width: tokens.spacing.step13 * 3,
                             child: DsSegmentedToggle<GoalAssessmentRating>(

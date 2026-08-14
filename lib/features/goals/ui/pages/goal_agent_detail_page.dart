@@ -443,7 +443,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                         alignment: AlignmentDirectional.topStart,
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
-                            maxWidth: tokens.spacing.step13 * 4,
+                            maxWidth: tokens.spacing.step13 * 3,
                           ),
                           child: detailList(showChatAction: false),
                         ),
@@ -670,7 +670,14 @@ class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
       children: [
         header,
         SizedBox(height: tokens.spacing.step2),
+        reportCard,
+        // Below the report, not above it. The automation controls describe
+        // how the report is kept fresh, so ahead of it they made the plumbing
+        // the first thing on the page and pushed what the agent actually SAYS
+        // below the fold — three rows of scheduling before a single word of
+        // the assessment.
         if (widget.canRefresh) ...[
+          SizedBox(height: tokens.spacing.step2),
           AgentAutomationRow(
             automaticUpdatesEnabled: automaticUpdatesEnabled,
             automationBusy: _automationBusy,
@@ -694,9 +701,7 @@ class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
             onCountdownExpired: () =>
                 ref.invalidate(agentStateProvider(widget.agentId)),
           ),
-          SizedBox(height: tokens.spacing.step2),
         ],
-        reportCard,
         // Every active banner remains reachable here, uncapped. The shell
         // rotates one slot; this goal-owned surface does not. Banners are an
         // interaction channel, not a replacement for the standing report.
@@ -841,8 +846,16 @@ class _WatchingSection extends StatelessWidget {
                     ),
                     SizedBox(height: tokens.spacing.step1),
                     Text(
-                      '${goalHabitTargetLabel(context, targetCount: habit.targetCount, window: habit.window)}'
-                      '${habit.successfulWeeks == null ? '' : ' · ${habit.successfulWeeks} / 6'}',
+                      // Cadence only. The streak is already stated on this
+                      // habit's own card one screen up, and repeating the
+                      // counter verbatim at a third size made the page look
+                      // like two views of one fact that had not been
+                      // reconciled.
+                      goalHabitTargetLabel(
+                        context,
+                        targetCount: habit.targetCount,
+                        window: habit.window,
+                      ),
                       key: ValueKey('goal-watching-meta-${habit.habitId}'),
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.mediumEmphasis,

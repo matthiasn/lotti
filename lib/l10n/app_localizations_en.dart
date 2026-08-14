@@ -6039,6 +6039,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalAssessmentUserProvenance => 'Rated by you';
 
   @override
+  String get goalAssessmentVerdictTitle => 'How did the day go?';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% of target';
   }
