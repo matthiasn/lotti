@@ -535,6 +535,56 @@ void main() {
     expect(rules(), 0);
   });
 
+  testWidgets('the whole-goal week shares the habit squares’ column pitch', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'gym',
+                name: 'Gym',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onReflectDay: (_) {},
+        ),
+      ),
+    );
+
+    // One week, one grid. The whole-goal strip and the habit squares are the
+    // same seven days drawn one card apart; on separate pitches the same
+    // Wednesday landed in two different columns and a reader could not follow
+    // a day down the page.
+    final stripCells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip),
+      matching: find.byType(InkWell),
+    );
+    final firstStrip = tester.getRect(stripCells.at(0));
+    final secondStrip = tester.getRect(stripCells.at(1));
+    final habitFirst = tester.getRect(
+      find.byKey(const ValueKey('goal-habit-day-visual-gym-2026-08-05')),
+    );
+    final habitSecond = tester.getRect(
+      find.byKey(const ValueKey('goal-habit-day-visual-gym-2026-08-06')),
+    );
+
+    expect(
+      secondStrip.left - firstStrip.left,
+      moreOrLessEquals(habitSecond.left - habitFirst.left, epsilon: 0.5),
+      reason: 'the two seven-day rows are on different pitches',
+    );
+  });
+
   testWidgets('the reflect row sits with the week it closes off, and names '
       'the verdict once recorded', (tester) async {
     final tapped = <DateTime>[];
@@ -705,20 +755,20 @@ void main() {
     for (var index = 0; index < 7; index++) {
       covered += tester.getSize(cells.at(index)).width;
     }
-    // Read-only the strip hugs its content. Tappable it grows to seven touch
-    // targets and stops there: handed a whole desktop card it used to spread
-    // the cells cell-widths apart, reading as scattered confetti rather than
-    // a week.
-    expect(
-      tester.getSize(find.byType(GoalCompactWindowStrip).at(0)).width,
-      lessThan(covered),
+    // Both strips sit on the page's shared seven-column track now, so the
+    // week lines up with the habit squares and the metric bars rather than
+    // being a third grid. Tapping does not change the pitch: the cells are
+    // the same width either way, and the span is seven of them.
+    final readOnlyCells = find.descendant(
+      of: find.byType(GoalCompactWindowStrip).at(0),
+      matching: find.byType(Padding),
     );
-    expect(covered, lessThanOrEqualTo(TapTargets.minimum * 7));
     expect(
-      covered,
-      greaterThan(TapTargets.minimum * 7 * 0.9),
-      reason: 'the tappable cells no longer fill their capped strip',
+      tester.getSize(cells.at(0)).width,
+      moreOrLessEquals(covered / 7, epsilon: 1),
+      reason: 'the tappable cells do not sit on an even pitch',
     );
+    expect(readOnlyCells, findsWidgets);
   });
 
   testWidgets('a placeholder strip keeps the silhouette without borrowing the '

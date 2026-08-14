@@ -489,9 +489,13 @@ void main() {
 
     // Saving an untouched suggestion is an acceptance, and is recorded as one
     // — a provenance the history could already render but nothing produced.
-    await tester.tap(
-      find.widgetWithText(DesignSystemButton, 'Record for Tuesday'),
+    final record = find.widgetWithText(
+      DesignSystemButton,
+      'Record for Tuesday',
     );
+    await tester.ensureVisible(record);
+    await tester.pumpAndSettle();
+    await tester.tap(record);
     await tester.pumpAndSettle();
     verify(
       () => service.record(

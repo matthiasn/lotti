@@ -839,4 +839,24 @@ void main() {
       );
     },
   );
+  test('a day inside its ceiling is met, whatever the rolling average did', () {
+    final day = DateTime.utc(2026, 8, 14);
+    final systolic = GoalMetricProgressView(
+      name: 'Systolic',
+      target: 125,
+      direction: GoalDirection.atMost,
+      days: [
+        // The evaluator's verdict for the WINDOW ending here is a miss: the
+        // rolling average is still over the ceiling.
+        GoalProgressDay(day: day, value: 122, targetSatisfied: false),
+      ],
+    );
+
+    // The window verdict and the day's own value disagree, and each has its
+    // own reader. The reflection sheet prints "122" beside a mark, so the
+    // mark has to be about 122 — it used to print the number and cross it
+    // out, contradicting the report one card above.
+    expect(systolic.meetsTarget(systolic.days.single), isFalse);
+    expect(systolic.valueMeetsTarget(systolic.days.single), isTrue);
+  });
 }

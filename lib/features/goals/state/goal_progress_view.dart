@@ -136,9 +136,22 @@ class GoalMetricProgressView {
   final GoalWindow window;
   final GoalDirection direction;
 
+  /// Whether the goal's requirement held AS OF [day] — the evaluator's own
+  /// verdict where it has one, which for a rolling criterion is a statement
+  /// about the window ending that day, not about the day's own value.
   bool meetsTarget(GoalProgressDay day) =>
       day.isObserved &&
       (day.targetSatisfied ?? _meetsTarget(day.value, target, direction));
+
+  /// Whether [day]'s OWN value clears the target.
+  ///
+  /// Distinct from [meetsTarget] on purpose. Anywhere a single day's number
+  /// is shown beside a met/missed mark, the mark has to be about that number:
+  /// the reflection sheet printed "122" against a 125 ceiling and crossed it
+  /// out, because the rolling average behind it was still over — contradicting
+  /// the report one card above, which read "today's 122 helps".
+  bool valueMeetsTarget(GoalProgressDay day) =>
+      day.isObserved && _meetsTarget(day.value, target, direction);
 }
 
 class GoalProgressDay {

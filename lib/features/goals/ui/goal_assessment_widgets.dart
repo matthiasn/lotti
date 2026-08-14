@@ -13,6 +13,19 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// The sheet's gap scale, so whitespace means something.
+///
+/// Before this the sheet used five different gaps with no rule, and the same
+/// ~35px did duty as both a section break and a heading-to-content binding —
+/// which is why nothing on it looked deliberately spaced.
+///
+///  * [_sectionGap] separates one block from the next.
+///  * [_bindGap] ties a heading to the content it introduces.
+///  * [_rowGap] is the pitch inside a list of like rows.
+double _sectionGap(DsTokens tokens) => tokens.spacing.step5;
+double _bindGap(DsTokens tokens) => tokens.spacing.step2;
+double _rowGap(DsTokens tokens) => tokens.spacing.step1;
+
 /// The verdict choices, in order, derived from the enum itself.
 ///
 /// Both the day toggle and the per-dimension toggles read from here: hand-
@@ -165,69 +178,82 @@ class _GoalDayAssessmentSheetState
                   color: tokens.colors.text.lowEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
-              // The measured evidence is one read-only group, fenced off from
-              // the decision below it. Loose on the page, its rows and its
-              // "not editable" caption interleaved with the verdict control
-              // and its hint — four fine-print lines with nothing saying
-              // which belonged to what.
-              Text(
-                context.messages.goalAssessmentMeasuredTitle,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Text(
-                context.messages.goalAssessmentMeasuredReadOnly,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step2),
-              for (final row in measured)
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: tokens.spacing.step1,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        row.met == null
-                            ? Icons.circle_outlined
-                            : row.met!
-                            ? Icons.check_circle_rounded
-                            : Icons.cancel_rounded,
-                        size: IconSizes.xs,
-                        // A cross is the MISSED mark in the verdict
-                        // vocabulary, so it must not wear the warning hue
-                        // that vocabulary gives to Mixed.
-                        color: row.met == null
-                            ? tokens.colors.text.lowEmphasis
-                            : row.met!
-                            ? tokens.colors.alert.success.ink
-                            : tokens.colors.alert.error.ink,
+              SizedBox(height: _sectionGap(tokens)),
+              // A real fence, not a comment claiming one: on the bare
+              // sheet the evidence rows and the decision below them sat
+              // on the same ground at the same pitch, so nothing said
+              // which lines you could change and which you could not.
+              DesignSystemSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // The measured evidence is one read-only group, fenced off from
+                    // the decision below it. Loose on the page, its rows and its
+                    // "not editable" caption interleaved with the verdict control
+                    // and its hint — four fine-print lines with nothing saying
+                    // which belonged to what.
+                    Text(
+                      context.messages.goalAssessmentMeasuredTitle,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
+                    ),
+                    SizedBox(height: _rowGap(tokens)),
+                    Text(
+                      context.messages.goalAssessmentMeasuredReadOnly,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
                       ),
-                      SizedBox(width: tokens.spacing.step2),
-                      Expanded(
-                        child: Text(
-                          row.name,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
+                    ),
+                    SizedBox(height: _bindGap(tokens)),
+                    for (final row in measured)
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          vertical: tokens.spacing.step1,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              row.met == null
+                                  ? Icons.circle_outlined
+                                  : row.met!
+                                  ? Icons.check_circle_rounded
+                                  : Icons.cancel_rounded,
+                              size: IconSizes.xs,
+                              // A cross is the MISSED mark in the verdict
+                              // vocabulary, so it must not wear the warning hue
+                              // that vocabulary gives to Mixed.
+                              color: row.met == null
+                                  ? tokens.colors.text.lowEmphasis
+                                  : row.met!
+                                  ? tokens.colors.alert.success.ink
+                                  : tokens.colors.alert.error.ink,
+                            ),
+                            SizedBox(width: tokens.spacing.step2),
+                            Expanded(
+                              child: Text(
+                                row.name,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(
+                                      color: tokens.colors.text.highEmphasis,
+                                    ),
                               ),
+                            ),
+                            Text(
+                              row.value,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        row.value,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-              SizedBox(height: tokens.spacing.step5),
+              ),
+              SizedBox(height: _sectionGap(tokens)),
               // The one decision this sheet exists for, and the only block
               // that had no heading — while both OPTIONAL inputs below it had
               // one.
@@ -237,7 +263,7 @@ class _GoalDayAssessmentSheetState
                   color: tokens.colors.text.highEmphasis,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step2),
+              SizedBox(height: _bindGap(tokens)),
               DsSegmentedToggle<GoalAssessmentRating>(
                 expand: true,
                 selected: _rating,
@@ -250,7 +276,7 @@ class _GoalDayAssessmentSheetState
               // Only while the suggestion still stands. Once the user has
               // moved off it, saying where the old value came from is noise.
               if (_acceptedSuggestion) ...[
-                SizedBox(height: tokens.spacing.step2),
+                SizedBox(height: _rowGap(tokens)),
                 // On the rail, like every other block. Behind a leading icon
                 // it was the one line in the sheet that started somewhere
                 // else, and the word "Suggested" already carries the meaning
@@ -262,16 +288,25 @@ class _GoalDayAssessmentSheetState
                   ),
                 ),
               ],
-              SizedBox(height: tokens.spacing.step4),
+              SizedBox(height: _sectionGap(tokens)),
               DesignSystemTextarea(
                 controller: _note,
                 label: context.messages.goalAssessmentNote,
                 minLines: 2,
                 growWithContent: true,
               ),
-              SizedBox(height: tokens.spacing.step3),
+              SizedBox(height: _sectionGap(tokens)),
+              // Material's own tile chrome, removed: its default vertical
+              // padding and minimum height left this row floating with more
+              // air around it than the sheet's section gap, so it read as
+              // belonging to nothing.
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
+                minTileHeight: 0,
+                childrenPadding: EdgeInsets.zero,
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                shape: const Border(),
+                collapsedShape: const Border(),
                 title: Text(
                   context.messages.goalAssessmentPerDimension,
                   style: tokens.typography.styles.body.bodySmall,
@@ -309,7 +344,7 @@ class _GoalDayAssessmentSheetState
                     ),
                 ],
               ),
-              SizedBox(height: tokens.spacing.step4),
+              SizedBox(height: _sectionGap(tokens)),
               if (_error != null) ...[
                 Text(
                   _error!,
@@ -317,7 +352,7 @@ class _GoalDayAssessmentSheetState
                     color: tokens.colors.alert.error.ink,
                   ),
                 ),
-                SizedBox(height: tokens.spacing.step2),
+                SizedBox(height: _bindGap(tokens)),
               ],
               DesignSystemButton(
                 label: context.messages.goalAssessmentRecordFor(
@@ -380,7 +415,13 @@ List<_MeasuredRow> _measuredRows(
             '—',
         met: metric.days
             .where((entry) => DateUtils.isSameDay(entry.day, day))
-            .map((entry) => entry.isObserved ? metric.meetsTarget(entry) : null)
+            // The DAY's value against the target, not the rolling verdict:
+            // this row prints that day's number, so the mark beside it has
+            // to be about that number.
+            .map(
+              (entry) =>
+                  entry.isObserved ? metric.valueMeetsTarget(entry) : null,
+            )
             .firstOrNull,
       ),
   ];

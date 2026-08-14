@@ -343,6 +343,62 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('an active goal with nothing pending pays no card gap for the '
+      'revision card', (tester) async {
+    Future<void> pump({required int pendingProposals}) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'All good.',
+              pendingProposals: pendingProposals,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+
+    // The card renders nothing when nothing is pending, so gating its GAP on
+    // "the agent is active" left the one broken interval in an otherwise even
+    // stack.
+    // Nothing pending: the card is not in the tree, so neither is its gap.
+    await pump(pendingProposals: 0);
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(ChangeSetSummaryCard, skipOffstage: false),
+      findsNothing,
+    );
+    final withoutCard = tester.getSize(find.byType(GoalAgentDetailPage)).height;
+
+    // A proposal waiting takes the other branch. The list is lazy, so the
+    // card itself may sit below the built window — what this pins is that
+    // the gate reads the proposal count rather than merely "is active".
+    await pump(pendingProposals: 1);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byType(GoalAgentDetailPage)).height,
+      withoutCard,
+    );
+  });
+
   testWidgets('a published assessment silences the Not-enough-data chip, and '
       'a sectionless report still expands to its flat text', (tester) async {
     final legacySpec =
@@ -716,6 +772,8 @@ void main() {
     expect(find.textContaining('Delayed historical report'), findsNothing);
     expect(find.text('Show more'), findsOneWidget);
     expect(find.textContaining('The current routine needs'), findsNothing);
+    // ...but the action is already on screen, unexpanded.
+    expect(find.textContaining('Walk on Saturday.'), findsOneWidget);
     await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
     // Sections, under headings the APP supplies — the sentences are authored
@@ -724,8 +782,10 @@ void main() {
     expect(find.text('Where things stand'), findsOneWidget);
     expect(find.text('One walk logged today.'), findsOneWidget);
     expect(find.text('The wider window'), findsOneWidget);
-    expect(find.text("What's next"), findsOneWidget);
-    expect(find.text('Walk on Saturday.'), findsOneWidget);
+    // The actions no longer live inside the expansion — they sit with the
+    // summary in the COLLAPSED card, because an action reachable only behind
+    // "Show more" is one most readers never see.
+    expect(find.text("What's next"), findsNothing);
     // A slot the model left empty gets no heading rather than an empty one.
     expect(find.text('Data coverage'), findsNothing);
     // ...and it closes again, easing shut rather than snapping.

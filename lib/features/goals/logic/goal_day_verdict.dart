@@ -25,7 +25,10 @@ GoalDayOutcome goalDayOutcome(GoalProgressView progress, DateTime day) {
     final entry = metric.days
         .where((value) => DateUtils.isSameDay(value.day, day))
         .firstOrNull;
-    if (entry != null && entry.isObserved && metric.meetsTarget(entry)) met++;
+    // The day's own value, not the rolling verdict for the window ending
+    // there: this is a judgement about one day, and the sheet prints that
+    // day's number right beside it.
+    if (entry != null && metric.valueMeetsTarget(entry)) met++;
   }
   return (met: met, total: total);
 }
