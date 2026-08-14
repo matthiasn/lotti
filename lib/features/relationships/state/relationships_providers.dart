@@ -9,18 +9,12 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
 
 /// The tokens that mean "the relationships list may have changed": any
-/// relationship write, any check-in write (a check-in changes the list's
-/// recency ordering and subtitle), the per-entity update token prefix, and
-/// a flip of the private-entries flag.
-///
-/// The private toggle matters because every relationship read is
-/// private-filtered: without it, a list loaded while private entries were
-/// shown would keep rendering those names until the next write or restart.
+/// relationship write and any check-in write (a check-in changes the list's
+/// recency ordering and subtitle). Both are emitted by `affectedIds`, so
+/// this covers local edits and synced ones alike.
 bool _touchesRelationships(Set<String> affectedIds) =>
     affectedIds.contains(relationshipNotification) ||
-    affectedIds.contains(checkInNotification) ||
-    affectedIds.contains(privateToggleNotification) ||
-    affectedIds.any((id) => id.startsWith(relationshipEntityUpdatePrefix));
+    affectedIds.contains(checkInNotification);
 
 /// All non-deleted relationships with their latest check-in time, most
 /// recently interacted-with first. Reloads on relationship and check-in
@@ -66,11 +60,6 @@ typedef RelationshipDetail = ({
 /// Detail state for one relationship. Resolves to `null` when the id does
 /// not (or no longer) point at a live relationship. Reloads when the
 /// relationship, any of its check-ins, or any currently linked task changes.
-///
-/// Auto-disposes with the page that watches it: one instance exists per
-/// person id, and each keeps an `UpdateNotifications` subscription alive, so
-/// a session that browsed many people would otherwise accumulate a listener
-/// per visited id.
 class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   RelationshipDetailController([String? relationshipId])
     : _relationshipId = relationshipId ?? '';
@@ -96,18 +85,10 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
       affectedIds,
     ) {
       // A check-in's affectedIds carry its relationship id (the wake-token
-      // delta from plan v2 D1), and every entity's affectedIds carry its own
-      // id, so the membership tests cover relationship edits, check-in
-      // writes, link writes and linked-task edits — local or synced. The
-      // private toggle is separate:
-      // this page's person and their check-ins are private-filtered reads,
-      // so hiding private entries must resolve an open private person to
-      // "no longer tracked" straight away.
+      // delta from plan v2 D1) and every entity's affectedIds carry its own
+      // id, so this single membership test covers relationship edits, check-in
+      // writes and link writes alike — local or synced.
       if (affectedIds.contains(_relationshipId) ||
-          affectedIds.contains(privateToggleNotification) ||
-          affectedIds.contains(
-            relationshipEntityUpdateNotification(_relationshipId),
-          ) ||
           affectedIds.any(_linkedTaskIds.contains)) {
         ref.invalidateSelf();
       }

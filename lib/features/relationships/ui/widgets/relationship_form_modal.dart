@@ -14,10 +14,6 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Upper bound on the form's height as a fraction of the viewport — the
-/// create-modal sizing shared with `ProjectCreateForm`.
-const double _modalMaxHeightFraction = 0.9;
-
 /// Cadence presets offered in the form (plan v2 D1: presets over a free
 /// integer field). `null` means no cadence.
 const List<int?> relationshipCadencePresets = [null, 7, 14, 30, 90];
@@ -316,7 +312,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+        maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
