@@ -298,6 +298,7 @@ class TaskListCompactHeaderBar extends StatelessWidget {
     required this.onExpandRequested,
     required this.onSearchRequested,
     required this.onFilterPressed,
+    this.leading,
     this.contextLabel,
     super.key,
   });
@@ -318,6 +319,7 @@ class TaskListCompactHeaderBar extends StatelessWidget {
   /// view's name, or the current search query — so the collapsed bar states
   /// *what* is narrowing the list, not only that something is.
   final String? contextLabel;
+  final Widget? leading;
 
   /// Whether a search query is currently applied.
   final bool searchActive;
@@ -348,6 +350,7 @@ class TaskListCompactHeaderBar extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
           child: Row(
             children: [
+              ?leading,
               Expanded(
                 child: Semantics(
                   button: true,

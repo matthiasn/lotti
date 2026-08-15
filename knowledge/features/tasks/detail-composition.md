@@ -35,7 +35,7 @@ sources:
   - id: expandable-app-bar
     resource: ../../../lib/features/tasks/ui/task_expandable_app_bar.dart
     title: TaskExpandableAppBar
-    last_modified: 2026-08-12
+    last_modified: 2026-08-15
   - id: cover-art
     resource: ../../../lib/features/tasks/ui/cover_art_background.dart
     title: CoverArtBackground and the full-screen viewer
@@ -325,7 +325,10 @@ When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked
 image entries, including rotation, download and zoom controls. The cover uses a
 task-specific Hero tag so an expanded linked image lower on the same detail page
-cannot become the transition source by mistake.
+cannot become the transition source by mistake. On a wide detail workspace the
+art remains centred at the shared detail-content maximum width instead of
+stretching across the whole window, and the compact title uses the cover's
+on-interactive text token so it remains legible in both themes.
 
 The header is exercised in isolation under **Widgetbook → Tasks → Desktop task
 header**, whose Playground drives priority, status, category, due date, labels and

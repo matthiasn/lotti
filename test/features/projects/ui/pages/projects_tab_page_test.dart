@@ -1035,5 +1035,95 @@ void main() {
         expect(find.byType(ProjectDetailsPage), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'focus mode hides and restores the selected project list without '
+      'discarding it',
+      (tester) async {
+        final nav = getIt<NavService>() as MockNavService;
+        final selected = ValueNotifier<String?>('p1');
+        addTearDown(selected.dispose);
+        when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          extraOverrides: [
+            projectDetailControllerProvider('p1').overrideWith(
+              _StubProjectDetailController.new,
+            ),
+            projectDetailRecordProvider('p1').overrideWith(
+              (ref) async => null,
+            ),
+          ],
+        );
+
+        expect(
+          find.byKey(const ValueKey('projects-hide-list-pane')),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('projects-hide-list-pane')),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Device Sync'), findsNothing);
+        expect(
+          find.text('Device Sync', skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(find.byType(ResizableDivider), findsNothing);
+        expect(find.byType(ProjectDetailsPage), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('projects-show-list-pane')),
+          findsOneWidget,
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(ProjectsTabPage, skipOffstage: false)),
+        );
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isTrue,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('projects-show-list-pane')),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Device Sync'), findsOneWidget);
+        expect(find.byType(ResizableDivider), findsOneWidget);
+        expect(
+          container.read(paneWidthControllerProvider).listPaneCollapsed,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets('does not hide a project list without a selected detail', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ProjectsTabPage)),
+      );
+      container.read(paneWidthControllerProvider.notifier).collapseListPane();
+      await tester.pump();
+
+      expect(find.text('Device Sync'), findsOneWidget);
+      expect(find.byType(ResizableDivider), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('projects-hide-list-pane')),
+        findsNothing,
+      );
+    });
   });
 }

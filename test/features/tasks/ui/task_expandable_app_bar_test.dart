@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
@@ -356,6 +358,24 @@ void main() {
       expect(appBar.expandedHeight, 225);
     });
 
+    testWidgets('caps desktop cover art at the shared reading measure', (
+      tester,
+    ) async {
+      final task = buildTask();
+
+      await pumpDesktop(tester, buildTestWidget(task, 'image-1'));
+      await tester.pump();
+
+      final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
+      expect(appBar.expandedHeight, kDetailContentMaxWidth * 9 / 16);
+      expect(
+        tester
+            .widgetList<SizedBox>(find.byType(SizedBox))
+            .where((box) => box.width == kDetailContentMaxWidth),
+        hasLength(1),
+      );
+    });
+
     testWidgets('contains FlexibleSpaceBar', (tester) async {
       final task = buildTask();
 
@@ -421,6 +441,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Test Task'), findsOneWidget);
+        final title = tester.widget<Text>(find.text('Test Task'));
+        expect(
+          title.style?.color,
+          tester
+              .element(find.text('Test Task'))
+              .designTokens
+              .colors
+              .text
+              .onInteractiveAlert,
+        );
       },
     );
 

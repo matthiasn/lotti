@@ -50,31 +50,36 @@ class DesignSystemBackControl extends StatelessWidget {
   }
 }
 
-/// Top bar for a mobile detail screen: a leading [DesignSystemBackControl] and
-/// a trailing slot defaulting to an overflow (more) icon.
+/// Top bar for a detail screen: an optional leading [DesignSystemBackControl]
+/// and a trailing slot defaulting to an overflow (more) icon.
 ///
 /// Both the back label/icon and the default trailing icon are tinted with
-/// [foregroundColor]; pass [trailing] to override the default action.
+/// [foregroundColor]; pass [trailing] to override the default action. Embedded
+/// desktop splits set [showBackControl] to false because their sibling list is
+/// not navigation history.
 class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
   const DesignSystemShowcaseMobileDetailHeader({
     required this.foregroundColor,
     this.onBack,
+    this.showBackControl = true,
     this.trailing,
     super.key,
   });
 
   final Color foregroundColor;
   final VoidCallback? onBack;
+  final bool showBackControl;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        DesignSystemBackControl(
-          foregroundColor: foregroundColor,
-          onTap: onBack,
-        ),
+        if (showBackControl)
+          DesignSystemBackControl(
+            foregroundColor: foregroundColor,
+            onTap: onBack,
+          ),
         const Spacer(),
         trailing ??
             Icon(

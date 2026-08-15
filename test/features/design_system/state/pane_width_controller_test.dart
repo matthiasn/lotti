@@ -25,6 +25,7 @@ void main() {
         // lookup returning null) so the stub mirrors what SettingsDb returns
         // and the test does not pass by accident if lookup semantics change.
         sidebarCollapsedKey: null,
+        listPaneCollapsedKey: null,
       },
     );
     container = ProviderContainer();
@@ -42,6 +43,7 @@ void main() {
       expect(widths.listPaneWidth, defaultListPaneWidth);
       expect(widths.journalListPaneWidth, defaultJournalListPaneWidth);
       expect(widths.sidebarCollapsed, isFalse);
+      expect(widths.listPaneCollapsed, isFalse);
     });
 
     test('copyWith creates new instance with updated values', () {
@@ -65,6 +67,13 @@ void main() {
       expect(updated.sidebarWidth, defaultSidebarWidth);
     });
 
+    test('copyWith updates list pane collapse flag', () {
+      const widths = PaneWidths();
+      final updated = widths.copyWith(listPaneCollapsed: true);
+      expect(updated.listPaneCollapsed, isTrue);
+      expect(updated.listPaneWidth, defaultListPaneWidth);
+    });
+
     test('copyWith updates journal list pane width independently', () {
       const widths = PaneWidths();
       final updated = widths.copyWith(journalListPaneWidth: 520);
@@ -83,10 +92,12 @@ void main() {
         listPaneWidth: 500,
         journalListPaneWidth: 350,
       );
+      const f = PaneWidths(listPaneCollapsed: true);
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a, isNot(equals(d)));
       expect(a, isNot(equals(e)));
+      expect(a, isNot(equals(f)));
     });
 
     test('hashCode is consistent with equality', () {
@@ -175,6 +186,7 @@ void main() {
       expect(result.sidebarWidth, defaultSidebarWidth);
       expect(result.listPaneWidth, defaultListPaneWidth);
       expect(result.sidebarCollapsed, isFalse);
+      expect(result.listPaneCollapsed, isFalse);
     });
 
     test('loads persisted collapse flag', () async {
@@ -185,6 +197,18 @@ void main() {
 
       final result = await hAwaitHydration(container);
       expect(result.sidebarCollapsed, isTrue);
+    });
+
+    test('loads persisted list pane collapse flag and restore width', () async {
+      container.dispose();
+      container = await hCreateContainerWithPersistedWidths(
+        listPaneCollapsed: 'true',
+        listPaneWidth: '510.0',
+      );
+
+      final result = await hAwaitHydration(container);
+      expect(result.listPaneCollapsed, isTrue);
+      expect(result.listPaneWidth, 510);
     });
 
     test(
@@ -386,6 +410,44 @@ void main() {
           ),
         ).called(1);
       });
+    });
+
+    test('ignores resize input while collapsed and restores prior width', () {
+      final notifier = container.read(paneWidthControllerProvider.notifier)
+        ..updateListPaneWidth(60)
+        ..collapseListPane()
+        ..updateListPaneWidth(120);
+
+      var state = container.read(paneWidthControllerProvider);
+      expect(state.listPaneCollapsed, isTrue);
+      expect(state.listPaneWidth, defaultListPaneWidth + 60);
+
+      notifier.expandListPane();
+      state = container.read(paneWidthControllerProvider);
+      expect(state.listPaneCollapsed, isFalse);
+      expect(state.listPaneWidth, defaultListPaneWidth + 60);
+    });
+
+    test('persists focus mode immediately and toggles idempotently', () {
+      container.read(paneWidthControllerProvider.notifier)
+        ..collapseListPane()
+        ..collapseListPane();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          listPaneCollapsedKey,
+          'true',
+        ),
+      ).called(1);
+
+      container.read(paneWidthControllerProvider.notifier)
+        ..toggleListPaneCollapsed()
+        ..expandListPane();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          listPaneCollapsedKey,
+          'false',
+        ),
+      ).called(1);
     });
   });
 

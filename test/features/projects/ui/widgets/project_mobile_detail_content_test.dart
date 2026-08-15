@@ -2,7 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -15,11 +19,29 @@ void main() {
   Widget wrap(
     Widget child, {
     Size size = const Size(430, 900),
+    ValueNotifier<bool>? listPaneVisible,
   }) {
+    final content = listPaneVisible == null
+        ? child
+        : ValueListenableBuilder<bool>(
+            valueListenable: listPaneVisible,
+            builder: (context, visible, _) => ListDetailFocusTraversal(
+              debugLabel: 'project-detail-test',
+              listPaneVisible: visible,
+              canHideListPane: true,
+              onListPaneVisibilityChanged: (nextVisible) {
+                listPaneVisible.value = nextVisible;
+              },
+              listPane: const SizedBox(width: 300, child: Text('Project list')),
+              divider: const SizedBox(width: 3),
+              detailPane: child,
+            ),
+          );
+
     return makeTestableWidget2(
       Theme(
         data: DesignSystemTheme.dark(),
-        child: Scaffold(body: child),
+        child: Scaffold(body: content),
       ),
       mediaQueryData: MediaQueryData(
         size: size,
@@ -29,6 +51,69 @@ void main() {
   }
 
   group('ProjectMobileDetailContent', () {
+    testWidgets('keeps Back on the standalone mobile detail route', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+
+      expect(find.byType(DesignSystemBackControl), findsOneWidget);
+    });
+
+    testWidgets('omits mobile Back inside the desktop split view', (
+      tester,
+    ) async {
+      final listPaneVisible = ValueNotifier(false);
+      addTearDown(listPaneVisible.dispose);
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+          size: const Size(1280, 800),
+          listPaneVisible: listPaneVisible,
+        ),
+      );
+
+      expect(find.byType(DesignSystemBackControl), findsNothing);
+    });
+
+    testWidgets('caps wide desktop detail content at the reading measure', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1440, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+          size: const Size(1440, 900),
+        ),
+      );
+      await tester.pump();
+
+      final tokens = tester
+          .element(find.byType(ProjectMobileDetailContent))
+          .designTokens;
+      expect(
+        tester.getSize(find.byType(CustomScrollView)).width,
+        kDetailContentMaxWidth - tokens.spacing.step5 * 2,
+      );
+    });
+
     testWidgets('lazily builds far task rows as the detail page scrolls', (
       tester,
     ) async {

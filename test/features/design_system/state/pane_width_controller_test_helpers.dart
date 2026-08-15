@@ -33,6 +33,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
   String? listPaneWidth,
   String? journalListPaneWidth,
   String? sidebarCollapsed,
+  String? listPaneCollapsed,
 }) async {
   await tearDownTestGetIt();
   final mocks = await setUpTestGetIt();
@@ -44,6 +45,7 @@ Future<ProviderContainer> hCreateContainerWithPersistedWidths({
       listPaneWidthKey: listPaneWidth,
       journalListPaneWidthKey: journalListPaneWidth,
       sidebarCollapsedKey: sidebarCollapsed,
+      listPaneCollapsedKey: listPaneCollapsed,
     },
   );
   return ProviderContainer();
@@ -81,6 +83,7 @@ Future<PaneWidths> hHydrateWith({
   String? listPaneWidth,
   String? journalListPaneWidth,
   String? sidebarCollapsed,
+  String? listPaneCollapsed,
 }) async {
   when(
     () => getIt<SettingsDb>().itemsByKeys(any()),
@@ -90,6 +93,7 @@ Future<PaneWidths> hHydrateWith({
       listPaneWidthKey: listPaneWidth,
       journalListPaneWidthKey: journalListPaneWidth,
       sidebarCollapsedKey: sidebarCollapsed,
+      listPaneCollapsedKey: listPaneCollapsed,
     },
   );
   final container = ProviderContainer();

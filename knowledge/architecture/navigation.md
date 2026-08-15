@@ -32,6 +32,22 @@ sources:
     resource: ../../lib/services/nav_service.dart
     title: NavService — tab index and delegate registry
     last_modified: 2026-07-28
+  - id: pane-width-controller
+    resource: ../../lib/features/design_system/state/pane_width_controller.dart
+    title: Persisted desktop pane widths and collapse state
+    last_modified: 2026-08-15
+  - id: list-detail-focus
+    resource: ../../lib/features/keyboard/ui/list_detail_focus_traversal.dart
+    title: Shared list/detail focus ownership
+    last_modified: 2026-08-15
+  - id: task-split
+    resource: ../../lib/features/tasks/ui/pages/tasks_root_page.dart
+    title: Tasks desktop split host
+    last_modified: 2026-08-15
+  - id: project-split
+    resource: ../../lib/features/projects/ui/pages/projects_tab_page.dart
+    title: Projects desktop split host
+    last_modified: 2026-08-15
 ---
 
 # One stack per tab
@@ -75,6 +91,39 @@ flowchart TD
 An `IndexedStack` keeps every tab **mounted**. Tabs preserve scroll position and
 in-flight state across switches, at the cost of every enabled tab holding its
 widgets in memory.
+
+# Desktop list focus is not Back navigation
+
+The Tasks and Projects desktop splits can hide their browse list once a detail
+is selected. This is a **focus-mode layout change**, not a navigation event:
+the list remains mounted inside `Offstage`, excluded from focus and semantics,
+so its query, filters, search text, selection and scroll position survive. The
+divider is offstage with it, and the detail expands into the released width.
+
+The shared `PaneWidthController` persists one Tasks/Projects collapse
+preference alongside the shared expanded list width. Width changes are ignored
+while collapsed, making expand restore the exact previous width. A split with no
+selected detail always forces the list visible even if the saved preference is
+collapsed; there must be somewhere meaningful for focus mode to land.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Browse
+  Browse --> Focus: selected detail + Hide list
+  Focus --> Browse: Show list
+  Focus --> Browse: selection cleared (effective guard)
+  note right of Focus
+    List subtree remains mounted offstage.
+    Keyboard focus moves into detail.
+  end note
+```
+
+**Back continues to mean history.** A Projects detail embedded in the desktop
+split never shows Back; its sibling list or Show list control owns lateral
+movement. A Tasks detail shows Back only when a linked task was pushed above the
+base task in `desktopTaskDetailStack`. Show list is a separate control and stays
+available over loading, error and empty detail states, so hiding the list cannot
+strand the user.
 
 # NavService owns the index
 

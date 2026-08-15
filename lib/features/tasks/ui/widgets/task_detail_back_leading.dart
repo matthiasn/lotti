@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
 /// Shared desktop "back" leading for the task detail app bars.
@@ -23,16 +26,46 @@ class TaskDetailDesktopBackLeading extends StatelessWidget {
     return ValueListenableBuilder<List<String>>(
       valueListenable: getIt<NavService>().desktopTaskDetailStack,
       builder: (context, stack, _) {
-        if (stack.length <= 1) {
+        final showBack = stack.length > 1;
+        if (!showBack) {
           return const SizedBox.shrink();
         }
+
         return Padding(
-          padding: const EdgeInsets.only(left: 8),
+          padding: EdgeInsets.only(left: context.designTokens.spacing.step2),
           child: GlassBackButton(
             onPressed: () => getIt<NavService>().popDesktopTaskDetail(),
           ),
         );
       },
+    );
+  }
+}
+
+/// Glass action used by the desktop task split to restore its hidden list.
+class TaskDetailShowListButton extends StatelessWidget {
+  const TaskDetailShowListButton({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.messages.listPaneShowTooltip;
+
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: GlassActionButton(
+          onTap: onPressed,
+          child: Icon(
+            Icons.view_sidebar_rounded,
+            size: IconSizes.m,
+            color: context.designTokens.colors.text.onInteractiveAlert,
+          ),
+        ),
+      ),
     );
   }
 }

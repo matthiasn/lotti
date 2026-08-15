@@ -3630,6 +3630,8 @@
   "linkSummaryNewTaskSupersedesPrimary": "Deze taak vervangt de nieuwe taak",
   "linkSummarySupersedesInverse": "Deze taak wordt vervangen door {target}",
   "linkSummarySupersedesPrimary": "Deze taak vervangt {target}",
+  "listPaneHideTooltip": "Lijst verbergen",
+  "listPaneShowTooltip": "Lijst tonen",
   "loggingDomainAgentRuntime": "Agent runtime",
   "loggingDomainAgentWorkflow": "Werkstroom van het agentschap",
   "loggingDomainAi": "AI",

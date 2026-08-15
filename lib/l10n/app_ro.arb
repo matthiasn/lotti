@@ -3238,6 +3238,8 @@
   "linkSummarySupersedesInverse": "Această sarcină este înlocuită de {target}",
   "linkSummarySupersedesPrimary": "Această sarcină înlocuiește {target}",
   "linkTaskButton": "Asociați",
+  "listPaneHideTooltip": "Ascundeți lista",
+  "listPaneShowTooltip": "Afișați lista",
   "logbookEmptyHint": "Creați prima dvs. intrare pentru a începe jurnalul.",
   "logbookEmptyTitle": "Jurnalul dvs. este gol",
   "logbookNewEntriesHint": "Intrările noi se vor deschide aici.",

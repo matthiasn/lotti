@@ -33,6 +33,7 @@ void main() {
       VoidCallback? onSearchCleared,
       ValueChanged<String>? onSearchPressed,
       VoidCallback? onFilterPressed,
+      Widget? titleLeading,
       Widget? titleTrailing,
       Widget? titleSuffix,
       bool filtersActive = false,
@@ -47,6 +48,7 @@ void main() {
         onSearchCleared: onSearchCleared ?? () {},
         onSearchPressed: onSearchPressed ?? (_) {},
         onFilterPressed: onFilterPressed ?? () {},
+        titleLeading: titleLeading,
         titleTrailing: titleTrailing,
         titleSuffix: titleSuffix,
         filtersActive: filtersActive,
@@ -155,6 +157,31 @@ void main() {
         expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
       },
     );
+
+    testWidgets('renders an actionable leading control before the title', (
+      tester,
+    ) async {
+      var taps = 0;
+      await pump(
+        tester,
+        header: buildHeader(
+          titleLeading: IconButton(
+            key: const ValueKey('title-leading'),
+            onPressed: () => taps++,
+            icon: const Icon(Icons.view_sidebar_rounded),
+          ),
+        ),
+      );
+
+      final leading = find.byKey(const ValueKey('title-leading'));
+      expect(leading, findsOneWidget);
+      expect(
+        tester.getCenter(leading).dx,
+        lessThan(tester.getCenter(find.text('Tasks')).dx),
+      );
+      await tester.tap(leading);
+      expect(taps, 1);
+    });
 
     testWidgets('renders the inline titleSuffix after the title', (
       tester,

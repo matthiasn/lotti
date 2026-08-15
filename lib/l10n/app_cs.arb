@@ -3245,6 +3245,8 @@
   "linkSummarySupersedesInverse": "Tento úkol je nahrazen úkolem {target}",
   "linkSummarySupersedesPrimary": "Tento úkol nahrazuje {target}",
   "linkTaskButton": "Propojit",
+  "listPaneHideTooltip": "Skrýt seznam",
+  "listPaneShowTooltip": "Zobrazit seznam",
   "logbookEmptyHint": "Vytvoř svůj první záznam a začni si psát deník.",
   "logbookEmptyTitle": "Tvůj deník je prázdný",
   "logbookNewEntriesHint": "Nové záznamy se otevřou tady.",

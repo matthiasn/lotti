@@ -74,5 +74,21 @@ void main() {
 
       expect(tapped, isTrue);
     });
+
+    testWidgets('can suppress Back for an embedded desktop detail', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const DesignSystemShowcaseMobileDetailHeader(
+            foregroundColor: Colors.white,
+            showBackControl: false,
+          ),
+        ),
+      );
+
+      expect(find.byType(DesignSystemBackControl), findsNothing);
+      expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+    });
   });
 }

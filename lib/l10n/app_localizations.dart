@@ -14076,6 +14076,18 @@ abstract class AppLocalizations {
   /// **'Link'**
   String get linkTaskButton;
 
+  /// No description provided for @listPaneHideTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide list'**
+  String get listPaneHideTooltip;
+
+  /// No description provided for @listPaneShowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show list'**
+  String get listPaneShowTooltip;
+
   /// No description provided for @logbookEmptyHint.
   ///
   /// In en, this message translates to:

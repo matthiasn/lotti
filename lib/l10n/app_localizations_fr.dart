@@ -8401,6 +8401,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkTaskButton => 'Lier';
 
   @override
+  String get listPaneHideTooltip => 'Masquer la liste';
+
+  @override
+  String get listPaneShowTooltip => 'Afficher la liste';
+
+  @override
   String get logbookEmptyHint =>
       'Crée ta première entrée pour commencer ton journal.';
 

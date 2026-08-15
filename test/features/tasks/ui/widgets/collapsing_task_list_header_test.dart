@@ -374,10 +374,12 @@ void main() {
       bool filtersActive = false,
       bool searchActive = false,
       String? contextLabel,
+      Widget? leading,
     }) {
       return makeTestableWidgetNoScroll(
         Scaffold(
           body: TaskListCompactHeaderBar(
+            leading: leading,
             title: 'Tasks',
             searchTooltip: 'Search tasks…',
             filterTooltip: 'Filter tasks',
@@ -406,6 +408,36 @@ void main() {
       await tester.tap(find.byKey(CollapsingTaskListHeaderKeys.compactTitle));
       expect(expandRequests, 1);
       expect(searchRequests, 0);
+    });
+
+    testWidgets('renders a leading focus-mode control before the title', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        subject(
+          leading: IconButton(
+            key: const ValueKey('compact-leading'),
+            onPressed: () => taps++,
+            icon: const Icon(Icons.view_sidebar_rounded),
+          ),
+        ),
+      );
+
+      final leading = find.byKey(const ValueKey('compact-leading'));
+      expect(leading, findsOneWidget);
+      expect(
+        tester.getCenter(leading).dx,
+        lessThan(
+          tester
+              .getCenter(
+                find.byKey(CollapsingTaskListHeaderKeys.compactTitle),
+              )
+              .dx,
+        ),
+      );
+      await tester.tap(leading);
+      expect(taps, 1);
     });
 
     testWidgets('search button requests expand-and-focus', (tester) async {

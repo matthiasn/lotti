@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/tasks
     title: Tasks feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-15
   - id: nav
     resource: ../../../lib/services/nav_service.dart
     title: desktopTaskDetailStack
@@ -106,6 +106,18 @@ selects the row and moves focus to a real detail control **after the detail fram
 renders**, skipping the independently keyboard-resizable divider. During the
 detail crossfade, outgoing pages are wrapped in `ExcludeFocus`, so the bridge
 cannot restore focus into a task that is only still present for animation.
+
+With a base task selected, the list header can enter focus mode. The list and
+divider become offstage while the detail takes the full split width; the list
+subtree stays mounted, preserving its filter, search, paging and scroll state.
+The Show list action is owned by `TasksRootPage`, so it remains reachable even
+while task data is loading. Its collapse preference and expanded width are
+shared with Projects and persisted by `PaneWidthController`. Focus mode uses the
+released canvas without turning media into wall-sized chrome: cover art remains
+16:9 but is capped at the shared 960 pt detail measure.
+
+This does not change the detail stack: Show list only changes layout, while Back
+still appears only when `desktopTaskDetailStack` is deeper than the base task.
 
 # Sidebar activity
 

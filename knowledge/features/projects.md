@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-08-14
+    last_modified: 2026-08-15
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
@@ -160,6 +160,17 @@ The tab is driven by `ProjectsOverviewSnapshot`, `ProjectCategoryGroup`,
 `ProjectListItemData`, `ProjectTaskRollupData` and `ProjectsFilter` — **not raw
 entities** — so the UI renders grouped rows without recomputing counts,
 categories and rollups in each widget.
+
+On desktop the overview and selected detail share the standard resizable
+list/detail traversal. Once a project is selected, Hide list enters focus mode:
+the list and divider go offstage without being disposed, and Show list remains
+available over every detail state, including initial loading and errors. A
+desktop project detail never renders the mobile Back affordance because the
+split has no parent route to pop; Back remains on the standalone mobile detail
+route. Tasks and Projects share the persisted collapse preference and expanded
+list width. The focused header and body are centered on the shared 960 pt detail
+measure, keeping report lines and cards readable when the list releases a wide
+canvas.
 
 # Health is agent-authored
 
