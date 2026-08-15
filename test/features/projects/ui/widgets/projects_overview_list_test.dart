@@ -53,7 +53,6 @@ void main() {
             groups: groups,
             onProjectTap: (_) {},
           ),
-          overrides: noOneLinerOverrides(['p1', 'p2']),
         ),
       );
       await tester.pump();
@@ -80,7 +79,6 @@ void main() {
             ],
             onProjectTap: (i) => tapped = i,
           ),
-          overrides: noOneLinerOverrides(['p-tap']),
         ),
       );
       await tester.pump();

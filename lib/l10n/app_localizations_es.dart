@@ -9718,11 +9718,26 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo visible cuando se muestran las entradas privadas';
 
   @override
+  String get projectActionAddTask => 'Añadir tarea';
+
+  @override
+  String get projectActionArchive => 'Archivar';
+
+  @override
+  String get projectActionDelete => 'Eliminar';
+
+  @override
+  String get projectActionEdit => 'Editar proyecto';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Todavía no se ha configurado un agente de proyecto para este proyecto.';
 
   @override
   String get projectAgentSectionTitle => 'Agente';
+
+  @override
+  String get projectArchiveSuccess => 'Proyecto archivado';
 
   @override
   String projectCountSummary(int count) {
@@ -9740,6 +9755,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Crear proyecto';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'El proyecto se eliminará. Sus tareas permanecerán en tu diario.';
+
+  @override
+  String get projectDeleteConfirmTitle => '¿Eliminar este proyecto?';
+
+  @override
+  String get projectDeleteSuccess => 'Proyecto eliminado';
 
   @override
   String get projectDetailTitle => 'Detalles del proyecto';
@@ -9775,6 +9800,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Vigilar';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return '$confidence % de confianza';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Ejecuta el agente del proyecto para crear una evaluación a partir de la actividad más reciente del proyecto y sus tareas.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Aún no hay informe de salud';
+
+  @override
+  String get projectHealthRunNow => 'Generar informe';
 
   @override
   String get projectHealthSectionTitle => 'Salud del proyecto';
@@ -9843,6 +9883,31 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'No se pudo actualizar la recomendación. Inténtalo de nuevo.';
+
+  @override
+  String get projectsClearFilters => 'Borrar filtros';
+
+  @override
+  String get projectsEmptyBody =>
+      'Crea un proyecto para reunir tareas relacionadas, progreso e información del agente.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Los proyectos completados y archivados están apartados. Cambia a Todos para volver a verlos.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'No hay proyectos actuales';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Ajusta la búsqueda o los filtros para volver a mostrar proyectos coincidentes.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Ningún proyecto coincide con esta vista';
+
+  @override
+  String get projectsEmptyTitle => 'Empieza tu primer proyecto';
 
   @override
   String get projectsFilterStatusLabel => 'Estado:';
@@ -9950,6 +10015,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Ver bloqueo';
 
   @override
+  String get projectsScopeAll => 'Todos';
+
+  @override
+  String get projectsScopeCurrent => 'Actuales';
+
+  @override
+  String get projectsSortActionable => 'Requiere atención';
+
+  @override
+  String get projectsSortName => 'Nombre';
+
+  @override
+  String get projectsSortRecent => 'Actualizados recientemente';
+
+  @override
+  String get projectsSortTargetDate => 'Fecha objetivo';
+
+  @override
+  String get projectsSortTooltip => 'Ordenar proyectos';
+
+  @override
   String get projectStatusActive => 'Activo';
 
   @override
@@ -9979,7 +10065,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Categoría no disponible';
+
+  @override
   String get projectTargetDateLabel => 'Fecha objetivo';
+
+  @override
+  String get projectTaskProgressNone => 'No hay tareas';
 
   @override
   String get projectTitleLabel => 'Título del proyecto';

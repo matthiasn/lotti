@@ -47,13 +47,10 @@ class CategoryTag extends StatelessWidget {
       return child;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: child,
-      ),
+    return _InteractiveTagSurface(
+      borderRadius: tokens.radii.xs,
+      onTap: onTap!,
+      child: child,
     );
   }
 }
@@ -155,13 +152,10 @@ class ProjectStatusPill extends StatelessWidget {
       return child;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        onTap: onTap,
-        child: child,
-      ),
+    return _InteractiveTagSurface(
+      borderRadius: tokens.radii.badgesPills,
+      onTap: onTap!,
+      child: child,
     );
   }
 }
@@ -295,12 +289,39 @@ class OutlinedMetaTag extends StatelessWidget {
       return child;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: child,
+    return _InteractiveTagSurface(
+      borderRadius: tokens.radii.xs,
+      onTap: onTap!,
+      child: child,
+    );
+  }
+}
+
+class _InteractiveTagSurface extends StatelessWidget {
+  const _InteractiveTagSurface({
+    required this.borderRadius,
+    required this.onTap,
+    required this.child,
+  });
+
+  final double borderRadius;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(borderRadius),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+            child: Align(alignment: Alignment.centerLeft, child: child),
+          ),
+        ),
       ),
     );
   }

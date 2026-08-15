@@ -54,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Slow local agents get more time to finish.** An agent wake can now run for
   up to ten minutes instead of two, so larger local reasoning models are less
   likely to be aborted before they return.
+- **Projects now read like an intentional workspace.** Current work opens first,
+  completed and archived projects sit behind All, actionable projects sort to
+  the top, category groups collapse for focus, long names keep two lines, and
+  empty projects say "No tasks" instead of looking unhealthy. Project details
+  now show the description and Add task action, use real edit/archive/delete
+  controls, and present only agent-authored health with a clear unassessed state
+  when no report exists. Visible agent summaries now arrive with the list and
+  participate in project search instead of shifting into rows one at a time.
 - **Editing a goal is two steps, not three.** The separate "What do you want
   to work toward?" page is gone from the edit flow: the statement is a
   single-line field at the top of the edit page, with the suggestion chips

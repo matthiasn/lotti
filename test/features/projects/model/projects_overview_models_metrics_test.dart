@@ -114,6 +114,58 @@ void main() {
       expect(result[1].projects, hasLength(2));
     });
 
+    test('actionable sort puts active work before open and completed work', () {
+      final result = applyProjectsFilter(
+        makeSnapshot(),
+        const ProjectsFilter(),
+      );
+
+      expect(
+        result.first.projects.map((item) => item.project.data.title),
+        ['CI Pipeline', 'Backend API', 'Legacy Cleanup'],
+      );
+    });
+
+    test(
+      'target-date sort puts nearest dated projects first and null last',
+      () {
+        ProjectListItemData dated(String title, DateTime? targetDate) {
+          return makeTestProjectListItemData(
+            project: makeTestProject(
+              title: title,
+              status: openStatus,
+              targetDate: targetDate,
+              categoryId: catEngineering.id,
+            ),
+            category: catEngineering,
+          );
+        }
+
+        final snapshot = ProjectsOverviewSnapshot(
+          groups: [
+            ProjectCategoryGroup(
+              categoryId: catEngineering.id,
+              category: catEngineering,
+              projects: [
+                dated('No date', null),
+                dated('Later', DateTime(2026, 9)),
+                dated('Sooner', DateTime(2026, 8)),
+              ],
+            ),
+          ],
+        );
+
+        final result = applyProjectsFilter(
+          snapshot,
+          const ProjectsFilter(sortMode: ProjectsSortMode.targetDate),
+        );
+        expect(
+          result.single.projects.map((item) => item.project.data.title),
+          ['Sooner', 'Later', 'No date'],
+        );
+      },
+    );
+
     test('status filter includes only projects with matching status', () {
       final snapshot = makeSnapshot();
       const filter = ProjectsFilter(
@@ -517,6 +569,7 @@ void main() {
       ),
       textQuery: f.textQuery,
       searchMode: f.searchMode,
+      sortMode: f.sortMode,
     );
 
     glados.Glados<ProjectsFilter>(

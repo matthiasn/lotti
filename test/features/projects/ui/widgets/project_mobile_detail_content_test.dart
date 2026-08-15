@@ -1,7 +1,10 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -21,6 +24,7 @@ void main() {
     Widget child, {
     Size size = const Size(430, 900),
     ValueNotifier<bool>? listPaneVisible,
+    TextScaler textScaler = TextScaler.noScaling,
   }) {
     final content = listPaneVisible == null
         ? child
@@ -47,11 +51,162 @@ void main() {
       mediaQueryData: MediaQueryData(
         size: size,
         padding: const EdgeInsets.only(top: 20),
+        textScaler: textScaler,
       ),
     );
   }
 
   group('ProjectMobileDetailContent', () {
+    testWidgets('uses a real overflow menu and forwards project actions', (
+      tester,
+    ) async {
+      var editRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onEdit: () => editRequests++,
+            onArchive: () {},
+            onDelete: () {},
+          ),
+        ),
+      );
+
+      final menu = tester.widget<DesignSystemContextMenuButton>(
+        find.byType(DesignSystemContextMenuButton),
+      );
+      expect(menu.items.map((item) => item.label), [
+        'Edit project',
+        'Archive',
+        'Delete',
+      ]);
+      menu.items.first.onTap!();
+      expect(editRequests, 1);
+    });
+
+    testWidgets('keeps interactive metadata usable at 200% text scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onCategoryTap: () {},
+            onStatusTap: () {},
+          ),
+          size: const Size(320, 900),
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Test Project'), findsOneWidget);
+      final categoryTarget = find.ancestor(
+        of: find.text('Work'),
+        matching: find.byType(InkWell),
+      );
+      expect(
+        tester.getSize(categoryTarget.first).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
+    testWidgets('shows an honest empty health state without agent metrics', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(HealthPanel), findsNothing);
+      expect(find.text('No health report yet'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
+    });
+
+    testWidgets('renders the user-authored project description', (
+      tester,
+    ) async {
+      final project = makeTestProject().copyWith(
+        entryText: const EntryText(
+          plainText:
+              'Keep the habitat launch work aligned with Mission Control.',
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(project: project),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Description'), findsOneWidget);
+      expect(
+        find.text(
+          'Keep the habitat launch work aligned with Mission Control.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('opens the first blocked task from the health action', (
+      tester,
+    ) async {
+      final openTask = makeTestTask(id: 'open-task', title: 'Open task');
+      final blockedTask =
+          makeTestTask(
+            id: 'blocked-task',
+            title: 'Blocked task',
+          ).copyWith(
+            data: makeTestTask().data.copyWith(
+              title: 'Blocked task',
+              status: TaskStatus.blocked(
+                id: 'blocked-status',
+                createdAt: DateTime(2026, 3, 20),
+                utcOffset: 0,
+                reason: 'Waiting for launch clearance',
+              ),
+            ),
+          );
+      TaskSummary? opened;
+      final record = makeTestProjectRecord(
+        healthMetrics: makeTestProjectHealthMetrics(
+          band: ProjectHealthBand.blocked,
+        ),
+        highlightedTaskSummaries: [
+          makeTestTaskSummary(task: openTask),
+          makeTestTaskSummary(task: blockedTask),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onTaskTap: (summary) => opened = summary,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('View blocker'));
+      await tester.pump();
+
+      expect(opened?.task.meta.id, 'blocked-task');
+    });
+
     testWidgets('keeps Back on the standalone mobile detail route', (
       tester,
     ) async {
@@ -114,7 +269,7 @@ void main() {
         kDetailContentMaxWidth - tokens.spacing.step5 * 2,
       );
       expect(
-        tester.getSize(find.byType(HealthPanel)).width,
+        tester.getSize(find.byType(ProjectHealthEmptyState)).width,
         tester.getSize(find.byType(CustomScrollView)).width,
       );
     });
@@ -154,7 +309,7 @@ void main() {
       expect(find.text('Task 49'), findsOneWidget);
     });
 
-    testWidgets('places the risk chip in the metadata row below the title', (
+    testWidgets('shows health once in its assessment panel below metadata', (
       tester,
     ) async {
       final record = makeTestProjectRecord(
@@ -198,8 +353,7 @@ void main() {
 
       expect((statusTop.dy - titleTop.dy).abs(), lessThan(8));
       expect(riskTop.dy, greaterThan(titleTop.dy));
-      expect((riskTop.dy - categoryTop.dy).abs(), lessThan(8));
-      expect(riskTop.dx, greaterThan(categoryTop.dx));
+      expect(riskTop.dy, greaterThan(categoryTop.dy));
       expect(statusTop.dx, greaterThan(categoryTop.dx));
     });
 
@@ -464,7 +618,6 @@ ProjectRecord _makeRecordWithNoCategory() {
       title: 'Uncategorised project',
     ),
     category: null,
-    healthScore: 78,
     healthMetrics: null,
     reportNextWakeAt: null,
     completedTaskCount: 0,

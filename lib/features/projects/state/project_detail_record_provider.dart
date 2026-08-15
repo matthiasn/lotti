@@ -8,12 +8,10 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
-import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:meta/meta.dart';
 
 /// Composes the read-model ([ProjectRecord]) that `ProjectDetailsPage` renders.
 ///
@@ -71,7 +69,6 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
       return ProjectRecord(
         project: project,
         category: category,
-        healthScore: healthScoreFromMetrics(metrics),
         healthMetrics: metrics,
         reportNextWakeAt: nextWakeAt,
         completedTaskCount: completedTaskCount,
@@ -166,27 +163,6 @@ int _taskStatusRank(TaskStatus status) => switch (status) {
   TaskDone() => 5,
   TaskRejected() => 6,
 };
-
-/// Pure health-score formula: per-band base score plus a confidence
-/// adjustment of `((confidence - 0.5) * 12).round()`, clamped to [0, 100].
-/// Public-for-tests so the arithmetic can be property-tested directly.
-@visibleForTesting
-int healthScoreFromMetrics(ProjectHealthMetrics? metrics) {
-  final base = switch (metrics?.band) {
-    ProjectHealthBand.onTrack => 90,
-    ProjectHealthBand.surviving => 78,
-    ProjectHealthBand.watch => 64,
-    ProjectHealthBand.atRisk => 42,
-    ProjectHealthBand.blocked => 18,
-    null => 0,
-  };
-  final adjustment = switch (metrics?.confidence) {
-    final double confidence => ((confidence - 0.5) * 12).round(),
-    null => 0,
-  };
-
-  return (base + adjustment).clamp(0, 100);
-}
 
 /// Injectable "current time" source for the detail UI (relative "updated X ago"
 /// labels and countdowns). Defaults to `clock.now`; override in tests for

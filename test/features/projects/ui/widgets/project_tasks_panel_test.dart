@@ -74,6 +74,28 @@ void main() {
       expect(find.text('Project Tasks'), findsOneWidget);
       expect(find.text('0'), findsOneWidget); // count badge
     });
+
+    testWidgets('exposes Add task only when the action is wired', (
+      tester,
+    ) async {
+      var addRequests = 0;
+      final record = makeTestProjectRecord();
+
+      await tester.pumpWidget(wrap(ProjectTasksPanel(record: record)));
+      expect(find.text('Add task'), findsNothing);
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: record,
+            onAddTask: () => addRequests++,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Add task'));
+
+      expect(addRequests, 1);
+    });
   });
 
   group('TaskSummaryRow', () {

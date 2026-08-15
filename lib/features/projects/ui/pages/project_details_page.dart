@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -11,13 +12,17 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
 /// Read-first project detail surface rendered in the desktop right pane and as
@@ -98,6 +103,12 @@ class ProjectDetailsPage extends ConsumerWidget {
               onTargetDateTap: () =>
                   _pickTargetDate(context, ref, record.project),
               onStatusTap: () => _pickStatus(context, ref, record.project),
+              onEdit: () => beamToNamed('/settings/projects/$projectId'),
+              onArchive: record.project.data.status is ProjectArchived
+                  ? null
+                  : () => _archiveProject(context, ref),
+              onDelete: () => _deleteProject(context, ref, record.project),
+              onAddTask: () => _addTask(context),
               onRefreshReport: identity == null
                   ? null
                   : () => ref
@@ -113,6 +124,7 @@ class ProjectDetailsPage extends ConsumerWidget {
                       );
                     },
               isRefreshingReport: isRefreshingReport,
+              isSaving: detailState.isSaving,
               onTaskTap: (summary) => beamToNamed(
                 '/tasks/${summary.task.meta.id}',
               ),
@@ -155,12 +167,11 @@ class ProjectDetailsPage extends ConsumerWidget {
       title: context.messages.habitCategoryLabel,
       currentCategoryId: project.meta.categoryId,
     );
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
-    );
-    await (controller..updateCategoryId(result.categoryOrNull?.id))
-        .saveChanges();
+    )..updateCategoryId(result.categoryOrNull?.id);
+    await _saveInlineUpdate(context, ref, controller);
   }
 
   Future<void> _pickTargetDate(
@@ -187,13 +198,12 @@ class ProjectDetailsPage extends ConsumerWidget {
       allowClear: currentDate != null,
     );
 
-    if (result == null) return;
+    if (result == null || !context.mounted) return;
 
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
-    );
-    await (controller..updateTargetDate(result.cleared ? null : result.date))
-        .saveChanges();
+    )..updateTargetDate(result.cleared ? null : result.date);
+    await _saveInlineUpdate(context, ref, controller);
   }
 
   Future<void> _pickStatus(
@@ -206,14 +216,93 @@ class ProjectDetailsPage extends ConsumerWidget {
       currentStatus: project.data.status,
     );
 
-    if (selected == null) {
+    if (selected == null || !context.mounted) {
       return;
     }
 
     final controller = ref.read(
       projectDetailControllerProvider(projectId).notifier,
+    )..updateStatus(selected);
+    await _saveInlineUpdate(context, ref, controller);
+  }
+
+  Future<void> _archiveProject(BuildContext context, WidgetRef ref) async {
+    final controller =
+        ref.read(
+          projectDetailControllerProvider(projectId).notifier,
+        )..updateStatus(
+          buildProjectStatus(ProjectStatusKind.archived, clock.now()),
+        );
+    final saved = await _saveInlineUpdate(context, ref, controller);
+    if (saved && context.mounted) {
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.projectArchiveSuccess,
+      );
+    }
+  }
+
+  Future<void> _deleteProject(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectEntry project,
+  ) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      title: context.messages.projectDeleteConfirmTitle,
+      message: context.messages.projectDeleteConfirmBody,
+      confirmLabel: context.messages.projectActionDelete,
     );
-    await (controller..updateStatus(selected)).saveChanges();
+    if (!confirmed || !context.mounted) return;
+
+    final deleted = await ref
+        .read(projectRepositoryProvider)
+        .deleteProject(project, deletedAt: clock.now());
+    if (!context.mounted) return;
+    if (!deleted) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectErrorUpdateFailed,
+      );
+      return;
+    }
+
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.projectDeleteSuccess,
+    );
+    _handleBack(context);
+  }
+
+  Future<void> _addTask(BuildContext context) async {
+    final task = await createTask(projectId: projectId);
+    if (!context.mounted) return;
+    if (task == null) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+      return;
+    }
+    beamToNamed('/tasks/${task.meta.id}');
+  }
+
+  Future<bool> _saveInlineUpdate(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectDetailController controller,
+  ) async {
+    await controller.saveChanges();
+    if (!context.mounted) return false;
+    final detailState = ref.read(projectDetailControllerProvider(projectId));
+    if (detailState.error == null) return true;
+
+    controller.discardChanges();
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.projectErrorUpdateFailed,
+    );
+    return false;
   }
 
   void _handleBack(BuildContext context) {

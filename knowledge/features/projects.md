@@ -160,6 +160,19 @@ The tab is driven by `ProjectsOverviewSnapshot`, `ProjectCategoryGroup`,
 `ProjectListItemData`, `ProjectTaskRollupData` and `ProjectsFilter` — **not raw
 entities** — so the UI renders grouped rows without recomputing counts,
 categories and rollups in each widget.
+Project-agent one-liners are resolved in two bulk reads when the snapshot is
+assembled, then stored on each `ProjectListItemData`. Rows therefore render a
+stable subtitle without one provider/query chain per card, and local search
+matches the same one-liner text that the list displays.
+
+The default `Current` scope keeps open, active, monitoring and on-hold work in
+view; `All` restores completed and archived projects. Projects sort by
+actionability, then target date and recent activity by default, with target
+date, recent and name alternatives. Category sections are collapsible, and
+completion uses the interactive accent rather than pretending low completion
+is a health warning. Projects with no tasks say so instead of showing a red
+zero-percent ring. First-run, current-empty and filtered-empty states each
+explain the state and offer the relevant recovery action.
 
 On desktop the overview and selected detail share the standard resizable
 list/detail traversal. Once a project is selected, Hide list enters focus mode:
@@ -184,7 +197,7 @@ flowchart LR
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
   Metrics --> HealthProv["projectHealthMetricsProvider"]
   Recos["projectRecommendationsProvider"] --> UI
-  HealthProv --> UI["Health chip / header, panel, detail sections"]
+  HealthProv --> UI["Health panel / neutral unassessed state"]
 ```
 
 The detail pages pull project entity data, linked tasks, the latest project-agent
@@ -193,8 +206,12 @@ recommendations, derived presentation data, and the wake controls.
 
 **There is no aggregator object** — each surface watches the providers it needs.
 
-**If the latest report has no parseable health payload yet, the app shows no
-health state** rather than falling back to invented local heuristics.
+**If the latest report has no parseable health payload yet, the app shows a
+neutral unassessed state** rather than falling back to invented local
+heuristics. Once metrics exist, the detail leads with the agent-authored band,
+rationale and optional confidence; it never converts a categorical assessment
+into a fabricated numeric score. Blocker navigation appears only when blocked
+tasks exist and opens the first actionable blocker.
 
 # When the project agent actually wakes
 

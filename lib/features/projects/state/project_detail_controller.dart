@@ -186,6 +186,20 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     );
   }
 
+  /// Restores the last persisted project after an optimistic inline edit
+  /// could not be saved.
+  void discardChanges() {
+    final original = _originalProject;
+    if (original == null) return;
+    _pendingProject = original;
+    state = state.copyWith(
+      project: original,
+      hasChanges: false,
+      isSaving: false,
+      error: null,
+    );
+  }
+
   /// Persists pending changes.
   ///
   /// If the status was changed, the previous status is appended to the

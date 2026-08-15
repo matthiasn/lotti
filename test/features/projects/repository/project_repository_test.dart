@@ -776,6 +776,61 @@ void main() {
     });
   });
 
+  group('deleteProject', () {
+    test('soft-deletes, persists, and notifies the project scope', () async {
+      final deletedMeta = projectMeta.copyWith(
+        updatedAt: testDate.add(const Duration(minutes: 1)),
+        deletedAt: testDate,
+      );
+      when(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).thenAnswer((_) async => deletedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.deleteProject(
+        projectEntry,
+        deletedAt: testDate,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => mockNotifications.notify({
+          projectEntityUpdateNotification(projectEntry.id),
+        }),
+      ).called(1);
+    });
+
+    test('does not notify when persistence rejects the delete', () async {
+      final deletedMeta = projectMeta.copyWith(deletedAt: testDate);
+      when(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).thenAnswer((_) async => deletedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final result = await repository.deleteProject(
+        projectEntry,
+        deletedAt: testDate,
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
+    });
+  });
+
   group('linkTaskToProject', () {
     test('creates new link when task has no existing project', () async {
       when(

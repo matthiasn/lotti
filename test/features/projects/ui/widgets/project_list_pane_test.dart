@@ -23,7 +23,7 @@ void main() {
     );
 
     return ProviderScope(
-      overrides: overrides ?? noOneLinerOverrides(['p1', 'p2']),
+      overrides: overrides ?? const [],
       child: makeTestableWidget2(
         Builder(
           builder: (context) => locale == null

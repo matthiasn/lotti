@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
@@ -37,9 +41,14 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onCategoryTap,
     this.onTargetDateTap,
     this.onStatusTap,
+    this.onEdit,
+    this.onArchive,
+    this.onDelete,
+    this.onAddTask,
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
     this.isRefreshingReport = false,
+    this.isSaving = false,
     this.onTaskTap,
     super.key,
   });
@@ -50,9 +59,14 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onCategoryTap;
   final VoidCallback? onTargetDateTap;
   final VoidCallback? onStatusTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onArchive;
+  final VoidCallback? onDelete;
+  final VoidCallback? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
   final bool isRefreshingReport;
+  final bool isSaving;
   final ValueChanged<TaskSummary>? onTaskTap;
 
   @override
@@ -74,6 +88,32 @@ class _ProjectMobileDetailContentState
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final splitController = ListDetailFocusTraversal.maybeOf(context);
+    final description = widget.record.project.entryText?.plainText.trim() ?? '';
+    final blockedTasks = widget.record.highlightedTaskSummaries
+        .where((summary) => summary.task.data.status is TaskBlocked)
+        .toList(growable: false);
+    final firstBlockedTask = blockedTasks.isEmpty ? null : blockedTasks.first;
+    final menuItems = <DesignSystemContextMenuItem>[
+      if (widget.onEdit != null)
+        DesignSystemContextMenuItem(
+          label: context.messages.projectActionEdit,
+          icon: Icons.edit_outlined,
+          onTap: widget.onEdit,
+        ),
+      if (widget.onArchive != null)
+        DesignSystemContextMenuItem(
+          label: context.messages.projectActionArchive,
+          icon: Icons.archive_outlined,
+          onTap: widget.onArchive,
+        ),
+      if (widget.onDelete != null)
+        DesignSystemContextMenuItem(
+          label: context.messages.projectActionDelete,
+          icon: Icons.delete_outline,
+          onTap: widget.onDelete,
+          isDestructive: true,
+        ),
+    ];
 
     return ColoredBox(
       color: ShowcasePalette.page(context),
@@ -89,6 +129,15 @@ class _ProjectMobileDetailContentState
                 foregroundColor: ShowcasePalette.highText(context),
                 onBack: widget.onBack,
                 showBackControl: splitController == null,
+                trailing: menuItems.isEmpty
+                    ? const SizedBox.shrink()
+                    : DesignSystemContextMenuButton(
+                        items: menuItems,
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).showMenuTooltip,
+                        iconColor: ShowcasePalette.highText(context),
+                      ),
               ),
             ),
           ),
@@ -109,20 +158,49 @@ class _ProjectMobileDetailContentState
                           SliverToBoxAdapter(
                             child: _ProjectMobileHeader(
                               record: widget.record,
-                              onCategoryTap: widget.onCategoryTap,
-                              onTargetDateTap: widget.onTargetDateTap,
-                              onStatusTap: widget.onStatusTap,
+                              onCategoryTap: widget.isSaving
+                                  ? null
+                                  : widget.onCategoryTap,
+                              onTargetDateTap: widget.isSaving
+                                  ? null
+                                  : widget.onTargetDateTap,
+                              onStatusTap: widget.isSaving
+                                  ? null
+                                  : widget.onStatusTap,
                             ),
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(height: tokens.spacing.step5),
                           ),
                           SliverToBoxAdapter(
-                            child: HealthPanel(record: widget.record),
+                            child: widget.record.healthMetrics == null
+                                ? ProjectHealthEmptyState(
+                                    onRunReport: widget.onRefreshReport,
+                                  )
+                                : HealthPanel(
+                                    record: widget.record,
+                                    onViewBlockerPressed:
+                                        firstBlockedTask == null ||
+                                            widget.onTaskTap == null
+                                        ? null
+                                        : () => widget.onTaskTap!(
+                                            firstBlockedTask,
+                                          ),
+                                  ),
                           ),
                           SliverToBoxAdapter(
                             child: SizedBox(height: tokens.spacing.step6),
                           ),
+                          if (description.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: _ProjectDescription(
+                                description: description,
+                              ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step6),
+                            ),
+                          ],
                           SliverToBoxAdapter(
                             child: ExpandableReportSection(
                               title:
@@ -151,6 +229,7 @@ class _ProjectMobileDetailContentState
                           ProjectTasksSliverPanel(
                             record: widget.record,
                             onTaskTap: widget.onTaskTap,
+                            onAddTask: widget.onAddTask,
                           ),
                         ],
                       ),
@@ -158,6 +237,41 @@ class _ProjectMobileDetailContentState
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectDescription extends StatelessWidget {
+  const _ProjectDescription({required this.description});
+
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              context.messages.projectShowcaseDescriptionTitle,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: ShowcasePalette.highText(context),
+              ),
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            description,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: ShowcasePalette.highText(context),
             ),
           ),
         ],
@@ -183,7 +297,6 @@ class _ProjectMobileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = record.category;
-    final healthMetrics = record.healthMetrics;
     final titleStyle = tokens.typography.styles.heading.heading3.copyWith(
       color: ShowcasePalette.highText(context),
     );
@@ -212,9 +325,12 @@ class _ProjectMobileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      record.project.data.title,
-                      style: titleStyle,
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        record.project.data.title,
+                        style: titleStyle,
+                      ),
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step4),
@@ -222,9 +338,12 @@ class _ProjectMobileHeader extends StatelessWidget {
                 ],
               )
             else ...[
-              Text(
-                record.project.data.title,
-                style: titleStyle,
+              Semantics(
+                header: true,
+                child: Text(
+                  record.project.data.title,
+                  style: titleStyle,
+                ),
               ),
               SizedBox(height: tokens.spacing.step3),
               Align(
@@ -268,8 +387,6 @@ class _ProjectMobileHeader extends StatelessWidget {
                     onTap: onTargetDateTap,
                     isPlaceholder: true,
                   ),
-                if (healthMetrics != null)
-                  ProjectHealthBandTag(band: healthMetrics.band),
               ],
             ),
           ],

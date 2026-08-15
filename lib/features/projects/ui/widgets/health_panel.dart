@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/progress_bars/design_system_circular_progress.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// The health-score panel shown at the top of the detail pane.
+/// Agent-authored project health, paired with factual task rollups.
+///
+/// The panel never invents a score. It leads with the report's categorical
+/// band, rationale, and optional confidence, then shows completion and blocker
+/// counts from the linked tasks. Callers render [ProjectHealthEmptyState]
+/// instead when the agent has not produced parseable health metrics yet.
 class HealthPanel extends StatelessWidget {
   const HealthPanel({
     required this.record,
@@ -21,185 +28,197 @@ class HealthPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final metrics = record.healthMetrics;
+    assert(
+      metrics != null,
+      'HealthPanel requires agent-authored health metrics.',
+    );
+    if (metrics == null) {
+      return const SizedBox.shrink();
+    }
+
     final progressValue = record.totalTaskCount == 0
         ? 0.0
         : record.completedTaskCount / record.totalTaskCount;
+    final confidence = metrics.confidence;
+    final showBlockerAction =
+        record.blockedTaskCount > 0 && onViewBlockerPressed != null;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 420;
-
-        final healthRing = DesignSystemCircularProgress(
-          value: record.healthScore / 100,
-          size: DesignSystemCircularProgressSize.large,
-          progressColor: ShowcasePalette.amber(context),
-          trackColor: ShowcasePalette.border(context),
-          semanticsLabel: context.messages.projectShowcaseHealthScoreTitle,
-          center: Text('${record.healthScore}'),
-        );
-
-        final summary = _HealthSummary(
-          record: record,
-          tokens: tokens,
-        );
-
-        final blockerButton = DesignSystemButton(
-          label: context.messages.projectShowcaseViewBlocker,
-          variant: DesignSystemButtonVariant.secondary,
-          onPressed: onViewBlockerPressed,
-        );
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: ShowcasePalette.healthSurface(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ShowcasePalette.border(context)),
-          ),
-          child: Column(
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isCompact) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    healthRing,
-                    SizedBox(width: tokens.spacing.step5),
-                    Expanded(child: summary),
-                  ],
-                ),
-                SizedBox(height: tokens.spacing.step4),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: blockerButton,
-                ),
-              ] else
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    healthRing,
-                    SizedBox(width: tokens.spacing.step5),
-                    Expanded(child: summary),
-                    SizedBox(width: tokens.spacing.step4),
-                    blockerButton,
-                  ],
-                ),
-              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: ShowcasePalette.border(context),
-              ),
-              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
-              DesignSystemProgressBar(
-                value: progressValue,
-                label: context.messages.navTabTitleTasks,
-                progressText: context.messages.projectShowcaseTasksCompleted(
-                  record.completedTaskCount,
-                  record.totalTaskCount,
-                ),
-                labelColor: ShowcasePalette.highText(context),
-                progressColor: ShowcasePalette.highText(context),
-                fillColor: ShowcasePalette.teal(context),
-                trackColor: ShowcasePalette.border(context),
-              ),
-              SizedBox(height: tokens.spacing.step4 + tokens.spacing.step1),
-              Wrap(
-                spacing: tokens.spacing.step4,
-                runSpacing: tokens.spacing.step3,
-                children: [
-                  _LegendItem(
-                    color: ShowcasePalette.teal(context),
-                    label: context.messages.projectShowcaseCompletedLegend(
-                      record.completedTaskCount,
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    context.messages.projectHealthSectionTitle,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: ShowcasePalette.highText(context),
                     ),
                   ),
-                  _LegendItem(
-                    color: ShowcasePalette.error(context),
-                    label: context.messages.projectShowcaseBlockedLegend(
-                      record.blockedTaskCount,
-                    ),
-                  ),
-                ],
+                ),
               ),
+              SizedBox(width: tokens.spacing.step3),
+              ProjectHealthBandTag(band: metrics.band),
             ],
           ),
-        );
-      },
+          SizedBox(height: tokens.spacing.step4),
+          Text(
+            metrics.rationale,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: ShowcasePalette.highText(context),
+            ),
+          ),
+          if (confidence != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              context.messages.projectHealthConfidence(
+                (confidence * 100).round(),
+              ),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ShowcasePalette.mediumText(context),
+              ),
+            ),
+          ],
+          if (record.blockedTaskCount > 0) ...[
+            SizedBox(height: tokens.spacing.step4),
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: IconSizes.m,
+                  color: tokens.colors.alert.error.defaultColor,
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                Expanded(
+                  child: Text(
+                    context.messages.projectShowcaseBlockedTaskCount(
+                      record.blockedTaskCount,
+                    ),
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: ShowcasePalette.mediumText(context),
+                    ),
+                  ),
+                ),
+                if (showBlockerAction) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  DesignSystemButton(
+                    label: context.messages.projectShowcaseViewBlocker,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.dense,
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                    onPressed: onViewBlockerPressed,
+                  ),
+                ],
+              ],
+            ),
+          ],
+          SizedBox(height: tokens.spacing.step5),
+          const DesignSystemDivider(),
+          SizedBox(height: tokens.spacing.step5),
+          DesignSystemProgressBar(
+            value: progressValue,
+            label: context.messages.navTabTitleTasks,
+            progressText: record.totalTaskCount == 0
+                ? context.messages.projectTaskProgressNone
+                : context.messages.projectShowcaseTasksCompleted(
+                    record.completedTaskCount,
+                    record.totalTaskCount,
+                  ),
+            labelColor: ShowcasePalette.highText(context),
+            progressColor: ShowcasePalette.highText(context),
+            fillColor: tokens.colors.interactive.enabled,
+            trackColor: ShowcasePalette.border(context),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          Wrap(
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              _LegendItem(
+                color: tokens.colors.interactive.enabled,
+                label: context.messages.projectShowcaseCompletedLegend(
+                  record.completedTaskCount,
+                ),
+              ),
+              if (record.blockedTaskCount > 0)
+                _LegendItem(
+                  color: tokens.colors.alert.error.defaultColor,
+                  label: context.messages.projectShowcaseBlockedLegend(
+                    record.blockedTaskCount,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _HealthSummary extends StatelessWidget {
-  const _HealthSummary({
-    required this.record,
-    required this.tokens,
+/// Neutral placeholder shown until a project agent produces a health payload.
+class ProjectHealthEmptyState extends StatelessWidget {
+  const ProjectHealthEmptyState({
+    this.onRunReport,
+    super.key,
   });
 
-  final ProjectRecord record;
-  final DsTokens tokens;
+  final VoidCallback? onRunReport;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.projectShowcaseHealthScoreTitle,
-          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-            color: ShowcasePalette.highText(context),
+    final tokens = context.designTokens;
+
+    return DesignSystemSectionCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.monitor_heart_outlined,
+            size: IconSizes.l,
+            color: tokens.colors.text.mediumEmphasis,
           ),
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: Icon(
-                Icons.info_outline_rounded,
-                size: tokens.typography.lineHeight.caption,
-                color: ShowcasePalette.infoBlue(context),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Expanded(
-              child: Text(
-                context.messages.projectShowcaseHealthScoreDescription,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ShowcasePalette.mediumText(context),
+          SizedBox(width: tokens.spacing.step4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(
+                    context.messages.projectHealthEmptyTitle,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: Icon(
-                Icons.warning_amber_rounded,
-                size: tokens.typography.lineHeight.caption,
-                color: ShowcasePalette.error(context),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Expanded(
-              child: Text(
-                context.messages.projectShowcaseBlockedTaskCount(
-                  record.blockedTaskCount,
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  context.messages.projectHealthEmptyBody,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
                 ),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: ShowcasePalette.mediumText(context),
-                ),
-              ),
+                if (onRunReport != null) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  DesignSystemButton(
+                    label: context.messages.projectHealthRunNow,
+                    leadingIcon: Icons.auto_awesome_rounded,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.dense,
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                    onPressed: onRunReport,
+                  ),
+                ],
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -221,8 +240,8 @@ class _LegendItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: tokens.spacing.step2 + tokens.spacing.step1,
-          height: tokens.spacing.step2 + tokens.spacing.step1,
+          width: IconSizes.xs,
+          height: IconSizes.xs,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         SizedBox(width: tokens.spacing.step2),

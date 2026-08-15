@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,22 +9,13 @@ import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Horizontal padding applied to a project row's content. Exposed so the
-/// owning list (`project_list_shared.dart`) can align dividers to the same
-/// inset.
-const kProjectRowHorizontalPadding = 16.0;
-
-const _kProjectRowGap = 16.0;
-const _kProjectRowVerticalPadding = 6.0;
-
 /// A single project row in the list, with task-progress ring, task count,
 /// due label, and status tag.
-class ProjectRow extends ConsumerWidget {
+class ProjectRow extends StatelessWidget {
   const ProjectRow({
     required this.item,
     required this.selected,
@@ -35,7 +25,6 @@ class ProjectRow extends ConsumerWidget {
     required this.onTap,
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
-    this.contentHorizontalPadding = kProjectRowHorizontalPadding,
     super.key,
   });
 
@@ -45,18 +34,17 @@ class ProjectRow extends ConsumerWidget {
   final double bottomOverlap;
   final double backgroundTopInset;
   final double backgroundBottomInset;
-  final double contentHorizontalPadding;
   final ValueChanged<bool> onHoverChanged;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final metaStyle = tokens.typography.styles.others.caption.copyWith(
       color: ShowcasePalette.lowText(context),
     );
     final projectId = item.project.meta.id;
-    final oneLiner = ref.watch(projectOneLinerProvider(projectId)).value;
+    final oneLiner = item.oneLiner;
 
     final row = GroupedCardRowSurface(
       key: key ?? ValueKey('project-row-surface-$projectId'),
@@ -70,10 +58,10 @@ class ProjectRow extends ConsumerWidget {
       backgroundTopInset: backgroundTopInset,
       backgroundBottomInset: backgroundBottomInset,
       padding: EdgeInsets.fromLTRB(
-        contentHorizontalPadding,
-        _kProjectRowVerticalPadding,
-        contentHorizontalPadding,
-        _kProjectRowVerticalPadding,
+        tokens.spacing.step4,
+        tokens.spacing.step2,
+        tokens.spacing.step4,
+        tokens.spacing.step2,
       ),
       onHoverChanged: onHoverChanged,
       onTap: onTap,
@@ -87,7 +75,7 @@ class ProjectRow extends ConsumerWidget {
               children: [
                 Text(
                   item.project.data.title,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                     color: ShowcasePalette.highText(context),
@@ -97,14 +85,14 @@ class ProjectRow extends ConsumerWidget {
                   SizedBox(height: tokens.spacing.step1),
                   Text(
                     oneLiner,
-                    maxLines: 3,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: ShowcasePalette.lowText(context),
                     ),
                   ),
                 ],
-                const SizedBox(height: 4),
+                SizedBox(height: tokens.spacing.step1),
                 RichText(
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -120,7 +108,7 @@ class ProjectRow extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: _kProjectRowGap),
+          SizedBox(width: tokens.spacing.step4),
           ProjectStatusLabel(status: item.status),
         ],
       ),
@@ -159,6 +147,15 @@ List<InlineSpan> _metaSpans(
           ).format(item.targetDate!),
         );
 
+  if (item.taskRollup.totalTaskCount == 0) {
+    return [
+      TextSpan(
+        text: '${context.messages.projectTaskProgressNone} · $dueLabel',
+        style: metaStyle,
+      ),
+    ];
+  }
+
   return [
     WidgetSpan(
       alignment: PlaceholderAlignment.middle,
@@ -167,7 +164,7 @@ List<InlineSpan> _metaSpans(
           'project-row-progress-ring-${item.project.meta.id}',
         ),
         progress: item.taskRollup.completionRatio,
-        progressColor: _progressRingColor(context, item.taskRollup),
+        progressColor: tokens.colors.interactive.enabled,
         trackColor: ShowcasePalette.highText(
           context,
         ).withValues(alpha: 0.12),
@@ -197,21 +194,6 @@ List<InlineSpan> _metaSpans(
   ];
 }
 
-Color _progressRingColor(
-  BuildContext context,
-  ProjectTaskRollupData taskRollup,
-) {
-  final completionPercent = taskRollup.completionPercent;
-
-  if (completionPercent >= 80) {
-    return ShowcasePalette.timeGreen(context);
-  }
-  if (completionPercent >= 50) {
-    return ShowcasePalette.amber(context);
-  }
-  return ShowcasePalette.error(context);
-}
-
 class _TinyProgressRing extends StatelessWidget {
   const _TinyProgressRing({
     required this.progress,
@@ -227,7 +209,7 @@ class _TinyProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox.square(
-      dimension: 16,
+      dimension: IconSizes.s,
       child: CustomPaint(
         painter: _TinyProgressRingPainter(
           progress: progress,
@@ -252,7 +234,7 @@ class _TinyProgressRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const strokeWidth = 2.285714;
+    const strokeWidth = BorderWidths.emphasis;
     const inset = strokeWidth / 2;
     final rect = Rect.fromLTWH(
       inset,

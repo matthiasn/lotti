@@ -79,7 +79,10 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    HealthPanel(record: widget.record),
+                    if (widget.record.healthMetrics == null)
+                      const ProjectHealthEmptyState()
+                    else
+                      HealthPanel(record: widget.record),
                     SizedBox(height: tokens.spacing.step5),
                     TextSection(
                       title: context.messages.projectShowcaseDescriptionTitle,

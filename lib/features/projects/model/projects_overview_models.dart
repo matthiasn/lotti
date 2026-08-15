@@ -13,6 +13,9 @@ enum ProjectsSearchMode {
   localText,
 }
 
+/// User-selectable ordering for projects within each category group.
+enum ProjectsSortMode { actionable, targetDate, recent, name }
+
 /// Stable string identifiers for the six project statuses, used as filter
 /// option IDs in the filter sheet and persisted in [ProjectsFilter].
 ///
@@ -27,6 +30,15 @@ abstract final class ProjectStatusFilterIds {
   static const completed = 'completed';
   static const archived = 'archived';
 }
+
+/// The default working set. Completed and archived projects remain available
+/// through the explicit All scope without competing for daily attention.
+const currentProjectStatusFilterIds = <String>{
+  ProjectStatusFilterIds.open,
+  ProjectStatusFilterIds.active,
+  ProjectStatusFilterIds.monitoring,
+  ProjectStatusFilterIds.onHold,
+};
 
 /// Repository-layer scope for the overview rollup: which categories to load.
 ///
@@ -77,24 +89,28 @@ class ProjectsFilter {
     this.selectedCategoryIds = const <String>{},
     this.textQuery = '',
     this.searchMode = ProjectsSearchMode.disabled,
+    this.sortMode = ProjectsSortMode.actionable,
   });
 
   final Set<String> selectedStatusIds;
   final Set<String> selectedCategoryIds;
   final String textQuery;
   final ProjectsSearchMode searchMode;
+  final ProjectsSortMode sortMode;
 
   ProjectsFilter copyWith({
     Set<String>? selectedStatusIds,
     Set<String>? selectedCategoryIds,
     String? textQuery,
     ProjectsSearchMode? searchMode,
+    ProjectsSortMode? sortMode,
   }) {
     return ProjectsFilter(
       selectedStatusIds: selectedStatusIds ?? this.selectedStatusIds,
       selectedCategoryIds: selectedCategoryIds ?? this.selectedCategoryIds,
       textQuery: textQuery ?? this.textQuery,
       searchMode: searchMode ?? this.searchMode,
+      sortMode: sortMode ?? this.sortMode,
     );
   }
 
@@ -111,7 +127,8 @@ class ProjectsFilter {
               selectedCategoryIds,
             ) &&
             other.textQuery == textQuery &&
-            other.searchMode == searchMode;
+            other.searchMode == searchMode &&
+            other.sortMode == sortMode;
   }
 
   @override
@@ -120,6 +137,7 @@ class ProjectsFilter {
     const SetEquality<String>().hash(selectedCategoryIds),
     textQuery,
     searchMode,
+    sortMode,
   );
 }
 
@@ -159,21 +177,23 @@ class ProjectTaskRollupData {
 }
 
 /// One project as displayed in an overview list row: the project entity, its
-/// resolved category, and aggregated task counts.
+/// resolved category, aggregated task counts, and a stable agent summary.
 ///
 /// [searchableText] is the haystack used by the Projects-tab local text filter
-/// (title + entry plain text + category name).
+/// (title + entry plain text + category name + visible agent one-liner).
 @immutable
 class ProjectListItemData {
   const ProjectListItemData({
     required this.project,
     required this.category,
     required this.taskRollup,
+    this.oneLiner,
   });
 
   final ProjectEntry project;
   final CategoryDefinition? category;
   final ProjectTaskRollupData taskRollup;
+  final String? oneLiner;
 
   String get categoryName => category?.name ?? '';
 
@@ -185,6 +205,7 @@ class ProjectListItemData {
     project.data.title,
     project.entryText?.plainText ?? '',
     categoryName,
+    oneLiner ?? '',
   ].where((segment) => segment.trim().isNotEmpty).join(' ');
 }
 
@@ -254,8 +275,8 @@ List<ProjectCategoryGroup> applyProjectsFilter(
                 selectedCategoryIds.contains(group.categoryId)),
       )
       .map((group) {
-        final filteredProjects = group.projects
-            .where((project) {
+        final filteredProjects =
+            group.projects.where((project) {
               final matchesStatus =
                   selectedStatusIds.isEmpty ||
                   selectedStatusIds.contains(
@@ -267,10 +288,61 @@ List<ProjectCategoryGroup> applyProjectsFilter(
                     normalizedQuery,
                   );
               return matchesStatus && matchesQuery;
-            })
-            .toList(growable: false);
+            }).toList()..sort(
+              (left, right) => _compareProjects(left, right, filter.sortMode),
+            );
         return group.copyWith(projects: filteredProjects);
       })
       .where((group) => group.projects.isNotEmpty)
       .toList(growable: false);
 }
+
+int _compareProjects(
+  ProjectListItemData left,
+  ProjectListItemData right,
+  ProjectsSortMode mode,
+) {
+  final order = switch (mode) {
+    ProjectsSortMode.actionable => _compareActionable(left, right),
+    ProjectsSortMode.targetDate => _compareNullableDates(
+      left.targetDate,
+      right.targetDate,
+    ),
+    ProjectsSortMode.recent => right.project.meta.updatedAt.compareTo(
+      left.project.meta.updatedAt,
+    ),
+    ProjectsSortMode.name => left.project.data.title.toLowerCase().compareTo(
+      right.project.data.title.toLowerCase(),
+    ),
+  };
+  if (order != 0) return order;
+  return left.project.data.title.toLowerCase().compareTo(
+    right.project.data.title.toLowerCase(),
+  );
+}
+
+int _compareActionable(ProjectListItemData left, ProjectListItemData right) {
+  final statusOrder = _projectStatusRank(left.status).compareTo(
+    _projectStatusRank(right.status),
+  );
+  if (statusOrder != 0) return statusOrder;
+  final targetOrder = _compareNullableDates(left.targetDate, right.targetDate);
+  if (targetOrder != 0) return targetOrder;
+  return right.project.meta.updatedAt.compareTo(left.project.meta.updatedAt);
+}
+
+int _compareNullableDates(DateTime? left, DateTime? right) {
+  if (left == null && right == null) return 0;
+  if (left == null) return 1;
+  if (right == null) return -1;
+  return left.compareTo(right);
+}
+
+int _projectStatusRank(ProjectStatus status) => switch (status) {
+  ProjectActive() => 0,
+  ProjectOpen() => 1,
+  ProjectMonitoring() => 2,
+  ProjectOnHold() => 3,
+  ProjectCompleted() => 4,
+  ProjectArchived() => 5,
+};

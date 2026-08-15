@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -21,20 +22,34 @@ void main() {
   }
 
   group('HealthPanel', () {
-    testWidgets('renders health score value', (tester) async {
-      final record = makeTestProjectRecord(healthScore: 85);
+    testWidgets('renders the agent-authored health assessment', (tester) async {
+      final record = makeTestProjectRecord(
+        healthMetrics: makeTestProjectHealthMetrics(
+          band: ProjectHealthBand.atRisk,
+          rationale: 'The launch dependency is slipping behind plan.',
+          confidence: 0.87,
+        ),
+      );
 
       await tester.pumpWidget(
         wrap(HealthPanel(record: record)),
       );
       await tester.pump();
 
-      expect(find.text('85'), findsOneWidget);
-      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('At Risk'), findsOneWidget);
+      expect(
+        find.text('The launch dependency is slipping behind plan.'),
+        findsOneWidget,
+      );
+      expect(find.text('87% confidence'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
     });
 
     testWidgets('renders blocked task count', (tester) async {
-      final record = makeTestProjectRecord(blockedTaskCount: 3);
+      final record = makeTestProjectRecord(
+        blockedTaskCount: 3,
+        healthMetrics: makeTestProjectHealthMetrics(),
+      );
 
       await tester.pumpWidget(
         wrap(HealthPanel(record: record)),
@@ -52,6 +67,7 @@ void main() {
       final record = makeTestProjectRecord(
         completedTaskCount: 4,
         totalTaskCount: 8,
+        healthMetrics: makeTestProjectHealthMetrics(),
       );
 
       await tester.pumpWidget(
@@ -67,6 +83,7 @@ void main() {
     testWidgets('renders legend items', (tester) async {
       final record = makeTestProjectRecord(
         completedTaskCount: 2,
+        healthMetrics: makeTestProjectHealthMetrics(),
       );
 
       await tester.pumpWidget(
@@ -78,15 +95,47 @@ void main() {
       expect(find.textContaining('Blocked'), findsOneWidget);
     });
 
-    testWidgets('renders view blocker button', (tester) async {
-      final record = makeTestProjectRecord();
+    testWidgets('only exposes the blocker action when it can do work', (
+      tester,
+    ) async {
+      var taps = 0;
+      final clearRecord = makeTestProjectRecord(
+        blockedTaskCount: 0,
+        healthMetrics: makeTestProjectHealthMetrics(),
+      );
 
       await tester.pumpWidget(
-        wrap(HealthPanel(record: record)),
+        wrap(
+          HealthPanel(
+            record: clearRecord,
+            onViewBlockerPressed: () => taps++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('View blocker'), findsNothing);
+
+      final blockedRecord = makeTestProjectRecord(
+        blockedTaskCount: 2,
+        healthMetrics: makeTestProjectHealthMetrics(
+          band: ProjectHealthBand.blocked,
+        ),
+      );
+      await tester.pumpWidget(
+        wrap(
+          HealthPanel(
+            record: blockedRecord,
+            onViewBlockerPressed: () => taps++,
+          ),
+        ),
       );
       await tester.pump();
 
       expect(find.text('View blocker'), findsOneWidget);
+      await tester.tap(find.text('View blocker'));
+      await tester.pump();
+      expect(taps, 1);
     });
   });
 }

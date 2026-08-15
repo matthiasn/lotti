@@ -9744,11 +9744,26 @@ class AppLocalizationsFr extends AppLocalizations {
       'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
+  String get projectActionAddTask => 'Ajouter une tâche';
+
+  @override
+  String get projectActionArchive => 'Archiver';
+
+  @override
+  String get projectActionDelete => 'Supprimer';
+
+  @override
+  String get projectActionEdit => 'Modifier le projet';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Aucun agent de projet n\'a encore été configuré pour ce projet.';
 
   @override
   String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectArchiveSuccess => 'Projet archivé';
 
   @override
   String projectCountSummary(int count) {
@@ -9766,6 +9781,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Créer un projet';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Le projet sera supprimé. Ses tâches resteront dans ton journal.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Supprimer ce projet ?';
+
+  @override
+  String get projectDeleteSuccess => 'Projet supprimé';
 
   @override
   String get projectDetailTitle => 'Détails du projet';
@@ -9803,6 +9828,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'À surveiller';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return 'Confiance : $confidence %';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Lance l’agent du projet pour créer une évaluation à partir de l’activité récente du projet et de ses tâches.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Aucun rapport de santé pour le moment';
+
+  @override
+  String get projectHealthRunNow => 'Générer le rapport';
 
   @override
   String get projectHealthSectionTitle => 'Santé du projet';
@@ -9871,6 +9911,31 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Impossible de mettre à jour la recommandation. Réessaie.';
+
+  @override
+  String get projectsClearFilters => 'Effacer les filtres';
+
+  @override
+  String get projectsEmptyBody =>
+      'Crée un projet pour réunir les tâches associées, la progression et les analyses de l’agent.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Les projets terminés et archivés sont mis de côté. Passe à Tous pour les revoir.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Aucun projet actuel';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Ajuste ta recherche ou tes filtres pour retrouver les projets correspondants.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Aucun projet ne correspond à cette vue';
+
+  @override
+  String get projectsEmptyTitle => 'Lance ton premier projet';
 
   @override
   String get projectsFilterStatusLabel => 'Statut :';
@@ -9984,6 +10049,27 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Voir le blocage';
 
   @override
+  String get projectsScopeAll => 'Tous';
+
+  @override
+  String get projectsScopeCurrent => 'Actuels';
+
+  @override
+  String get projectsSortActionable => 'Nécessite ton attention';
+
+  @override
+  String get projectsSortName => 'Nom';
+
+  @override
+  String get projectsSortRecent => 'Récemment mis à jour';
+
+  @override
+  String get projectsSortTargetDate => 'Date cible';
+
+  @override
+  String get projectsSortTooltip => 'Trier les projets';
+
+  @override
   String get projectStatusActive => 'Actif';
 
   @override
@@ -10013,7 +10099,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Catégorie indisponible';
+
+  @override
   String get projectTargetDateLabel => 'Date cible';
+
+  @override
+  String get projectTaskProgressNone => 'Aucune tâche';
 
   @override
   String get projectTitleLabel => 'Titre du projet';

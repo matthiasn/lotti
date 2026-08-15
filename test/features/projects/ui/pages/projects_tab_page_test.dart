@@ -8,6 +8,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -325,6 +326,41 @@ void main() {
     expect(find.text('Completed'), findsOneWidget);
   });
 
+  testWidgets('switches Current/All scope and exposes the sort choices', (
+    tester,
+  ) async {
+    await pumpPage(tester, groups: [buildWorkGroup()]);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ProjectsTabPage)),
+    );
+
+    expect(find.text('Current'), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    await tester.tap(find.text('All'));
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+    await tester.tap(find.text('Current'));
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      currentProjectStatusFilterIds,
+    );
+
+    final sortMenu = tester.widget<DesignSystemContextMenuButton>(
+      find.byType(DesignSystemContextMenuButton),
+    );
+    expect(
+      sortMenu.items.map((item) => item.label),
+      ['Needs attention', 'Target date', 'Recently updated', 'Name'],
+    );
+    sortMenu.items[2].onTap!();
+    expect(
+      container.read(projectsFilterControllerProvider).sortMode,
+      ProjectsSortMode.recent,
+    );
+  });
+
   testWidgets('row tap opens the top-level project detail route', (
     tester,
   ) async {
@@ -560,9 +596,10 @@ void main() {
     await pumpPage(tester, groups: []);
 
     expect(
-      find.text('No projects match your search.'),
+      find.text('Start your first project'),
       findsOneWidget,
     );
+    expect(find.text('New Project'), findsOneWidget);
   });
 
   testWidgets('filters visible projects by substring search', (tester) async {
@@ -929,8 +966,7 @@ void main() {
 
   group('_ProjectsTabActiveFilters category resolution', () {
     testWidgets(
-      'a selected categoryId that is not present in the overview is '
-      'silently skipped (no chip rendered) and does not crash',
+      'a selected categoryId that is not present remains visible and removable',
       (tester) async {
         await pumpPage(
           tester,
@@ -945,7 +981,8 @@ void main() {
             .setSelectedCategoryIds(const {'ghost-category'});
         await tester.pumpAndSettle();
 
-        expect(find.byType(ActiveFilterChip), findsNothing);
+        expect(find.byType(ActiveFilterChip), findsOneWidget);
+        expect(find.text('Unavailable category'), findsOneWidget);
       },
     );
 

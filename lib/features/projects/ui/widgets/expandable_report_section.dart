@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -138,120 +139,90 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          onTap: canExpand
-              ? () => setState(() => _expanded = !_expanded)
-              : null,
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: ShowcasePalette.highText(context),
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                button: canExpand,
+                expanded: canExpand ? _expanded : null,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(tokens.radii.s),
+                  onTap: canExpand
+                      ? () => setState(() => _expanded = !_expanded)
+                      : null,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: TapTargets.minimum,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.subtitle.subtitle2
+                                .copyWith(
+                                  color: ShowcasePalette.highText(context),
+                                ),
+                          ),
+                        ),
+                        if (canExpand) ...[
+                          SizedBox(width: tokens.spacing.step2),
+                          Icon(
+                            _expanded
+                                ? Icons.keyboard_arrow_down_rounded
+                                : Icons.chevron_right_rounded,
+                            size: IconSizes.s,
+                            color: ShowcasePalette.mediumText(context),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.trailingLabel case final trailingLabel?)
-                      Padding(
-                        padding: EdgeInsets.only(right: tokens.spacing.step2),
-                        child: Text(
-                          trailingLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: ShowcasePalette.mediumText(context),
-                              ),
-                        ),
-                      ),
-                    if (!widget.isRefreshing && widget.nextWakeAt != null)
-                      Padding(
-                        padding: EdgeInsets.only(right: tokens.spacing.step2),
-                        child: _ReportCountdownPill(
-                          nextWakeAt: widget.nextWakeAt!,
-                        ),
-                      ),
-                    if (!widget.isRefreshing &&
-                        widget.nextWakeAt != null &&
-                        widget.onCancelScheduledWake != null)
-                      Padding(
-                        padding: EdgeInsets.only(right: tokens.spacing.step1),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.close_rounded,
-                            size: tokens.typography.lineHeight.subtitle2,
-                            color: ShowcasePalette.mediumText(context),
-                          ),
-                          tooltip: context.messages.taskAgentCancelTimerTooltip,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(
-                            minWidth: tokens.spacing.step6,
-                            minHeight: tokens.spacing.step6,
-                          ),
-                          onPressed: widget.onCancelScheduledWake,
-                        ),
-                      ),
-                    if (widget.onRefresh != null)
-                      Padding(
-                        padding: EdgeInsets.only(right: tokens.spacing.step1),
-                        child: widget.isRefreshing
-                            ? SizedBox.square(
-                                dimension:
-                                    tokens.typography.lineHeight.subtitle2,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: ShowcasePalette.mediumText(context),
-                                ),
-                              )
-                            : IconButton(
-                                icon: Icon(
-                                  Icons.refresh_rounded,
-                                  size: tokens.typography.lineHeight.subtitle2,
-                                  color: ShowcasePalette.mediumText(context),
-                                ),
-                                tooltip:
-                                    context.messages.taskAgentRunNowTooltip,
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints(
-                                  minWidth: tokens.spacing.step6,
-                                  minHeight: tokens.spacing.step6,
-                                ),
-                                onPressed: widget.onRefresh,
-                              ),
-                      ),
-                    if (canExpand)
-                      Padding(
-                        padding: EdgeInsets.only(left: tokens.spacing.step2),
-                        child: Icon(
-                          _expanded
-                              ? Icons.keyboard_arrow_down_rounded
-                              : Icons.chevron_right_rounded,
-                          size: tokens.typography.lineHeight.bodySmall,
-                          color: ShowcasePalette.mediumText(context),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+            if (widget.trailingLabel case final trailingLabel?) ...[
+              SizedBox(width: tokens.spacing.step2),
+              Flexible(
+                child: Text(
+                  trailingLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: ShowcasePalette.mediumText(context),
+                  ),
+                ),
+              ),
+            ],
+            if (!widget.isRefreshing && widget.nextWakeAt != null) ...[
+              SizedBox(width: tokens.spacing.step2),
+              _ReportCountdownPill(nextWakeAt: widget.nextWakeAt!),
+            ],
+            if (!widget.isRefreshing &&
+                widget.nextWakeAt != null &&
+                widget.onCancelScheduledWake != null)
+              DesignSystemIconAction(
+                icon: Icons.close_rounded,
+                tooltip: context.messages.taskAgentCancelTimerTooltip,
+                onPressed: widget.onCancelScheduledWake,
+              ),
+            if (widget.onRefresh != null)
+              DesignSystemIconAction(
+                icon: Icons.refresh_rounded,
+                tooltip: context.messages.taskAgentRunNowTooltip,
+                onPressed: widget.onRefresh,
+                isBusy: widget.isRefreshing,
+              ),
+          ],
         ),
         SizedBox(height: tokens.spacing.step2),
         AnimatedSize(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeInOut,
+          duration: MotionDurations.short4,
+          curve: MotionCurves.standard,
           alignment: Alignment.topLeft,
           child: _expanded || !canExpand
               ? Column(

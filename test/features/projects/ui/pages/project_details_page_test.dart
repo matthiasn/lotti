@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
@@ -65,6 +66,7 @@ class _TrackingProjectDetailController extends ProjectDetailController {
 
   final List<String?> updatedCategoryIds = [];
   final List<DateTime?> updatedTargetDates = [];
+  final List<ProjectStatus> updatedStatuses = [];
   int saveChangesCallCount = 0;
 
   @override
@@ -84,11 +86,37 @@ class _TrackingProjectDetailController extends ProjectDetailController {
   }
 
   @override
-  void updateStatus(ProjectStatus newStatus) {}
+  void updateStatus(ProjectStatus newStatus) {
+    updatedStatuses.add(newStatus);
+  }
 
   @override
   Future<void> saveChanges() async {
     saveChangesCallCount++;
+  }
+}
+
+class _FailingProjectDetailController extends ProjectDetailController {
+  _FailingProjectDetailController(this._initialState) : super(_projectId);
+
+  final ProjectDetailState _initialState;
+  int discardCalls = 0;
+
+  @override
+  ProjectDetailState build() => _initialState;
+
+  @override
+  void updateStatus(ProjectStatus newStatus) {}
+
+  @override
+  Future<void> saveChanges() async {
+    state = state.copyWith(error: ProjectDetailError.updateFailed);
+  }
+
+  @override
+  void discardChanges() {
+    discardCalls++;
+    state = state.copyWith(error: null, hasChanges: false);
   }
 }
 
@@ -102,11 +130,12 @@ const _projectId = 'test-project-id';
 List<Override> _baseOverrides({
   required ProjectDetailState controllerState,
   required FutureOr<ProjectRecord?> Function(Ref) recordOverride,
+  ProjectDetailController Function()? controllerOverride,
   List<Override> extraOverrides = const [],
 }) {
   return [
     projectDetailControllerProvider(_projectId).overrideWith(
-      () => _TestProjectDetailController(controllerState),
+      controllerOverride ?? () => _TestProjectDetailController(controllerState),
     ),
     projectDetailRecordProvider(_projectId).overrideWith(
       (ref) => recordOverride(ref),
@@ -144,11 +173,13 @@ void main() {
     WidgetTester tester, {
     required ProjectDetailState controllerState,
     ProjectRecord? record,
+    ProjectDetailController Function()? controllerOverride,
     List<Override> extraOverrides = const [],
   }) async {
     final overrides = _baseOverrides(
       controllerState: controllerState,
       recordOverride: (_) => record,
+      controllerOverride: controllerOverride,
       extraOverrides: extraOverrides,
     );
 
@@ -298,13 +329,13 @@ void main() {
           await tester.pump();
 
           expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
-          expect(find.byType(TaskSummaryRow), findsWidgets);
 
           await tester.drag(
             find.byType(CustomScrollView),
             const Offset(0, -500),
           );
           await tester.pump();
+          expect(find.byType(TaskSummaryRow), findsWidgets);
 
           final scrollableState = tester.state<ScrollableState>(
             find.byType(Scrollable),
@@ -680,6 +711,10 @@ void main() {
             'onCategoryTap': content.onCategoryTap,
             'onTargetDateTap': content.onTargetDateTap,
             'onStatusTap': content.onStatusTap,
+            'onEdit': content.onEdit,
+            'onArchive': content.onArchive,
+            'onDelete': content.onDelete,
+            'onAddTask': content.onAddTask,
             'onTaskTap': content.onTaskTap,
           }.forEach(
             (name, callback) => expect(
@@ -690,6 +725,120 @@ void main() {
           );
         },
       );
+
+      testWidgets('archive persists an archived status and reports success', (
+        tester,
+      ) async {
+        final initialState = ProjectDetailState(
+          project: testProject,
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        );
+        final tracking = _TrackingProjectDetailController(
+          initialState,
+          _projectId,
+        );
+        await pumpPageWithData(
+          tester,
+          controllerState: initialState,
+          record: testRecord,
+          controllerOverride: () => tracking,
+        );
+
+        final content = tester.widget<ProjectMobileDetailContent>(
+          find.byType(ProjectMobileDetailContent),
+        );
+        content.onArchive!();
+        await tester.pump();
+
+        expect(tracking.updatedStatuses.single, isA<ProjectArchived>());
+        expect(tracking.saveChangesCallCount, 1);
+      });
+
+      testWidgets('failed inline actions roll back and surface the error', (
+        tester,
+      ) async {
+        final initialState = ProjectDetailState(
+          project: testProject,
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        );
+        final failing = _FailingProjectDetailController(initialState);
+        await pumpPageWithData(
+          tester,
+          controllerState: initialState,
+          record: testRecord,
+          controllerOverride: () => failing,
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onArchive!();
+        await tester.pump();
+
+        expect(failing.discardCalls, 1);
+        expect(
+          find.text('Failed to update project. Please try again.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('delete confirms and delegates a synchronized soft delete', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(430, 1200)
+          ..devicePixelRatio = 1;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+        beamToNamedOverride = (_) {};
+        addTearDown(() => beamToNamedOverride = null);
+        final mockRepository = MockProjectRepository();
+        when(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => true);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+
+        final content = tester.widget<ProjectMobileDetailContent>(
+          find.byType(ProjectMobileDetailContent),
+        );
+        content.onDelete!();
+        await tester.pumpAndSettle();
+        expect(find.text('Delete this project?'), findsOneWidget);
+
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+        verify(
+          () => mockRepository.deleteProject(
+            testProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+      });
     });
 
     /// Sizes the test surface tall enough for bottom-sheet / modal content to

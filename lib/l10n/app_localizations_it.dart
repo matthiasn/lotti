@@ -9706,11 +9706,26 @@ class AppLocalizationsIt extends AppLocalizations {
       'Solo visibile quando vengono mostrate le voci private';
 
   @override
+  String get projectActionAddTask => 'Aggiungi attività';
+
+  @override
+  String get projectActionArchive => 'Archivia';
+
+  @override
+  String get projectActionDelete => 'Elimina';
+
+  @override
+  String get projectActionEdit => 'Modifica progetto';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Nessun agente di progetto è stato fornito per questo progetto ancora.';
 
   @override
   String get projectAgentSectionTitle => 'Agente';
+
+  @override
+  String get projectArchiveSuccess => 'Progetto archiviato';
 
   @override
   String projectCountSummary(int count) {
@@ -9728,6 +9743,16 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Creare un progetto';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Il progetto verrà rimosso. Le sue attività resteranno nel tuo diario.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Eliminare questo progetto?';
+
+  @override
+  String get projectDeleteSuccess => 'Progetto eliminato';
 
   @override
   String get projectDetailTitle => 'Dettagli del progetto';
@@ -9762,6 +9787,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Guarda qui';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return 'Affidabilità $confidence%';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Avvia l’agente del progetto per creare una valutazione dall’attività più recente del progetto e delle sue attività.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Nessun rapporto sullo stato ancora';
+
+  @override
+  String get projectHealthRunNow => 'Genera rapporto';
 
   @override
   String get projectHealthSectionTitle => 'Salute del progetto';
@@ -9830,6 +9870,31 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Non ho potuto aggiornare la raccomandazione, si prega di riprovare.';
+
+  @override
+  String get projectsClearFilters => 'Cancella filtri';
+
+  @override
+  String get projectsEmptyBody =>
+      'Crea un progetto per riunire attività correlate, avanzamento e analisi dell’agente.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'I progetti completati e archiviati sono messi da parte. Passa a Tutti per rivederli.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Nessun progetto attuale';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Modifica la ricerca o i filtri per mostrare di nuovo i progetti corrispondenti.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Nessun progetto corrisponde a questa vista';
+
+  @override
+  String get projectsEmptyTitle => 'Avvia il tuo primo progetto';
 
   @override
   String get projectsFilterStatusLabel => 'Stato:';
@@ -9931,6 +9996,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Visualizza blocco';
 
   @override
+  String get projectsScopeAll => 'Tutti';
+
+  @override
+  String get projectsScopeCurrent => 'Attuali';
+
+  @override
+  String get projectsSortActionable => 'Richiede attenzione';
+
+  @override
+  String get projectsSortName => 'Nome';
+
+  @override
+  String get projectsSortRecent => 'Aggiornati di recente';
+
+  @override
+  String get projectsSortTargetDate => 'Data obiettivo';
+
+  @override
+  String get projectsSortTooltip => 'Ordina progetti';
+
+  @override
   String get projectStatusActive => 'Attivo';
 
   @override
@@ -9960,7 +10046,13 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Categoria non disponibile';
+
+  @override
   String get projectTargetDateLabel => 'Data di destinazione';
+
+  @override
+  String get projectTaskProgressNone => 'Nessuna attività';
 
   @override
   String get projectTitleLabel => 'Titolo del progetto';

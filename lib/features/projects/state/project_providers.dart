@@ -2,7 +2,10 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
@@ -82,7 +85,9 @@ final projectsFilterControllerProvider =
 /// re-applies this state to the raw overview snapshot whenever it changes.
 class ProjectsFilterController extends Notifier<ProjectsFilter> {
   @override
-  ProjectsFilter build() => const ProjectsFilter();
+  ProjectsFilter build() => const ProjectsFilter(
+    selectedStatusIds: currentProjectStatusFilterIds,
+  );
 
   ProjectsFilter get filter => state;
 
@@ -96,6 +101,16 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
 
   void setSelectedCategoryIds(Set<String> categoryIds) {
     state = state.copyWith(selectedCategoryIds: categoryIds);
+  }
+
+  void setSortMode(ProjectsSortMode sortMode) {
+    state = state.copyWith(sortMode: sortMode);
+  }
+
+  void resetToCurrent() {
+    state = const ProjectsFilter(
+      selectedStatusIds: currentProjectStatusFilterIds,
+    );
   }
 
   /// Updates the search text and derives the [ProjectsSearchMode]: an empty
@@ -116,8 +131,74 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
 final projectsOverviewProvider =
     StreamProvider.autoDispose<ProjectsOverviewSnapshot>((ref) {
       final repository = ref.watch(projectRepositoryProvider);
-      return repository.watchProjectsOverview(query: const ProjectsQuery());
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      return repository
+          .watchProjectsOverview(query: const ProjectsQuery())
+          .asyncMap(
+            (snapshot) async {
+              try {
+                return await _attachProjectOneLiners(
+                  snapshot,
+                  agentRepository,
+                );
+              } on Object {
+                // Agent summaries are optional enrichment. A failed sidecar
+                // read must not replace the established list with an error.
+                return snapshot;
+              }
+            },
+          );
     });
+
+Future<ProjectsOverviewSnapshot> _attachProjectOneLiners(
+  ProjectsOverviewSnapshot snapshot,
+  AgentRepository agentRepository,
+) async {
+  final projectIds = [
+    for (final group in snapshot.groups)
+      for (final item in group.projects) item.project.meta.id,
+  ];
+  if (projectIds.isEmpty) return snapshot;
+
+  final linksByProjectId = await agentRepository.getLinksToMultiple(
+    projectIds,
+    type: AgentLinkTypes.agentProject,
+  );
+  final agentIdsByProjectId = <String, String>{};
+  final agentIds = <String>{};
+  for (final entry in linksByProjectId.entries) {
+    if (entry.value.isEmpty) continue;
+    final agentId = entry.value.selectPrimary().fromId;
+    agentIdsByProjectId[entry.key] = agentId;
+    agentIds.add(agentId);
+  }
+  if (agentIds.isEmpty) return snapshot;
+
+  final reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
+    agentIds.toList(growable: false),
+    AgentReportScopes.current,
+  );
+  return ProjectsOverviewSnapshot(
+    groups: [
+      for (final group in snapshot.groups)
+        group.copyWith(
+          projects: [
+            for (final item in group.projects)
+              ProjectListItemData(
+                project: item.project,
+                category: item.category,
+                taskRollup: item.taskRollup,
+                oneLiner:
+                    reportsByAgentId[agentIdsByProjectId[item.project.meta.id]]
+                        ?.oneLiner
+                        ?.trim(),
+              ),
+          ],
+        ),
+    ],
+  );
+}
 
 /// Applies the provider-layer filtering model to the raw snapshot.
 final visibleProjectGroupsProvider =

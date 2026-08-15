@@ -1,33 +1,57 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_utils.dart';
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
   late MockProjectRepository mockRepo;
+  late MockAgentRepository mockAgentRepo;
   late StreamController<Set<String>> updateStreamController;
   late ProviderContainer container;
 
   setUp(() {
     mockRepo = MockProjectRepository();
+    mockAgentRepo = MockAgentRepository();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(
       () => mockRepo.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockAgentRepo.getLinksToMultiple(
+        any(),
+        type: AgentLinkTypes.agentProject,
+      ),
+    ).thenAnswer((_) async => <String, List<AgentLink>>{});
+    when(
+      () => mockAgentRepo.getLatestReportsByAgentIds(
+        any(),
+        AgentReportScopes.current,
+      ),
+    ).thenAnswer((_) async => {});
 
     container = ProviderContainer(
       overrides: [
         projectRepositoryProvider.overrideWithValue(mockRepo),
+        agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+        agentUpdateStreamProvider(
+          agentNotification,
+        ).overrideWith((ref) => const Stream.empty()),
       ],
     );
   });
@@ -114,6 +138,100 @@ void main() {
     );
 
     test(
+      'projectsOverviewProvider bulk-loads stable one-liners into rows',
+      () async {
+        final snapshot = makeSnapshot();
+        final link = AgentLink.agentProject(
+          id: 'link-work',
+          fromId: 'agent-work',
+          toId: 'project-work',
+          createdAt: DateTime(2026, 4, 2),
+          updatedAt: DateTime(2026, 4, 2),
+          vectorClock: null,
+        );
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(snapshot));
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            ['project-work', 'project-study'],
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => <String, List<AgentLink>>{
+            'project-work': [link],
+          },
+        );
+        when(
+          () => mockAgentRepo.getLatestReportsByAgentIds(
+            ['agent-work'],
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'agent-work': makeTestReport(
+              agentId: 'agent-work',
+              oneLiner: '  Release review is ready  ',
+            ),
+          },
+        );
+
+        final subscription = container.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final result = await container.read(projectsOverviewProvider.future);
+
+        expect(
+          result.groups.first.projects.single.oneLiner,
+          'Release review is ready',
+        );
+        expect(result.groups[1].projects.single.oneLiner, isNull);
+        verify(
+          () => mockAgentRepo.getLinksToMultiple(
+            ['project-work', 'project-study'],
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).called(1);
+        verify(
+          () => mockAgentRepo.getLatestReportsByAgentIds(
+            ['agent-work'],
+            AgentReportScopes.current,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'projectsOverviewProvider keeps projects when one-liner loading fails',
+      () async {
+        final snapshot = makeSnapshot();
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(snapshot));
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            any(),
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenThrow(StateError('agent database unavailable'));
+        final subscription = container.listen(
+          projectsOverviewProvider,
+          (previous, next) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final result = await container.read(projectsOverviewProvider.future);
+
+        expect(result.groups.expand((group) => group.projects), hasLength(2));
+        expect(result.groups.first.projects.single.oneLiner, isNull);
+      },
+    );
+
+    test(
       'visibleProjectGroupsProvider reflects updated project status from the overview stream',
       () async {
         final controller = StreamController<ProjectsOverviewSnapshot>();
@@ -152,15 +270,34 @@ void main() {
           ],
         );
 
+        container
+            .read(projectsFilterControllerProvider.notifier)
+            .setSelectedStatusIds(const {});
+        final activeReady = Completer<void>();
+        final completedReady = Completer<void>();
         final subscription = container.listen(
           visibleProjectGroupsProvider,
-          (previous, next) {},
+          (previous, next) {
+            final status = next
+                .value
+                ?.firstOrNull
+                ?.projects
+                .firstOrNull
+                ?.project
+                .data
+                .status;
+            if (status is ProjectActive && !activeReady.isCompleted) {
+              activeReady.complete();
+            }
+            if (status is ProjectCompleted && !completedReady.isCompleted) {
+              completedReady.complete();
+            }
+          },
           fireImmediately: true,
         );
         addTearDown(subscription.close);
-
         controller.add(initialSnapshot);
-        await Future<void>.microtask(() {});
+        await activeReady.future;
 
         var visibleGroups = container.read(visibleProjectGroupsProvider).value;
         expect(
@@ -169,7 +306,7 @@ void main() {
         );
 
         controller.add(updatedSnapshot);
-        await Future<void>.microtask(() {});
+        await completedReady.future;
 
         visibleGroups = container.read(visibleProjectGroupsProvider).value;
         expect(
@@ -282,6 +419,35 @@ void main() {
       },
     );
 
+    test('ProjectsFilterController defaults to current work and can reset', () {
+      final scopedContainer = ProviderContainer();
+      addTearDown(scopedContainer.dispose);
+
+      final notifier = scopedContainer.read(
+        projectsFilterControllerProvider.notifier,
+      );
+      expect(
+        scopedContainer
+            .read(projectsFilterControllerProvider)
+            .selectedStatusIds,
+        currentProjectStatusFilterIds,
+      );
+
+      notifier
+        ..filter = const ProjectsFilter(
+          selectedCategoryIds: {'stale'},
+          sortMode: ProjectsSortMode.name,
+        )
+        ..resetToCurrent();
+
+      expect(
+        scopedContainer.read(projectsFilterControllerProvider),
+        const ProjectsFilter(
+          selectedStatusIds: currentProjectStatusFilterIds,
+        ),
+      );
+    });
+
     test(
       'ProjectsFilterController.setSelectedStatusIds updates only status ids',
       () {
@@ -338,6 +504,7 @@ void main() {
         expect(
           scopedContainer.read(projectsFilterControllerProvider),
           const ProjectsFilter(
+            selectedStatusIds: currentProjectStatusFilterIds,
             textQuery: 'nonexistent-term',
             searchMode: ProjectsSearchMode.localText,
           ),
@@ -346,7 +513,9 @@ void main() {
         notifier.setTextQuery('');
         expect(
           scopedContainer.read(projectsFilterControllerProvider),
-          const ProjectsFilter(),
+          const ProjectsFilter(
+            selectedStatusIds: currentProjectStatusFilterIds,
+          ),
         );
       },
     );

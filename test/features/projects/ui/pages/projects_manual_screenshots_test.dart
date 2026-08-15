@@ -30,7 +30,6 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
@@ -239,7 +238,6 @@ void main() {
       makeTestProjectRecord(
         project: projectWaddle,
         category: world.category,
-        healthScore: 82,
         healthMetrics: makeTestProjectHealthMetrics(
           rationale: _t(
             'Habitat telemetry is stable; the zero-gravity feeder remains '
@@ -296,7 +294,6 @@ void main() {
       makeTestProjectRecord(
         project: coldChain,
         category: missionControl,
-        healthScore: 74,
         totalTaskCount: 6,
         blockedTaskCount: 0,
         aiSummary: _t(
@@ -307,7 +304,6 @@ void main() {
       makeTestProjectRecord(
         project: passengerTreaty,
         category: fishDiplomacy,
-        healthScore: 61,
         completedTaskCount: 1,
         totalTaskCount: 4,
         aiSummary: _t(
@@ -319,7 +315,6 @@ void main() {
       makeTestProjectRecord(
         project: iceGarden,
         category: humanMaintenance,
-        healthScore: 100,
         completedTaskCount: 5,
         blockedTaskCount: 0,
         aiSummary: _t(
@@ -328,11 +323,43 @@ void main() {
         ),
       ),
     ];
-    groups = ProjectListData(
+    final rawGroups = ProjectListData(
       categories: categories,
       projects: records,
       currentTime: manualDemoNow,
     ).overviewSnapshot.groups;
+    String oneLinerFor(String projectId) => switch (projectId) {
+      _projectWaddleId => _t(
+        'Orbital launch readiness and habitat safety',
+        'Orbitale Startbereitschaft und Habitatsicherheit',
+      ),
+      'europa-sardine-cold-chain' => _t(
+        'Keep every cargo pod below the emergency fish ceiling',
+        'Jede Frachtkapsel unter der Fisch-Notfallgrenze halten',
+      ),
+      'penguin-passenger-treaty' => _t(
+        'Settle the passenger-versus-cargo question before launch',
+        'Passagier-oder-Fracht-Frage vor dem Start klären',
+      ),
+      _ => _t(
+        'One quiet lap around the orbital ice garden',
+        'Eine stille Runde durch den orbitalen Eisgarten',
+      ),
+    };
+    groups = [
+      for (final group in rawGroups)
+        group.copyWith(
+          projects: [
+            for (final item in group.projects)
+              ProjectListItemData(
+                project: item.project,
+                category: item.category,
+                taskRollup: item.taskRollup,
+                oneLiner: oneLinerFor(item.project.meta.id),
+              ),
+          ],
+        ),
+    ];
 
     selectedProjectId = ValueNotifier<String?>(null);
     final navService = MockNavService();
@@ -390,26 +417,6 @@ void main() {
       ),
       projectAgentProvider(record.project.meta.id).overrideWith(
         (ref) async => null,
-      ),
-      projectOneLinerProvider(record.project.meta.id).overrideWith(
-        (ref) async => switch (record.project.meta.id) {
-          _projectWaddleId => _t(
-            'Orbital launch readiness and habitat safety',
-            'Orbitale Startbereitschaft und Habitatsicherheit',
-          ),
-          'europa-sardine-cold-chain' => _t(
-            'Keep every cargo pod below the emergency fish ceiling',
-            'Jede Frachtkapsel unter der Fisch-Notfallgrenze halten',
-          ),
-          'penguin-passenger-treaty' => _t(
-            'Settle the passenger-versus-cargo question before launch',
-            'Passagier-oder-Fracht-Frage vor dem Start klären',
-          ),
-          _ => _t(
-            'One quiet lap around the orbital ice garden',
-            'Eine stille Runde durch den orbitalen Eisgarten',
-          ),
-        },
       ),
     ],
     projectDetailNowProvider.overrideWithValue(() => manualDemoNow),
@@ -488,7 +495,7 @@ void main() {
           selectedId: _projectWaddleId,
         );
         expect(find.text('Project Waddle'), findsWidgets);
-        expect(find.text('82'), findsOneWidget);
+        expect(find.text(_t('On Track', 'Im Plan')), findsOneWidget);
         expect(
           find.textContaining(
             _t(

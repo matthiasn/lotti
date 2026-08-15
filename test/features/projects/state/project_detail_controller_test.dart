@@ -305,6 +305,38 @@ void main() {
       },
     );
 
+    test(
+      'discardChanges restores persisted state after a failed save',
+      () async {
+        when(
+          () => mockRepo.updateProject(any()),
+        ).thenAnswer((_) async => false);
+
+        final container = await createLoadedContainer();
+        final notifier = container.read(
+          projectDetailControllerProvider(projectId).notifier,
+        )..updateTitle('Unsaved optimistic title');
+        await notifier.saveChanges();
+
+        expect(
+          container
+              .read(projectDetailControllerProvider(projectId))
+              .project!
+              .data
+              .title,
+          'Unsaved optimistic title',
+        );
+
+        notifier.discardChanges();
+        final restored = container.read(
+          projectDetailControllerProvider(projectId),
+        );
+        expect(restored.project!.data.title, 'Test Project');
+        expect(restored.hasChanges, isFalse);
+        expect(restored.error, isNull);
+      },
+    );
+
     test('saveChanges sets updateFailed on exception', () async {
       when(
         () => mockRepo.updateProject(any()),

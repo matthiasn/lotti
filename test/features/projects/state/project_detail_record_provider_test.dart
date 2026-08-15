@@ -1,7 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -311,101 +310,6 @@ void main() {
         expect(result.highlightedTaskSummaries, isEmpty);
         expect(result.highlightedTasksTotalDuration, Duration.zero);
       });
-    });
-
-    group('health score calculation', () {
-      Future<int> healthScoreFor({
-        ProjectHealthBand? band,
-        double? confidence,
-        bool metricsPresent = true,
-      }) async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-        final container = createContainer(
-          detailState: makeDetailState(
-            project: project,
-          ),
-          healthMetrics: metricsPresent
-              ? makeTestProjectHealthMetrics(
-                  band: band ?? ProjectHealthBand.onTrack,
-                  confidence: confidence,
-                )
-              : null,
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-        return result!.healthScore;
-      }
-
-      test('returns 0 when metrics are null', () async {
-        expect(await healthScoreFor(metricsPresent: false), 0);
-      });
-
-      test(
-        'per-band base score with confidence adjustment and clamping',
-        () async {
-          // (band, confidence, expected): base + ((confidence - 0.5) * 12)
-          // rounded, clamped to [0, 100]; null confidence adds nothing.
-          final cases = <(ProjectHealthBand, double?, int)>[
-            (ProjectHealthBand.onTrack, 0.5, 90), // base 90 + 0
-            (ProjectHealthBand.blocked, 0.9, 23), // base 18 + 5
-            (ProjectHealthBand.surviving, null, 78), // base 78, no adjustment
-            (ProjectHealthBand.watch, 0.5, 64), // base 64 + 0
-            (ProjectHealthBand.atRisk, 0.5, 42), // base 42 + 0
-            (ProjectHealthBand.onTrack, 2, 100), // 90 + 18 → clamped to 100
-            (ProjectHealthBand.blocked, -2, 0), // 18 - 30 → clamped to 0
-          ];
-
-          for (final (band, confidence, expected) in cases) {
-            expect(
-              await healthScoreFor(band: band, confidence: confidence),
-              expected,
-              reason: 'band=$band confidence=$confidence',
-            );
-          }
-        },
-      );
-    });
-
-    group('healthScoreFromMetrics properties', () {
-      glados.Glados2<int, int>(
-        glados.IntAnys(
-          glados.any,
-        ).intInRange(0, ProjectHealthBand.values.length),
-        glados.IntAnys(glados.any).intInRange(-300, 301),
-        glados.ExploreConfig(numRuns: 160),
-      ).test(
-        'score equals clamped base + confidence adjustment for any input',
-        (bandIndex, confidenceCentis) {
-          final band = ProjectHealthBand.values[bandIndex];
-          final confidence = confidenceCentis / 100;
-          final score = healthScoreFromMetrics(
-            makeTestProjectHealthMetrics(band: band, confidence: confidence),
-          );
-
-          const bases = {
-            ProjectHealthBand.onTrack: 90,
-            ProjectHealthBand.surviving: 78,
-            ProjectHealthBand.watch: 64,
-            ProjectHealthBand.atRisk: 42,
-            ProjectHealthBand.blocked: 18,
-          };
-          final expected = (bases[band]! + ((confidence - 0.5) * 12).round())
-              .clamp(0, 100);
-          expect(score, expected, reason: 'band=$band confidence=$confidence');
-          expect(score, inInclusiveRange(0, 100));
-
-          // Null confidence yields exactly the base score.
-          expect(
-            healthScoreFromMetrics(makeTestProjectHealthMetrics(band: band)),
-            bases[band],
-          );
-          // Null metrics yield zero.
-          expect(healthScoreFromMetrics(null), 0);
-        },
-        tags: 'glados',
-      );
     });
 
     group('AI summary resolution', () {

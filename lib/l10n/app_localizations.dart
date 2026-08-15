@@ -16279,6 +16279,30 @@ abstract class AppLocalizations {
   /// **'Only visible when private entries are shown'**
   String get privateSwitchDescription;
 
+  /// No description provided for @projectActionAddTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add task'**
+  String get projectActionAddTask;
+
+  /// No description provided for @projectActionArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get projectActionArchive;
+
+  /// No description provided for @projectActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get projectActionDelete;
+
+  /// No description provided for @projectActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit project'**
+  String get projectActionEdit;
+
   /// No description provided for @projectAgentNotProvisioned.
   ///
   /// In en, this message translates to:
@@ -16290,6 +16314,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agent'**
   String get projectAgentSectionTitle;
+
+  /// No description provided for @projectArchiveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Project archived'**
+  String get projectArchiveSuccess;
 
   /// No description provided for @projectCountSummary.
   ///
@@ -16308,6 +16338,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Project'**
   String get projectCreateTitle;
+
+  /// No description provided for @projectDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The project will be removed. Its tasks will stay in your journal.'**
+  String get projectDeleteConfirmBody;
+
+  /// No description provided for @projectDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this project?'**
+  String get projectDeleteConfirmTitle;
+
+  /// No description provided for @projectDeleteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Project deleted'**
+  String get projectDeleteSuccess;
 
   /// No description provided for @projectDetailTitle.
   ///
@@ -16374,6 +16422,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Watch'**
   String get projectHealthBandWatch;
+
+  /// No description provided for @projectHealthConfidence.
+  ///
+  /// In en, this message translates to:
+  /// **'{confidence}% confidence'**
+  String projectHealthConfidence(int confidence);
+
+  /// No description provided for @projectHealthEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Run the project agent to create an assessment from the latest project and task activity.'**
+  String get projectHealthEmptyBody;
+
+  /// No description provided for @projectHealthEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No health report yet'**
+  String get projectHealthEmptyTitle;
+
+  /// No description provided for @projectHealthRunNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Run report'**
+  String get projectHealthRunNow;
 
   /// No description provided for @projectHealthSectionTitle.
   ///
@@ -16464,6 +16536,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update the recommendation. Please try again.'**
   String get projectRecommendationUpdateError;
+
+  /// No description provided for @projectsClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get projectsClearFilters;
+
+  /// No description provided for @projectsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project to bring related tasks, progress, and agent insight together.'**
+  String get projectsEmptyBody;
+
+  /// No description provided for @projectsEmptyCurrentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed and archived projects are out of the way. Switch to All to revisit them.'**
+  String get projectsEmptyCurrentBody;
+
+  /// No description provided for @projectsEmptyCurrentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No current projects'**
+  String get projectsEmptyCurrentTitle;
+
+  /// No description provided for @projectsEmptyFilteredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust your search or filters to bring matching projects back into view.'**
+  String get projectsEmptyFilteredBody;
+
+  /// No description provided for @projectsEmptyFilteredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects match this view'**
+  String get projectsEmptyFilteredTitle;
+
+  /// No description provided for @projectsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your first project'**
+  String get projectsEmptyTitle;
 
   /// No description provided for @projectsFilterStatusLabel.
   ///
@@ -16591,6 +16705,48 @@ abstract class AppLocalizations {
   /// **'View blocker'**
   String get projectShowcaseViewBlocker;
 
+  /// No description provided for @projectsScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get projectsScopeAll;
+
+  /// No description provided for @projectsScopeCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get projectsScopeCurrent;
+
+  /// No description provided for @projectsSortActionable.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get projectsSortActionable;
+
+  /// No description provided for @projectsSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get projectsSortName;
+
+  /// No description provided for @projectsSortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently updated'**
+  String get projectsSortRecent;
+
+  /// No description provided for @projectsSortTargetDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Target date'**
+  String get projectsSortTargetDate;
+
+  /// No description provided for @projectsSortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort projects'**
+  String get projectsSortTooltip;
+
   /// No description provided for @projectStatusActive.
   ///
   /// In en, this message translates to:
@@ -16645,11 +16801,23 @@ abstract class AppLocalizations {
   /// **'Summary outdated. Next update {date} at {time}.'**
   String projectSummaryOutdatedScheduled(String date, String time);
 
+  /// No description provided for @projectsUnavailableCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable category'**
+  String get projectsUnavailableCategory;
+
   /// No description provided for @projectTargetDateLabel.
   ///
   /// In en, this message translates to:
   /// **'Target Date'**
   String get projectTargetDateLabel;
+
+  /// No description provided for @projectTaskProgressNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks'**
+  String get projectTaskProgressNone;
 
   /// No description provided for @projectTitleLabel.
   ///

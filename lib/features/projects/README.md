@@ -21,9 +21,13 @@ project agent is attached — a summary and health read that the agent maintains
   read. Relevant project and linked-task activity schedules one coalesced
   refresh; an idle project has no recurring wake.
 - **Is honest when it does not know.** If the agent has not produced a usable
-  health payload, no health is shown — nothing is invented locally.
+  health payload, the detail says that no report exists yet — nothing is
+  invented locally. Agent health stays categorical and explains its rationale.
 - **Groups the overview by area.** The projects tab groups projects under their
-  category with task counts and filters.
+  category with task counts and filters. It opens on current work, keeps
+  completed/archived projects behind All, prioritizes actionable work, and lets
+  each category collapse for focus. Agent one-liners load in one overview batch
+  and participate in search instead of shifting into rows one by one.
 - **Makes room to focus on one project.** On desktop, the project list can be
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.

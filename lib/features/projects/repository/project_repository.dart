@@ -314,6 +314,26 @@ class ProjectRepository {
     return result ?? false;
   }
 
+  /// Soft-deletes [project] and emits the same scoped notification as an
+  /// ordinary project update so list/detail providers reconcile immediately.
+  Future<bool> deleteProject(
+    ProjectEntry project, {
+    required DateTime deletedAt,
+  }) async {
+    final updatedMeta = await _persistenceLogic.updateMetadata(
+      project.meta,
+      deletedAt: deletedAt,
+    );
+    final deleted = project.copyWith(meta: updatedMeta);
+    final result = await _persistenceLogic.updateDbEntity(deleted);
+    if (result ?? false) {
+      _updateNotifications.notify({
+        projectEntityUpdateNotification(deleted.id),
+      });
+    }
+    return result ?? false;
+  }
+
   // ── Linking ────────────────────────────────────────────────────────────────
 
   /// Links a task to a project.

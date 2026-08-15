@@ -9767,11 +9767,26 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizibil doar când intrările private sunt afișate';
 
   @override
+  String get projectActionAddTask => 'Adăugați sarcină';
+
+  @override
+  String get projectActionArchive => 'Arhivați';
+
+  @override
+  String get projectActionDelete => 'Ștergeți';
+
+  @override
+  String get projectActionEdit => 'Editați proiectul';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Încă nu a fost configurat niciun agent de proiect pentru acest proiect.';
 
   @override
   String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectArchiveSuccess => 'Proiect arhivat';
 
   @override
   String projectCountSummary(int count) {
@@ -9790,6 +9805,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Creare proiect';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Proiectul va fi eliminat. Sarcinile sale vor rămâne în jurnalul dvs.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Ștergeți acest proiect?';
+
+  @override
+  String get projectDeleteSuccess => 'Proiect șters';
 
   @override
   String get projectDetailTitle => 'Detalii proiect';
@@ -9825,6 +9850,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'De urmărit';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return 'Încredere $confidence%';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Rulați agentul proiectului pentru a crea o evaluare din cea mai recentă activitate a proiectului și a sarcinilor.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Încă nu există un raport de stare';
+
+  @override
+  String get projectHealthRunNow => 'Rulați raportul';
 
   @override
   String get projectHealthSectionTitle => 'Starea proiectului';
@@ -9896,6 +9936,31 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.';
+
+  @override
+  String get projectsClearFilters => 'Ștergeți filtrele';
+
+  @override
+  String get projectsEmptyBody =>
+      'Creați un proiect pentru a reuni sarcinile asociate, progresul și informațiile agentului.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Proiectele finalizate și arhivate sunt ascunse. Comutați la Toate pentru a le revedea.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Niciun proiect curent';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Ajustați căutarea sau filtrele pentru a afișa din nou proiectele potrivite.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Niciun proiect nu corespunde acestei vizualizări';
+
+  @override
+  String get projectsEmptyTitle => 'Începeți primul proiect';
 
   @override
   String get projectsFilterStatusLabel => 'Stare:';
@@ -9993,6 +10058,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Vedeți blocajul';
 
   @override
+  String get projectsScopeAll => 'Toate';
+
+  @override
+  String get projectsScopeCurrent => 'Curente';
+
+  @override
+  String get projectsSortActionable => 'Necesită atenție';
+
+  @override
+  String get projectsSortName => 'Nume';
+
+  @override
+  String get projectsSortRecent => 'Actualizate recent';
+
+  @override
+  String get projectsSortTargetDate => 'Data țintă';
+
+  @override
+  String get projectsSortTooltip => 'Sortați proiectele';
+
+  @override
   String get projectStatusActive => 'Activ';
 
   @override
@@ -10022,7 +10108,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Categorie indisponibilă';
+
+  @override
   String get projectTargetDateLabel => 'Data țintă';
+
+  @override
+  String get projectTaskProgressNone => 'Nicio sarcină';
 
   @override
   String get projectTitleLabel => 'Titlu proiect';

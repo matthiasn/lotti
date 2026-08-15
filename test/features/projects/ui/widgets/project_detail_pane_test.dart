@@ -51,16 +51,18 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('renders health panel with score', (tester) async {
-      final record = makeTestProjectRecord(healthScore: 85);
+    testWidgets('renders an honest empty health state without metrics', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord();
 
       await tester.pumpWidget(
         wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
       );
       await tester.pump();
 
-      expect(find.text('Health Score'), findsOneWidget);
-      expect(find.text('85'), findsOneWidget);
+      expect(find.text('No health report yet'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
     });
 
     testWidgets('renders AI summary section', (tester) async {

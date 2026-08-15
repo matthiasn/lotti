@@ -9698,11 +9698,26 @@ class AppLocalizationsCs extends AppLocalizations {
       'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
+  String get projectActionAddTask => 'Přidat úkol';
+
+  @override
+  String get projectActionArchive => 'Archivovat';
+
+  @override
+  String get projectActionDelete => 'Smazat';
+
+  @override
+  String get projectActionEdit => 'Upravit projekt';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Pro tento projekt ještě nebyl nastaven žádný projektový agent.';
 
   @override
   String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectArchiveSuccess => 'Projekt archivován';
 
   @override
   String projectCountSummary(int count) {
@@ -9721,6 +9736,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectCreateTitle => 'Vytvořit projekt';
+
+  @override
+  String get projectDeleteConfirmBody =>
+      'Projekt bude odstraněn. Jeho úkoly zůstanou ve tvém deníku.';
+
+  @override
+  String get projectDeleteConfirmTitle => 'Smazat tento projekt?';
+
+  @override
+  String get projectDeleteSuccess => 'Projekt smazán';
 
   @override
   String get projectDetailTitle => 'Detail projektu';
@@ -9755,6 +9780,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectHealthBandWatch => 'Sledovat';
+
+  @override
+  String projectHealthConfidence(int confidence) {
+    return 'Jistota $confidence %';
+  }
+
+  @override
+  String get projectHealthEmptyBody =>
+      'Spusť agenta projektu, aby vytvořil hodnocení z nejnovější aktivity projektu a úkolů.';
+
+  @override
+  String get projectHealthEmptyTitle => 'Zatím žádná zpráva o stavu';
+
+  @override
+  String get projectHealthRunNow => 'Spustit zprávu';
 
   @override
   String get projectHealthSectionTitle => 'Stav projektu';
@@ -9826,6 +9866,31 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get projectRecommendationUpdateError =>
       'Doporučení se nepodařilo aktualizovat. Zkus to prosím znovu.';
+
+  @override
+  String get projectsClearFilters => 'Vymazat filtry';
+
+  @override
+  String get projectsEmptyBody =>
+      'Vytvoř projekt a spoj související úkoly, postup a poznatky agenta.';
+
+  @override
+  String get projectsEmptyCurrentBody =>
+      'Dokončené a archivované projekty jsou skryté. Přepni na Vše a vrať se k nim.';
+
+  @override
+  String get projectsEmptyCurrentTitle => 'Žádné aktuální projekty';
+
+  @override
+  String get projectsEmptyFilteredBody =>
+      'Uprav hledání nebo filtry a zobraz odpovídající projekty.';
+
+  @override
+  String get projectsEmptyFilteredTitle =>
+      'Tomuto zobrazení neodpovídají žádné projekty';
+
+  @override
+  String get projectsEmptyTitle => 'Začni prvním projektem';
 
   @override
   String get projectsFilterStatusLabel => 'Stav:';
@@ -9923,6 +9988,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectShowcaseViewBlocker => 'Zobrazit blokátor';
 
   @override
+  String get projectsScopeAll => 'Vše';
+
+  @override
+  String get projectsScopeCurrent => 'Aktuální';
+
+  @override
+  String get projectsSortActionable => 'Vyžaduje pozornost';
+
+  @override
+  String get projectsSortName => 'Název';
+
+  @override
+  String get projectsSortRecent => 'Nedávno aktualizované';
+
+  @override
+  String get projectsSortTargetDate => 'Cílové datum';
+
+  @override
+  String get projectsSortTooltip => 'Seřadit projekty';
+
+  @override
   String get projectStatusActive => 'Aktivní';
 
   @override
@@ -9952,7 +10038,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get projectsUnavailableCategory => 'Nedostupná kategorie';
+
+  @override
   String get projectTargetDateLabel => 'Cílové datum';
+
+  @override
+  String get projectTaskProgressNone => 'Žádné úkoly';
 
   @override
   String get projectTitleLabel => 'Název projektu';
