@@ -3238,6 +3238,8 @@
   "linkSummarySupersedesInverse": "Cette tâche est remplacée par {target}",
   "linkSummarySupersedesPrimary": "Cette tâche remplace {target}",
   "linkTaskButton": "Lier",
+  "listPaneHideTooltip": "Masquer la liste",
+  "listPaneShowTooltip": "Afficher la liste",
   "logbookEmptyHint": "Crée ta première entrée pour commencer ton journal.",
   "logbookEmptyTitle": "Ton journal est vide",
   "logbookNewEntriesHint": "Les nouvelles entrées s’ouvriront ici.",

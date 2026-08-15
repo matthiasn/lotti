@@ -8269,6 +8269,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkTaskButton => 'Link';
 
   @override
+  String get listPaneHideTooltip => 'Skjul liste';
+
+  @override
+  String get listPaneShowTooltip => 'Vis liste';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

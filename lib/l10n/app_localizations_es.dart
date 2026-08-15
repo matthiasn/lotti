@@ -8376,6 +8376,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkTaskButton => 'Vincular';
 
   @override
+  String get listPaneHideTooltip => 'Ocultar lista';
+
+  @override
+  String get listPaneShowTooltip => 'Mostrar lista';
+
+  @override
   String get logbookEmptyHint =>
       'Crea tu primera entrada para empezar tu diario.';
 

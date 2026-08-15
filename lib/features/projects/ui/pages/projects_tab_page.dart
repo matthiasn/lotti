@@ -32,10 +32,11 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 ///
 /// On desktop it renders a resizable two-pane layout: a list scaffold on the
 /// left (width driven by [paneWidthControllerProvider] via a [ResizableDivider])
-/// and, on the right, [ProjectDetailsPage] for the project currently selected in
-/// `NavService.desktopSelectedProjectId`, falling back to an empty-state. On
-/// mobile it shows only the list scaffold; tapping a project beams to
-/// `/projects/<id>`.
+/// and, on the right, [ProjectDetailsPage] for the project currently selected
+/// in `NavService.desktopSelectedProjectId`, falling back to an empty-state.
+/// With a selection, the list can move offstage into persisted focus mode while
+/// retaining its state. On mobile it shows only the list scaffold; tapping a
+/// project beams to `/projects/<id>`.
 ///
 /// The list scaffold watches [visibleProjectGroupsProvider] (the raw
 /// [projectsOverviewProvider] snapshot with [projectsFilterControllerProvider]
@@ -86,44 +87,57 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         minValue: minListPaneWidth,
         maxValue: maxListPaneWidth,
         screenWidth: MediaQuery.sizeOf(context).width,
-        onDelta: ref
+        onDelta: (delta) => ref
             .read(paneWidthControllerProvider.notifier)
-            .updateListPaneWidth,
+            .updateListPaneWidth(delta, allowWhileCollapsed: true),
       );
       final listPaneWidth = resolvedListPane.width;
+      final paneController = ref.read(paneWidthControllerProvider.notifier);
       child = DecoratedBox(
         decoration: BoxDecoration(
           color: ShowcasePalette.page(context),
         ),
-        child: ListDetailFocusTraversal(
-          debugLabel: 'projects-split',
-          listPane: SizedBox(
-            width: listPaneWidth,
-            child: _ProjectsListScaffold(
-              scrollController: _scrollController,
-              searchFocusNode: _searchFocusNode,
-            ),
-          ),
-          divider: ResizableDivider(
-            currentValue: listPaneWidth,
-            minValue: minListPaneWidth,
-            maxValue: maxListPaneWidth,
-            onDrag: resolvedListPane.onDrag,
-          ),
-          detailPane: ValueListenableBuilder<String?>(
-            valueListenable: getIt<NavService>().desktopSelectedProjectId,
-            builder: (context, selectedProjectId, _) {
-              if (selectedProjectId != null) {
-                return ProjectDetailsPage(
-                  key: ValueKey(selectedProjectId),
-                  projectId: selectedProjectId,
-                );
-              }
-              return DesktopDetailEmptyState(
-                message: context.messages.desktopEmptyStateSelectProject,
-              );
-            },
-          ),
+        child: ValueListenableBuilder<String?>(
+          valueListenable: getIt<NavService>().desktopSelectedProjectId,
+          builder: (context, selectedProjectId, _) {
+            final canHideListPane = selectedProjectId != null;
+            final listPaneVisible =
+                !paneWidths.listPaneCollapsed || !canHideListPane;
+
+            return ListDetailFocusTraversal(
+              debugLabel: 'projects-split',
+              listPaneVisible: listPaneVisible,
+              canHideListPane: canHideListPane,
+              onListPaneVisibilityChanged: (visible) {
+                if (visible) {
+                  paneController.expandListPane();
+                } else {
+                  paneController.collapseListPane();
+                }
+              },
+              listPane: SizedBox(
+                width: listPaneWidth,
+                child: _ProjectsListScaffold(
+                  scrollController: _scrollController,
+                  searchFocusNode: _searchFocusNode,
+                ),
+              ),
+              divider: ResizableDivider(
+                currentValue: listPaneWidth,
+                minValue: minListPaneWidth,
+                maxValue: maxListPaneWidth,
+                onDrag: resolvedListPane.onDrag,
+              ),
+              detailPane: selectedProjectId != null
+                  ? _ProjectsDetailPane(
+                      key: ValueKey(selectedProjectId),
+                      projectId: selectedProjectId,
+                    )
+                  : DesktopDetailEmptyState(
+                      message: context.messages.desktopEmptyStateSelectProject,
+                    ),
+            );
+          },
         ),
       );
     } else {
@@ -136,7 +150,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     return AppCommandScope(
       handlers: {
         AppCommandId.focusSearch: AppCommandHandler(
-          invoke: (_) => _searchFocusNode.requestFocus(),
+          invoke: (_) => _focusSearch(isDesktop: isDesktop),
         ),
         AppCommandId.createInContext: AppCommandHandler(
           invoke: (invocation) =>
@@ -146,9 +160,60 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
       child: child,
     );
   }
+
+  void _focusSearch({required bool isDesktop}) {
+    if (!isDesktop) {
+      _searchFocusNode.requestFocus();
+      return;
+    }
+
+    ref.read(paneWidthControllerProvider.notifier).expandListPane();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
 }
 
 final _noProjectSelectionNotifier = ValueNotifier<String?>(null);
+
+class _ProjectsDetailPane extends StatelessWidget {
+  const _ProjectsDetailPane({required this.projectId, super.key});
+
+  final String projectId;
+
+  @override
+  Widget build(BuildContext context) {
+    final splitController = ListDetailFocusTraversal.maybeOf(context);
+    final detail = ProjectDetailsPage(projectId: projectId);
+    final tokens = context.designTokens;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        detail,
+        if (splitController?.listPaneVisible == false)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step5,
+                  top: tokens.spacing.step4,
+                ),
+                child: TabHeaderIconButton(
+                  key: const ValueKey('projects-show-list-pane'),
+                  icon: Icons.view_sidebar_rounded,
+                  tooltip: context.messages.listPaneShowTooltip,
+                  onPressed: splitController!.showListPane,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
 
 class _ProjectsListScaffold extends ConsumerWidget {
   const _ProjectsListScaffold({
@@ -162,6 +227,10 @@ class _ProjectsListScaffold extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final splitController = ListDetailFocusTraversal.maybeOf(context);
+    final canHideListPane =
+        splitController?.listPaneVisible == true &&
+        splitController?.canHideListPane == true;
     final overviewAsync = ref.watch(projectsOverviewProvider);
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
@@ -207,6 +276,16 @@ class _ProjectsListScaffold extends ConsumerWidget {
                   query: filter.textQuery,
                   searchHint: context.messages.projectShowcaseSearchHint,
                   filterTooltip: context.messages.projectsFilterTooltip,
+                  titleLeading: canHideListPane
+                      ? TabHeaderIconButton(
+                          key: const ValueKey(
+                            'projects-hide-list-pane',
+                          ),
+                          icon: Icons.view_sidebar_rounded,
+                          tooltip: context.messages.listPaneHideTooltip,
+                          onPressed: splitController!.hideListPane,
+                        )
+                      : null,
                   onSearchChanged: (value) {
                     ref
                         .read(projectsFilterControllerProvider.notifier)

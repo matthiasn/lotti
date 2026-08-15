@@ -3631,6 +3631,8 @@
   "linkSummaryNewTaskSupersedesPrimary": "Questa attività sostituisce la nuova attività",
   "linkSummarySupersedesInverse": "Questa attività è sostituita da {target}",
   "linkSummarySupersedesPrimary": "Questa attività sostituisce {target}",
+  "listPaneHideTooltip": "Nascondi elenco",
+  "listPaneShowTooltip": "Mostra elenco",
   "loggingDomainAgentRuntime": "Tempo libero dell'agente",
   "loggingDomainAgentWorkflow": "Flusso di lavoro agente",
   "loggingDomainAi": "IA",

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
@@ -165,6 +166,81 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
   });
+
+  testWidgets(
+    'focus mode hides and restores the selected task list while preserving it',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
+      addTearDown(stackNotifier.dispose);
+      when(
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
+        findsOneWidget,
+      );
+      final detailElement = tester.element(find.byType(TaskDetailsPage));
+      await tester.tap(
+        find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TasksTabPage), findsNothing);
+      expect(
+        find.byType(TasksTabPage, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.byType(ResizableDivider), findsNothing);
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(tester.element(find.byType(TaskDetailsPage)), detailElement);
+      expect(
+        find.byKey(const ValueKey('tasks-show-list-pane')),
+        findsOneWidget,
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TasksRootPage)),
+      );
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isTrue,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('tasks-show-list-pane')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TasksTabPage), findsOneWidget);
+      expect(find.byType(ResizableDivider), findsOneWidget);
+      expect(tester.element(find.byType(TaskDetailsPage)), detailElement);
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isFalse,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets(
     'wraps detail pane in AnimatedSwitcher and crossfades between tasks',
@@ -394,6 +470,17 @@ void main() {
         .width!;
 
     final before = listPaneWidth();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TasksRootPage)),
+    );
+    container.read(paneWidthControllerProvider.notifier).collapseListPane();
+    await tester.pump();
+
+    expect(find.byType(ResizableDivider), findsOneWidget);
+    expect(
+      container.read(paneWidthControllerProvider).listPaneCollapsed,
+      isTrue,
+    );
 
     await tester.drag(
       find.byType(ResizableDivider),
@@ -405,5 +492,10 @@ void main() {
     // The width delta is forwarded to the pane controller, not just local
     // layout: the divider's onDrag updates paneWidthControllerProvider.
     expect(listPaneWidth(), before + 80);
+    expect(
+      container.read(paneWidthControllerProvider).listPaneCollapsed,
+      isTrue,
+    );
+    await tester.pump(persistDebounce);
   });
 }

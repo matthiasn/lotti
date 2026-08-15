@@ -3631,6 +3631,8 @@
   "linkSummaryNewTaskSupersedesPrimary": "Denna uppgift ersätter den nya uppgiften",
   "linkSummarySupersedesInverse": "Denna uppgift ersätts av {target}",
   "linkSummarySupersedesPrimary": "Denna uppgift ersätter {target}",
+  "listPaneHideTooltip": "Dölj lista",
+  "listPaneShowTooltip": "Visa lista",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentens arbetsflöde",
   "loggingDomainAi": "AI",

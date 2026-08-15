@@ -31,6 +31,9 @@ project, and relationships to other tasks.
   search-and-filter header folds into a slim bar while scrolling down the list
   and returns on a deliberate scroll back up, so small screens show tasks
   rather than chrome.
+- **Makes room to focus on one task.** On desktop, the task list can be hidden
+  after a task is selected and restored without losing its filters, search or
+  scroll position. Back remains reserved for returning from a linked task.
 - **Saves the filters that matter.** Frequently used queries become named views
   with live counts, pinned in the desktop sidebar or reachable from the mobile
   rail's Views button.

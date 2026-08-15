@@ -8317,6 +8317,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkTaskButton => 'Verknüpfen';
 
   @override
+  String get listPaneHideTooltip => 'Liste ausblenden';
+
+  @override
+  String get listPaneShowTooltip => 'Liste anzeigen';
+
+  @override
   String get logbookEmptyHint =>
       'Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.';
 

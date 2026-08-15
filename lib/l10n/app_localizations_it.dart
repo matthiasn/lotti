@@ -8372,6 +8372,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get linkTaskButton => 'Link';
 
   @override
+  String get listPaneHideTooltip => 'Nascondi elenco';
+
+  @override
+  String get listPaneShowTooltip => 'Mostra elenco';
+
+  @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
 
   @override

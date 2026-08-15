@@ -3631,6 +3631,8 @@
   "linkSummaryNewTaskSupersedesPrimary": "Denne opgave erstatter den nye opgave",
   "linkSummarySupersedesInverse": "Denne opgave erstattes af {target}",
   "linkSummarySupersedesPrimary": "Denne opgave erstatter {target}",
+  "listPaneHideTooltip": "Skjul liste",
+  "listPaneShowTooltip": "Vis liste",
   "loggingDomainAgentRuntime": "Agentens runtime",
   "loggingDomainAgentWorkflow": "Agentarbejdsgang",
   "loggingDomainAi": "AI",

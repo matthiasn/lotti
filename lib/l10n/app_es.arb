@@ -3238,6 +3238,8 @@
   "linkSummarySupersedesInverse": "Esta tarea está sustituida por {target}",
   "linkSummarySupersedesPrimary": "Esta tarea sustituye a {target}",
   "linkTaskButton": "Vincular",
+  "listPaneHideTooltip": "Ocultar lista",
+  "listPaneShowTooltip": "Mostrar lista",
   "logbookEmptyHint": "Crea tu primera entrada para empezar tu diario.",
   "logbookEmptyTitle": "Tu diario está vacío",
   "logbookNewEntriesHint": "Las nuevas entradas se abrirán aquí.",

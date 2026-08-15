@@ -10,6 +10,7 @@ const sidebarWidthKey = 'PANE_WIDTH_SIDEBAR';
 const listPaneWidthKey = 'PANE_WIDTH_LIST';
 const journalListPaneWidthKey = 'PANE_WIDTH_JOURNAL_LIST';
 const sidebarCollapsedKey = 'PANE_WIDTH_SIDEBAR_COLLAPSED';
+const listPaneCollapsedKey = 'PANE_WIDTH_LIST_COLLAPSED';
 
 /// Default and constraint values for pane widths.
 ///
@@ -108,8 +109,8 @@ ResolvedPaneWidth resolvedPaneWidth({
   );
 }
 
-/// State holding the current widths and collapsed flag for the sidebar, plus
-/// the width for the list pane.
+/// State holding the current pane widths and the collapsed flags shared by the
+/// desktop navigation sidebar and the Tasks/Projects list pane.
 ///
 /// [sidebarWidth] doubles as the restore target for
 /// `PaneWidthController.expandSidebar`: while collapsed the controller
@@ -122,24 +123,28 @@ class PaneWidths {
     this.listPaneWidth = defaultListPaneWidth,
     this.journalListPaneWidth = defaultJournalListPaneWidth,
     this.sidebarCollapsed = false,
+    this.listPaneCollapsed = false,
   });
 
   final double sidebarWidth;
   final double listPaneWidth;
   final double journalListPaneWidth;
   final bool sidebarCollapsed;
+  final bool listPaneCollapsed;
 
   PaneWidths copyWith({
     double? sidebarWidth,
     double? listPaneWidth,
     double? journalListPaneWidth,
     bool? sidebarCollapsed,
+    bool? listPaneCollapsed,
   }) {
     return PaneWidths(
       sidebarWidth: sidebarWidth ?? this.sidebarWidth,
       listPaneWidth: listPaneWidth ?? this.listPaneWidth,
       journalListPaneWidth: journalListPaneWidth ?? this.journalListPaneWidth,
       sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
+      listPaneCollapsed: listPaneCollapsed ?? this.listPaneCollapsed,
     );
   }
 
@@ -151,7 +156,8 @@ class PaneWidths {
           sidebarWidth == other.sidebarWidth &&
           listPaneWidth == other.listPaneWidth &&
           journalListPaneWidth == other.journalListPaneWidth &&
-          sidebarCollapsed == other.sidebarCollapsed;
+          sidebarCollapsed == other.sidebarCollapsed &&
+          listPaneCollapsed == other.listPaneCollapsed;
 
   @override
   int get hashCode => Object.hash(
@@ -159,11 +165,12 @@ class PaneWidths {
     listPaneWidth,
     journalListPaneWidth,
     sidebarCollapsed,
+    listPaneCollapsed,
   );
 }
 
 /// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
-/// widths and the sidebar's collapsed flag.
+/// widths and their collapsed flags.
 ///
 /// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
 /// deltas, and debounces writes back to disk. Once the user adjusts a width,
@@ -200,6 +207,7 @@ class PaneWidthController extends Notifier<PaneWidths> {
         listPaneWidthKey,
         journalListPaneWidthKey,
         sidebarCollapsedKey,
+        listPaneCollapsedKey,
       });
 
       if (_userAdjusted) return;
@@ -223,12 +231,14 @@ class PaneWidthController extends Notifier<PaneWidths> {
         maxJournalListPaneWidth,
       );
       final sidebarCollapsed = values[sidebarCollapsedKey] == 'true';
+      final listPaneCollapsed = values[listPaneCollapsedKey] == 'true';
 
       state = PaneWidths(
         sidebarWidth: sidebarWidth,
         listPaneWidth: listPaneWidth,
         journalListPaneWidth: journalListPaneWidth,
         sidebarCollapsed: sidebarCollapsed,
+        listPaneCollapsed: listPaneCollapsed,
       );
     } catch (error, stackTrace) {
       debugPrint(
@@ -268,7 +278,16 @@ class PaneWidthController extends Notifier<PaneWidths> {
 
   /// Applies a drag [delta] to the list-pane width, clamped to
   /// [minListPaneWidth]..[maxListPaneWidth], and debounces persistence.
-  void updateListPaneWidth(double delta) {
+  ///
+  /// A hidden pane keeps its restore width frozen. A host that deliberately
+  /// forces the list and divider visible despite a latent collapsed preference
+  /// may set [allowWhileCollapsed] so that visible resize affordance remains
+  /// operational.
+  void updateListPaneWidth(
+    double delta, {
+    bool allowWhileCollapsed = false,
+  }) {
+    if (state.listPaneCollapsed && !allowWhileCollapsed) return;
     _userAdjusted = true;
     final newWidth = (state.listPaneWidth + delta).clamp(
       minListPaneWidth,
@@ -332,6 +351,34 @@ class PaneWidthController extends Notifier<PaneWidths> {
     }
   }
 
+  /// Collapses the shared Tasks/Projects list pane without changing its saved
+  /// expanded width, so returning from focus mode restores the user's layout.
+  void collapseListPane() {
+    if (state.listPaneCollapsed) return;
+    _userAdjusted = true;
+    _listPaneDebounce?.cancel();
+    state = state.copyWith(listPaneCollapsed: true);
+    _persistListPaneWidth();
+    _persistListPaneCollapseFlag();
+  }
+
+  /// Restores the shared Tasks/Projects list pane at its previous width.
+  void expandListPane() {
+    if (!state.listPaneCollapsed) return;
+    _userAdjusted = true;
+    state = state.copyWith(listPaneCollapsed: false);
+    _persistListPaneCollapseFlag();
+  }
+
+  /// Toggles the shared Tasks/Projects list pane between browse and focus mode.
+  void toggleListPaneCollapsed() {
+    if (state.listPaneCollapsed) {
+      expandListPane();
+    } else {
+      collapseListPane();
+    }
+  }
+
   void _debounceSidebarPersist() {
     _sidebarDebounce?.cancel();
     _sidebarDebounce = Timer(persistDebounce, _persistSidebarWidth);
@@ -367,6 +414,15 @@ class PaneWidthController extends Notifier<PaneWidths> {
   void _persistCollapseFlag() {
     unawaited(
       _persistString(sidebarCollapsedKey, state.sidebarCollapsed.toString()),
+    );
+  }
+
+  void _persistListPaneCollapseFlag() {
+    unawaited(
+      _persistString(
+        listPaneCollapsedKey,
+        state.listPaneCollapsed.toString(),
+      ),
     );
   }
 

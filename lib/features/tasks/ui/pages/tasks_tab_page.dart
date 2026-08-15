@@ -25,6 +25,7 @@ import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
+import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
@@ -360,6 +361,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(true));
     final controller = ref.read(journalPageControllerProvider(true).notifier);
+    final splitController = ListDetailFocusTraversal.maybeOf(context);
+    final canHideListPane =
+        splitController?.listPaneVisible == true &&
+        splitController?.canHideListPane == true;
 
     // One narrowing predicate for the whole page — the funnel tint, the
     // clause badge, the collapsed caption and the chip row all read the same
@@ -378,6 +383,14 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
           searchHint: context.messages.searchTasksHint,
           filterTooltip: context.messages.tasksFilterTitle,
           filtersActive: filtersActive,
+          titleLeading: canHideListPane
+              ? TabHeaderIconButton(
+                  key: const ValueKey('tasks-hide-list-pane-expanded'),
+                  icon: Icons.view_sidebar_rounded,
+                  tooltip: context.messages.listPaneHideTooltip,
+                  onPressed: splitController!.hideListPane,
+                )
+              : null,
           onSearchChanged: (value) {
             unawaited(controller.setSearchString(value));
           },
@@ -432,6 +445,14 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       expandSemanticHint: context.messages.tasksCompactHeaderExpandHint,
       filtersActive: filtersActive,
       searchActive: state.match.isNotEmpty,
+      leading: canHideListPane
+          ? TabHeaderIconButton(
+              key: const ValueKey('tasks-hide-list-pane-compact'),
+              icon: Icons.view_sidebar_rounded,
+              tooltip: context.messages.listPaneHideTooltip,
+              onPressed: splitController!.hideListPane,
+            )
+          : null,
       contextLabel: contextParts.isEmpty ? null : contextParts.join(' · '),
       onExpandRequested: widget.collapseController.expand,
       onSearchRequested: _expandAndFocusSearch,

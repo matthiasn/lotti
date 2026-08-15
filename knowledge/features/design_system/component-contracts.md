@@ -11,7 +11,7 @@ sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-08-05
+    last_modified: 2026-08-15
   - id: contact-row
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
@@ -97,9 +97,12 @@ The same rule applies to structural and operational surfaces:
 `DesignSystemTextInput` owns editable settings fields. The sync maintenance
 progress views, statistics page, and this-device profile are canonical
 adopters: feature code supplies state and copy, while these components supply
-the visual and semantic grammar. `DesignSystemListItem` remains an interactive
-row; rendering a read-only value with no callback puts it into its disabled
-treatment, so static metadata should use token-styled text instead.
+the visual and semantic grammar. A progress header gives its label and trailing
+value bounded shares of a narrow row; either may ellipsize visually, while the
+bar's semantics retain the complete label and value. `DesignSystemListItem`
+remains an interactive row; rendering a read-only value with no callback puts
+it into its disabled treatment, so static metadata should use token-styled text
+instead.
 
 **`DesignSystemSectionCard` fixes its own fill** to `background.level02`, which
 is what makes it a *surface* rather than a container. A card whose fill carries

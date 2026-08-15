@@ -3630,6 +3630,8 @@
   "linkSummaryNewTaskSupersedesPrimary": "Esta tarefa substitui a nova tarefa",
   "linkSummarySupersedesInverse": "Esta tarefa está substituída por {target}",
   "linkSummarySupersedesPrimary": "Esta tarefa substitui {target}",
+  "listPaneHideTooltip": "Ocultar lista",
+  "listPaneShowTooltip": "Mostrar lista",
   "loggingDomainAgentRuntime": "Tempo de execução do agente",
   "loggingDomainAgentWorkflow": "Fluxo de trabalho do agente",
   "loggingDomainAi": "IA",

@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The steps signal no longer repeats its own name.** The target input
   inside the "Average steps per day" card is labelled "Daily target" instead
   of duplicating the card title.
+- **Tasks and Projects have a desktop focus mode.** Once an item is selected,
+  you can hide the list and give the detail the full workspace, then restore
+  the list with its search, filters, scroll position and previous width intact.
+  Back now stays reserved for real navigation: project details do not show it
+  in the desktop split, and task details show it only after opening a linked
+  task.
 - **The seven-day rows line up.** The whole-goal week, the habit squares and
   the step bars are the same week drawn one card apart; they now share one
   column grid, one cell shape and one legend shape, so a day sits in the same

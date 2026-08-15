@@ -8431,6 +8431,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkTaskButton => 'Asociați';
 
   @override
+  String get listPaneHideTooltip => 'Ascundeți lista';
+
+  @override
+  String get listPaneShowTooltip => 'Afișați lista';
+
+  @override
   String get logbookEmptyHint =>
       'Creați prima dvs. intrare pentru a începe jurnalul.';
 

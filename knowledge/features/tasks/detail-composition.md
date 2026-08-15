@@ -35,7 +35,7 @@ sources:
   - id: expandable-app-bar
     resource: ../../../lib/features/tasks/ui/task_expandable_app_bar.dart
     title: TaskExpandableAppBar
-    last_modified: 2026-08-12
+    last_modified: 2026-08-15
   - id: cover-art
     resource: ../../../lib/features/tasks/ui/cover_art_background.dart
     title: CoverArtBackground and the full-screen viewer
@@ -321,11 +321,21 @@ knowledge-graph entry point (`Icons.hub_outlined` → `TaskKnowledgeGraphPage`,
 gated by `knowledgeGraphEntryPointEnabledProvider`), so the graph is one tap
 from the task without competing for header space on mobile.
 
+On desktop, list focus mode conditionally adds the restore-list overlay inside
+a stable `Stack` parent. The task detail subtree never changes parent while the
+list hides or returns, preserving scroll position and other local widget state.
+The restore control remains distinct from Back, which continues to traverse the
+linked-task detail stack.
+
 When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked
 image entries, including rotation, download and zoom controls. The cover uses a
 task-specific Hero tag so an expanded linked image lower on the same detail page
-cannot become the transition source by mistake.
+cannot become the transition source by mistake. On a wide detail workspace the
+art remains centred at the shared detail-content maximum width instead of
+stretching across the whole window. Once the cover scrolls away, the compact
+title renders on the toolbar's level-01 surface and therefore uses the standard
+high-emphasis toolbar text token in both themes.
 
 The header is exercised in isolation under **Widgetbook → Tasks → Desktop task
 header**, whose Playground drives priority, status, category, due date, labels and

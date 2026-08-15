@@ -18,12 +18,15 @@ project agent is attached — a summary and health read that the agent maintains
   from; open, monitoring and on-hold ones stay available at lower priority;
   completed and archived ones drop out.
 - **Keeps a running summary.** A project agent writes a short report and health
-  read, refreshed on a daily digest rather than on every task edit — so a busy
-  day of small changes does not burn tokens.
+  read. Relevant project and linked-task activity schedules one coalesced
+  refresh; an idle project has no recurring wake.
 - **Is honest when it does not know.** If the agent has not produced a usable
   health payload, no health is shown — nothing is invented locally.
 - **Groups the overview by area.** The projects tab groups projects under their
   category with task counts and filters.
+- **Makes room to focus on one project.** On desktop, the project list can be
+  hidden after a project is selected and restored without losing its filters,
+  search or scroll position. The embedded detail has no misleading Back action.
 
 The whole visible experience is behind a feature flag; with it off there is no
 projects tab, no category projects section, and no project chip on tasks.

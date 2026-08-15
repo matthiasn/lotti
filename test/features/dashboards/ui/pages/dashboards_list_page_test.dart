@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
@@ -377,6 +378,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(ResizableDivider), findsOneWidget);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(DashboardsListPage)),
+      );
+      container.read(paneWidthControllerProvider.notifier).collapseListPane();
+      await tester.pump();
+
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isTrue,
+      );
 
       final dividerCenter = tester.getCenter(find.byType(ResizableDivider));
       await tester.dragFrom(dividerCenter, const Offset(50, 0));
@@ -389,6 +400,11 @@ void main() {
         ),
       );
       expect(sizedBox.width, defaultListPaneWidth + 50);
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isTrue,
+      );
+      await tester.pump(persistDebounce);
     });
   });
 }

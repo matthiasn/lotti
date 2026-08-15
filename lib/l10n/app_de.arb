@@ -3238,6 +3238,8 @@
   "linkSummarySupersedesInverse": "Diese Aufgabe wird durch {target} ersetzt",
   "linkSummarySupersedesPrimary": "Diese Aufgabe ersetzt {target}",
   "linkTaskButton": "Verknüpfen",
+  "listPaneHideTooltip": "Liste ausblenden",
+  "listPaneShowTooltip": "Liste anzeigen",
   "logbookEmptyHint": "Erstelle deinen ersten Eintrag, um mit dem Logbuch zu starten.",
   "logbookEmptyTitle": "Dein Logbuch ist leer",
   "logbookNewEntriesHint": "Neue Einträge erscheinen hier.",

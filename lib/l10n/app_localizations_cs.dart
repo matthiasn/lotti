@@ -8356,6 +8356,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkTaskButton => 'Propojit';
 
   @override
+  String get listPaneHideTooltip => 'Skrýt seznam';
+
+  @override
+  String get listPaneShowTooltip => 'Zobrazit seznam';
+
+  @override
   String get logbookEmptyHint =>
       'Vytvoř svůj první záznam a začni si psát deník.';
 

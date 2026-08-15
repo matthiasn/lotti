@@ -9,18 +9,17 @@ import 'package:lotti/features/knowledge_graph/ui/task_knowledge_graph_page.dart
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
 /// Expandable app bar for tasks with cover art.
 ///
-/// Displays a SliverAppBar with a 16:9 aspect ratio cover image,
-/// glass-styled back button and action buttons. Once the cover has
-/// scrolled past the pinned toolbar, the bar surfaces the task title in
-/// `subtitle2` so it stays on screen — matching the title typography used
-/// by the task list cards.
+/// Displays a SliverAppBar with a 16:9 aspect ratio cover image capped at the
+/// shared detail reading measure, plus glass-styled navigation and actions.
+/// Once the cover has scrolled past the pinned toolbar, the bar surfaces the
+/// task title in `subtitle2` so it stays on screen — matching the title
+/// typography used by the task list cards.
 class TaskExpandableAppBar extends ConsumerWidget {
   const TaskExpandableAppBar({
     required this.task,
@@ -47,7 +46,10 @@ class TaskExpandableAppBar extends ConsumerWidget {
         final availableWidth = constraints.crossAxisExtent > 0
             ? constraints.crossAxisExtent
             : MediaQuery.of(context).size.width;
-        final expandedHeight = availableWidth * 9 / 16;
+        final coverWidth = availableWidth
+            .clamp(0, kDetailContentMaxWidth)
+            .toDouble();
+        final expandedHeight = coverWidth * 9 / 16;
         // Show the title once the cover is mostly out of view — ~85% of
         // the expanded height — so it appears as the compact collapsed
         // toolbar takes over.
@@ -78,7 +80,15 @@ class TaskExpandableAppBar extends ConsumerWidget {
           pinned: true,
           automaticallyImplyLeading: false,
           flexibleSpace: FlexibleSpaceBar(
-            background: CoverArtBackground(imageId: coverArtId),
+            background: ColoredBox(
+              color: context.designTokens.colors.background.level01,
+              child: Center(
+                child: SizedBox(
+                  width: coverWidth,
+                  child: CoverArtBackground(imageId: coverArtId),
+                ),
+              ),
+            ),
           ),
         );
       },
@@ -170,7 +180,7 @@ class _ExpandableCompactTitle extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: TaskShowcasePalette.highText(context),
+          color: tokens.colors.text.highEmphasis,
           fontWeight: FontWeight.w600,
         ),
       ),

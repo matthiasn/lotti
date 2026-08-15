@@ -54,9 +54,9 @@ class TabHeaderIconButton extends StatelessWidget {
   }
 }
 
-/// Compact header used by the Tasks and Projects tabs: a title row (with an
-/// optional trailing widget like a notification bell) and a search row with
-/// an optional trailing filter button.
+/// Compact header used by the Tasks and Projects tabs: a title row (with
+/// optional leading and trailing controls) and a search row with an optional
+/// trailing filter button.
 ///
 /// The two rows are wrapped in [DetailContentWidth] so they align
 /// with the list content below — any full-bleed element (divider, chip row,
@@ -73,6 +73,7 @@ class TabSectionHeader extends StatelessWidget {
     required this.onFilterPressed,
     required this.filterTooltip,
     this.filtersActive = false,
+    this.titleLeading,
     this.titleTrailing,
     this.titleSuffix,
     this.searchFocusNode,
@@ -88,6 +89,7 @@ class TabSectionHeader extends StatelessWidget {
   final VoidCallback onFilterPressed;
   final String filterTooltip;
   final Widget? titleTrailing;
+  final Widget? titleLeading;
   final FocusNode? searchFocusNode;
 
   /// Optional inline suffix rendered after [title] — used by Tasks to show
@@ -120,6 +122,13 @@ class TabSectionHeader extends StatelessWidget {
           DetailContentWidth(
             child: Row(
               children: [
+                if (titleLeading != null) ...[
+                  SizedBox.square(
+                    dimension: TapTargets.minimum,
+                    child: Center(child: titleLeading),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                ],
                 Expanded(
                   child: Row(
                     children: [

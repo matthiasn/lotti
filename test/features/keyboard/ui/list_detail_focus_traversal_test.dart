@@ -146,4 +146,193 @@ void main() {
       expect(detailFocusNode.hasFocus, isTrue);
     },
   );
+
+  testWidgets(
+    'focus mode preserves list state and transfers focus between panes',
+    (tester) async {
+      final listPaneVisible = ValueNotifier(true);
+      final listFocusNode = FocusNode(debugLabel: 'focus-mode-list');
+      final dividerFocusNode = FocusNode(debugLabel: 'focus-mode-divider');
+      final detailFocusNode = FocusNode(debugLabel: 'focus-mode-detail');
+      addTearDown(listPaneVisible.dispose);
+      addTearDown(listFocusNode.dispose);
+      addTearDown(dividerFocusNode.dispose);
+      addTearDown(detailFocusNode.dispose);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          ValueListenableBuilder<bool>(
+            valueListenable: listPaneVisible,
+            builder: (context, visible, _) => ListDetailFocusTraversal(
+              debugLabel: 'focus-mode-split',
+              listPaneVisible: visible,
+              canHideListPane: true,
+              onListPaneVisibilityChanged: (nextVisible) {
+                listPaneVisible.value = nextVisible;
+              },
+              listPane: _StatefulListPane(focusNode: listFocusNode),
+              divider: Focus(
+                focusNode: dividerFocusNode,
+                child: const SizedBox(
+                  key: Key('focus-mode-divider'),
+                  width: 3,
+                ),
+              ),
+              detailPane: Align(
+                alignment: Alignment.topLeft,
+                child: TextButton(
+                  focusNode: detailFocusNode,
+                  onPressed: () {},
+                  child: const Text('Detail action'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Increment'));
+      await tester.pump();
+      expect(find.text('Count 1'), findsOneWidget);
+
+      final detailContext = tester.element(find.text('Detail action'));
+      ListDetailFocusTraversal.maybeOf(detailContext)!.hideListPane();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Count 1'), findsNothing);
+      expect(find.text('Count 1', skipOffstage: false), findsOneWidget);
+      expect(find.byKey(const Key('focus-mode-divider')), findsNothing);
+      expect(
+        find.byKey(const Key('focus-mode-divider'), skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(detailFocusNode.hasFocus, isTrue);
+
+      dividerFocusNode.requestFocus();
+      await tester.pump();
+      expect(dividerFocusNode.hasFocus, isFalse);
+      expect(detailFocusNode.hasFocus, isTrue);
+
+      ListDetailFocusTraversal.maybeOf(
+        tester.element(find.text('Detail action')),
+      )!.showListPane();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Count 1'), findsOneWidget);
+      expect(listFocusNode.hasFocus, isTrue);
+    },
+  );
+
+  testWidgets('external pane visibility changes transfer focus', (
+    tester,
+  ) async {
+    final listPaneVisible = ValueNotifier(true);
+    final listFocusNode = FocusNode(debugLabel: 'external-list');
+    final detailFocusNode = FocusNode(debugLabel: 'external-detail');
+    addTearDown(listPaneVisible.dispose);
+    addTearDown(listFocusNode.dispose);
+    addTearDown(detailFocusNode.dispose);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        ValueListenableBuilder<bool>(
+          valueListenable: listPaneVisible,
+          builder: (context, visible, _) => ListDetailFocusTraversal(
+            debugLabel: 'external-split',
+            listPaneVisible: visible,
+            canHideListPane: true,
+            listPane: SizedBox(
+              width: 240,
+              child: TextButton(
+                focusNode: listFocusNode,
+                onPressed: () {},
+                child: const Text('External list row'),
+              ),
+            ),
+            divider: const SizedBox(width: 3),
+            detailPane: Align(
+              alignment: Alignment.topLeft,
+              child: TextButton(
+                focusNode: detailFocusNode,
+                onPressed: () {},
+                child: const Text('External detail action'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    listFocusNode.requestFocus();
+    await tester.pump();
+    listPaneVisible.value = false;
+    await tester.pump();
+    await tester.pump();
+
+    expect(detailFocusNode.hasFocus, isTrue);
+
+    listPaneVisible.value = true;
+    await tester.pump();
+    await tester.pump();
+
+    expect(listFocusNode.hasFocus, isTrue);
+  });
+
+  testWidgets('refuses to hide the list without an actionable detail', (
+    tester,
+  ) async {
+    var visibilityChanges = 0;
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        ListDetailFocusTraversal(
+          debugLabel: 'guarded-split',
+          onListPaneVisibilityChanged: (_) => visibilityChanges++,
+          listPane: const SizedBox(width: 240, child: Text('List row')),
+          divider: const SizedBox(width: 3),
+          detailPane: const Text('Empty detail'),
+        ),
+      ),
+    );
+
+    ListDetailFocusTraversal.maybeOf(
+      tester.element(find.text('Empty detail')),
+    )!.hideListPane();
+    await tester.pump();
+
+    expect(visibilityChanges, 0);
+    expect(find.text('List row'), findsOneWidget);
+  });
+}
+
+class _StatefulListPane extends StatefulWidget {
+  const _StatefulListPane({required this.focusNode});
+
+  final FocusNode focusNode;
+
+  @override
+  State<_StatefulListPane> createState() => _StatefulListPaneState();
+}
+
+class _StatefulListPaneState extends State<_StatefulListPane> {
+  var _count = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 240,
+      child: Column(
+        children: [
+          Text('Count $_count'),
+          TextButton(
+            focusNode: widget.focusNode,
+            onPressed: () => setState(() => _count++),
+            child: const Text('Increment'),
+          ),
+        ],
+      ),
+    );
+  }
 }

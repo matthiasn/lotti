@@ -4764,6 +4764,8 @@
   "@linkTaskButton": {
     "description": "Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode."
   },
+  "listPaneHideTooltip": "Hide list",
+  "listPaneShowTooltip": "Show list",
   "logbookEmptyHint": "Create your first entry to start journaling.",
   "logbookEmptyTitle": "Your logbook is empty",
   "logbookNewEntriesHint": "New entries will open here.",
