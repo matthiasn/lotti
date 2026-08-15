@@ -11,7 +11,10 @@ today:
   `goal_window.dart`, `goal_enums.dart`, `goal_nudge_models.dart`,
   `goal_progress_models.dart`) — the shared-vocabulary rule that lets the
   agent entity union embed these types without `features/agents` depending
-  on a feature (the `day_plan.dart` precedent).
+  on a feature (the `day_plan.dart` precedent). The nudge vocabulary itself
+  is kind-agnostic since ADR 0059 (`nudge_models.dart`);
+  `goal_nudge_models.dart` re-exports it under the goal-prefixed aliases
+  these docs and this feature still use.
   `GoalCriterion.fromAutoCompleteRule` imports an existing habit rule as a
   goal seed.
 - `evaluation/` — `GoalProgressEvaluator`, a pure fold over a

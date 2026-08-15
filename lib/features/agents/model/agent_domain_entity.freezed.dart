@@ -4416,7 +4416,7 @@ $Res call({
 });
 
 
-$GoalNudgeBriefCopyWith<$Res> get brief;
+$NudgeBriefCopyWith<$Res> get brief;
 
 }
 /// @nodoc
@@ -4470,9 +4470,9 @@ as DateTime?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$GoalNudgeBriefCopyWith<$Res> get brief {
+$NudgeBriefCopyWith<$Res> get brief {
   
-  return $GoalNudgeBriefCopyWith<$Res>(_self.brief, (value) {
+  return $NudgeBriefCopyWith<$Res>(_self.brief, (value) {
     return _then(_self.copyWith(brief: value));
   });
 }

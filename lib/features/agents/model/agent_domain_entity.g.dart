@@ -1866,101 +1866,97 @@ const _$GoalTrackStatusEnumMap = {
   GoalTrackStatus.insufficientData: 'insufficientData',
 };
 
-GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
-    GoalNudgeEntity(
-      id: json['id'] as String,
-      agentId: json['agentId'] as String,
-      status: $enumDecode(_$GoalNudgeStatusEnumMap, json['status']),
-      brief: GoalNudgeBrief.fromJson(json['brief'] as Map<String, dynamic>),
-      briefDigest: json['briefDigest'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
-      vectorClock: json['vectorClock'] == null
-          ? null
-          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
-      runKey: json['runKey'] as String?,
-      threadId: json['threadId'] as String?,
-      triggerProgressId: json['triggerProgressId'] as String?,
-      reasonSummary: json['reasonSummary'] as String?,
-      staleAt: json['staleAt'] == null
-          ? null
-          : DateTime.parse(json['staleAt'] as String),
-      activatedAt: json['activatedAt'] == null
-          ? null
-          : DateTime.parse(json['activatedAt'] as String),
-      dismissedAt: json['dismissedAt'] == null
-          ? null
-          : DateTime.parse(json['dismissedAt'] as String),
-      retiredAt: json['retiredAt'] == null
-          ? null
-          : DateTime.parse(json['retiredAt'] as String),
-      expiredAt: json['expiredAt'] == null
-          ? null
-          : DateTime.parse(json['expiredAt'] as String),
-      supersededAt: json['supersededAt'] == null
-          ? null
-          : DateTime.parse(json['supersededAt'] as String),
-      snoozedUntil: json['snoozedUntil'] == null
-          ? null
-          : DateTime.parse(json['snoozedUntil'] as String),
-      lastSnoozeDuration: $enumDecodeNullable(
-        _$GoalBannerSnoozeDurationEnumMap,
-        json['lastSnoozeDuration'],
-      ),
-      snoozeHistory:
-          (json['snoozeHistory'] as List<dynamic>?)
-              ?.map((e) => GoalNudgeSnooze.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <GoalNudgeSnooze>[],
-      dismissedForDayAt: json['dismissedForDayAt'] == null
-          ? null
-          : DateTime.parse(json['dismissedForDayAt'] as String),
-      dismissalHistory:
-          (json['dismissalHistory'] as List<dynamic>?)
-              ?.map(
-                (e) =>
-                    GoalNudgeDayDismissal.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          const <GoalNudgeDayDismissal>[],
-      activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
-      ratings:
-          (json['ratings'] as List<dynamic>?)
-              ?.map((e) => GoalNudgeRating.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <GoalNudgeRating>[],
-      totalVisibleMs: json['totalVisibleMsByHost'] == null
-          ? const GCounter.empty()
-          : GCounter.fromJson(
-              json['totalVisibleMsByHost'] as Map<String, dynamic>,
-            ),
-      impressionCount: json['impressionCountByHost'] == null
-          ? const GCounter.empty()
-          : GCounter.fromJson(
-              json['impressionCountByHost'] as Map<String, dynamic>,
-            ),
-      firstShownAt: json['firstShownAt'] == null
-          ? null
-          : DateTime.parse(json['firstShownAt'] as String),
-      lastShownAt: json['lastShownAt'] == null
-          ? null
-          : DateTime.parse(json['lastShownAt'] as String),
-      provenance:
-          (json['provenance'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(k, e as String),
-          ) ??
-          const <String, String>{},
-      deletedAt: json['deletedAt'] == null
-          ? null
-          : DateTime.parse(json['deletedAt'] as String),
-      $type: json['runtimeType'] as String?,
-    );
+GoalNudgeEntity _$GoalNudgeEntityFromJson(
+  Map<String, dynamic> json,
+) => GoalNudgeEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  status: $enumDecode(_$NudgeStatusEnumMap, json['status']),
+  brief: NudgeBrief.fromJson(json['brief'] as Map<String, dynamic>),
+  briefDigest: json['briefDigest'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  runKey: json['runKey'] as String?,
+  threadId: json['threadId'] as String?,
+  triggerProgressId: json['triggerProgressId'] as String?,
+  reasonSummary: json['reasonSummary'] as String?,
+  staleAt: json['staleAt'] == null
+      ? null
+      : DateTime.parse(json['staleAt'] as String),
+  activatedAt: json['activatedAt'] == null
+      ? null
+      : DateTime.parse(json['activatedAt'] as String),
+  dismissedAt: json['dismissedAt'] == null
+      ? null
+      : DateTime.parse(json['dismissedAt'] as String),
+  retiredAt: json['retiredAt'] == null
+      ? null
+      : DateTime.parse(json['retiredAt'] as String),
+  expiredAt: json['expiredAt'] == null
+      ? null
+      : DateTime.parse(json['expiredAt'] as String),
+  supersededAt: json['supersededAt'] == null
+      ? null
+      : DateTime.parse(json['supersededAt'] as String),
+  snoozedUntil: json['snoozedUntil'] == null
+      ? null
+      : DateTime.parse(json['snoozedUntil'] as String),
+  lastSnoozeDuration: $enumDecodeNullable(
+    _$NudgeBannerSnoozeDurationEnumMap,
+    json['lastSnoozeDuration'],
+  ),
+  snoozeHistory:
+      (json['snoozeHistory'] as List<dynamic>?)
+          ?.map((e) => NudgeSnooze.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <GoalNudgeSnooze>[],
+  dismissedForDayAt: json['dismissedForDayAt'] == null
+      ? null
+      : DateTime.parse(json['dismissedForDayAt'] as String),
+  dismissalHistory:
+      (json['dismissalHistory'] as List<dynamic>?)
+          ?.map((e) => NudgeDayDismissal.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <GoalNudgeDayDismissal>[],
+  activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
+  ratings:
+      (json['ratings'] as List<dynamic>?)
+          ?.map((e) => NudgeRating.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <GoalNudgeRating>[],
+  totalVisibleMs: json['totalVisibleMsByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(json['totalVisibleMsByHost'] as Map<String, dynamic>),
+  impressionCount: json['impressionCountByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(
+          json['impressionCountByHost'] as Map<String, dynamic>,
+        ),
+  firstShownAt: json['firstShownAt'] == null
+      ? null
+      : DateTime.parse(json['firstShownAt'] as String),
+  lastShownAt: json['lastShownAt'] == null
+      ? null
+      : DateTime.parse(json['lastShownAt'] as String),
+  provenance:
+      (json['provenance'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
     <String, dynamic>{
       'id': instance.id,
       'agentId': instance.agentId,
-      'status': _$GoalNudgeStatusEnumMap[instance.status]!,
+      'status': _$NudgeStatusEnumMap[instance.status]!,
       'brief': instance.brief,
       'briefDigest': instance.briefDigest,
       'createdAt': instance.createdAt.toIso8601String(),
@@ -1978,7 +1974,7 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'supersededAt': instance.supersededAt?.toIso8601String(),
       'snoozedUntil': instance.snoozedUntil?.toIso8601String(),
       'lastSnoozeDuration':
-          _$GoalBannerSnoozeDurationEnumMap[instance.lastSnoozeDuration],
+          _$NudgeBannerSnoozeDurationEnumMap[instance.lastSnoozeDuration],
       'snoozeHistory': instance.snoozeHistory,
       'dismissedForDayAt': instance.dismissedForDayAt?.toIso8601String(),
       'dismissalHistory': instance.dismissalHistory,
@@ -1993,23 +1989,23 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'runtimeType': instance.$type,
     };
 
-const _$GoalNudgeStatusEnumMap = {
-  GoalNudgeStatus.draft: 'draft',
-  GoalNudgeStatus.ready: 'ready',
-  GoalNudgeStatus.active: 'active',
-  GoalNudgeStatus.dismissed: 'dismissed',
-  GoalNudgeStatus.retired: 'retired',
-  GoalNudgeStatus.expired: 'expired',
-  GoalNudgeStatus.superseded: 'superseded',
-  GoalNudgeStatus.failed: 'failed',
+const _$NudgeStatusEnumMap = {
+  NudgeStatus.draft: 'draft',
+  NudgeStatus.ready: 'ready',
+  NudgeStatus.active: 'active',
+  NudgeStatus.dismissed: 'dismissed',
+  NudgeStatus.retired: 'retired',
+  NudgeStatus.expired: 'expired',
+  NudgeStatus.superseded: 'superseded',
+  NudgeStatus.failed: 'failed',
 };
 
-const _$GoalBannerSnoozeDurationEnumMap = {
-  GoalBannerSnoozeDuration.oneHour: 'oneHour',
-  GoalBannerSnoozeDuration.threeHours: 'threeHours',
-  GoalBannerSnoozeDuration.sixHours: 'sixHours',
-  GoalBannerSnoozeDuration.eightHours: 'eightHours',
-  GoalBannerSnoozeDuration.custom: 'custom',
+const _$NudgeBannerSnoozeDurationEnumMap = {
+  NudgeBannerSnoozeDuration.oneHour: 'oneHour',
+  NudgeBannerSnoozeDuration.threeHours: 'threeHours',
+  NudgeBannerSnoozeDuration.sixHours: 'sixHours',
+  NudgeBannerSnoozeDuration.eightHours: 'eightHours',
+  NudgeBannerSnoozeDuration.custom: 'custom',
 };
 
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
