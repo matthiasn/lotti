@@ -174,6 +174,30 @@ void main() {
         ),
         isEmpty,
       );
+      expect(
+        goalCriterionHabitIds(
+          const GoalCriterion.measurable(
+            criterionId: 'weight',
+            dataTypeId: 'weight-type',
+            window: window,
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 80,
+          ),
+        ),
+        isEmpty,
+      );
+      expect(
+        goalCriterionHabitIds(
+          const GoalCriterion.categoryTime(
+            criterionId: 'writing-time',
+            categoryId: 'category-1',
+            window: window,
+            aggregation: GoalAggregation.dailySumThenAverage,
+            targetHours: 2,
+          ),
+        ),
+        isEmpty,
+      );
     });
   });
 

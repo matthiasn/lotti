@@ -1648,8 +1648,8 @@
   "configFlagEnableSessionRatingsDescription": "Vraag om een snelle sessie rating wanneer u een timer stopt.",
   "configFlagEnableTooltip": "Hulpballonnen inschakelen",
   "configFlagEnableTooltipDescription": "Toon handige tooltips in de hele app om u door functies te leiden.",
-  "configFlagEnableUnifiedGoals": "Uniforme Doelen-pagina inschakelen",
-  "configFlagEnableUnifiedGoalsDescription": "Toont de uniforme Doelen-pagina in de hoofdnavigatie – doelen met hun gewoontes erin, één plek voor beide.",
+  "configFlagEnableUnifiedGoals": "Uniforme doelenpagina inschakelen",
+  "configFlagEnableUnifiedGoalsDescription": "Toon de uniforme doelenpagina in de hoofdnavigatie. Doelen en hun gewoontes verschijnen daar samen op één pagina.",
   "configFlagEnableVectorSearch": "Zoekopdracht voor vector",
   "configFlagEnableVectorSearchDescription": "Activeer vector zoeken in taakfilters. Vereist inbeddingen ingeschakeld te zijn en Ollama draait.",
   "configFlagEnableWhatsNew": "Toon wat nieuw is",
@@ -3154,7 +3154,7 @@
   },
   "habitsOpenHeader": "Vervallen",
   "habitsPendingLaterHeader": "Later vandaag",
-  "habitsPointsToGoal": "{points, plural, one{1 pt tot streefwaarde} other{{points} pt tot streefwaarde}}",
+  "habitsPointsToGoal": "{points, plural, one{1 punt tot de streefwaarde} other{{points} punten tot de streefwaarde}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
@@ -5644,7 +5644,7 @@
   "unifiedGoalStatusNoData": "Geen gegevens",
   "unifiedGoalSummaryAllOnTrack": "{count, plural, one{Je gewoonte ligt op koers – vandaag is er niets nodig.} other{Alle {count} gewoontes liggen op koers – vandaag is er niets nodig.}}",
   "unifiedGoalSummaryNoData": "Nog geen gegevens – registreer een gewoonte of koppel een signaal om te beginnen.",
-  "unifiedGoalSummaryPartial": "{onTrack} van {total} gewoontes op koers",
+  "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} van 1 gewoonte op koers} other{{onTrack} van {total} gewoontes op koers}}",
   "unifiedGoalsUngroupedHabitsHeader": "Zonder doel",
   "unlinkButton": "Verbinding verbreken",
   "unlinkTaskConfirm": "Weet u zeker dat u deze taak wilt losmaken?",

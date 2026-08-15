@@ -5045,7 +5045,7 @@
   "unifiedGoalStatusNoData": "Žádná data",
   "unifiedGoalSummaryAllOnTrack": "{count, plural, one{Tvůj návyk je na dobré cestě – dnes není potřeba nic.} few{Všechny {count} návyky jsou na dobré cestě – dnes není potřeba nic.} other{Všech {count} návyků je na dobré cestě – dnes není potřeba nic.}}",
   "unifiedGoalSummaryNoData": "Zatím žádná data – zaznamenej návyk nebo připoj signál a začni sledovat.",
-  "unifiedGoalSummaryPartial": "{onTrack} z {total} návyků na dobré cestě",
+  "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} z 1 návyku na dobré cestě} few{{onTrack} z {total} návyků na dobré cestě} other{{onTrack} z {total} návyků na dobré cestě}}",
   "unifiedGoalsUngroupedHabitsHeader": "Bez cíle",
   "unlinkButton": "Zrušit propojení",
   "unlinkTaskConfirm": "Opravdu chcete zrušit propojení tohoto úkolu?",

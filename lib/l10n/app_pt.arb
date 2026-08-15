@@ -5644,7 +5644,7 @@
   "unifiedGoalStatusNoData": "Sem dados",
   "unifiedGoalSummaryAllOnTrack": "{count, plural, one{O teu hábito está no bom caminho — hoje não é preciso nada.} other{Todos os {count} hábitos estão no bom caminho — hoje não é preciso nada.}}",
   "unifiedGoalSummaryNoData": "Ainda sem dados — regista um hábito ou liga um sinal para começar.",
-  "unifiedGoalSummaryPartial": "{onTrack} de {total} hábitos no bom caminho",
+  "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} de 1 hábito no bom caminho} other{{onTrack} de {total} hábitos no bom caminho}}",
   "unifiedGoalsUngroupedHabitsHeader": "Sem objetivo",
   "unlinkButton": "Desvincular",
   "unlinkTaskConfirm": "Tem certeza de que deseja desvincular esta tarefa?",

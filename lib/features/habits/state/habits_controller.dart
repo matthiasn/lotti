@@ -47,10 +47,11 @@ class HabitsController extends Notifier<HabitsState> {
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitCompletionRecord> _habitCompletions = [];
 
-  /// Tracks whether the habits tab was the active top-level tab on the
+  /// Tracks whether a habits-rendering surface (the Habits tab or the
+  /// unified Goals tab — see [_isHabitsSurfaceActive]) was active on the
   /// previous nav-index emission. Used to detect the off→on edge that
   /// triggers a recompute — `showHabit()` depends on the current time,
-  /// so re-entering the tab is the cue to refresh the due/later split
+  /// so re-entering such a tab is the cue to refresh the due/later split
   /// without keeping a background ticker alive.
   bool _wasHabitsActive = false;
 
@@ -272,6 +273,9 @@ class HabitsController extends Notifier<HabitsState> {
       openNow: filteredOpenNow,
       pendingLater: filteredPendingLater,
       completed: filteredCompleted,
+      openNowAll: openNow,
+      pendingLaterAll: pendingLater,
+      completedAll: completed,
       days: days,
       successfulToday: successfulToday,
       successfulByDay: successfulByDay,
@@ -287,8 +291,9 @@ class HabitsController extends Notifier<HabitsState> {
     );
   }
 
-  /// Recomputes habit success on the inactive→active edge of the habits
-  /// tab — time may have passed while the tab was off-screen, so the
+  /// Recomputes habit success on the inactive→active edge of a
+  /// habits-rendering surface (Habits tab or unified Goals tab) — time may
+  /// have passed while the tab was off-screen, so the
   /// due/later split needs refreshing. Refetches completions first so a
   /// midnight rollover (which extends the relevant day range) is also
   /// reflected, not just the wall-clock-driven `showHabit` bucketing.

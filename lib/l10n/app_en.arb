@@ -6999,7 +6999,7 @@
   "@unifiedGoalSummaryNoData": {
     "description": "Templated goal-card summary for a goal with no recorded data yet — a setup nudge, not an error."
   },
-  "unifiedGoalSummaryPartial": "{onTrack} of {total} habits on track",
+  "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} of 1 habit on track} other{{onTrack} of {total} habits on track}}",
   "@unifiedGoalSummaryPartial": {
     "description": "Templated goal-card summary when only some habit dimensions are on track. Deterministic, computed locally.",
     "placeholders": {

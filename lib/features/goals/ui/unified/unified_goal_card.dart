@@ -23,12 +23,12 @@ import 'package:lotti/services/nav_service.dart';
 /// filtered out collapses to its header.
 ///
 /// The card watches the same per-agent providers the agents list row does;
-/// habits-side state ([successfulToday], [streaksByHabit]) is supplied by the
+/// habits-side state ([successToday], [streaksByHabit]) is supplied by the
 /// page so every card shares one read of the habits controller.
 class UnifiedGoalCard extends ConsumerWidget {
   const UnifiedGoalCard({
     required this.identity,
-    required this.successfulToday,
+    required this.successToday,
     required this.streaksByHabit,
     this.visibleHabitIds,
     super.key,
@@ -36,9 +36,11 @@ class UnifiedGoalCard extends ConsumerWidget {
 
   final AgentIdentityEntity identity;
 
-  /// Habit ids that count as done today (the habits controller's
-  /// `successfulToday` bucket) — drives each row's done state.
-  final Set<String> successfulToday;
+  /// Habit ids with a REAL success recorded today (success-only — skips
+  /// excluded). Goal criteria credit only `HabitCompletionType.success`, so a
+  /// skipped habit keeps its one-tap success button here instead of reading
+  /// green while the window reading still reports a deficit.
+  final Set<String> successToday;
 
   /// Per-habit current streaks (the heatmap controller's deep history).
   final Map<String, int> streaksByHabit;
@@ -107,9 +109,15 @@ class UnifiedGoalCard extends ConsumerWidget {
       for (final habit in progress?.habits ?? const <GoalHabitProgressView>[])
         if (visibleHabitIds?.contains(habit.habitId) ?? true)
           HabitActionRow(
-            key: Key('unified-goal-${identity.agentId}-${habit.habitId}'),
+            // Criterion id included: a composite tree may reference the
+            // same habit in several leaves (different windows/targets), and
+            // each leaf keeps its own row.
+            key: Key(
+              'unified-goal-${identity.agentId}'
+              '-${habit.criterionId}-${habit.habitId}',
+            ),
             habitId: habit.habitId,
-            completedToday: successfulToday.contains(habit.habitId),
+            completedToday: successToday.contains(habit.habitId),
             currentStreak: streaksByHabit[habit.habitId] ?? 0,
             history: _HabitWindowReading(habit: habit),
           ),
@@ -117,7 +125,7 @@ class UnifiedGoalCard extends ConsumerWidget {
 
     final header = InkWell(
       borderRadius: BorderRadius.circular(tokens.radii.l),
-      onTap: () => beamToNamed('/agents/details/${identity.agentId}'),
+      onTap: () => beamToNamed('/goals/details/${identity.agentId}'),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
         child: LayoutBuilder(

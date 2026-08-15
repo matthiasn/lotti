@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -26,7 +27,7 @@ class GoalAgentChatPage extends ConsumerWidget {
     final name = isActiveGoal
         ? identity.displayName
         : context.messages.agentsPageTitle;
-    final detailPath = '/agents/details/$agentId';
+    final detailPath = goalDetailPath(agentId);
     final page = Scaffold(
       appBar: AppBar(
         leading: BackButton(

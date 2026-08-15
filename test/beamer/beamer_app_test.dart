@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/agents_location.dart';
+import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
@@ -237,6 +238,7 @@ Future<void> _stubNavService(
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
   final eventsDelegate = await _createEmptyDelegate('/events');
+  final goalsDelegate = await _createEmptyDelegate('/goals');
   settingsDelegate ??= await _createEmptyDelegate('/settings');
 
   // Real NavService.getIndexStream returns a broadcast stream (multiple
@@ -255,6 +257,7 @@ Future<void> _stubNavService(
   when(() => navService.journalDelegate).thenReturn(journalDelegate);
   when(() => navService.settingsDelegate).thenReturn(settingsDelegate);
   when(() => navService.agentsDelegate).thenReturn(agentsDelegate);
+  when(() => navService.goalsDelegate).thenReturn(goalsDelegate);
   // `isAgentsPageEnabled` is a concrete member on MockNavService, so it is
   // flipped through the field rather than stubbed with `when()`. Left alone
   // unless the caller asks, so a test that set it before stubbing keeps it.
@@ -782,6 +785,51 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (w) => w is Beamer && w.routerDelegate == agentsDelegate,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('the flag-gated unified Goals destination appears in the '
+        'desktop sidebar when enabled', (tester) async {
+      final mockNavService = MockNavService()..unifiedGoalsPageEnabled = true;
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      final goalsDelegate = await _createEmptyDelegate('/goals');
+      when(() => mockNavService.goalsDelegate).thenReturn(goalsDelegate);
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Icon &&
+              (w.icon == Icons.track_changes_outlined ||
+                  w.icon == Icons.track_changes_rounded),
+        ),
+        findsWidgets,
+      );
+      // The goals tab is mounted but not active, so its Beamer child sits
+      // offstage in the shell's IndexedStack.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Beamer && w.routerDelegate == goalsDelegate,
           skipOffstage: false,
         ),
         findsOneWidget,
@@ -2397,6 +2445,67 @@ void main() {
     test('an unknown agents sub-route keeps the bar', () {
       expect(
         agentsRouteHidesBottomNav(agentsLocationFor('/agents/settings')),
+        isFalse,
+      );
+    });
+  });
+
+  group('goalsRouteHidesBottomNav', () {
+    // Same shape rules as agentsRouteHidesBottomNav: the unified Goals tab
+    // hosts the same terminal pages under its own paths.
+    GoalsLocation goalsLocationFor(String path) =>
+        GoalsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('a null location keeps the bar', () {
+      expect(goalsRouteHidesBottomNav(null), isFalse);
+    });
+
+    test('a non-goals location keeps the bar even at a goals-like path', () {
+      expect(
+        goalsRouteHidesBottomNav(
+          ProjectsLocation(
+            RouteInformation(uri: Uri.parse('/goals/details/goal-1')),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('the /goals list root keeps the bar', () {
+      expect(goalsRouteHidesBottomNav(goalsLocationFor('/goals')), isFalse);
+    });
+
+    test('a GoalsLocation whose path is not under /goals keeps the bar', () {
+      expect(
+        goalsRouteHidesBottomNav(goalsLocationFor('/elsewhere/deep')),
+        isFalse,
+      );
+    });
+
+    test('detail, chat, edit and create hide the bar; unknown sub-routes '
+        'keep it', () {
+      expect(
+        goalsRouteHidesBottomNav(goalsLocationFor('/goals/details/goal-1')),
+        isTrue,
+      );
+      expect(
+        goalsRouteHidesBottomNav(
+          goalsLocationFor('/goals/details/goal-1/chat'),
+        ),
+        isTrue,
+      );
+      expect(
+        goalsRouteHidesBottomNav(
+          goalsLocationFor('/goals/details/goal-1/edit'),
+        ),
+        isTrue,
+      );
+      expect(
+        goalsRouteHidesBottomNav(goalsLocationFor('/goals/create')),
+        isTrue,
+      );
+      expect(
+        goalsRouteHidesBottomNav(goalsLocationFor('/goals/settings')),
         isFalse,
       );
     });

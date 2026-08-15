@@ -146,7 +146,7 @@ void main() {
       expect(find.textContaining('kept 0 of 14'), findsOneWidget);
     });
 
-    testWidgets('the goal chip flips to "On track" at/above target', (
+    testWidgets('the target chip flips to "On track" at/above target', (
       tester,
     ) async {
       final days = [
@@ -160,7 +160,7 @@ void main() {
           allByDay: {
             for (final day in days) day: const {'h1'},
           },
-          // Every day kept → 100% average, at/above the 80% goal.
+          // Every day kept → 100% average, at/above the 80% target.
           successfulByDay: {
             for (final day in days) day: const {'h1'},
           },

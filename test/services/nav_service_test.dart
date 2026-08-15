@@ -19,6 +19,8 @@ enum _GeneratedNavPathKind {
   projectsChild,
   calendarRoot,
   calendarChild,
+  goalsRoot,
+  goalsChild,
   habitsRoot,
   habitsChild,
   dashboardsRoot,
@@ -48,6 +50,8 @@ class _GeneratedNavPath {
       _GeneratedNavPathKind.projectsChild => '/projects/$suffix',
       _GeneratedNavPathKind.calendarRoot => '/calendar',
       _GeneratedNavPathKind.calendarChild => '/calendar/$suffix',
+      _GeneratedNavPathKind.goalsRoot => '/goals',
+      _GeneratedNavPathKind.goalsChild => '/goals/$suffix',
       _GeneratedNavPathKind.habitsRoot => '/habits',
       _GeneratedNavPathKind.habitsChild => '/habits/$suffix',
       _GeneratedNavPathKind.dashboardsRoot => '/dashboards',
@@ -70,6 +74,7 @@ class _GeneratedNavScenario {
   const _GeneratedNavScenario({
     required this.dailyOs,
     required this.projects,
+    required this.unifiedGoals,
     required this.habits,
     required this.dashboards,
     required this.paths,
@@ -77,6 +82,7 @@ class _GeneratedNavScenario {
 
   final bool dailyOs;
   final bool projects;
+  final bool unifiedGoals;
   final bool habits;
   final bool dashboards;
   final List<_GeneratedNavPath> paths;
@@ -87,6 +93,7 @@ class _GeneratedNavScenario {
     '/tasks',
     if (dailyOs) '/calendar',
     if (projects) '/projects',
+    if (unifiedGoals) '/goals',
     if (habits) '/habits',
     if (dashboards) '/dashboards',
     '/journal',
@@ -115,7 +122,8 @@ class _GeneratedNavScenario {
   @override
   String toString() {
     return '_GeneratedNavScenario(dailyOs: $dailyOs, projects: $projects, '
-        'habits: $habits, dashboards: $dashboards, paths: $paths)';
+        'unifiedGoals: $unifiedGoals, habits: $habits, '
+        'dashboards: $dashboards, paths: $paths)';
   }
 }
 
@@ -134,7 +142,8 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 
   glados.Generator<_GeneratedNavScenario> get navScenario =>
-      glados.CombinableAny(this).combine5(
+      glados.CombinableAny(this).combine6(
+        glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
@@ -143,12 +152,14 @@ extension _AnyGeneratedNavScenario on glados.Any {
         (
           bool dailyOs,
           bool projects,
+          bool unifiedGoals,
           bool habits,
           bool dashboards,
           List<_GeneratedNavPath> paths,
         ) => _GeneratedNavScenario(
           dailyOs: dailyOs,
           projects: projects,
+          unifiedGoals: unifiedGoals,
           habits: habits,
           dashboards: dashboards,
           paths: paths,
@@ -156,8 +167,9 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 }
 
-/// Bench for the flag-driven NavService tests: wires the five optional-tab
-/// flag stream controllers into a fresh NavService and registers teardown.
+/// Bench for the flag-driven NavService tests: wires the optional-tab flag
+/// stream controllers (one per flag-gated destination) into a fresh
+/// NavService and registers teardown.
 class _NavFlagBench {
   _NavFlagBench({bool registerTeardown = true}) {
     final settingsDb = SettingsDb(inMemoryDatabase: true);
@@ -192,9 +204,10 @@ class _NavFlagBench {
   final unifiedGoals = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
-  /// Emits the five optional-tab flags at once; the Events flag stays off so
-  /// existing tab indices/delegates are unaffected (toggle [events] directly to
-  /// exercise the Events destination).
+  /// Emits the base optional-tab flags at once; the Events, Agents and
+  /// unified-Goals flags stay off so existing tab indices/delegates are
+  /// unaffected (toggle their controllers directly to exercise those
+  /// destinations).
   void emitAll({required bool enabled}) {
     dailyOs.add(enabled);
     projects.add(enabled);
@@ -381,17 +394,18 @@ void main() {
       try {
         bench.dailyOs.add(scenario.dailyOs);
         bench.projects.add(scenario.projects);
+        bench.unifiedGoals.add(scenario.unifiedGoals);
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
         bench.agents.add(false);
-        bench.unifiedGoals.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
           navService.tasksDelegate,
           if (scenario.dailyOs) navService.calendarDelegate,
           if (scenario.projects) navService.projectsDelegate,
+          if (scenario.unifiedGoals) navService.goalsDelegate,
           if (scenario.habits) navService.habitsDelegate,
           if (scenario.dashboards) navService.dashboardsDelegate,
           navService.journalDelegate,
@@ -541,6 +555,15 @@ void main() {
       await settingsDb.saveSettingsItem(
         lastRouteKey,
         '/agents/details/123e4567-e89b-12d3-a456-426614174000',
+      );
+      expect(await getIdFromSavedRoute(), isNull);
+    });
+
+    test('getIdFromSavedRoute yields NO creation context on unified Goals '
+        'routes either — the same agent id lives under /goals', () async {
+      await settingsDb.saveSettingsItem(
+        lastRouteKey,
+        '/goals/details/123e4567-e89b-12d3-a456-426614174000',
       );
       expect(await getIdFromSavedRoute(), isNull);
     });

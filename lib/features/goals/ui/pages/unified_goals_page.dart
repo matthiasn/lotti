@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The unified Goals tab (flag: `enable_unified_goals`; design handover
@@ -44,10 +46,6 @@ class UnifiedGoalsPage extends ConsumerStatefulWidget {
 
 class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
   final _scrollController = ScrollController();
-
-  /// The handover's confirmed reading measure for this surface: narrower than
-  /// the Habits page's 1100 so goal cards read as one comfortable column.
-  static const _maxContentWidth = 700.0;
 
   @override
   void initState() {
@@ -74,14 +72,27 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     final identities = agents.value ?? const [];
 
     // The due/later/done tabs select habit ROWS; `all` shows everything.
+    // Deliberately the category-UNFILTERED buckets: this page exposes no
+    // category-filter control, so it must not silently inherit a selection
+    // made on the Habits tab.
     final visibleHabitIds = switch (state.displayFilter) {
-      HabitDisplayFilter.openNow => {for (final h in state.openNow) h.id},
+      HabitDisplayFilter.openNow => {for (final h in state.openNowAll) h.id},
       HabitDisplayFilter.pendingLater => {
-        for (final h in state.pendingLater) h.id,
+        for (final h in state.pendingLaterAll) h.id,
       },
-      HabitDisplayFilter.completed => {for (final h in state.completed) h.id},
+      HabitDisplayFilter.completed => {
+        for (final h in state.completedAll) h.id,
+      },
       HabitDisplayFilter.all => null,
     };
+
+    // Goal-card rows count only real successes as done: goal criteria credit
+    // `HabitCompletionType.success` alone, while `successfulToday` also
+    // contains skips (the Habits tab's broader "handled today"). A skipped
+    // habit must keep its one-tap success button on a goal card, or the card
+    // reads green while the goal's window reading still reports a deficit.
+    final todayYmd = ref.watch(habitsNowProvider)().ymd;
+    final successToday = state.successfulByDay[todayYmd] ?? const <String>{};
 
     // Which habits any goal claims, from the resolved specs' criteria trees.
     // Orphan membership must not flicker while per-goal health is still on
@@ -91,7 +102,11 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
       for (final identity in identities)
         ref.watch(goalAgentHealthProvider(identity.agentId)),
     ];
-    final healthsResolved = healths.every((health) => health.hasValue);
+    // `agents.hasValue` guards the first load: with no identities resolved
+    // yet, `every` on the empty healths list is vacuously true and cached
+    // habit state would flash into "not in a goal" before jumping back.
+    final healthsResolved =
+        agents.hasValue && healths.every((health) => health.hasValue);
     final claimedHabitIds = <String>{
       for (final health in healths)
         if (health.value?.spec?.criteria case final criteria?)
@@ -99,13 +114,13 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     };
 
     final orphanSource = switch (state.displayFilter) {
-      HabitDisplayFilter.openNow => state.openNow,
-      HabitDisplayFilter.pendingLater => state.pendingLater,
-      HabitDisplayFilter.completed => state.completed,
+      HabitDisplayFilter.openNow => state.openNowAll,
+      HabitDisplayFilter.pendingLater => state.pendingLaterAll,
+      HabitDisplayFilter.completed => state.completedAll,
       HabitDisplayFilter.all => [
-        ...state.openNow,
-        ...state.pendingLater,
-        ...state.completed,
+        ...state.openNowAll,
+        ...state.pendingLaterAll,
+        ...state.completedAll,
       ],
     };
     final orphanHabits = healthsResolved
@@ -115,14 +130,17 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         : const <HabitDefinition>[];
 
     final width = MediaQuery.sizeOf(context).width;
-    final pagePadding = width > _maxContentWidth + tokens.spacing.step6 * 2
-        ? (width - _maxContentWidth) / 2
+    final pagePadding =
+        width > kUnifiedGoalsContentMaxWidth + tokens.spacing.step6 * 2
+        ? (width - kUnifiedGoalsContentMaxWidth) / 2
         : tokens.spacing.step6;
 
     HabitActionRow buildOrphanRow(HabitDefinition habitDefinition) {
       return HabitActionRow(
         key: Key('unified-orphan-${habitDefinition.id}'),
         habitId: habitDefinition.id,
+        // Orphan rows keep the Habits tab's semantics (skip counts as
+        // handled) — they ARE the old habits list, just grouped.
         completedToday: state.successfulToday.contains(habitDefinition.id),
         currentStreak: streaks[habitDefinition.id] ?? 0,
       );
@@ -133,7 +151,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
         child: DesignSystemFloatingActionButton(
           semanticLabel: messages.agentsCreateGoal,
-          onPressed: () => beamToNamed('/agents/create'),
+          onPressed: () => beamToNamed('/goals/create'),
         ),
       ),
       body: SafeArea(
@@ -164,7 +182,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
                     UnifiedGoalCard(
                       key: Key('unified-goal-card-${identity.agentId}'),
                       identity: identity,
-                      successfulToday: state.successfulToday,
+                      successToday: successToday,
                       streaksByHabit: streaks,
                       visibleHabitIds: visibleHabitIds,
                     ),
@@ -212,7 +230,7 @@ class _GoalsHeader extends StatelessWidget {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 520) {
+        if (constraints.maxWidth >= kPageHeaderFoldWidth) {
           return Row(
             children: [
               title,

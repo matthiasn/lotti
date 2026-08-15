@@ -58,6 +58,13 @@ abstract class HabitsState with _$HabitsState {
     required bool showSearch,
     required String searchString,
     required HabitDisplayFilter displayFilter,
+    // The three buckets BEFORE the category filter — for surfaces that reuse
+    // this state but expose no category-filter control (the unified Goals
+    // page), which must not silently inherit the Habits tab's hidden
+    // selection.
+    @Default(<HabitDefinition>[]) List<HabitDefinition> openNowAll,
+    @Default(<HabitDefinition>[]) List<HabitDefinition> pendingLaterAll,
+    @Default(<HabitDefinition>[]) List<HabitDefinition> completedAll,
   }) = _HabitsState;
 
   /// Creates the initial state with default values.

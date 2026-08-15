@@ -25,6 +25,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
@@ -809,7 +810,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         container
           ..invalidate(activeGoalAgentsProvider)
           ..invalidate(activeGoalNudgesProvider);
-        if (mounted) beamToNamed('/agents');
+        if (mounted) beamToNamed(goalSurfaceRootPath());
         return;
       }
 
@@ -831,7 +832,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         :final reason,
       ) when reason == GoalSpecRevisionService.ownerStaleVersionReason) {
         _invalidateGoalViews(container, agentId);
-        if (mounted) beamToNamed('/agents/details/$agentId');
+        if (mounted) beamToNamed(goalDetailPath(agentId));
         return;
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
@@ -839,7 +840,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         throw StateError(reason);
       }
       _invalidateGoalViews(container, agentId);
-      if (mounted) beamToNamed('/agents/details/$agentId');
+      if (mounted) beamToNamed(goalDetailPath(agentId));
     } on Object {
       if (mounted) {
         setState(() {
@@ -899,7 +900,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     final agentId = widget.agentId;
-    beamToNamed(agentId == null ? '/agents' : '/agents/details/$agentId');
+    beamToNamed(
+      agentId == null ? goalSurfaceRootPath() : goalDetailPath(agentId),
+    );
   }
 
   @override
@@ -997,7 +1000,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final agentId = widget.agentId;
             beamToNamed(
-              agentId == null ? '/agents' : '/agents/details/$agentId',
+              agentId == null ? goalSurfaceRootPath() : goalDetailPath(agentId),
             );
           });
         } else {

@@ -30,6 +30,7 @@ import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -128,7 +129,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     // EVERY pop — AppBar button, Android system back, iOS gesture —
     // routes through NavService so currentPath and the persisted route
     // return to the Agents root instead of pinning this child.
-    final backToList = BackButton(onPressed: () => beamToNamed('/agents'));
+    final backToList = BackButton(
+      onPressed: () => beamToNamed(goalSurfaceRootPath()),
+    );
     Widget popSafe(Widget child) => PopScope(
       // canPop stays TRUE: false would disable the iOS swipe-back
       // gesture entirely. The route pops normally; the completed pop
@@ -138,7 +141,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // Post-frame: the pop is mid-router-update — persisting the root
         // synchronously would re-enter the delegate while it notifies.
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => beamToNamed('/agents'),
+          (_) => beamToNamed(goalSurfaceRootPath()),
         );
       },
       child: child,
@@ -358,7 +361,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
             label: context.messages.goalChatTalkTo(goalIdentity.displayName),
-            onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
+            onPressed: () => beamToNamed(goalChatPath(agentId)),
             leadingIcon: Icons.chat_bubble_outline_rounded,
             // Secondary: the persistent app-bar action is the primary
             // doorway; this tail button is the convenience for readers who
@@ -446,7 +449,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 tooltip: context.messages.goalChatTalkTo(
                   goalIdentity.displayName,
                 ),
-                onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
+                onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
             _GoalActionsMenuButton(
               agentId: agentId,
@@ -1083,7 +1086,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
       onSelected: (action) {
         switch (action) {
           case _GoalDetailMenuAction.edit:
-            beamToNamed('/agents/details/$agentId/edit');
+            beamToNamed(goalEditPath(agentId));
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1176,7 +1179,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             .read(goalAgentServiceProvider)
             .deleteGoalAgent(agentId);
         if (!deleted || !context.mounted) return;
-        beamToNamed('/agents');
+        beamToNamed(goalSurfaceRootPath());
       } catch (_) {
         if (!context.mounted) return;
         ScaffoldMessenger.maybeOf(context)

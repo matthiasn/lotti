@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -32,6 +34,9 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../habits/test_utils.dart';
+
+/// Deterministic "now" for the page's success-only today derivation.
+final _now = DateTime(2026, 8, 15, 14);
 
 /// Serves a fixed [HabitHeatmapData] so the page's heatmap card renders
 /// without the database-backed controller.
@@ -100,6 +105,7 @@ void main() {
     habits: [
       GoalHabitProgressView(
         habitId: habitFlossing.id,
+        criterionId: 'c1',
         name: habitFlossing.name,
         targetCount: 4,
         days: const [],
@@ -125,26 +131,37 @@ void main() {
 
   Future<FakeHabitsController> pump(
     WidgetTester tester,
-    HabitsState state,
-  ) async {
+    HabitsState state, {
+    bool agentsNeverResolve = false,
+    Size viewport = const Size(800, 2600),
+  }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
     // chart cards — builds inside the sliver viewport.
-    tester.view.physicalSize = const Size(800, 2600);
+    tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final controller = FakeHabitsController(state);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const UnifiedGoalsPage(),
+        // Mirror the real view size into MediaQuery: the page computes its
+        // centered-column padding from MediaQuery.sizeOf.
+        mediaQueryData: MediaQueryData(size: viewport),
         overrides: [
           habitsControllerProvider.overrideWith(() => controller),
+          habitsNowProvider.overrideWithValue(() => _now),
           habitHeatmapControllerProvider.overrideWith(
             _FakeHeatmapController.new,
           ),
           firstDayOfWeekIndexProvider.overrideWith((ref) => 1),
-          activeGoalAgentsProvider.overrideWith(
-            (ref) async => [identity('goal-1', 'Fitness')],
-          ),
+          if (agentsNeverResolve)
+            activeGoalAgentsProvider.overrideWith(
+              (ref) => Completer<List<AgentIdentityEntity>>().future,
+            )
+          else
+            activeGoalAgentsProvider.overrideWith(
+              (ref) async => [identity('goal-1', 'Fitness')],
+            ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => health('goal-1')),
@@ -157,16 +174,29 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    if (agentsNeverResolve) {
+      await tester.pump(const Duration(milliseconds: 100));
+    } else {
+      await tester.pumpAndSettle();
+    }
     return controller;
   }
 
   HabitsState baseState({
     HabitDisplayFilter filter = HabitDisplayFilter.all,
+    Set<String> successfulToday = const {},
+    Set<String> successOnlyToday = const {},
   }) => HabitsState.initial().copyWith(
     habitDefinitions: [habitFlossing, habitFlossingDueLater],
-    openNow: [habitFlossing, habitFlossingDueLater],
+    // The page must read the category-UNFILTERED buckets; the filtered ones
+    // are left empty here so any accidental read renders nothing and fails
+    // the assertions below.
+    openNowAll: [habitFlossing, habitFlossingDueLater],
     displayFilter: filter,
+    successfulToday: successfulToday,
+    successfulByDay: {
+      if (successOnlyToday.isNotEmpty) '2026-08-15': successOnlyToday,
+    },
   );
 
   testWidgets('renders the summary card, the goal card with its habit row, '
@@ -234,6 +264,106 @@ void main() {
 
     await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
-    expect(navigated, ['/agents/create']);
+    expect(navigated, ['/goals/create']);
+  });
+
+  testWidgets('a skipped habit stays actionable on the goal card while the '
+      'orphan group keeps the Habits-tab semantics', (tester) async {
+    // Both habits were "handled" today, but only the orphan's handling is a
+    // real success — the goal-linked habit was SKIPPED. Goal criteria credit
+    // only successes, so its goal-card row must keep the one-tap + button
+    // (not completed), while the orphan row reads as handled.
+    await pump(
+      tester,
+      baseState(
+        successfulToday: {habitFlossing.id, habitFlossingDueLater.id},
+        successOnlyToday: {habitFlossingDueLater.id},
+      ),
+    );
+
+    final goalRow = tester.widget<HabitActionRow>(
+      find.byKey(
+        Key('unified-goal-goal-1-c1-${habitFlossing.id}'),
+      ),
+    );
+    expect(goalRow.completedToday, isFalse);
+
+    final orphanRow = tester.widget<HabitActionRow>(
+      find.byKey(Key('unified-orphan-${habitFlossingDueLater.id}')),
+    );
+    expect(orphanRow.completedToday, isTrue);
+  });
+
+  testWidgets('the later filter arm selects the pending-later bucket', (
+    tester,
+  ) async {
+    // Flossing-due-later is pending later; the goal-claimed habit is due
+    // now. Under the later filter the goal card collapses to its header and
+    // the orphan group shows only the pending habit.
+    final state = baseState(filter: HabitDisplayFilter.pendingLater).copyWith(
+      openNowAll: [habitFlossing],
+      pendingLaterAll: [habitFlossingDueLater],
+    );
+    await pump(tester, state);
+
+    expect(find.text(habitFlossing.name), findsNothing);
+    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+    expect(find.text('Fitness'), findsOneWidget);
+  });
+
+  testWidgets('while the agent list is still loading, cached habits are NOT '
+      'presented as ungrouped', (tester) async {
+    await pump(tester, baseState(), agentsNeverResolve: true);
+
+    // No goal cards yet — and crucially no orphan group either: the habits
+    // would jump into their goal cards the moment the agents resolve.
+    expect(find.byType(UnifiedGoalCard), findsNothing);
+    expect(find.text('Not in a goal'), findsNothing);
+    expect(find.byType(HabitActionRow), findsNothing);
+  });
+
+  testWidgets('a window wider than the reading measure centers the column', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      baseState(),
+      viewport: const Size(1200, 2600),
+    );
+
+    // The column is capped at the unified reading measure and centered:
+    // the header starts well inside the left edge.
+    final headerRect = tester.getRect(find.text('Goals'));
+    expect(headerRect.left, greaterThan(200));
+  });
+
+  testWidgets('a narrow window folds the filter tabs under the title', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      baseState(),
+      viewport: const Size(430, 2600),
+    );
+
+    // The reused completion-rate chart's headline row overflows at phone
+    // widths under the wide test font — pre-existing rendering noise from
+    // the reused card, not the fold behavior under test here.
+    var exception = tester.takeException();
+    while (exception != null) {
+      // The binding folds several reported errors into one wrapper whose
+      // message doesn't restate them; the individual reports (all RenderFlex
+      // overflows from the reused cards) are printed above.
+      expect(
+        '$exception',
+        anyOf(contains('overflowed'), contains('Multiple exceptions')),
+      );
+      exception = tester.takeException();
+    }
+
+    // Folded: the tabs sit BELOW the title instead of beside it.
+    final titleRect = tester.getRect(find.text('Goals'));
+    final tabsRect = tester.getRect(find.text('due').first);
+    expect(tabsRect.top, greaterThan(titleRect.bottom - 1));
   });
 }

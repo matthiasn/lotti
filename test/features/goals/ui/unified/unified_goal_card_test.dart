@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -9,6 +10,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
+import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
@@ -130,14 +133,14 @@ void main() {
     required GoalAgentHealth agentHealth,
     GoalProgressView? progressView,
     Set<String>? visibleHabitIds,
-    Set<String> successfulToday = const {},
+    Set<String> successToday = const {},
     Map<String, int> streaks = const {},
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         UnifiedGoalCard(
           identity: identity('goal-1', 'Fitness'),
-          successfulToday: successfulToday,
+          successToday: successToday,
           streaksByHabit: streaks,
           visibleHabitIds: visibleHabitIds,
         ),
@@ -244,6 +247,49 @@ void main() {
 
     await tester.tap(find.text('Fitness'));
     await tester.pump();
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
+  });
+
+  testWidgets('a significant trend renders the shared direction chip', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+        direction: GoalHealthDirection.up,
+      ),
+      progressView: progress(),
+    );
+
+    // The same chip the agents list and detail header use — one trend
+    // vocabulary across every goal surface.
+    expect(find.byType(GoalHealthDirectionChip), findsOneWidget);
+    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+  });
+
+  testWidgets('a narrow card stacks the strip below the identity block', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+      ),
+      progressView: progress(),
+    );
+
+    // Phone branch: the goal-level strip starts below the title instead of
+    // trailing it on the same row.
+    final titleRect = tester.getRect(find.text('Fitness'));
+    final stripRect = tester.getRect(
+      find.byType(GoalCompactWindowStrip).first,
+    );
+    expect(stripRect.top, greaterThan(titleRect.bottom - 1));
   });
 }
