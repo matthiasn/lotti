@@ -1,6 +1,12 @@
 # ADR 0040: Relationship Executive Briefing
 
-- Status: Proposed
+- Status: Proposed — amended by
+  [ADR 0059](./0059-relationship-agent-runtime-and-nudge-generalization.md):
+  the agent is a registered runtime kind on deterministic-first two-tier
+  wakes, and Decision 1's `AgentTemplateKind.relationshipAgent` is dropped
+  (the constitution is code, the ADR 0053 Decision 7 precedent). The report
+  contract, health band, context boundary, honesty rules, and
+  privacy-weighted routing stand.
 - Date: 2026-07-22
 
 ## Context
@@ -89,5 +95,6 @@ inference profiles can pin capability slots to local models.
 - [ADR 0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md)
 - [ADR 0016: Agent-Derived State as a Projection of the Append-Only Log](./0016-agent-state-as-log-projection.md)
 - [ADR 0023: Durable Domain Agents and Time Negotiation](./0023-durable-domain-agents-and-time-negotiation.md)
+- [ADR 0059: Relationship Agents on the Shared Runtime and the Kind-Agnostic Nudge Substrate](./0059-relationship-agent-runtime-and-nudge-generalization.md) — amends the runtime binding; drops the template
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
   (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))
