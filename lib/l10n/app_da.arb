@@ -2898,6 +2898,7 @@
   "goalDimensionOnTrackStatus": "På sporet",
   "goalDimensionRecordedByAgent": "Sagt af dig og optaget efter din godkendelse.",
   "goalDimensionRecordedByAgentDetails": "Sagt af dig, optaget af {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} har brug for opmærksomhed",
   "goalFormAddDimension": "Tilføj dimension",
   "goalFormAddSignal": "Tilføj et signal",
   "goalFormBloodPressureSource": "Systolisk og diastolisk · mmHg · 7-dages gennemsnit",

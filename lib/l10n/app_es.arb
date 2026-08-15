@@ -2641,6 +2641,7 @@
   "goalDimensionOnTrackStatus": "En camino",
   "goalDimensionRecordedByAgent": "Dicho por ti y registrado tras tu aprobación.",
   "goalDimensionRecordedByAgentDetails": "Dicho por ti, grabado por {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} necesita atención",
   "goalFormAddDimension": "Agregar dimensión",
   "goalFormAddSignal": "Añadir una señal",
   "goalFormBloodPressureSource": "Sistólica y diastólica · mmHg · promedio de 7 días",

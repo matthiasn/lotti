@@ -3596,6 +3596,7 @@
       }
     }
   },
+  "goalDominantIssueBadge": "{dimensionName} needs attention",
   "goalFormAddDimension": "Add dimension",
   "goalFormAddSignal": "Add a signal",
   "@goalFormAddSignal": {

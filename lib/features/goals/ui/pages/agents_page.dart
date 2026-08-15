@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -197,6 +198,16 @@ class _GoalAgentRow extends ConsumerWidget {
         ? tokens.colors.text.lowEmphasis
         : goalCoarseHealthColor(coarse, tokens.colors);
     final direction = health?.direction;
+    // The deterministic fallback for a goal the agent has not written about
+    // yet (first inference pending, spec just revised, automatic updates
+    // off): without it a struggling metric or composite row would carry only
+    // a generic health chip. Once a one-liner exists it names the lagging
+    // dimension itself, and the pill would restate it — so it yields.
+    final oneLiner = health?.reportOneLiner;
+    final dominantIssue =
+        progress == null || (oneLiner?.trim().isNotEmpty ?? false)
+        ? null
+        : _dominantIssue(progress, health?.trackStatus);
     // A deterministic, factual hint for rolling-window habit goals: the
     // days-to-recovery when behind, or the buffer before the oldest success
     // ages out when at rate. Distinct from the agent's prose one-liner —
@@ -250,11 +261,14 @@ class _GoalAgentRow extends ConsumerWidget {
             // across list and detail.
             if (direction != null)
               GoalHealthDirectionChip(direction: direction),
-            // At most one health chip and one trend chip. The dominant-issue
-            // pill that used to stack third here restated what the one-liner
-            // below already says, and stretched the chip row into noise; the
-            // needs-you badge stays because it is an action, not a restatement.
-            if ((health?.pendingProposals ?? 0) > 0) const _NeedsYouBadge(),
+            // At most one health chip, one trend chip and one badge. The
+            // needs-you badge is an action; the dominant-issue pill is a
+            // FALLBACK only — it renders solely while no one-liner exists to
+            // name the lagging dimension, never as a third restatement.
+            if ((health?.pendingProposals ?? 0) > 0)
+              const _NeedsYouBadge()
+            else if (dominantIssue != null)
+              _AttentionBadge(dimensionName: dominantIssue),
           ],
         ),
         // Executive summary: the agent's standing one-liner — events-and-time
@@ -360,6 +374,63 @@ class _GoalAgentRow extends ConsumerWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The dimension most in need of attention, or null when the goal is on
+/// track (or has nothing observable to blame). Used only as the fallback
+/// while the agent has no standing one-liner for the row.
+String? _dominantIssue(
+  GoalProgressView progress,
+  GoalTrackStatus? trackStatus,
+) {
+  if (progress.rootOnTrack ||
+      trackStatus == GoalTrackStatus.onTrack ||
+      trackStatus == GoalTrackStatus.achieved ||
+      trackStatus == GoalTrackStatus.insufficientData) {
+    return null;
+  }
+  for (final metric in progress.metrics) {
+    final observed = metric.days.where((day) => day.isObserved).toList();
+    if (observed.isNotEmpty &&
+        !metric.projectedOnTrack &&
+        !metric.meetsTarget(observed.last)) {
+      return metric.name;
+    }
+  }
+  for (final habit in progress.habits) {
+    if (habit.deficit > 0) return habit.name;
+  }
+  return null;
+}
+
+class _AttentionBadge extends StatelessWidget {
+  const _AttentionBadge({required this.dimensionName});
+
+  final String dimensionName;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final warning = tokens.colors.alert.warning;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: warning.defaultColor.withValues(
+          alpha: SurfaceAlphas.washChip,
+        ),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+      ),
+      child: Text(
+        context.messages.goalDominantIssueBadge(dimensionName),
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: warning.ink,
         ),
       ),
     );

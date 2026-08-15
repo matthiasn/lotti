@@ -237,13 +237,25 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ].join('. '),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
-      // The track sizes itself to `pitch * days`, so no cap is needed: it can
-      // neither scatter across a desktop card nor overflow a phone one.
+      // The scale-down FittedBox is the overflow bound: the track (and the
+      // dateless placeholder Row) size themselves to `pitch * days`, and on
+      // a 320px phone a list row's column is a few pixels narrower than
+      // seven full-size cells. Everywhere with room, the fit is identity.
       child: onDaySelected == null
-          ? ExcludeSemantics(child: labelled)
+          ? ExcludeSemantics(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: labelled,
+              ),
+            )
           : Align(
               alignment: AlignmentDirectional.centerStart,
-              child: labelled,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: labelled,
+              ),
             ),
     );
   }

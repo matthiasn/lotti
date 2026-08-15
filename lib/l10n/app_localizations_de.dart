@@ -6403,6 +6403,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName braucht Aufmerksamkeit';
+  }
+
+  @override
   String get goalFormAddDimension => 'Dimension hinzufügen';
 
   @override

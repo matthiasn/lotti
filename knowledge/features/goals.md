@@ -51,7 +51,7 @@ sources:
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-14
+    last_modified: 2026-08-15
   - id: strategy
     resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
     title: GoalAgentStrategy — Phase B conversation and tool dispatch
@@ -59,7 +59,7 @@ sources:
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
-    last_modified: 2026-08-13
+    last_modified: 2026-08-15
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results

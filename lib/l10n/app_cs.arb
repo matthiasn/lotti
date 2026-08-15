@@ -2648,6 +2648,7 @@
   "goalDimensionOnTrackStatus": "Na cestě",
   "goalDimensionRecordedByAgent": "Řekl(a) jsi to ty a po tvém schválení to bylo zaznamenáno.",
   "goalDimensionRecordedByAgentDetails": "Řekl(a) jsi to ty, zaznamenal(a) {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} vyžaduje pozornost",
   "goalFormAddDimension": "Přidat rozměr",
   "goalFormAddSignal": "Přidat signál",
   "goalFormBloodPressureSource": "Systolický a diastolický · mmHg · 7denní průměr",

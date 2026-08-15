@@ -714,11 +714,49 @@ GoalMetricProgressView _numericProgressView({
           isObserved:
               (dailyValues?.containsKey(day) ?? false) ||
               (zeroIsObserved && !day.isAfter(today)),
+          // A rolling window ends at the reference day; a calendar window's
+          // period range covers its WHOLE week or month, so evaluating it
+          // unclipped would let Friday's total repaint Monday's verdict
+          // retroactively. Clipping the aggregates makes this the verdict
+          // as of that day — the window ending there — for both shapes.
           targetSatisfied: const GoalProgressEvaluator()
-              .evaluate(criterion, signals, day)
+              .evaluate(
+                criterion,
+                window is GoalWindowRollingDays
+                    ? signals
+                    : _signalsThroughDay(signals, day),
+                day,
+              )
               .satisfied,
         ),
     ],
+  );
+}
+
+/// [signals] with every daily aggregate after [day] removed, so a calendar
+/// criterion's per-day verdict cannot see data logged later in the same
+/// period. Identity-preserving for everything evaluation does not date-fold.
+GoalSignalWindow _signalsThroughDay(GoalSignalWindow signals, DateTime day) {
+  Map<String, Map<DateTime, V>> clip<V>(Map<String, Map<DateTime, V>> source) =>
+      {
+        for (final entry in source.entries)
+          entry.key: {
+            for (final dayEntry in entry.value.entries)
+              if (!dayEntry.key.isAfter(day)) dayEntry.key: dayEntry.value,
+          },
+      };
+  return GoalSignalWindow(
+    quantitativeDailySums: clip(signals.quantitativeDailySums),
+    quantitativeObservationsByType: signals.quantitativeObservationsByType,
+    habitSuccessesByDay: signals.habitSuccessesByDay,
+    habitCompletionsByDay: signals.habitCompletionsByDay,
+    measurableDailySums: clip(signals.measurableDailySums),
+    measurableEntryDaysById: signals.measurableEntryDaysById,
+    categoryTimeDailyHours: clip(signals.categoryTimeDailyHours),
+    categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
+    categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
+    categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,
+    hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
   );
 }
 

@@ -223,9 +223,9 @@ void main() {
 
     // The phone branch: identity, deterministic hint and a REAL
     // (non-placeholder) strip stacked in one column. The dominant-issue pill
-    // is gone — the one-liner already names the lagging dimension, and a
-    // third chip stretched the row into noise (and could repeat one habit's
-    // name across every goal that watches it).
+    // yields to the one-liner: with the agent's own sentence naming the
+    // lagging dimension, a third chip restating it stretched the row into
+    // noise (and repeated one habit's name across every goal watching it).
     expect(find.text('Walk needs attention'), findsNothing);
     expect(find.textContaining('needs attention'), findsNothing);
     expect(find.text('3 days to recover'), findsOneWidget);
@@ -575,5 +575,134 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('One agent per goal'), findsNothing);
+  });
+
+  testWidgets('without a one-liner, the dominant-issue pill is the fallback', (
+    tester,
+  ) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-fit:spec-v1',
+              agentId: 'goal-fit',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Walk daily',
+              statement: 'Walk every day.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 5,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 13);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-fit', 'Vesper')],
+          ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            // No standing one-liner yet — first inference pending. The
+            // deterministic fallback must still tell the user WHICH
+            // dimension needs attention, not just show a generic chip.
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.offTrack,
+              spec: spec,
+              deficit: 3,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-fit').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 5,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: offset == 2 ? 1 : 0,
+                        targetSatisfied: false,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Walk needs attention'), findsOneWidget);
+  });
+
+  testWidgets('an unresolved strip stays bounded on a 320px viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-fit:spec-v1',
+              agentId: 'goal-fit',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Walk daily',
+              statement: 'Walk every day.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 5,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-fit', 'Vesper')],
+          ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.onTrack,
+              reportOneLiner: 'Walks are landing.',
+              spec: spec,
+            ),
+          ),
+          // Progress never resolves: the row reserves the strip footprint
+          // with dashed placeholder cells.
+          goalAgentProgressViewProvider(
+            'goal-fit',
+          ).overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Seven full-size placeholder cells are wider than a 320px row's
+    // column; the strip must scale down instead of overflowing.
+    expect(tester.takeException(), isNull);
+    final strip = find.byType(GoalCompactWindowStrip);
+    expect(strip, findsOneWidget);
+    expect(
+      tester.getSize(strip).width,
+      lessThanOrEqualTo(320),
+    );
   });
 }

@@ -10870,6 +10870,12 @@ abstract class AppLocalizations {
     String recordedAt,
   );
 
+  /// No description provided for @goalDominantIssueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimensionName} needs attention'**
+  String goalDominantIssueBadge(Object dimensionName);
+
   /// No description provided for @goalFormAddDimension.
   ///
   /// In en, this message translates to:

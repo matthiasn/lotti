@@ -74,9 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The Goal Agents list reads at full size.** The per-goal week strip drew
   12px dots that were illegible at list scale; it now uses the same cell size
   as the detail page, and the chip row is down to the health chip, the trend
-  chip and the needs-you badge — the third "… needs attention" pill restated
-  the one-liner below it and could repeat one habit's name across every goal
-  watching it.
+  chip and one badge — the "… needs attention" pill now appears only as a
+  fallback while the agent has no one-liner yet, instead of restating the
+  one-liner beside every goal watching the same habit.
 - **The desktop scrollbar sits beside the chat.** On the goal details page
   the middle column's scrollbar floated mid-pane at the reading measure's
   edge; the scroll view now spans its pane (the measure constrains the

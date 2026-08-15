@@ -2641,6 +2641,7 @@
   "goalDimensionOnTrackStatus": "Pe drumul cel bun",
   "goalDimensionRecordedByAgent": "Spus de dvs. și înregistrat după aprobarea dvs.",
   "goalDimensionRecordedByAgentDetails": "Spus de dvs., înregistrat de {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} are nevoie de atenție",
   "goalFormAddDimension": "Adaugă dimensiune",
   "goalFormAddSignal": "Adăugați un semnal",
   "goalFormBloodPressureSource": "Sistolică și diastolică · mmHg · medie pe 7 zile",

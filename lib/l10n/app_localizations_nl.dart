@@ -6380,6 +6380,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName heeft aandacht nodig';
+  }
+
+  @override
   String get goalFormAddDimension => 'Voeg dimensie toe';
 
   @override

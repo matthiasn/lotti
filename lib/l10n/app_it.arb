@@ -2898,6 +2898,7 @@
   "goalDimensionOnTrackStatus": "In pista",
   "goalDimensionRecordedByAgent": "Detto da te e registrato dopo la tua approvazione.",
   "goalDimensionRecordedByAgentDetails": "Detto da te, registrato da {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} ha bisogno di attenzione",
   "goalFormAddDimension": "Aggiungi dimensione",
   "goalFormAddSignal": "Aggiungi un segnale",
   "goalFormBloodPressureSource": "Sistolica e diastolica · mmHg · media su 7 giorni",

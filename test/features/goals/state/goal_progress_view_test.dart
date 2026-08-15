@@ -863,6 +863,41 @@ void main() {
     expect(systolic.valueMeetsTarget(systolic.days.single), isTrue);
   });
 
+  test(
+    'a calendar-window day verdict is as of that day, never retroactive',
+    () {
+      // Sum criterion over the calendar week: 6 hours on Monday, 6 on Tuesday,
+      // 12-hour weekly target reached only on Tuesday. Monday's verdict must
+      // be the running total AS OF Monday — evaluating the unclipped window
+      // let Tuesday's hours repaint Monday retroactively, so reopening
+      // Monday's reflection after the total landed suggested Met for a day
+      // that had not met anything yet.
+      final view = buildGoalProgressView(
+        criteria: const GoalCriterion.metric(
+          criterionId: 'deep-work',
+          dataType: 'deep-work',
+          window: GoalWindow.calendarWeek(),
+          aggregation: GoalAggregation.sum,
+          target: 12,
+        ),
+        signals: GoalSignalWindow(
+          quantitativeDailySums: {
+            'deep-work': {day(1): 6, day(0): 6},
+          },
+        ),
+        reference: today,
+      );
+
+      final metric = view.metric!;
+      final monday = metric.days.singleWhere((entry) => entry.day == day(1));
+      final tuesday = metric.days.singleWhere((entry) => entry.day == day(0));
+      expect(metric.meetsTarget(monday), isFalse);
+      expect(metric.dayMark(monday), isFalse);
+      expect(metric.meetsTarget(tuesday), isTrue);
+      expect(metric.dayMark(tuesday), isTrue);
+    },
+  );
+
   test('the evaluator-supplied habit count outranks the view-side fold', () {
     // Three creditable days in the visible window, but the evaluator said
     // five (its window need not equal the visible one). The card must quote

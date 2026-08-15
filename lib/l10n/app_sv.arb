@@ -2898,6 +2898,7 @@
   "goalDimensionOnTrackStatus": "På rätt spår",
   "goalDimensionRecordedByAgent": "Sagt av dig och inspelat efter ditt godkännande.",
   "goalDimensionRecordedByAgentDetails": "Sagt av dig, inspelat av {agentName}, {recordedAt}",
+  "goalDominantIssueBadge": "{dimensionName} behöver uppmärksamhet",
   "goalFormAddDimension": "Lägg till dimension",
   "goalFormAddSignal": "Lägg till en signal",
   "goalFormBloodPressureSource": "Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt",
