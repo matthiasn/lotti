@@ -868,8 +868,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
 
     final card = find.byKey(
       const ValueKey('goal-form-category-time-card-archived'),
@@ -2038,7 +2036,6 @@ void main() {
     expect(selectionRow('All dimensions'), findsOneWidget);
     expect(selectionRow('Any dimension'), findsOneWidget);
     expect(selectionRow('At least 1 of 3'), findsOneWidget);
-    expect(find.text('1 / 3'), findsOneWidget);
     expect(
       find.text('Strictest — every dimension must be met.'),
       findsOneWidget,
@@ -2047,9 +2044,9 @@ void main() {
       find.text('Loosest — one met dimension is enough.'),
       findsOneWidget,
     );
+    // Choosing a rule applies it but keeps the sheet open — only Done (or a
+    // dismiss gesture) closes it.
     await tester.tap(selectionRow('Any dimension'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
     await tester.pumpAndSettle();
     expect(
       tester
@@ -2058,29 +2055,31 @@ void main() {
       isTrue,
     );
 
+    // Selecting the at-least rule reveals its stepper on its own line, and
+    // stepping adjusts the count without dismissing the sheet.
+    await tester.tap(selectionRow('At least 1 of 3'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 3'), findsOneWidget);
     await tester.tap(
-      find.descendant(
-        of: selectionRow('At least 1 of 3'),
-        matching: find.byIcon(Icons.add_rounded),
-      ),
+      find.byKey(const ValueKey('goal-form-composite-increase')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('At least 2 of 3'), findsOneWidget);
+    expect(selectionRow('At least 2 of 3'), findsOneWidget);
+    expect(find.text('2 / 3'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-composite-decrease')),
+    );
+    await tester.pumpAndSettle();
+    expect(selectionRow('At least 1 of 3'), findsOneWidget);
+    expect(find.text('1 / 3'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
-    await tester.pumpAndSettle();
     await tester.tap(selectionRow('All dimensions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
-    await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<DesignSystemSelectionRow>(selectionRow('All dimensions'))
-          .selected,
-      isTrue,
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-composite-done')),
     );
-    await tester.tap(selectionRow('All dimensions'));
     await tester.pumpAndSettle();
+    expect(selectionRow('All dimensions'), findsNothing);
 
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -2283,8 +2282,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
     await tester.pumpAndSettle();
@@ -2355,8 +2352,6 @@ void main() {
         overrides: overrides(editSpec: current),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
@@ -2482,8 +2477,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Gym and run every week'), findsOneWidget);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     expect(find.text('2×/week', skipOffstage: false), findsOneWidget);
     expect(find.text('5×/week', skipOffstage: false), findsOneWidget);
 
@@ -2656,8 +2649,6 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('Continue'));
       await tester.pump();
-      await tester.tap(find.text('Continue'));
-      await tester.pump();
       await tester.tap(find.text('Save new version'));
       await tester.pump();
 
@@ -2711,8 +2702,6 @@ void main() {
         overrides: overrides(editSpec: current),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -2797,8 +2786,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
     await tester.pump();
     await tester.enterText(
@@ -2848,8 +2835,6 @@ void main() {
           overrides: overrides(editSpec: current),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
@@ -2911,8 +2896,6 @@ void main() {
           overrides: overrides(editSpec: current),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
       await tester.pumpAndSettle();
@@ -2978,8 +2961,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
@@ -3026,8 +3007,6 @@ void main() {
         overrides: overrides(editSpec: _spec(criteria: hiddenCriteria)),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -3088,8 +3067,6 @@ void main() {
           overrides: overrides(editSpec: current),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
@@ -3176,8 +3153,6 @@ void main() {
         overrides: overrides(editSpec: current),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(
       find.textContaining('uses a mapping this editor can’t safely rewrite'),
@@ -3299,8 +3274,6 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
       await tester.pump();
       await tester.enterText(
@@ -3348,8 +3321,6 @@ void main() {
         overrides: overrides(editSpec: _spec()),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -3404,8 +3375,6 @@ void main() {
         overrides: overrides(editSpec: _spec()),
       ),
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
@@ -3476,8 +3445,6 @@ void main() {
     await tester.pumpWidget(harness.widget);
     await tester.pumpAndSettle();
     expect(pendingReads, 1);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('goal-form-title-edit')));
@@ -4884,8 +4851,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
 
       // A partial pair is still a selected signal: checked, carrying the
       // one value it has.
@@ -5243,8 +5208,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
 
       // One toggle drives both readings, so it must read the direction off
       // whichever half the partial pair actually carries.
@@ -5290,8 +5253,6 @@ void main() {
           overrides: overrides(editSpec: _spec(criteria: criteria)),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
@@ -5436,8 +5397,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
 
       // Filling the blank half of the pair must adopt the direction the
       // shared toggle already shows, not the atMost default.
@@ -5500,4 +5459,199 @@ void main() {
       );
     },
   );
+
+  testWidgets('editing is a two-step flow with the statement inline', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No intention page: editing lands on the consolidated mapping page
+    // with the statement as a single-line field at the top.
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+    expect(find.text('What do you want to work toward?'), findsNothing);
+    expect(find.text('Here’s what I can watch'), findsOneWidget);
+    final statementField = find.byKey(const ValueKey('goal-form-intention'));
+    expect(statementField, findsOneWidget);
+    final editable = tester.widget<EditableText>(
+      find.descendant(
+        of: statementField,
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(editable.controller.text, 'Gym and run every week');
+    expect(editable.maxLines, 1);
+    // The example pills fold in under the field.
+    expect(find.text('gym twice a week'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 2 of 2'), findsOneWidget);
+    expect(find.text('Save new version'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+  });
+
+  testWidgets('back from the consolidated edit page exits to goal details', (
+    tester,
+  ) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    expect(navigated, ['/agents/details/goal-1']);
+  });
+
+  testWidgets('editing blocks continue while the statement is empty', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      '',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Describe what you want to work toward first.'),
+      findsOneWidget,
+    );
+    // Still on the mapping page, not the confirmation.
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+    expect(find.text('Save new version'), findsNothing);
+
+    // Typing clears the inline error.
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym often',
+    );
+    await tester.pump();
+    expect(
+      find.text('Describe what you want to work toward first.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('an example pill rewrites the statement on the edit page', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final current = _spec();
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        'the owner edit does not change the goal',
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('gym twice a week'));
+    await tester.pump();
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const ValueKey('goal-form-intention')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
+          .text,
+      'gym twice a week',
+    );
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: 'gym twice a week',
+        criteria: any(named: 'criteria'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('the steps input is labelled as the daily target, not a '
+      'duplicate of the row title', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Move more every day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pumpAndSettle();
+
+    // The signal's name appears once (the row title); the target input
+    // carries its own label instead of repeating it.
+    expect(find.text('Average steps per day'), findsOneWidget);
+    expect(find.text('Daily target'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+  });
 }

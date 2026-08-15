@@ -144,7 +144,10 @@ the mapping step — derived from the selected habits' names (emoji-free),
 falling back to the steps label or the intention text when no habit is
 selected, until the user types their own — and reappears on the
 confirmation step as the same field rendered read-only behind a pencil
-affordance. The automatic step count
+affordance. Editing skips the intention page entirely: the statement is a
+single-line field with the example pills at the top of the mapping page, so
+the edit flow is two steps where creation is three, and the step indicator
+reflects the count the user actually walks. The automatic step count
 is an always-visible signal row rather than an intention-gated one, and an
 intention that names a health capability (blood pressure, weight) arrives
 with that signal pre-selected and seeded (130/80 mmHg, at-most), while a

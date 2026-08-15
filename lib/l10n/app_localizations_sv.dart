@@ -6579,8 +6579,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Befintliga signaler och schemat bevaras exakt.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Steg $step av 3';
+  String goalFormProgress(int step, int total) {
+    return 'Steg $step av $total';
   }
 
   @override
@@ -6608,9 +6608,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormSaveChanges => 'Spara ny version';
 
   @override
+  String get goalFormStatementLabel => 'Ditt mål, med dina ord';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target steg om dagen';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Dagligt mål';
 
   @override
   String get goalFormStepsSignal => 'automatisk stegräkning';

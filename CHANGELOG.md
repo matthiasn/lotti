@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggests nothing at all.
 
 ### Changed
+- **Editing a goal is two steps, not three.** The separate "What do you want
+  to work toward?" page is gone from the edit flow: the statement is a
+  single-line field at the top of the edit page, with the suggestion chips
+  right beneath it, and the step indicator now says so.
+- **The steps signal no longer repeats its own name.** The target input
+  inside the "Average steps per day" card is labelled "Daily target" instead
+  of duplicating the card title.
 - **The seven-day rows line up.** The whole-goal week, the habit squares and
   the step bars are the same week drawn one card apart; they now share one
   column grid, one cell shape and one legend shape, so a day sits in the same
@@ -54,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
 
 ### Fixed
+- **The "At least N of M" stepper no longer closes the sheet.** Tapping plus
+  or minus in "How this goal comes together" used to dismiss the sheet
+  instead of changing the count; the stepper now adjusts the value on a
+  full-width control with proper touch targets, and the sheet stays open
+  until Done.
 - **A reading inside its target no longer shows as missed.** The day sheet
   printed "122" against a 125 ceiling and crossed it out, because the mark
   came from the rolling average rather than the reading beside it — directly

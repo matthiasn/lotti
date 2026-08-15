@@ -3760,10 +3760,13 @@
   "goalFormOpenHabits": "Create a habit first",
   "goalFormPersonaLabel": "Agent name",
   "goalFormPreservedCriteriaSummary": "The existing signals and schedule will be preserved exactly.",
-  "goalFormProgress": "Step {step} of 3",
+  "goalFormProgress": "Step {step} of {total}",
   "@goalFormProgress": {
     "placeholders": {
       "step": {
+        "type": "int"
+      },
+      "total": {
         "type": "int"
       }
     }
@@ -3781,6 +3784,7 @@
   },
   "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per signal; no dead weekends, no lost weeks.",
   "goalFormSaveChanges": "Save new version",
+  "goalFormStatementLabel": "Your goal, in your words",
   "goalFormStepsCadence": "{target} steps a day",
   "@goalFormStepsCadence": {
     "placeholders": {
@@ -3789,6 +3793,7 @@
       }
     }
   },
+  "goalFormStepsDailyTarget": "Daily target",
   "goalFormStepsSignal": "automatic step count",
   "goalFormSuggestedSignals": "Suggested",
   "@goalFormSuggestedSignals": {

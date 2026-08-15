@@ -6572,8 +6572,8 @@ class AppLocalizationsDa extends AppLocalizations {
       'De eksisterende signaler og tidsplanen bevares uændret.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Trin $step af 3';
+  String goalFormProgress(int step, int total) {
+    return 'Trin $step af $total';
   }
 
   @override
@@ -6601,9 +6601,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormSaveChanges => 'Gem ny version';
 
   @override
+  String get goalFormStatementLabel => 'Dit mål, med dine ord';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target skridt om dagen';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Dagligt mål';
 
   @override
   String get goalFormStepsSignal => 'automatisk skridttælling';
