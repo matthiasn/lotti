@@ -199,6 +199,7 @@ void main() {
   Widget buildSubject({
     required JournalPageState state,
     TasksTabCreateTaskCallback? onCreateTaskPressed,
+    TasksTabPageController? controller,
     MediaQueryData? mediaQueryData,
   }) {
     fakeController = FakeJournalPageController(state);
@@ -209,6 +210,7 @@ void main() {
         platform: TargetPlatform.windows,
         child: TasksTabPage(
           onCreateTaskPressed: onCreateTaskPressed,
+          controller: controller,
         ),
       ),
       mediaQueryData: mediaQueryData,
@@ -324,6 +326,43 @@ void main() {
       tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
       isTrue,
     );
+  });
+
+  testWidgets('external search bridge follows the attached tab controller', (
+    tester,
+  ) async {
+    final firstController = TasksTabPageController();
+    final secondController = TasksTabPageController();
+    addTearDown(firstController.dispose);
+    addTearDown(secondController.dispose);
+
+    await tester.pumpWidget(
+      buildSubject(state: state(), controller: firstController),
+    );
+    await tester.pump();
+
+    firstController.focusSearch();
+    await tester.pump();
+    await tester.pump();
+
+    TextField searchField() => tester.widget<TextField>(find.byType(TextField));
+    expect(searchField().focusNode?.hasFocus, isTrue);
+
+    searchField().focusNode?.unfocus();
+    await tester.pumpWidget(
+      buildSubject(state: state(), controller: secondController),
+    );
+    await tester.pump();
+
+    firstController.focusSearch();
+    await tester.pump();
+    await tester.pump();
+    expect(searchField().focusNode?.hasFocus, isFalse);
+
+    secondController.focusSearch();
+    await tester.pump();
+    await tester.pump();
+    expect(searchField().focusNode?.hasFocus, isTrue);
   });
 
   test('filter inheritance ignores empty and Unassigned selections', () {
