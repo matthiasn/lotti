@@ -85,6 +85,52 @@ void main() {
       expect(editRequests, 1);
     });
 
+    testWidgets('disables mutating menu actions while an inline save runs', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onEdit: () {},
+            onArchive: () {},
+            onDelete: () {},
+            isSaving: true,
+          ),
+        ),
+      );
+
+      final menu = tester.widget<DesignSystemContextMenuButton>(
+        find.byType(DesignSystemContextMenuButton),
+      );
+      expect(menu.items, hasLength(3));
+      expect(menu.items.every((item) => item.onTap == null), isTrue);
+    });
+
+    testWidgets(
+      'marks the empty-health report action busy while the agent runs',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(
+            ProjectMobileDetailContent(
+              record: makeTestProjectRecord(),
+              currentTime: DateTime(2026, 3, 28, 1, 18),
+              onRefreshReport: () {},
+              isRefreshingReport: true,
+            ),
+          ),
+        );
+
+        final emptyState = tester.widget<ProjectHealthEmptyState>(
+          find.byType(ProjectHealthEmptyState),
+        );
+        expect(emptyState.isRunningReport, isTrue);
+      },
+    );
+
     testWidgets('keeps interactive metadata usable at 200% text scale', (
       tester,
     ) async {

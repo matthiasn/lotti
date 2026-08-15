@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
@@ -80,6 +81,23 @@ void main() {
       expect(find.text('4 Completed'), findsOneWidget);
     });
 
+    testWidgets('describes a zero-task project without implying bad progress', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        completedTaskCount: 0,
+        totalTaskCount: 0,
+        blockedTaskCount: 0,
+        healthMetrics: makeTestProjectHealthMetrics(),
+      );
+
+      await tester.pumpWidget(wrap(HealthPanel(record: record)));
+      await tester.pump();
+
+      expect(find.text('No tasks'), findsOneWidget);
+      expect(find.text('0/0 tasks completed'), findsNothing);
+    });
+
     testWidgets('renders legend items', (tester) async {
       final record = makeTestProjectRecord(
         completedTaskCount: 2,
@@ -137,5 +155,34 @@ void main() {
       await tester.pump();
       expect(taps, 1);
     });
+  });
+
+  group('ProjectHealthEmptyState', () {
+    testWidgets(
+      'keeps the report action visible but non-interactive while busy',
+      (
+        tester,
+      ) async {
+        var taps = 0;
+        await tester.pumpWidget(
+          wrap(
+            ProjectHealthEmptyState(
+              onRunReport: () => taps++,
+              isRunningReport: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final action = tester.widget<DesignSystemButton>(
+          find.widgetWithText(DesignSystemButton, 'Run report'),
+        );
+        expect(action.isLoading, isTrue);
+        expect(action.onPressed, isNotNull);
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Run report'));
+        await tester.pump();
+        expect(taps, 0);
+      },
+    );
   });
 }

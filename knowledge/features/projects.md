@@ -163,7 +163,8 @@ categories and rollups in each widget.
 Project-agent one-liners are resolved in two bulk reads when the snapshot is
 assembled, then stored on each `ProjectListItemData`. Rows therefore render a
 stable subtitle without one provider/query chain per card, and local search
-matches the same one-liner text that the list displays.
+matches the same one-liner text that the list displays. Background enrichment
+reloads preserve the last rendered snapshot until the replacement is ready.
 
 The default `Current` scope keeps open, active, monitoring and on-hold work in
 view; `All` restores completed and archived projects. Projects sort by
@@ -189,6 +190,12 @@ the shared 960 pt detail
 measure with its one standard horizontal gutter, keeping report lines and cards
 readable when the list releases a wide canvas without double-insetting mobile
 content.
+
+Project detail actions preserve workspace continuity. Edit carries an explicit
+return path back to the selected project, and Add task creates a project-linked
+task, applies the category's default task agent, then opens the task. Soft
+deleting a project also retires its project agent so its runtime subscriptions
+and pending work cannot outlive the project.
 
 # Health is agent-authored
 

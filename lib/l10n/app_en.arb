@@ -5409,6 +5409,7 @@
   "projectCreateTitle": "Create Project",
   "projectDeleteConfirmBody": "The project will be removed. Its tasks will stay in your journal.",
   "projectDeleteConfirmTitle": "Delete this project?",
+  "projectDeleteFailed": "Failed to delete project. Please try again.",
   "projectDeleteSuccess": "Project deleted",
   "projectDetailTitle": "Project Details",
   "projectErrorCreateFailed": "Error creating project.",

@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
@@ -131,6 +133,7 @@ List<Override> _baseOverrides({
   required ProjectDetailState controllerState,
   required FutureOr<ProjectRecord?> Function(Ref) recordOverride,
   ProjectDetailController Function()? controllerOverride,
+  AgentDomainEntity? projectAgent,
   List<Override> extraOverrides = const [],
 }) {
   return [
@@ -143,7 +146,9 @@ List<Override> _baseOverrides({
     projectDetailNowProvider.overrideWithValue(
       () => DateTime(2026, 3, 28, 9, 30),
     ),
-    projectAgentProvider(_projectId).overrideWith((ref) async => null),
+    projectAgentProvider(_projectId).overrideWith(
+      (ref) async => projectAgent,
+    ),
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => Stream.value(false),
     ),
@@ -174,12 +179,14 @@ void main() {
     required ProjectDetailState controllerState,
     ProjectRecord? record,
     ProjectDetailController Function()? controllerOverride,
+    AgentDomainEntity? projectAgent,
     List<Override> extraOverrides = const [],
   }) async {
     final overrides = _baseOverrides(
       controllerState: controllerState,
       recordOverride: (_) => record,
       controllerOverride: controllerOverride,
+      projectAgent: projectAgent,
       extraOverrides: extraOverrides,
     );
 
@@ -757,6 +764,35 @@ void main() {
         expect(tracking.saveChangesCallCount, 1);
       });
 
+      testWidgets('edit preserves a return route to the project workspace', (
+        tester,
+      ) async {
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onEdit!();
+
+        final route = Uri.parse(capturedPaths.single);
+        expect(route.path, '/settings/projects/test-project-id');
+        expect(route.queryParameters['returnTo'], '/projects/test-project-id');
+      });
+
       testWidgets('failed inline actions roll back and surface the error', (
         tester,
       ) async {
@@ -802,11 +838,16 @@ void main() {
         beamToNamedOverride = (_) {};
         addTearDown(() => beamToNamedOverride = null);
         final mockRepository = MockProjectRepository();
+        final mockAgentService = MockAgentService();
+        final identity = makeTestIdentity(agentId: 'agent-project-1');
         when(
           () => mockRepository.deleteProject(
             any(),
             deletedAt: any(named: 'deletedAt'),
           ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAgentService.destroyAgent(identity.agentId),
         ).thenAnswer((_) async => true);
         await pumpPageWithData(
           tester,
@@ -818,8 +859,10 @@ void main() {
             hasChanges: false,
           ),
           record: testRecord,
+          projectAgent: identity,
           extraOverrides: [
             projectRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
           ],
         );
 
@@ -838,6 +881,128 @@ void main() {
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
+        verify(
+          () => mockAgentService.destroyAgent(identity.agentId),
+        ).called(1);
+      });
+
+      testWidgets('failed deletion reports a delete-specific error', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(430, 1200)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final mockRepository = MockProjectRepository();
+        when(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => false);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Failed to delete project. Please try again.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('add task assigns its category agent before navigating', (
+        tester,
+      ) async {
+        final task = makeTestTask(id: 'created-task', title: 'Created task');
+        final capturedPaths = <String>[];
+        Task? assignedTask;
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((projectId) async {
+              expect(projectId, _projectId);
+              return task;
+            }),
+            projectTaskAgentAssignerProvider.overrideWithValue((task) async {
+              assignedTask = task;
+            }),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+
+        expect(assignedTask?.meta.id, 'created-task');
+        expect(capturedPaths, ['/tasks/created-task']);
+      });
+
+      testWidgets('add task failure stays put and reports an error', (
+        tester,
+      ) async {
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((_) async => null),
+            projectTaskAgentAssignerProvider.overrideWithValue((_) async {}),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+        await tester.pump();
+
+        expect(capturedPaths, isEmpty);
+        expect(find.text('Error'), findsOneWidget);
       });
     });
 

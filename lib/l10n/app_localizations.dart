@@ -16351,6 +16351,12 @@ abstract class AppLocalizations {
   /// **'Delete this project?'**
   String get projectDeleteConfirmTitle;
 
+  /// No description provided for @projectDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete project. Please try again.'**
+  String get projectDeleteFailed;
+
   /// No description provided for @projectDeleteSuccess.
   ///
   /// In en, this message translates to:

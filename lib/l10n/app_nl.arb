@@ -4193,6 +4193,7 @@
   "projectCreateTitle": "Project aanmaken",
   "projectDeleteConfirmBody": "Het project wordt verwijderd. De taken blijven in je dagboek staan.",
   "projectDeleteConfirmTitle": "Dit project verwijderen?",
+  "projectDeleteFailed": "Het project kon niet worden verwijderd. Probeer het opnieuw.",
   "projectDeleteSuccess": "Project verwijderd",
   "projectDetailTitle": "Projectdetails",
   "projectErrorCreateFailed": "Fout bij het aanmaken van project.",

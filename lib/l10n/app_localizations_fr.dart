@@ -9790,6 +9790,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Supprimer ce projet ?';
 
   @override
+  String get projectDeleteFailed =>
+      'Impossible de supprimer le projet. Réessaie.';
+
+  @override
   String get projectDeleteSuccess => 'Projet supprimé';
 
   @override

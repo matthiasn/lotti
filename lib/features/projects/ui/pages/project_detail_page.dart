@@ -32,9 +32,11 @@ import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 /// bottom bar's Save button persists them (also bound to Cmd/Ctrl+S). On a
 /// successful save it shows a success toast and navigates back.
 ///
-/// When [categoryId] is non-null the page came from a category screen, so back
-/// navigation beams to that category instead of a plain `pop`, and [PopScope]
-/// is locked (`canPop: false`) to route the gesture through the same handler.
+/// When [returnPath] is supplied, successful saves and explicit back actions
+/// beam there first. Otherwise, when [categoryId] is non-null the page came
+/// from a category screen, so back navigation beams to that category instead
+/// of a plain `pop`, and [PopScope] is locked (`canPop: false`) to route the
+/// gesture through the same handler.
 ///
 /// This is the desktop/settings editor; the read-first mobile/desktop detail
 /// surface is `ProjectDetailsPage`.
@@ -42,11 +44,13 @@ class ProjectDetailPage extends ConsumerStatefulWidget {
   const ProjectDetailPage({
     required this.projectId,
     this.categoryId,
+    this.returnPath,
     super.key,
   });
 
   final String projectId;
   final String? categoryId;
+  final String? returnPath;
 
   @override
   ConsumerState<ProjectDetailPage> createState() => _ProjectDetailPageState();
@@ -102,6 +106,12 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
   }
 
   void _handleBackNavigation() {
+    final returnPath = widget.returnPath;
+    if (returnPath != null && getIt.isRegistered<NavService>()) {
+      getIt<NavService>().beamToNamed(returnPath);
+      return;
+    }
+
     final categoryId = widget.categoryId;
     if (categoryId != null && getIt.isRegistered<NavService>()) {
       getIt<NavService>().beamToNamed('/settings/categories/$categoryId');

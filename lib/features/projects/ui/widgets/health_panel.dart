@@ -164,10 +164,12 @@ class HealthPanel extends StatelessWidget {
 class ProjectHealthEmptyState extends StatelessWidget {
   const ProjectHealthEmptyState({
     this.onRunReport,
+    this.isRunningReport = false,
     super.key,
   });
 
   final VoidCallback? onRunReport;
+  final bool isRunningReport;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +214,7 @@ class ProjectHealthEmptyState extends StatelessWidget {
                     size: DesignSystemButtonSize.dense,
                     tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: onRunReport,
+                    isLoading: isRunningReport,
                   ),
                 ],
               ],

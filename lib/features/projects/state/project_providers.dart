@@ -1,5 +1,7 @@
 // ignore_for_file: specify_nonobvious_property_types
 
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -142,9 +144,15 @@ final projectsOverviewProvider =
                   snapshot,
                   agentRepository,
                 );
-              } on Object {
+              } catch (error, stackTrace) {
                 // Agent summaries are optional enrichment. A failed sidecar
                 // read must not replace the established list with an error.
+                developer.log(
+                  'Failed to attach project agent one-liners',
+                  name: 'projectsOverviewProvider',
+                  error: error,
+                  stackTrace: stackTrace,
+                );
                 return snapshot;
               }
             },

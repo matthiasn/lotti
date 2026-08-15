@@ -3710,6 +3710,7 @@
   "projectCreateTitle": "Projekt erstellen",
   "projectDeleteConfirmBody": "Das Projekt wird entfernt. Seine Aufgaben bleiben in deinem Journal.",
   "projectDeleteConfirmTitle": "Dieses Projekt löschen?",
+  "projectDeleteFailed": "Das Projekt konnte nicht gelöscht werden. Versuch es erneut.",
   "projectDeleteSuccess": "Projekt gelöscht",
   "projectDetailTitle": "Projektdetails",
   "projectErrorCreateFailed": "Fehler beim Erstellen des Projekts.",

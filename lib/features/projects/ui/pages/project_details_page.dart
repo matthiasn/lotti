@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -24,6 +26,25 @@ import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+
+typedef ProjectTaskCreator = Future<Task?> Function(String projectId);
+typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);
+
+/// Injectable task-creation seam used by the project detail action.
+final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
+  (ref) =>
+      (projectId) => createTask(projectId: projectId),
+  name: 'projectTaskCreatorProvider',
+);
+
+/// Captures the task-agent service before task creation crosses an async gap.
+final projectTaskAgentAssignerProvider = Provider<ProjectTaskAgentAssigner>(
+  (ref) {
+    final service = ref.watch(taskAgentServiceProvider);
+    return (task) => autoAssignCategoryAgentWith(service, task);
+  },
+  name: 'projectTaskAgentAssignerProvider',
+);
 
 /// Read-first project detail surface rendered in the desktop right pane and as
 /// the mobile `/projects/<id>` route.
@@ -103,12 +124,22 @@ class ProjectDetailsPage extends ConsumerWidget {
               onTargetDateTap: () =>
                   _pickTargetDate(context, ref, record.project),
               onStatusTap: () => _pickStatus(context, ref, record.project),
-              onEdit: () => beamToNamed('/settings/projects/$projectId'),
+              onEdit: () => beamToNamed(
+                Uri(
+                  path: '/settings/projects/$projectId',
+                  queryParameters: {'returnTo': '/projects/$projectId'},
+                ).toString(),
+              ),
               onArchive: record.project.data.status is ProjectArchived
                   ? null
                   : () => _archiveProject(context, ref),
-              onDelete: () => _deleteProject(context, ref, record.project),
-              onAddTask: () => _addTask(context),
+              onDelete: () => _deleteProject(
+                context,
+                ref,
+                record.project,
+                projectAgentId: identity?.agentId,
+              ),
+              onAddTask: () => _addTask(context, ref),
               onRefreshReport: identity == null
                   ? null
                   : () => ref
@@ -245,8 +276,13 @@ class ProjectDetailsPage extends ConsumerWidget {
   Future<void> _deleteProject(
     BuildContext context,
     WidgetRef ref,
-    ProjectEntry project,
-  ) async {
+    ProjectEntry project, {
+    required String? projectAgentId,
+  }) async {
+    final repository = ref.read(projectRepositoryProvider);
+    final agentService = projectAgentId == null
+        ? null
+        : ref.read(agentServiceProvider);
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.projectDeleteConfirmTitle,
@@ -255,18 +291,39 @@ class ProjectDetailsPage extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
-    final deleted = await ref
-        .read(projectRepositoryProvider)
-        .deleteProject(project, deletedAt: clock.now());
+    final deleted = await repository.deleteProject(
+      project,
+      deletedAt: clock.now(),
+    );
     if (!context.mounted) return;
     if (!deleted) {
       context.showToast(
         tone: DesignSystemToastTone.error,
-        title: context.messages.projectErrorUpdateFailed,
+        title: context.messages.projectDeleteFailed,
       );
       return;
     }
 
+    if (projectAgentId != null && agentService != null) {
+      try {
+        final retired = await agentService.destroyAgent(projectAgentId);
+        if (!retired) {
+          developer.log(
+            'Project agent was already absent while deleting its project',
+            name: 'ProjectDetailsPage',
+          );
+        }
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to retire project agent after deleting its project',
+          name: 'ProjectDetailsPage',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
+    if (!context.mounted) return;
     context.showToast(
       tone: DesignSystemToastTone.success,
       title: context.messages.projectDeleteSuccess,
@@ -274,8 +331,10 @@ class ProjectDetailsPage extends ConsumerWidget {
     _handleBack(context);
   }
 
-  Future<void> _addTask(BuildContext context) async {
-    final task = await createTask(projectId: projectId);
+  Future<void> _addTask(BuildContext context, WidgetRef ref) async {
+    final createProjectTask = ref.read(projectTaskCreatorProvider);
+    final assignTaskAgent = ref.read(projectTaskAgentAssignerProvider);
+    final task = await createProjectTask(projectId);
     if (!context.mounted) return;
     if (task == null) {
       context.showToast(
@@ -284,6 +343,7 @@ class ProjectDetailsPage extends ConsumerWidget {
       );
       return;
     }
+    unawaited(assignTaskAgent(task));
     beamToNamed('/tasks/${task.meta.id}');
   }
 

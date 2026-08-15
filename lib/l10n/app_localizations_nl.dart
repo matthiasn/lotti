@@ -9634,6 +9634,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Dit project verwijderen?';
 
   @override
+  String get projectDeleteFailed =>
+      'Het project kon niet worden verwijderd. Probeer het opnieuw.';
+
+  @override
   String get projectDeleteSuccess => 'Project verwijderd';
 
   @override

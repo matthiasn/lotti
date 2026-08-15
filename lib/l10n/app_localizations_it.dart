@@ -9752,6 +9752,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Eliminare questo progetto?';
 
   @override
+  String get projectDeleteFailed =>
+      'Impossibile eliminare il progetto. Riprova.';
+
+  @override
   String get projectDeleteSuccess => 'Progetto eliminato';
 
   @override
@@ -9790,7 +9794,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String projectHealthConfidence(int confidence) {
-    return 'Affidabilità $confidence%';
+    return 'Confidenza $confidence%';
   }
 
   @override
@@ -9798,10 +9802,11 @@ class AppLocalizationsIt extends AppLocalizations {
       'Avvia l’agente del progetto per creare una valutazione dall’attività più recente del progetto e delle sue attività.';
 
   @override
-  String get projectHealthEmptyTitle => 'Nessun rapporto sullo stato ancora';
+  String get projectHealthEmptyTitle =>
+      'Nessuna valutazione dello stato del progetto';
 
   @override
-  String get projectHealthRunNow => 'Genera rapporto';
+  String get projectHealthRunNow => 'Genera un rapporto';
 
   @override
   String get projectHealthSectionTitle => 'Salute del progetto';

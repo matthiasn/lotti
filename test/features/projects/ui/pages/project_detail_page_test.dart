@@ -132,6 +132,7 @@ void main() {
     AgentDomainEntity? projectAgent,
     Exception? agentError,
     String? categoryId,
+    String? returnPath,
     List<Override> extraOverrides = const [],
   }) async {
     // Use a tall surface so that all sliver children are laid out.
@@ -153,6 +154,7 @@ void main() {
           child: ProjectDetailPage(
             projectId: 'test-project-id',
             categoryId: categoryId,
+            returnPath: returnPath,
           ),
         ),
         overrides: [
@@ -781,6 +783,28 @@ void main() {
           ).called(1);
         },
       );
+
+      testWidgets('back returns to the supplied project workspace route', (
+        tester,
+      ) async {
+        final mockNavService = MockNavService();
+        when(
+          () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+        ).thenReturn(null);
+        getIt.registerSingleton<NavService>(mockNavService);
+        await pumpPage(
+          tester,
+          controllerState: defaultState(),
+          returnPath: '/projects/test-project-id',
+        );
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pump();
+
+        verify(
+          () => mockNavService.beamToNamed('/projects/test-project-id'),
+        ).called(1);
+      });
     });
 
     group('error display', () {

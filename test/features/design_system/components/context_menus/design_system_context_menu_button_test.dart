@@ -130,6 +130,40 @@ void main() {
       );
       semantics.dispose();
     });
+
+    testWidgets('preserves disabled menu items without invoking them', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemContextMenuButton(
+            tooltip: 'More actions',
+            items: [
+              DesignSystemContextMenuItem(
+                label: 'Archive',
+                icon: Icons.archive_outlined,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.pumpAndSettle();
+
+      final menu = tester.widget<DesignSystemContextMenu>(
+        find.byType(DesignSystemContextMenu),
+      );
+      expect(menu.items.single.onTap, isNull);
+      expect(
+        tester.getSemantics(find.text('Archive')),
+        matchesSemantics(
+          label: 'Archive',
+          isButton: true,
+          hasEnabledState: true,
+        ),
+      );
+    });
   });
 }
 

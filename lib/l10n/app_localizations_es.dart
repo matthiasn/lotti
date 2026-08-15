@@ -9764,6 +9764,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get projectDeleteConfirmTitle => '¿Eliminar este proyecto?';
 
   @override
+  String get projectDeleteFailed =>
+      'No se pudo eliminar el proyecto. Inténtalo de nuevo.';
+
+  @override
   String get projectDeleteSuccess => 'Proyecto eliminado';
 
   @override

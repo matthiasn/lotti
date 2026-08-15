@@ -1,3 +1,5 @@
+// ignore_for_file: invalid_use_of_internal_member
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -133,12 +135,15 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     required List<ProjectCategoryGroup> groups,
+    List<ProjectCategoryGroup>? overviewGroups,
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
     bool overrideVisibleGroups = true,
     List<Override> extraOverrides = const [],
   }) async {
-    final snapshot = ProjectsOverviewSnapshot(groups: groups);
+    final snapshot = ProjectsOverviewSnapshot(
+      groups: overviewGroups ?? groups,
+    );
     final overrides = [
       projectsOverviewProvider.overrideWith(
         (ref) => Stream.value(snapshot),
@@ -600,6 +605,66 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('New Project'), findsOneWidget);
+
+    await tester.tap(find.text('New Project'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectCreateForm), findsOneWidget);
+  });
+
+  testWidgets('current-empty action switches the project scope to all', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+
+    expect(find.text(pageContext.messages.projectsScopeAll), findsNWidgets(2));
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+  });
+
+  testWidgets('filtered-empty action restores the default current view', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setTextQuery('missing');
+    await tester.pump();
+
+    expect(
+      find.text(pageContext.messages.projectsClearFilters),
+      findsOneWidget,
+    );
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    final filter = container.read(projectsFilterControllerProvider);
+    expect(filter.textQuery, isEmpty);
+    expect(filter.selectedStatusIds, currentProjectStatusFilterIds);
   });
 
   testWidgets('filters visible projects by substring search', (tester) async {
@@ -645,6 +710,34 @@ void main() {
       find.byType(CircularProgressIndicator),
       findsOneWidget,
     );
+  });
+
+  testWidgets('keeps established projects visible during a provider reload', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup()];
+    // Riverpod uses this exact previous-data shape during dependency reloads.
+    final reloading = const AsyncLoading<List<ProjectCategoryGroup>>()
+        .copyWithPrevious(
+          AsyncData(groups),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
+          ),
+          visibleProjectGroupsProvider.overrideWith((ref) => reloading),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
   testWidgets('shows localized error message on failure', (tester) async {

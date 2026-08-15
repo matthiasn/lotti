@@ -9628,6 +9628,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Ta bort det här projektet?';
 
   @override
+  String get projectDeleteFailed =>
+      'Det gick inte att ta bort projektet. Försök igen.';
+
+  @override
   String get projectDeleteSuccess => 'Projekt borttaget';
 
   @override
@@ -9667,7 +9671,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String projectHealthConfidence(int confidence) {
-    return '$confidence% säkerhet';
+    return '$confidence% tillförlitlighet';
   }
 
   @override

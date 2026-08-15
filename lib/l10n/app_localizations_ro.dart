@@ -9767,7 +9767,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizibil doar când intrările private sunt afișate';
 
   @override
-  String get projectActionAddTask => 'Adăugați sarcină';
+  String get projectActionAddTask => 'Adăugați o sarcină';
 
   @override
   String get projectActionArchive => 'Arhivați';
@@ -9812,6 +9812,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectDeleteConfirmTitle => 'Ștergeți acest proiect?';
+
+  @override
+  String get projectDeleteFailed =>
+      'Proiectul nu a putut fi șters. Încercați din nou.';
 
   @override
   String get projectDeleteSuccess => 'Proiect șters';

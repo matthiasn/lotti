@@ -700,6 +700,50 @@ Longer report content.
       });
     });
 
+    testWidgets('full report controls fit a narrow view at 200% text scale', (
+      tester,
+    ) async {
+      final start = DateTime(2024, 3, 15, 12);
+      var refreshCount = 0;
+      var cancelCount = 0;
+
+      await withClock(Clock.fixed(start), () async {
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: Scaffold(
+                body: ExpandableReportSection(
+                  title: 'AI Report',
+                  body: 'A concise assessment.',
+                  fullContent: 'A concise assessment.',
+                  nextWakeAt: start.add(const Duration(seconds: 90)),
+                  onCancelScheduledWake: () => cancelCount++,
+                  onRefresh: () => refreshCount++,
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: Size(320, 800),
+              textScaler: TextScaler.linear(2),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.refresh_rounded));
+        await tester.pump();
+        expect(cancelCount, 1);
+        expect(refreshCount, 1);
+      });
+    });
+
     testWidgets(
       'countdown does not update while ticker mode is disabled and catches up when re-enabled',
       (tester) async {

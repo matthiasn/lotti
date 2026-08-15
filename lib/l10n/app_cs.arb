@@ -3717,6 +3717,7 @@
   "projectCreateTitle": "Vytvořit projekt",
   "projectDeleteConfirmBody": "Projekt bude odstraněn. Jeho úkoly zůstanou ve tvém deníku.",
   "projectDeleteConfirmTitle": "Smazat tento projekt?",
+  "projectDeleteFailed": "Projekt se nepodařilo smazat. Zkus to znovu.",
   "projectDeleteSuccess": "Projekt smazán",
   "projectDetailTitle": "Detail projektu",
   "projectErrorCreateFailed": "Chyba při vytváření projektu.",

@@ -9745,6 +9745,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Smazat tento projekt?';
 
   @override
+  String get projectDeleteFailed =>
+      'Projekt se nepodařilo smazat. Zkus to znovu.';
+
+  @override
   String get projectDeleteSuccess => 'Projekt smazán';
 
   @override

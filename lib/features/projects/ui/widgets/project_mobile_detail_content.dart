@@ -98,19 +98,19 @@ class _ProjectMobileDetailContentState
         DesignSystemContextMenuItem(
           label: context.messages.projectActionEdit,
           icon: Icons.edit_outlined,
-          onTap: widget.onEdit,
+          onTap: widget.isSaving ? null : widget.onEdit,
         ),
       if (widget.onArchive != null)
         DesignSystemContextMenuItem(
           label: context.messages.projectActionArchive,
           icon: Icons.archive_outlined,
-          onTap: widget.onArchive,
+          onTap: widget.isSaving ? null : widget.onArchive,
         ),
       if (widget.onDelete != null)
         DesignSystemContextMenuItem(
           label: context.messages.projectActionDelete,
           icon: Icons.delete_outline,
-          onTap: widget.onDelete,
+          onTap: widget.isSaving ? null : widget.onDelete,
           isDestructive: true,
         ),
     ];
@@ -176,6 +176,7 @@ class _ProjectMobileDetailContentState
                             child: widget.record.healthMetrics == null
                                 ? ProjectHealthEmptyState(
                                     onRunReport: widget.onRefreshReport,
+                                    isRunningReport: widget.isRefreshingReport,
                                   )
                                 : HealthPanel(
                                     record: widget.record,

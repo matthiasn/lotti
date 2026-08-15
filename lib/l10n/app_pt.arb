@@ -4193,6 +4193,7 @@
   "projectCreateTitle": "Criar projeto",
   "projectDeleteConfirmBody": "O projeto será removido. As tarefas vão continuar no teu diário.",
   "projectDeleteConfirmTitle": "Eliminar este projeto?",
+  "projectDeleteFailed": "Não foi possível eliminar o projeto. Tenta novamente.",
   "projectDeleteSuccess": "Projeto eliminado",
   "projectDetailTitle": "Detalhes do projeto",
   "projectErrorCreateFailed": "Erro ao criar projeto.",

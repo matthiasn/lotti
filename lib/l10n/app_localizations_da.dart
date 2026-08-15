@@ -9620,6 +9620,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectDeleteConfirmTitle => 'Slet dette projekt?';
 
   @override
+  String get projectDeleteFailed => 'Projektet kunne ikke slettes. Prøv igen.';
+
+  @override
   String get projectDeleteSuccess => 'Projekt slettet';
 
   @override

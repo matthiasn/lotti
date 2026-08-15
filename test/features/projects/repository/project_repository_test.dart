@@ -801,6 +801,17 @@ void main() {
 
       expect(result, isTrue);
       verify(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).called(1);
+      verify(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).called(1);
+      verify(
         () => mockNotifications.notify({
           projectEntityUpdateNotification(projectEntry.id),
         }),
@@ -827,6 +838,17 @@ void main() {
       );
 
       expect(result, isFalse);
+      verify(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).called(1);
+      verify(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).called(1);
       verifyNever(() => mockNotifications.notify(any()));
     });
   });

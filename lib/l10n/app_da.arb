@@ -4194,6 +4194,7 @@
   "projectCreateTitle": "Opret projekt",
   "projectDeleteConfirmBody": "Projektet fjernes. Dets opgaver bliver i din journal.",
   "projectDeleteConfirmTitle": "Slet dette projekt?",
+  "projectDeleteFailed": "Projektet kunne ikke slettes. Prøv igen.",
   "projectDeleteSuccess": "Projekt slettet",
   "projectDetailTitle": "Projektdetaljer",
   "projectErrorCreateFailed": "Fejloprettelse af projekt.",

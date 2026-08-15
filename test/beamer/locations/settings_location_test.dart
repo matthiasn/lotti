@@ -799,7 +799,9 @@ void main() {
 
     test('buildPages builds ProjectDetailPage with projectId', () {
       final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/projects/proj-123'),
+        uri: Uri.parse(
+          '/settings/projects/proj-123?returnTo=%2Fprojects%2Fproj-123',
+        ),
       );
       final location = SettingsLocation(routeInformation);
       var beamState = BeamState.fromRouteInformation(routeInformation);
@@ -815,6 +817,7 @@ void main() {
       expect(pages[1].child, isA<ProjectDetailPage>());
       final detailPage = pages[1].child as ProjectDetailPage;
       expect(detailPage.projectId, 'proj-123');
+      expect(detailPage.returnPath, '/projects/proj-123');
     });
 
     test(
