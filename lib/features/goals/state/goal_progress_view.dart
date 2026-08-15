@@ -51,6 +51,7 @@ class GoalHabitProgressView {
     this.window = const GoalWindow.rollingDays(count: 7),
     this.slippedDay,
     this.suggestedFromDimensionName,
+    this.evaluatedSuccesses,
   });
 
   final String habitId;
@@ -72,10 +73,19 @@ class GoalHabitProgressView {
   final GoalWindow window;
   final GoalProgressDay? slippedDay;
 
-  int get successesInWindow => switch (window) {
-    GoalWindowRollingDays() => days.where((day) => day.value > 0).length,
-    _ => days.fold(0, (total, day) => total + day.value.toInt()),
-  };
+  /// The EVALUATOR's creditable-success count for this criterion — the same
+  /// number the agent is handed in FACTS. The view-side fold below mirrors
+  /// the evaluator's rule only coincidentally; where the evaluator's figure
+  /// is available it wins, so the card and the report cannot drift apart the
+  /// way the metric headline once did.
+  final int? evaluatedSuccesses;
+
+  int get successesInWindow =>
+      evaluatedSuccesses ??
+      switch (window) {
+        GoalWindowRollingDays() => days.where((day) => day.value > 0).length,
+        _ => days.fold(0, (total, day) => total + day.value.toInt()),
+      };
 
   int get deficit => (targetCount - successesInWindow).clamp(0, targetCount);
 
@@ -152,6 +162,25 @@ class GoalMetricProgressView {
   /// the report one card above, which read "today's 122 helps".
   bool valueMeetsTarget(GoalProgressDay day) =>
       day.isObserved && _meetsTarget(day.value, target, direction);
+
+  /// Whether [target] describes one day's quantity — `dailySumThenAverage`
+  /// and the point-sample aggregations — rather than a total the whole
+  /// period accumulates (`sum`, `count`).
+  bool get targetIsPerDay => switch (aggregation) {
+    GoalAggregation.sum || GoalAggregation.count => false,
+    _ => true,
+  };
+
+  /// THE per-day met/missed policy, shared by every surface that marks a
+  /// single day (bars, strip cells, the reflection sheet, the composite
+  /// tally): the day's own value where the target is a per-day quantity, the
+  /// evaluator's window verdict where the target belongs to the period.
+  ///
+  /// One policy, or the surfaces contradict each other — a 12,400-step day
+  /// inside a weak week rendered muted while the reflection sheet it opens
+  /// suggested "met" for the same day.
+  bool dayMark(GoalProgressDay day) =>
+      targetIsPerDay ? valueMeetsTarget(day) : meetsTarget(day);
 }
 
 class GoalProgressDay {
@@ -225,7 +254,10 @@ class GoalProgressView {
         : periodDays.sublist(periodDays.length - 7);
     return [
       for (final day in compactDays)
-        if (series.meetsTarget(day))
+        // The same per-day policy as the bars and the reflection sheet this
+        // cell opens — a strip cell must not call a day missed while the
+        // sheet suggests "met" for it.
+        if (series.dayMark(day))
           GoalCompactDayState.full
         else
           GoalCompactDayState.none,
@@ -709,6 +741,11 @@ GoalHabitProgressView _habitProgressView({
         .satisfied,
   );
   return GoalHabitProgressView(
+    evaluatedSuccesses: const GoalProgressEvaluator()
+        .evaluate(habit, signals, reference)
+        .results[habit.criterionId]
+        ?.actual
+        .toInt(),
     criterionId: habit.criterionId,
     habitId: habit.habitId,
     name: habit.title?.trim().isNotEmpty == true

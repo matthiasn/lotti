@@ -5654,4 +5654,126 @@ void main() {
       findsOneWidget,
     );
   });
+
+  GoalSpecVersionEntity threeOfThreeSpec() => _spec(
+    criteria: const GoalCriterion.atLeastCount(
+      criterionId: 'routine',
+      successes: 3,
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'run',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+      ],
+    ),
+  );
+
+  testWidgets('a stale at-least count clamps on the card and Done commits '
+      'the clamped rule', (tester) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: threeOfThreeSpec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('At least 3 of 3'), findsOneWidget);
+
+    // Removing a dimension strands the stored "3 of" above a two-dimension
+    // goal; the card must show the clamped promise, not an impossible one.
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('At least 3 of 2'), findsNothing);
+    expect(find.textContaining('At least 2 of 2'), findsOneWidget);
+
+    // Done propagates the clamp to the page: re-adding the dimension keeps
+    // the count the sheet showed, instead of resurrecting the stale 3.
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-composite-done')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('At least 2 of 3'), findsOneWidget);
+  });
+
+  testWidgets('the rule sheet scrolls on a short screen instead of clipping '
+      'the stepper or Done', (tester) async {
+    tester.view.physicalSize = const Size(390, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: threeOfThreeSpec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final changeButton = find.widgetWithText(DesignSystemButton, 'Change');
+    await tester.ensureVisible(changeButton);
+    // Past the pinned Continue band, which overlays the bottom edge that
+    // ensureVisible stops at on a screen this short.
+    await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+    await tester.pumpAndSettle();
+    await tester.tap(changeButton);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsOneWidget);
+
+    // The at-least row (with its full-width stepper line) may start below
+    // the fold of the shortened sheet; it must be reachable by scrolling,
+    // not clipped by an overflowing fixed column.
+    final atLeastRow = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DesignSystemSelectionRow &&
+            widget.title.startsWith('At least'),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      atLeastRow,
+      50,
+      scrollable: find
+          .descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(atLeastRow);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-composite-decrease')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 3'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-composite-done')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

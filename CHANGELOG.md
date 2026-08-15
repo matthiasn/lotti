@@ -62,15 +62,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **The "At least N of M" stepper no longer closes the sheet.** Tapping plus
-  or minus in "How this goal comes together" used to dismiss the sheet
-  instead of changing the count; the stepper now adjusts the value on a
-  full-width control with proper touch targets, and the sheet stays open
-  until Done.
+  or minus in "How this goal comes together" did change the count, but also
+  dismissed the sheet with every tap; the stepper now adjusts the value on a
+  full-width control with proper touch targets, the sheet scrolls when space
+  is tight, and it stays open until Done.
 - **Markdown reports paste as rich text in the editor.** Headings, bold text,
   inline code, quotes, horizontal rules and lists copied as Markdown source now
   keep their formatting instead of appearing with the punctuation intact.
   Ordinary plain-text paste and richer HTML clipboard content keep their
   existing behavior.
+- **The Goal Agents list reads at full size.** The per-goal week strip drew
+  12px dots that were illegible at list scale; it now uses the same cell size
+  as the detail page, and the chip row is down to the health chip, the trend
+  chip and the needs-you badge — the third "… needs attention" pill restated
+  the one-liner below it and could repeat one habit's name across every goal
+  watching it.
+- **The desktop scrollbar sits beside the chat.** On the goal details page
+  the middle column's scrollbar floated mid-pane at the reading measure's
+  edge; the scroll view now spans its pane (the measure constrains the
+  content inside), so the scrollbar hugs the divider.
+- **A day's bar is judged by that day's number.** Step and measurement bars
+  used to take the trailing-week verdict, so a 12,400-step day inside a weak
+  week rendered as short of a 10,000 target; wherever the target is a per-day
+  quantity, the bar, the week strip, the reflection sheet and the "met
+  yesterday" tally now all judge the day by its own value — one policy, no
+  contradictions between surfaces.
+- **The agent quotes the same rounded number as the card.** The report and
+  banner received the raw aggregate (7,684.428571…) while the card showed
+  "7,700"; the agent now gets the card's display precision.
 - **A reading inside its target no longer shows as missed.** The day sheet
   printed "122" against a 125 ceiling and crossed it out, because the mark
   came from the rolling average rather than the reading beside it — directly

@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -1553,6 +1554,33 @@ void main() {
 
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
     expect(find.text('Talk to Move more'), findsNothing);
+
+    // The middle column's scroll view spans its whole pane, so the desktop
+    // scrollbar hugs the divider beside the chat. Constraining the ListView
+    // itself parked the scrollbar at the reading measure's right edge,
+    // floating mid-pane. The measure still applies — to the content inside.
+    final detailListFinder = find
+        .ancestor(
+          of: find.text('Two walks landed this week.'),
+          matching: find.byType(ListView),
+        )
+        .first;
+    final dividerLeft = tester.getTopLeft(find.byType(VerticalDivider)).dx;
+    expect(
+      tester.getTopRight(detailListFinder).dx,
+      moreOrLessEquals(dividerLeft, epsilon: 1),
+    );
+    final measure =
+        tester
+            .element(find.byType(GoalAgentDetailPage))
+            .designTokens
+            .spacing
+            .step13 *
+        3;
+    expect(
+      tester.getSize(find.byType(GoalProgressCard)).width,
+      lessThanOrEqualTo(measure),
+    );
     // Below the fold now that the whole-goal strip has its own card on this
     // goal — it has two dimensions, so the strip sums a week the individual
     // habit rows cannot.

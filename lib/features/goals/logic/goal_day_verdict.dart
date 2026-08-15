@@ -25,10 +25,12 @@ GoalDayOutcome goalDayOutcome(GoalProgressView progress, DateTime day) {
     final entry = metric.days
         .where((value) => DateUtils.isSameDay(value.day, day))
         .firstOrNull;
-    // The day's own value, not the rolling verdict for the window ending
-    // there: this is a judgement about one day, and the sheet prints that
-    // day's number right beside it.
-    if (entry != null && metric.valueMeetsTarget(entry)) met++;
+    // The shared per-day policy: the day's own value where the target is a
+    // per-day quantity (the sheet prints that day's number right beside the
+    // mark), the evaluator's window verdict where the target belongs to the
+    // whole period — a single day's hours cannot be judged against a weekly
+    // total.
+    if (entry != null && metric.dayMark(entry)) met++;
   }
   return (met: met, total: total);
 }

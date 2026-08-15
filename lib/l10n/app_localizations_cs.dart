@@ -6425,11 +6425,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String goalDominantIssueBadge(String dimensionName) {
-    return '$dimensionName vyžaduje pozornost';
-  }
-
-  @override
   String get goalFormAddDimension => 'Přidat rozměr';
 
   @override
@@ -6931,9 +6926,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalReportSectionCoverage => 'Pokrytí dat';
-
-  @override
-  String get goalReportSectionNext => 'Co dál';
 
   @override
   String get goalReportSectionStanding => 'Jak to vypadá';

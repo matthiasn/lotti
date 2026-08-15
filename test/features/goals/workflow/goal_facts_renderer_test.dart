@@ -48,6 +48,7 @@ void main() {
     int? buffer,
     int? projectedDaysToTarget,
     bool onTrackByTrend = false,
+    num actual = 6400,
     Map<String, List<GoalCategoryTimeSession>> categoryTimeSessions = const {},
     DateTime? categoryTimeEvidenceStart,
     DateTime? categoryTimeEvidenceEnd,
@@ -64,7 +65,7 @@ void main() {
       results: {
         'steps': GoalCriterionResult(
           criterionId: 'steps',
-          actual: 6400,
+          actual: actual,
           target: 10000,
           ratio: 0.64,
           satisfied: false,
@@ -200,6 +201,27 @@ void main() {
     final steps = (evaluation['criterionResults'] as List).single;
     expect((steps as Map<String, dynamic>)['daysToRecover'], 2);
     expect(steps['bufferDays'], 1);
+  });
+
+  test('the criterion actual is quantized with the card display rule', () {
+    // The card headline shows 7,700 for this mean; the agent quotes the
+    // FACTS actual, so an unrounded 7684.428571 here put a number on the
+    // banner the card directly above it did not show.
+    final rounded = renderedJson(wakeFacts: facts(actual: 7684.428571));
+    final roundedResult =
+        ((rounded['evaluation'] as Map<String, dynamic>)['criterionResults']
+                as List)
+            .single;
+    expect((roundedResult as Map<String, dynamic>)['actual'], 7700);
+
+    // The against-guard survives the shared path: a value one coarse step
+    // from its target must not round onto the target.
+    final near = renderedJson(wakeFacts: facts(actual: 9950));
+    final nearResult =
+        ((near['evaluation'] as Map<String, dynamic>)['criterionResults']
+                as List)
+            .single;
+    expect((nearResult as Map<String, dynamic>)['actual'], 9950);
   });
 
   test('health trend projections reach the authoritative facts block', () {

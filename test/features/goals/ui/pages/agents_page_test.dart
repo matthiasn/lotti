@@ -155,8 +155,8 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Not enough data')), findsNothing);
   });
 
-  testWidgets('a narrow row stacks hint and strip below the identity and '
-      'badges the dominant issue', (tester) async {
+  testWidgets('a narrow row stacks hint and strip below the identity, with '
+      'no dominant-issue pill', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -221,14 +221,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The phone branch: identity, dominant-issue badge, deterministic hint
-    // and a REAL (non-placeholder) strip stacked in one column.
-    expect(find.text('Walk needs attention'), findsOneWidget);
+    // The phone branch: identity, deterministic hint and a REAL
+    // (non-placeholder) strip stacked in one column. The dominant-issue pill
+    // is gone — the one-liner already names the lagging dimension, and a
+    // third chip stretched the row into noise (and could repeat one habit's
+    // name across every goal that watches it).
+    expect(find.text('Walk needs attention'), findsNothing);
+    expect(find.textContaining('needs attention'), findsNothing);
     expect(find.text('3 days to recover'), findsOneWidget);
     final strip = tester.widget<GoalCompactWindowStrip>(
       find.byType(GoalCompactWindowStrip),
     );
     expect(strip.placeholder, isFalse);
+    // Full-size day cells: the old 12px list default rendered as illegible
+    // dots that carried no signal at list scale.
+    expect(strip.cellSize, ControlSizes.iconChipCompact);
     // Stacked below, not trailing: the strip starts at the identity's left
     // edge on a narrow row.
     expect(
@@ -286,79 +293,6 @@ void main() {
       expect(find.text('Juno'), findsNothing);
     },
   );
-
-  testWidgets('an on-track composite does not badge an unmet leaf', (
-    tester,
-  ) async {
-    final spec =
-        AgentDomainEntity.goalSpecVersion(
-              id: 'goal-fit:spec-v1',
-              agentId: 'goal-fit',
-              version: 1,
-              status: GoalSpecVersionStatus.active,
-              authoredBy: 'user',
-              title: 'Health trajectory',
-              statement: 'Improve either health signal.',
-              criteria: const GoalCriterion.anyOf(
-                criterionId: 'health',
-                criteria: [
-                  GoalCriterion.metric(
-                    criterionId: 'weight',
-                    dataType: 'HealthDataType.WEIGHT',
-                    window: GoalWindow.rollingDays(count: 7),
-                    aggregation: GoalAggregation.dailySumThenAverage,
-                    target: 80,
-                    direction: GoalDirection.atMost,
-                  ),
-                  GoalCriterion.metric(
-                    criterionId: 'steps',
-                    dataType: 'steps',
-                    window: GoalWindow.day(),
-                    aggregation: GoalAggregation.sum,
-                    target: 8000,
-                  ),
-                ],
-              ),
-              createdAt: DateTime(2026),
-              vectorClock: null,
-            )
-            as GoalSpecVersionEntity;
-    final today = DateTime.utc(2026, 8, 11);
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const AgentsPage(),
-        overrides: [
-          activeGoalAgentsProvider.overrideWith(
-            (ref) async => [identity('goal-fit', 'Juno')],
-          ),
-          goalAgentHealthProvider('goal-fit').overrideWith(
-            (ref) async => health(
-              trackStatus: GoalTrackStatus.onTrack,
-              spec: spec,
-            ),
-          ),
-          goalAgentProgressViewProvider('goal-fit').overrideWith(
-            (ref) async => GoalProgressView(
-              today: today,
-              rootOnTrack: true,
-              metrics: [
-                GoalMetricProgressView(
-                  name: 'Weight',
-                  target: 80,
-                  direction: GoalDirection.atMost,
-                  days: [GoalProgressDay(day: today, value: 85)],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Healthy'), findsOneWidget);
-    expect(find.text('Weight needs attention'), findsNothing);
-  });
 
   testWidgets('a rolling-window goal shows a deterministic recovery hint when '
       'behind, and a buffer hint when at rate', (tester) async {
@@ -488,6 +422,9 @@ void main() {
       // Resolved data renders REAL cells; the dashed placeholder encoding is
       // reserved for rows whose window has not resolved.
       expect(strip.placeholder, isFalse);
+      // And at the detail page's cell size — the strip is the same
+      // instrument on both surfaces, not a miniature.
+      expect(strip.cellSize, ControlSizes.iconChipCompact);
     },
   );
 

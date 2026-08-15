@@ -6478,11 +6478,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String goalDominantIssueBadge(String dimensionName) {
-    return '$dimensionName are nevoie de atenție';
-  }
-
-  @override
   String get goalFormAddDimension => 'Adaugă dimensiune';
 
   @override
@@ -6985,9 +6980,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalReportSectionCoverage => 'Acoperirea datelor';
-
-  @override
-  String get goalReportSectionNext => 'Ce urmează';
 
   @override
   String get goalReportSectionStanding => 'Cum stați';

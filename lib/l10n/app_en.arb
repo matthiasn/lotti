@@ -3596,14 +3596,6 @@
       }
     }
   },
-  "goalDominantIssueBadge": "{dimensionName} needs attention",
-  "@goalDominantIssueBadge": {
-    "placeholders": {
-      "dimensionName": {
-        "type": "String"
-      }
-    }
-  },
   "goalFormAddDimension": "Add dimension",
   "goalFormAddSignal": "Add a signal",
   "@goalFormAddSignal": {
@@ -4012,7 +4004,6 @@
   },
   "goalReportSectionChange": "Latest change",
   "goalReportSectionCoverage": "Data coverage",
-  "goalReportSectionNext": "What's next",
   "goalReportSectionStanding": "Where things stand",
   "goalReportSectionWindow": "The wider window",
   "goalStatusAchieved": "Achieved",

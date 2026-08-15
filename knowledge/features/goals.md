@@ -5,13 +5,13 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-14T15:00:00Z }
+generated: { by: claude-code/fable-5, at: 2026-08-15T21:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-14
+    last_modified: 2026-08-15
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -70,8 +70,8 @@ sources:
     last_modified: 2026-08-12
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
-    title: Goal create/edit flow — intention, observable mapping and confirmation
-    last_modified: 2026-08-14
+    title: Goal create/edit flow — three-step creation, two-step editing
+    last_modified: 2026-08-15
   - id: measurable-capture
     resource: ../../lib/features/goals/service/goal_measurable_capture_service.dart
     title: Approval-gated measurable capture from goal chat
@@ -255,7 +255,11 @@ flowchart TD
   never disagree with the chart the user is looking at.
 - **Health FACTS preserve observations, not only aggregates.** Weight and
   systolic/diastolic blood-pressure criterion results keep `actual` as the
-  deterministic rolling aggregate, and add a bounded `healthSeries` for the
+  deterministic rolling aggregate — quantized with the card's own display
+  rule (`roundGoalAggregate` in `logic/goal_aggregate_rounding.dart`, shared
+  with `formatGoalAggregate`) so the agent's report and the dimension card
+  cannot quote two precisions of one number — and add a bounded
+  `healthSeries` for the
   criterion's authored window and evaluation reference. Its ordered
   `observations` contain the newest 100 exact journal timestamps and values,
   `observationCount` and `observationsOmitted` disclose the wider series, and
@@ -670,7 +674,13 @@ flowchart TD
   and the settled-empty state is a first-run explainer whose CTA is the sole
   creation affordance (the global FAB hides). When a spec is available,
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
-  adds a seven-cell compact strip to the list. The detail page expands the
+  adds a seven-cell compact strip to the list — at the detail page's day-cell
+  size, so the two surfaces draw the same instrument at the same scale (the
+  strip's earlier 12px list default read as illegible dots). On desktop the
+  detail page's middle column applies its reading measure to the content
+  *inside* the scroll view, never to the scroll view itself — constraining
+  the `ListView` parked the scrollbar mid-pane instead of at the pane edge
+  beside the chat divider. The detail page expands the
   same source into a habit grid or metric series using each leaf criterion's
   actual day/rolling/week/month range. Canonical weight data uses the shared
   time-series line treatment, while paired systolic and diastolic dimensions
@@ -683,15 +693,21 @@ flowchart TD
   numeric dimensions retain the progress-bar series. Rolling habit projections keep the
   immediately preceding slipped day separate from active-period arithmetic,
   and periods longer than seven days scroll horizontally instead of being
-  relabelled as a trailing week. Metric satisfaction is folded with the same
-  configured aggregation (`sum`, `count`, average, or max) as
-  `GoalProgressEvaluator`, rather than comparing each raw daily contribution
-  with the period target. Composite detail keeps every metric and measurable
+  relabelled as a trailing week. Every surface that marks a single metric day
+  — the bars, the compact strip cells, the reflection sheet's per-dimension
+  marks, and the composite card's met-yesterday tally — shares one policy
+  (`GoalMetricProgressView.dayMark`): where the target is a per-day quantity
+  (`dailySumThenAverage` and the point samples) the day's own value decides
+  the mark, so a 12,400-step day beats a 10,000 target even inside a weak
+  week; where the target belongs to the whole period (`sum`, `count`) the
+  mark is the evaluator's verdict for the window ending that day, because a
+  single day's contribution cannot be judged against a period total.
+  Composite detail keeps every metric and measurable
   leaf instead of silently collapsing the evidence to the first one, and the
   habit-only legend is omitted when no habit grid is rendered. The compact
-  strip combines rolling success with daily accomplishment: a cell is green
-  when `GoalProgressEvaluator` says the rolling criterion was satisfied as of
-  that day, or when the authored `allOf`, `anyOf`, or `atLeastCount` tree folds
+  strip combines that per-day policy with daily accomplishment: a metric cell
+  is green when `dayMark` holds, and a habit-composite cell when the authored
+  `allOf`, `anyOf`, or `atLeastCount` tree folds
   to true over that day's habit completions. A fully completed routine day can
   therefore be green while the current goal remains Behind or Restarting.
   Numeric leaves still respect `atLeast` versus `atMost` direction, and missing

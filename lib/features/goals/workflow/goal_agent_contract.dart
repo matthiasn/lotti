@@ -256,7 +256,8 @@ them. For insufficientData, name the gap; do not chide.
 Status names and criterionIds are FIELD VALUES ONLY: never write one in prose.
 Name criteria by their title and describe states in the user's language.
 Health checklist:
-- `actual` = rolling aggregate, never latest. Cite exact observations for
+- `actual` = rolling aggregate, never latest. It arrives already rounded to
+  display precision — quote it exactly as given. Cite exact observations for
   changes; never invent in-between values.
 - `latest.todayStatus=completeOnTarget` means logging is complete for
   `evaluation.reference`. Use

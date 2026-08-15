@@ -855,7 +855,9 @@ void main() {
             temperature = 0.7,
             strategy,
           }) async {
-            expect(message, contains('"actual": 90.0'));
+            // Quantized with the card's display rule: a whole aggregate is
+            // serialized as an int, so the agent quotes "90", not "90.0".
+            expect(message, contains('"actual": 90,'));
             expect(message, contains('"healthSeries"'));
             expect(
               message,

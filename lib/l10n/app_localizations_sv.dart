@@ -6365,11 +6365,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String goalDominantIssueBadge(String dimensionName) {
-    return '$dimensionName behöver uppmärksamhet';
-  }
-
-  @override
   String get goalFormAddDimension => 'Lägg till dimension';
 
   @override
@@ -6865,9 +6860,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalReportSectionCoverage => 'Datatäckning';
-
-  @override
-  String get goalReportSectionNext => 'Vad som är näst';
 
   @override
   String get goalReportSectionStanding => 'Hur det ligger till';

@@ -219,18 +219,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         latestReport = report;
       }
     }
-    Widget detailList({required bool showChatAction}) => ListView(
-      controller: _scrollController,
-      // The mobile shell keeps the bottom navigation overlaid on agents
-      // subroutes, so the final content must clear it.
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step5,
-        tokens.spacing.step5,
-        tokens.spacing.step5 +
-            DesignSystemBottomNavigationBar.occupiedHeight(context),
-      ),
-      children: [
+    Widget detailList({
+      required bool showChatAction,
+      double? contentMaxWidth,
+    }) {
+      final sections = <Widget>[
         _GoalHeader(
           key: _headerKey,
           agentId: agentId,
@@ -379,8 +372,38 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           _GoalHistorySection(history: history),
         ],
-      ],
-    );
+      ];
+      return ListView(
+        controller: _scrollController,
+        // The mobile shell keeps the bottom navigation overlaid on agents
+        // subroutes, so the final content must clear it.
+        padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step5,
+          tokens.spacing.step5,
+          tokens.spacing.step5,
+          tokens.spacing.step5 +
+              DesignSystemBottomNavigationBar.occupiedHeight(context),
+        ),
+        children: [
+          for (final section in sections)
+            if (contentMaxWidth == null)
+              section
+            else
+              // The reading measure belongs to the CONTENT, not the scroll
+              // view. Constraining the ListView itself parked the desktop
+              // scrollbar at the measure's right edge — floating mid-pane —
+              // instead of at the pane's own edge beside the chat divider.
+              Align(
+                alignment: AlignmentDirectional.topStart,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                  child: section,
+                ),
+              ),
+        ],
+      );
+    }
+
     final desktop = isDesktopLayout(context);
     final chatAvailable = isActive;
     return popSafe(
@@ -442,15 +465,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                       // report's section bodies ran ~90 characters per line
                       // on a wide window — roughly twice a comfortable
                       // measure — and the automation row's spaceBetween
-                      // opened a void across the same span.
-                      child: Align(
-                        alignment: AlignmentDirectional.topStart,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxWidth: tokens.spacing.step13 * 3,
-                          ),
-                          child: detailList(showChatAction: false),
-                        ),
+                      // opened a void across the same span. Applied INSIDE
+                      // the list (per section), so the scroll view spans the
+                      // pane and its scrollbar hugs the chat divider.
+                      child: detailList(
+                        showChatAction: false,
+                        contentMaxWidth: tokens.spacing.step13 * 3,
                       ),
                     ),
                     VerticalDivider(
