@@ -198,7 +198,14 @@ class _GoalAgentRow extends ConsumerWidget {
         ? tokens.colors.text.lowEmphasis
         : goalCoarseHealthColor(coarse, tokens.colors);
     final direction = health?.direction;
-    final dominantIssue = progress == null
+    // The deterministic fallback for a goal the agent has not written about
+    // yet (first inference pending, spec just revised, automatic updates
+    // off): without it a struggling metric or composite row would carry only
+    // a generic health chip. Once a one-liner exists it names the lagging
+    // dimension itself, and the pill would restate it — so it yields.
+    final oneLiner = health?.reportOneLiner;
+    final dominantIssue =
+        progress == null || (oneLiner?.trim().isNotEmpty ?? false)
         ? null
         : _dominantIssue(progress, health?.trackStatus);
     // A deterministic, factual hint for rolling-window habit goals: the
@@ -254,6 +261,10 @@ class _GoalAgentRow extends ConsumerWidget {
             // across list and detail.
             if (direction != null)
               GoalHealthDirectionChip(direction: direction),
+            // At most one health chip, one trend chip and one badge. The
+            // needs-you badge is an action; the dominant-issue pill is a
+            // FALLBACK only — it renders solely while no one-liner exists to
+            // name the lagging dimension, never as a third restatement.
             if ((health?.pendingProposals ?? 0) > 0)
               const _NeedsYouBadge()
             else if (dominantIssue != null)
@@ -369,6 +380,9 @@ class _GoalAgentRow extends ConsumerWidget {
   }
 }
 
+/// The dimension most in need of attention, or null when the goal is on
+/// track (or has nothing observable to blame). Used only as the fallback
+/// while the agent has no standing one-liner for the row.
 String? _dominantIssue(
   GoalProgressView progress,
   GoalTrackStatus? trackStatus,

@@ -16,6 +16,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -28,7 +29,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
   const GoalCompactWindowStrip({
     required this.days,
     this.placeholder = false,
-    this.cellSize = IconSizes.xs,
+    this.cellSize = ControlSizes.iconChipCompact,
     this.lastDay,
     this.onDaySelected,
     this.ratingsByDay = const {},
@@ -47,9 +48,9 @@ class GoalCompactWindowStrip extends StatelessWidget {
   /// it.
   final bool placeholder;
 
-  /// Edge of one day's square. Defaults to the compact size the list rows
-  /// need; the detail page passes the habit day square's size so the two
-  /// strips on one screen read as the same instrument at the same scale.
+  /// Edge of one day's square. Defaults to the habit day square's size —
+  /// list rows and the detail page draw the same instrument at the same
+  /// scale. The 12px default the list once used rendered as illegible dots.
   final double cellSize;
 
   /// The day the last cell stands for. Every earlier cell counts back from
@@ -236,13 +237,25 @@ class GoalCompactWindowStrip extends StatelessWidget {
             ].join('. '),
       // A tappable strip publishes each day as its own button, so the summary
       // above becomes the container's label rather than the whole story.
-      // The track sizes itself to `pitch * days`, so no cap is needed: it can
-      // neither scatter across a desktop card nor overflow a phone one.
+      // The scale-down FittedBox is the overflow bound: the track (and the
+      // dateless placeholder Row) size themselves to `pitch * days`, and on
+      // a 320px phone a list row's column is a few pixels narrower than
+      // seven full-size cells. Everywhere with room, the fit is identity.
       child: onDaySelected == null
-          ? ExcludeSemantics(child: labelled)
+          ? ExcludeSemantics(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: labelled,
+              ),
+            )
           : Align(
               alignment: AlignmentDirectional.centerStart,
-              child: labelled,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: labelled,
+              ),
             ),
     );
   }
@@ -400,38 +413,11 @@ class _CompactDayCell extends StatelessWidget {
 /// Targets go through the same rule so a value can never appear to miss a
 /// target it actually meets, purely because the two were rounded differently.
 String formatGoalAggregate(NumberFormat number, num value, {num? against}) {
-  var rounded = _roundGoalAggregate(value);
-  // Never round a value onto the wrong side of the number it is compared
-  // with: 9,950 against a 10,000 target would otherwise read "10,000 of
-  // 10,000" directly above a "Needs attention" line. Where the coarse step
-  // would erase the difference, keep the finer one.
-  if (against != null && value != against) {
-    // Keep adding decimals until the two stop reading as the same number.
-    // A fixed ladder always has a last rung: [1, 0.1, 0.01] still rendered
-    // "88 of 88" for 87.996, the exact contradiction this guard exists to
-    // prevent. Bounded at six places, well past any real measurement, so a
-    // pathological pair cannot spin here.
-    if (rounded == _roundGoalAggregate(against)) {
-      for (var places = 0; places <= 6; places++) {
-        if (value.toStringAsFixed(places) != against.toStringAsFixed(places)) {
-          rounded = double.parse(value.toStringAsFixed(places));
-          break;
-        }
-      }
-    }
-  }
-  return number.format(
-    rounded == rounded.roundToDouble() ? rounded.toInt() : rounded,
-  );
-}
-
-num _roundGoalAggregate(num value) {
-  final magnitude = value.abs();
-  return magnitude >= 1000
-      ? (value / 100).roundToDouble() * 100
-      : magnitude >= 100
-      ? value.roundToDouble()
-      : (value * 10).roundToDouble() / 10;
+  // The quantization itself lives in goal_aggregate_rounding.dart, shared
+  // with the FACTS renderer so the agent quotes the same number this card
+  // prints. Whole results arrive as ints, so decimalPattern never shows a
+  // spurious ".0".
+  return number.format(roundGoalAggregate(value, against: against));
 }
 
 /// The corner radius every day cell on this page shares.
@@ -660,8 +646,9 @@ class _CompositeProgressCard extends StatelessWidget {
       for (final metric in progress.metrics)
         metric.days.any(
           (day) =>
-              DateUtils.isSameDay(day.day, yesterday) &&
-              metric.meetsTarget(day),
+              // The shared per-day policy, so this tally cannot disagree with
+              // the reflection sheet the strip above it opens.
+              DateUtils.isSameDay(day.day, yesterday) && metric.dayMark(day),
         ),
     ].where((met) => met).length;
     final required = progress.requiredSuccesses ?? progress.dimensionCount;
@@ -686,10 +673,6 @@ class _CompositeProgressCard extends StatelessWidget {
           SizedBox(height: tokens.spacing.step1),
           GoalCompactWindowStrip(
             days: progress.compactWindow,
-            // Matched to the habit day squares below: the two strips describe
-            // the same week at the same scale, and the whole-goal one used to
-            // render at 12px against their 28px.
-            cellSize: ControlSizes.iconChipCompact,
             lastDay: progress.today,
             onDaySelected: onReflectDay,
             ratingsByDay: ratingsByDay,
@@ -2145,17 +2128,6 @@ class _MetricTrendSeries extends StatelessWidget {
   }
 }
 
-/// Whether a metric's target is comparable to a single day's bar.
-///
-/// `dailySumThenAverage` and the point-sample aggregations describe one day's
-/// value, so a day can be read against the target directly. `sum` and `count`
-/// accumulate ACROSS the window, and their target belongs to the period
-/// rather than to any bar in it.
-bool _targetIsPerDay(GoalAggregation aggregation) => switch (aggregation) {
-  GoalAggregation.sum || GoalAggregation.count => false,
-  _ => true,
-};
-
 class _MetricProgressSeries extends StatelessWidget {
   const _MetricProgressSeries({required this.metric});
 
@@ -2191,7 +2163,7 @@ class _MetricProgressSeries extends StatelessWidget {
               // total while these bars are single days, so a line at the
               // target would put two already-sufficient days under a
               // threshold they jointly cleared.
-              if (maxValue > 0 && _targetIsPerDay(metric.aggregation))
+              if (maxValue > 0 && metric.targetIsPerDay)
                 Positioned(
                   key: const ValueKey('goal-metric-target-rule'),
                   left: 0,
@@ -2213,16 +2185,13 @@ class _MetricProgressSeries extends StatelessWidget {
                 ),
               Positioned.fill(
                 child: metric.days.length <= 7
-                    ? Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: _bars(context, maxValue, expanded: true),
+                    ? Align(
+                        alignment: Alignment.bottomLeft,
+                        child: _track(context, maxValue),
                       )
                     : SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: _bars(context, maxValue, expanded: false),
-                        ),
+                        child: _track(context, maxValue),
                       ),
               ),
             ],
@@ -2232,43 +2201,31 @@ class _MetricProgressSeries extends StatelessWidget {
     );
   }
 
-  List<Widget> _bars(
-    BuildContext context,
-    num maxValue, {
-    required bool expanded,
-  }) {
+  /// The bars on the page's shared day grid.
+  ///
+  /// `_DayTrack` with `_dayTrackPitch`, exactly like the habit squares and
+  /// the whole-goal strip: a plain Row with fixed gaps matched the default
+  /// pitch but not the text-scale-expanded one, so at raised text scales the
+  /// bars' Wednesday drifted away from the Wednesday one card above.
+  Widget _track(BuildContext context, num maxValue) {
     final tokens = context.designTokens;
-    return [
-      for (var index = 0; index < metric.days.length; index++) ...[
-        if (index > 0) SizedBox(width: tokens.spacing.step2),
-        if (expanded)
-          // Even spacing across the card, but each bar keeps the same width
-          // it has in the scrollable variant. Left to fill its share, a
-          // seven-day week rendered ~40px slabs that dominated the card and
-          // read nothing like the day squares above them.
-          Expanded(
-            // Bottom-aligned: a bar chart's bars stand on a shared baseline.
-            // Centred, each one floated at its own height and the whole point
-            // of the three fills and the target rule was unreadable.
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              // A tight width, not a maximum. `_bar` is a FractionallySizedBox
-              // with no widthFactor, so a loose constraint passes straight
-              // through to a DecoratedBox with no intrinsic width and every
-              // bar collapses to zero — an invisible chart.
-              child: SizedBox(
-                width: ControlSizes.iconChipCompact,
-                child: _bar(context, metric.days[index], maxValue),
-              ),
-            ),
-          )
-        else
+    final height = _chartHeight(tokens);
+    return _DayTrack(
+      height: height,
+      itemExtent: ControlSizes.iconChipCompact,
+      pitch: _dayTrackPitch(context, metric.days),
+      children: [
+        for (final day in metric.days)
+          // A tight box, not a loose slot. `_bar` is a FractionallySizedBox
+          // whose Stack expands against its parent, so it needs bounded
+          // dimensions or every bar collapses to zero — an invisible chart.
           SizedBox(
             width: ControlSizes.iconChipCompact,
-            child: _bar(context, metric.days[index], maxValue),
+            height: height,
+            child: _bar(context, day, maxValue),
           ),
       ],
-    ];
+    );
   }
 
   Widget _bar(BuildContext context, GoalProgressDay day, num maxValue) {
@@ -2276,9 +2233,15 @@ class _MetricProgressSeries extends StatelessWidget {
     final locale = Localizations.localeOf(context).toString();
     final date = DateFormat.MMMd(locale).format(day.day);
     final number = NumberFormat.decimalPattern(locale);
+    // The shared per-day policy: a bar drawn against a per-day target rule
+    // is judged by the day's own value, so a 12,400-step day beats a 10,000
+    // target even when the trailing week's average is still short. Only a
+    // period-total criterion keeps the evaluator's window verdict, because
+    // no single bar can be read against a whole-period target.
+    final met = metric.dayMark(day);
     final status = !day.isObserved
         ? 'missing'
-        : metric.meetsTarget(day)
+        : met
         ? 'met'
         : 'missed';
     final rawHeightFactor = maxValue == 0
@@ -2300,9 +2263,7 @@ class _MetricProgressSeries extends StatelessWidget {
             ? goalDayStateFill(tokens, GoalCompactDayState.none)
             : goalDayStateFill(
                 tokens,
-                metric.meetsTarget(day)
-                    ? GoalCompactDayState.full
-                    : GoalCompactDayState.partial,
+                met ? GoalCompactDayState.full : GoalCompactDayState.partial,
               ),
         border: !day.isObserved
             ? Border.all(

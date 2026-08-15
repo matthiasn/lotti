@@ -415,13 +415,11 @@ List<_MeasuredRow> _measuredRows(
             '—',
         met: metric.days
             .where((entry) => DateUtils.isSameDay(entry.day, day))
-            // The DAY's value against the target, not the rolling verdict:
-            // this row prints that day's number, so the mark beside it has
-            // to be about that number.
-            .map(
-              (entry) =>
-                  entry.isObserved ? metric.valueMeetsTarget(entry) : null,
-            )
+            // The shared per-day policy: for a per-day target the mark is
+            // about the number this row prints beside it; for a period-total
+            // criterion it is the evaluator's verdict as of that day, since
+            // one day's hours cannot be judged against a weekly total.
+            .map((entry) => entry.isObserved ? metric.dayMark(entry) : null)
             .firstOrNull,
       ),
   ];

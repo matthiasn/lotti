@@ -134,6 +134,9 @@ void main() {
 
     expect(view.metric?.days, hasLength(7));
     expect(view.metric?.aggregation, GoalAggregation.dailySumThenAverage);
+    // Per-day policy: the 7,999 day is not full even though the rolling
+    // average of the observed days clears 8,000 — a strip cell is a
+    // statement about that day's own number.
     expect(view.compactWindow, [
       GoalCompactDayState.full,
       GoalCompactDayState.none,
@@ -141,7 +144,7 @@ void main() {
       GoalCompactDayState.none,
       GoalCompactDayState.full,
       GoalCompactDayState.none,
-      GoalCompactDayState.full,
+      GoalCompactDayState.none,
     ]);
   });
 
@@ -858,5 +861,99 @@ void main() {
     // out, contradicting the report one card above.
     expect(systolic.meetsTarget(systolic.days.single), isFalse);
     expect(systolic.valueMeetsTarget(systolic.days.single), isTrue);
+  });
+
+  test(
+    'a calendar-window day verdict is as of that day, never retroactive',
+    () {
+      // Sum criterion over the calendar week: 6 hours on Monday, 6 on Tuesday,
+      // 12-hour weekly target reached only on Tuesday. Monday's verdict must
+      // be the running total AS OF Monday — evaluating the unclipped window
+      // let Tuesday's hours repaint Monday retroactively, so reopening
+      // Monday's reflection after the total landed suggested Met for a day
+      // that had not met anything yet.
+      final view = buildGoalProgressView(
+        criteria: const GoalCriterion.metric(
+          criterionId: 'deep-work',
+          dataType: 'deep-work',
+          window: GoalWindow.calendarWeek(),
+          aggregation: GoalAggregation.sum,
+          target: 12,
+        ),
+        signals: GoalSignalWindow(
+          quantitativeDailySums: {
+            'deep-work': {day(1): 6, day(0): 6},
+          },
+        ),
+        reference: today,
+      );
+
+      final metric = view.metric!;
+      final monday = metric.days.singleWhere((entry) => entry.day == day(1));
+      final tuesday = metric.days.singleWhere((entry) => entry.day == day(0));
+      expect(metric.meetsTarget(monday), isFalse);
+      expect(metric.dayMark(monday), isFalse);
+      expect(metric.meetsTarget(tuesday), isTrue);
+      expect(metric.dayMark(tuesday), isTrue);
+    },
+  );
+
+  test('the evaluator-supplied habit count outranks the view-side fold', () {
+    // Three creditable days in the visible window, but the evaluator said
+    // five (its window need not equal the visible one). The card must quote
+    // the evaluator — the same number the agent's FACTS carry — or the two
+    // can drift apart the way the metric headline once did.
+    final habit = GoalHabitProgressView(
+      habitId: 'walk-id',
+      name: 'Walk',
+      targetCount: 6,
+      successfulWeeks: null,
+      evaluatedSuccesses: 5,
+      days: [
+        for (var offset = 6; offset >= 0; offset--)
+          GoalProgressDay(
+            day: DateTime.utc(2026, 8, 11).subtract(Duration(days: offset)),
+            value: offset.isEven && offset > 0 ? 1 : 0,
+          ),
+      ],
+    );
+    expect(habit.successesInWindow, 5);
+    expect(habit.deficit, 1);
+  });
+
+  test('dayMark uses the day value for per-day targets and the window '
+      'verdict for period totals', () {
+    final perDay = GoalMetricProgressView(
+      name: 'Steps',
+      target: 10000,
+      days: [
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 12400,
+          targetSatisfied: false,
+        ),
+      ],
+    );
+    expect(perDay.dayMark(perDay.days.single), isTrue);
+    expect(perDay.targetIsPerDay, isTrue);
+
+    final periodTotal = GoalMetricProgressView(
+      name: 'Deep work',
+      target: 12,
+      aggregation: GoalAggregation.sum,
+      days: [
+        // Two hours toward a twelve-hour week: the day's own value cannot be
+        // judged against the period total, so the evaluator's verdict for
+        // the window ending that day decides the mark.
+        GoalProgressDay(
+          day: DateTime.utc(2026, 8, 10),
+          value: 2,
+          targetSatisfied: true,
+        ),
+      ],
+    );
+    expect(periodTotal.targetIsPerDay, isFalse);
+    expect(periodTotal.dayMark(periodTotal.days.single), isTrue);
+    expect(periodTotal.valueMeetsTarget(periodTotal.days.single), isFalse);
   });
 }

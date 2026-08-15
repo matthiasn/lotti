@@ -264,7 +264,6 @@ void main() {
       makeTestableWidgetNoScroll(
         GoalCompactWindowStrip(
           days: week,
-          cellSize: ControlSizes.iconChipCompact,
           lastDay: today,
           onDaySelected: (_) {},
           ratingsByDay: {
@@ -782,7 +781,6 @@ void main() {
             GoalCompactDayState.none,
           ],
           placeholder: true,
-          cellSize: ControlSizes.iconChipCompact,
         ),
       ),
     );
@@ -1715,7 +1713,20 @@ void main() {
             metric: GoalMetricProgressView(
               name: 'Steps',
               target: 10000,
-              days: [day(1, 12400), day(0, 5262)],
+              // `targetSatisfied` deliberately contradicts each day's own
+              // value: production always populates it with the evaluator's
+              // ROLLING verdict, and this test exists to prove a per-day
+              // target bar ignores that verdict in favour of the day's own
+              // number. Without it, both days took the null-fallback branch
+              // and the test passed against either policy.
+              days: [
+                GoalProgressDay(
+                  day: today.subtract(const Duration(days: 1)),
+                  value: 12400,
+                  targetSatisfied: false,
+                ),
+                GoalProgressDay(day: today, value: 5262, targetSatisfied: true),
+              ],
             ),
           ),
         ),
@@ -1737,7 +1748,9 @@ void main() {
     expect(
       barColor('2026-08-10'),
       goalDayStateFill(tokens, GoalCompactDayState.full),
-      reason: '12,400 steps beat the 10,000 target',
+      reason:
+          '12,400 steps beat the 10,000 target even though the '
+          'trailing-week verdict for that day says short',
     );
     // Short, but MEASURED. `background.level03` is what the legend calls
     // absence, so a logged day that fell short wears the muted wash of the
@@ -1745,7 +1758,9 @@ void main() {
     expect(
       barColor('2026-08-11'),
       goalDayStateFill(tokens, GoalCompactDayState.partial),
-      reason: '5,262 steps fell short but were still logged',
+      reason:
+          '5,262 steps fell short but were still logged — the passing '
+          'rolling verdict must not paint the day green',
     );
 
     // Seven bars filling a full-width card rendered ~40px slabs. Each one now
@@ -2833,5 +2848,70 @@ void main() {
       contains('Said by you and recorded after your approval.'),
     );
     expect(messages.any((message) => message.contains('Juno')), isTrue);
+  });
+
+  testWidgets('the agent-recorded badge stays inside the plot on a short bar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Steps',
+              target: 10000,
+              days: [day(1, 400), day(0, 9000)],
+              agentRecordedDays: {today.subtract(const Duration(days: 1))},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // A 400-step bar against a 10,000 ceiling is ~2px tall; the badge used
+    // to escape above the plot and float over the card header. Clamped, it
+    // rests on the baseline inside its own column instead.
+    final slot = tester.getRect(
+      find.byKey(const ValueKey('goal-metric-bar-2026-08-10')),
+    );
+    final icon = tester.getRect(find.byIcon(Icons.edit_note_rounded));
+    expect(icon.top, greaterThanOrEqualTo(slot.top));
+    expect(icon.bottom, lessThanOrEqualTo(slot.bottom));
+  });
+
+  testWidgets('the met-yesterday tally judges a per-day metric by the '
+      "day's own value", (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            compositeRule: GoalCompositeRuleKind.all,
+            metric: GoalMetricProgressView(
+              name: 'Steps',
+              target: 10000,
+              // Yesterday beat the target on its own number while the
+              // trailing-week verdict for that day still said short — the
+              // tally must agree with the reflection sheet the strip opens,
+              // which judges the day by its value.
+              days: [
+                GoalProgressDay(
+                  day: today.subtract(const Duration(days: 1)),
+                  value: 12400,
+                  targetSatisfied: false,
+                ),
+                day(0, 2000),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text('Yesterday: 1 of 1 dimensions · 1 required.'),
+      findsOneWidget,
+    );
   });
 }

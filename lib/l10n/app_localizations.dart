@@ -10874,7 +10874,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{dimensionName} needs attention'**
-  String goalDominantIssueBadge(String dimensionName);
+  String goalDominantIssueBadge(Object dimensionName);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11621,12 +11621,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Data coverage'**
   String get goalReportSectionCoverage;
-
-  /// No description provided for @goalReportSectionNext.
-  ///
-  /// In en, this message translates to:
-  /// **'What\'s next'**
-  String get goalReportSectionNext;
 
   /// No description provided for @goalReportSectionStanding.
   ///

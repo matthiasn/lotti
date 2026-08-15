@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
@@ -187,7 +188,12 @@ class GoalFactsRenderer {
           );
     return {
       'criterionId': result.criterionId,
-      'actual': result.actual,
+      // Quantized with the SAME rule the dimension card's headline uses
+      // (nearest hundred above 1000, whole numbers above 100, one decimal
+      // below, never rounded across the target) — the agent quotes `actual`
+      // in its report, and an unrounded 7684.428571 here put a number on the
+      // banner that the card directly above it did not show.
+      'actual': roundGoalAggregate(result.actual, against: result.target),
       'target': result.target,
       'ratio': result.ratio,
       'satisfied': result.satisfied,

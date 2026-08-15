@@ -6359,7 +6359,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String goalDominantIssueBadge(String dimensionName) {
+  String goalDominantIssueBadge(Object dimensionName) {
     return '$dimensionName har brug for opmærksomhed';
   }
 
@@ -6857,9 +6857,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalReportSectionCoverage => 'Datadækning';
-
-  @override
-  String get goalReportSectionNext => 'Hvad nu';
 
   @override
   String get goalReportSectionStanding => 'Sådan står det';

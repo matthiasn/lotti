@@ -32,12 +32,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-/// Creates or edits a goal agent through WP5's intention → observable mapping
-/// → confirmation flow.
+/// Creates or edits a goal agent through WP5's observable-mapping controls.
 ///
-/// Passing [agentId] switches the flow into versioned editing. The current
-/// spec is mapped losslessly into the same controls used for creation; saving
-/// mints a new immutable spec version rather than changing history in place.
+/// Creation walks three steps — intention → mapping → confirmation — because
+/// the intention statement drives the observable-signal derivation for a goal
+/// that does not exist yet. Passing [agentId] switches the flow into versioned
+/// editing, which has no intention page: the statement is a single-line field
+/// at the top of the mapping page, so editing is mapping → confirmation, two
+/// steps. The current spec is mapped losslessly into the same controls used
+/// for creation; saving mints a new immutable spec version rather than
+/// changing history in place.
 class CreateGoalAgentPage extends ConsumerStatefulWidget {
   const CreateGoalAgentPage({this.agentId, super.key});
 
@@ -2143,7 +2147,12 @@ class _MappingStep extends StatelessWidget {
                           _compositeRuleLabel(
                             context,
                             compositeRule,
-                            requiredSuccesses,
+                            // Clamped for display: removing a dimension can
+                            // strand a stored "3 of" above a 2-dimension
+                            // goal, and the card must not promise the
+                            // impossible while buildCriteria would silently
+                            // save the clamped value anyway.
+                            requiredSuccesses.clamp(1, dimensionCount),
                             dimensionCount,
                           ),
                           style: tokens.typography.styles.body.bodySmall
@@ -2888,54 +2897,72 @@ class _CompositeRulePickerState extends State<_CompositeRulePicker> {
               style: tokens.typography.styles.heading.heading3,
             ),
             SizedBox(height: tokens.spacing.step3),
-            for (final rule in GoalFormCompositeRule.values)
-              DesignSystemSelectionRow(
-                title: _compositeRuleLabel(
-                  context,
-                  rule,
-                  _required,
-                  widget.dimensionCount,
-                ),
-                subtitle: switch (rule) {
-                  GoalFormCompositeRule.all =>
-                    messages.goalFormCompositeAllHint,
-                  GoalFormCompositeRule.any =>
-                    messages.goalFormCompositeAnyHint,
-                  GoalFormCompositeRule.atLeast =>
-                    messages.goalFormCompositeAtLeastHint,
-                },
-                selected: _rule == rule,
-                type: DesignSystemSelectionRowType.singleSelect,
-                // The stepper gets the row's full width on its own line —
-                // trailing squeezed it against the selection mark, which is
-                // how a stray tap kept landing beside the glyphs.
-                secondaryLine:
-                    rule == GoalFormCompositeRule.atLeast && _rule == rule
-                    ? DesignSystemStepper(
-                        label: '$_required / ${widget.dimensionCount}',
-                        decrementTooltip: messages.goalFormDecreaseTarget,
-                        incrementTooltip: messages.goalFormIncreaseTarget,
-                        decrementKey: const ValueKey(
-                          'goal-form-composite-decrease',
-                        ),
-                        incrementKey: const ValueKey(
-                          'goal-form-composite-increase',
-                        ),
-                        onDecrement: _required > 1
-                            ? () => _apply(rule, _required - 1)
-                            : null,
-                        onIncrement: _required < widget.dimensionCount
-                            ? () => _apply(rule, _required + 1)
-                            : null,
-                      )
-                    : null,
-                onTap: () => _apply(rule, _required),
+            // Scrollable, because the selected at-least row grows a
+            // full-width stepper line: on a short phone or at raised text
+            // scale the fixed column overflowed and could clip the stepper
+            // or the Done button.
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final rule in GoalFormCompositeRule.values)
+                    DesignSystemSelectionRow(
+                      title: _compositeRuleLabel(
+                        context,
+                        rule,
+                        _required,
+                        widget.dimensionCount,
+                      ),
+                      subtitle: switch (rule) {
+                        GoalFormCompositeRule.all =>
+                          messages.goalFormCompositeAllHint,
+                        GoalFormCompositeRule.any =>
+                          messages.goalFormCompositeAnyHint,
+                        GoalFormCompositeRule.atLeast =>
+                          messages.goalFormCompositeAtLeastHint,
+                      },
+                      selected: _rule == rule,
+                      type: DesignSystemSelectionRowType.singleSelect,
+                      // The stepper gets the row's full width on its own line —
+                      // trailing squeezed it against the selection mark, which is
+                      // how a stray tap kept landing beside the glyphs.
+                      secondaryLine:
+                          rule == GoalFormCompositeRule.atLeast && _rule == rule
+                          ? DesignSystemStepper(
+                              label: '$_required / ${widget.dimensionCount}',
+                              decrementTooltip: messages.goalFormDecreaseTarget,
+                              incrementTooltip: messages.goalFormIncreaseTarget,
+                              decrementKey: const ValueKey(
+                                'goal-form-composite-decrease',
+                              ),
+                              incrementKey: const ValueKey(
+                                'goal-form-composite-increase',
+                              ),
+                              onDecrement: _required > 1
+                                  ? () => _apply(rule, _required - 1)
+                                  : null,
+                              onIncrement: _required < widget.dimensionCount
+                                  ? () => _apply(rule, _required + 1)
+                                  : null,
+                            )
+                          : null,
+                      onTap: () => _apply(rule, _required),
+                    ),
+                ],
               ),
+            ),
             SizedBox(height: tokens.spacing.step4),
             DesignSystemButton(
               key: const ValueKey('goal-form-composite-done'),
               label: messages.doneButton,
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                // Commit the local state, not just close: opening the sheet
+                // clamps a stale "3 of 2" to what the goal can actually
+                // require, and Done is where that normalization reaches the
+                // page instead of silently diverging until save.
+                widget.onChanged(_rule, _required);
+                Navigator.of(context).pop();
+              },
               fullWidth: true,
             ),
           ],

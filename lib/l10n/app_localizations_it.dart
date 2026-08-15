@@ -6442,7 +6442,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String goalDominantIssueBadge(String dimensionName) {
+  String goalDominantIssueBadge(Object dimensionName) {
     return '$dimensionName ha bisogno di attenzione';
   }
 
@@ -6946,9 +6946,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalReportSectionCoverage => 'Copertura dei dati';
-
-  @override
-  String get goalReportSectionNext => 'Cosa viene dopo';
 
   @override
   String get goalReportSectionStanding => 'A che punto sei';
