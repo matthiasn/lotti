@@ -114,9 +114,13 @@ class _ProgressBarHeader extends StatelessWidget {
           color: spec.progressColor,
         ),
       if (progressText?.isNotEmpty == true)
-        Text(
-          progressText!,
-          style: spec.headerTextStyle.copyWith(color: spec.progressColor),
+        Flexible(
+          child: Text(
+            progressText!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: spec.headerTextStyle.copyWith(color: spec.progressColor),
+          ),
         ),
     ];
 
@@ -142,8 +146,13 @@ class _ProgressBarHeader extends StatelessWidget {
                 style: spec.headerTextStyle.copyWith(color: spec.labelColor),
               ),
             ),
-          if (label?.isNotEmpty != true && trailing != null) const Spacer(),
-          ?trailing,
+          if (trailing != null)
+            Flexible(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: trailing,
+              ),
+            ),
         ],
       ),
     );

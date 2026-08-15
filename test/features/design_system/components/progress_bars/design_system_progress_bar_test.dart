@@ -178,17 +178,59 @@ void main() {
       expect(progress.style?.color, progressColor);
       expect(fill.color, fillColor);
     });
+
+    testWidgets('keeps long header content inside a narrow bar', (
+      tester,
+    ) async {
+      const barKey = Key('narrow-progress-bar');
+
+      await _pumpProgressBar(
+        tester,
+        const DesignSystemProgressBar(
+          key: barKey,
+          value: 0.5,
+          label: 'Tasks',
+          progressText: '3 of 5 tasks completed',
+          trailingIcon: Icons.star_outline_rounded,
+        ),
+        width: 160,
+      );
+
+      final barRect = tester.getRect(find.byKey(barKey));
+      final progressRect = tester.getRect(
+        find.descendant(
+          of: find.byKey(barKey),
+          matching: find.text('3 of 5 tasks completed'),
+        ),
+      );
+      final semantics = tester.widget<Semantics>(
+        find.descendant(
+          of: find.byKey(barKey),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.label == 'Tasks' &&
+                widget.properties.value == '3 of 5 tasks completed',
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(progressRect.right, lessThanOrEqualTo(barRect.right));
+      expect(semantics.properties.value, '3 of 5 tasks completed');
+    });
   });
 }
 
 Future<void> _pumpProgressBar(
   WidgetTester tester,
-  Widget child,
-) async {
+  Widget child, {
+  double width = 544,
+}) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       SizedBox(
-        width: 544,
+        width: width,
         child: child,
       ),
       theme: DesignSystemTheme.light(),
