@@ -199,7 +199,10 @@ Project deletion retires its project agent before soft-deleting the project,
 so runtime subscriptions and pending work cannot outlive the project. A
 retirement error aborts deletion instead of claiming success; a failed project
 write compensates by resuming the retired agent and restoring its runtime
-subscriptions.
+subscriptions. The detail keeps the last resolved agent identity during
+provider reloads, and captures the subscription restorer before deletion
+awaits, so neither a sync refresh nor route disposal can bypass that lifecycle
+cleanup.
 
 # Health is agent-authored
 

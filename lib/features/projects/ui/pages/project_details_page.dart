@@ -28,6 +28,7 @@ import 'package:lotti/widgets/ui/error_state_widget.dart';
 
 typedef ProjectTaskCreator = Future<Task?> Function(String projectId);
 typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);
+typedef ProjectAgentSubscriptionsRestorer = Future<void> Function();
 
 /// Injectable task-creation seam used by the project detail action.
 final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
@@ -44,6 +45,14 @@ final projectTaskAgentAssignerProvider = Provider<ProjectTaskAgentAssigner>(
   },
   name: 'projectTaskAgentAssignerProvider',
 );
+
+/// Captures the project-agent service in a callback that remains safe to call
+/// if the detail widget is disposed while a project deletion is in flight.
+final projectAgentSubscriptionsRestorerProvider =
+    Provider<ProjectAgentSubscriptionsRestorer>(
+      (ref) => ref.watch(projectAgentServiceProvider).restoreSubscriptions,
+      name: 'projectAgentSubscriptionsRestorerProvider',
+    );
 
 /// Read-first project detail surface rendered in the desktop right pane and as
 /// the mobile `/projects/<id>` route.
@@ -74,7 +83,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     final recordAsync = ref.watch(projectDetailRecordProvider(projectId));
     final currentTime = ref.watch(projectDetailNowProvider)();
     final agentAsync = ref.watch(projectAgentProvider(projectId));
-    final agent = agentAsync.asData?.value;
+    final agent = agentAsync.value;
     final identity = agent?.mapOrNull(agent: (value) => value);
     final isRefreshingReport =
         identity != null &&
@@ -290,6 +299,9 @@ class ProjectDetailsPage extends ConsumerWidget {
       confirmLabel: context.messages.projectActionDelete,
     );
     if (!confirmed || !context.mounted) return;
+    final restoreProjectAgentSubscriptions = projectAgentId == null
+        ? null
+        : ref.read(projectAgentSubscriptionsRestorerProvider);
 
     var agentRetired = false;
     if (projectAgentId != null && agentService != null) {
@@ -335,13 +347,14 @@ class ProjectDetailsPage extends ConsumerWidget {
     if (!deleted &&
         agentRetired &&
         projectAgentId != null &&
-        agentService != null) {
+        agentService != null &&
+        restoreProjectAgentSubscriptions != null) {
       try {
         final resumed = await agentService.resumeAgent(projectAgentId);
         if (!resumed) {
           throw StateError('Retired project agent could not be resumed');
         }
-        await ref.read(projectAgentServiceProvider).restoreSubscriptions();
+        await restoreProjectAgentSubscriptions();
       } catch (error, stackTrace) {
         developer.log(
           'Failed to restore project agent after project deletion failed',

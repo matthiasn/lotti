@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -135,6 +136,8 @@ List<Override> _baseOverrides({
   required FutureOr<ProjectRecord?> Function(Ref) recordOverride,
   ProjectDetailController Function()? controllerOverride,
   AgentDomainEntity? projectAgent,
+  Override? projectAgentOverride,
+  ProjectAgentSubscriptionsRestorer? restoreAgentSubscriptions,
   List<Override> extraOverrides = const [],
 }) {
   return [
@@ -147,8 +150,12 @@ List<Override> _baseOverrides({
     projectDetailNowProvider.overrideWithValue(
       () => DateTime(2026, 3, 28, 9, 30),
     ),
-    projectAgentProvider(_projectId).overrideWith(
-      (ref) async => projectAgent,
+    projectAgentOverride ??
+        projectAgentProvider(_projectId).overrideWith(
+          (ref) async => projectAgent,
+        ),
+    projectAgentSubscriptionsRestorerProvider.overrideWithValue(
+      restoreAgentSubscriptions ?? () async {},
     ),
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => Stream.value(false),
@@ -181,6 +188,8 @@ void main() {
     ProjectRecord? record,
     ProjectDetailController Function()? controllerOverride,
     AgentDomainEntity? projectAgent,
+    Override? projectAgentOverride,
+    ProjectAgentSubscriptionsRestorer? restoreAgentSubscriptions,
     List<Override> extraOverrides = const [],
   }) async {
     final overrides = _baseOverrides(
@@ -188,6 +197,8 @@ void main() {
       recordOverride: (_) => record,
       controllerOverride: controllerOverride,
       projectAgent: projectAgent,
+      projectAgentOverride: projectAgentOverride,
+      restoreAgentSubscriptions: restoreAgentSubscriptions,
       extraOverrides: extraOverrides,
     );
 
@@ -542,6 +553,76 @@ void main() {
           );
           expect(content.hasProjectAgent, isFalse);
           expect(content.isRefreshingReport, isFalse);
+        },
+      );
+
+      testWidgets(
+        'preserves the project agent while its provider reloads',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          beamToNamedOverride = (_) {};
+          addTearDown(() => beamToNamedOverride = null);
+          final reloadGeneration = StateProvider<int>((ref) => 0);
+          final pendingReload = Completer<AgentDomainEntity?>();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = MockAgentService();
+          when(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenAnswer((_) async => true);
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgentOverride:
+                projectAgentProvider(
+                  _projectId,
+                ).overrideWith((ref) async {
+                  if (ref.watch(reloadGeneration) == 0) return identity;
+                  return pendingReload.future;
+                }),
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(ProjectDetailsPage)),
+          );
+
+          container.read(reloadGeneration.notifier).state = 1;
+          await tester.pump();
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+          expect(content.hasProjectAgent, isTrue);
+          content.onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).called(1);
+          pendingReload.complete(identity);
         },
       );
 
@@ -1044,23 +1125,29 @@ void main() {
           addTearDown(tester.view.resetDevicePixelRatio);
           final mockRepository = MockProjectRepository();
           final mockAgentService = MockAgentService();
-          final mockProjectAgentService = MockProjectAgentService();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
+          final lifecycleEvents = <String>[];
           when(
             () => mockAgentService.destroyAgent(identity.agentId),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('destroy');
+            return true;
+          });
           when(
             () => mockRepository.deleteProject(
               any(),
               deletedAt: any(named: 'deletedAt'),
             ),
-          ).thenAnswer((_) async => false);
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('delete');
+            return false;
+          });
           when(
             () => mockAgentService.resumeAgent(identity.agentId),
-          ).thenAnswer((_) async => true);
-          when(
-            mockProjectAgentService.restoreSubscriptions,
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('resume');
+            return true;
+          });
           await pumpPageWithData(
             tester,
             controllerState: ProjectDetailState(
@@ -1072,12 +1159,12 @@ void main() {
             ),
             record: testRecord,
             projectAgent: identity,
+            restoreAgentSubscriptions: () async {
+              lifecycleEvents.add('restore');
+            },
             extraOverrides: [
               projectRepositoryProvider.overrideWithValue(mockRepository),
               agentServiceProvider.overrideWithValue(mockAgentService),
-              projectAgentServiceProvider.overrideWithValue(
-                mockProjectAgentService,
-              ),
             ],
           );
 
@@ -1094,15 +1181,7 @@ void main() {
             find.text('Failed to delete project. Please try again.'),
             findsOneWidget,
           );
-          verifyInOrder([
-            () => mockAgentService.destroyAgent(identity.agentId),
-            () => mockRepository.deleteProject(
-              testProject,
-              deletedAt: any(named: 'deletedAt'),
-            ),
-            () => mockAgentService.resumeAgent(identity.agentId),
-            mockProjectAgentService.restoreSubscriptions,
-          ]);
+          expect(lifecycleEvents, ['destroy', 'delete', 'resume', 'restore']);
         },
       );
 
@@ -1116,8 +1195,8 @@ void main() {
           addTearDown(tester.view.resetDevicePixelRatio);
           final mockRepository = MockProjectRepository();
           final mockAgentService = MockAgentService();
-          final mockProjectAgentService = MockProjectAgentService();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
+          var restoreCalls = 0;
           when(
             () => mockAgentService.destroyAgent(identity.agentId),
           ).thenAnswer((_) async => true);
@@ -1141,12 +1220,10 @@ void main() {
             ),
             record: testRecord,
             projectAgent: identity,
+            restoreAgentSubscriptions: () async => restoreCalls++,
             extraOverrides: [
               projectRepositoryProvider.overrideWithValue(mockRepository),
               agentServiceProvider.overrideWithValue(mockAgentService),
-              projectAgentServiceProvider.overrideWithValue(
-                mockProjectAgentService,
-              ),
             ],
           );
 
@@ -1166,7 +1243,77 @@ void main() {
           verify(
             () => mockAgentService.resumeAgent(identity.agentId),
           ).called(1);
-          verifyNever(mockProjectAgentService.restoreSubscriptions);
+          expect(restoreCalls, 0);
+        },
+      );
+
+      testWidgets(
+        'restores subscriptions after an unmount during failed deletion',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final deletion = Completer<bool>();
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = MockAgentService();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          var restoreCalls = 0;
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer((_) => deletion.future);
+          when(
+            () => mockAgentService.resumeAgent(identity.agentId),
+          ).thenAnswer((_) async => true);
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgent: identity,
+            restoreAgentSubscriptions: () async => restoreCalls++,
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pump();
+          verify(
+            () => mockRepository.deleteProject(
+              testProject,
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).called(1);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          deletion.complete(false);
+          await tester.pump();
+          await tester.pump();
+
+          verify(
+            () => mockAgentService.resumeAgent(identity.agentId),
+          ).called(1);
+          expect(restoreCalls, 1);
         },
       );
 
