@@ -202,6 +202,39 @@ void main() {
       await tester.tap(find.byType(OutlinedMetaTag));
       expect(taps, 1);
     });
+
+    testWidgets('interactive tags stay shrink-wrapped inside a Wrap', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          Wrap(
+            children: [
+              OutlinedMetaTag(
+                icon: Icons.folder_outlined,
+                label: 'Category',
+                onTap: () {},
+              ),
+              OutlinedMetaTag(
+                icon: Icons.calendar_today_outlined,
+                label: 'Target date',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getCenter(find.text('Category')).dy,
+        tester.getCenter(find.text('Target date')).dy,
+      );
+      expect(
+        tester.getSize(find.byType(OutlinedMetaTag).first).width,
+        lessThan(200),
+      );
+    });
   });
 
   group('ProjectHealthBandTag', () {

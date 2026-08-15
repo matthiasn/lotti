@@ -1109,7 +1109,7 @@ void main() {
           ],
         );
 
-        tester
+        final addFuture = tester
             .widget<ProjectMobileDetailContent>(
               find.byType(ProjectMobileDetailContent),
             )
@@ -1120,6 +1120,7 @@ void main() {
         expect(capturedPaths, isEmpty);
 
         assignment.complete();
+        await addFuture;
         await tester.pump();
 
         expect(capturedPaths, ['/tasks/created-task']);
@@ -1150,7 +1151,7 @@ void main() {
           ],
         );
 
-        tester
+        await tester
             .widget<ProjectMobileDetailContent>(
               find.byType(ProjectMobileDetailContent),
             )
@@ -1184,7 +1185,7 @@ void main() {
           ],
         );
 
-        tester
+        await tester
             .widget<ProjectMobileDetailContent>(
               find.byType(ProjectMobileDetailContent),
             )

@@ -61,7 +61,7 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
         agentState: (value) => value.nextWakeAt ?? value.scheduledWakeAt,
       );
 
-      final aiSummary = _resolveAiSummary(project, report);
+      final aiSummary = _resolveAiSummary(report);
 
       final completedTaskCount = linkedTasks.where(_isCompletedTask).length;
       final blockedTaskCount = linkedTasks.where(_isBlockedTask).length;
@@ -75,7 +75,7 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
         totalTaskCount: linkedTasks.length,
         blockedTaskCount: blockedTaskCount,
         aiSummary: aiSummary,
-        reportContent: report?.content.trim() ?? aiSummary,
+        reportContent: report?.content.trim() ?? '',
         reportUpdatedAt: report?.createdAt ?? project.meta.updatedAt,
         highlightedTaskSummaries: linkedTasks
             .map(
@@ -97,20 +97,9 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
       );
     });
 
-String _resolveAiSummary(ProjectEntry project, AgentReportEntity? report) {
-  final candidates = [
-    report?.tldr,
-    project.entryText?.plainText,
-  ];
-
-  for (final candidate in candidates) {
-    final trimmed = candidate?.trim();
-    if (trimmed != null && trimmed.isNotEmpty) {
-      return trimmed;
-    }
-  }
-
-  return '';
+String _resolveAiSummary(AgentReportEntity? report) {
+  final summary = report?.tldr?.trim();
+  return summary == null || summary.isEmpty ? '' : summary;
 }
 
 bool _isCompletedTask(Task task) => switch (task.data.status) {

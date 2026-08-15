@@ -62,7 +62,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onArchive;
   final VoidCallback? onDelete;
-  final VoidCallback? onAddTask;
+  final Future<void> Function()? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
   final bool isRefreshingReport;
@@ -77,6 +77,19 @@ class ProjectMobileDetailContent extends StatefulWidget {
 class _ProjectMobileDetailContentState
     extends State<ProjectMobileDetailContent> {
   late final ScrollController _scrollController = ScrollController();
+  bool _isAddingTask = false;
+
+  Future<void> _handleAddTask() async {
+    final onAddTask = widget.onAddTask;
+    if (onAddTask == null || _isAddingTask) return;
+
+    setState(() => _isAddingTask = true);
+    try {
+      await onAddTask();
+    } finally {
+      if (mounted) setState(() => _isAddingTask = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -230,7 +243,10 @@ class _ProjectMobileDetailContentState
                           ProjectTasksSliverPanel(
                             record: widget.record,
                             onTaskTap: widget.onTaskTap,
-                            onAddTask: widget.onAddTask,
+                            onAddTask: widget.onAddTask == null
+                                ? null
+                                : _handleAddTask,
+                            isAddingTask: _isAddingTask,
                           ),
                         ],
                       ),

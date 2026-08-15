@@ -319,7 +319,11 @@ class _InteractiveTagSurface extends StatelessWidget {
           onTap: onTap,
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-            child: Align(alignment: Alignment.centerLeft, child: child),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              child: child,
+            ),
           ),
         ),
       ),

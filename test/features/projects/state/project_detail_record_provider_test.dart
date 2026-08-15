@@ -346,73 +346,79 @@ void main() {
         expect(result!.aiSummary, 'Short TLDR from report');
       });
 
-      test('falls back to project text when TLDR is null', () async {
-        final project =
-            makeTestProject(
-              id: projectId,
-              categoryId: categoryId,
-            ).copyWith(
-              entryText: const EntryText(
-                plainText: 'Project description text',
-              ),
-            );
+      test(
+        'does not present project text as AI summary when TLDR is null',
+        () async {
+          final project =
+              makeTestProject(
+                id: projectId,
+                categoryId: categoryId,
+              ).copyWith(
+                entryText: const EntryText(
+                  plainText: 'Project description text',
+                ),
+              );
 
-        final agent = makeAgent();
-        final report = makeTestReport(
-          agentId: agentId,
-          content: '# Full report body',
-        );
+          final agent = makeAgent();
+          final report = makeTestReport(
+            agentId: agentId,
+            content: '# Full report body',
+          );
 
-        final container = createContainer(
-          detailState: makeDetailState(
-            project: project,
-          ),
-          agent: agent,
-          reportEntity: report,
-        );
+          final container = createContainer(
+            detailState: makeDetailState(
+              project: project,
+            ),
+            agent: agent,
+            reportEntity: report,
+          );
 
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
+          final result = await container.read(
+            projectDetailRecordProvider(projectId).future,
+          );
 
-        expect(result!.aiSummary, 'Project description text');
-      });
-
-      test('falls back to project text when TLDR is empty', () async {
-        final project =
-            makeTestProject(
-              id: projectId,
-              categoryId: categoryId,
-            ).copyWith(
-              entryText: const EntryText(
-                plainText: 'Project description text',
-              ),
-            );
-
-        final agent = makeAgent();
-        final report = makeTestReport(
-          agentId: agentId,
-          content: '# Full report body',
-          tldr: '   ',
-        );
-
-        final container = createContainer(
-          detailState: makeDetailState(
-            project: project,
-          ),
-          agent: agent,
-          reportEntity: report,
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.aiSummary, 'Project description text');
-      });
+          expect(result!.aiSummary, isEmpty);
+        },
+      );
 
       test(
-        'returns empty string when both TLDR and project text are absent',
+        'does not present project text as AI summary when TLDR is empty',
+        () async {
+          final project =
+              makeTestProject(
+                id: projectId,
+                categoryId: categoryId,
+              ).copyWith(
+                entryText: const EntryText(
+                  plainText: 'Project description text',
+                ),
+              );
+
+          final agent = makeAgent();
+          final report = makeTestReport(
+            agentId: agentId,
+            content: '# Full report body',
+            tldr: '   ',
+          );
+
+          final container = createContainer(
+            detailState: makeDetailState(
+              project: project,
+            ),
+            agent: agent,
+            reportEntity: report,
+          );
+
+          final result = await container.read(
+            projectDetailRecordProvider(projectId).future,
+          );
+
+          expect(result!.aiSummary, isEmpty);
+        },
+      );
+
+      test(
+        'returns empty string when no report exists',
         () async {
           final project = makeTestProject(
             id: projectId,
@@ -494,7 +500,7 @@ void main() {
       });
 
       test(
-        'falls back to aiSummary for reportContent when no report',
+        'keeps reportContent empty when only project text exists',
         () async {
           final project =
               makeTestProject(
@@ -516,7 +522,8 @@ void main() {
             projectDetailRecordProvider(projectId).future,
           );
 
-          expect(result!.reportContent, 'Project summary text');
+          expect(result!.aiSummary, isEmpty);
+          expect(result.reportContent, isEmpty);
         },
       );
 

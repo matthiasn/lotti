@@ -337,6 +337,72 @@ void main() {
       },
     );
 
+    test(
+      'failed save discards to a concurrently reloaded persisted baseline',
+      () async {
+        final updateResult = Completer<bool>();
+        when(
+          () => mockRepo.updateProject(any()),
+        ).thenAnswer((_) => updateResult.future);
+        final container = await createLoadedContainer();
+        final notifier = container.read(
+          projectDetailControllerProvider(projectId).notifier,
+        );
+        final saveFuture = (notifier..updateTitle('Unsaved optimistic title'))
+            .saveChanges();
+        expect(
+          container.read(projectDetailControllerProvider(projectId)).isSaving,
+          isTrue,
+        );
+
+        final syncedProject = makeTestProject(id: projectId).copyWith(
+          data: makeTestProject(
+            id: projectId,
+          ).data.copyWith(title: 'Title received from sync'),
+        );
+        final syncedTask = makeTestTask(id: 'synced-task');
+        when(
+          () => mockRepo.getProjectById(projectId),
+        ).thenAnswer((_) async => syncedProject);
+        when(
+          () => mockRepo.getTasksForProject(projectId),
+        ).thenAnswer((_) async => [syncedTask]);
+        final reloadObserved = Completer<void>();
+        final subscription = container.listen(
+          projectDetailControllerProvider(projectId),
+          (_, next) {
+            if (next.linkedTasks.any((task) => task.id == syncedTask.id) &&
+                !reloadObserved.isCompleted) {
+              reloadObserved.complete();
+            }
+          },
+        );
+
+        updateStreamController.add({projectId});
+        await reloadObserved.future;
+        subscription.close();
+        expect(
+          container
+              .read(projectDetailControllerProvider(projectId))
+              .project!
+              .data
+              .title,
+          'Unsaved optimistic title',
+        );
+
+        updateResult.complete(false);
+        await saveFuture;
+        notifier.discardChanges();
+
+        final restored = container.read(
+          projectDetailControllerProvider(projectId),
+        );
+        expect(restored.project!.data.title, 'Title received from sync');
+        expect(restored.hasChanges, isFalse);
+        expect(restored.error, isNull);
+      },
+    );
+
     test('saveChanges sets updateFailed on exception', () async {
       when(
         () => mockRepo.updateProject(any()),

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -203,6 +206,47 @@ void main() {
           'Keep the habitat launch work aligned with Mission Control.',
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('prevents duplicate Add task requests while one is pending', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      var addRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onAddTask: () {
+              addRequests++;
+              return pending.future;
+            },
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+
+      await tester.tap(addButton);
+      await tester.pump();
+      await tester.tap(addButton, warnIfMissed: false);
+      await tester.pump();
+
+      expect(addRequests, 1);
+      expect(
+        tester.widget<DesignSystemButton>(addButton).isLoading,
+        isTrue,
+      );
+
+      pending.complete();
+      await tester.pump();
+      expect(
+        tester.widget<DesignSystemButton>(addButton).isLoading,
+        isFalse,
       );
     });
 

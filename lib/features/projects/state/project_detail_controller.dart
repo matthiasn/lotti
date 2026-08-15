@@ -55,9 +55,10 @@ final projectDetailControllerProvider = NotifierProvider.autoDispose
 /// changed), then promotes it to the new baseline.
 ///
 /// It subscribes to the repository update stream and reloads on changes to this
-/// project, but a reload preserves unsaved edits: the baseline refreshes only
-/// when there are no pending changes, so a concurrent sync never clobbers what
-/// the user is typing.
+/// project. A reload preserves the pending edit shown to the user while still
+/// refreshing the persisted baseline underneath it, so concurrent sync never
+/// clobbers what the user is typing and a later discard restores the newest
+/// persisted project.
 class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectDetailController(this._projectId);
 
@@ -98,9 +99,14 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
 
       if (project != null) {
         if (_originalProject == null || !_hasChanges()) {
-          // First load or clean reload: update both baseline and pending
+          // First load or clean reload: update both baseline and pending.
           _originalProject = project;
           _pendingProject = project;
+        } else {
+          // Preserve the user's pending edit, but retain the concurrently
+          // fetched persisted baseline so a failed save can roll back to the
+          // newest synchronized project rather than an older snapshot.
+          _originalProject = project;
         }
       }
 

@@ -13,12 +13,14 @@ class ProjectTasksPanel extends StatelessWidget {
     required this.record,
     this.onTaskTap,
     this.onAddTask,
+    this.isAddingTask = false,
     super.key,
   });
 
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
   final VoidCallback? onAddTask;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +32,7 @@ class ProjectTasksPanel extends StatelessWidget {
         child: _ProjectTasksPanelHeader(
           record: record,
           onAddTask: onAddTask,
+          isAddingTask: isAddingTask,
         ),
       ),
       itemCount: record.highlightedTaskSummaries.length,
@@ -59,12 +62,14 @@ class ProjectTasksSliverPanel extends StatelessWidget {
     required this.record,
     this.onTaskTap,
     this.onAddTask,
+    this.isAddingTask = false,
     super.key,
   });
 
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
   final VoidCallback? onAddTask;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +95,7 @@ class ProjectTasksSliverPanel extends StatelessWidget {
               child: _ProjectTasksPanelHeader(
                 record: record,
                 onAddTask: onAddTask,
+                isAddingTask: isAddingTask,
               ),
             ),
           ),
@@ -143,10 +149,12 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
   const _ProjectTasksPanelHeader({
     required this.record,
     this.onAddTask,
+    this.isAddingTask = false,
   });
 
   final ProjectRecord record;
   final VoidCallback? onAddTask;
+  final bool isAddingTask;
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +198,8 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
                 variant: DesignSystemButtonVariant.secondary,
                 size: DesignSystemButtonSize.dense,
                 tapTargetSize: MaterialTapTargetSize.padded,
-                onPressed: onAddTask,
+                isLoading: isAddingTask,
+                onPressed: isAddingTask ? null : onAddTask,
               ),
             ],
           ],
