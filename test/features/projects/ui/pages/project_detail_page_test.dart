@@ -805,6 +805,28 @@ void main() {
           () => mockNavService.beamToNamed('/projects/test-project-id'),
         ).called(1);
       });
+
+      testWidgets('native back honors the supplied project workspace route', (
+        tester,
+      ) async {
+        final mockNavService = MockNavService();
+        when(
+          () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
+        ).thenReturn(null);
+        getIt.registerSingleton<NavService>(mockNavService);
+        await pumpPage(
+          tester,
+          controllerState: defaultState(),
+          returnPath: '/projects/test-project-id',
+        );
+
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+
+        verify(
+          () => mockNavService.beamToNamed('/projects/test-project-id'),
+        ).called(1);
+      });
     });
 
     group('error display', () {

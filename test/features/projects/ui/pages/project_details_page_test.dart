@@ -10,6 +10,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -207,6 +208,45 @@ void main() {
   }
 
   group('ProjectDetailsPage', () {
+    test(
+      'default task creator uses the project-scoped creation path',
+      () async {
+        final mockRepository = MockProjectRepository();
+        getIt.registerSingleton<ProjectRepository>(mockRepository);
+        when(
+          () => mockRepository.getProjectById(_projectId),
+        ).thenAnswer((_) async => null);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final created = await container.read(projectTaskCreatorProvider)(
+          _projectId,
+        );
+
+        expect(created, isNull);
+        verify(() => mockRepository.getProjectById(_projectId)).called(1);
+      },
+    );
+
+    test(
+      'default task-agent assigner safely skips uncategorized tasks',
+      () async {
+        final mockService = MockTaskAgentService();
+        final container = ProviderContainer(
+          overrides: [
+            taskAgentServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(projectTaskAgentAssignerProvider)(
+          makeTestTask(id: 'uncategorized-task'),
+        );
+
+        verifyZeroInteractions(mockService);
+      },
+    );
+
     group('loading state', () {
       testWidgets(
         'shows CircularProgressIndicator when controller is loading with '
@@ -875,15 +915,122 @@ void main() {
 
         await tester.tap(find.text('Delete').last);
         await tester.pumpAndSettle();
+        verifyInOrder([
+          () => mockAgentService.destroyAgent(identity.agentId),
+          () => mockRepository.deleteProject(
+            testProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ]);
+      });
+
+      testWidgets('an already-absent agent still permits project deletion', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(430, 1200)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        beamToNamedOverride = (_) {};
+        addTearDown(() => beamToNamedOverride = null);
+        final mockRepository = MockProjectRepository();
+        final mockAgentService = MockAgentService();
+        final identity = makeTestIdentity(agentId: 'agent-project-1');
+        when(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAgentService.destroyAgent(identity.agentId),
+        ).thenAnswer((_) async => false);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          projectAgent: identity,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project deleted'), findsOneWidget);
         verify(
           () => mockRepository.deleteProject(
             testProject,
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
-        verify(
+      });
+
+      testWidgets('agent retirement errors abort project deletion', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(430, 1200)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final mockRepository = MockProjectRepository();
+        final mockAgentService = MockAgentService();
+        final identity = makeTestIdentity(agentId: 'agent-project-1');
+        when(
           () => mockAgentService.destroyAgent(identity.agentId),
-        ).called(1);
+        ).thenThrow(StateError('agent cleanup failed'));
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          projectAgent: identity,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Failed to delete project. Please try again.'),
+          findsOneWidget,
+        );
+        verifyNever(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        );
       });
 
       testWidgets('failed deletion reports a delete-specific error', (
@@ -936,6 +1083,7 @@ void main() {
       ) async {
         final task = makeTestTask(id: 'created-task', title: 'Created task');
         final capturedPaths = <String>[];
+        final assignment = Completer<void>();
         Task? assignedTask;
         beamToNamedOverride = capturedPaths.add;
         addTearDown(() => beamToNamedOverride = null);
@@ -956,6 +1104,7 @@ void main() {
             }),
             projectTaskAgentAssignerProvider.overrideWithValue((task) async {
               assignedTask = task;
+              await assignment.future;
             }),
           ],
         );
@@ -968,7 +1117,49 @@ void main() {
         await tester.pump();
 
         expect(assignedTask?.meta.id, 'created-task');
+        expect(capturedPaths, isEmpty);
+
+        assignment.complete();
+        await tester.pump();
+
         expect(capturedPaths, ['/tasks/created-task']);
+      });
+
+      testWidgets('agent assignment failure keeps the created task closed', (
+        tester,
+      ) async {
+        final task = makeTestTask(id: 'created-task', title: 'Created task');
+        final capturedPaths = <String>[];
+        beamToNamedOverride = capturedPaths.add;
+        addTearDown(() => beamToNamedOverride = null);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectTaskCreatorProvider.overrideWithValue((_) async => task),
+            projectTaskAgentAssignerProvider.overrideWithValue((_) async {
+              throw StateError('assignment failed');
+            }),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onAddTask!();
+        await tester.pump();
+        await tester.pump();
+
+        expect(capturedPaths, isEmpty);
+        expect(find.text('Error'), findsOneWidget);
       });
 
       testWidgets('add task failure stays put and reports an error', (

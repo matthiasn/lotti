@@ -161,6 +161,9 @@ void main() {
           label: 'Archive',
           isButton: true,
           hasEnabledState: true,
+          // Explicitly assert the disabled value, not just its presence.
+          // ignore: avoid_redundant_argument_values
+          isEnabled: false,
         ),
       );
     });

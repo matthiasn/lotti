@@ -193,9 +193,10 @@ content.
 
 Project detail actions preserve workspace continuity. Edit carries an explicit
 return path back to the selected project, and Add task creates a project-linked
-task, applies the category's default task agent, then opens the task. Soft
-deleting a project also retires its project agent so its runtime subscriptions
-and pending work cannot outlive the project.
+task, awaits the category's default task-agent assignment, then opens the task.
+Project deletion retires its project agent before soft-deleting the project, so
+runtime subscriptions and pending work cannot outlive the project. A retirement
+error aborts deletion instead of claiming success.
 
 # Health is agent-authored
 

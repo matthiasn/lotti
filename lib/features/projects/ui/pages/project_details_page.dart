@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -291,19 +290,6 @@ class ProjectDetailsPage extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
-    final deleted = await repository.deleteProject(
-      project,
-      deletedAt: clock.now(),
-    );
-    if (!context.mounted) return;
-    if (!deleted) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.projectDeleteFailed,
-      );
-      return;
-    }
-
     if (projectAgentId != null && agentService != null) {
       try {
         final retired = await agentService.destroyAgent(projectAgentId);
@@ -320,7 +306,26 @@ class ProjectDetailsPage extends ConsumerWidget {
           error: error,
           stackTrace: stackTrace,
         );
+        if (!context.mounted) return;
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectDeleteFailed,
+        );
+        return;
       }
+    }
+
+    final deleted = await repository.deleteProject(
+      project,
+      deletedAt: clock.now(),
+    );
+    if (!context.mounted) return;
+    if (!deleted) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectDeleteFailed,
+      );
+      return;
     }
 
     if (!context.mounted) return;
@@ -343,7 +348,23 @@ class ProjectDetailsPage extends ConsumerWidget {
       );
       return;
     }
-    unawaited(assignTaskAgent(task));
+    try {
+      await assignTaskAgent(task);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to assign category agent to project task',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+      return;
+    }
+    if (!context.mounted) return;
     beamToNamed('/tasks/${task.meta.id}');
   }
 

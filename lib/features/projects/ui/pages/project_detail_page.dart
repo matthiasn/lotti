@@ -195,9 +195,10 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     }
 
     return PopScope(
-      canPop: widget.categoryId == null,
+      canPop: widget.categoryId == null && widget.returnPath == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && widget.categoryId != null) {
+        if (!didPop &&
+            (widget.categoryId != null || widget.returnPath != null)) {
           _handleBackNavigation();
         }
       },
