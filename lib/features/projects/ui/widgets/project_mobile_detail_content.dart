@@ -32,7 +32,8 @@ import 'package:lotti/utils/color.dart';
 /// pure read-only showcase. [currentTime] feeds the report's relative "updated
 /// X ago" label. On wide windows, the header and scrollable body use the shared
 /// detail reading measure instead of stretching report text and cards edge to
-/// edge.
+/// edge. [hasProjectAgent] distinguishes an unassessed agent from a project
+/// that cannot produce a report yet.
 class ProjectMobileDetailContent extends StatefulWidget {
   const ProjectMobileDetailContent({
     required this.record,
@@ -47,6 +48,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onAddTask,
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
+    this.hasProjectAgent = true,
     this.isRefreshingReport = false,
     this.isSaving = false,
     this.onTaskTap,
@@ -65,6 +67,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final Future<void> Function()? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
+  final bool hasProjectAgent;
   final bool isRefreshingReport;
   final bool isSaving;
   final ValueChanged<TaskSummary>? onTaskTap;
@@ -81,7 +84,7 @@ class _ProjectMobileDetailContentState
 
   Future<void> _handleAddTask() async {
     final onAddTask = widget.onAddTask;
-    if (onAddTask == null || _isAddingTask) return;
+    if (onAddTask == null || widget.isSaving || _isAddingTask) return;
 
     setState(() => _isAddingTask = true);
     try {
@@ -189,6 +192,7 @@ class _ProjectMobileDetailContentState
                             child: widget.record.healthMetrics == null
                                 ? ProjectHealthEmptyState(
                                     onRunReport: widget.onRefreshReport,
+                                    hasAgent: widget.hasProjectAgent,
                                     isRunningReport: widget.isRefreshingReport,
                                   )
                                 : HealthPanel(
@@ -246,6 +250,7 @@ class _ProjectMobileDetailContentState
                             onAddTask: widget.onAddTask == null
                                 ? null
                                 : _handleAddTask,
+                            isAddTaskEnabled: !widget.isSaving,
                             isAddingTask: _isAddingTask,
                           ),
                         ],

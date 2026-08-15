@@ -193,11 +193,13 @@ content.
 
 Project detail actions preserve workspace continuity. Edit carries an explicit
 return path back to the selected project, and Add task creates a project-linked
-task, serializes concurrent taps, awaits the category's default task-agent
-assignment, then opens the task. Project deletion retires its project agent
-before soft-deleting the project, so runtime subscriptions and pending work
-cannot outlive the project. A retirement error aborts deletion instead of
-claiming success.
+task with the project's privacy, serializes concurrent taps and project saves,
+awaits the category's default task-agent assignment, then opens the task.
+Project deletion retires its project agent before soft-deleting the project,
+so runtime subscriptions and pending work cannot outlive the project. A
+retirement error aborts deletion instead of claiming success; a failed project
+write compensates by resuming the retired agent and restoring its runtime
+subscriptions.
 
 # Health is agent-authored
 
@@ -220,7 +222,9 @@ neutral unassessed state** rather than falling back to invented local
 heuristics. Once metrics exist, the detail leads with the agent-authored band,
 rationale and optional confidence; it never converts a categorical assessment
 into a fabricated numeric score. Blocker navigation appears only when blocked
-tasks exist and opens the first actionable blocker.
+tasks exist and opens the first actionable blocker. A project with no agent
+gets distinct provisioning guidance rather than an unavailable Run report
+instruction.
 
 The user-authored project description and the agent report are distinct fields
 in the detail read model. A missing report renders the neutral report-empty

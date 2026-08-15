@@ -111,6 +111,64 @@ void main() {
       expect(menu.items.every((item) => item.onTap == null), isTrue);
     });
 
+    testWidgets('disables Add task while an inline save runs', (tester) async {
+      var addRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onAddTask: () async => addRequests++,
+            isSaving: true,
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+
+      expect(
+        tester.widget<DesignSystemButton>(addButton).onPressed,
+        isNull,
+      );
+      await tester.tap(addButton, warnIfMissed: false);
+      await tester.pump();
+      expect(addRequests, 0);
+    });
+
+    testWidgets('rejects a stale Add task callback after saving starts', (
+      tester,
+    ) async {
+      var addRequests = 0;
+      const contentKey = ValueKey('project-detail');
+      Widget content({required bool isSaving}) => ProjectMobileDetailContent(
+        key: contentKey,
+        record: makeTestProjectRecord(),
+        currentTime: DateTime(2026, 3, 28, 1, 18),
+        onAddTask: () async => addRequests++,
+        isSaving: isSaving,
+      );
+
+      await tester.pumpWidget(
+        wrap(content(isSaving: false), size: const Size(430, 1200)),
+      );
+      await tester.pump();
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+      final staleCallback = tester
+          .widget<DesignSystemButton>(addButton)
+          .onPressed!;
+
+      await tester.pumpWidget(
+        wrap(content(isSaving: true), size: const Size(430, 1200)),
+      );
+      staleCallback();
+      await tester.pump();
+
+      expect(addRequests, 0);
+    });
+
     testWidgets(
       'marks the empty-health report action busy while the agent runs',
       (
@@ -178,6 +236,32 @@ void main() {
       expect(find.byType(HealthPanel), findsNothing);
       expect(find.text('No health report yet'), findsOneWidget);
       expect(find.text('Health Score'), findsNothing);
+    });
+
+    testWidgets('explains missing health when no project agent exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            hasProjectAgent: false,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(
+          'No project agent has been provisioned for this project yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(DesignSystemButton, 'Run report'),
+        findsNothing,
+      );
     });
 
     testWidgets('renders the user-authored project description', (

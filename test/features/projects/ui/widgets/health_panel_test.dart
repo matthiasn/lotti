@@ -158,6 +158,26 @@ void main() {
   });
 
   group('ProjectHealthEmptyState', () {
+    testWidgets('shows distinct guidance when the project has no agent', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const ProjectHealthEmptyState(
+            hasAgent: false,
+          ),
+        ),
+      );
+
+      expect(
+        find.text(
+          'No project agent has been provisioned for this project yet.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Run report'), findsNothing);
+    });
+
     testWidgets(
       'keeps the report action visible but non-interactive while busy',
       (

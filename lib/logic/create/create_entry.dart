@@ -73,11 +73,12 @@ Future<JournalEntity?> createChecklist({
 /// the task is never briefly nameless; a non-empty title is also indexed for
 /// full-text search here, which nothing on the create path otherwise does.
 ///
-/// [inheritContextFrom] names a parent task whose project *and* privacy the
-/// new task adopts, without writing a link to it. [linkedId] does both
-/// together; callers that own their own linking (the link picker writes one
-/// typed edge) would otherwise have to unpick a plain link to get the context
-/// across.
+/// An explicit [projectId] makes that project's category and privacy
+/// authoritative for the new task. Otherwise, [inheritContextFrom] names a
+/// parent task whose project *and* privacy the new task adopts, without
+/// writing a link to it. [linkedId] does both together; callers that own their
+/// own linking (the link picker writes one typed edge) would otherwise have to
+/// unpick a plain link to get the context across.
 Future<Task?> createTask({
   String? linkedId,
   String? categoryId,
@@ -93,13 +94,15 @@ Future<Task?> createTask({
       ? _createProjectRepository()
       : null;
   var effectiveCategoryId = categoryId;
+  bool? inheritedPrivate;
   final nonEmptyLabelIds = labelIds
       ?.where((id) => id.isNotEmpty)
       .toList(growable: false);
 
-  // Project links require tasks and projects to share a category. Resolve the
-  // project before creating the task and treat its category as authoritative,
-  // including when the filter context also supplies a conflicting category.
+  // Project links require tasks and projects to share category and privacy.
+  // Resolve the project before creating the task and treat both fields as
+  // authoritative, including when the filter context supplies a conflicting
+  // category.
   if (projectId != null) {
     ProjectEntry? project;
     try {
@@ -119,6 +122,7 @@ Future<Task?> createTask({
       return null;
     }
     effectiveCategoryId = project.meta.categoryId;
+    inheritedPrivate = project.meta.private;
   }
 
   // Look up category defaults for profile inheritance.
@@ -126,12 +130,12 @@ Future<Task?> createTask({
       ? getIt<EntitiesCacheService>().getCategoryById(effectiveCategoryId)
       : null;
 
-  // Privacy travels with a link-free context too. With a `linkedId`,
+  // Without an explicit project, privacy travels with a link-free context too.
+  // With a `linkedId`,
   // `createDbEntity` copies it off the linked entity; without one the new task
   // persists as public, so a task created from inside a *private* task's
   // picker would expose it.
-  bool? inheritedPrivate;
-  if (inheritContextFrom != null) {
+  if (projectId == null && inheritContextFrom != null) {
     final parent = await getIt<JournalDb>().journalEntityById(
       inheritContextFrom,
     );

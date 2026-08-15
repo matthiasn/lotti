@@ -161,14 +161,19 @@ class HealthPanel extends StatelessWidget {
 }
 
 /// Neutral placeholder shown until a project agent produces a health payload.
+///
+/// When [hasAgent] is false, the copy explains that provisioning is missing
+/// instead of instructing the user to run an unavailable agent.
 class ProjectHealthEmptyState extends StatelessWidget {
   const ProjectHealthEmptyState({
     this.onRunReport,
+    this.hasAgent = true,
     this.isRunningReport = false,
     super.key,
   });
 
   final VoidCallback? onRunReport;
+  final bool hasAgent;
   final bool isRunningReport;
 
   @override
@@ -200,12 +205,14 @@ class ProjectHealthEmptyState extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spacing.step2),
                 Text(
-                  context.messages.projectHealthEmptyBody,
+                  hasAgent
+                      ? context.messages.projectHealthEmptyBody
+                      : context.messages.projectAgentNotProvisioned,
                   style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
-                if (onRunReport != null) ...[
+                if (hasAgent && onRunReport != null) ...[
                   SizedBox(height: tokens.spacing.step4),
                   DesignSystemButton(
                     label: context.messages.projectHealthRunNow,

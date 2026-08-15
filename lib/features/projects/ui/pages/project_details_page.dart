@@ -153,6 +153,7 @@ class ProjectDetailsPage extends ConsumerWidget {
                         identity.agentId,
                       );
                     },
+              hasProjectAgent: identity != null,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,
               onTaskTap: (summary) => beamToNamed(
@@ -290,9 +291,11 @@ class ProjectDetailsPage extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
+    var agentRetired = false;
     if (projectAgentId != null && agentService != null) {
       try {
         final retired = await agentService.destroyAgent(projectAgentId);
+        agentRetired = retired;
         if (!retired) {
           developer.log(
             'Project agent was already absent while deleting its project',
@@ -315,10 +318,39 @@ class ProjectDetailsPage extends ConsumerWidget {
       }
     }
 
-    final deleted = await repository.deleteProject(
-      project,
-      deletedAt: clock.now(),
-    );
+    var deleted = false;
+    try {
+      deleted = await repository.deleteProject(
+        project,
+        deletedAt: clock.now(),
+      );
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to soft-delete project',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    if (!deleted &&
+        agentRetired &&
+        projectAgentId != null &&
+        agentService != null) {
+      try {
+        final resumed = await agentService.resumeAgent(projectAgentId);
+        if (!resumed) {
+          throw StateError('Retired project agent could not be resumed');
+        }
+        await ref.read(projectAgentServiceProvider).restoreSubscriptions();
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to restore project agent after project deletion failed',
+          name: 'ProjectDetailsPage',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
     if (!context.mounted) return;
     if (!deleted) {
       context.showToast(

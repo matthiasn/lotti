@@ -280,6 +280,27 @@ void main() {
       expect((persisted as Task).data.status, isA<TaskInProgress>());
     });
 
+    test('createTask inherits privacy from its explicit project', () async {
+      const projectId = 'private-project';
+      final project = TestProjectFactory.create(
+        id: projectId,
+        categoryId: 'private-category',
+      );
+      await getIt<PersistenceLogic>().createDbEntity(
+        project.copyWith(meta: project.meta.copyWith(private: true)),
+      );
+
+      final task = await createTask(projectId: projectId);
+
+      expect(task, isNotNull);
+      final persisted = await journalDb.journalEntityById(task!.meta.id);
+      expect(persisted?.meta.private, isTrue);
+      expect(
+        (await journalDb.getProjectForTask(task.meta.id))?.meta.id,
+        projectId,
+      );
+    });
+
     test(
       'createTask rejects unresolved explicit projects before writing',
       () async {

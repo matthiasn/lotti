@@ -13,6 +13,7 @@ class ProjectTasksPanel extends StatelessWidget {
     required this.record,
     this.onTaskTap,
     this.onAddTask,
+    this.isAddTaskEnabled = true,
     this.isAddingTask = false,
     super.key,
   });
@@ -20,6 +21,7 @@ class ProjectTasksPanel extends StatelessWidget {
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
   final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
   final bool isAddingTask;
 
   @override
@@ -32,6 +34,7 @@ class ProjectTasksPanel extends StatelessWidget {
         child: _ProjectTasksPanelHeader(
           record: record,
           onAddTask: onAddTask,
+          isAddTaskEnabled: isAddTaskEnabled,
           isAddingTask: isAddingTask,
         ),
       ),
@@ -62,6 +65,7 @@ class ProjectTasksSliverPanel extends StatelessWidget {
     required this.record,
     this.onTaskTap,
     this.onAddTask,
+    this.isAddTaskEnabled = true,
     this.isAddingTask = false,
     super.key,
   });
@@ -69,6 +73,7 @@ class ProjectTasksSliverPanel extends StatelessWidget {
   final ProjectRecord record;
   final ValueChanged<TaskSummary>? onTaskTap;
   final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
   final bool isAddingTask;
 
   @override
@@ -95,6 +100,7 @@ class ProjectTasksSliverPanel extends StatelessWidget {
               child: _ProjectTasksPanelHeader(
                 record: record,
                 onAddTask: onAddTask,
+                isAddTaskEnabled: isAddTaskEnabled,
                 isAddingTask: isAddingTask,
               ),
             ),
@@ -149,11 +155,13 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
   const _ProjectTasksPanelHeader({
     required this.record,
     this.onAddTask,
+    this.isAddTaskEnabled = true,
     this.isAddingTask = false,
   });
 
   final ProjectRecord record;
   final VoidCallback? onAddTask;
+  final bool isAddTaskEnabled;
   final bool isAddingTask;
 
   @override
@@ -199,7 +207,7 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
                 size: DesignSystemButtonSize.dense,
                 tapTargetSize: MaterialTapTargetSize.padded,
                 isLoading: isAddingTask,
-                onPressed: isAddingTask ? null : onAddTask,
+                onPressed: isAddingTask || !isAddTaskEnabled ? null : onAddTask,
               ),
             ],
           ],

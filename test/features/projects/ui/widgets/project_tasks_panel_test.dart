@@ -117,6 +117,26 @@ void main() {
       expect(button.isLoading, isTrue);
       expect(button.onPressed, isNull);
     });
+
+    testWidgets('keeps Add task visible but disabled by its host', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: makeTestProjectRecord(),
+            onAddTask: () {},
+            isAddTaskEnabled: false,
+          ),
+        ),
+      );
+
+      final button = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Add task'),
+      );
+      expect(button.isLoading, isFalse);
+      expect(button.onPressed, isNull);
+    });
   });
 
   group('TaskSummaryRow', () {
