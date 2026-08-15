@@ -674,6 +674,7 @@ class EntryController extends AsyncNotifier<EntryState?> {
     controller = makeController(
       serializedQuill: quill,
       selection: _editorStateService.getSelection(id),
+      markdownPasteEnabled: true,
     );
 
     controller.changes.listen((DocChange event) {

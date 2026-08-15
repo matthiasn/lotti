@@ -1,3 +1,7 @@
+// Flutter Quill marks its clipboard customization seam experimental. This test
+// verifies that Lotti opts into that seam for live entry editors.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 import 'dart:io';
 
@@ -443,6 +447,36 @@ void main() {
             formKey: notifier.formKey,
           ),
         ),
+      );
+    });
+
+    test('entry editor enables Markdown-aware plain-text paste', () async {
+      final localMockJournalRepository = MockJournalRepository();
+      when(
+        () => localMockJournalRepository.getLinkedEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+      final container = makeProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(
+            localMockJournalRepository,
+          ),
+        ],
+      );
+      final provider = entryControllerProvider(testTextEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+
+      await container.read(provider.future);
+      await container.pump();
+
+      expect(
+        notifier.controller.config.clipboardConfig?.onPlainTextPaste,
+        isNotNull,
+      );
+      expect(
+        notifier.controller.config.clipboardConfig?.enableExternalRichPaste,
+        isTrue,
       );
     });
 

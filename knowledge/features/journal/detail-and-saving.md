@@ -1,17 +1,21 @@
 ---
 type: Feature Module
 title: Entry detail and saving
-description: The two-state detail machine, the save path that writes twice for a task, and the date-time editor whose bounds can never desync.
+description: The two-state detail machine, Markdown-aware rich-text paste, the save path that writes twice for a task, and the date-time editor whose bounds can never desync.
 resource: ../../../lib/features/journal/state/entry_controller.dart
 tags: [journal, entry-controller, editor, drafts, datetime]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T01:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-15T00:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: controller
     resource: ../../../lib/features/journal/state/entry_controller.dart
     title: EntryController
-    last_modified: 2026-08-01
+    last_modified: 2026-08-15
+  - id: editor-tools
+    resource: ../../../lib/features/journal/ui/widgets/editor/editor_tools.dart
+    title: Editor conversion helpers
+    last_modified: 2026-08-15
   - id: datetime
     resource: ../../../lib/features/journal/ui/widgets/entry_details/entry_datetime_range.dart
     title: EntryDateTimeRange
@@ -33,6 +37,32 @@ deletion.
 `EditorWidget` contributes the lifecycle-bound **Primary+S** handler next to the
 reusable rich-text editor, so the same command reaches `EntryController.save()`
 whether the editor is on the entry page, in a journal card, or inside a task form.
+
+# Rich-text clipboard precedence
+
+Every live entry controller enables Lotti's Markdown-aware plain-text callback.
+Flutter Quill still owns clipboard dispatch and keeps richer formats first:
+
+```mermaid
+flowchart TD
+  Paste[Clipboard paste] --> HTML{HTML or explicit Markdown available?}
+  HTML -->|yes| Quill[Flutter Quill converts rich flavor to Delta]
+  HTML -->|no| Plain[Read text/plain]
+  Plain --> Detect{Recognized Markdown syntax?}
+  Detect -->|no| Verbatim[Insert ordinary text unchanged]
+  Detect -->|yes| Convert[delta_markdown converts to Delta]
+  Convert --> Code[Restore inline code attributes]
+  Code --> Insert[Replace selection with rich Delta]
+```
+
+The syntax gate recognizes supported block constructs (ATX headings,
+blockquotes, rules, fenced code and lists) and inline constructs (emphasis,
+strikeout, code and links). It deliberately does not claim ordinary prose,
+`#hashtags`, arithmetic asterisks or emoji. The canonical `delta_markdown`
+converter supplies the same headings, emphasis, list, quote and custom divider
+representation already used when loading Markdown-only entries. Its decoder
+predates Flutter Quill's inline-code attribute, so paste protects code spans
+during conversion and restores them as `code: true` operations afterward.
 
 # The state machine has two real states
 

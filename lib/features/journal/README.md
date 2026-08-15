@@ -26,6 +26,9 @@ responses and ratings are all journal entries with different shapes.
 - **Captures quickly.** Create from the button, paste an image from the
   clipboard, drag a file onto an entry, take a screenshot, or start a recording —
   all from the same place.
+- **Keeps pasted reports formatted.** Markdown copied as plain text becomes
+  headings, emphasis, code, quotes, rules and lists in the rich-text editor;
+  ordinary text remains ordinary text.
 - **Shows photos at their natural shape.** The full-screen image viewer contains
   and centers portrait or landscape images, and on iOS and Android it follows
   phone rotation until the viewer closes.

@@ -66,6 +66,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of changing the count; the stepper now adjusts the value on a
   full-width control with proper touch targets, and the sheet stays open
   until Done.
+- **Markdown reports paste as rich text in the editor.** Headings, bold text,
+  inline code, quotes, horizontal rules and lists copied as Markdown source now
+  keep their formatting instead of appearing with the punctuation intact.
+  Ordinary plain-text paste and richer HTML clipboard content keep their
+  existing behavior.
 - **A reading inside its target no longer shows as missed.** The day sheet
   printed "122" against a 125 ceiling and crossed it out, because the mark
   came from the rolling average rather than the reading beside it — directly
