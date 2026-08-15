@@ -67,6 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
 
 ### Fixed
+- **Toast borders follow their rounded corners cleanly.** Countdown and tone
+  indicator strips no longer paint over the toast outline at the left corners,
+  removing the doubled edge that was most visible at the top-left.
 - **The "At least N of M" stepper no longer closes the sheet.** Tapping plus
   or minus in "How this goal comes together" did change the count, but also
   dismissed the sheet with every tap; the stepper now adjusts the value on a

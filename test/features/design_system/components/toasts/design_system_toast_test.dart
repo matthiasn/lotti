@@ -445,6 +445,34 @@ void main() {
     });
 
     group('countdown bar', () {
+      testWidgets('paints the rounded border above the tone strips', (
+        tester,
+      ) async {
+        await _pumpToast(
+          tester,
+          tone: DesignSystemToastTone.warning,
+          description: null,
+          countdownDuration: const Duration(seconds: 5),
+        );
+
+        final borderBox = tester
+            .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+            .singleWhere((widget) {
+              final decoration = widget.decoration;
+              return decoration is BoxDecoration && decoration.border != null;
+            });
+
+        expect(
+          borderBox.position,
+          DecorationPosition.foreground,
+          reason:
+              'the countdown and leading gradient must stay behind the '
+              'rounded border so they cannot overpaint either corner',
+        );
+
+        await tester.pump(const Duration(seconds: 6));
+      });
+
       testWidgets('renders a LinearProgressIndicator when countdown is set', (
         tester,
       ) async {

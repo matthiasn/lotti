@@ -115,6 +115,12 @@ grouping is structural; keep a container when the fill is information. See
 [design tokens and theming](tokens-and-theming.md) for why the tint could not
 be expressed as a `colorScheme.*Container` either.
 
+`DesignSystemToast` clips its background, countdown bar, and leading tone
+gradient to one token-derived rounded outline, then paints the border in the
+foreground. The order is part of the component contract: both tone layers reach
+the interior edge of the curve, but neither can overpaint the outline and create
+a doubled or discontinuous corner.
+
 ## Beside the button tier: `DesignSystemIconAction`
 
 A glyph-only control for card headers and panel corners — the sync statistics
