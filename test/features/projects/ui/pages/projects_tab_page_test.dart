@@ -1104,6 +1104,54 @@ void main() {
       },
     );
 
+    testWidgets('focus-search restores a hidden project list before focusing', (
+      tester,
+    ) async {
+      final nav = getIt<NavService>() as MockNavService;
+      final selected = ValueNotifier<String?>('p1');
+      addTearDown(selected.dispose);
+      when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        extraOverrides: [
+          projectDetailControllerProvider('p1').overrideWith(
+            _StubProjectDetailController.new,
+          ),
+          projectDetailRecordProvider('p1').overrideWith(
+            (ref) async => null,
+          ),
+        ],
+      );
+      final pageContext = tester.element(find.byType(ProjectsTabPage));
+      final container = ProviderScope.containerOf(pageContext);
+      container.read(paneWidthControllerProvider.notifier).collapseListPane();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(find.byType(TextField, skipOffstage: false), findsOneWidget);
+
+      final commandController = AppCommandControllerProvider.of(
+        tester.element(find.byType(ProjectDetailsPage)),
+      );
+      expect(
+        await commandController.invoke(pageContext, AppCommandId.focusSearch),
+        isTrue,
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        container.read(paneWidthControllerProvider).listPaneCollapsed,
+        isFalse,
+      );
+      final search = tester.widget<TextField>(find.byType(TextField));
+      expect(search.focusNode?.hasFocus, isTrue);
+    });
+
     testWidgets('does not hide a project list without a selected detail', (
       tester,
     ) async {
@@ -1124,6 +1172,40 @@ void main() {
         find.byKey(const ValueKey('projects-hide-list-pane')),
         findsNothing,
       );
+    });
+
+    testWidgets('a forced-visible project list remains resizable', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        groups: [buildWorkGroup()],
+        mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ProjectsTabPage)),
+      );
+      container.read(paneWidthControllerProvider.notifier).collapseListPane();
+      await tester.pump();
+
+      await tester.drag(
+        find.byType(ResizableDivider),
+        const Offset(40, 0),
+      );
+      await tester.pump();
+
+      final paneWidths = container.read(paneWidthControllerProvider);
+      expect(paneWidths.listPaneCollapsed, isTrue);
+      expect(paneWidths.listPaneWidth, defaultListPaneWidth + 40);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SizedBox && widget.width == defaultListPaneWidth + 40,
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pump(persistDebounce);
     });
   });
 }

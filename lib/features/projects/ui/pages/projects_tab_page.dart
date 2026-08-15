@@ -87,9 +87,9 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
         minValue: minListPaneWidth,
         maxValue: maxListPaneWidth,
         screenWidth: MediaQuery.sizeOf(context).width,
-        onDelta: ref
+        onDelta: (delta) => ref
             .read(paneWidthControllerProvider.notifier)
-            .updateListPaneWidth,
+            .updateListPaneWidth(delta, allowWhileCollapsed: true),
       );
       final listPaneWidth = resolvedListPane.width;
       final paneController = ref.read(paneWidthControllerProvider.notifier);
@@ -150,7 +150,7 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
     return AppCommandScope(
       handlers: {
         AppCommandId.focusSearch: AppCommandHandler(
-          invoke: (_) => _searchFocusNode.requestFocus(),
+          invoke: (_) => _focusSearch(isDesktop: isDesktop),
         ),
         AppCommandId.createInContext: AppCommandHandler(
           invoke: (invocation) =>
@@ -159,6 +159,20 @@ class _ProjectsTabPageState extends ConsumerState<ProjectsTabPage> {
       },
       child: child,
     );
+  }
+
+  void _focusSearch({required bool isDesktop}) {
+    if (!isDesktop) {
+      _searchFocusNode.requestFocus();
+      return;
+    }
+
+    ref.read(paneWidthControllerProvider.notifier).expandListPane();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 }
 

@@ -278,8 +278,16 @@ class PaneWidthController extends Notifier<PaneWidths> {
 
   /// Applies a drag [delta] to the list-pane width, clamped to
   /// [minListPaneWidth]..[maxListPaneWidth], and debounces persistence.
-  void updateListPaneWidth(double delta) {
-    if (state.listPaneCollapsed) return;
+  ///
+  /// A hidden pane keeps its restore width frozen. A host that deliberately
+  /// forces the list and divider visible despite a latent collapsed preference
+  /// may set [allowWhileCollapsed] so that visible resize affordance remains
+  /// operational.
+  void updateListPaneWidth(
+    double delta, {
+    bool allowWhileCollapsed = false,
+  }) {
+    if (state.listPaneCollapsed && !allowWhileCollapsed) return;
     _userAdjusted = true;
     final newWidth = (state.listPaneWidth + delta).clamp(
       minListPaneWidth,

@@ -98,13 +98,17 @@ The Tasks and Projects desktop splits can hide their browse list once a detail
 is selected. This is a **focus-mode layout change**, not a navigation event:
 the list remains mounted inside `Offstage`, excluded from focus and semantics,
 so its query, filters, search text, selection and scroll position survive. The
-divider is offstage with it, and the detail expands into the released width.
+divider is offstage and excluded from focus with it, and the detail expands
+into the released width. Invoking the primary search command while focused on
+the detail restores the list before moving focus into its search field.
 
 The shared `PaneWidthController` persists one Tasks/Projects collapse
 preference alongside the shared expanded list width. Width changes are ignored
 while collapsed, making expand restore the exact previous width. A split with no
 selected detail always forces the list visible even if the saved preference is
-collapsed; there must be somewhere meaningful for focus mode to land.
+collapsed; there must be somewhere meaningful for focus mode to land. Because
+that forced-visible divider is actionable, its drag may update the stored width
+without clearing the latent collapse preference.
 `ListDetailFocusTraversal` observes the effective visibility input itself, so a
 persisted collapsed preference taking effect when a new selection appears moves
 focus into the detail just as reliably as pressing Hide list; every transition

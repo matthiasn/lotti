@@ -180,7 +180,7 @@ class _ExpandableCompactTitle extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-          color: tokens.colors.text.onInteractiveAlert,
+          color: tokens.colors.text.highEmphasis,
           fontWeight: FontWeight.w600,
         ),
       ),

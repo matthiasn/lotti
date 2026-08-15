@@ -113,9 +113,9 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
       minValue: minListPaneWidth,
       maxValue: maxListPaneWidth,
       screenWidth: MediaQuery.sizeOf(context).width,
-      onDelta: ref
+      onDelta: (delta) => ref
           .read(paneWidthControllerProvider.notifier)
-          .updateListPaneWidth,
+          .updateListPaneWidth(delta, allowWhileCollapsed: true),
     );
     final listPaneWidth = resolvedListPane.width;
 

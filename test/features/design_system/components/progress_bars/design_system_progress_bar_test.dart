@@ -216,6 +216,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
+      expect(progressRect.left, greaterThanOrEqualTo(barRect.left));
       expect(progressRect.right, lessThanOrEqualTo(barRect.right));
       expect(semantics.properties.value, '3 of 5 tasks completed');
     });

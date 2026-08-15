@@ -152,9 +152,11 @@ void main() {
     (tester) async {
       final listPaneVisible = ValueNotifier(true);
       final listFocusNode = FocusNode(debugLabel: 'focus-mode-list');
+      final dividerFocusNode = FocusNode(debugLabel: 'focus-mode-divider');
       final detailFocusNode = FocusNode(debugLabel: 'focus-mode-detail');
       addTearDown(listPaneVisible.dispose);
       addTearDown(listFocusNode.dispose);
+      addTearDown(dividerFocusNode.dispose);
       addTearDown(detailFocusNode.dispose);
 
       await tester.pumpWidget(
@@ -169,9 +171,12 @@ void main() {
                 listPaneVisible.value = nextVisible;
               },
               listPane: _StatefulListPane(focusNode: listFocusNode),
-              divider: const SizedBox(
-                key: Key('focus-mode-divider'),
-                width: 3,
+              divider: Focus(
+                focusNode: dividerFocusNode,
+                child: const SizedBox(
+                  key: Key('focus-mode-divider'),
+                  width: 3,
+                ),
               ),
               detailPane: Align(
                 alignment: Alignment.topLeft,
@@ -202,6 +207,11 @@ void main() {
         find.byKey(const Key('focus-mode-divider'), skipOffstage: false),
         findsOneWidget,
       );
+      expect(detailFocusNode.hasFocus, isTrue);
+
+      dividerFocusNode.requestFocus();
+      await tester.pump();
+      expect(dividerFocusNode.hasFocus, isFalse);
       expect(detailFocusNode.hasFocus, isTrue);
 
       ListDetailFocusTraversal.maybeOf(

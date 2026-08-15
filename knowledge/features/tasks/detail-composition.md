@@ -327,8 +327,9 @@ image entries, including rotation, download and zoom controls. The cover uses a
 task-specific Hero tag so an expanded linked image lower on the same detail page
 cannot become the transition source by mistake. On a wide detail workspace the
 art remains centred at the shared detail-content maximum width instead of
-stretching across the whole window, and the compact title uses the cover's
-on-interactive text token so it remains legible in both themes.
+stretching across the whole window. Once the cover scrolls away, the compact
+title renders on the toolbar's level-01 surface and therefore uses the standard
+high-emphasis toolbar text token in both themes.
 
 The header is exercised in isolation under **Widgetbook → Tasks → Desktop task
 header**, whose Playground drives priority, status, category, due date, labels and

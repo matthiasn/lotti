@@ -142,7 +142,10 @@ class _ListDetailFocusTraversalState extends State<ListDetailFocusTraversal> {
             ),
             Offstage(
               offstage: !widget.listPaneVisible,
-              child: widget.divider,
+              child: ExcludeFocus(
+                excluding: !widget.listPaneVisible,
+                child: widget.divider,
+              ),
             ),
             Expanded(
               child: KeyboardFocusRegion(

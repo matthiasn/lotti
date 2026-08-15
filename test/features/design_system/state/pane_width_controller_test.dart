@@ -428,6 +428,26 @@ void main() {
       expect(state.listPaneWidth, defaultListPaneWidth + 60);
     });
 
+    test('allows a forced-visible collapsed pane to resize', () {
+      fakeAsync((async) {
+        container.read(paneWidthControllerProvider.notifier)
+          ..collapseListPane()
+          ..updateListPaneWidth(40, allowWhileCollapsed: true);
+
+        final state = container.read(paneWidthControllerProvider);
+        expect(state.listPaneCollapsed, isTrue);
+        expect(state.listPaneWidth, defaultListPaneWidth + 40);
+
+        async.elapse(persistDebounce);
+        verify(
+          () => getIt<SettingsDb>().saveSettingsItem(
+            listPaneWidthKey,
+            '${defaultListPaneWidth + 40}',
+          ),
+        ).called(1);
+      });
+    });
+
     test('persists focus mode immediately and toggles idempotently', () {
       container.read(paneWidthControllerProvider.notifier)
         ..updateListPaneWidth(30)

@@ -44,9 +44,9 @@ class TasksRootPage extends ConsumerWidget {
       minValue: minListPaneWidth,
       maxValue: maxListPaneWidth,
       screenWidth: MediaQuery.sizeOf(context).width,
-      onDelta: ref
+      onDelta: (delta) => ref
           .read(paneWidthControllerProvider.notifier)
-          .updateListPaneWidth,
+          .updateListPaneWidth(delta, allowWhileCollapsed: true),
     );
     final listPaneWidth = resolvedListPane.width;
     final paneController = ref.read(paneWidthControllerProvider.notifier);

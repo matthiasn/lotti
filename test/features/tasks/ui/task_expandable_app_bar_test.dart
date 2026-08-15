@@ -93,6 +93,7 @@ void main() {
     String coverArtId, {
     double? initialOffset,
     bool showGraphEntryPoint = true,
+    ThemeData? theme,
   }) {
     return ProviderScope(
       overrides: [
@@ -110,7 +111,7 @@ void main() {
           ),
       ],
       child: MaterialApp(
-        theme: DesignSystemTheme.dark(),
+        theme: theme ?? DesignSystemTheme.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -449,7 +450,39 @@ void main() {
               .designTokens
               .colors
               .text
-              .onInteractiveAlert,
+              .highEmphasis,
+        );
+      },
+    );
+
+    testWidgets(
+      'uses the toolbar text token for the compact title in light theme',
+      (tester) async {
+        final task = buildTask();
+
+        await tester.binding.setSurfaceSize(const Size(400, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpMobile(
+          tester,
+          buildTestWidget(
+            task,
+            'image-1',
+            initialOffset: 200,
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final title = tester.widget<Text>(find.text('Test Task'));
+        expect(
+          title.style?.color,
+          tester
+              .element(find.text('Test Task'))
+              .designTokens
+              .colors
+              .text
+              .highEmphasis,
         );
       },
     );

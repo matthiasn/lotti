@@ -467,6 +467,17 @@ void main() {
         .width!;
 
     final before = listPaneWidth();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TasksRootPage)),
+    );
+    container.read(paneWidthControllerProvider.notifier).collapseListPane();
+    await tester.pump();
+
+    expect(find.byType(ResizableDivider), findsOneWidget);
+    expect(
+      container.read(paneWidthControllerProvider).listPaneCollapsed,
+      isTrue,
+    );
 
     await tester.drag(
       find.byType(ResizableDivider),
@@ -478,5 +489,10 @@ void main() {
     // The width delta is forwarded to the pane controller, not just local
     // layout: the divider's onDrag updates paneWidthControllerProvider.
     expect(listPaneWidth(), before + 80);
+    expect(
+      container.read(paneWidthControllerProvider).listPaneCollapsed,
+      isTrue,
+    );
+    await tester.pump(persistDebounce);
   });
 }
