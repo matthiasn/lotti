@@ -25,11 +25,13 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -1634,6 +1636,112 @@ void main() {
           'A photo of a sunset',
         );
       });
+
+      test(
+        'analyzes the migrated real-world screenshot instead of reporting no image data',
+        () async {
+          const entryId = 'dfb5db6b-215c-5d1f-b05a-53830b125fad';
+          var imageEntity = makeImageEntity(
+            id: entryId,
+            imageDirectory: 'images/2026-08-15/',
+            imageFile: '$entryId.screenshot.jpg',
+          );
+          final corrected = imageEntity.copyWith(
+            data: imageEntity.data.copyWith(
+              imageDirectory: '/images/2026-08-15/',
+            ),
+          );
+          final migrationDb = MockJournalDb();
+          final migrationPersistence = MockPersistenceLogic();
+          when(
+            () => migrationDb.getJournalEntities(
+              types: const ['JournalImage'],
+              starredStatuses: const [true, false],
+              privateStatuses: const [true, false],
+              flaggedStatuses: [
+                for (final flag in EntryFlag.values) flag.index,
+              ],
+              ids: null,
+              limit: 200,
+              // ignore: avoid_redundant_argument_values
+              offset: 0,
+            ),
+          ).thenAnswer((_) async => [imageEntity]);
+          when(
+            () => migrationPersistence.updateJournalEntity(
+              corrected,
+              imageEntity.meta,
+            ),
+          ).thenAnswer((_) async {
+            imageEntity = corrected;
+            return true;
+          });
+          final legacyFile = File(
+            getLegacyMalformedImagePath(
+              imageEntity,
+              documentsDirectory: tempDir.path,
+            ),
+          );
+          await legacyFile.parent.create(recursive: true);
+          await legacyFile.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+          final migration = ImagePathMigrationService(
+            documentsDirectory: tempDir,
+            journalDb: migrationDb,
+            persistenceLogic: migrationPersistence,
+            logger: mockLoggingService,
+          );
+
+          final report = await migration.migrateAll();
+
+          expect(report.affected, 1);
+          when(
+            () => mockAiInputRepo.getEntity(entryId),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Recovered screenshot')),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageAnalysis(
+            imageEntryId: entryId,
+            automationResult: makeImageAnalysisResult(),
+          );
+
+          verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: 'vision-model',
+              temperature: null,
+              images: [
+                base64Encode([0xFF, 0xD8, 0xFF, 0xE0]),
+              ],
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('persists attributed image analysis as an AI response', () async {
         final attribution = _registerInteractionCapture();

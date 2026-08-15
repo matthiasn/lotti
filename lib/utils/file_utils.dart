@@ -138,10 +138,18 @@ Future<void> saveJson(String path, String json) async {
   );
 }
 
+/// Creates an attachment directory below the app documents directory.
+///
+/// Persisted attachment paths may carry a metadata-only leading separator;
+/// stripping it before [join] prevents both absolute-path resolution and the
+/// legacy missing-separator sibling-directory bug.
 Future<String> createAssetDirectory(String relativePath) async {
   final docDir = getDocumentsDirectory();
+  final normalizedRelativePath = relativePath
+      .replaceAll(r'\', '/')
+      .replaceFirst(RegExp('^/+'), '');
   final directory = await Directory(
-    '${docDir.path}$relativePath',
+    join(docDir.path, normalizedRelativePath),
   ).create(recursive: true);
   return directory.path;
 }

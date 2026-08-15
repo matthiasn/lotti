@@ -24,6 +24,10 @@ sources:
     resource: ../../lib/widgets/settings/settings_detail_scaffold.dart
     title: Shared settings detail scaffold
     last_modified: 2026-07-15
+  - id: maintenance-page
+    resource: ../../lib/features/settings/ui/pages/advanced/maintenance_page.dart
+    title: Advanced maintenance actions
+    last_modified: 2026-08-15
 ---
 
 # From one tree to two page stacks
@@ -209,6 +213,12 @@ regenerated — never placed directly in the widget.
 That matters most for Advanced → Maintenance: its onboarding preview and
 animation-gallery rows are real app UI and **must not introduce an English island
 in another locale**.
+
+Maintenance also owns the explicit **Repair screenshot storage** action. It
+runs the centralized, idempotent journal-image repair and reports repaired,
+missing, conflicting, and failed entries in a localized toast. The action is
+manual by design: there is no startup migration and no error-triggered write in
+the image display or AI read paths.
 
 **One row currently breaks it.** The repaint-rainbow overlay toggle in
 `maintenance_page.dart` hardcodes its title and subtitle in English, the only such

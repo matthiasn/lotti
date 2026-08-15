@@ -31,7 +31,11 @@ sources:
   - id: unified
     resource: ../../../lib/features/ai/repository/unified_ai_inference_repository.dart
     title: UnifiedAiInferenceRepository (legacy prompt path)
-    last_modified: 2026-07-21
+    last_modified: 2026-08-15
+  - id: image-paths
+    resource: ../../../lib/utils/image_utils.dart
+    title: Journal image path resolution
+    last_modified: 2026-08-15
 ---
 
 # Two systems coexist
@@ -102,6 +106,15 @@ edge for the square tile, so `BoxFit.cover` crops excess pixels without
 magnifying a fit-sized wide or tall thumbnail. The longer decoded edge is capped
 at 4096 pixels so scrolling screenshots and other extreme aspect ratios cannot
 reintroduce an oversized texture through proportional scaling.
+
+Both inference paths read `JournalImage` bytes only from the canonical location
+inside the app documents directory. This containment boundary deliberately does
+not use the display resolver's compatibility fallback: screenshots written by
+the legacy missing-separator bug can remain visible inline from their old
+sibling directory, but are not sent to an AI provider until the user runs
+Settings → Advanced → Maintenance → **Repair screenshot storage**. The repair
+copies and verifies the bytes, updates the entry, and removes the legacy source
+only after persistence succeeds; see [persistence](../../architecture/persistence.md#journal-image-paths-and-screenshot-repair).
 
 ```mermaid
 flowchart TD

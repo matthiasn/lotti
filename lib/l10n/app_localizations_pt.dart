@@ -8573,6 +8573,24 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tem certeza de que deseja recriar o índice de texto completo? Isso pode levar algum tempo.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Reparar armazenamento de capturas de ecrã';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Move as capturas de ecrã guardadas por versões anteriores para a pasta correta, para que a análise de imagens por IA consiga lê-las.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Reparação de capturas concluída: $repaired corrigidas, $missing em falta, $conflicts conflitos, $failed falharam.';
+  }
+
+  @override
   String get maintenanceReSync => 'Histórico de mensagens';
 
   @override

@@ -9,6 +9,7 @@ import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/screenshot_consts.dart';
+import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 /// Checks if a command is available on the system
@@ -70,13 +71,18 @@ Future<void> takeLinuxScreenshot(
   }
 }
 
+/// Returns the canonical documents-relative directory for [created].
+String screenshotRelativePath(DateTime created) {
+  final day = DateFormat(screenshotDateFormat).format(created);
+  return '${p.posix.join(screenshotDirectoryPath, day)}/';
+}
+
 Future<ImageData> takeScreenshot() async {
   try {
     final id = uuid.v1();
     final filename = '$id$screenshotFileExtension';
     final created = DateTime.now();
-    final day = DateFormat(screenshotDateFormat).format(created);
-    final relativePath = '$screenshotDirectoryPath$day/';
+    final relativePath = screenshotRelativePath(created);
     final directory = await createAssetDirectory(relativePath);
 
     // Check if we should use portal (Flatpak environment)

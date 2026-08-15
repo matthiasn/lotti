@@ -8454,6 +8454,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to recreate the full-text index? This may take some time.';
 
   @override
+  String get maintenanceRepairScreenshotPaths => 'Repair screenshot storage';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Move screenshots saved by older versions into the correct folder so AI image analysis can read them.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Screenshot repair complete: $repaired fixed, $missing missing, $conflicts conflicts, $failed failed.';
+  }
+
+  @override
   String get maintenanceReSync => 'Message history';
 
   @override

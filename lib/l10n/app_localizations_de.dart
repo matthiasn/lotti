@@ -8545,6 +8545,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du den Volltextindex wirklich neu erstellen? Dies kann einige Zeit dauern.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Screenshot-Speicher reparieren';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Verschiebe Screenshots aus älteren Versionen in den richtigen Ordner, damit die KI-Bildanalyse sie lesen kann.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Screenshot-Reparatur abgeschlossen: $repaired repariert, $missing fehlen, $conflicts Konflikte, $failed fehlgeschlagen.';
+  }
+
+  @override
   String get maintenanceReSync => 'Nachrichtenverlauf';
 
   @override

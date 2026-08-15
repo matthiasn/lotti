@@ -9,7 +9,7 @@ void main() {
       });
 
       test('should have correct directory path', () {
-        expect(screenshotDirectoryPath, equals('images/'));
+        expect(screenshotDirectoryPath, equals('/images/'));
       });
 
       test('should have correct date format', () {

@@ -8605,6 +8605,24 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Opravit úložiště snímků obrazovky';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Přesune snímky obrazovky uložené staršími verzemi do správné složky, aby je analýza obrázků pomocí AI mohla načíst.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Oprava snímků obrazovky dokončena: opraveno $repaired, chybí $missing, konflikty $conflicts, selhalo $failed.';
+  }
+
+  @override
   String get maintenanceReSync => 'Historie zpráv';
 
   @override

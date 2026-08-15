@@ -114,6 +114,7 @@ import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -1190,6 +1191,9 @@ class MockOnboardingCaptureToTaskService extends Mock
     implements OnboardingCaptureToTaskService {}
 
 class MockJournalRepository extends Mock implements JournalRepository {}
+
+class MockImagePathMigrationService extends Mock
+    implements ImagePathMigrationService {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
 

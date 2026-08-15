@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -118,6 +119,7 @@ void main() {
   group('MaintenancePage - database operations', () {
     final mockJournalDb = MockJournalDb();
     final mockNotificationService = MockNotificationService();
+    final mockImagePathMigrationService = MockImagePathMigrationService();
 
     setUp(() {
       when(mockJournalDb.watchConfigFlags).thenAnswer(
@@ -128,11 +130,17 @@ void main() {
       when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteSyncDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
+      when(
+        mockImagePathMigrationService.migrateAll,
+      ).thenAnswer((_) async => ImagePathMigrationReport(const []));
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<Maintenance>(mockMaintenance)
+        ..registerSingleton<ImagePathMigrationService>(
+          mockImagePathMigrationService,
+        )
         ..registerSingleton<NotificationService>(mockNotificationService);
       ensureThemingServicesRegistered();
     });
@@ -282,7 +290,51 @@ void main() {
         findsNothing,
       );
       expect(find.text('Recreate full-text index'), findsAtLeastNWidgets(1));
+      expect(find.text('Repair screenshot storage'), findsOneWidget);
       expect(find.text('Re-sync messages'), findsNothing);
+    });
+
+    testWidgets('repairs screenshot paths once and reports migration counts', (
+      tester,
+    ) async {
+      when(
+        mockImagePathMigrationService.migrateAll,
+      ).thenAnswer(
+        (_) async => ImagePathMigrationReport(const [
+          ImagePathMigrationOutcome(
+            entryId: 'fixed',
+            status: ImagePathMigrationStatus.migrated,
+          ),
+          ImagePathMigrationOutcome(
+            entryId: 'missing',
+            status: ImagePathMigrationStatus.missing,
+          ),
+          ImagePathMigrationOutcome(
+            entryId: 'conflict',
+            status: ImagePathMigrationStatus.conflict,
+          ),
+        ]),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final repairRow = find.text('Repair screenshot storage');
+      await tester.ensureVisible(repairRow);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(repairRow);
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Screenshot repair complete: 1 fixed, 1 missing, 1 conflicts, '
+          '0 failed.',
+        ),
+        findsOneWidget,
+      );
+      verify(mockImagePathMigrationService.migrateAll).called(1);
     });
 
     testWidgets('delete editor database button shows confirmation dialog', (
@@ -475,14 +527,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      // 6 fixed items (EmbeddingStore not registered in this group)
-      // plus the diagnostic repaint-rainbow toggle = 7 list items.
-      // Only the 8 action rows carry chevrons (incl. the two onboarding/FTUE
-      // debug actions); the toggle uses an adaptive Switch as its trailing
-      // affordance instead.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(9));
-      expect(find.byType(SettingsIcon), findsNWidgets(9));
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(8));
+      // Nine action rows (including the screenshot repair and the two
+      // onboarding/FTUE debug actions) carry chevrons. The diagnostic
+      // repaint-rainbow toggle is the tenth item and uses an adaptive Switch.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+      expect(find.byType(SettingsIcon), findsNWidgets(10));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(9));
       expect(find.byType(Switch), findsOneWidget);
     });
 

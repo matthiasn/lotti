@@ -8,12 +8,12 @@ library;
 // File and path constants
 const String screenshotFileExtension = '.screenshot.jpg';
 
-/// Relative path for screenshot storage within the app's documents directory.
-/// This ensures compatibility with sandboxed environments (Snap, Flatpak, macOS, Windows)
-/// where absolute paths like '/images/' are not writable.
-/// The actual full path is constructed by createAssetDirectory() using the platform's
-/// documents directory + this relative path.
-const String screenshotDirectoryPath = 'images/';
+/// Documents-relative path persisted in screenshot image metadata.
+///
+/// The leading slash is part of Lotti's platform-neutral metadata format, not
+/// a filesystem root. Physical paths are resolved under the app documents
+/// directory with `path.join`.
+const String screenshotDirectoryPath = '/images/';
 
 const String screenshotDateFormat = 'yyyy-MM-dd';
 

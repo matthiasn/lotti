@@ -427,8 +427,9 @@ class UnifiedAiInferenceRepository {
 
     if (entity is! JournalImage) return [];
 
-    final fullPath = getFullImagePath(entity);
-    final bytes = await File(fullPath).readAsBytes();
+    final fullPath = getCanonicalImagePath(entity);
+    final file = File(fullPath);
+    final bytes = await file.readAsBytes();
     final base64String = base64Encode(bytes);
 
     return [base64String];
