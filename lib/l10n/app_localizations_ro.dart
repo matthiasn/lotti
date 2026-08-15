@@ -3385,6 +3385,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează sfaturi utile în întreaga aplicație pentru a vă ghida prin funcții.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Activați pagina unificată de Obiective';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Afișează pagina unificată de Obiective în navigarea principală – obiective cu obiceiurile lor, o singură suprafață pentru ambele.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Căutare vectorială';
 
   @override
@@ -7176,7 +7184,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsFilterPendingLater => 'mai târziu';
 
   @override
-  String get habitsGoalLineLabel => 'Obiectiv';
+  String get habitsGoalLineLabel => 'Țintă';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7207,7 +7215,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points pct. până la obiectiv';
+    return '$points pct. până la țintă';
   }
 
   @override
@@ -9057,6 +9065,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Evenimente';
+
+  @override
+  String get navTabTitleGoals => 'Obiective';
 
   @override
   String get navTabTitleHabits => 'Obiceiuri';
@@ -13164,6 +13175,39 @@ class AppLocalizationsRo extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'În pericol';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Fără date';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Toate cele $count de obiceiuri sunt pe drumul cel bun – azi nu este nevoie de nimic.',
+      few:
+          'Toate cele $count obiceiuri sunt pe drumul cel bun – azi nu este nevoie de nimic.',
+      one:
+          'Obiceiul dumneavoastră este pe drumul cel bun – azi nu este nevoie de nimic.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Încă nu există date – înregistrați un obicei sau conectați un semnal pentru a începe.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack din $total obiceiuri pe drumul cel bun';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Fără obiectiv';
 
   @override
   String get unlinkButton => 'Dezleagă';

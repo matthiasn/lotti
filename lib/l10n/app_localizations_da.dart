@@ -3327,6 +3327,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis nyttige værktøjstips gennem hele appen, der guider dig gennem funktionerne.';
 
   @override
+  String get configFlagEnableUnifiedGoals => 'Aktivér den samlede Mål-side';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Viser den samlede Mål-side i hovednavigationen – mål med deres vaner indeni, én flade til begge.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Vektorsøgning';
 
   @override
@@ -7039,7 +7046,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitsFilterPendingLater => 'Senere';
 
   @override
-  String get habitsGoalLineLabel => 'Mål';
+  String get habitsGoalLineLabel => 'Målværdi';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7073,8 +7080,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points point til mål',
-      one: '1 point til mål',
+      other: '$points point til målværdien',
+      one: '1 point til målværdien',
     );
     return '$_temp0';
   }
@@ -8874,6 +8881,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Begivenheder';
+
+  @override
+  String get navTabTitleGoals => 'Mål';
 
   @override
   String get navTabTitleHabits => 'Vaner';
@@ -12907,6 +12917,35 @@ class AppLocalizationsDa extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'I farezonen';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Ingen data';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count vaner er på rette spor – intet behøves i dag.',
+      one: 'Din vane er på rette spor – intet behøves i dag.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Ingen data endnu – registrér en vane eller tilslut et signal for at komme i gang.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack af $total vaner på rette spor';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Uden mål';
 
   @override
   String get unlinkButton => 'Afbryd forbindelsen';

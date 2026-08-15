@@ -70,6 +70,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableUnifiedGoalsFlag,
+    description: 'Enable unified Goals page?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableDailyOsPageFlag,
     description: 'Enable DailyOS Page?',
     status: false,

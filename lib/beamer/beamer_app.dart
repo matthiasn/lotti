@@ -252,6 +252,7 @@ enum _AppNavigationDestinationKind {
   tasks,
   dailyOs,
   projects,
+  goals,
   habits,
   dashboards,
   agents,
@@ -286,6 +287,7 @@ class _AppNavigationDestination {
     _AppNavigationDestinationKind.dailyOs ||
     _AppNavigationDestinationKind.journal => true,
     _AppNavigationDestinationKind.projects ||
+    _AppNavigationDestinationKind.goals ||
     _AppNavigationDestinationKind.habits ||
     _AppNavigationDestinationKind.dashboards ||
     _AppNavigationDestinationKind.agents ||
@@ -584,11 +586,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
         final isEventsPageEnabled = navService.isEventsPageEnabled;
         final isAgentsPageEnabled = navService.isAgentsPageEnabled;
+        final isUnifiedGoalsPageEnabled = navService.isUnifiedGoalsPageEnabled;
 
         final destinations = _buildNavigationDestinations(
           context: context,
           isProjectsPageEnabled: isProjectsPageEnabled,
           isDailyOsPageEnabled: isDailyOsPageEnabled,
+          isUnifiedGoalsPageEnabled: isUnifiedGoalsPageEnabled,
           isHabitsPageEnabled: isHabitsPageEnabled,
           isDashboardsPageEnabled: isDashboardsPageEnabled,
           isEventsPageEnabled: isEventsPageEnabled,
@@ -612,6 +616,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             Beamer(routerDelegate: navService.calendarDelegate),
           if (isProjectsPageEnabled)
             Beamer(routerDelegate: navService.projectsDelegate),
+          if (isUnifiedGoalsPageEnabled)
+            Beamer(routerDelegate: navService.goalsDelegate),
           if (isHabitsPageEnabled)
             Beamer(routerDelegate: navService.habitsDelegate),
           if (isDashboardsPageEnabled)
@@ -1082,6 +1088,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required BuildContext context,
     required bool isProjectsPageEnabled,
     required bool isDailyOsPageEnabled,
+    required bool isUnifiedGoalsPageEnabled,
     required bool isHabitsPageEnabled,
     required bool isDashboardsPageEnabled,
     required bool isEventsPageEnabled,
@@ -1112,6 +1119,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleProjects,
         iconBuilder: ({required active}) =>
             Icon(active ? Icons.folder_rounded : Icons.folder_outlined),
+      ),
+      _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.goals,
+        label: context.messages.navTabTitleGoals,
+        iconBuilder: ({required active}) => Icon(
+          active ? Icons.track_changes_rounded : Icons.track_changes_outlined,
+        ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,
@@ -1160,6 +1174,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final enabledKinds = _enabledDestinationKinds(
       isProjectsPageEnabled: isProjectsPageEnabled,
       isDailyOsPageEnabled: isDailyOsPageEnabled,
+      isUnifiedGoalsPageEnabled: isUnifiedGoalsPageEnabled,
       isHabitsPageEnabled: isHabitsPageEnabled,
       isDashboardsPageEnabled: isDashboardsPageEnabled,
       isEventsPageEnabled: isEventsPageEnabled,
@@ -1192,6 +1207,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final index = _enabledDestinationKinds(
       isProjectsPageEnabled: navService.isProjectsPageEnabled,
       isDailyOsPageEnabled: navService.isDailyOsPageEnabled,
+      isUnifiedGoalsPageEnabled: navService.isUnifiedGoalsPageEnabled,
       isHabitsPageEnabled: navService.isHabitsPageEnabled,
       isDashboardsPageEnabled: navService.isDashboardsPageEnabled,
       isEventsPageEnabled: navService.isEventsPageEnabled,
@@ -1356,6 +1372,7 @@ class _SlideAwayBottomNav extends StatelessWidget {
 List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isProjectsPageEnabled,
   required bool isDailyOsPageEnabled,
+  required bool isUnifiedGoalsPageEnabled,
   required bool isHabitsPageEnabled,
   required bool isDashboardsPageEnabled,
   required bool isEventsPageEnabled,
@@ -1365,6 +1382,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
     _AppNavigationDestinationKind.tasks,
     if (isDailyOsPageEnabled) _AppNavigationDestinationKind.dailyOs,
     if (isProjectsPageEnabled) _AppNavigationDestinationKind.projects,
+    if (isUnifiedGoalsPageEnabled) _AppNavigationDestinationKind.goals,
     if (isHabitsPageEnabled) _AppNavigationDestinationKind.habits,
     if (isDashboardsPageEnabled) _AppNavigationDestinationKind.dashboards,
     if (isAgentsPageEnabled) _AppNavigationDestinationKind.agents,

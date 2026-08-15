@@ -5,6 +5,7 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
+import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
@@ -55,6 +56,40 @@ void main() {
         for (final path in ['/settings/events', '/prevents']) {
           expect(
             eventsBeamerDelegate.locationBuilder(
+              RouteInformation(uri: Uri.parse(path)),
+              null,
+            ),
+            isA<NotFound>(),
+            reason: path,
+          );
+        }
+      },
+    );
+
+    test('goalsBeamerDelegate returns GoalsLocation', () {
+      final routeInformation = RouteInformation(uri: Uri.parse('/goals'));
+      final location = goalsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
+      expect(location, isA<GoalsLocation>());
+    });
+
+    test(
+      'goalsBeamerDelegate root-matches (not substring) the goals path',
+      () {
+        // A nested goals route still resolves.
+        expect(
+          goalsBeamerDelegate.locationBuilder(
+            RouteInformation(uri: Uri.parse('/goals/abc')),
+            null,
+          ),
+          isA<GoalsLocation>(),
+        );
+        // But unrelated paths that merely contain "goals" do not.
+        for (final path in ['/settings/goals', '/mygoals']) {
+          expect(
+            goalsBeamerDelegate.locationBuilder(
               RouteInformation(uri: Uri.parse(path)),
               null,
             ),
@@ -149,9 +184,14 @@ void main() {
         routeInformation,
         null,
       );
+      final goalsLocation = goalsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
 
       expect(habitsLocation, isA<NotFound>());
       expect(agentsLocation, isA<NotFound>());
+      expect(goalsLocation, isA<NotFound>());
       expect(eventsLocation, isA<NotFound>());
       expect(projectsLocation, isA<NotFound>());
       expect(dashboardsLocation, isA<NotFound>());

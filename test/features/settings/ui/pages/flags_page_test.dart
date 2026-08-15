@@ -832,6 +832,11 @@ void main() {
               status: false,
             ),
             const ConfigFlag(
+              name: enableUnifiedGoalsFlag,
+              description: 'Enable unified Goals page?',
+              status: false,
+            ),
+            const ConfigFlag(
               name: enableSessionRatingsFlag,
               description: 'Enable Session Ratings?',
               status: false,
@@ -899,6 +904,12 @@ void main() {
         icon: Icons.psychology_outlined,
       ),
       (
+        name: enableUnifiedGoalsFlag,
+        description: 'Enable unified Goals page?',
+        status: false,
+        icon: Icons.track_changes_outlined,
+      ),
+      (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
@@ -960,6 +971,10 @@ void main() {
             enableAgentsPageFlag => (
               context.messages.configFlagEnableAgentsPage,
               context.messages.configFlagEnableAgentsPageDescription,
+            ),
+            enableUnifiedGoalsFlag => (
+              context.messages.configFlagEnableUnifiedGoals,
+              context.messages.configFlagEnableUnifiedGoalsDescription,
             ),
             enableSessionRatingsFlag => (
               context.messages.configFlagEnableSessionRatings,

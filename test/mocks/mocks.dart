@@ -702,6 +702,12 @@ class MockNavService extends Mock implements NavService {
 
   @override
   bool get isAgentsPageEnabled => agentsPageEnabled;
+
+  /// Same contract for the unified Goals tab (`enable_unified_goals`).
+  bool unifiedGoalsPageEnabled = false;
+
+  @override
+  bool get isUnifiedGoalsPageEnabled => unifiedGoalsPageEnabled;
 }
 
 class MockWindowService extends Mock implements WindowService {}

@@ -3379,6 +3379,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher des info-bulles utiles dans toute l\'application pour te guider à travers les fonctionnalités.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Activer la page Objectifs unifiée';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Affiche la page Objectifs unifiée dans la navigation principale – les objectifs avec leurs habitudes, une seule surface pour les deux.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Recherche vectorielle';
 
   @override
@@ -7157,7 +7165,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsFilterPendingLater => 'plus tard';
 
   @override
-  String get habitsGoalLineLabel => 'Objectif';
+  String get habitsGoalLineLabel => 'Cible';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7191,8 +7199,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts avant l\'\'objectif',
-      one: '1 pt avant l\'\'objectif',
+      other: '$points pts avant la cible',
+      one: '1 pt avant la cible',
     );
     return '$_temp0';
   }
@@ -9040,6 +9048,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Événements';
+
+  @override
+  String get navTabTitleGoals => 'Objectifs';
 
   @override
   String get navTabTitleHabits => 'Habitudes';
@@ -13144,6 +13155,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Modèle : $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'À risque';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Aucune donnée';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Les $count habitudes sont sur la bonne voie – rien à faire aujourd\'\'hui.',
+      one: 'Ton habitude est sur la bonne voie – rien à faire aujourd\'\'hui.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Pas encore de données – enregistre une habitude ou connecte un signal pour commencer.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack sur $total habitudes sur la bonne voie';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Sans objectif';
 
   @override
   String get unlinkButton => 'Délier';

@@ -3340,6 +3340,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon handige tooltips in de hele app om u door functies te leiden.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Uniforme Doelen-pagina inschakelen';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Toont de uniforme Doelen-pagina in de hoofdnavigatie – doelen met hun gewoontes erin, één plek voor beide.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Zoekopdracht voor vector';
 
   @override
@@ -7058,7 +7066,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsFilterPendingLater => 'later';
 
   @override
-  String get habitsGoalLineLabel => 'Doel';
+  String get habitsGoalLineLabel => 'Streefwaarde';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7092,8 +7100,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts to goal',
-      one: '1 pt tot doel',
+      other: '$points pt tot streefwaarde',
+      one: '1 pt tot streefwaarde',
     );
     return '$_temp0';
   }
@@ -8896,6 +8904,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Gebeurtenissen';
+
+  @override
+  String get navTabTitleGoals => 'Doelen';
 
   @override
   String get navTabTitleHabits => 'Gewoontes';
@@ -12947,6 +12958,36 @@ class AppLocalizationsNl extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'In gevaar';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Geen gegevens';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Alle $count gewoontes liggen op koers – vandaag is er niets nodig.',
+      one: 'Je gewoonte ligt op koers – vandaag is er niets nodig.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Nog geen gegevens – registreer een gewoonte of koppel een signaal om te beginnen.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack van $total gewoontes op koers';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Zonder doel';
 
   @override
   String get unlinkButton => 'Verbinding verbreken';

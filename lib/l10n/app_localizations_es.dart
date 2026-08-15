@@ -3375,6 +3375,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar información sobre herramientas útil en toda la aplicación para guiarte a través de las funciones.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Activar la página unificada de Objetivos';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Muestra la página unificada de Objetivos en la navegación principal: objetivos con sus hábitos dentro, una sola superficie para ambos.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Búsqueda vectorial';
 
   @override
@@ -9016,6 +9024,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navTabTitleEvents => 'Eventos';
 
   @override
+  String get navTabTitleGoals => 'Objetivos';
+
+  @override
   String get navTabTitleHabits => 'Hábitos';
 
   @override
@@ -13099,6 +13110,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Modelo: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'En riesgo';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Sin datos';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Los $count hábitos van por buen camino: hoy no hace falta nada.',
+      one: 'Tu hábito va por buen camino: hoy no hace falta nada.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Aún no hay datos: registra un hábito o conecta una señal para empezar.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack de $total hábitos van por buen camino';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Sin objetivo';
 
   @override
   String get unlinkButton => 'Desvincular';

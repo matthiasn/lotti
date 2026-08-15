@@ -111,6 +111,9 @@ void main() {
     ).thenAnswer((_) => updateController.stream);
 
     when(() => mockNavService.habitsIndex).thenReturn(habitsTabIndex);
+    // The unified Goals tab is absent in these harnesses; a disabled tab's
+    // index getter reports -1 (delegate not in the enabled list).
+    when(() => mockNavService.goalsIndex).thenReturn(-1);
     when(() => mockNavService.index).thenReturn(habitsTabIndex);
     when(
       mockNavService.getIndexStream,

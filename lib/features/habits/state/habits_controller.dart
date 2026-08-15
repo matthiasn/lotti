@@ -68,7 +68,7 @@ class HabitsController extends Notifier<HabitsState> {
     // Subscribe synchronously inside build() so the subscriptions are
     // anchored to this controller's lifecycle even if disposal races
     // with init — they are guaranteed to be cancelled by _cleanup.
-    _wasHabitsActive = _navService.index == _navService.habitsIndex;
+    _wasHabitsActive = _isHabitsSurfaceActive(_navService.index);
     _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
@@ -295,7 +295,7 @@ class HabitsController extends Notifier<HabitsState> {
   Future<void> _handleNavIndex(int newIndex) async {
     if (!ref.mounted) return;
 
-    final isHabitsActive = newIndex == _navService.habitsIndex;
+    final isHabitsActive = _isHabitsSurfaceActive(newIndex);
     final wasActive = _wasHabitsActive;
     _wasHabitsActive = isHabitsActive;
 
@@ -305,6 +305,15 @@ class HabitsController extends Notifier<HabitsState> {
       _determineHabitSuccessByDays();
     }
   }
+
+  /// Whether [navIndex] is a tab that renders habit rows from this
+  /// controller. The unified Goals page (flag-gated) reuses the habits state
+  /// wholesale, so it must trigger the same on-activation refresh the Habits
+  /// tab gets — otherwise its rows would go stale the moment the old tab is
+  /// disabled. A disabled tab's index getter returns -1, which no live
+  /// [navIndex] matches.
+  bool _isHabitsSurfaceActive(int navIndex) =>
+      navIndex == _navService.habitsIndex || navIndex == _navService.goalsIndex;
 
   /// Sets the time span for habit history display.
   Future<void> setTimeSpan(int timeSpanDays) async {

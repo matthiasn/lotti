@@ -3354,6 +3354,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt hilfreiche Tooltips in der gesamten App an, um dich durch die Funktionen zu führen.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Einheitliche Ziele-Seite aktivieren';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Zeigt die einheitliche Ziele-Seite in der Hauptnavigation – Ziele mit ihren Gewohnheiten, eine Oberfläche für beides.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Vektorsuche';
 
   @override
@@ -7089,7 +7097,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitsFilterPendingLater => 'später';
 
   @override
-  String get habitsGoalLineLabel => 'Ziel';
+  String get habitsGoalLineLabel => 'Zielwert';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7120,7 +7128,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points Pkt. bis zum Ziel';
+    return '$points Pkt. bis zum Zielwert';
   }
 
   @override
@@ -8932,6 +8940,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Ereignisse';
+
+  @override
+  String get navTabTitleGoals => 'Ziele';
 
   @override
   String get navTabTitleHabits => 'Gewohnheiten';
@@ -12997,6 +13008,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Modell: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'Gefährdet';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Keine Daten';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Alle $count Gewohnheiten auf Kurs – heute ist nichts nötig.',
+      one: 'Deine Gewohnheit ist auf Kurs – heute ist nichts nötig.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Noch keine Daten – erfasse eine Gewohnheit oder verbinde ein Signal, um zu starten.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    return '$onTrack von $total Gewohnheiten auf Kurs';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Keinem Ziel zugeordnet';
 
   @override
   String get unlinkButton => 'Verknüpfung aufheben';

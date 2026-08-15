@@ -115,8 +115,8 @@ void main() {
 
       expect(find.byType(LineChart), findsOneWidget);
       expect(find.textContaining('7-day avg'), findsOneWidget);
-      // Empty data → the forward-looking goal line, not a pass/fail count.
-      expect(find.textContaining('goal'), findsOneWidget);
+      // Empty data → the forward-looking target line, not a pass/fail count.
+      expect(find.textContaining('target'), findsOneWidget);
     });
 
     testWidgets('disables the implicit data-swap animation', (tester) async {
@@ -137,8 +137,8 @@ void main() {
       // The rate and its unit read as one inline group "50%  7-day avg".
       expect(find.textContaining('50%'), findsOneWidget);
       expect(find.textContaining('7-day avg'), findsOneWidget);
-      // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
-      expect(find.textContaining('30 pts to goal'), findsOneWidget);
+      // 50% average → 30 pts to the 80% target (gain-framed, not pass/fail).
+      expect(find.textContaining('30 pts to target'), findsOneWidget);
       // A full prior week exists and is identical → flat trend.
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
       // The never-kept habit is named as the laggard, gain-framed.
@@ -168,7 +168,7 @@ void main() {
       );
 
       expect(find.text('On track'), findsOneWidget);
-      expect(find.textContaining('to goal'), findsNothing);
+      expect(find.textContaining('to target'), findsNothing);
     });
 
     testWidgets('hides the trend chip on the short 7-day window', (

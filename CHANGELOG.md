@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The steps signal no longer repeats its own name.** The target input
   inside the "Average steps per day" card is labelled "Daily target" instead
   of duplicating the card title.
+- **The completion-rate chart aims at a "Target", not a "Goal".** The dashed
+  line and the "pts to goal" badge on the habits completion-rate chart now say
+  *Target* (and the equivalent in translations where the old word collided),
+  so the word "goal" stays reserved for actual goals.
 - **Tasks and Projects have a desktop focus mode.** Once an item is selected,
   you can hide the list and give the detail the full workspace, then restore
   the list with its search, filters, scroll position and previous width intact.

@@ -172,6 +172,7 @@ class _NavFlagBench {
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
         enableAgentsPageFlag => agents.stream,
+        enableUnifiedGoalsFlag => unifiedGoals.stream,
         _ => Stream<bool>.value(false),
       };
     });
@@ -188,6 +189,7 @@ class _NavFlagBench {
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
   final agents = StreamController<bool>.broadcast(sync: true);
+  final unifiedGoals = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
   /// Emits the five optional-tab flags at once; the Events flag stays off so
@@ -200,6 +202,7 @@ class _NavFlagBench {
     dashboards.add(enabled);
     events.add(false);
     agents.add(false);
+    unifiedGoals.add(false);
   }
 
   Future<void> dispose() async {
@@ -211,6 +214,7 @@ class _NavFlagBench {
       dashboards.close(),
       events.close(),
       agents.close(),
+      unifiedGoals.close(),
     ]);
   }
 }
@@ -381,6 +385,7 @@ void main() {
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
         bench.agents.add(false);
+        bench.unifiedGoals.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -697,6 +702,7 @@ void main() {
         bench.dashboards.add(false);
         bench.events.add(true);
         bench.agents.add(false);
+        bench.unifiedGoals.add(false);
         await pumpEventQueue();
 
         expect(bench.navService.isEventsPageEnabled, isTrue);
@@ -864,6 +870,42 @@ void main() {
         );
         expect(navService.currentPath, '/tasks');
       });
+
+      test('enable_unified_goals shows the Goals tab between projects and '
+          'habits, and disabling it falls back to tasks', () async {
+        final bench = _NavFlagBench();
+        final navService = bench.navService;
+        bench.emitAll(enabled: true);
+
+        // Off (the emitAll default): the delegate is absent and the index
+        // getter reports -1 — the value the habits controller relies on to
+        // treat a disabled Goals tab as never-active.
+        expect(navService.isUnifiedGoalsPageEnabled, isFalse);
+        expect(navService.goalsIndex, -1);
+
+        bench.unifiedGoals.add(true);
+
+        expect(navService.isUnifiedGoalsPageEnabled, isTrue);
+        // The Goals tab occupies the slot directly before Habits (the design
+        // handover's cutover position).
+        expect(
+          navService.goalsIndex,
+          navService.beamerDelegates.indexOf(navService.projectsDelegate) + 1,
+        );
+        expect(navService.habitsIndex, navService.goalsIndex + 1);
+
+        navService.beamToNamed('/goals');
+        expect(navService.currentPath, '/goals');
+        expect(navService.index, navService.goalsIndex);
+
+        bench.unifiedGoals.add(false);
+        expect(navService.isUnifiedGoalsPageEnabled, isFalse);
+        expect(
+          navService.beamerDelegates.contains(navService.goalsDelegate),
+          isFalse,
+        );
+        expect(navService.currentPath, '/tasks');
+      });
     });
 
     group('_handleNavigationFlagsUpdated fallback', () {
@@ -885,6 +927,9 @@ void main() {
           );
           final eventsController = StreamController<bool>.broadcast(sync: true);
           final agentsController = StreamController<bool>.broadcast(sync: true);
+          final unifiedGoalsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
 
           when(
             () => localJournalDb.watchConfigFlag(any()),
@@ -897,6 +942,7 @@ void main() {
               enableDailyOsPageFlag => dailyOsController.stream,
               enableEventsFlag => eventsController.stream,
               enableAgentsPageFlag => agentsController.stream,
+              enableUnifiedGoalsFlag => unifiedGoalsController.stream,
               _ => Stream<bool>.value(false),
             };
           });
@@ -914,6 +960,7 @@ void main() {
               dailyOsController.close(),
               eventsController.close(),
               agentsController.close(),
+              unifiedGoalsController.close(),
             ]);
           });
 
@@ -924,6 +971,7 @@ void main() {
           dailyOsController.add(true);
           eventsController.add(false);
           agentsController.add(false);
+          unifiedGoalsController.add(false);
 
           navService.beamToNamed('/habits');
           expect(navService.currentPath, '/habits');
