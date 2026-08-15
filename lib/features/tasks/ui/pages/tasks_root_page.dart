@@ -134,10 +134,6 @@ class _TasksDetailPane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final splitController = ListDetailFocusTraversal.maybeOf(context);
-    if (splitController?.listPaneVisible != false) {
-      return detail;
-    }
-
     final tokens = context.designTokens;
     final horizontalInset =
         tokens.spacing.step2 +
@@ -146,21 +142,22 @@ class _TasksDetailPane extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         detail,
-        SafeArea(
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: horizontalInset,
-                top: tokens.spacing.step2,
-              ),
-              child: TaskDetailShowListButton(
-                key: const ValueKey('tasks-show-list-pane'),
-                onPressed: splitController!.showListPane,
+        if (splitController?.listPaneVisible == false)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: horizontalInset,
+                  top: tokens.spacing.step2,
+                ),
+                child: TaskDetailShowListButton(
+                  key: const ValueKey('tasks-show-list-pane'),
+                  onPressed: splitController!.showListPane,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

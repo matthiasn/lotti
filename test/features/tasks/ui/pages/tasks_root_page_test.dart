@@ -197,6 +197,7 @@ void main() {
         find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
         findsOneWidget,
       );
+      final detailElement = tester.element(find.byType(TaskDetailsPage));
       await tester.tap(
         find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
       );
@@ -210,6 +211,7 @@ void main() {
       );
       expect(find.byType(ResizableDivider), findsNothing);
       expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(tester.element(find.byType(TaskDetailsPage)), detailElement);
       expect(
         find.byKey(const ValueKey('tasks-show-list-pane')),
         findsOneWidget,
@@ -229,6 +231,7 @@ void main() {
 
       expect(find.byType(TasksTabPage), findsOneWidget);
       expect(find.byType(ResizableDivider), findsOneWidget);
+      expect(tester.element(find.byType(TaskDetailsPage)), detailElement);
       expect(
         container.read(paneWidthControllerProvider).listPaneCollapsed,
         isFalse,

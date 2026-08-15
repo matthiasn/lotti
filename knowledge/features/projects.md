@@ -168,9 +168,11 @@ available over every detail state, including initial loading and errors. A
 desktop project detail never renders the mobile Back affordance because the
 split has no parent route to pop; Back remains on the standalone mobile detail
 route. The primary search command restores a hidden list before focusing its
-search field, so keyboard search never targets an offstage control. Tasks and
-Projects share the persisted collapse preference and expanded list width. The
-focused header and body are centered on the shared 960 pt detail
+search field, so keyboard search never targets an offstage control. Toggling
+focus mode changes only the restore-button overlay; the detail subtree stays
+mounted under a stable parent. Tasks and Projects share the persisted collapse
+preference and expanded list width. The focused header and body are centered on
+the shared 960 pt detail
 measure with its one standard horizontal gutter, keeping report lines and cards
 readable when the list releases a wide canvas without double-insetting mobile
 content.

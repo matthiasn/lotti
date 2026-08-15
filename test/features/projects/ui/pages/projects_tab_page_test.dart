@@ -1063,6 +1063,7 @@ void main() {
           find.byKey(const ValueKey('projects-hide-list-pane')),
           findsOneWidget,
         );
+        final detailElement = tester.element(find.byType(ProjectDetailsPage));
         await tester.tap(
           find.byKey(const ValueKey('projects-hide-list-pane')),
         );
@@ -1076,6 +1077,7 @@ void main() {
         );
         expect(find.byType(ResizableDivider), findsNothing);
         expect(find.byType(ProjectDetailsPage), findsOneWidget);
+        expect(tester.element(find.byType(ProjectDetailsPage)), detailElement);
         expect(
           find.byKey(const ValueKey('projects-show-list-pane')),
           findsOneWidget,
@@ -1097,6 +1099,7 @@ void main() {
 
         expect(find.text('Device Sync'), findsOneWidget);
         expect(find.byType(ResizableDivider), findsOneWidget);
+        expect(tester.element(find.byType(ProjectDetailsPage)), detailElement);
         expect(
           container.read(paneWidthControllerProvider).listPaneCollapsed,
           isFalse,

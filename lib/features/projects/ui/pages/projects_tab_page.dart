@@ -187,32 +187,29 @@ class _ProjectsDetailPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final splitController = ListDetailFocusTraversal.maybeOf(context);
     final detail = ProjectDetailsPage(projectId: projectId);
-    if (splitController?.listPaneVisible != false) {
-      return detail;
-    }
-
     final tokens = context.designTokens;
     return Stack(
       fit: StackFit.expand,
       children: [
         detail,
-        SafeArea(
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: tokens.spacing.step5,
-                top: tokens.spacing.step4,
-              ),
-              child: TabHeaderIconButton(
-                key: const ValueKey('projects-show-list-pane'),
-                icon: Icons.view_sidebar_rounded,
-                tooltip: context.messages.listPaneShowTooltip,
-                onPressed: splitController!.showListPane,
+        if (splitController?.listPaneVisible == false)
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step5,
+                  top: tokens.spacing.step4,
+                ),
+                child: TabHeaderIconButton(
+                  key: const ValueKey('projects-show-list-pane'),
+                  icon: Icons.view_sidebar_rounded,
+                  tooltip: context.messages.listPaneShowTooltip,
+                  onPressed: splitController!.showListPane,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

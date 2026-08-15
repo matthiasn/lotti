@@ -100,7 +100,9 @@ the list remains mounted inside `Offstage`, excluded from focus and semantics,
 so its query, filters, search text, selection and scroll position survive. The
 divider is offstage and excluded from focus with it, and the detail expands
 into the released width. Invoking the primary search command while focused on
-the detail restores the list before moving focus into its search field.
+the detail restores the list before moving focus into its search field. The
+detail stays under one stable `Stack` parent while only the restore-button
+overlay changes, preserving its scroll position and local widget state.
 
 The shared `PaneWidthController` persists one Tasks/Projects collapse
 preference alongside the shared expanded list width. Width changes are ignored

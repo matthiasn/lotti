@@ -321,6 +321,12 @@ knowledge-graph entry point (`Icons.hub_outlined` → `TaskKnowledgeGraphPage`,
 gated by `knowledgeGraphEntryPointEnabledProvider`), so the graph is one tap
 from the task without competing for header space on mobile.
 
+On desktop, list focus mode conditionally adds the restore-list overlay inside
+a stable `Stack` parent. The task detail subtree never changes parent while the
+list hides or returns, preserving scroll position and other local widget state.
+The restore control remains distinct from Back, which continues to traverse the
+linked-task detail stack.
+
 When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked
 image entries, including rotation, download and zoom controls. The cover uses a
