@@ -18,13 +18,27 @@ import 'package:lotti/utils/platform.dart';
 /// Shows a "less → more" legend alongside the grid, and an "add a habit"
 /// placeholder when the user has no habits at all.
 class HabitHeatmapCard extends ConsumerWidget {
-  const HabitHeatmapCard({super.key});
+  const HabitHeatmapCard({this.ignoreCategoryFilter = false, super.key});
+
+  /// Render the category-UNFILTERED day grid
+  /// ([HabitHeatmapData.unfilteredDays]).
+  /// The unified Goals page sets this: it exposes no category-filter control,
+  /// so it must not inherit the Habits tab's hidden selection.
+  final bool ignoreCategoryFilter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final data = ref.watch(habitHeatmapControllerProvider);
+    final heatmap = ref.watch(habitHeatmapControllerProvider);
+    final data = ignoreCategoryFilter
+        ? HabitHeatmapData(
+            days: heatmap.unfilteredDays,
+            hasHabits: heatmap.hasHabits,
+            isLoading: heatmap.isLoading,
+            streaksByHabit: heatmap.streaksByHabit,
+          )
+        : heatmap;
     final firstDayOfWeekIndex = ref
         .watch(firstDayOfWeekIndexProvider)
         .maybeWhen(data: (i) => i, orElse: () => DateTime.monday % 7);

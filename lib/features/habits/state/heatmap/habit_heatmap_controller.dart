@@ -170,6 +170,19 @@ class HabitHeatmapController extends Notifier<HabitHeatmapData> {
         selectedCategoryIds: _selectedCategoryIds,
         todayYmd: now.ymd,
       ),
+      // The unified Goals page has no category-filter control and must not
+      // inherit the Habits tab's hidden selection; recomputing the pure fold
+      // is only paid while a filter is actually active.
+      daysAll: _selectedCategoryIds.isEmpty
+          ? null
+          : buildHeatmapDays(
+              completions: _habitCompletions,
+              habitDefinitions: _habitDefinitions,
+              rangeStartYmd: _rangeStart(now).ymd,
+              rangeEndYmd: now.ymd,
+              selectedCategoryIds: const {},
+              todayYmd: now.ymd,
+            ),
       // Streaks are per habit and ignore the category filter — a habit's own
       // chain shouldn't vanish because a different category is selected.
       streaksByHabit: currentStreaksByHabit(

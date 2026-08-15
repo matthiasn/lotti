@@ -133,6 +133,9 @@ void main() {
     WidgetTester tester,
     HabitsState state, {
     bool agentsNeverResolve = false,
+    bool agentsFail = false,
+    bool healthFails = false,
+    GoalProgressView? Function()? progressOverride,
     Size viewport = const Size(800, 2600),
   }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
@@ -158,16 +161,26 @@ void main() {
             activeGoalAgentsProvider.overrideWith(
               (ref) => Completer<List<AgentIdentityEntity>>().future,
             )
+          else if (agentsFail)
+            activeGoalAgentsProvider.overrideWith(
+              (ref) async => throw StateError('agent db unavailable'),
+            )
           else
             activeGoalAgentsProvider.overrideWith(
               (ref) async => [identity('goal-1', 'Fitness')],
             ),
-          goalAgentHealthProvider(
-            'goal-1',
-          ).overrideWith((ref) async => health('goal-1')),
-          goalAgentProgressViewProvider(
-            'goal-1',
-          ).overrideWith((ref) async => progress()),
+          if (healthFails)
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => throw StateError('health unavailable'),
+            )
+          else
+            goalAgentHealthProvider(
+              'goal-1',
+            ).overrideWith((ref) async => health('goal-1')),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async =>
+                progressOverride != null ? progressOverride() : progress(),
+          ),
           goalAssessmentHistoryProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -346,14 +359,13 @@ void main() {
       viewport: const Size(430, 2600),
     );
 
-    // The reused completion-rate chart's headline row overflows at phone
-    // widths under the wide test font — pre-existing rendering noise from
-    // the reused card, not the fold behavior under test here.
+    // The wide FlutterTest fallback font renders roughly double-width text,
+    // so the folded segmented tabs overflow here even though the same layout
+    // fits with the app's real fonts (the 390px real-font capture in this
+    // PR's review screenshots renders cleanly). Tolerate ONLY
+    // overflow-shaped exceptions; anything else still fails the test.
     var exception = tester.takeException();
     while (exception != null) {
-      // The binding folds several reported errors into one wrapper whose
-      // message doesn't restate them; the individual reports (all RenderFlex
-      // overflows from the reused cards) are printed above.
       expect(
         '$exception',
         anyOf(contains('overflowed'), contains('Multiple exceptions')),
@@ -365,5 +377,74 @@ void main() {
     final titleRect = tester.getRect(find.text('Goals'));
     final tabsRect = tester.getRect(find.text('due').first);
     expect(tabsRect.top, greaterThan(titleRect.bottom - 1));
+  });
+
+  testWidgets('a FAILED first agent load says so instead of silently hiding '
+      'goals and ungrouped habits', (tester) async {
+    await pump(tester, baseState(), agentsFail: true);
+
+    expect(
+      find.text("Couldn't load your agents right now."),
+      findsOneWidget,
+    );
+    expect(find.byType(UnifiedGoalCard), findsNothing);
+    // Without the goal claims, orphan classification would be guesswork —
+    // the error line carries the state instead of a misgrouped list.
+    expect(find.text('Not in a goal'), findsNothing);
+  });
+
+  testWidgets('one goal whose health errored does not black out the orphan '
+      'section — it settles as claiming nothing', (tester) async {
+    await pump(tester, baseState(), healthFails: true);
+
+    // Both habits render as ungrouped: the failing goal's claims are
+    // unknowable, and hiding every habit indefinitely would be worse. The
+    // goal card still renders header-only (no false verdict).
+    expect(find.text('Not in a goal'), findsOneWidget);
+    expect(find.text(habitFlossing.name), findsOneWidget);
+    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+    expect(find.text('Fitness'), findsOneWidget);
+  });
+
+  testWidgets('a goal criterion referencing a deactivated habit renders no '
+      'actionable row under the all filter', (tester) async {
+    // The goal claims a habit that is no longer among the ACTIVE
+    // definitions: its quick-complete would bypass the goal recording
+    // path's lifecycle checks, so no row may render for it.
+    await pump(
+      tester,
+      baseState(),
+      progressOverride: () => GoalProgressView(
+        today: DateTime.utc(2026, 8, 15),
+        habits: [
+          const GoalHabitProgressView(
+            habitId: 'habit-retired',
+            criterionId: 'c-retired',
+            name: 'Retired habit',
+            targetCount: 4,
+            days: [],
+            successfulWeeks: 0,
+            evaluatedSuccesses: 1,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(
+      find.byKey(const Key('unified-goal-goal-1-c-retired-habit-retired')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('the aggregate heatmap opts out of the category filter', (
+    tester,
+  ) async {
+    await pump(tester, baseState());
+
+    final heatmapCard = tester.widget<HabitHeatmapCard>(
+      find.byType(HabitHeatmapCard),
+    );
+    expect(heatmapCard.ignoreCategoryFilter, isTrue);
   });
 }

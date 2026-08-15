@@ -67,12 +67,14 @@ Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
 /// The goal card's one-line summary — TEMPLATED from live deterministic state,
 /// never generated prose, so it can never be stale (design handover §4.8).
 ///
-/// Habit goals summarise their on-track fraction. Goals without habit
-/// dimensions (signal-only goals like Steps) fall back to the agent's
-/// standing [oneLiner] — except in the no-data state, where the summary is
-/// the setup nudge unless a standing one-liner already describes the goal
-/// (the same "never contradict a standing assessment" display rule the
-/// coarse-health chip follows). Null means: render no summary line.
+/// Habit-ONLY goals summarise their on-track fraction. Goals with any
+/// non-habit dimension — signal-only goals like Steps, and mixed composites
+/// — fall back to the agent's standing [oneLiner]: a habit fraction beside
+/// a pill that also weighs a metric could contradict it ("Behind" next to
+/// "all habits on track"). In the no-data state the summary is the setup
+/// nudge unless a standing one-liner already describes the goal (the same
+/// "never contradict a standing assessment" display rule the coarse-health
+/// chip follows). Null means: render no summary line.
 String? unifiedGoalSummary(
   AppLocalizations messages, {
   required UnifiedGoalStatus status,
@@ -84,7 +86,8 @@ String? unifiedGoalSummary(
     return standing ?? messages.unifiedGoalSummaryNoData;
   }
   final habits = progress?.habits ?? const <GoalHabitProgressView>[];
-  if (habits.isEmpty) return standing;
+  final metrics = progress?.metrics ?? const <GoalMetricProgressView>[];
+  if (habits.isEmpty || metrics.isNotEmpty) return standing;
   final onTrackCount = habits.where((habit) => habit.deficit == 0).length;
   if (onTrackCount == habits.length) {
     return messages.unifiedGoalSummaryAllOnTrack(habits.length);

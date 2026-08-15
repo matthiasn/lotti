@@ -446,6 +446,50 @@ void main() {
       });
     });
 
+    test('a DIRECT switch between the Habits and Goals tabs refetches, '
+        'even though both are habits-rendering surfaces', () {
+      const goalsTabIndex = 2;
+      when(() => mockNavService.goalsIndex).thenReturn(goalsTabIndex);
+      fakeAsync((async) {
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
+        definitionsController.add([testHabit1]);
+        async.flushMicrotasks();
+
+        clearInteractions(mockRepository);
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        // The controller booted with the Habits tab active
+        // (index == habitsIndex), so `_wasHabitsActive` is already true —
+        // without the last-index tracking, jumping straight to the Goals
+        // tab would be swallowed as "still active" and midnight/showFrom
+        // boundaries crossed while parked on Habits would go stale.
+        navIndexController.add(goalsTabIndex);
+        async.flushMicrotasks();
+
+        verify(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+
+        // A repeat emission of the SAME index (emitState fires on every tab
+        // tap) must NOT refetch again.
+        clearInteractions(mockRepository);
+        navIndexController.add(goalsTabIndex);
+        async.flushMicrotasks();
+        verifyNever(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        );
+      });
+    });
+
     test('ignores unrelated notifications', () {
       fakeAsync((async) {
         container.read(habitsControllerProvider);

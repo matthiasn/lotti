@@ -259,6 +259,36 @@ void main() {
       );
     });
 
+    test('mixed goals (habit AND metric dimensions) defer to the standing '
+        'one-liner — a habit-only fraction could contradict the pill', () {
+      final progress = GoalProgressView(
+        today: DateTime.utc(2026, 8, 15),
+        habits: [habitView(successes: 4)],
+        metric: const GoalMetricProgressView(
+          name: 'Step count',
+          target: 10000,
+          days: [],
+        ),
+      );
+      expect(
+        unifiedGoalSummary(
+          messages,
+          status: UnifiedGoalStatus.behind,
+          progress: progress,
+          oneLiner: 'The steps average is lagging.',
+        ),
+        'The steps average is lagging.',
+      );
+      expect(
+        unifiedGoalSummary(
+          messages,
+          status: UnifiedGoalStatus.behind,
+          progress: progress,
+        ),
+        isNull,
+      );
+    });
+
     test('goals without habit dimensions fall back to the standing '
         'one-liner, or render no line at all', () {
       expect(

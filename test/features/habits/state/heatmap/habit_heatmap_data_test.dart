@@ -472,5 +472,12 @@ void main() {
     test('value equality by fields', () {
       expect(HabitHeatmapData.empty(), HabitHeatmapData.empty());
     });
+
+    test('unfilteredDays falls back to days when no filtered companion was '
+        'computed', () {
+      final data = HabitHeatmapData.empty();
+      expect(data.daysAll, isNull);
+      expect(data.unfilteredDays, same(data.days));
+    });
   });
 }

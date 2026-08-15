@@ -55,6 +55,12 @@ class HabitsController extends Notifier<HabitsState> {
   /// without keeping a background ticker alive.
   bool _wasHabitsActive = false;
 
+  /// The previous nav-index emission, so a DIRECT switch between the two
+  /// habits-rendering surfaces (Habits tab ↔ unified Goals tab) still counts
+  /// as entering one — [_wasHabitsActive] alone stays true across it and
+  /// would swallow the refresh.
+  int _lastNavIndex = -1;
+
   late HabitsRepository _repository;
   late final NavService _navService = getIt<NavService>();
   late DateTime Function() _now;
@@ -70,6 +76,7 @@ class HabitsController extends Notifier<HabitsState> {
     // anchored to this controller's lifecycle even if disposal races
     // with init — they are guaranteed to be cancelled by _cleanup.
     _wasHabitsActive = _isHabitsSurfaceActive(_navService.index);
+    _lastNavIndex = _navService.index;
     _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
@@ -302,9 +309,11 @@ class HabitsController extends Notifier<HabitsState> {
 
     final isHabitsActive = _isHabitsSurfaceActive(newIndex);
     final wasActive = _wasHabitsActive;
+    final switchedTab = newIndex != _lastNavIndex;
     _wasHabitsActive = isHabitsActive;
+    _lastNavIndex = newIndex;
 
-    if (isHabitsActive && !wasActive) {
+    if (isHabitsActive && (!wasActive || switchedTab)) {
       await _fetchHabitCompletions();
       if (!ref.mounted) return;
       _determineHabitSuccessByDays();

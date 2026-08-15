@@ -2682,7 +2682,12 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         label: messages.goalFormOpenHabits,
                         onPressed: () {
                           Navigator.of(context).pop();
-                          beamToNamed('/habits');
+                          // Habit definitions are CREATED in settings, and the
+                          // settings tab is always enabled — the Habits tab is
+                          // flag-gated (and has no create affordance), so
+                          // routing there strands the wizard on /tasks when
+                          // only the unified Goals flag is on.
+                          beamToNamed('/settings/habits');
                         },
                         variant: DesignSystemButtonVariant.secondary,
                         fullWidth: true,

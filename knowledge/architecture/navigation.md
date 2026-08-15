@@ -188,8 +188,8 @@ Each delegate routes into one `BeamLocation` under
 | `ProjectsLocation` | `/projects`, `/projects/:projectId` |
 | `DashboardsLocation` | `/dashboards`, `/dashboards/impact`, `/dashboards/:dashboardId` |
 | `EventsLocation` | `/events`, `/events/:eventId` |
-| `AgentsLocation` | `/agents`, `/agents/create`, `/agents/details/:agentId[/chat|/edit]` |
-| `GoalsLocation` | `/goals`, `/goals/create`, `/goals/details/:agentId[/chat|/edit]` |
+| `AgentsLocation` | `/agents`, `/agents/create`, `/agents/details/:agentId[/chat\|/edit]` |
+| `GoalsLocation` | `/goals`, `/goals/create`, `/goals/details/:agentId[/chat\|/edit]` |
 | `HabitsLocation` | `/habits` |
 | `SettingsLocation` | the deepest tree in the app — `/settings` plus AI, agents, sync, advanced and entity-definition subtrees |
 

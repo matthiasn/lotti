@@ -362,6 +362,24 @@ void main() {
         state.days.firstWhere((d) => d.ymd == '2026-06-16').successCount,
         0,
       );
+      // The unfiltered companion keeps the full picture: the unified Goals
+      // page reads it so its aggregate heatmap cannot inherit the Habits
+      // tab's hidden category selection.
+      expect(
+        state.unfilteredDays
+            .firstWhere((d) => d.ymd == '2026-06-16')
+            .successCount,
+        1,
+      );
+
+      // With the filter cleared, no duplicate fold is paid: daysAll is null
+      // and the getter falls back to the filtered-equals-unfiltered list.
+      (container.read(habitsControllerProvider.notifier) as _FilterController)
+          .emitCategories({});
+      async.flushMicrotasks();
+      final cleared = container.read(habitHeatmapControllerProvider);
+      expect(cleared.daysAll, isNull);
+      expect(cleared.unfilteredDays, same(cleared.days));
     }, initialTime: fixedNow);
   });
 

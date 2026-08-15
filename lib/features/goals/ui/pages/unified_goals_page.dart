@@ -68,13 +68,20 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     final agents = ref.watch(activeGoalAgentsProvider);
     // Stale-while-revalidate: background wakes reload the provider
     // constantly; an established list must never flash away. Before the
-    // first value the goal section simply renders nothing.
+    // first value the goal section renders nothing — unless that first load
+    // FAILED, which must say so instead of silently hiding every goal and
+    // ungrouped habit (the agents list's own rule).
     final identities = agents.value ?? const [];
+    final failedFirstLoad = agents.value == null && agents.hasError;
 
-    // The due/later/done tabs select habit ROWS; `all` shows everything.
-    // Deliberately the category-UNFILTERED buckets: this page exposes no
-    // category-filter control, so it must not silently inherit a selection
-    // made on the Habits tab.
+    // The due/later/done tabs select habit ROWS; `all` shows every ACTIVE
+    // habit. Deliberately the category-UNFILTERED buckets: this page exposes
+    // no category-filter control, so it must not silently inherit a selection
+    // made on the Habits tab. `all` still passes an explicit set (the active
+    // definitions) rather than null: a goal's criteria tree can reference a
+    // habit that was later deactivated, and such a row must not render an
+    // actionable quick-complete that would bypass the goal recording path's
+    // lifecycle checks.
     final visibleHabitIds = switch (state.displayFilter) {
       HabitDisplayFilter.openNow => {for (final h in state.openNowAll) h.id},
       HabitDisplayFilter.pendingLater => {
@@ -83,7 +90,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
       HabitDisplayFilter.completed => {
         for (final h in state.completedAll) h.id,
       },
-      HabitDisplayFilter.all => null,
+      HabitDisplayFilter.all => {
+        for (final h in state.habitDefinitions) h.id,
+      },
     };
 
     // Goal-card rows count only real successes as done: goal criteria credit
@@ -104,9 +113,13 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     ];
     // `agents.hasValue` guards the first load: with no identities resolved
     // yet, `every` on the empty healths list is vacuously true and cached
-    // habit state would flash into "not in a goal" before jumping back.
+    // habit state would flash into "not in a goal" before jumping back. A
+    // health whose FIRST load errored counts as settled (claiming nothing):
+    // its card renders header-only, and one failing goal must not black out
+    // the whole ungrouped section indefinitely.
     final healthsResolved =
-        agents.hasValue && healths.every((health) => health.hasValue);
+        agents.hasValue &&
+        healths.every((health) => health.hasValue || health.hasError);
     final claimedHabitIds = <String>{
       for (final health in healths)
         if (health.value?.spec?.criteria case final criteria?)
@@ -129,12 +142,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
               .toList()
         : const <HabitDefinition>[];
 
-    final width = MediaQuery.sizeOf(context).width;
-    final pagePadding =
-        width > kUnifiedGoalsContentMaxWidth + tokens.spacing.step6 * 2
-        ? (width - kUnifiedGoalsContentMaxWidth) / 2
-        : tokens.spacing.step6;
-
     HabitActionRow buildOrphanRow(HabitDefinition habitDefinition) {
       return HabitActionRow(
         key: Key('unified-orphan-${habitDefinition.id}'),
@@ -155,54 +162,82 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         ),
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                pagePadding,
-                tokens.spacing.step5,
-                pagePadding,
-                tokens.spacing.step6 +
-                    DesignSystemBottomNavigationBar.occupiedHeight(context) +
-                    tokens.spacing.step12,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _GoalsHeader(
-                    filter: state.displayFilter,
-                    onFilterChanged: ref
-                        .read(habitsControllerProvider.notifier)
-                        .setDisplayFilter,
-                  ),
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  const HabitsSummaryCard(),
-                  SizedBox(height: tokens.spacing.step5),
-                  for (final identity in identities) ...[
-                    UnifiedGoalCard(
-                      key: Key('unified-goal-card-${identity.agentId}'),
-                      identity: identity,
-                      successToday: successToday,
-                      streaksByHabit: streaks,
-                      visibleHabitIds: visibleHabitIds,
-                    ),
-                    SizedBox(height: tokens.spacing.cardItemSpacing),
-                  ],
-                  if (orphanHabits.isNotEmpty) ...[
-                    HabitsSectionHeader(
-                      label: messages.unifiedGoalsUngroupedHabitsHeader,
-                      count: orphanHabits.length,
-                    ),
-                    ...orphanHabits.map(buildOrphanRow),
-                  ],
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  const HabitHeatmapCard(),
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  const HabitsChartCard(),
-                ]),
-              ),
+        // Centered against the ACTUAL pane, not the window: in desktop layout
+        // this page renders beside the navigation sidebar, and window-width
+        // arithmetic would subtract the sidebar twice (the agents-page idiom).
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: kUnifiedGoalsContentMaxWidth + tokens.spacing.step6 * 2,
             ),
-          ],
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step6,
+                    tokens.spacing.step5,
+                    tokens.spacing.step6,
+                    tokens.spacing.step6 +
+                        DesignSystemBottomNavigationBar.occupiedHeight(
+                          context,
+                        ) +
+                        tokens.spacing.step12,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _GoalsHeader(
+                        filter: state.displayFilter,
+                        onFilterChanged: ref
+                            .read(habitsControllerProvider.notifier)
+                            .setDisplayFilter,
+                      ),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      const HabitsSummaryCard(),
+                      SizedBox(height: tokens.spacing.step5),
+                      if (failedFirstLoad)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: tokens.spacing.sectionGap,
+                          ),
+                          child: Text(
+                            messages.agentsPageLoadFailed,
+                            textAlign: TextAlign.center,
+                            style: tokens.typography.styles.body.bodyMedium
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
+                          ),
+                        ),
+                      for (final identity in identities) ...[
+                        UnifiedGoalCard(
+                          key: Key('unified-goal-card-${identity.agentId}'),
+                          identity: identity,
+                          successToday: successToday,
+                          streaksByHabit: streaks,
+                          visibleHabitIds: visibleHabitIds,
+                        ),
+                        SizedBox(height: tokens.spacing.cardItemSpacing),
+                      ],
+                      if (orphanHabits.isNotEmpty) ...[
+                        HabitsSectionHeader(
+                          label: messages.unifiedGoalsUngroupedHabitsHeader,
+                          count: orphanHabits.length,
+                        ),
+                        ...orphanHabits.map(buildOrphanRow),
+                      ],
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      // Unfiltered: the aggregate heatmap must not inherit
+                      // the Habits tab's hidden category selection either.
+                      const HabitHeatmapCard(ignoreCategoryFilter: true),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      const HabitsChartCard(),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
