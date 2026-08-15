@@ -1,7 +1,7 @@
 ---
 type: Architecture
 title: Persistence layer
-description: The eleven Drift/SQLite databases, how connections are opened and migrated, and how writes reach the UI.
+description: The eleven Drift/SQLite databases, attachment storage, how connections are opened and migrated, and how writes reach the UI.
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
@@ -48,6 +48,14 @@ sources:
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
     last_modified: 2026-07-09
+  - id: image-path-migration
+    resource: ../../lib/features/journal/service/image_path_migration_service.dart
+    title: ImagePathMigrationService
+    last_modified: 2026-08-15
+  - id: image-paths
+    resource: ../../lib/utils/image_utils.dart
+    title: Journal image path resolution
+    last_modified: 2026-08-15
   - id: backup-catalog
     resource: ../../lib/features/backup_restore/domain/profile_backup_catalog.dart
     title: Profile backup storage catalog
@@ -329,6 +337,38 @@ Two consequences worth holding on to:
 
 # Backups and maintenance
 
+## Journal image paths and screenshot repair
+
+`JournalImage.data.imageDirectory` stores a platform-neutral,
+documents-relative directory with forward slashes and leading/trailing
+separators, for example `/images/2026-08-15/`. It is not an absolute filesystem
+path. Writers strip the metadata-only leading separator and construct physical
+paths with `path.join`; AI image readers resolve only this canonical location
+inside the documents directory.
+
+A legacy screenshot writer persisted `images/...` and concatenated it directly
+to the documents path. A profile rooted at `Documents` therefore wrote the file
+under the sibling `Documentsimages` directory. Inline rendering historically
+used the same malformed concatenation, so the screenshot remained visible,
+while AI's containment check correctly rejected it as outside the profile.
+
+Settings → Advanced → Maintenance exposes the explicit, repeatable **Repair
+screenshot storage** pass implemented by `ImagePathMigrationService`. It scans
+all non-deleted `JournalImage` rows, including private, starred, and every flag
+state. For each legacy file it:
+
+1. copies to a uniquely named temporary file in the canonical target directory;
+2. verifies length and SHA-256 before atomically renaming the temporary file;
+3. persists the canonical metadata through `PersistenceLogic`; and
+4. deletes the legacy file only after the metadata write succeeds.
+
+If a crash or persistence failure interrupts the pass, the legacy source is
+retained and a later run can finish safely. Existing canonical files are never
+overwritten with different bytes; conflicts, genuinely missing files, invalid
+paths, and failures are counted and reported without aborting the whole pass.
+The normal display resolver retains a read-only legacy fallback until repair,
+so affected screenshots do not disappear from existing journal entries.
+
 `createDbBackup(fileName)` copies a database to
 `backup/db.<yyyy-MM-dd_HH-mm-ss-S>.sqlite`. It runs automatically before a
 `JournalDb` migration and on demand from *Settings → Advanced → Maintenance*.
@@ -377,6 +417,7 @@ entity operations, which is where to look for it.
 | Slow-query interceptor | [`lib/database/slow_query_logging.dart`](../../lib/database/slow_query_logging.dart) |
 | Maintenance operations | [`lib/database/maintenance.dart`](../../lib/database/maintenance.dart) |
 | Historical Sync staging and retry | [`lib/features/sync/services/historical_sync_service.dart`](../../lib/features/sync/services/historical_sync_service.dart) |
+| Journal image paths and legacy screenshot repair | [`lib/utils/image_utils.dart`](../../lib/utils/image_utils.dart), [`lib/features/journal/service/image_path_migration_service.dart`](../../lib/features/journal/service/image_path_migration_service.dart) |
 | Profile backup inventory, manifest and staging | [Backup and restore](../features/backup-and-restore.md) |
 
 Related: [bootstrap and dependency injection](bootstrap-and-di.md) for when each

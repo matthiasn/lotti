@@ -8514,6 +8514,23 @@ class AppLocalizationsNl extends AppLocalizations {
       'Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.';
 
   @override
+  String get maintenanceRepairScreenshotPaths => 'Screenshotopslag herstellen';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Verplaats screenshots die door oudere versies zijn opgeslagen naar de juiste map, zodat AI-beeldanalyse ze kan lezen.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Screenshotherstel voltooid: $repaired hersteld, $missing ontbrekend, $conflicts conflicten, $failed mislukt.';
+  }
+
+  @override
   String get maintenanceReSync => 'Berichtgeschiedenis';
 
   @override

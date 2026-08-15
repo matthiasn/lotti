@@ -307,7 +307,7 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
   }
 
   Future<List<String>> _prepareImageData(JournalImage image) async {
-    final fullPath = getFullImagePath(image);
+    final fullPath = getCanonicalImagePath(image);
     final file = File(fullPath);
     if (!file.existsSync()) {
       developer.log(

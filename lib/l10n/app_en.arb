@@ -4848,6 +4848,25 @@
   "maintenanceRecreateFts5Confirm": "Yes, recreate index",
   "maintenanceRecreateFts5Description": "Recreate full-text search index",
   "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
+  "maintenanceRepairScreenshotPaths": "Repair screenshot storage",
+  "maintenanceRepairScreenshotPathsDescription": "Move screenshots saved by older versions into the correct folder so AI image analysis can read them.",
+  "maintenanceRepairScreenshotPathsResult": "Screenshot repair complete: {repaired} fixed, {missing} missing, {conflicts} conflicts, {failed} failed.",
+  "@maintenanceRepairScreenshotPathsResult": {
+    "placeholders": {
+      "repaired": {
+        "type": "int"
+      },
+      "missing": {
+        "type": "int"
+      },
+      "conflicts": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Message history",
   "maintenanceReSyncAgentEntities": "Agent entities",
   "maintenanceReSyncAgentLinks": "Agent links",

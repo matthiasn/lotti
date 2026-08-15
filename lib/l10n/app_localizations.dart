@@ -14464,6 +14464,29 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to recreate the full-text index? This may take some time.'**
   String get maintenanceRecreateFts5Message;
 
+  /// No description provided for @maintenanceRepairScreenshotPaths.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair screenshot storage'**
+  String get maintenanceRepairScreenshotPaths;
+
+  /// No description provided for @maintenanceRepairScreenshotPathsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Move screenshots saved by older versions into the correct folder so AI image analysis can read them.'**
+  String get maintenanceRepairScreenshotPathsDescription;
+
+  /// No description provided for @maintenanceRepairScreenshotPathsResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot repair complete: {repaired} fixed, {missing} missing, {conflicts} conflicts, {failed} failed.'**
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  );
+
   /// No description provided for @maintenanceReSync.
   ///
   /// In en, this message translates to:

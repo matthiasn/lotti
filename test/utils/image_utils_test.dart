@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   group('getRelativeAssetPath', () {
@@ -149,6 +152,58 @@ void main() {
       );
     });
 
+    test(
+      'preserves inline display from the malformed legacy location',
+      () async {
+        final sandbox = await Directory.systemTemp.createTemp(
+          'legacy_image_path_test_',
+        );
+        addTearDown(() => sandbox.delete(recursive: true));
+        final documentsDirectory = Directory(p.join(sandbox.path, 'Documents'));
+        await documentsDirectory.create();
+        final image = JournalImage(
+          meta: Metadata(
+            id: _failingEntryId,
+            createdAt: DateTime(2026, 8, 15),
+            updatedAt: DateTime(2026, 8, 15),
+            dateFrom: DateTime(2026, 8, 15),
+            dateTo: DateTime(2026, 8, 15),
+          ),
+          data: ImageData(
+            imageId: _failingEntryId,
+            imageFile: 'capture.screenshot.jpg',
+            imageDirectory: 'images/2026-08-15/',
+            capturedAt: DateTime(2026, 8, 15),
+          ),
+        );
+        final legacyPath = getLegacyMalformedImagePath(
+          image,
+          documentsDirectory: documentsDirectory.path,
+        );
+        await File(legacyPath).create(recursive: true);
+
+        expect(
+          getFullImagePath(
+            image,
+            documentsDirectory: documentsDirectory.path,
+          ),
+          legacyPath,
+        );
+        expect(
+          getCanonicalImagePath(
+            image,
+            documentsDirectory: documentsDirectory.path,
+          ),
+          p.join(
+            documentsDirectory.path,
+            'images',
+            '2026-08-15',
+            'capture.screenshot.jpg',
+          ),
+        );
+      },
+    );
+
     glados.Glados(
       glados.any.generatedImagePathScenario,
       // ignore: avoid_redundant_argument_values
@@ -236,7 +291,11 @@ class _GeneratedImagePathScenario {
 
   String get expectedRelativePath => '$imageDirectory$imageFile';
 
-  String get expectedFullPath => '$documentsDirectory$expectedRelativePath';
+  String get expectedFullPath => p.joinAll([
+    documentsDirectory,
+    ...directoryParts.map((part) => part.text),
+    imageFile,
+  ]);
 
   JournalImage get journalImage {
     final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -265,6 +324,8 @@ class _GeneratedImagePathScenario {
         'documentsDirectory: $documentsDirectory)';
   }
 }
+
+const _failingEntryId = 'dfb5db6b-215c-5d1f-b05a-53830b125fad';
 
 String _joinPath(List<_GeneratedImagePathToken> parts) {
   if (parts.isEmpty) {

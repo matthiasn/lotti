@@ -163,6 +163,13 @@ void main() {
     });
 
     group('takeScreenshot', () {
+      test('builds a canonical documents-relative screenshot path', () {
+        expect(
+          screenshotRelativePath(DateTime(2026, 8, 15)),
+          '/images/2026-08-15/',
+        );
+      });
+
       test(
         'creates ImageData with correct properties on supported platform',
         () async {
@@ -574,8 +581,8 @@ void main() {
 
       test('constructs correct relative paths', () {
         const relativePath = screenshotDirectoryPath;
-        expect(relativePath, equals('images/'));
-        expect(relativePath, isNot(startsWith('/')));
+        expect(relativePath, equals('/images/'));
+        expect(relativePath, startsWith('/'));
       });
     });
 
@@ -926,17 +933,16 @@ void main() {
 
       test('creates date-based directory structure', () {
         final testDate = DateTime(2024, 3, 15, 10, 30);
-        final day = DateFormat(screenshotDateFormat).format(testDate);
-        final pathStr = '$screenshotDirectoryPath$day/';
+        final pathStr = screenshotRelativePath(testDate);
 
-        expect(pathStr, startsWith('images/'));
+        expect(pathStr, startsWith('/images/'));
         expect(pathStr, endsWith('/'));
-        expect(pathStr, matches(RegExp(r'^images/\d{4}-\d{2}-\d{2}/$')));
+        expect(pathStr, matches(RegExp(r'^/images/\d{4}-\d{2}-\d{2}/$')));
       });
 
       test('uses relative paths for sandboxed environments', () {
-        expect(screenshotDirectoryPath, equals('images/'));
-        expect(screenshotDirectoryPath, isNot(startsWith('/')));
+        expect(screenshotDirectoryPath, equals('/images/'));
+        expect(screenshotDirectoryPath, isNot(startsWith('//')));
       });
     });
 

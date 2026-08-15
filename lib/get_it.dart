@@ -31,6 +31,7 @@ import 'package:lotti/features/ai_consumption/sync/consumption_sync_service.dart
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
+import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
@@ -373,6 +374,14 @@ Future<void> registerSingletons({
       ),
     )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
+    ..registerSingleton<ImagePathMigrationService>(
+      ImagePathMigrationService(
+        documentsDirectory: documentsDirectory,
+        journalDb: journalDb,
+        persistenceLogic: getIt<PersistenceLogic>(),
+        logger: domainLogger,
+      ),
+    )
     ..registerSingleton<EditorStateService>(EditorStateService());
   // Device health data must not bleed into a play world: like the sync
   // stack, health import is structurally absent in guest profiles, and its

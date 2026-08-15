@@ -8599,6 +8599,24 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sei sicuro di voler ricreare l\'indice full-text? Potrebbe volerci un po\' di tempo.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Ripara l’archivio degli screenshot';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Sposta gli screenshot salvati dalle versioni precedenti nella cartella corretta, così l’analisi immagini IA può leggerli.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Riparazione degli screenshot completata: $repaired corretti, $missing mancanti, $conflicts conflitti, $failed non riusciti.';
+  }
+
+  @override
   String get maintenanceReSync => 'Cronologia messaggi';
 
   @override

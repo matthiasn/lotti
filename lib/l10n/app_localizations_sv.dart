@@ -8500,6 +8500,24 @@ class AppLocalizationsSv extends AppLocalizations {
       'Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Reparera lagring av skärmbilder';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Flytta skärmbilder som äldre versioner sparade till rätt mapp så att AI-bildanalys kan läsa dem.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Reparation av skärmbilder klar: $repaired åtgärdade, $missing saknas, $conflicts konflikter, $failed misslyckades.';
+  }
+
+  @override
   String get maintenanceReSync => 'Meddelandehistorik';
 
   @override

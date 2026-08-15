@@ -8672,6 +8672,24 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.';
 
   @override
+  String get maintenanceRepairScreenshotPaths =>
+      'Reparați stocarea capturilor de ecran';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Mutați capturile de ecran salvate de versiunile mai vechi în dosarul corect, astfel încât analiza imaginilor cu IA să le poată citi.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Repararea capturilor de ecran s-a încheiat: $repaired reparate, $missing lipsă, $conflicts conflicte, $failed eșuate.';
+  }
+
+  @override
   String get maintenanceReSync => 'Istoricul mesajelor';
 
   @override

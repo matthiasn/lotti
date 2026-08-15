@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/lists/hover_divider_inde
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_animation_gallery_page.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
@@ -57,6 +58,8 @@ class MaintenanceBody extends ConsumerStatefulWidget {
 
 class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
     with HoverDividerIndex<MaintenanceBody> {
+  bool _isRepairingScreenshotPaths = false;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -175,6 +178,44 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
             subtitle: context.messages.maintenanceRecreateFts5Description,
             icon: Icons.search_rounded,
             onTap: () => Fts5RecreateModal.show(context),
+          ),
+          (
+            title: context.messages.maintenanceRepairScreenshotPaths,
+            subtitle:
+                context.messages.maintenanceRepairScreenshotPathsDescription,
+            icon: Icons.image_search_rounded,
+            onTap: () async {
+              if (_isRepairingScreenshotPaths) return;
+              setState(() => _isRepairingScreenshotPaths = true);
+              try {
+                final report = await getIt<ImagePathMigrationService>()
+                    .migrateAll();
+                if (!context.mounted) return;
+                final missing = report.count(ImagePathMigrationStatus.missing);
+                final conflicts = report.count(
+                  ImagePathMigrationStatus.conflict,
+                );
+                final failed =
+                    report.count(ImagePathMigrationStatus.failed) +
+                    report.count(ImagePathMigrationStatus.invalid);
+                context.showToast(
+                  tone: missing + conflicts + failed == 0
+                      ? DesignSystemToastTone.success
+                      : DesignSystemToastTone.warning,
+                  title: context.messages
+                      .maintenanceRepairScreenshotPathsResult(
+                        report.affected,
+                        missing,
+                        conflicts,
+                        failed,
+                      ),
+                );
+              } finally {
+                if (mounted) {
+                  setState(() => _isRepairingScreenshotPaths = false);
+                }
+              }
+            },
           ),
           if (getIt.isRegistered<EmbeddingStore>())
             (

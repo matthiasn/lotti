@@ -8495,6 +8495,23 @@ class AppLocalizationsDa extends AppLocalizations {
       'Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.';
 
   @override
+  String get maintenanceRepairScreenshotPaths => 'Reparer skærmbilledlager';
+
+  @override
+  String get maintenanceRepairScreenshotPathsDescription =>
+      'Flyt skærmbilleder, som ældre versioner gemte, til den korrekte mappe, så AI-billedanalyse kan læse dem.';
+
+  @override
+  String maintenanceRepairScreenshotPathsResult(
+    int repaired,
+    int missing,
+    int conflicts,
+    int failed,
+  ) {
+    return 'Reparation af skærmbilleder fuldført: $repaired rettet, $missing mangler, $conflicts konflikter, $failed mislykkedes.';
+  }
+
+  @override
   String get maintenanceReSync => 'Beskedhistorik';
 
   @override

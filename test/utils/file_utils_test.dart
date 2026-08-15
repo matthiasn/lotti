@@ -257,32 +257,37 @@ void main() {
       }
     });
 
-    test('createAssetDirectory creates directory and returns path', () async {
-      // Skip in CI environment to avoid file system operations
-      if (Platform.environment.containsKey('CI')) {
-        return;
-      }
+    test(
+      'createAssetDirectory keeps every relative path under documents',
+      () async {
+        const rootName = 'asset_directory_path_test';
+        final testRoot = Directory(p.join(docDir.path, rootName));
+        try {
+          final withLeadingSeparator = await createAssetDirectory(
+            '/$rootName/with-leading-separator',
+          );
+          final withoutLeadingSeparator = await createAssetDirectory(
+            '$rootName/without-leading-separator',
+          );
 
-      // Create a temp dir for the test
-      final tempDir = await Directory.systemTemp.createTemp('file_utils_test_');
-
-      try {
-        // We're already using the directory from GetIt, so we don't need to register it again
-
-        // Test the function
-        const relativePath = '/test/asset/dir';
-        final result = await createAssetDirectory(relativePath);
-
-        // Verify the directory was created
-        // Note: this will use the docDir from GetIt, not tempDir
-        final expectedPath = '${docDir.path}$relativePath';
-        expect(result, expectedPath);
-        expect(Directory(expectedPath).existsSync(), isTrue);
-      } finally {
-        // Clean up
-        await tempDir.delete(recursive: true);
-      }
-    });
+          expect(
+            withLeadingSeparator,
+            p.join(docDir.path, rootName, 'with-leading-separator'),
+          );
+          expect(
+            withoutLeadingSeparator,
+            p.join(docDir.path, rootName, 'without-leading-separator'),
+          );
+          expect(Directory(withLeadingSeparator).existsSync(), isTrue);
+          expect(Directory(withoutLeadingSeparator).existsSync(), isTrue);
+          expect(Directory('${docDir.path}$rootName').existsSync(), isFalse);
+        } finally {
+          if (testRoot.existsSync()) {
+            await testRoot.delete(recursive: true);
+          }
+        }
+      },
+    );
 
     test(
       'findDocumentsDirectory returns correct directory based on platform',
