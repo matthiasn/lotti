@@ -830,8 +830,12 @@ flowchart TD
   ids are deterministic per `(agentId, runKey)`; if the output transaction
   committed and only the deferred outbox flush failed, the reply is re-read as
   the commit marker and the turn completes without another billed inference.
-  Creation and owner editing share a three-stage intention → mapping →
-  confirmation route. The mapping stage matches observable active habits and
+  Creation and owner editing share one route through the same controls.
+  Creation is a three-stage intention → mapping → confirmation flow; owner
+  editing skips the intention stage — the statement is a single-line field
+  (with the example pills) at the top of the mapping page — so editing is two
+  steps, and the step indicator renders the count of the steps actually
+  walked. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
   rolling-week cadence, can add a searchable existing measurable with a
   numeric rolling-week target, and offers Weight or one Blood pressure source
@@ -839,7 +843,10 @@ flowchart TD
   chooses `at least` or `no more than` and uses a rolling seven-day average.
   The same controls load during owner editing, retain existing criterion ids,
   and expose `all`, `any`, or `at least N` when multiple dimensions are
-  selected. An empty measurable library links to the
+  selected. The combination sheet applies every choice to the page
+  immediately while rendering from local mirrors, and stays open until the
+  explicit Done (or a dismiss gesture) — the at-least stepper adjusts the
+  count on its own full-width line without dismissing the sheet. An empty measurable library links to the
   existing measurable setup flow. Mapping waits for the active-habit snapshot before caching a
   match, uses whole-word matching that excludes generic cadence terms, and
   explicitly refuses an intention for which no observable proxy exists.

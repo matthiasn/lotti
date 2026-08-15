@@ -6643,8 +6643,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Stávající signály a plán zůstanou přesně zachované.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Krok $step ze 3';
+  String goalFormProgress(int step, int total) {
+    return 'Krok $step z $total';
   }
 
   @override
@@ -6672,9 +6672,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormSaveChanges => 'Uložit novou verzi';
 
   @override
+  String get goalFormStatementLabel => 'Tvůj cíl, tvými slovy';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target kroků denně';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Denní cíl';
 
   @override
   String get goalFormStepsSignal => 'automatický počet kroků';

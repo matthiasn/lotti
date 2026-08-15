@@ -11212,8 +11212,8 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormProgress.
   ///
   /// In en, this message translates to:
-  /// **'Step {step} of 3'**
-  String goalFormProgress(int step);
+  /// **'Step {step} of {total}'**
+  String goalFormProgress(int step, int total);
 
   /// No description provided for @goalFormRefusalBody.
   ///
@@ -11251,11 +11251,23 @@ abstract class AppLocalizations {
   /// **'Save new version'**
   String get goalFormSaveChanges;
 
+  /// No description provided for @goalFormStatementLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal, in your words'**
+  String get goalFormStatementLabel;
+
   /// No description provided for @goalFormStepsCadence.
   ///
   /// In en, this message translates to:
   /// **'{target} steps a day'**
   String goalFormStepsCadence(String target);
+
+  /// No description provided for @goalFormStepsDailyTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily target'**
+  String get goalFormStepsDailyTarget;
 
   /// No description provided for @goalFormStepsSignal.
   ///

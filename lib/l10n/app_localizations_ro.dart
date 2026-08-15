@@ -6695,8 +6695,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Semnalele și programul existente vor fi păstrate întocmai.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Pasul $step din 3';
+  String goalFormProgress(int step, int total) {
+    return 'Pasul $step din $total';
   }
 
   @override
@@ -6724,9 +6724,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormSaveChanges => 'Salvați versiunea nouă';
 
   @override
+  String get goalFormStatementLabel => 'Obiectivul, în cuvintele dumneavoastră';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target pași pe zi';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Țintă zilnică';
 
   @override
   String get goalFormStepsSignal => 'numărarea automată a pașilor';

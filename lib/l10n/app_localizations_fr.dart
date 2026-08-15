@@ -6680,8 +6680,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les signaux et le calendrier existants seront conservés à l’identique.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Étape $step sur 3';
+  String goalFormProgress(int step, int total) {
+    return 'Étape $step sur $total';
   }
 
   @override
@@ -6709,9 +6709,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalFormSaveChanges => 'Enregistrer la nouvelle version';
 
   @override
+  String get goalFormStatementLabel => 'Ton objectif, avec tes mots';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target pas par jour';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Objectif quotidien';
 
   @override
   String get goalFormStepsSignal => 'comptage automatique des pas';

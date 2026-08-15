@@ -6640,8 +6640,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os sinais e o calendário existentes serão preservados exatamente.';
 
   @override
-  String goalFormProgress(int step) {
-    return 'Passo $step de 3';
+  String goalFormProgress(int step, int total) {
+    return 'Passo $step de $total';
   }
 
   @override
@@ -6669,9 +6669,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormSaveChanges => 'Guardar nova versão';
 
   @override
+  String get goalFormStatementLabel => 'A tua meta, nas tuas palavras';
+
+  @override
   String goalFormStepsCadence(String target) {
     return '$target passos por dia';
   }
+
+  @override
+  String get goalFormStepsDailyTarget => 'Meta diária';
 
   @override
   String get goalFormStepsSignal => 'contagem automática de passos';

@@ -55,7 +55,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _title = TextEditingController();
   final _persona = TextEditingController();
   final _stepsTarget = TextEditingController(text: '10000');
-  _GoalFormStep _step = _GoalFormStep.intention;
+  late _GoalFormStep _step = _visibleSteps.first;
   var _mapping = const GoalFormMapping.empty();
   final _habitTargets = <String, int>{};
   final _measurableTargets = <String, num?>{};
@@ -94,6 +94,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _errorAnchors = <String, GlobalKey>{};
   String? _personaError;
   String? _titleError;
+  String? _statementError;
   var _initialized = false;
   var _defaultPersonaInitialized = false;
   var _saving = false;
@@ -105,6 +106,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _validation;
 
   bool get _editing => widget.agentId != null;
+
+  /// The wizard as the user actually walks it. Editing has no separate
+  /// intention page — the statement is one field on the mapping page — so the
+  /// edit flow is two steps where creation is three.
+  List<_GoalFormStep> get _visibleSteps => _editing
+      ? const [_GoalFormStep.mapping, _GoalFormStep.confirmation]
+      : _GoalFormStep.values;
 
   @override
   void didChangeDependencies() {
@@ -147,6 +155,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _categoryTimeDirections.addAll(_mapping.categoryTimeDirections);
     _compositeRule = _mapping.compositeRule;
     _requiredSuccesses = _mapping.requiredSuccesses;
+    // Editing lands directly on the mapping page, so the signal-row order
+    // that creation freezes on step entry is frozen here instead.
+    _snapshotSignalGroups();
   }
 
   num? _parseLocalizedTarget(String raw) {
@@ -475,6 +486,14 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   void _continueToConfirmation(List<HabitDefinition> habits) {
+    // Editing carries the statement field on this page, so the emptiness
+    // check the intention step performs for creation happens here.
+    if (_editing && _statement.text.trim().isEmpty) {
+      setState(
+        () => _statementError = context.messages.goalFormValidationIntention,
+      );
+      return;
+    }
     _reconcileHabitTargets();
     final hasMapping =
         !_mapping.isEditable ||
@@ -863,8 +882,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   void _back() {
     if (_saving) return;
 
-    if (_step.index > _GoalFormStep.intention.index) {
-      final target = _GoalFormStep.values[_step.index - 1];
+    final steps = _visibleSteps;
+    final index = steps.indexOf(_step);
+    if (index > 0) {
+      final target = steps[index - 1];
       if (target == _GoalFormStep.mapping) _snapshotSignalGroups();
       setState(() {
         _step = target;
@@ -966,7 +987,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       fullWidth: true,
     );
     return PopScope(
-      canPop: _step == _GoalFormStep.intention,
+      canPop: _step == _visibleSteps.first,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -998,7 +1019,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                   children: [
                     Padding(
                       padding: EdgeInsets.only(top: tokens.spacing.step4),
-                      child: _StepProgress(step: _step),
+                      child: _StepProgress(steps: _visibleSteps, step: _step),
                     ),
                     Expanded(
                       child: ListView(
@@ -1019,6 +1040,17 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               },
                             ),
                             _GoalFormStep.mapping => _MappingStep(
+                              // Editing has no intention page: the statement
+                              // is a single-line field at the top of this
+                              // page instead.
+                              statement: _editing ? _statement : null,
+                              statementError: _statementError,
+                              onStatementChanged: () =>
+                                  setState(() => _statementError = null),
+                              onExampleSelected: (example) => setState(() {
+                                _statement.text = example;
+                                _statementError = null;
+                              }),
                               title: _title,
                               habits: habits,
                               habitsFailed:
@@ -1246,22 +1278,30 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 }
 
 class _StepProgress extends StatelessWidget {
-  const _StepProgress({required this.step});
+  const _StepProgress({required this.steps, required this.step});
 
+  /// The steps this flow actually walks — two for editing, three for
+  /// creation — so the dots and the caption promise the same count.
+  final List<_GoalFormStep> steps;
   final _GoalFormStep step;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final position = steps.indexOf(step);
+    final label = context.messages.goalFormProgress(
+      position + 1,
+      steps.length,
+    );
     return Semantics(
-      label: context.messages.goalFormProgress(step.index + 1),
+      label: label,
       child: ExcludeSemantics(
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (final candidate in _GoalFormStep.values) ...[
+                for (final candidate in steps) ...[
                   AnimatedContainer(
                     duration: MotionDurations.short4,
                     width: candidate == step
@@ -1270,9 +1310,9 @@ class _StepProgress extends StatelessWidget {
                     height: tokens.spacing.step2,
                     decoration: BoxDecoration(
                       // lowEmphasis ink, not a decorative hairline tone:
-                      // the promise of three steps must survive the dark
-                      // canvas.
-                      color: candidate.index <= step.index
+                      // the promise of the remaining steps must survive the
+                      // dark canvas.
+                      color: steps.indexOf(candidate) <= position
                           ? tokens.colors.interactive.enabled
                           : tokens.colors.text.lowEmphasis,
                       borderRadius: BorderRadius.circular(
@@ -1280,14 +1320,14 @@ class _StepProgress extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (candidate != _GoalFormStep.values.last)
+                  if (candidate != steps.last)
                     SizedBox(width: tokens.spacing.step2),
                 ],
               ],
             ),
             SizedBox(height: tokens.spacing.step2),
             Text(
-              context.messages.goalFormProgress(step.index + 1),
+              label,
               style: tokens.typography.styles.others.caption.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
@@ -1314,12 +1354,7 @@ class _IntentionStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final examples = [
-      messages.goalFormExampleHealth,
-      messages.goalFormExampleGym,
-      messages.goalFormExampleWalk,
-      messages.goalFormExampleRead,
-    ];
+    final examples = _intentionExamples(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1360,6 +1395,18 @@ class _IntentionStep extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The canned example intentions, shared by the intention step and the
+/// consolidated edit page.
+List<String> _intentionExamples(BuildContext context) {
+  final messages = context.messages;
+  return [
+    messages.goalFormExampleHealth,
+    messages.goalFormExampleGym,
+    messages.goalFormExampleWalk,
+    messages.goalFormExampleRead,
+  ];
 }
 
 String _healthDimensionName(BuildContext context, String dataType) =>
@@ -1427,6 +1474,10 @@ class _MappingStep extends StatelessWidget {
     required this.onCategoryTimeTargetChanged,
     required this.onCategoryTimeDirectionChanged,
     required this.onCompositeRuleChanged,
+    this.statement,
+    this.statementError,
+    this.onStatementChanged,
+    this.onExampleSelected,
   });
 
   final List<HabitDefinition> habits;
@@ -1445,6 +1496,13 @@ class _MappingStep extends StatelessWidget {
   final bool watchesSteps;
   final TextEditingController stepsTarget;
   final TextEditingController title;
+
+  /// Non-null only while editing: the goal statement lives at the top of
+  /// this page instead of on a wizard step of its own.
+  final TextEditingController? statement;
+  final String? statementError;
+  final VoidCallback? onStatementChanged;
+  final ValueChanged<String>? onExampleSelected;
   final Set<String> matchedHabitIds;
   final Set<String> matchedHealthTypes;
 
@@ -1557,7 +1615,10 @@ class _MappingStep extends StatelessWidget {
                     child: DesignSystemTextInput(
                       key: const ValueKey('goal-form-steps-target'),
                       controller: stepsTarget,
-                      label: messages.goalCreateStepsTargetLabel,
+                      // The row title already names the signal; repeating it
+                      // as the input label read as a duplicate. The input
+                      // names the number instead.
+                      label: messages.goalFormStepsDailyTarget,
                       keyboardType: TextInputType.number,
                       errorText: targetErrors.contains('steps')
                           ? messages.goalFormValidationTarget
@@ -1856,6 +1917,34 @@ class _MappingStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // The consolidated edit page opens with the statement — one line,
+        // with the example pills inline, no dead space and no page of its
+        // own.
+        if (statement case final statement?) ...[
+          DesignSystemTextInput(
+            key: const ValueKey('goal-form-intention'),
+            controller: statement,
+            label: messages.goalFormStatementLabel,
+            leadingIcon: Icons.edit_note_rounded,
+            errorText: statementError,
+            onChanged: (_) => onStatementChanged?.call(),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Wrap(
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
+            children: [
+              for (final example in _intentionExamples(context))
+                DsPill(
+                  variant: DsPillVariant.filled,
+                  label: example,
+                  bordered: true,
+                  onTap: () => onExampleSelected?.call(example),
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.sectionGap),
+        ],
         Text(
           noObservableMatch
               ? messages.goalFormRefusalTitle
@@ -2073,10 +2162,7 @@ class _MappingStep extends StatelessWidget {
                         value: compositeRule,
                         requiredSuccesses: requiredSuccesses,
                         dimensionCount: dimensionCount,
-                        onChanged: (rule, required) {
-                          Navigator.of(context).pop();
-                          onCompositeRuleChanged(rule, required);
-                        },
+                        onChanged: onCompositeRuleChanged,
                       ),
                     ),
                     variant: DesignSystemButtonVariant.tertiary,
@@ -2750,7 +2836,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   }
 }
 
-class _CompositeRulePicker extends StatelessWidget {
+class _CompositeRulePicker extends StatefulWidget {
   const _CompositeRulePicker({
     required this.value,
     required this.requiredSuccesses,
@@ -2765,9 +2851,31 @@ class _CompositeRulePicker extends StatelessWidget {
   onChanged;
 
   @override
+  State<_CompositeRulePicker> createState() => _CompositeRulePickerState();
+}
+
+/// Chooses how the goal's dimensions combine, and stays open while it does.
+///
+/// Every tap applies to the page immediately but renders from local mirrors,
+/// because a modal does not rebuild with the page behind it. Crucially the
+/// at-least stepper only adjusts the count — the sheet dismisses on Done (or
+/// an explicit dismiss gesture), never as a side effect of stepping.
+class _CompositeRulePickerState extends State<_CompositeRulePicker> {
+  late GoalFormCompositeRule _rule = widget.value;
+  late int _required = widget.requiredSuccesses.clamp(1, widget.dimensionCount);
+
+  void _apply(GoalFormCompositeRule rule, int required) {
+    setState(() {
+      _rule = rule;
+      _required = required;
+    });
+    widget.onChanged(rule, required);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final required = requiredSuccesses.clamp(1, dimensionCount);
+    final messages = context.messages;
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step5),
@@ -2776,7 +2884,7 @@ class _CompositeRulePicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.messages.goalFormCompositeRule,
+              messages.goalFormCompositeRule,
               style: tokens.typography.styles.heading.heading3,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -2785,46 +2893,51 @@ class _CompositeRulePicker extends StatelessWidget {
                 title: _compositeRuleLabel(
                   context,
                   rule,
-                  required,
-                  dimensionCount,
+                  _required,
+                  widget.dimensionCount,
                 ),
                 subtitle: switch (rule) {
                   GoalFormCompositeRule.all =>
-                    context.messages.goalFormCompositeAllHint,
+                    messages.goalFormCompositeAllHint,
                   GoalFormCompositeRule.any =>
-                    context.messages.goalFormCompositeAnyHint,
+                    messages.goalFormCompositeAnyHint,
                   GoalFormCompositeRule.atLeast =>
-                    context.messages.goalFormCompositeAtLeastHint,
+                    messages.goalFormCompositeAtLeastHint,
                 },
-                selected: value == rule,
+                selected: _rule == rule,
                 type: DesignSystemSelectionRowType.singleSelect,
-                trailing: rule == GoalFormCompositeRule.atLeast
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          DesignSystemIconAction(
-                            icon: Icons.remove_rounded,
-                            tooltip: context.messages.goalFormDecreaseTarget,
-                            onPressed: required > 1
-                                ? () => onChanged(rule, required - 1)
-                                : null,
-                          ),
-                          Text(
-                            '$required / $dimensionCount',
-                            style: tokens.typography.styles.subtitle.subtitle2,
-                          ),
-                          DesignSystemIconAction(
-                            icon: Icons.add_rounded,
-                            tooltip: context.messages.goalFormIncreaseTarget,
-                            onPressed: required < dimensionCount
-                                ? () => onChanged(rule, required + 1)
-                                : null,
-                          ),
-                        ],
+                // The stepper gets the row's full width on its own line —
+                // trailing squeezed it against the selection mark, which is
+                // how a stray tap kept landing beside the glyphs.
+                secondaryLine:
+                    rule == GoalFormCompositeRule.atLeast && _rule == rule
+                    ? DesignSystemStepper(
+                        label: '$_required / ${widget.dimensionCount}',
+                        decrementTooltip: messages.goalFormDecreaseTarget,
+                        incrementTooltip: messages.goalFormIncreaseTarget,
+                        decrementKey: const ValueKey(
+                          'goal-form-composite-decrease',
+                        ),
+                        incrementKey: const ValueKey(
+                          'goal-form-composite-increase',
+                        ),
+                        onDecrement: _required > 1
+                            ? () => _apply(rule, _required - 1)
+                            : null,
+                        onIncrement: _required < widget.dimensionCount
+                            ? () => _apply(rule, _required + 1)
+                            : null,
                       )
                     : null,
-                onTap: () => onChanged(rule, required),
+                onTap: () => _apply(rule, _required),
               ),
+            SizedBox(height: tokens.spacing.step4),
+            DesignSystemButton(
+              key: const ValueKey('goal-form-composite-done'),
+              label: messages.doneButton,
+              onPressed: () => Navigator.of(context).pop(),
+              fullWidth: true,
+            ),
           ],
         ),
       ),
