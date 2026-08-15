@@ -1,5 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -87,7 +91,31 @@ void main() {
     );
 
     expect(find.byTooltip('Show list'), findsOneWidget);
+    final semanticsFinder = find.bySemanticsLabel('Show list');
+    expect(semanticsFinder, findsOneWidget);
+    final semantics = tester.getSemantics(semanticsFinder);
+    expect(semantics.label, 'Show list');
+    expect(
+      semantics.getSemanticsData().hasAction(ui.SemanticsAction.tap),
+      isTrue,
+    );
     await tester.tap(find.byType(GlassActionButton));
     expect(presses, 1);
+  });
+
+  testWidgets('TaskDetailShowListButton keeps light ink in the dark theme', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        TaskDetailShowListButton(onPressed: () {}),
+        theme: DesignSystemTheme.dark(),
+      ),
+    );
+
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.view_sidebar_rounded)).color,
+      dsTokensDark.colors.text.highEmphasis,
+    );
   });
 }

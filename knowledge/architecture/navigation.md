@@ -105,6 +105,10 @@ preference alongside the shared expanded list width. Width changes are ignored
 while collapsed, making expand restore the exact previous width. A split with no
 selected detail always forces the list visible even if the saved preference is
 collapsed; there must be somewhere meaningful for focus mode to land.
+`ListDetailFocusTraversal` observes the effective visibility input itself, so a
+persisted collapsed preference taking effect when a new selection appears moves
+focus into the detail just as reliably as pressing Hide list; every transition
+back to visible returns focus to the list.
 
 ```mermaid
 stateDiagram-v2

@@ -169,8 +169,9 @@ desktop project detail never renders the mobile Back affordance because the
 split has no parent route to pop; Back remains on the standalone mobile detail
 route. Tasks and Projects share the persisted collapse preference and expanded
 list width. The focused header and body are centered on the shared 960 pt detail
-measure, keeping report lines and cards readable when the list releases a wide
-canvas.
+measure with its one standard horizontal gutter, keeping report lines and cards
+readable when the list releases a wide canvas without double-insetting mobile
+content.
 
 # Health is agent-authored
 

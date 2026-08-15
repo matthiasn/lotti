@@ -52,19 +52,14 @@ class TaskDetailShowListButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = context.messages.listPaneShowTooltip;
 
-    return Tooltip(
-      message: label,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: GlassActionButton(
-          onTap: onPressed,
-          child: Icon(
-            Icons.view_sidebar_rounded,
-            size: IconSizes.m,
-            color: context.designTokens.colors.text.onInteractiveAlert,
-          ),
-        ),
+    return GlassActionButton(
+      onTap: onPressed,
+      semanticLabel: label,
+      tooltip: label,
+      child: Icon(
+        Icons.view_sidebar_rounded,
+        size: IconSizes.m,
+        color: dsTokensDark.colors.text.highEmphasis,
       ),
     );
   }

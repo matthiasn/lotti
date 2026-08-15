@@ -4,14 +4,12 @@ import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 /// Focus bridge exposed to rows inside a [ListDetailFocusTraversal].
 final class ListDetailFocusTraversalController {
   const ListDetailFocusTraversalController._(
-    this._focusList,
     this._focusDetails,
     this._listPaneVisible,
     this._canHideListPane,
     this._setListPaneVisible,
   );
 
-  final VoidCallback _focusList;
   final VoidCallback _focusDetails;
   final bool Function() _listPaneVisible;
   final bool Function() _canHideListPane;
@@ -27,14 +25,12 @@ final class ListDetailFocusTraversalController {
   void showListPane() {
     if (listPaneVisible) return;
     _setListPaneVisible(true);
-    _focusList();
   }
 
   /// Hides the list pane and transfers keyboard focus into the detail pane.
   void hideListPane() {
     if (!listPaneVisible || !canHideListPane) return;
     _setListPaneVisible(false);
-    _focusDetails();
   }
 
   /// Moves focus from the list pane into the detail pane.
@@ -84,7 +80,6 @@ class _ListDetailFocusTraversalState extends State<ListDetailFocusTraversal> {
   final _listRegionId = Object();
   final _detailRegionId = Object();
   late final _controller = ListDetailFocusTraversalController._(
-    _focusList,
     _focusDetails,
     () => widget.listPaneVisible,
     () => widget.canHideListPane,
@@ -101,6 +96,18 @@ class _ListDetailFocusTraversalState extends State<ListDetailFocusTraversal> {
       _focusRegionController.focusRegion(regionId);
     });
     WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  void didUpdateWidget(covariant ListDetailFocusTraversal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listPaneVisible == widget.listPaneVisible) return;
+
+    if (widget.listPaneVisible) {
+      _focusList();
+    } else {
+      _focusDetails();
+    }
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 
@@ -111,6 +112,10 @@ void main() {
       expect(
         tester.getSize(find.byType(CustomScrollView)).width,
         kDetailContentMaxWidth - tokens.spacing.step5 * 2,
+      );
+      expect(
+        tester.getSize(find.byType(HealthPanel)).width,
+        tester.getSize(find.byType(CustomScrollView)).width,
       );
     });
 

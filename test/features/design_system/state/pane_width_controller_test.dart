@@ -430,8 +430,15 @@ void main() {
 
     test('persists focus mode immediately and toggles idempotently', () {
       container.read(paneWidthControllerProvider.notifier)
+        ..updateListPaneWidth(30)
         ..collapseListPane()
         ..collapseListPane();
+      verify(
+        () => getIt<SettingsDb>().saveSettingsItem(
+          listPaneWidthKey,
+          '${defaultListPaneWidth + 30}',
+        ),
+      ).called(1);
       verify(
         () => getIt<SettingsDb>().saveSettingsItem(
           listPaneCollapsedKey,

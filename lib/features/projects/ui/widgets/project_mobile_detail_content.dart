@@ -82,11 +82,8 @@ class _ProjectMobileDetailContentState
         children: [
           DetailContentWidth(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.step5,
-                tokens.spacing.step4,
-                tokens.spacing.step5,
-                0,
+              padding: EdgeInsets.only(
+                top: tokens.spacing.step4,
               ),
               child: DesignSystemShowcaseMobileDetailHeader(
                 foregroundColor: ShowcasePalette.highText(context),
@@ -103,11 +100,9 @@ class _ProjectMobileDetailContentState
                   controller: _scrollController,
                   slivers: [
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        tokens.spacing.step5,
-                        tokens.spacing.step3,
-                        tokens.spacing.step5,
-                        tokens.spacing.step6,
+                      padding: EdgeInsets.only(
+                        top: tokens.spacing.step3,
+                        bottom: tokens.spacing.step6,
                       ),
                       sliver: SliverMainAxisGroup(
                         slivers: [

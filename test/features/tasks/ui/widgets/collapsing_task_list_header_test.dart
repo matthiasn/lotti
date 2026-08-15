@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -426,6 +427,20 @@ void main() {
 
       final leading = find.byKey(const ValueKey('compact-leading'));
       expect(leading, findsOneWidget);
+      expect(
+        tester.getSize(
+          find.ancestor(
+            of: leading,
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is SizedBox &&
+                  widget.width == TapTargets.minimum &&
+                  widget.height == TapTargets.minimum,
+            ),
+          ),
+        ),
+        const Size.square(TapTargets.minimum),
+      );
       expect(
         tester.getCenter(leading).dx,
         lessThan(

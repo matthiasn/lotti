@@ -119,6 +119,14 @@ released canvas without turning media into wall-sized chrome: cover art remains
 This does not change the detail stack: Show list only changes layout, while Back
 still appears only when `desktopTaskDetailStack` is deeper than the base task.
 
+```mermaid
+stateDiagram-v2
+  [*] --> Visible
+  Visible --> Hidden: Hide list (task selected)
+  Hidden --> Visible: Show list
+  Hidden --> Visible: selection disappears
+```
+
 # Sidebar activity
 
 `SidebarActivitySummary` and `TaskActionBar`'s running pill read the **same live

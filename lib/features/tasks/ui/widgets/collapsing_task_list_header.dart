@@ -350,7 +350,11 @@ class TaskListCompactHeaderBar extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
           child: Row(
             children: [
-              ?leading,
+              if (leading != null)
+                SizedBox.square(
+                  dimension: TapTargets.minimum,
+                  child: Center(child: leading),
+                ),
               Expanded(
                 child: Semantics(
                   button: true,
