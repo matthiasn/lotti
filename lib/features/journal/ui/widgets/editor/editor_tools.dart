@@ -12,10 +12,13 @@ import 'package:flutter_quill/quill_delta.dart';
 import 'package:lotti/classes/entry_text.dart';
 
 final _markdownBlockPattern = RegExp(
-  r'^(?: {0,3}#{1,3}[ \t]+| {0,3}>[ \t]?|'
+  r'^(?: {0,3}#{1,6}[ \t]+| {0,3}>[ \t]?|'
   r' {0,3}(?:[-+*]|\d+[.)])[ \t]+| {0,3}(?:`{3,}|~{3,}))',
   multiLine: true,
 );
+final _unsupportedAtxHeadingPattern = RegExp(r'^( {0,3})#{4,6}([ \t]+)');
+final _markdownFenceLinePattern = RegExp('^ {0,3}(`{3,}|~{3,})');
+final _lineEndingPattern = RegExp('\r\n|\n|\r');
 final _markdownHorizontalRulePattern = RegExp(
   r'^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$',
   multiLine: true,
@@ -30,7 +33,9 @@ final _markdownInlinePattern = RegExp(
 final _markdownItalicPattern = RegExp(
   r'(?<![\w\\])[*_](?=\S)[^*_\n]+(?<=\S)[*_](?!\w)',
 );
-final _inlineCodePattern = RegExp(r'(?<!\\)(`+)([^`\n]+?)\1');
+final _inlineCodePattern = RegExp(
+  r'(?<![`\\])(`+)(?!`)([^\n]*?)(?<!`)\1(?!`)',
+);
 
 /// The current document of `controller` as a Quill [Delta].
 Delta deltaFromController(QuillController controller) {
@@ -114,11 +119,13 @@ bool containsMarkdownFormatting(String text) =>
 Delta? markdownDeltaForPaste(String text) {
   if (!containsMarkdownFormatting(text)) return null;
 
-  final protected = _protectInlineCode(text);
+  final normalizedHeadings = _normalizeAtxHeadingLevels(text);
+  final protected = _protectInlineCode(normalizedHeadings);
   final encoded = markdownToDelta(protected.markdown);
   final decoded = jsonDecode(encoded) as List<dynamic>;
   final delta = Delta.fromJson(decoded);
-  return _restoreInlineCode(delta, protected.inlineCodeByToken);
+  final restored = _restoreInlineCode(delta, protected.inlineCodeByToken);
+  return _withoutSyntheticInlineTerminalNewline(restored, text);
 }
 
 /// Inserts Markdown-looking [plainText] at the current selection.
@@ -172,14 +179,74 @@ String? handlePlainTextMarkdownPaste(
 }
 
 String _normalizeInlineCode(String code) {
-  final normalizedWhitespace = code.replaceAll(RegExp(r'\s+'), ' ');
-  if (normalizedWhitespace.length > 2 &&
-      normalizedWhitespace.startsWith(' ') &&
-      normalizedWhitespace.endsWith(' ') &&
-      normalizedWhitespace.trim().isNotEmpty) {
-    return normalizedWhitespace.substring(1, normalizedWhitespace.length - 1);
+  final normalizedLineEndings = code
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n');
+  if (normalizedLineEndings.length > 2 &&
+      normalizedLineEndings.startsWith(' ') &&
+      normalizedLineEndings.endsWith(' ') &&
+      normalizedLineEndings.trim().isNotEmpty) {
+    return normalizedLineEndings.substring(
+      1,
+      normalizedLineEndings.length - 1,
+    );
   }
-  return normalizedWhitespace;
+  return normalizedLineEndings;
+}
+
+String _normalizeAtxHeadingLevels(String markdown) {
+  String? fenceCharacter;
+  var fenceLength = 0;
+
+  return markdown.splitMapJoin(
+    _lineEndingPattern,
+    onMatch: (match) => match.group(0)!,
+    onNonMatch: (line) {
+      final fenceMatch = _markdownFenceLinePattern.firstMatch(line);
+      if (fenceMatch != null) {
+        final fence = fenceMatch.group(1)!;
+        if (fenceCharacter == null) {
+          fenceCharacter = fence[0];
+          fenceLength = fence.length;
+        } else if (fence[0] == fenceCharacter &&
+            fence.length >= fenceLength &&
+            line.substring(fenceMatch.end).trim().isEmpty) {
+          fenceCharacter = null;
+          fenceLength = 0;
+        }
+        return line;
+      }
+      if (fenceCharacter != null) return line;
+
+      return line.replaceFirstMapped(
+        _unsupportedAtxHeadingPattern,
+        (match) => '${match.group(1)}###${match.group(2)}',
+      );
+    },
+  );
+}
+
+Delta _withoutSyntheticInlineTerminalNewline(Delta delta, String markdown) {
+  if (markdown.contains('\n') ||
+      markdown.contains('\r') ||
+      _markdownBlockPattern.hasMatch(markdown) ||
+      _markdownHorizontalRulePattern.hasMatch(markdown)) {
+    return delta;
+  }
+
+  final operations = delta.toList();
+  // `markdownToDelta` always returns a document Delta, so detected Markdown
+  // always has at least its terminal newline operation here.
+  final last = operations.last;
+  if (last.value != '\n' || (last.attributes?.isNotEmpty ?? false)) {
+    return delta;
+  }
+
+  final trimmed = Delta();
+  for (final operation in operations.take(operations.length - 1)) {
+    trimmed.insert(operation.value, operation.attributes);
+  }
+  return trimmed;
 }
 
 Delta _restoreInlineCode(Delta delta, Map<String, String> inlineCodeByToken) {
