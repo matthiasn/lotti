@@ -138,6 +138,7 @@ Done ✅'''
     test('detects supported Markdown without claiming ordinary text', () {
       const markdownCases = [
         '# Heading',
+        '###### Compact heading',
         'A **bold** word',
         'Use `code` here',
         '> Quote',
@@ -226,7 +227,7 @@ Done ✅'''
       );
 
       expect(replacement, isEmpty);
-      expect(controller.document.toPlainText(), 'before bold\n after\n');
+      expect(controller.document.toPlainText(), 'before bold after\n');
       expect(
         controller.document.toDelta().toList().any(
           (operation) =>
@@ -237,7 +238,87 @@ Done ✅'''
       );
       expect(
         controller.selection,
-        const TextSelection.collapsed(offset: 12),
+        const TextSelection.collapsed(offset: 11),
+      );
+    });
+
+    test('removes only a synthetic unformatted terminal newline', () {
+      final inlineDelta = markdownDeltaForPaste('**bold**')!;
+      final explicitNewlineDelta = markdownDeltaForPaste('**bold**\n')!;
+      final headingDelta = markdownDeltaForPaste('# Heading')!;
+      final horizontalRuleDelta = markdownDeltaForPaste('---')!;
+
+      expect(inlineDelta.toList().last.value, 'bold');
+      expect(explicitNewlineDelta.toList().last.value, '\n');
+      expect(headingDelta.toList().last.value, '\n');
+      expect(
+        headingDelta.toList().last.attributes,
+        containsPair('header', 1),
+      );
+      expect(
+        horizontalRuleDelta.toList().any(
+          (operation) =>
+              operation.data is Map<String, dynamic> &&
+              (operation.data! as Map<String, dynamic>)['divider'] == 'hr',
+        ),
+        isTrue,
+      );
+    });
+
+    test('preserves interior whitespace and trims one code-span pad', () {
+      final delta = markdownDeltaForPaste(
+        'Use `alpha  beta\tgamma` and ` padded `.',
+      )!;
+      final codeValues = delta
+          .toList()
+          .where((operation) => operation.attributes?['code'] == true)
+          .map((operation) => operation.value)
+          .toList();
+
+      expect(codeValues, ['alpha  beta\tgamma', 'padded']);
+    });
+
+    test('converts ATX heading levels four through six as headings', () {
+      for (var level = 4; level <= 6; level++) {
+        final marker = List.filled(level, '#').join();
+        final delta = markdownDeltaForPaste('$marker Details')!;
+
+        expect(delta.toList().last.value, '\n');
+        expect(
+          delta.toList().last.attributes,
+          containsPair('header', 3),
+          reason: 'ATX level $level uses Quill’s smallest heading style',
+        );
+      }
+    });
+
+    test('does not normalize heading markers inside fenced code', () {
+      final delta = markdownDeltaForPaste('```\n#### literal code\n```')!;
+
+      expect(
+        Document.fromDelta(delta).toPlainText(),
+        contains('#### literal code'),
+      );
+    });
+
+    test('allows shorter backtick runs inside longer code spans', () {
+      final delta = markdownDeltaForPaste('Use ``a ` b`` here')!;
+      final operations = delta.toList();
+
+      expect(
+        operations.any(
+          (operation) =>
+              operation.value == 'a ` b' &&
+              operation.attributes?['code'] == true,
+        ),
+        isTrue,
+      );
+      expect(
+        operations
+            .map((operation) => operation.value)
+            .whereType<String>()
+            .join(),
+        isNot(contains('``')),
       );
     });
 

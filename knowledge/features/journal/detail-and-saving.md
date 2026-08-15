@@ -52,7 +52,8 @@ flowchart TD
   Detect -->|no| Verbatim[Insert ordinary text unchanged]
   Detect -->|yes| Convert[delta_markdown converts to Delta]
   Convert --> Code[Restore inline code attributes]
-  Code --> Insert[Replace selection with rich Delta]
+  Code --> Fragment[Drop synthetic newline from inline fragments]
+  Fragment --> Insert[Replace selection with rich Delta]
 ```
 
 The syntax gate recognizes supported block constructs (ATX headings,
@@ -62,7 +63,15 @@ strikeout, code and links). It deliberately does not claim ordinary prose,
 converter supplies the same headings, emphasis, list, quote and custom divider
 representation already used when loading Markdown-only entries. Its decoder
 predates Flutter Quill's inline-code attribute, so paste protects code spans
-during conversion and restores them as `code: true` operations afterward.
+during conversion and restores them as `code: true` operations afterward,
+including spans whose longer delimiters contain shorter backtick runs. Quill's
+editor exposes three rendered heading sizes, so ATX levels four through six
+use the third heading style; fenced-code contents are never normalized as
+headings.
+Inline fragments shed only the converter's synthetic document newline, while
+explicit newlines and block-attributed newlines remain intact. Inline code
+normalizes line endings and CommonMark's optional single outer padding space,
+but preserves repeated spaces and tabs inside the code payload.
 
 # The state machine has two real states
 
