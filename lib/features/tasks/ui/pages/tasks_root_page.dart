@@ -5,6 +5,9 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -24,11 +27,24 @@ import 'package:lotti/services/nav_service.dart';
 /// [DesktopDetailEmptyState] when nothing is selected. A selected task enables
 /// persisted focus mode, which keeps the list mounted offstage and exposes a
 /// separate restore action over every detail state.
-class TasksRootPage extends ConsumerWidget {
+class TasksRootPage extends ConsumerStatefulWidget {
   const TasksRootPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TasksRootPage> createState() => _TasksRootPageState();
+}
+
+class _TasksRootPageState extends ConsumerState<TasksRootPage> {
+  final _tasksTabController = TasksTabPageController();
+
+  @override
+  void dispose() {
+    _tasksTabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (!isDesktopLayout(context)) {
       return const TasksTabPage();
     }
@@ -51,75 +67,85 @@ class TasksRootPage extends ConsumerWidget {
     final listPaneWidth = resolvedListPane.width;
     final paneController = ref.read(paneWidthControllerProvider.notifier);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: TaskShowcasePalette.page(context),
-      ),
-      child: ValueListenableBuilder<List<String>>(
-        valueListenable: getIt<NavService>().desktopTaskDetailStack,
-        builder: (context, stack, _) {
-          final selectedTaskId = stack.isEmpty ? null : stack.last;
-          final canHideListPane = selectedTaskId != null;
-          final listPaneVisible =
-              !paneWidths.listPaneCollapsed || !canHideListPane;
-          final detailChild = selectedTaskId != null
-              ? TaskDetailsPage(
-                  key: ValueKey(selectedTaskId),
-                  taskId: selectedTaskId,
-                )
-              : DesktopDetailEmptyState(
-                  key: const ValueKey<String>(
-                    'tasks-root-empty-detail',
-                  ),
-                  message: context.messages.desktopEmptyStateSelectTask,
-                );
-
-          return ListDetailFocusTraversal(
-            debugLabel: 'tasks-split',
-            listPaneVisible: listPaneVisible,
-            canHideListPane: canHideListPane,
-            onListPaneVisibilityChanged: (visible) {
-              if (visible) {
-                paneController.expandListPane();
-              } else {
-                paneController.collapseListPane();
-              }
-            },
-            listPane: SizedBox(
-              width: listPaneWidth,
-              child: const TasksTabPage(),
-            ),
-            divider: ResizableDivider(
-              currentValue: listPaneWidth,
-              minValue: minListPaneWidth,
-              maxValue: maxListPaneWidth,
-              onDrag: resolvedListPane.onDrag,
-            ),
-            detailPane: _TasksDetailPane(
-              stackDepth: stack.length,
-              detail: AnimatedSwitcher(
-                // Fast cross-fade (200ms): stepping row-by-row through tasks is
-                // the split view's core interaction, and matches the logbook
-                // split so both panes feel identical.
-                duration: MotionDurations.short4,
-                switchInCurve: Curves.easeInOutCubic,
-                switchOutCurve: Curves.easeInOutCubic,
-                layoutBuilder: (currentChild, previousChildren) {
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: <Widget>[
-                      ...previousChildren.map(
-                        (child) => ExcludeFocus(child: child),
-                      ),
-                      ?currentChild,
-                    ],
+    return AppCommandScope(
+      handlers: {
+        AppCommandId.focusSearch: AppCommandHandler(
+          invoke: (_) {
+            paneController.expandListPane();
+            _tasksTabController.focusSearch();
+          },
+        ),
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: TaskShowcasePalette.page(context),
+        ),
+        child: ValueListenableBuilder<List<String>>(
+          valueListenable: getIt<NavService>().desktopTaskDetailStack,
+          builder: (context, stack, _) {
+            final selectedTaskId = stack.isEmpty ? null : stack.last;
+            final canHideListPane = selectedTaskId != null;
+            final listPaneVisible =
+                !paneWidths.listPaneCollapsed || !canHideListPane;
+            final detailChild = selectedTaskId != null
+                ? TaskDetailsPage(
+                    key: ValueKey(selectedTaskId),
+                    taskId: selectedTaskId,
+                  )
+                : DesktopDetailEmptyState(
+                    key: const ValueKey<String>(
+                      'tasks-root-empty-detail',
+                    ),
+                    message: context.messages.desktopEmptyStateSelectTask,
                   );
-                },
-                child: detailChild,
+
+            return ListDetailFocusTraversal(
+              debugLabel: 'tasks-split',
+              listPaneVisible: listPaneVisible,
+              canHideListPane: canHideListPane,
+              onListPaneVisibilityChanged: (visible) {
+                if (visible) {
+                  paneController.expandListPane();
+                } else {
+                  paneController.collapseListPane();
+                }
+              },
+              listPane: SizedBox(
+                width: listPaneWidth,
+                child: TasksTabPage(controller: _tasksTabController),
               ),
-            ),
-          );
-        },
+              divider: ResizableDivider(
+                currentValue: listPaneWidth,
+                minValue: minListPaneWidth,
+                maxValue: maxListPaneWidth,
+                onDrag: resolvedListPane.onDrag,
+              ),
+              detailPane: _TasksDetailPane(
+                stackDepth: stack.length,
+                detail: AnimatedSwitcher(
+                  // Fast cross-fade (200ms): stepping row-by-row through tasks
+                  // is the split view's core interaction, and matches the
+                  // logbook split so both panes feel identical.
+                  duration: MotionDurations.short4,
+                  switchInCurve: Curves.easeInOutCubic,
+                  switchOutCurve: Curves.easeInOutCubic,
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: <Widget>[
+                        ...previousChildren.map(
+                          (child) => ExcludeFocus(child: child),
+                        ),
+                        ?currentChild,
+                      ],
+                    );
+                  },
+                  child: detailChild,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

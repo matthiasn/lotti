@@ -325,7 +325,9 @@ On desktop, list focus mode conditionally adds the restore-list overlay inside
 a stable `Stack` parent. The task detail subtree never changes parent while the
 list hides or returns, preserving scroll position and other local widget state.
 The restore control remains distinct from Back, which continues to traverse the
-linked-task detail stack.
+linked-task detail stack. The desktop split also owns the primary search command:
+invoking it from the focused detail restores the offstage list, then delegates
+to the still-mounted tab to expand and focus task search on the next frame.
 
 When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked

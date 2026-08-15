@@ -54,6 +54,37 @@ typedef TasksTabCreateTaskCallback =
       TaskCreationFilterContext filterContext,
     );
 
+/// Bridges list-owned search UI to a parent desktop split command scope.
+///
+/// The task list remains mounted while focus mode hides it. A parent can use
+/// this controller to expand the list first, then ask the still-mounted tab to
+/// reveal and focus its search field without exposing the tab state's private
+/// focus and collapse controllers.
+class TasksTabPageController {
+  Object? _owner;
+  VoidCallback? _focusSearch;
+
+  /// Reveals and focuses task search when an attached tab is mounted.
+  void focusSearch() => _focusSearch?.call();
+
+  void _attach(Object owner, VoidCallback focusSearch) {
+    _owner = owner;
+    _focusSearch = focusSearch;
+  }
+
+  void _detach(Object owner) {
+    if (!identical(_owner, owner)) return;
+    _owner = null;
+    _focusSearch = null;
+  }
+
+  /// Detaches this bridge when its parent split is disposed.
+  void dispose() {
+    _owner = null;
+    _focusSearch = null;
+  }
+}
+
 /// Unambiguous active-filter values inherited by a task created from the task
 /// list.
 ///
@@ -105,9 +136,11 @@ class TasksTabPage extends ConsumerStatefulWidget {
   const TasksTabPage({
     super.key,
     this.onCreateTaskPressed,
+    this.controller,
   });
 
   final TasksTabCreateTaskCallback? onCreateTaskPressed;
+  final TasksTabPageController? controller;
 
   @override
   ConsumerState<TasksTabPage> createState() => _TasksTabPageState();
@@ -122,6 +155,15 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
     super.initState();
     _searchFocusNode.addListener(_onSearchFocusChanged);
     _collapseController.addListener(_onCollapseChanged);
+    widget.controller?._attach(this, _focusSearch);
+  }
+
+  @override
+  void didUpdateWidget(covariant TasksTabPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.controller, widget.controller)) return;
+    oldWidget.controller?._detach(this);
+    widget.controller?._attach(this, _focusSearch);
   }
 
   void _onSearchFocusChanged() {
@@ -139,6 +181,7 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _searchFocusNode
       ..removeListener(_onSearchFocusChanged)
       ..dispose();
@@ -146,6 +189,17 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
       ..removeListener(_onCollapseChanged)
       ..dispose();
     super.dispose();
+  }
+
+  void _focusSearch() {
+    _collapseController.expand();
+    // The field does not exist while the header is collapsed, and the entire
+    // tab can be offstage in desktop focus mode. Both the header expansion and
+    // the parent list restoration rebuild before this callback runs.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override
@@ -183,17 +237,7 @@ class _TasksTabPageState extends ConsumerState<TasksTabPage> {
                 ),
           ),
           AppCommandId.focusSearch: AppCommandHandler(
-            invoke: (_) {
-              _collapseController.expand();
-              // The field does not exist while the header is collapsed, so
-              // focusing it in the same frame as the expand is a no-op — the
-              // shortcut would silently do nothing. Wait for the frame that
-              // rebuilds the expanded header, exactly as the compact bar's
-              // search affordance does.
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) _searchFocusNode.requestFocus();
-              });
-            },
+            invoke: (_) => _focusSearch(),
           ),
         },
         child: Scaffold(

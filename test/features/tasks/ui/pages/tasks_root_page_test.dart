@@ -9,6 +9,9 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/keyboard/domain/app_command.dart';
+import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
@@ -241,6 +244,76 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  testWidgets('focus-search restores a hidden task list before focusing', (
+    tester,
+  ) async {
+    fakeController = FakeJournalPageController(state());
+
+    final navService = getIt<NavService>() as MockNavService;
+    final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
+    addTearDown(stackNotifier.dispose);
+    when(
+      () => navService.desktopTaskDetailStack,
+    ).thenReturn(stackNotifier);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AppCommandHost(
+          handlers: {},
+          platform: TargetPlatform.windows,
+          child: TasksRootPage(),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey('tasks-hide-list-pane-expanded')),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final taskSearch = find.byWidgetPredicate(
+      (widget) =>
+          widget is TextField && widget.focusNode?.debugLabel == 'tasks-search',
+      skipOffstage: false,
+    );
+    expect(taskSearch, findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.focusNode?.debugLabel == 'tasks-search',
+      ),
+      findsNothing,
+    );
+
+    final detailContext = tester.element(find.byType(TaskDetailsPage));
+    final commandController = AppCommandControllerProvider.of(detailContext);
+    expect(
+      await commandController.invoke(detailContext, AppCommandId.focusSearch),
+      isTrue,
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TasksRootPage)),
+    );
+    expect(
+      container.read(paneWidthControllerProvider).listPaneCollapsed,
+      isFalse,
+    );
+    expect(tester.widget<TextField>(taskSearch).focusNode?.hasFocus, isTrue);
+  });
 
   testWidgets(
     'wraps detail pane in AnimatedSwitcher and crossfades between tasks',
