@@ -200,6 +200,20 @@ class _TestAgentsLocation extends AgentsLocation {
   }
 }
 
+class _TestGoalsLocation extends GoalsLocation {
+  _TestGoalsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-goals-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -224,9 +238,11 @@ Future<void> _stubNavService(
   required bool Function() isDashboardsEnabled,
   bool Function() isEventsEnabled = _eventsDisabledByDefault,
   bool? isAgentsEnabled,
+  bool? isUnifiedGoalsEnabled,
   BeamerDelegate? settingsDelegate,
   BeamerDelegate? projectsDelegate,
   BeamerDelegate? agentsDelegate,
+  BeamerDelegate? goalsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
@@ -238,7 +254,9 @@ Future<void> _stubNavService(
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
   final eventsDelegate = await _createEmptyDelegate('/events');
-  final goalsDelegate = await _createEmptyDelegate('/goals');
+  // AppScreen listens to the goals delegate too, so the bottom bar can
+  // slide away on the unified Goals tab's hosted goal pages.
+  goalsDelegate ??= await _createEmptyDelegate('/goals');
   settingsDelegate ??= await _createEmptyDelegate('/settings');
 
   // Real NavService.getIndexStream returns a broadcast stream (multiple
@@ -263,6 +281,9 @@ Future<void> _stubNavService(
   // unless the caller asks, so a test that set it before stubbing keeps it.
   if (isAgentsEnabled != null) {
     navService.agentsPageEnabled = isAgentsEnabled;
+  }
+  if (isUnifiedGoalsEnabled != null) {
+    navService.unifiedGoalsPageEnabled = isUnifiedGoalsEnabled;
   }
   when(() => navService.isProjectsPageEnabled).thenAnswer(
     (_) => isProjectsEnabled(),
@@ -2812,6 +2833,73 @@ void main() {
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'slides the bar away inside a Goals-hosted goal page and back on the '
+      'unified list',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final goalsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/goals',
+          locationBuilder: (routeInformation, _) =>
+              _TestGoalsLocation(routeInformation),
+        );
+        addTearDown(goalsDelegate.dispose);
+        await goalsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/goals')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          isUnifiedGoalsEnabled: true,
+          goalsDelegate: goalsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Activate the Goals tab (destinations: Tasks, Goals, Journal,
+        // Settings).
+        indexController.add(1);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+
+        // The /goals list is a tab you navigate from, so it keeps the bar.
+        expect(slide().offset, Offset.zero);
+
+        // A Goals-hosted goal page owns its bottom edge, exactly like its
+        // /agents twin: the bar stays mounted but slides down.
+        goalsDelegate.beamToNamed('/goals/details/goal-1');
+        await tester.pump();
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(slide().offset, const Offset(0, 1));
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // Popping back to the unified list slides the bar into place.
+        goalsDelegate.beamToNamed('/goals');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        await tester.pump(const Duration(milliseconds: 450));
       },
     );
 

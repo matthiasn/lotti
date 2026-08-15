@@ -119,6 +119,23 @@ void main() {
       expect(find.textContaining('target'), findsOneWidget);
     });
 
+    testWidgets('the headline flows to a second line at phone width '
+        'instead of overflowing', (tester) async {
+      // Regression: renaming the badge to "pts to target" made the headline
+      // row (rate block + target chip + trend chip) wider than a phone-width
+      // card, overflowing its right edge by a few pixels. The headline is a
+      // Wrap now, so the chips drop to a second line. Reverting the Wrap
+      // makes this fail with a RenderFlex overflow exception.
+      tester.view.physicalSize = const Size(358, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpChart(tester, state: _fourteenDayState());
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('to target'), findsOneWidget);
+    });
+
     testWidgets('disables the implicit data-swap animation', (tester) async {
       await pumpChart(tester, state: _fourteenDayState());
 

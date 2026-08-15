@@ -324,34 +324,48 @@ class _ChartHeadline extends StatelessWidget {
     // 7-day span there's nothing meaningful to trend against.
     final showTrend = stats.windowDays >= 14;
 
-    return Row(
-      children: [
-        // Group A: the rate and its unit read as one block — the big number
-        // with a small "7-day avg" set just to its right on the same baseline.
-        Text.rich(
-          TextSpan(
-            style: tokens.typography.styles.heading.heading2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-            children: [
-              TextSpan(text: '$avg%'),
-              TextSpan(
-                text: '  ${messages.habitsRollingAverageLabel}',
-                style: bodySmall.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
+    // A Wrap, not a Row: on a phone the rate block plus both chips can
+    // exceed the card's width (the "pts to target" chip is the widest the
+    // badge gets), and the chips must flow onto a second line instead of
+    // overflowing the card edge. Full-width so the single-line case keeps
+    // the Row's rate-left / chips-right spread.
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: tokens.spacing.step2,
+        children: [
+          // Group A: the rate and its unit read as one block — the big number
+          // with a small "7-day avg" set just to its right on the same baseline.
+          Text.rich(
+            TextSpan(
+              style: tokens.typography.styles.heading.heading2.copyWith(
+                color: tokens.colors.text.highEmphasis,
               ),
+              children: [
+                TextSpan(text: '$avg%'),
+                TextSpan(
+                  text: '  ${messages.habitsRollingAverageLabel}',
+                  style: bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Group B: distance to target, a step apart and warning-tinted when
+          // below it (a calm amber, not alarm red).
+          Wrap(
+            spacing: tokens.spacing.step2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (stats.windowDays > 0) _GoalChip(stats: stats),
+              if (showTrend) _TrendChip(delta: stats.trendDelta.round()),
             ],
           ),
-        ),
-        const Spacer(),
-        // Group B: distance to goal, a step apart and warning-tinted when below
-        // target (a calm amber, not alarm red).
-        if (stats.windowDays > 0) _GoalChip(stats: stats),
-        if (stats.windowDays > 0 && showTrend)
-          SizedBox(width: tokens.spacing.step2),
-        if (showTrend) _TrendChip(delta: stats.trendDelta.round()),
-      ],
+        ],
+      ),
     );
   }
 }
