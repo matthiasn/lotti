@@ -2236,6 +2236,49 @@ void main() {
       expect(decoded.activationCount, 2);
     });
 
+    test('relationshipNudge: sibling variant folds through the same columns '
+        '(ADR 0059) — type tag, status subtype, threadId, full roundtrip', () {
+      final entity = AgentDomainEntity.relationshipNudge(
+        id: 'rnudge-1',
+        agentId: 'relationship-agent-1',
+        status: NudgeStatus.active,
+        brief: brief,
+        briefDigest: 'digest-r1',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+        runKey: 'wake-run-1',
+        threadId: 'thread-r1',
+        triggerRegisterId: 'relationship_health:relationship-agent-1',
+        staleAt: updatedAt,
+        activatedAt: updatedAt,
+        activationCount: 2,
+        ratings: [
+          NudgeRating(activation: 1, rating: 5, ratedAt: createdAt),
+          NudgeRating(activation: 2, rating: 2, ratedAt: updatedAt),
+        ],
+        totalVisibleMs: const GCounter({'host-a': 30000, 'host-b': 12000}),
+        impressionCount: const GCounter({'host-a': 2, 'host-b': 1}),
+        provenance: const {'animation': 'steady'},
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.relationshipNudge));
+      expect(companion.subtype, const Value<String?>('active'));
+      expect(companion.threadId, const Value<String?>('thread-r1'));
+      final decoded =
+          AgentDbConversions.fromSerialized(companion.serialized.value)
+              as RelationshipNudgeEntity;
+      expect(decoded, entity);
+      expect(decoded.ratings.map((r) => r.rating), [5, 2]);
+      expect(decoded.totalVisibleMs.value, 42000);
+      expect(decoded.impressionCount.value, 3);
+      expect(decoded.activationCount, 2);
+      expect(
+        decoded.triggerRegisterId,
+        'relationship_health:relationship-agent-1',
+      );
+    });
+
     test('fromSerialized rejects poison goal-spec payloads at the gate', () {
       Map<String, Object?> specJson(Object? criteria) => {
         'runtimeType': 'goalSpecVersion',

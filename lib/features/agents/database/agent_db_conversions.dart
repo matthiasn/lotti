@@ -56,6 +56,7 @@ class AgentDbConversions {
       goalSpecHead: (e) => e.deletedAt,
       goalProgress: (e) => e.deletedAt,
       goalNudge: (e) => e.deletedAt,
+      relationshipNudge: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -65,6 +66,7 @@ class AgentDbConversions {
       changeSet: (c) => c.threadId,
       wakeTokenUsage: (e) => e.threadId,
       goalNudge: (e) => e.threadId,
+      relationshipNudge: (e) => e.threadId,
     );
 
     final json = entity.toJson();
@@ -276,6 +278,7 @@ class AgentDbConversions {
       goalSpecHead: (_) => AgentEntityTypes.goalSpecHead,
       goalProgress: (_) => AgentEntityTypes.goalProgress,
       goalNudge: (_) => AgentEntityTypes.goalNudge,
+      relationshipNudge: (_) => AgentEntityTypes.relationshipNudge,
       unknown: (_) => 'unknown',
     );
   }
@@ -325,6 +328,7 @@ class AgentDbConversions {
       // of this goal" an indexed scan over a decade of rows.
       goalProgress: (progress) => progress.trackStatus.name,
       goalNudge: (nudge) => nudge.status.name,
+      relationshipNudge: (nudge) => nudge.status.name,
     );
   }
 
@@ -371,6 +375,7 @@ class AgentDbConversions {
       goalSpecHead: (e) => e.updatedAt,
       goalProgress: (e) => e.createdAt,
       goalNudge: (e) => e.createdAt,
+      relationshipNudge: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -418,6 +423,7 @@ class AgentDbConversions {
       goalSpecHead: (e) => e.updatedAt,
       goalProgress: (e) => e.updatedAt,
       goalNudge: (e) => e.updatedAt,
+      relationshipNudge: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }

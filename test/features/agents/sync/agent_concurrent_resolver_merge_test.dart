@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/sync/g_counter.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   GoalNudgeEntity goalNudge({
@@ -962,6 +963,268 @@ void main() {
 
       expect(ab.dismissalHistory, [earlier, other]);
       expect(ba.dismissalHistory, ab.dismissalHistory);
+    });
+  });
+
+  RelationshipNudgeEntity relationshipNudge({
+    required NudgeStatus status,
+    String id = 'rn1',
+    List<NudgeRating> ratings = const [],
+    GCounter visibleMs = const GCounter.empty(),
+    GCounter impressions = const GCounter.empty(),
+    int activationCount = 1,
+    VectorClock? vectorClock,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+    DateTime? staleAt,
+    DateTime? snoozedUntil,
+    NudgeBannerSnoozeDuration? lastSnoozeDuration,
+    List<NudgeSnooze> snoozeHistory = const [],
+    DateTime? dismissedForDayAt,
+    List<NudgeDayDismissal> dismissalHistory = const [],
+  }) =>
+      AgentDomainEntity.relationshipNudge(
+            id: id,
+            agentId: 'ra1',
+            status: status,
+            brief: const NudgeBrief(
+              headline: 'Check in with Anna — five weeks.',
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
+            ),
+            briefDigest: 'digest-r1',
+            createdAt: DateTime(2026, 8),
+            updatedAt: DateTime(2026, 8),
+            vectorClock: vectorClock,
+            ratings: ratings,
+            totalVisibleMs: visibleMs,
+            impressionCount: impressions,
+            activationCount: activationCount,
+            firstShownAt: firstShownAt,
+            lastShownAt: lastShownAt,
+            staleAt: staleAt,
+            snoozedUntil: snoozedUntil,
+            lastSnoozeDuration: lastSnoozeDuration,
+            snoozeHistory: snoozeHistory,
+            dismissedForDayAt: dismissedForDayAt,
+            dismissalHistory: dismissalHistory,
+          )
+          as RelationshipNudgeEntity;
+
+  group('relationship nudge — the shared lifecycle rules, applied '
+      'per-variant (ADR 0059)', () {
+    test('dismissal is terminal, both directions', () {
+      final dismissed = relationshipNudge(status: NudgeStatus.dismissed);
+      final active = relationshipNudge(status: NudgeStatus.active);
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: dismissed,
+          incoming: active,
+        ),
+        ConcurrentWinner.local,
+        reason: 'a re-activation must not revive a dismissed banner',
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: active,
+          incoming: dismissed,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('supersession outranks even a higher activation', () {
+      final swept = relationshipNudge(status: NudgeStatus.superseded);
+      final offlineRerun = relationshipNudge(
+        status: NudgeStatus.active,
+        activationCount: 3,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: swept,
+          incoming: offlineRerun,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: offlineRerun,
+          incoming: swept,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('the higher activation wins whole-row selection', () {
+      final rerun = relationshipNudge(
+        status: NudgeStatus.active,
+        activationCount: 2,
+      );
+      final staleBookkeeping = relationshipNudge(
+        status: NudgeStatus.active,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: rerun,
+          incoming: staleBookkeeping,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: staleBookkeeping,
+          incoming: rerun,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('a terminal status beats a same-activation live write; two live '
+        'writes defer to LWW', () {
+      final retired = relationshipNudge(status: NudgeStatus.retired);
+      final active = relationshipNudge(status: NudgeStatus.active);
+      expect(
+        resolveConcurrentAgentEntityOverride(local: retired, incoming: active),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: relationshipNudge(status: NudgeStatus.active),
+          incoming: relationshipNudge(status: NudgeStatus.ready),
+        ),
+        isNull,
+      );
+    });
+
+    test('a cross-variant id collision has no monotonic rule — defers to '
+        'LWW (null)', () {
+      // Same id, different nudge kinds: neither per-variant branch matches,
+      // so the pair falls through to the generic path instead of one kind's
+      // rules being misapplied to the other.
+      final goal = goalNudge(status: GoalNudgeStatus.dismissed, id: 'same-id');
+      final relationship = relationshipNudge(
+        status: NudgeStatus.active,
+        id: 'same-id',
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: goal,
+          incoming: relationship,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('mergeRelationshipNudgeAccumulators', () {
+    test('projects every accumulator field through the shared merge and '
+        'back — counters joined, histories unioned, watermarks widened, '
+        'clocks joined', () {
+      final snoozeEvent = NudgeSnooze(
+        id: 'snooze-1',
+        activation: 1,
+        snoozedAt: DateTime.utc(2026, 8, 13, 10),
+        snoozedUntil: DateTime.utc(2026, 8, 13, 13),
+        duration: NudgeBannerSnoozeDuration.threeHours,
+        durationMinutes: 180,
+        utcOffsetMinutes: 120,
+      );
+      final dismissalEvent = NudgeDayDismissal(
+        id: 'dismiss-1',
+        activation: 1,
+        dismissedAt: DateTime.utc(2026, 8, 13, 18),
+        dismissedUntil: DateTime.utc(2026, 8, 13, 22),
+        utcOffsetMinutes: 120,
+      );
+      final local = relationshipNudge(
+        status: NudgeStatus.active,
+        vectorClock: const VectorClock({'phone': 4}),
+        visibleMs: const GCounter({'phone': 4000}),
+        impressions: const GCounter({'phone': 3}),
+        ratings: [
+          NudgeRating(activation: 1, ratedAt: DateTime(2026, 8), rating: 5),
+        ],
+        snoozeHistory: [snoozeEvent],
+        snoozedUntil: DateTime.utc(2026, 8, 13, 13),
+        lastSnoozeDuration: NudgeBannerSnoozeDuration.threeHours,
+        staleAt: DateTime(2026, 8, 4),
+        firstShownAt: DateTime(2026, 8),
+        lastShownAt: DateTime(2026, 8, 3),
+      );
+      final incoming = relationshipNudge(
+        status: NudgeStatus.active,
+        vectorClock: const VectorClock({'desktop': 2}),
+        visibleMs: const GCounter({'phone': 1000, 'desktop': 9000}),
+        impressions: const GCounter({'desktop': 7}),
+        dismissalHistory: [dismissalEvent],
+        dismissedForDayAt: DateTime.utc(2026, 8, 13, 18),
+        staleAt: DateTime(2026, 8, 5),
+        firstShownAt: DateTime(2026, 8, 2),
+        lastShownAt: DateTime(2026, 8, 5),
+      );
+
+      final merged = mergeRelationshipNudgeAccumulators(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+
+      expect(merged.totalVisibleMs.byHost, {'phone': 4000, 'desktop': 9000});
+      expect(merged.impressionCount.value, 10);
+      expect(merged.ratings.single.rating, 5);
+      expect(merged.snoozeHistory, [snoozeEvent]);
+      expect(merged.snoozedUntil, DateTime.utc(2026, 8, 13, 13));
+      expect(
+        merged.lastSnoozeDuration,
+        NudgeBannerSnoozeDuration.threeHours,
+      );
+      expect(merged.dismissalHistory, [dismissalEvent]);
+      expect(merged.dismissedForDayAt, DateTime.utc(2026, 8, 13, 18));
+      expect(merged.staleAt, DateTime(2026, 8, 5));
+      expect(merged.firstShownAt, DateTime(2026, 8));
+      expect(merged.lastShownAt, DateTime(2026, 8, 5));
+      expect(
+        merged.vectorClock,
+        const VectorClock({'phone': 4, 'desktop': 2}),
+        reason: 'the merged row observed both branches — clock join',
+      );
+      // Non-accumulator fields stay the winner's.
+      expect(merged.status, NudgeStatus.active);
+      expect(merged.agentId, 'ra1');
+    });
+
+    test('is symmetric: swapping local/incoming converges', () {
+      final a = relationshipNudge(
+        status: NudgeStatus.active,
+        visibleMs: const GCounter({'phone': 4000}),
+        ratings: [
+          NudgeRating(activation: 1, ratedAt: DateTime(2026, 8), rating: 3),
+        ],
+      );
+      final b = relationshipNudge(
+        status: NudgeStatus.retired,
+        visibleMs: const GCounter({'desktop': 500}),
+        ratings: [
+          NudgeRating(
+            activation: 1,
+            ratedAt: DateTime(2026, 8, 2),
+            skipped: true,
+          ),
+        ],
+      );
+      final ab = mergeRelationshipNudgeAccumulators(
+        winner: b,
+        local: a,
+        incoming: b,
+      );
+      final ba = mergeRelationshipNudgeAccumulators(
+        winner: b,
+        local: b,
+        incoming: a,
+      );
+      expect(ab.totalVisibleMs, ba.totalVisibleMs);
+      expect(ab.ratings, ba.ratings);
+      expect(ab.ratings.single.rating, 3, reason: 'earliest outcome wins');
     });
   });
 }

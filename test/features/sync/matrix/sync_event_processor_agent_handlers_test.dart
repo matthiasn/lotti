@@ -618,6 +618,72 @@ void main() {
       );
     });
 
+    test(
+      'concurrent relationship-nudge edits take the same merge path as '
+      'goal nudges (ADR 0059): dismissal terminal, counters joined',
+      () async {
+        const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+        const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+        RelationshipNudgeEntity nudgeRow({
+          required VectorClock vc,
+          required GCounter visibleMs,
+          NudgeStatus status = NudgeStatus.active,
+        }) =>
+            AgentDomainEntity.relationshipNudge(
+                  id: 'rnudge-1',
+                  agentId: 'relationship-agent-1',
+                  status: status,
+                  brief: const NudgeBrief(
+                    headline: 'Check in with Anna — five weeks.',
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
+                  ),
+                  briefDigest: 'dr',
+                  createdAt: DateTime(2026, 8),
+                  updatedAt: DateTime(2026, 8, 2),
+                  vectorClock: vc,
+                  totalVisibleMs: visibleMs,
+                )
+                as RelationshipNudgeEntity;
+
+        final local = nudgeRow(
+          vc: localVc,
+          visibleMs: const GCounter({'host-A': 5000}),
+          status: NudgeStatus.dismissed,
+        );
+        final incoming = nudgeRow(
+          vc: incomingVc,
+          visibleMs: const GCounter({'host-B': 3000}),
+        );
+        when(
+          () => mockAgentRepo.getEntity('rnudge-1'),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final upserted =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as RelationshipNudgeEntity;
+        // The shared lifecycle override kept the dismissal; the shared
+        // accumulator join still recovered the other device's exposure.
+        expect(upserted.status, NudgeStatus.dismissed);
+        expect(
+          upserted.totalVisibleMs.byHost,
+          {'host-A': 5000, 'host-B': 3000},
+        );
+      },
+    );
+
     test('a locally-dominating agent state is kept — incoming is neither '
         'merged nor applied', () async {
       // local dominates (a_gt_b), so the merge must NOT run; if it did it would

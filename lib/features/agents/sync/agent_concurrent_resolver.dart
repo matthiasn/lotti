@@ -2,6 +2,7 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Which of two concurrent versions of the same entity/link id should win.
@@ -170,48 +171,69 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     return null;
   }
   if (local is GoalNudgeEntity && incoming is GoalNudgeEntity) {
-    // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
-    // must not be revived by a concurrent re-activation or bookkeeping
-    // write on another device — a fresh dismissal is a request for quiet.
-    final localDismissed = local.status == GoalNudgeStatus.dismissed;
-    final incomingDismissed = incoming.status == GoalNudgeStatus.dismissed;
-    if (localDismissed != incomingDismissed) {
-      return localDismissed
-          ? ConcurrentWinner.local
-          : ConcurrentWinner.incoming;
-    }
-    // Supersession is the spec itself moving on and outranks EVERYTHING
-    // below, including a higher activation: an offline rerun of an
-    // old-spec banner must not resurrect it beside the revised goal.
-    // (Only revision sweeps write `superseded`, and superseded rows can
-    // never re-enter the rerun path, so this cannot mask a legitimate
-    // same-spec reactivation.)
-    final localSuperseded = local.status == GoalNudgeStatus.superseded;
-    final incomingSuperseded = incoming.status == GoalNudgeStatus.superseded;
-    if (localSuperseded != incomingSuperseded) {
-      return localSuperseded
-          ? ConcurrentWinner.local
-          : ConcurrentWinner.incoming;
-    }
-    // The HIGHER activation is the newer run: its lifecycle metadata
-    // (activatedAt, staleAt, runKey) must win whole-row selection, or a
-    // peer's bookkeeping write for the PREVIOUS activation could win LWW
-    // and stamp the fresh rerun with the old deadline. This also covers
-    // genuine reactivation beating a same-spec terminal write.
-    if (local.activationCount != incoming.activationCount) {
-      return local.activationCount > incoming.activationCount
-          ? ConcurrentWinner.local
-          : ConcurrentWinner.incoming;
-    }
-    // Same activation: terminal states dominate concurrent live writes —
-    // a device that retired/expired/superseded the ad must not lose to a
-    // stale exposure flush or rating that copied the old `active` row.
-    final localTerminal = _terminalNudgeStatuses.contains(local.status);
-    final incomingTerminal = _terminalNudgeStatuses.contains(incoming.status);
-    if (localTerminal != incomingTerminal) {
-      return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
-    }
-    return null;
+    return resolveConcurrentNudgeLifecycle(
+      localStatus: local.status,
+      incomingStatus: incoming.status,
+      localActivationCount: local.activationCount,
+      incomingActivationCount: incoming.activationCount,
+    );
+  }
+  if (local is RelationshipNudgeEntity && incoming is RelationshipNudgeEntity) {
+    return resolveConcurrentNudgeLifecycle(
+      localStatus: local.status,
+      incomingStatus: incoming.status,
+      localActivationCount: local.activationCount,
+      incomingActivationCount: incoming.activationCount,
+    );
+  }
+  return null;
+}
+
+/// The nudge lifecycle dominance rules, shared by every nudge variant and
+/// applied per-variant by [resolveConcurrentAgentEntityOverride] (ADR 0055
+/// semantics, generalized by ADR 0059). Returns null to defer to LWW.
+ConcurrentWinner? resolveConcurrentNudgeLifecycle({
+  required NudgeStatus localStatus,
+  required NudgeStatus incomingStatus,
+  required int localActivationCount,
+  required int incomingActivationCount,
+}) {
+  // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
+  // must not be revived by a concurrent re-activation or bookkeeping
+  // write on another device — a fresh dismissal is a request for quiet.
+  final localDismissed = localStatus == NudgeStatus.dismissed;
+  final incomingDismissed = incomingStatus == NudgeStatus.dismissed;
+  if (localDismissed != incomingDismissed) {
+    return localDismissed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  // Supersession is the subject itself moving on (a revised goal spec, a
+  // changed relationship state) and outranks EVERYTHING below, including a
+  // higher activation: an offline rerun of a stale banner must not
+  // resurrect it beside the revised subject. (Only revision sweeps write
+  // `superseded`, and superseded rows can never re-enter the rerun path,
+  // so this cannot mask a legitimate same-subject reactivation.)
+  final localSuperseded = localStatus == NudgeStatus.superseded;
+  final incomingSuperseded = incomingStatus == NudgeStatus.superseded;
+  if (localSuperseded != incomingSuperseded) {
+    return localSuperseded ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  // The HIGHER activation is the newer run: its lifecycle metadata
+  // (activatedAt, staleAt, runKey) must win whole-row selection, or a
+  // peer's bookkeeping write for the PREVIOUS activation could win LWW
+  // and stamp the fresh rerun with the old deadline. This also covers
+  // genuine reactivation beating a same-subject terminal write.
+  if (localActivationCount != incomingActivationCount) {
+    return localActivationCount > incomingActivationCount
+        ? ConcurrentWinner.local
+        : ConcurrentWinner.incoming;
+  }
+  // Same activation: terminal states dominate concurrent live writes —
+  // a device that retired/expired/superseded the banner must not lose to a
+  // stale exposure flush or rating that copied the old `active` row.
+  final localTerminal = _terminalNudgeStatuses.contains(localStatus);
+  final incomingTerminal = _terminalNudgeStatuses.contains(incomingStatus);
+  if (localTerminal != incomingTerminal) {
+    return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   return null;
 }
@@ -223,11 +245,11 @@ int? _specVersionNumber(String specVersionId) {
   return match == null ? null : int.tryParse(match.group(1)!);
 }
 
-const Set<GoalNudgeStatus> _terminalNudgeStatuses = {
-  GoalNudgeStatus.retired,
-  GoalNudgeStatus.expired,
-  GoalNudgeStatus.superseded,
-  GoalNudgeStatus.failed,
+const Set<NudgeStatus> _terminalNudgeStatuses = {
+  NudgeStatus.retired,
+  NudgeStatus.expired,
+  NudgeStatus.superseded,
+  NudgeStatus.failed,
 };
 
 /// A total, replica-independent ordering of two vector clocks. Compares each
@@ -286,9 +308,32 @@ AgentStateEntity mergeAgentStateCounters({
   );
 }
 
-/// Merges the convergent fields of two **concurrent** [GoalNudgeEntity]
-/// versions into [winner] (chosen by [resolveConcurrent], possibly after
-/// the dismissal-terminal override): the per-host exposure G-counters
+/// The accumulator and visibility fields every nudge variant shares — the
+/// working set of [mergeNudgeAccumulators]. The variants are siblings in a
+/// freezed union with no common nudge supertype, so thin per-variant
+/// adapters ([mergeGoalNudgeAccumulators],
+/// [mergeRelationshipNudgeAccumulators]) project into this view and apply
+/// the merged view back via `copyWith`; the merge rules themselves exist
+/// exactly once (ADR 0059).
+typedef NudgeAccumulatorView = ({
+  VectorClock? vectorClock,
+  int activationCount,
+  List<NudgeRating> ratings,
+  List<NudgeSnooze> snoozeHistory,
+  DateTime? snoozedUntil,
+  NudgeBannerSnoozeDuration? lastSnoozeDuration,
+  List<NudgeDayDismissal> dismissalHistory,
+  DateTime? dismissedForDayAt,
+  DateTime? staleAt,
+  GCounter totalVisibleMs,
+  GCounter impressionCount,
+  DateTime? firstShownAt,
+  DateTime? lastShownAt,
+});
+
+/// Merges the convergent fields of two **concurrent** versions of one
+/// nudge into [winner] (chosen by [resolveConcurrent], possibly after
+/// the lifecycle override): the per-host exposure G-counters
 /// joined element-wise, the ratings histories unioned, and the
 /// observed-event watermarks widened. Whole-row LWW alone would let the
 /// losing device's visible-time, impressions and rating-prompt outcomes
@@ -305,38 +350,37 @@ AgentStateEntity mergeAgentStateCounters({
 /// two devices rating the same run before syncing keep the EARLIEST
 /// outcome on both — deterministic, and a run is never counted twice in
 /// reuse means or wear-out trajectories. Pure: same inputs → same result.
-GoalNudgeEntity mergeGoalNudgeAccumulators({
-  required GoalNudgeEntity winner,
-  required GoalNudgeEntity local,
-  required GoalNudgeEntity incoming,
+NudgeAccumulatorView mergeNudgeAccumulators({
+  required NudgeAccumulatorView winner,
+  required NudgeAccumulatorView local,
+  required NudgeAccumulatorView incoming,
 }) {
   // The sort is a TOTAL order over every distinguishing field: replicas
   // build this set local-first, so a comparator tie between distinct
   // records would let them serialize in different orders and diverge
   // permanently under equal-clock sync.
-  final ratings =
-      <GoalNudgeRating>{...local.ratings, ...incoming.ratings}.toList()
-        ..sort((a, b) {
-          final byActivation = a.activation.compareTo(b.activation);
-          if (byActivation != 0) return byActivation;
-          final byRatedAt = a.ratedAt.compareTo(b.ratedAt);
-          if (byRatedAt != 0) return byRatedAt;
-          final bySkipped = (a.skipped ? 1 : 0).compareTo(b.skipped ? 1 : 0);
-          if (bySkipped != 0) return bySkipped;
-          return (a.rating ?? 0).compareTo(b.rating ?? 0);
-        });
-  final onePerActivation = <GoalNudgeRating>[];
+  final ratings = <NudgeRating>{...local.ratings, ...incoming.ratings}.toList()
+    ..sort((a, b) {
+      final byActivation = a.activation.compareTo(b.activation);
+      if (byActivation != 0) return byActivation;
+      final byRatedAt = a.ratedAt.compareTo(b.ratedAt);
+      if (byRatedAt != 0) return byRatedAt;
+      final bySkipped = (a.skipped ? 1 : 0).compareTo(b.skipped ? 1 : 0);
+      if (bySkipped != 0) return bySkipped;
+      return (a.rating ?? 0).compareTo(b.rating ?? 0);
+    });
+  final onePerActivation = <NudgeRating>[];
   for (final rating in ratings) {
     if (onePerActivation.isEmpty ||
         onePerActivation.last.activation != rating.activation) {
       onePerActivation.add(rating);
     }
   }
-  final snoozes = <GoalNudgeSnooze>[
+  final snoozes = <NudgeSnooze>[
     ...local.snoozeHistory,
     ...incoming.snoozeHistory,
-  ]..sort(_compareGoalNudgeSnoozes);
-  final snoozesById = <String, GoalNudgeSnooze>{};
+  ]..sort(_compareNudgeSnoozes);
+  final snoozesById = <String, NudgeSnooze>{};
   for (final snooze in snoozes) {
     snoozesById.putIfAbsent(snooze.id, () => snooze);
   }
@@ -346,7 +390,7 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
       return byTime != 0 ? byTime : a.id.compareTo(b.id);
     });
   final dismissals =
-      <GoalNudgeDayDismissal>[
+      <NudgeDayDismissal>[
         ...local.dismissalHistory,
         ...incoming.dismissalHistory,
       ]..sort(
@@ -354,7 +398,7 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
           _dayDismissalOrderKey(b),
         ),
       );
-  final dismissalsById = <String, GoalNudgeDayDismissal>{};
+  final dismissalsById = <String, NudgeDayDismissal>{};
   for (final dismissal in dismissals) {
     dismissalsById.putIfAbsent(dismissal.id, () => dismissal);
   }
@@ -369,7 +413,7 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
   final snoozedUntil = sameActivation
       ? _latestInstant(local.snoozedUntil, incoming.snoozedUntil)
       : winner.snoozedUntil;
-  GoalNudgeSnooze? effectiveSnooze;
+  NudgeSnooze? effectiveSnooze;
   if (snoozedUntil != null) {
     for (final event in mergedSnoozes) {
       if (event.snoozedUntil == snoozedUntil) effectiveSnooze = event;
@@ -381,7 +425,7 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
   final mergedStaleAt = sameActivation
       ? _latestInstant(local.staleAt, incoming.staleAt)
       : winner.staleAt;
-  return winner.copyWith(
+  return (
     // The merged row observed BOTH branches, so its clock must be their
     // join: keeping only the winner's clock would let that device's next
     // (pre-merge) write causally dominate and overwrite the other
@@ -407,14 +451,103 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
   );
 }
 
-String _dayDismissalOrderKey(GoalNudgeDayDismissal event) =>
+/// [mergeNudgeAccumulators] applied to the [GoalNudgeEntity] variant.
+GoalNudgeEntity mergeGoalNudgeAccumulators({
+  required GoalNudgeEntity winner,
+  required GoalNudgeEntity local,
+  required GoalNudgeEntity incoming,
+}) {
+  final merged = mergeNudgeAccumulators(
+    winner: _goalNudgeView(winner),
+    local: _goalNudgeView(local),
+    incoming: _goalNudgeView(incoming),
+  );
+  return winner.copyWith(
+    vectorClock: merged.vectorClock,
+    totalVisibleMs: merged.totalVisibleMs,
+    impressionCount: merged.impressionCount,
+    ratings: merged.ratings,
+    snoozeHistory: merged.snoozeHistory,
+    snoozedUntil: merged.snoozedUntil,
+    lastSnoozeDuration: merged.lastSnoozeDuration,
+    dismissalHistory: merged.dismissalHistory,
+    staleAt: merged.staleAt,
+    dismissedForDayAt: merged.dismissedForDayAt,
+    activationCount: merged.activationCount,
+    firstShownAt: merged.firstShownAt,
+    lastShownAt: merged.lastShownAt,
+  );
+}
+
+/// [mergeNudgeAccumulators] applied to the [RelationshipNudgeEntity]
+/// variant.
+RelationshipNudgeEntity mergeRelationshipNudgeAccumulators({
+  required RelationshipNudgeEntity winner,
+  required RelationshipNudgeEntity local,
+  required RelationshipNudgeEntity incoming,
+}) {
+  final merged = mergeNudgeAccumulators(
+    winner: _relationshipNudgeView(winner),
+    local: _relationshipNudgeView(local),
+    incoming: _relationshipNudgeView(incoming),
+  );
+  return winner.copyWith(
+    vectorClock: merged.vectorClock,
+    totalVisibleMs: merged.totalVisibleMs,
+    impressionCount: merged.impressionCount,
+    ratings: merged.ratings,
+    snoozeHistory: merged.snoozeHistory,
+    snoozedUntil: merged.snoozedUntil,
+    lastSnoozeDuration: merged.lastSnoozeDuration,
+    dismissalHistory: merged.dismissalHistory,
+    staleAt: merged.staleAt,
+    dismissedForDayAt: merged.dismissedForDayAt,
+    activationCount: merged.activationCount,
+    firstShownAt: merged.firstShownAt,
+    lastShownAt: merged.lastShownAt,
+  );
+}
+
+NudgeAccumulatorView _goalNudgeView(GoalNudgeEntity e) => (
+  vectorClock: e.vectorClock,
+  activationCount: e.activationCount,
+  ratings: e.ratings,
+  snoozeHistory: e.snoozeHistory,
+  snoozedUntil: e.snoozedUntil,
+  lastSnoozeDuration: e.lastSnoozeDuration,
+  dismissalHistory: e.dismissalHistory,
+  dismissedForDayAt: e.dismissedForDayAt,
+  staleAt: e.staleAt,
+  totalVisibleMs: e.totalVisibleMs,
+  impressionCount: e.impressionCount,
+  firstShownAt: e.firstShownAt,
+  lastShownAt: e.lastShownAt,
+);
+
+NudgeAccumulatorView _relationshipNudgeView(RelationshipNudgeEntity e) => (
+  vectorClock: e.vectorClock,
+  activationCount: e.activationCount,
+  ratings: e.ratings,
+  snoozeHistory: e.snoozeHistory,
+  snoozedUntil: e.snoozedUntil,
+  lastSnoozeDuration: e.lastSnoozeDuration,
+  dismissalHistory: e.dismissalHistory,
+  dismissedForDayAt: e.dismissedForDayAt,
+  staleAt: e.staleAt,
+  totalVisibleMs: e.totalVisibleMs,
+  impressionCount: e.impressionCount,
+  firstShownAt: e.firstShownAt,
+  lastShownAt: e.lastShownAt,
+);
+
+String _dayDismissalOrderKey(NudgeDayDismissal event) =>
     '${event.id}\u0000'
     '${event.dismissedAt.toUtc().toIso8601String()}\u0000'
     '${event.dismissedUntil.toUtc().toIso8601String()}\u0000'
     '${event.activation.toString().padLeft(10, '0')}\u0000'
     '${event.utcOffsetMinutes.toString().padLeft(5, '0')}';
 
-int _compareGoalNudgeSnoozes(GoalNudgeSnooze a, GoalNudgeSnooze b) {
+int _compareNudgeSnoozes(NudgeSnooze a, NudgeSnooze b) {
   final byId = a.id.compareTo(b.id);
   if (byId != 0) return byId;
   final byStart = a.snoozedAt.compareTo(b.snoozedAt);

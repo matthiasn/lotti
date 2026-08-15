@@ -84,6 +84,7 @@ abstract final class AgentEntityTypes {
   static const goalSpecHead = 'goalSpecHead';
   static const goalProgress = 'goalProgress';
   static const goalNudge = 'goalNudge';
+  static const relationshipNudge = 'relationshipNudge';
 }
 
 /// `scope` values for `AgentReport` rows. `current` marks the live report a

@@ -1539,6 +1539,93 @@ void main() {
     });
   });
 
+  group('RelationshipNudgeEntity (ADR 0059)', () {
+    final snooze = NudgeSnooze(
+      id: 'snooze-r1',
+      activation: 1,
+      snoozedAt: DateTime.utc(2026, 8, 13, 8),
+      snoozedUntil: DateTime.utc(2026, 8, 13, 11),
+      duration: NudgeBannerSnoozeDuration.threeHours,
+      durationMinutes: 180,
+      utcOffsetMinutes: 120,
+    );
+    final entity = AgentDomainEntity.relationshipNudge(
+      id: 'rnudge-1',
+      agentId: 'relationship-1',
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
+        headline: 'Check in with Anna — five weeks.',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      ),
+      briefDigest: 'digest-r1',
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      vectorClock: vectorClock,
+      triggerRegisterId: 'relationship_health:agent-1',
+      snoozedUntil: snooze.snoozedUntil,
+      lastSnoozeDuration: snooze.duration,
+      snoozeHistory: [snooze],
+      ratings: [
+        NudgeRating(
+          activation: 1,
+          ratedAt: DateTime.utc(2026, 8, 13, 12),
+          rating: 4,
+        ),
+      ],
+    );
+
+    test('roundtrips with its own runtimeType discriminator', () {
+      expect(roundtrip(entity), entity);
+      // The wire tag older peers see — they decode it via the `unknown`
+      // fallback (pinned below) and never surface it, which is what makes
+      // the mixed-fleet rollout safe without converting goalNudge rows.
+      expect(entity.toJson()['runtimeType'], 'relationshipNudge');
+    });
+
+    test('the shared cross-field gate rejects contradictory ratings under '
+        'the relationship label', () {
+      final json =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
+      final ratings = json['ratings']! as List<dynamic>;
+      (ratings.single as Map<String, dynamic>)['skipped'] = true;
+
+      expect(
+        () => AgentDomainEntity.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('relationship nudge rating'),
+              contains('must not carry a rating'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('rejects zone-free snooze history timestamps like the goal '
+        'variant', () {
+      final json =
+          jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
+      final history = json['snoozeHistory']! as List<dynamic>;
+      (history.single as Map<String, dynamic>)['snoozedAt'] =
+          '2026-08-13T08:00:00';
+
+      expect(
+        () => AgentDomainEntity.fromJson(json),
+        throwsA(
+          isA<FormatException>().having(
+            (error) => error.message,
+            'message',
+            contains('explicit UTC offset'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('unknown fallback', () {
     test('unknown runtimeType deserializes to AgentUnknownEntity', () {
       final json = <String, dynamic>{

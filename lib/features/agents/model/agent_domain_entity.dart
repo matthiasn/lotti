@@ -1033,6 +1033,85 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = GoalNudgeEntity;
 
+  /// A relationship nudge — one banner, its brief, and its whole life.
+  ///
+  /// The sibling of [GoalNudgeEntity] on the kind-agnostic nudge substrate
+  /// (ADR 0059): identical lifecycle, accumulator and exposure semantics,
+  /// enforced per-variant by the shared resolver helpers rather than by a
+  /// second copy of the rules. Existing `goalNudge` rows are never converted
+  /// or renamed; peers too old to know this variant decode it as
+  /// [AgentUnknownEntity] and never surface it, so mixed-fleet rollout is
+  /// safe by construction.
+  const factory AgentDomainEntity.relationshipNudge({
+    required String id,
+    required String agentId,
+    required NudgeStatus status,
+    required NudgeBrief brief,
+    required String briefDigest,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+
+    /// Wake provenance (the DayPlanEntity precedent).
+    String? runKey,
+    String? threadId,
+
+    /// The cadence-health register row that justified this nudge
+    /// (the `goalNudge.triggerProgressId` analogue; ADR 0059 Decision 2).
+    String? triggerRegisterId,
+    String? reasonSummary,
+
+    /// How long this nudge may claim to be current; relationship-relevant
+    /// events pull it forward (staleness is a contract, not a hope).
+    DateTime? staleAt,
+    DateTime? activatedAt,
+    DateTime? dismissedAt,
+    DateTime? retiredAt,
+    DateTime? expiredAt,
+    DateTime? supersededAt,
+
+    /// Temporary visibility state. Snoozes keep the activation active and
+    /// preserve their append-only interaction history so future agent wakes
+    /// can learn which local times users repeatedly defer and request.
+    DateTime? snoozedUntil,
+    NudgeBannerSnoozeDuration? lastSnoozeDuration,
+    @Default(<NudgeSnooze>[]) List<NudgeSnooze> snoozeHistory,
+
+    /// The latest "not today" choice. The banner remains active and becomes
+    /// visible again when this instant is no longer on the reading device's
+    /// local calendar day.
+    DateTime? dismissedForDayAt,
+
+    /// Append-only day-dismissal evidence. Current visibility reads the latest
+    /// day-dismissal instant above; future timing analysis reads this history.
+    @Default(<NudgeDayDismissal>[]) List<NudgeDayDismissal> dismissalHistory,
+
+    /// How many times this nudge has been activated (1-based; a reuse
+    /// re-entry increments it). Rating prompts key off this: one outcome
+    /// per activation in the ratings history.
+    @Default(1) int activationCount,
+
+    /// Rating-prompt outcomes, one per rated-or-skipped activation
+    /// (append-only; never overwritten).
+    @Default(<NudgeRating>[]) List<NudgeRating> ratings,
+
+    /// Accumulated visible milliseconds, per host — grow-only counters so
+    /// concurrent exposure on two devices can merge by element-wise max
+    /// instead of losing one side to whole-row LWW (`.value` is the total).
+    @Default(GCounter.empty())
+    @JsonKey(name: 'totalVisibleMsByHost')
+    GCounter totalVisibleMs,
+    @Default(GCounter.empty())
+    @JsonKey(name: 'impressionCountByHost')
+    GCounter impressionCount,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+
+    /// Pipeline outcomes (verification verdict, generator model, …).
+    @Default(<String, String>{}) Map<String, String> provenance,
+    DateTime? deletedAt,
+  }) = RelationshipNudgeEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,
@@ -1069,7 +1148,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 AgentDomainEntity _decodeAgentDomainEntity(Map<String, dynamic> json) {
   final repaired = _repairLegacyWeekRollup(json);
   _validateGoalSpecJson(repaired);
-  _validateGoalNudgeJson(repaired);
+  _validateNudgeJson(repaired);
   final entity = _$AgentDomainEntityFromJson(repaired);
   if (entity is GoalSpecVersionEntity) {
     final issues = GoalSpecValidator.criterionIssues(entity.criteria);
@@ -1103,16 +1182,24 @@ void _validateGoalSpecJson(Map<String, dynamic> json) {
 }
 
 /// Cross-field rating validation the per-field converters cannot do.
-void _validateGoalNudgeJson(Map<String, dynamic> json) {
-  if (json['runtimeType'] != 'goalNudge') return;
+/// One rule set for every nudge variant (ADR 0059): the histories carry the
+/// same contracts whichever agent kind wrote them.
+void _validateNudgeJson(Map<String, dynamic> json) {
+  final runtimeType = json['runtimeType'];
+  if (runtimeType != 'goalNudge' && runtimeType != 'relationshipNudge') {
+    return;
+  }
+  final label = runtimeType == 'goalNudge'
+      ? 'goal nudge'
+      : 'relationship nudge';
   final ratings = json['ratings'];
   if (ratings is List) {
     for (final entry in ratings) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeRatingJsonIssues(entry);
+      final issues = nudgeRatingJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge rating: ${issues.join('; ')}',
+          'Invalid $label rating: ${issues.join('; ')}',
         );
       }
     }
@@ -1121,10 +1208,10 @@ void _validateGoalNudgeJson(Map<String, dynamic> json) {
   if (snoozeHistory is List) {
     for (final entry in snoozeHistory) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeSnoozeJsonIssues(entry);
+      final issues = nudgeSnoozeJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge snooze: ${issues.join('; ')}',
+          'Invalid $label snooze: ${issues.join('; ')}',
         );
       }
     }
@@ -1133,10 +1220,10 @@ void _validateGoalNudgeJson(Map<String, dynamic> json) {
   if (dismissalHistory is List) {
     for (final entry in dismissalHistory) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeDayDismissalJsonIssues(entry);
+      final issues = nudgeDayDismissalJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge day dismissal: ${issues.join('; ')}',
+          'Invalid $label day dismissal: ${issues.join('; ')}',
         );
       }
     }

@@ -2008,6 +2008,130 @@ const _$NudgeBannerSnoozeDurationEnumMap = {
   NudgeBannerSnoozeDuration.custom: 'custom',
 };
 
+RelationshipNudgeEntity _$RelationshipNudgeEntityFromJson(
+  Map<String, dynamic> json,
+) => RelationshipNudgeEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  status: $enumDecode(_$NudgeStatusEnumMap, json['status']),
+  brief: NudgeBrief.fromJson(json['brief'] as Map<String, dynamic>),
+  briefDigest: json['briefDigest'] as String,
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  runKey: json['runKey'] as String?,
+  threadId: json['threadId'] as String?,
+  triggerRegisterId: json['triggerRegisterId'] as String?,
+  reasonSummary: json['reasonSummary'] as String?,
+  staleAt: json['staleAt'] == null
+      ? null
+      : DateTime.parse(json['staleAt'] as String),
+  activatedAt: json['activatedAt'] == null
+      ? null
+      : DateTime.parse(json['activatedAt'] as String),
+  dismissedAt: json['dismissedAt'] == null
+      ? null
+      : DateTime.parse(json['dismissedAt'] as String),
+  retiredAt: json['retiredAt'] == null
+      ? null
+      : DateTime.parse(json['retiredAt'] as String),
+  expiredAt: json['expiredAt'] == null
+      ? null
+      : DateTime.parse(json['expiredAt'] as String),
+  supersededAt: json['supersededAt'] == null
+      ? null
+      : DateTime.parse(json['supersededAt'] as String),
+  snoozedUntil: json['snoozedUntil'] == null
+      ? null
+      : DateTime.parse(json['snoozedUntil'] as String),
+  lastSnoozeDuration: $enumDecodeNullable(
+    _$NudgeBannerSnoozeDurationEnumMap,
+    json['lastSnoozeDuration'],
+  ),
+  snoozeHistory:
+      (json['snoozeHistory'] as List<dynamic>?)
+          ?.map((e) => NudgeSnooze.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <NudgeSnooze>[],
+  dismissedForDayAt: json['dismissedForDayAt'] == null
+      ? null
+      : DateTime.parse(json['dismissedForDayAt'] as String),
+  dismissalHistory:
+      (json['dismissalHistory'] as List<dynamic>?)
+          ?.map((e) => NudgeDayDismissal.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <NudgeDayDismissal>[],
+  activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
+  ratings:
+      (json['ratings'] as List<dynamic>?)
+          ?.map((e) => NudgeRating.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <NudgeRating>[],
+  totalVisibleMs: json['totalVisibleMsByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(json['totalVisibleMsByHost'] as Map<String, dynamic>),
+  impressionCount: json['impressionCountByHost'] == null
+      ? const GCounter.empty()
+      : GCounter.fromJson(
+          json['impressionCountByHost'] as Map<String, dynamic>,
+        ),
+  firstShownAt: json['firstShownAt'] == null
+      ? null
+      : DateTime.parse(json['firstShownAt'] as String),
+  lastShownAt: json['lastShownAt'] == null
+      ? null
+      : DateTime.parse(json['lastShownAt'] as String),
+  provenance:
+      (json['provenance'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$RelationshipNudgeEntityToJson(
+  RelationshipNudgeEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'status': _$NudgeStatusEnumMap[instance.status]!,
+  'brief': instance.brief,
+  'briefDigest': instance.briefDigest,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'runKey': instance.runKey,
+  'threadId': instance.threadId,
+  'triggerRegisterId': instance.triggerRegisterId,
+  'reasonSummary': instance.reasonSummary,
+  'staleAt': instance.staleAt?.toIso8601String(),
+  'activatedAt': instance.activatedAt?.toIso8601String(),
+  'dismissedAt': instance.dismissedAt?.toIso8601String(),
+  'retiredAt': instance.retiredAt?.toIso8601String(),
+  'expiredAt': instance.expiredAt?.toIso8601String(),
+  'supersededAt': instance.supersededAt?.toIso8601String(),
+  'snoozedUntil': instance.snoozedUntil?.toIso8601String(),
+  'lastSnoozeDuration':
+      _$NudgeBannerSnoozeDurationEnumMap[instance.lastSnoozeDuration],
+  'snoozeHistory': instance.snoozeHistory,
+  'dismissedForDayAt': instance.dismissedForDayAt?.toIso8601String(),
+  'dismissalHistory': instance.dismissalHistory,
+  'activationCount': instance.activationCount,
+  'ratings': instance.ratings,
+  'totalVisibleMsByHost': instance.totalVisibleMs,
+  'impressionCountByHost': instance.impressionCount,
+  'firstShownAt': instance.firstShownAt?.toIso8601String(),
+  'lastShownAt': instance.lastShownAt?.toIso8601String(),
+  'provenance': instance.provenance,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,

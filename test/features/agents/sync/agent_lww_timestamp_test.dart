@@ -354,6 +354,24 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'relationshipNudge (lifecycle — updatedAt)',
+    entity: AgentDomainEntity.relationshipNudge(
+      id: 'rnudge-1',
+      agentId: 'relationship-1',
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
+        headline: 'Check in with Anna — five weeks.',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      ),
+      briefDigest: 'digest-r1',
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
     label: 'unknown',
     entity: AgentDomainEntity.unknown(
       id: 'unknown-1',
@@ -380,7 +398,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 37);
+      expect(_cases.length, 38);
     });
   });
 }
