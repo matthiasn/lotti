@@ -5,10 +5,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../mocks/mocks.dart';
 
 const _failingEntryId = 'dfb5db6b-215c-5d1f-b05a-53830b125fad';
+
+class _MockUuid extends Mock implements Uuid {}
 
 JournalImage _image({
   String id = _failingEntryId,
@@ -55,12 +58,14 @@ void main() {
     await sandbox.delete(recursive: true);
   });
 
-  ImagePathMigrationService makeService() => ImagePathMigrationService(
-    documentsDirectory: documentsDirectory,
-    journalDb: journalDb,
-    persistenceLogic: persistenceLogic,
-    logger: logger,
-  );
+  ImagePathMigrationService makeService({Uuid uuid = const Uuid()}) =>
+      ImagePathMigrationService(
+        documentsDirectory: documentsDirectory,
+        journalDb: journalDb,
+        persistenceLogic: persistenceLogic,
+        logger: logger,
+        uuid: uuid,
+      );
 
   void stubPage(JournalImage Function() current) {
     when(
@@ -101,20 +106,29 @@ void main() {
       await legacyFile.parent.create(recursive: true);
       await legacyFile.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
       await File('${legacyFile.path}.json').writeAsString('legacy sidecar');
-
-      final service = makeService();
-      final first = await service.migrateAll();
-
       final canonicalFile = File(
         getCanonicalImagePath(
           corrected,
           documentsDirectory: documentsDirectory.path,
         ),
       );
+      await canonicalFile.parent.create(recursive: true);
+      await File('${canonicalFile.path}.json').writeAsString(
+        'canonical sidecar',
+      );
+
+      final service = makeService();
+      final first = await service.migrateAll();
+
       expect(first.affected, 1);
       expect(first.count(ImagePathMigrationStatus.migrated), 1);
       expect(canonicalFile.readAsBytesSync(), [0xFF, 0xD8, 0xFF, 0xE0]);
       expect(legacyFile.existsSync(), isFalse);
+      expect(File('${legacyFile.path}.json').existsSync(), isFalse);
+      expect(
+        File('${canonicalFile.path}.json').readAsStringSync(),
+        'canonical sidecar',
+      );
       expect(current.data.imageDirectory, '/images/2026-08-15/');
 
       final second = await service.migrateAll();
@@ -224,4 +238,153 @@ void main() {
     expect(report.outcomes.single.entryId, 'bulk-query');
     expect(report.outcomes.single.error, isA<StateError>());
   });
+
+  test(
+    'bulk migration rejects paths outside the documents directory',
+    () async {
+      final image = _image(imageDirectory: '../../outside/');
+      stubPage(() => image);
+
+      final report = await makeService().migrateAll();
+
+      expect(report.count(ImagePathMigrationStatus.invalid), 1);
+      verifyZeroInteractions(persistenceLogic);
+    },
+  );
+
+  test(
+    'bulk migration updates metadata when the canonical file exists',
+    () async {
+      final image = _image();
+      final corrected = image.copyWith(
+        data: image.data.copyWith(imageDirectory: '/images/2026-08-15/'),
+      );
+      stubPage(() => image);
+      when(
+        () => persistenceLogic.updateJournalEntity(corrected, image.meta),
+      ).thenAnswer((_) async => true);
+      final canonicalFile = File(
+        getCanonicalImagePath(
+          image,
+          documentsDirectory: documentsDirectory.path,
+        ),
+      );
+      canonicalFile.parent.createSync(recursive: true);
+      canonicalFile.writeAsBytesSync([1, 2, 3]);
+
+      final report = await makeService().migrateAll();
+
+      expect(report.count(ImagePathMigrationStatus.metadataUpdated), 1);
+      expect(canonicalFile.readAsBytesSync(), [1, 2, 3]);
+    },
+  );
+
+  test('bulk migration reports metadata persistence exceptions', () async {
+    final image = _image();
+    final corrected = image.copyWith(
+      data: image.data.copyWith(imageDirectory: '/images/2026-08-15/'),
+    );
+    stubPage(() => image);
+    when(
+      () => persistenceLogic.updateJournalEntity(corrected, image.meta),
+    ).thenThrow(StateError('write failed'));
+    final canonicalFile = File(
+      getCanonicalImagePath(
+        image,
+        documentsDirectory: documentsDirectory.path,
+      ),
+    );
+    canonicalFile.parent.createSync(recursive: true);
+    canonicalFile.writeAsBytesSync([1]);
+
+    final report = await makeService().migrateAll();
+
+    expect(report.count(ImagePathMigrationStatus.failed), 1);
+    expect(report.outcomes.single.error, isA<StateError>());
+  });
+
+  test('bulk migration requests subsequent database pages', () async {
+    final images = List.generate(
+      200,
+      (index) => _image(id: 'image-$index', imageDirectory: '/images/'),
+    );
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalImage'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
+        ids: null,
+        limit: 200,
+        // ignore: avoid_redundant_argument_values
+        offset: 0,
+      ),
+    ).thenAnswer((_) async => images);
+    when(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalImage'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
+        ids: null,
+        limit: 200,
+        offset: 200,
+      ),
+    ).thenAnswer((_) async => []);
+
+    final report = await makeService().migrateAll();
+
+    expect(report.count(ImagePathMigrationStatus.missing), 200);
+    verify(
+      () => journalDb.getJournalEntities(
+        types: const ['JournalImage'],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
+        ids: null,
+        limit: 200,
+        offset: 200,
+      ),
+    ).called(1);
+  });
+
+  test(
+    'bulk migration handles a conflicting target created during copy',
+    () async {
+      final image = _image();
+      stubPage(() => image);
+      final legacyFile = File(
+        getLegacyMalformedImagePath(
+          image,
+          documentsDirectory: documentsDirectory.path,
+        ),
+      );
+      final canonicalFile = File(
+        getCanonicalImagePath(
+          image,
+          documentsDirectory: documentsDirectory.path,
+        ),
+      );
+      legacyFile.parent.createSync(recursive: true);
+      legacyFile.writeAsBytesSync([1, 2, 3]);
+      final uuid = _MockUuid();
+      when(uuid.v4).thenAnswer((_) {
+        canonicalFile.parent.createSync(recursive: true);
+        canonicalFile.writeAsBytesSync([9, 8, 7]);
+        return 'race';
+      });
+
+      final report = await makeService(uuid: uuid).migrateAll();
+
+      expect(report.count(ImagePathMigrationStatus.conflict), 1);
+      expect(legacyFile.readAsBytesSync(), [1, 2, 3]);
+      expect(canonicalFile.readAsBytesSync(), [9, 8, 7]);
+      expect(
+        canonicalFile.parent.listSync().where(
+          (entry) => entry.path.endsWith('.migrating'),
+        ),
+        isEmpty,
+      );
+    },
+  );
 }

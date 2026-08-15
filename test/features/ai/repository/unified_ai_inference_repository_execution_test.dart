@@ -1062,6 +1062,78 @@ void main() {
         );
       });
 
+      test('rejects image paths that escape the documents directory', () async {
+        final sandbox = Directory.systemTemp.createTempSync('image_escape');
+        overrideTempDirs.add(sandbox);
+        final documentsDirectory = Directory('${sandbox.path}/Documents')
+          ..createSync();
+        when(() => mockDirectory.path).thenReturn(documentsDirectory.path);
+        File('${sandbox.path}/secret.jpg').writeAsBytesSync([1, 2, 3, 4]);
+
+        final imageEntity = JournalImage(
+          meta: createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'test-image',
+            imageFile: 'secret.jpg',
+            imageDirectory: '../',
+          ),
+        );
+        final promptConfig = createPrompt(
+          id: 'prompt-1',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+        stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
+          ),
+          provider: createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          taskDetailsJson: '{"image": "secret.jpg"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        await expectLater(
+          repository.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('escapes documents directory'),
+            ),
+          ),
+        );
+
+        verifyNever(
+          () => mockCloudInferenceRepo.generateWithImages(
+            any(),
+            impactCollector: any(named: 'impactCollector'),
+            provider: any(named: 'provider'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+          ),
+        );
+      });
+
       test('rethrows when the audio file is missing on disk', () async {
         final tempDir = Directory.systemTemp.createTempSync('audio_missing');
         overrideTempDirs.add(tempDir);

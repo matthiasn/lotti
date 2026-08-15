@@ -35,8 +35,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/ai/repository/ai_tool_call_processor.dart'
@@ -429,6 +431,13 @@ class UnifiedAiInferenceRepository {
 
     final fullPath = getCanonicalImagePath(entity);
     final file = File(fullPath);
+    final documentsPath = Directory(
+      getDocumentsDirectory().path,
+    ).resolveSymbolicLinksSync();
+    final resolvedPath = file.resolveSymbolicLinksSync();
+    if (!p.isWithin(documentsPath, resolvedPath)) {
+      throw StateError('Image path escapes documents directory: $fullPath');
+    }
     final bytes = await file.readAsBytes();
     final base64String = base64Encode(bytes);
 
