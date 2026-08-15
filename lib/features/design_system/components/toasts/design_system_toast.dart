@@ -164,9 +164,11 @@ class _DesignSystemToastState extends State<DesignSystemToast>
           : widget.title,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(spec.radius),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: spec.backgroundColor,
+        child: Container(
+          color: spec.backgroundColor,
+          // Tone strips are children of this surface. Keep the rounded border
+          // in the foreground so neither strip can overpaint its inner curve.
+          foregroundDecoration: BoxDecoration(
             border: Border.all(color: spec.borderColor),
             borderRadius: BorderRadius.circular(spec.radius),
           ),
