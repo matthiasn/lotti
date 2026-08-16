@@ -7116,7 +7116,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitsFilterPendingLater => 'mais tarde';
 
   @override
-  String get habitsGoalLineLabel => 'Objetivo';
+  String get habitsGoalLineLabel => 'Meta';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -13067,7 +13067,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack de $total hábitos no bom caminho';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack de $total hábitos no bom caminho',
+      one: '$onTrack de 1 hábito no bom caminho',
+    );
+    return '$_temp0';
   }
 
   @override

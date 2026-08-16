@@ -89,7 +89,12 @@ String? unifiedGoalSummary(
   final metrics = progress?.metrics ?? const <GoalMetricProgressView>[];
   if (habits.isEmpty || metrics.isNotEmpty) return standing;
   final onTrackCount = habits.where((habit) => habit.deficit == 0).length;
-  if (onTrackCount == habits.length) {
+  // The "nothing needed today" all-clear only beside an on-track pill: right
+  // after a quick-complete the live projection can reach full count while
+  // the pill still carries the evaluator's persisted Behind register — until
+  // the runtime ticks, the factual fraction ("2 of 2 habits on track")
+  // must not escalate to an all-clear the pill contradicts.
+  if (onTrackCount == habits.length && status == UnifiedGoalStatus.onTrack) {
     return messages.unifiedGoalSummaryAllOnTrack(habits.length);
   }
   return messages.unifiedGoalSummaryPartial(onTrackCount, habits.length);

@@ -21840,7 +21840,7 @@ abstract class AppLocalizations {
   /// Templated goal-card summary when only some habit dimensions are on track. Deterministic, computed locally.
   ///
   /// In en, this message translates to:
-  /// **'{onTrack} of {total} habits on track'**
+  /// **'{total, plural, one{{onTrack} of 1 habit on track} other{{onTrack} of {total} habits on track}}'**
   String unifiedGoalSummaryPartial(int onTrack, int total);
 
   /// Section header on the unified Goals page for habits that belong to no goal.

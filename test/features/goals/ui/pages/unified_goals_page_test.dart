@@ -515,6 +515,30 @@ void main() {
     expect(summaryCard.doneHabitIds, isNotNull);
   });
 
+  testWidgets("the summary's done set mirrors each group's semantics: a "
+      'skipped orphan counts as handled, a skipped goal habit stays to-go', (
+    tester,
+  ) async {
+    // Both habits skipped today (legacy handled, success-only empty).
+    // habitFlossing is goal-claimed; habitFlossingDueLater is ungrouped.
+    final state =
+        baseState(
+          successfulToday: {habitFlossing.id, habitFlossingDueLater.id},
+        ).copyWith(
+          completedAll: [habitFlossing, habitFlossingDueLater],
+        );
+    await pump(tester, state);
+
+    final summaryCard = tester.widget<HabitsSummaryCard>(
+      find.byType(HabitsSummaryCard),
+    );
+    expect(summaryCard.doneHabitIds, contains(habitFlossingDueLater.id));
+    expect(
+      summaryCard.doneHabitIds,
+      isNot(contains(habitFlossing.id)),
+    );
+  });
+
   testWidgets('a completion refetch invalidates the mounted goal progress '
       'projections, so window readings recompute in the same beat', (
     tester,

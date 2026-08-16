@@ -13095,7 +13095,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack z $total návyků na dobré cestě';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack z $total návyků na dobré cestě',
+      few: '$onTrack z $total návyků na dobré cestě',
+      one: '$onTrack z 1 návyku na dobré cestě',
+    );
+    return '$_temp0';
   }
 
   @override

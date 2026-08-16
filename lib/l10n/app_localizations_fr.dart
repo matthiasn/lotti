@@ -3384,7 +3384,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Affiche la page Objectifs unifiée dans la navigation principale – les objectifs avec leurs habitudes, une seule surface pour les deux.';
+      'Affiche la page Objectifs unifiée dans la navigation principale. Les objectifs et leurs habitudes y apparaissent ensemble, sur une seule page.';
 
   @override
   String get configFlagEnableVectorSearch => 'Recherche vectorielle';
@@ -13168,8 +13168,8 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          'Les $count habitudes sont sur la bonne voie – rien à faire aujourd\'\'hui.',
-      one: 'Ton habitude est sur la bonne voie – rien à faire aujourd\'\'hui.',
+          'Les $count habitudes sont sur la bonne voie – rien à faire aujourd\'hui.',
+      one: 'Ton habitude est sur la bonne voie – rien à faire aujourd\'hui.',
     );
     return '$_temp0';
   }
@@ -13180,7 +13180,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack sur $total habitudes sur la bonne voie';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack sur $total habitudes sur la bonne voie',
+      one: '$onTrack sur 1 habitude sur la bonne voie',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -13192,7 +13192,7 @@ class AppLocalizationsRo extends AppLocalizations {
       few:
           'Toate cele $count obiceiuri sunt pe drumul cel bun – azi nu este nevoie de nimic.',
       one:
-          'Obiceiul dumneavoastră este pe drumul cel bun – azi nu este nevoie de nimic.',
+          'Obiceiul dvs. este pe drumul cel bun – azi nu este nevoie de nimic.',
     );
     return '$_temp0';
   }
@@ -13203,7 +13203,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack din $total obiceiuri pe drumul cel bun';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack din $total de obiceiuri pe drumul cel bun',
+      few: '$onTrack din $total obiceiuri pe drumul cel bun',
+      one: '$onTrack din 1 obicei pe drumul cel bun',
+    );
+    return '$_temp0';
   }
 
   @override

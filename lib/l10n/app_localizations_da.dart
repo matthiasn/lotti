@@ -3327,11 +3327,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vis nyttige værktøjstips gennem hele appen, der guider dig gennem funktionerne.';
 
   @override
-  String get configFlagEnableUnifiedGoals => 'Aktivér den samlede Mål-side';
+  String get configFlagEnableUnifiedGoals => 'Aktivér den samlede målside';
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Viser den samlede Mål-side i hovednavigationen – mål med deres vaner indeni, én flade til begge.';
+      'Vis den samlede målside i hovednavigationen. Mål og deres vaner vises der sammen på én side.';
 
   @override
   String get configFlagEnableVectorSearch => 'Vektorsøgning';
@@ -12929,8 +12929,9 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Alle $count vaner er på rette spor – intet behøves i dag.',
-      one: 'Din vane er på rette spor – intet behøves i dag.',
+      other:
+          'Alle $count vaner er på rette spor – der er ikke noget, du skal gøre i dag.',
+      one: 'Din vane er på rette spor – der er ikke noget, du skal gøre i dag.',
     );
     return '$_temp0';
   }
@@ -12941,7 +12942,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack af $total vaner på rette spor';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack af $total vaner på rette spor',
+      one: '$onTrack af 1 vane på rette spor',
+    );
+    return '$_temp0';
   }
 
   @override

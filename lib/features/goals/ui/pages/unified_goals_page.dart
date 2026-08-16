@@ -207,6 +207,17 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
           ...goalCriterionHabitIds(criteria),
     };
 
+    // The summary's done set mirrors each group's OWN semantics: goal-owned
+    // habits count success-only (their rows stay due after a skip), while
+    // ungrouped habits count the legacy handled set (their rows file a skip
+    // under Done) — otherwise a skipped orphan reads "1 to go" above a row
+    // that already shows as handled.
+    final summaryDoneIds = {
+      ...successToday,
+      for (final id in state.successfulToday)
+        if (!claimedHabitIds.contains(id)) id,
+    };
+
     final orphanSource = switch (state.displayFilter) {
       HabitDisplayFilter.openNow => state.openNowAll,
       HabitDisplayFilter.pendingLater => state.pendingLaterAll,
@@ -282,10 +293,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
                       SizedBox(height: tokens.spacing.sectionGap),
                       HabitsSummaryCard(
                         visibleHabitIds: recordableIds,
-                        // Success-only, matching the rows: a skipped habit is
-                        // still due here, so it must not count as done above
-                        // an actionable, deficient goal.
-                        doneHabitIds: successToday,
+                        doneHabitIds: summaryDoneIds,
                       ),
                       SizedBox(height: tokens.spacing.step5),
                       if (failedFirstLoad)

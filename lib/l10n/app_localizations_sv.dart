@@ -3336,11 +3336,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa användbara verktygstips genom hela appen för att vägleda dig genom funktioner.';
 
   @override
-  String get configFlagEnableUnifiedGoals => 'Aktivera den samlade Mål-sidan';
+  String get configFlagEnableUnifiedGoals => 'Aktivera den samlade målsidan';
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Visar den samlade Mål-sidan i huvudnavigeringen – mål med sina vanor inuti, en yta för båda.';
+      'Visa den samlade målsidan i huvudnavigeringen. Mål och deras vanor visas där tillsammans på en sida.';
 
   @override
   String get configFlagEnableVectorSearch => 'Vektorsökning';
@@ -12952,7 +12952,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack av $total vanor på rätt spår';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack av $total vanor på rätt spår',
+      one: '$onTrack av 1 vana på rätt spår',
+    );
+    return '$_temp0';
   }
 
   @override

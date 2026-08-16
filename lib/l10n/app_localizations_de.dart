@@ -3355,11 +3355,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagEnableUnifiedGoals =>
-      'Einheitliche Ziele-Seite aktivieren';
+      'Einheitliche Zielseite aktivieren';
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Zeigt die einheitliche Ziele-Seite in der Hauptnavigation – Ziele mit ihren Gewohnheiten, eine Oberfläche für beides.';
+      'Zeigt die einheitliche Zielseite in der Hauptnavigation. Ziele und ihre Gewohnheiten erscheinen dort gemeinsam auf einer Seite.';
 
   @override
   String get configFlagEnableVectorSearch => 'Vektorsuche';
@@ -13032,7 +13032,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack von $total Gewohnheiten auf Kurs';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack von $total Gewohnheiten auf Kurs',
+      one: '$onTrack von 1 Gewohnheit auf Kurs',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -3379,7 +3379,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Mostra la pagina Obiettivi unificata nella navigazione principale: obiettivi con le loro abitudini, un\'\'unica superficie per entrambi.';
+      'Mostra la pagina Obiettivi unificata nella navigazione principale: obiettivi con le loro abitudini, un\'unica superficie per entrambi.';
 
   @override
   String get configFlagEnableVectorSearch => 'Ricerca vettoriale';
@@ -13108,7 +13108,7 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Tutte e $count le abitudini sono in linea: oggi non serve nulla.',
+      other: 'Le $count abitudini sono tutte in linea: oggi non serve nulla.',
       one: 'La tua abitudine è in linea: oggi non serve nulla.',
     );
     return '$_temp0';
@@ -13116,11 +13116,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get unifiedGoalSummaryNoData =>
-      'Ancora nessun dato: registra un\'\'abitudine o collega un segnale per iniziare.';
+      'Ancora nessun dato: registra un\'abitudine o collega un segnale per iniziare.';
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack abitudini su $total in linea';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack su $total abitudini in linea',
+      one: '$onTrack su 1 abitudine in linea',
+    );
+    return '$_temp0';
   }
 
   @override

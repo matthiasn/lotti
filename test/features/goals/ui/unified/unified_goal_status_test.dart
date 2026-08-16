@@ -244,7 +244,8 @@ void main() {
       );
     });
 
-    test('all habits at rate reads as the all-on-track line', () {
+    test('all habits at rate reads as the all-on-track line — but ONLY '
+        'beside an on-track pill', () {
       final progress = GoalProgressView(
         today: DateTime.utc(2026, 8, 15),
         habits: [habitView(successes: 4), habitView(successes: 5)],
@@ -256,6 +257,18 @@ void main() {
           progress: progress,
         ),
         'All 2 habits on track — nothing needed today.',
+      );
+      // Right after a quick-complete the live projection reaches full count
+      // while the pill still carries the persisted Behind register: the
+      // summary stays a factual fraction, never an all-clear the pill
+      // contradicts.
+      expect(
+        unifiedGoalSummary(
+          messages,
+          status: UnifiedGoalStatus.behind,
+          progress: progress,
+        ),
+        '2 of 2 habits on track',
       );
     });
 

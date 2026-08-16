@@ -13134,7 +13134,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack de $total hábitos van por buen camino';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack de $total hábitos van por buen camino',
+      one: '$onTrack de 1 hábito va por buen camino',
+    );
+    return '$_temp0';
   }
 
   @override

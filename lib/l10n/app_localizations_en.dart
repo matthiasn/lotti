@@ -12860,7 +12860,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack of $total habits on track';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack of $total habits on track',
+      one: '$onTrack of 1 habit on track',
+    );
+    return '$_temp0';
   }
 
   @override

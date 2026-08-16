@@ -3341,11 +3341,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableUnifiedGoals =>
-      'Uniforme Doelen-pagina inschakelen';
+      'Uniforme doelenpagina inschakelen';
 
   @override
   String get configFlagEnableUnifiedGoalsDescription =>
-      'Toont de uniforme Doelen-pagina in de hoofdnavigatie – doelen met hun gewoontes erin, één plek voor beide.';
+      'Toon de uniforme doelenpagina in de hoofdnavigatie. Doelen en hun gewoontes verschijnen daar samen op één pagina.';
 
   @override
   String get configFlagEnableVectorSearch => 'Zoekopdracht voor vector';
@@ -7100,8 +7100,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pt tot streefwaarde',
-      one: '1 pt tot streefwaarde',
+      other: '$points punten tot de streefwaarde',
+      one: '1 punt tot de streefwaarde',
     );
     return '$_temp0';
   }
@@ -12983,7 +12983,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String unifiedGoalSummaryPartial(int onTrack, int total) {
-    return '$onTrack van $total gewoontes op koers';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack van $total gewoontes op koers',
+      one: '$onTrack van 1 gewoonte op koers',
+    );
+    return '$_temp0';
   }
 
   @override
