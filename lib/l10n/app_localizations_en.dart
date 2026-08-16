@@ -13138,9 +13138,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get goalDetailTimelineTitle => 'Interactions';
 
   @override
-  String get goalPendingProposalBadge => 'Proposal awaiting review';
-
-  @override
   String get goalStatusAchieved => 'Achieved';
 
   @override

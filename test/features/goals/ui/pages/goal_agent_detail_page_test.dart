@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
@@ -2526,5 +2527,200 @@ void main() {
           .habitIds,
       {'walk'},
     );
+  });
+
+  testWidgets("the read's age ticks across its bucket boundary without any "
+      'provider update', (tester) async {
+    var current = DateTime(2026, 8, 13, 12, 59, 30);
+    final generatedAt = DateTime(2026, 8, 13, 12);
+    // The report only counts as the standing read while it matches the
+    // ACTIVE spec version.
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await withClock(Clock(() => current), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            goalAgentProgressViewProvider(
+              'goal-1',
+            ).overrideWith(
+              (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
+            ),
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 13)),
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentReport(
+                        id: 'report-1',
+                        agentId: 'goal-1',
+                        scope: AgentReportScopes.current,
+                        createdAt: generatedAt,
+                        vectorClock: null,
+                        oneLiner: 'Seven for seven.',
+                        tldr: 'Seven for seven.',
+                        content: 'Seven for seven.',
+                        provenance: const {
+                          'specVersionId': 'goal-1:spec-v1',
+                        },
+                      )
+                      as AgentReportEntity,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('as of 59 min ago'), findsOneWidget);
+
+      // Nothing rebuilds the page — only the boundary timer may. Rendered
+      // once at build, "59 min ago" would sit there for hours.
+      current = current.add(const Duration(seconds: 40));
+      await tester.pump(const Duration(seconds: 40));
+      expect(find.text('as of 1 h ago'), findsOneWidget);
+
+      // Drain the re-armed hourly timer so the test ends clean.
+      current = current.add(const Duration(hours: 1, seconds: 2));
+      await tester.pump(const Duration(hours: 1, seconds: 2));
+    });
+  });
+
+  testWidgets('Ask why never quotes a suppressed No-data verdict', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          // No register yet, but a standing one-liner: the page suppresses
+          // the No-data pill as self-contradictory — Ask why must not
+          // resurrect that verdict in the composer.
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: null,
+              attainment: null,
+              reportOneLiner: 'Two days in.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Two days in.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-detail-ask-why')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a marathon-length agent name cannot overflow the desktop '
+      'toolbar — the Talk-to button ellipsizes inside its cap', (
+    tester,
+  ) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          agentIdentityProvider('goal-1').overrideWith(
+            (ref) async => goalIdentity.copyWith(
+              displayName:
+                  'The Grand Unified Everything Fitness Longevity '
+                  'Mobility And General Flourishing Programme',
+            ),
+          ),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final button = tester.getSize(
+      find.byKey(const ValueKey('goal-detail-talk-to')),
+    );
+    final measure = tester
+        .element(find.byType(GoalAgentDetailPage))
+        .designTokens
+        .spacing
+        .step13;
+    expect(button.width, lessThanOrEqualTo(measure));
   });
 }

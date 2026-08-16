@@ -361,10 +361,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             (agentState is AgentStateEntity ? agentState : null)
                 ?.isReportStale ??
             false,
-        // Ask-why needs a computed state to ask about AND a read to
-        // question; with neither, the link would open an empty prompt about
-        // nothing (§4b ties it to the narrative card).
-        onAskWhy: unifiedStatus != null && hasStandingAssessment && isActive
+        // Ask-why needs a DISPLAYED verdict to ask about AND a read to
+        // question (§4b ties it to the narrative card). "No data" never
+        // qualifies: beside a standing assessment the page suppresses that
+        // pill as self-contradictory, and a prefill quoting the suppressed
+        // verdict would resurrect the contradiction in the composer.
+        onAskWhy:
+            unifiedStatus != null &&
+                unifiedStatus != UnifiedGoalStatus.noData &&
+                hasStandingAssessment &&
+                isActive
             ? () => _askWhy(unifiedStatus)
             : null,
       );
@@ -615,15 +621,29 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                   padding: EdgeInsetsDirectional.only(
                     end: tokens.spacing.step2,
                   ),
-                  child: DesignSystemButton(
-                    key: const ValueKey('goal-detail-talk-to'),
-                    label: context.messages.goalChatTalkTo(
-                      goalIdentity.displayName,
+                  // Goal names are user-written and unbounded; capped so a
+                  // long persona name ellipsizes inside the button instead
+                  // of overflowing the toolbar. The tooltip keeps the full
+                  // name reachable.
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: tokens.spacing.step13,
                     ),
-                    leadingIcon: Icons.chat_bubble_outline_rounded,
-                    variant: DesignSystemButtonVariant.secondary,
-                    size: DesignSystemButtonSize.dense,
-                    onPressed: () => _setChatOpen(open: !_chatOpen),
+                    child: Tooltip(
+                      message: context.messages.goalChatTalkTo(
+                        goalIdentity.displayName,
+                      ),
+                      child: DesignSystemButton(
+                        key: const ValueKey('goal-detail-talk-to'),
+                        label: context.messages.goalChatTalkTo(
+                          goalIdentity.displayName,
+                        ),
+                        leadingIcon: Icons.chat_bubble_outline_rounded,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        onPressed: () => _setChatOpen(open: !_chatOpen),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -939,7 +959,7 @@ class _GoalHeader extends StatelessWidget {
 /// when the runtime marks the report stale, the timestamp slot self-demotes
 /// to the out-of-date notice instead (the §4b freshness contract). Ask-why
 /// hands the verdict on screen to the conversation.
-class _AgentReadCard extends ConsumerWidget {
+class _AgentReadCard extends ConsumerStatefulWidget {
   const _AgentReadCard({
     required this.agentId,
     required this.healthAsync,
@@ -955,18 +975,64 @@ class _AgentReadCard extends ConsumerWidget {
   final VoidCallback? onAskWhy;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AgentReadCard> createState() => _AgentReadCardState();
+}
+
+class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
+  /// Re-renders the "as of" caption when its DISPLAYED bucket next changes:
+  /// computed only at build, a read rendered "just now" kept that label for
+  /// hours. Armed at the next minute/hour/day boundary of the read's age —
+  /// one wake per visible change, not a per-second tick.
+  Timer? _ageTick;
+
+  @override
+  void dispose() {
+    _ageTick?.cancel();
+    super.dispose();
+  }
+
+  void _armAgeTick(DateTime generatedAt) {
+    _ageTick?.cancel();
+    final age = clock.now().difference(generatedAt);
+    final Duration untilNextBucket;
+    if (age.inHours < 1) {
+      untilNextBucket = Duration(
+        seconds: 60 - (age.inSeconds % 60) + 1,
+      );
+    } else if (age.inDays < 1) {
+      untilNextBucket = Duration(
+        seconds: 3600 - (age.inSeconds % 3600) + 1,
+      );
+    } else {
+      untilNextBucket = Duration(
+        seconds: 86400 - (age.inSeconds % 86400) + 1,
+      );
+    }
+    _ageTick = Timer(untilNextBucket, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final oneLiner = healthAsync.value?.reportOneLiner;
+    final report = widget.report;
+    final oneLiner = widget.healthAsync.value?.reportOneLiner;
     final generatedAt = report?.createdAt;
-    final freshness = isStale
-        ? messages.taskAgentStatusOutOfDate
-        : generatedAt == null
-        ? null
-        : messages.goalDetailReadAsOf(
-            _relativeAgo(messages, clock.now().difference(generatedAt)),
-          );
+    final String? freshness;
+    if (widget.isStale) {
+      freshness = messages.taskAgentStatusOutOfDate;
+      _ageTick?.cancel();
+    } else if (generatedAt == null) {
+      freshness = null;
+      _ageTick?.cancel();
+    } else {
+      freshness = messages.goalDetailReadAsOf(
+        _relativeAgo(messages, clock.now().difference(generatedAt)),
+      );
+      _armAgeTick(generatedAt);
+    }
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,7 +1053,7 @@ class _AgentReadCard extends ConsumerWidget {
                 Text(
                   freshness,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: isStale
+                    color: widget.isStale
                         ? tokens.colors.alert.warning.ink
                         : tokens.colors.text.lowEmphasis,
                   ),
@@ -1000,17 +1066,17 @@ class _AgentReadCard extends ConsumerWidget {
             report: report,
             fallback:
                 oneLiner ??
-                (healthAsync.hasError
+                (widget.healthAsync.hasError
                     ? messages.goalDetailHealthUnavailable
                     : messages.goalDetailNoReport),
             fallbackMuted: oneLiner == null,
           ),
-          if (onAskWhy != null) ...[
+          if (widget.onAskWhy != null) ...[
             SizedBox(height: tokens.spacing.step1),
             DesignSystemButton(
               key: const ValueKey('goal-detail-ask-why'),
               label: messages.goalDetailAskWhy,
-              onPressed: onAskWhy,
+              onPressed: widget.onAskWhy,
               variant: DesignSystemButtonVariant.tertiary,
               size: DesignSystemButtonSize.dense,
               trailingIcon: Icons.arrow_forward_rounded,
