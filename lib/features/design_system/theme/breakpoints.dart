@@ -54,13 +54,6 @@ const kPageHeaderFoldWidth = 520.0;
 /// around.
 const kGoalChatDrawerWidth = 400.0;
 
-/// The narrowest content width at which the goal detail hero pair — the
-/// This-week card and the Agent's-read card — sits side by side; below it
-/// the pair stacks. Each card needs roughly the action-list measure's half
-/// plus its padding to keep the 7-day strip and two lines of narrative
-/// legible.
-const kGoalHeroPairMinWidth = 560.0;
-
 /// The narrowest row width that can host an inline trailing control (a
 /// stepper, say) beside the row's title without starving the title's measure.
 /// Below this, the control drops to the row's secondary line.

@@ -614,7 +614,7 @@ class GoalProgressCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // The whole-goal week lives in [GoalThisWeekCard], placed by the page
-        // in its hero pair (design handover §4b) — this widget owns only the
+        // in its hero stack (design handover §4b) — this widget owns only the
         // evidence sections beneath it: Habits, then the data Signals.
         if (progress.habits.isNotEmpty)
           sectionHeading(

@@ -684,11 +684,11 @@ flowchart TD
   adds a seven-cell compact strip to the list — at the detail page's day-cell
   size, so the two surfaces draw the same instrument at the same scale (the
   strip's earlier 12px list default read as illegible dots). The detail page
-  is the §4b dashboard: a left-aligned column capped at the unified-Goals
-  measure (`kUnifiedGoalsContentMaxWidth`) whose hero pair puts the
+  is the §4b dashboard: a centered column capped at the unified-Goals
+  measure (`kUnifiedGoalsContentMaxWidth`) whose hero stack puts the
   deterministic This-week card (`GoalThisWeekCard` — whole-goal strip,
-  Reflect-on-today, yesterday tally) beside the timestamped Agent's-read
-  card, side by side above `kGoalHeroPairMinWidth` and stacked below it,
+  Reflect-on-today, yesterday tally) above the timestamped Agent's-read
+  card, both at the full content width on every viewport,
   with the Habits and Signals sections beneath (habit cards name the other
   goals sharing them via `goalHabitMembershipsProvider` — one recording,
   reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
