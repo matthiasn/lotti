@@ -2131,6 +2131,13 @@ void main() {
     expect(find.text('Update now'), findsNothing);
     expect(find.byType(PopupMenuButton<HabitCompletionType>), findsNothing);
     expect(find.byType(ChangeSetSummaryCard), findsNothing);
+
+    // The desktop reading measure holds without chat: a dormant goal's
+    // cards must not stretch across the whole 1400px pane.
+    expect(
+      tester.getSize(find.byKey(const ValueKey('goal-agent-read-card'))).width,
+      lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
+    );
   });
 
   testWidgets('a first health load failure does not claim a data-gap verdict', (

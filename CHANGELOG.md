@@ -86,7 +86,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sections.
 - **The goal detail page is a dashboard, with the agent as a drawer.** The
   permanent desktop chat column is gone: the page is one focused column —
-  "This week" beside the agent's read (now carrying an "as of" timestamp),
+  "This week" above the agent's read (now carrying an "as of" timestamp),
+  each at the column's full width,
   then your habits and data signals under their own headings and a
   completion-rate chart scoped to just that goal's habits — and the
   conversation slides in as a compact drawer from "Talk to …" or the new

@@ -688,7 +688,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         ),
         body: SafeArea(
           child: !desktop || !chatAvailable
-              ? detailList(showChatAction: !desktop && chatAvailable)
+              // The desktop reading measure is a property of the pane, not of
+              // chat: a dormant goal (no chat) must not stretch its cards
+              // across the whole window.
+              ? detailList(
+                  showChatAction: !desktop && chatAvailable,
+                  contentMaxWidth: desktop
+                      ? kUnifiedGoalsContentMaxWidth
+                      : null,
+                )
               : CallbackShortcuts(
                   bindings: {
                     const SingleActivator(LogicalKeyboardKey.escape): () {
