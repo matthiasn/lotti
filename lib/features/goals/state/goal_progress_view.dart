@@ -81,12 +81,22 @@ class GoalHabitProgressView {
   /// way the metric headline once did.
   final int? evaluatedSuccesses;
 
-  int get successesInWindow =>
-      evaluatedSuccesses ??
-      switch (window) {
-        GoalWindowRollingDays() => days.where((day) => day.value > 0).length,
-        _ => days.fold(0, (total, day) => total + day.value.toInt()),
-      };
+  /// The evaluator's creditable-success count where available; the local
+  /// fold otherwise. The fold is WINDOW-aware: [days] may render extra
+  /// history for the page's shared span, and counting the whole list read
+  /// "4 of 2 this window" the moment a track showed more than the window.
+  int get successesInWindow {
+    if (evaluatedSuccesses case final evaluated?) return evaluated;
+    if (days.isEmpty) return 0;
+    final range = window.periodRange(days.last.day);
+    final inWindow = days.where(
+      (day) => !day.day.isBefore(range.start) && !day.day.isAfter(range.end),
+    );
+    return switch (window) {
+      GoalWindowRollingDays() => inWindow.where((day) => day.value > 0).length,
+      _ => inWindow.fold(0, (total, day) => total + day.value.toInt()),
+    };
+  }
 
   int get deficit => (targetCount - successesInWindow).clamp(0, targetCount);
 

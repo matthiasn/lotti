@@ -24,6 +24,28 @@ void main() {
     today.subtract(Duration(days: offset)),
   );
 
+  test('without an evaluator figure, successesInWindow folds only the days '
+      'inside the authored window — never the rendered history', () {
+    final view = GoalHabitProgressView(
+      habitId: 'gym',
+      name: 'Gym',
+      targetCount: 2,
+      successfulWeeks: null,
+      days: [
+        for (var offset = 13; offset >= 0; offset--)
+          GoalProgressDay(
+            day: day(offset),
+            // Successes at 12, 8 (history) and 5, 1 (in-window).
+            value: offset == 12 || offset == 8 || offset == 5 || offset == 1
+                ? 1
+                : 0,
+          ),
+      ],
+    );
+    expect(view.successesInWindow, 2);
+    expect(view.deficit, 0);
+  });
+
   test('a shared history span extends every day track backwards without '
       'touching the window maths — and the ages-out ring stays anchored at '
       'the WINDOW, not the list head', () {
