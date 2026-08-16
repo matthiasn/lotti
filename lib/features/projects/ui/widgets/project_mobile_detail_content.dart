@@ -151,21 +151,29 @@ class _ProjectMobileDetailContentState
 
     return ColoredBox(
       color: ShowcasePalette.page(context),
-      child: DetailContentWidth(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (splitController == null)
-              Padding(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (splitController == null)
+            DetailContentWidth(
+              child: Padding(
                 padding: EdgeInsets.only(top: tokens.spacing.step3),
-                child: DesignSystemBackControl(
-                  foregroundColor: ShowcasePalette.highText(context),
-                  onTap: widget.onBack,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: DesignSystemBackControl(
+                    foregroundColor: ShowcasePalette.highText(context),
+                    onTap: widget.onBack,
+                  ),
                 ),
               ),
-            Expanded(
-              child: DesignSystemScrollbar(
-                controller: _scrollController,
+            ),
+          Expanded(
+            child: DesignSystemScrollbar(
+              controller: _scrollController,
+              size: splitController == null
+                  ? DesignSystemScrollbarSize.small
+                  : DesignSystemScrollbarSize.defaultSize,
+              child: DetailContentWidth(
                 child: CustomScrollView(
                   controller: _scrollController,
                   slivers: [
@@ -174,7 +182,9 @@ class _ProjectMobileDetailContentState
                         top: splitController == null
                             ? tokens.spacing.step2
                             : tokens.spacing.step5,
-                        bottom: tokens.spacing.step6,
+                        bottom: splitController == null
+                            ? tokens.spacing.step12 + tokens.spacing.step8
+                            : tokens.spacing.step6,
                       ),
                       sliver: SliverMainAxisGroup(
                         slivers: [
@@ -212,6 +222,7 @@ class _ProjectMobileDetailContentState
                                   )
                                 : HealthPanel(
                                     record: widget.record,
+                                    currentTime: widget.currentTime,
                                     onViewBlockerPressed:
                                         firstBlockedTask == null ||
                                             widget.onTaskTap == null
@@ -281,8 +292,8 @@ class _ProjectMobileDetailContentState
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

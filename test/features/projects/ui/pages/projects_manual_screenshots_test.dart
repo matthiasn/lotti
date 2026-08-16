@@ -20,12 +20,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -80,6 +86,9 @@ class _ManualProjectDetailController extends ProjectDetailController {
   void updateTitle(String title) {}
 
   @override
+  void updateDescription(String description) {}
+
+  @override
   void updateTargetDate(DateTime? targetDate) {}
 
   @override
@@ -121,7 +130,10 @@ Widget _app({
           home: AppCommandHost(
             handlers: const {},
             platform: platform,
-            child: home,
+            child: Material(
+              type: MaterialType.transparency,
+              child: home,
+            ),
           ),
         ),
       ),
@@ -186,17 +198,74 @@ void main() {
       createdAt: DateTime(2026, 7),
     );
 
-    final projectWaddle = project(
-      id: _projectWaddleId,
-      title: 'Project Waddle',
-      status: ProjectStatus.active(
-        id: 'project-waddle-active',
-        createdAt: DateTime(2026, 7, 2),
-        utcOffset: 120,
+    final projectWaddle =
+        project(
+          id: _projectWaddleId,
+          title: 'Project Waddle',
+          status: ProjectStatus.active(
+            id: 'project-waddle-active',
+            createdAt: DateTime(2026, 7, 2),
+            utcOffset: 120,
+          ),
+          category: world.category,
+          targetDate: DateTime(2026, 8),
+        ).copyWith(
+          entryText: EntryText(
+            plainText: _t(
+              'Prepare the orbital habitat demo and keep every penguin-safe '
+                  'launch dependency visible.',
+              'Bereite die Demo des Orbital-Habitats vor und halte alle '
+                  'pinguinsicheren Startabhängigkeiten sichtbar.',
+            ),
+          ),
+        );
+    Task completedTask(String id, String title, int daysAgo) {
+      final task = makeTestTask(
+        id: id,
+        title: title,
+        createdAt: manualDemoNow.subtract(Duration(days: daysAgo + 2)),
+      );
+      return task.copyWith(
+        data: task.data.copyWith(
+          status: TaskStatus.done(
+            id: '$id-done',
+            createdAt: manualDemoNow.subtract(Duration(days: daysAgo)),
+            utcOffset: 120,
+          ),
+        ),
+      );
+    }
+
+    final completedTasks = [
+      completedTask(
+        'habitat-pressure-seals',
+        _t('Pressure-test habitat seals', 'Habitatdichtungen druckprüfen'),
+        6,
       ),
-      category: world.category,
-      targetDate: DateTime(2026, 8),
-    );
+      completedTask(
+        'penguin-passenger-count',
+        _t(
+          'Confirm penguin passenger count',
+          'Pinguin-Passagierzahl bestätigen',
+        ),
+        5,
+      ),
+      completedTask(
+        'cargo-routing-check',
+        _t('Verify orbital cargo routing', 'Orbitale Frachtrouten prüfen'),
+        4,
+      ),
+      completedTask(
+        'mission-control-briefing',
+        _t('Brief Mission Control', 'Missionskontrolle einweisen'),
+        3,
+      ),
+      completedTask(
+        'emergency-fish-reserves',
+        _t('Load emergency fish reserves', 'Notfall-Fischvorräte laden'),
+        2,
+      ),
+    ];
     final coldChain = project(
       id: 'europa-sardine-cold-chain',
       title: _t('Europa sardine cold chain', 'Europa-Sardinenkühlkette'),
@@ -273,7 +342,21 @@ void main() {
             ),
           ),
           makeTestTaskSummary(
-            task: world.fishFeederTask,
+            task: world.fishFeederTask.copyWith(
+              data: world.fishFeederTask.data.copyWith(
+                status: TaskStatus.blocked(
+                  id: 'fish-feeder-blocked',
+                  createdAt: manualDemoNow.subtract(
+                    const Duration(hours: 3),
+                  ),
+                  utcOffset: 120,
+                  reason: _t(
+                    'Calibration sends food toward Mission Control.',
+                    'Die Kalibrierung schickt Futter zur Missionskontrolle.',
+                  ),
+                ),
+              ),
+            ),
             estimatedDuration: const Duration(hours: 1, minutes: 30),
             oneLiner: _t(
               'The feeder still launches lunch toward Mission Control',
@@ -288,8 +371,13 @@ void main() {
               'Europa-Kühlkettenmanifest bereit zum Abgleich',
             ),
           ),
+          for (final task in completedTasks)
+            makeTestTaskSummary(
+              task: task,
+              estimatedDuration: const Duration(minutes: 30),
+            ),
         ],
-        highlightedTasksTotalDuration: const Duration(hours: 4, minutes: 15),
+        highlightedTasksTotalDuration: const Duration(hours: 6, minutes: 45),
       ),
       makeTestProjectRecord(
         project: coldChain,
@@ -402,9 +490,6 @@ void main() {
     projectsOverviewProvider.overrideWith(
       (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
     ),
-    visibleProjectGroupsProvider.overrideWith(
-      (ref) => AsyncValue.data(groups),
-    ),
     for (final record in records) ...[
       projectDetailControllerProvider(record.project.meta.id).overrideWith(
         () => _ManualProjectDetailController(record),
@@ -416,7 +501,20 @@ void main() {
         (ref) async => record,
       ),
       projectAgentProvider(record.project.meta.id).overrideWith(
-        (ref) async => null,
+        (ref) async => AgentDomainEntity.agent(
+          id: 'manual-agent-${record.project.meta.id}',
+          agentId: 'manual-agent-${record.project.meta.id}',
+          kind: 'project_agent',
+          displayName: '${record.project.data.title} Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'manual-state-${record.project.meta.id}',
+          config: const AgentConfig(),
+          createdAt: manualDemoNow.subtract(const Duration(days: 30)),
+          updatedAt: manualDemoNow.subtract(const Duration(hours: 2)),
+          vectorClock: null,
+        ),
       ),
     ],
     projectDetailNowProvider.overrideWithValue(() => manualDemoNow),
@@ -478,6 +576,16 @@ void main() {
           find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
           findsWidgets,
         );
+        expect(
+          find.text(
+            _t(
+              'Orbital ice-garden wellness program',
+              'Wellnessprogramm im orbitalen Eisgarten',
+            ),
+          ),
+          findsNothing,
+          reason: 'The production Current filter excludes completed projects.',
+        );
         await captureScreenshot(
           tester,
           'projects_list_${viewport}_$theme',
@@ -529,16 +637,32 @@ void main() {
           of: details,
           matching: find.byType(Scrollable),
         );
+        final projectTasksHeader = find.text(
+          _messages(tester).projectShowcaseProjectTasksTab,
+        );
         await tester.scrollUntilVisible(
-          find.text(
-            _t(
-              'Inspect orbital penguin habitat',
-              'Pinguin-Habitat im Orbit inspizieren',
-            ),
-          ),
+          projectTasksHeader,
           320,
           scrollable: detailScrollable.first,
         );
+        await Scrollable.ensureVisible(
+          tester.element(projectTasksHeader),
+          alignment: 0.05,
+        );
+        final scrollableState = tester.state<ScrollableState>(
+          detailScrollable.first,
+        );
+        final position = scrollableState.position;
+        final alignedOffset =
+            (position.maxScrollExtent -
+                    tester
+                            .element(find.byType(ProjectDetailsPage))
+                            .designTokens
+                            .spacing
+                            .step8 *
+                        2)
+                .clamp(position.minScrollExtent, position.maxScrollExtent);
+        position.jumpTo(alignedOffset);
         await settleFrames(tester, 4);
         expect(
           find.text(
@@ -659,14 +783,26 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          mobile: const ProjectDetailPage(projectId: _projectWaddleId),
-          desktop: const ProjectDetailPage(projectId: _projectWaddleId),
+          mobile: const ProjectDetailPage(
+            projectId: _projectWaddleId,
+            returnPath: '/projects/$_projectWaddleId',
+          ),
+          desktop: const ProjectDetailPage(
+            projectId: _projectWaddleId,
+            returnPath: '/projects/$_projectWaddleId',
+          ),
         );
         final messages = _messages(tester);
         expect(find.text(messages.projectDetailTitle), findsOneWidget);
         expect(find.text(messages.projectStatusChangeTitle), findsOneWidget);
         expect(find.text('Project Waddle'), findsOneWidget);
         expect(find.text(messages.projectTargetDateLabel), findsOneWidget);
+        expect(
+          find.text(messages.projectShowcaseDescriptionTitle),
+          findsOneWidget,
+        );
+        expect(find.text(messages.habitCategoryLabel), findsOneWidget);
+        expect(find.text(messages.designSystemBackLabel), findsOneWidget);
         expect(find.text(messages.projectHealthSectionTitle), findsNothing);
         expect(find.text(messages.cancelButton), findsOneWidget);
         expect(find.text(messages.saveButton), findsOneWidget);

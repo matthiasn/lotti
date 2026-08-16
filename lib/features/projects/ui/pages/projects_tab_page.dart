@@ -415,7 +415,7 @@ class _ProjectsViewControls extends ConsumerWidget {
 
     return DetailContentWidth(
       child: Padding(
-        padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+        padding: EdgeInsets.only(bottom: tokens.spacing.step2),
         child: Row(
           children: [
             DesignSystemChip(
@@ -435,7 +435,7 @@ class _ProjectsViewControls extends ConsumerWidget {
             ),
             const Spacer(),
             DesignSystemContextMenuButton(
-              icon: Icons.sort_rounded,
+              icon: Icons.swap_vert_rounded,
               tooltip: context.messages.projectsSortTooltip,
               items: [
                 for (final mode in ProjectsSortMode.values)

@@ -355,6 +355,8 @@ void main() {
     final sortMenu = tester.widget<DesignSystemContextMenuButton>(
       find.byType(DesignSystemContextMenuButton),
     );
+    expect(sortMenu.icon, Icons.swap_vert_rounded);
+    expect(find.byIcon(Icons.filter_list_rounded), findsOneWidget);
     expect(
       sortMenu.items.map((item) => item.label),
       ['Needs attention', 'Target date', 'Recently updated', 'Name'],

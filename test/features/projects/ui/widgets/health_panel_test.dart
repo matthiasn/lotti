@@ -46,6 +46,26 @@ void main() {
       expect(find.text('Health Score'), findsNothing);
     });
 
+    testWidgets('labels assessment provenance and report freshness', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        healthMetrics: makeTestProjectHealthMetrics(),
+        reportUpdatedAt: DateTime(2026, 8, 16, 8),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          HealthPanel(
+            record: record,
+            currentTime: DateTime(2026, 8, 16, 10),
+          ),
+        ),
+      );
+
+      expect(find.text('AI Report · Updated 2h ago'), findsOneWidget);
+    });
+
     testWidgets('renders blocked task count', (tester) async {
       final record = makeTestProjectRecord(
         blockedTaskCount: 3,

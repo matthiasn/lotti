@@ -62,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   controls, and present only agent-authored health with a clear unassessed state
   when no report exists. Visible agent summaries now arrive with the list and
   participate in project search instead of shifting into rows one at a time.
+  The editor keeps title, description, category, status, and target date in one
+  form with its actions close by, while health identifies the source report's
+  freshness beside live task progress.
 - **Editing a goal is two steps, not three.** The separate "What do you want
   to work toward?" page is gone from the edit flow: the statement is a
   single-line field at the top of the edit page, with the suggestion chips

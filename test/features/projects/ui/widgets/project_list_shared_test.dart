@@ -11,23 +11,32 @@ import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
-  Widget wrap(Widget child, {List<Override> overrides = const []}) {
+  Widget wrap(
+    Widget child, {
+    List<Override> overrides = const [],
+    double width = 402,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     return ProviderScope(
       overrides: overrides,
       child: makeTestableWidget2(
         Theme(
           data: DesignSystemTheme.dark(),
           child: Scaffold(
-            body: SizedBox(width: 402, height: 900, child: child),
+            body: SizedBox(width: width, height: 900, child: child),
           ),
         ),
-        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
+        mediaQueryData: MediaQueryData(
+          size: Size(width, 1000),
+          textScaler: textScaler,
+        ),
       ),
     );
   }
@@ -76,6 +85,38 @@ void main() {
 
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('1 project'), findsOneWidget);
+    });
+
+    testWidgets('constrains a long category before the count at 200% text', (
+      tester,
+    ) async {
+      final data = makeTestProjectListData();
+      final category = data.categories.first.copyWith(
+        name: 'Interplanetary Penguin Habitat Safety Operations',
+      );
+      final group = ProjectCategoryGroup(
+        categoryId: category.id,
+        category: category,
+        projects: [
+          makeTestProjectListItemData(
+            project: makeTestProject(categoryId: category.id),
+            category: category,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupHeader(group: group),
+          width: 280,
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+
+      final tagRect = tester.getRect(find.byType(CategoryTag));
+      final countRect = tester.getRect(find.text('1 project'));
+      expect(tagRect.right, lessThan(countRect.left));
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -134,6 +175,26 @@ void main() {
       await tester.pump();
       expect(find.text('Project Alpha'), findsOneWidget);
       expect(find.byIcon(Icons.expand_less_rounded), findsOneWidget);
+    });
+
+    testWidgets('centers the visible group header inside its 48dp tap target', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        ),
+      );
+
+      final headerRect = tester.getRect(find.byType(InkWell).first);
+      final tagRect = tester.getRect(find.byType(CategoryTag));
+      expect(headerRect.height, greaterThanOrEqualTo(TapTargets.minimum));
+      expect(tagRect.center.dy, closeTo(headerRect.center.dy, 0.1));
     });
 
     testWidgets('renders the grouped card with the Figma border treatment', (

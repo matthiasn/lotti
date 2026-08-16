@@ -210,7 +210,11 @@ content.
 
 Project detail actions preserve workspace continuity. Edit uses the
 Projects-owned `/projects/<id>/edit` route on mobile and desktop, with an
-explicit return path back to the selected project. Add task creates a
+explicit return path back to the selected project. The editor owns the complete
+user-authored project record — title, description, category, status and target
+date — while the detail surface keeps compact quick edits for category, status
+and target date. Both paths write through the same detail controller, so draft
+rebasing and save-failure behavior stay consistent. Add task creates a
 project-linked task with the project's privacy, serializes concurrent taps and
 project saves,
 awaits the category's default task-agent assignment, then opens the task. If
@@ -262,11 +266,12 @@ recommendations, derived presentation data, and the wake controls.
 **If the latest report has no parseable health payload yet, the app shows a
 neutral unassessed state** rather than falling back to invented local
 heuristics. Once metrics exist, the detail leads with the agent-authored band,
-rationale and optional confidence; it never converts a categorical assessment
-into a fabricated numeric score. Blocker navigation appears only when blocked
-tasks exist and opens the first actionable blocker. A project with no agent
-gets distinct provisioning guidance rather than an unavailable Run report
-instruction.
+rationale and optional confidence, labelled with the source report's freshness;
+it never converts a categorical assessment into a fabricated numeric score.
+That timestamp makes the assessment's snapshot provenance explicit beside live
+task counts. Blocker navigation appears only when blocked tasks exist and opens
+the first actionable blocker. A project with no agent gets distinct
+provisioning guidance rather than an unavailable Run report instruction.
 
 The user-authored project description and the agent report are distinct fields
 in the detail read model. A missing report renders the neutral report-empty

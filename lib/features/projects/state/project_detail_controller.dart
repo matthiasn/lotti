@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -147,6 +148,8 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   bool _hasChanges() {
     if (_pendingProject == null || _originalProject == null) return false;
     return _pendingProject!.data.title != _originalProject!.data.title ||
+        _projectDescription(_pendingProject!) !=
+            _projectDescription(_originalProject!) ||
         _pendingProject!.meta.categoryId != _originalProject!.meta.categoryId ||
         _pendingProject!.data.targetDate != _originalProject!.data.targetDate ||
         _pendingProject!.data.status != _originalProject!.data.status;
@@ -162,6 +165,9 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
       rebased = rebased.copyWith(
         data: rebased.data.copyWith(title: pending.data.title),
       );
+    }
+    if (_projectDescription(pending) != _projectDescription(original)) {
+      rebased = rebased.copyWith(entryText: pending.entryText);
     }
     if (pending.meta.categoryId != original.meta.categoryId) {
       rebased = rebased.copyWith(
@@ -186,6 +192,19 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     if (_pendingProject == null) return;
     _pendingProject = _pendingProject!.copyWith(
       data: _pendingProject!.data.copyWith(title: title),
+    );
+    state = state.copyWith(
+      project: _pendingProject,
+      hasChanges: _hasChanges(),
+      error: null,
+    );
+  }
+
+  /// Updates the user-authored project description.
+  void updateDescription(String description) {
+    if (_pendingProject == null) return;
+    _pendingProject = _pendingProject!.copyWith(
+      entryText: EntryText(plainText: description),
     );
     state = state.copyWith(
       project: _pendingProject,
@@ -308,3 +327,6 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     }
   }
 }
+
+String _projectDescription(ProjectEntry project) =>
+    project.entryText?.plainText ?? '';

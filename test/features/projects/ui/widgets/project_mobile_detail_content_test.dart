@@ -9,6 +9,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
+import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -531,6 +532,36 @@ void main() {
       );
 
       expect(find.byType(DesignSystemBackControl), findsOneWidget);
+      expect(
+        tester.getCenter(find.text('Back')).dx,
+        lessThan(
+          tester.getCenter(find.byType(ProjectMobileDetailContent)).dx,
+        ),
+      );
+    });
+
+    testWidgets('keeps a small mobile scrollbar outside the content gutter', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onBack: () {},
+          ),
+        ),
+      );
+
+      final scrollbar = tester.widget<DesignSystemScrollbar>(
+        find.byType(DesignSystemScrollbar),
+      );
+      final scrollbarRect = tester.getRect(find.byType(DesignSystemScrollbar));
+      final contentRect = tester.getRect(
+        find.byType(ProjectMobileDetailContent),
+      );
+      expect(scrollbar.size, DesignSystemScrollbarSize.small);
+      expect(scrollbarRect.right, contentRect.right);
     });
 
     testWidgets('omits mobile Back inside the desktop split view', (

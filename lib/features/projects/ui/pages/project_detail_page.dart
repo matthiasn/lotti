@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -9,6 +12,7 @@ import 'package:lotti/features/design_system/components/inputs/design_system_tex
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -22,16 +26,17 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
-import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 /// Full-screen, form-style project editor used by the Projects-owned
 /// `/projects/<id>/edit` route and settings/category entry points.
 ///
-/// Edits go through [ProjectDetailController]: the status picker, title field,
-/// and target-date field mutate the controller's pending project, and the
-/// bottom bar's Save button persists them (also bound to Cmd/Ctrl+S). On a
+/// Edits go through [ProjectDetailController]: title, description, category,
+/// status, and target date mutate the controller's pending project, and the
+/// nearby action row's Save button persists them (also bound to Cmd/Ctrl+S). On a
 /// successful save it shows a success toast and navigates back. Cancel and
 /// system-back exits discard the shared controller draft before navigation so
 /// the underlying desktop detail cannot retain or later persist canceled data.
@@ -62,24 +67,35 @@ class ProjectDetailPage extends ConsumerStatefulWidget {
 
 class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
   late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
+    _descriptionController = TextEditingController();
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
-  void _syncTitleWithProject(String title) {
+  void _syncControllersWithProject(ProjectEntry project) {
+    final title = project.data.title;
     if (_titleController.text != title) {
       _titleController.value = TextEditingValue(
         text: title,
         selection: TextSelection.collapsed(offset: title.length),
+      );
+    }
+    final description = project.entryText?.plainText ?? '';
+    if (_descriptionController.text != description) {
+      _descriptionController.value = TextEditingValue(
+        text: description,
+        selection: TextSelection.collapsed(offset: description.length),
       );
     }
   }
@@ -197,6 +213,23 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
         .updateStatus(selected);
   }
 
+  Future<void> _pickCategory() async {
+    final project = ref
+        .read(projectDetailControllerProvider(widget.projectId))
+        .project;
+    if (project == null) return;
+
+    final result = await showCategoryPicker(
+      context: context,
+      title: context.messages.habitCategoryLabel,
+      currentCategoryId: project.meta.categoryId,
+    );
+    if (!mounted || result == null) return;
+    ref
+        .read(projectDetailControllerProvider(widget.projectId).notifier)
+        .updateCategoryId(result.categoryOrNull?.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(
@@ -220,7 +253,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     }
 
     if (project != null && !state.hasChanges) {
-      _syncTitleWithProject(project.data.title);
+      _syncControllersWithProject(project);
     }
 
     return PopScope(
@@ -264,21 +297,38 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                         top: context.designTokens.spacing.step4,
                         bottom: context.designTokens.spacing.step6,
                       ),
-                      child: _ProjectEditorContent(
-                        state: state,
-                        titleController: _titleController,
-                        onTitleChanged: (value) => ref
-                            .read(
-                              projectDetailControllerProvider(
-                                widget.projectId,
-                              ).notifier,
-                            )
-                            .updateTitle(value),
-                        onStatusTap: _pickStatus,
-                        onTargetDateTap: _pickTargetDate,
-                        localizedError: state.error == null
-                            ? null
-                            : _localizeError(messages, state.error!),
+                      child: Column(
+                        children: [
+                          _ProjectEditorContent(
+                            state: state,
+                            titleController: _titleController,
+                            descriptionController: _descriptionController,
+                            onTitleChanged: (value) => ref
+                                .read(
+                                  projectDetailControllerProvider(
+                                    widget.projectId,
+                                  ).notifier,
+                                )
+                                .updateTitle(value),
+                            onDescriptionChanged: (value) => ref
+                                .read(
+                                  projectDetailControllerProvider(
+                                    widget.projectId,
+                                  ).notifier,
+                                )
+                                .updateDescription(value),
+                            onCategoryTap: _pickCategory,
+                            onStatusTap: _pickStatus,
+                            onTargetDateTap: _pickTargetDate,
+                            localizedError: state.error == null
+                                ? null
+                                : _localizeError(messages, state.error!),
+                          ),
+                          SizedBox(
+                            height: context.designTokens.spacing.step4,
+                          ),
+                          _buildActions(state),
+                        ],
                       ),
                     ),
                   ),
@@ -286,7 +336,6 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
               ),
             ),
           ),
-          bottomNavigationBar: _buildBottomBar(state),
         ),
       ),
     );
@@ -300,20 +349,24 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     };
   }
 
-  Widget _buildBottomBar(ProjectDetailState state) {
+  Widget _buildActions(ProjectDetailState state) {
     final messages = context.messages;
-    return FormBottomBar(
-      rightButtons: [
-        DesignSystemButton(
-          label: messages.cancelButton,
-          variant: DesignSystemButtonVariant.secondary,
-          onPressed: _handleBackNavigation,
-        ),
-        DesignSystemButton(
-          label: messages.saveButton,
-          onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
-        ),
-      ],
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Wrap(
+        spacing: context.designTokens.spacing.step2,
+        children: [
+          DesignSystemButton(
+            label: messages.cancelButton,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: _handleBackNavigation,
+          ),
+          DesignSystemButton(
+            label: messages.saveButton,
+            onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -322,7 +375,10 @@ class _ProjectEditorContent extends StatelessWidget {
   const _ProjectEditorContent({
     required this.state,
     required this.titleController,
+    required this.descriptionController,
     required this.onTitleChanged,
+    required this.onDescriptionChanged,
+    required this.onCategoryTap,
     required this.onStatusTap,
     required this.onTargetDateTap,
     required this.localizedError,
@@ -330,7 +386,10 @@ class _ProjectEditorContent extends StatelessWidget {
 
   final ProjectDetailState state;
   final TextEditingController titleController;
+  final TextEditingController descriptionController;
   final ValueChanged<String> onTitleChanged;
+  final ValueChanged<String> onDescriptionChanged;
+  final VoidCallback onCategoryTap;
   final VoidCallback onStatusTap;
   final VoidCallback onTargetDateTap;
   final String? localizedError;
@@ -351,6 +410,12 @@ class _ProjectEditorContent extends StatelessWidget {
       project.data.status,
     );
     final targetDate = project.data.targetDate;
+    final category = getIt<EntitiesCacheService>().getCategoryById(
+      project.meta.categoryId,
+    );
+    final categoryColor = colorFromCssHex(
+      category?.color ?? defaultCategoryColorHex,
+    );
     final targetDateLabel = targetDate == null
         ? messages.projectTargetDateLabel
         : DateFormat.yMMMd(
@@ -393,6 +458,34 @@ class _ProjectEditorContent extends StatelessWidget {
                   onChanged: onTitleChanged,
                   enabled: !state.isSaving,
                 ),
+              ),
+              const DesignSystemDivider(),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spacing.step5,
+                  tokens.spacing.step4,
+                  tokens.spacing.step5,
+                  tokens.spacing.step4,
+                ),
+                child: DesignSystemTextarea(
+                  controller: descriptionController,
+                  label: messages.projectShowcaseDescriptionTitle,
+                  growWithContent: true,
+                  enabled: !state.isSaving,
+                  onChanged: onDescriptionChanged,
+                ),
+              ),
+              const DesignSystemDivider(),
+              DesignSystemSelectionRow(
+                title: messages.habitCategoryLabel,
+                subtitle:
+                    category?.name ?? messages.taskCategoryUnassignedLabel,
+                type: DesignSystemSelectionRowType.navigation,
+                leading: Icon(
+                  category?.icon?.iconData ?? Icons.folder_outlined,
+                  color: categoryColor,
+                ),
+                onTap: state.isSaving ? null : onCategoryTap,
               ),
               const DesignSystemDivider(),
               DesignSystemSelectionRow(

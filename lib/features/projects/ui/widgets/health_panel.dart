@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/dividers/design_system_d
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
+import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -18,11 +19,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class HealthPanel extends StatelessWidget {
   const HealthPanel({
     required this.record,
+    this.currentTime,
     this.onViewBlockerPressed,
     super.key,
   });
 
   final ProjectRecord record;
+  final DateTime? currentTime;
   final VoidCallback? onViewBlockerPressed;
 
   @override
@@ -43,6 +46,15 @@ class HealthPanel extends StatelessWidget {
     final confidence = metrics.confidence;
     final showBlockerAction =
         record.blockedTaskCount > 0 && onViewBlockerPressed != null;
+    final reportUpdatedAt = record.reportUpdatedAt;
+    final assessmentSource = reportUpdatedAt == null || currentTime == null
+        ? null
+        : '${context.messages.projectShowcaseAiReportTitle} · '
+              '${showcaseUpdatedLabel(
+                context,
+                updatedAt: reportUpdatedAt,
+                currentTime: currentTime!,
+              )}';
 
     return DesignSystemSectionCard(
       child: Column(
@@ -73,6 +85,15 @@ class HealthPanel extends StatelessWidget {
               color: ShowcasePalette.highText(context),
             ),
           ),
+          if (assessmentSource != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              assessmentSource,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ShowcasePalette.mediumText(context),
+              ),
+            ),
+          ],
           if (confidence != null || record.blockedTaskCount > 0) ...[
             SizedBox(height: tokens.spacing.step2),
             Wrap(

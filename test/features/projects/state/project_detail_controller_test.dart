@@ -95,6 +95,18 @@ void main() {
       expect(state.project!.data.title, 'New Title');
     });
 
+    test('updateDescription marks hasChanges true', () async {
+      final container = await createLoadedContainer();
+
+      container
+          .read(projectDetailControllerProvider(projectId).notifier)
+          .updateDescription('A clear project brief.');
+
+      final state = container.read(projectDetailControllerProvider(projectId));
+      expect(state.hasChanges, isTrue);
+      expect(state.project?.entryText?.plainText, 'A clear project brief.');
+    });
+
     test('updateTargetDate marks hasChanges true', () async {
       final container = await createLoadedContainer();
 
@@ -471,6 +483,7 @@ void main() {
       );
       notifier
         ..updateTitle('Locally edited title')
+        ..updateDescription('Locally edited description')
         ..updateCategoryId('local-category')
         ..updateStatus(locallyEditedStatus);
       final secondSyncedAt = DateTime(2026, 8, 18);
@@ -511,8 +524,8 @@ void main() {
       expect(fullyRebased.project!.data.targetDate, localTargetDate);
       expect(fullyRebased.project!.meta.updatedAt, secondSyncedAt);
       expect(
-        fullyRebased.project!.entryText,
-        const EntryText(plainText: 'Body received from sync'),
+        fullyRebased.project!.entryText?.plainText,
+        'Locally edited description',
       );
     });
 

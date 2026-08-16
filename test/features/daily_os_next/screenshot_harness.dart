@@ -193,7 +193,21 @@ Future<void> captureScreenshot(
   ]);
   await tester.pump();
   _expectProductionShaderPainters(tester, screenshotName: name);
-  final boundary =
+  var boundary =
+      tester.element(find.byKey(screenshotBoundaryKey)).findRenderObject()!
+          as RenderRepaintBoundary;
+  // The headless renderer can populate a new theme's glyph atlas during the
+  // first off-screen raster. Publishing that first image occasionally drops
+  // most characters from otherwise correctly laid-out dark-theme labels.
+  // Warm the exact production boundary once, then pump the completed raster
+  // work before encoding the review image. This is deterministic and remains
+  // isolated to opt-in manual capture suites.
+  await tester.runAsync(() async {
+    final warmup = await boundary.toImage(pixelRatio: 2);
+    warmup.dispose();
+  });
+  await tester.pump();
+  boundary =
       tester.element(find.byKey(screenshotBoundaryKey)).findRenderObject()!
           as RenderRepaintBoundary;
   await tester.runAsync(() async {

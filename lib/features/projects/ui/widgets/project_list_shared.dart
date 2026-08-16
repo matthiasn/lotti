@@ -30,12 +30,15 @@ class ProjectGroupHeader extends StatelessWidget {
 
     return Row(
       children: [
-        CategoryTag(
-          label: category?.name ?? context.messages.taskCategoryUnassignedLabel,
-          icon: category?.icon?.iconData ?? Icons.folder_outlined,
-          color: color,
+        Flexible(
+          child: CategoryTag(
+            label:
+                category?.name ?? context.messages.taskCategoryUnassignedLabel,
+            icon: category?.icon?.iconData ?? Icons.folder_outlined,
+            color: color,
+          ),
         ),
-        const Spacer(),
+        SizedBox(width: tokens.spacing.step2),
         Text(
           context.messages.projectCountSummary(group.projectCount),
           style: tokens.typography.styles.others.caption.copyWith(
@@ -100,20 +103,17 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
             onTap: () => setState(() => _expanded = !_expanded),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-              child: Padding(
-                padding: EdgeInsets.only(top: tokens.spacing.step3),
-                child: Row(
-                  children: [
-                    Expanded(child: ProjectGroupHeader(group: widget.group)),
-                    SizedBox(width: tokens.spacing.step2),
-                    Icon(
-                      _expanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                      color: ShowcasePalette.mediumText(context),
-                    ),
-                  ],
-                ),
+              child: Row(
+                children: [
+                  Expanded(child: ProjectGroupHeader(group: widget.group)),
+                  SizedBox(width: tokens.spacing.step2),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: ShowcasePalette.mediumText(context),
+                  ),
+                ],
               ),
             ),
           ),
