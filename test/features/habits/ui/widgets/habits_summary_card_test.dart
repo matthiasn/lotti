@@ -90,6 +90,32 @@ void main() {
       expect(find.text('All done today'), findsNothing);
     });
 
+    testWidgets('visibleHabitIds scopes both total and done — the unified '
+        'Goals surface must not count habits it neither shows nor records', (
+      tester,
+    ) async {
+      // 3 definitions, but only def-0/def-1 in scope; done set holds def-1
+      // plus an out-of-scope id that must not count.
+      final state = _state(definitionCount: 3).copyWith(
+        completedToday: {'def-1', 'def-2'},
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const HabitsSummaryCard(visibleHabitIds: {'def-0', 'def-1'}),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(state),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // 1 of 2 in scope: headline 1, remaining 1 — never the global 2/3.
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('1 to go'), findsOneWidget);
+    });
+
     testWidgets('shows "All done today" once done == total (total > 0)', (
       tester,
     ) async {

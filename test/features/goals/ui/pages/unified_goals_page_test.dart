@@ -33,6 +33,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../habits/habit_completion_record_fixtures.dart';
 import '../../../habits/test_utils.dart';
 
 /// Deterministic "now" for the page's success-only today derivation.
@@ -445,12 +446,20 @@ void main() {
     final expired = habitFlossing.copyWith(
       activeUntil: DateTime(2026, 8, 10),
     );
+    final expiredOrphan = habitFlossingDueLater.copyWith(
+      id: 'habit-expired-orphan',
+      name: 'Expired orphan',
+      activeUntil: DateTime(2026, 8, 10),
+    );
     when(
       () => mockEntitiesCacheService.getHabitById(expired.id),
     ).thenAnswer((_) => expired);
+    when(
+      () => mockEntitiesCacheService.getHabitById(expiredOrphan.id),
+    ).thenAnswer((_) => expiredOrphan);
     final state = baseState().copyWith(
-      habitDefinitions: [expired, habitFlossingDueLater],
-      openNowAll: [expired, habitFlossingDueLater],
+      habitDefinitions: [expired, expiredOrphan, habitFlossingDueLater],
+      openNowAll: [expired, expiredOrphan, habitFlossingDueLater],
     );
     await pump(tester, state);
 
@@ -459,6 +468,9 @@ void main() {
       find.byKey(Key('unified-goal-goal-1-c1-${expired.id}')),
       findsNothing,
     );
+    // The same gate covers the orphan group: an out-of-window orphan gets no
+    // actionable row either.
+    expect(find.text(expiredOrphan.name), findsNothing);
     // The in-window habit keeps its row in the orphan group.
     expect(find.text(habitFlossingDueLater.name), findsOneWidget);
   });
@@ -472,5 +484,79 @@ void main() {
       find.byType(HabitHeatmapCard),
     );
     expect(heatmapCard.ignoreCategoryFilter, isTrue);
+  });
+
+  testWidgets('the Done-today card is scoped to the recordable definitions', (
+    tester,
+  ) async {
+    final expired = habitFlossing.copyWith(
+      activeUntil: DateTime(2026, 8, 10),
+    );
+    final state = baseState().copyWith(
+      habitDefinitions: [expired, habitFlossingDueLater],
+      openNowAll: [habitFlossingDueLater],
+    );
+    await pump(tester, state);
+
+    final summaryCard = tester.widget<HabitsSummaryCard>(
+      find.byType(HabitsSummaryCard),
+    );
+    // Only the in-window definition counts — the expired one is invisible
+    // and unrecordable on this surface, so it must not inflate "to go".
+    expect(summaryCard.visibleHabitIds, {habitFlossingDueLater.id});
+  });
+
+  testWidgets('a completion refetch invalidates the mounted goal progress '
+      'projections, so window readings recompute in the same beat', (
+    tester,
+  ) async {
+    var progressReads = 0;
+    final controller = FakeHabitsController(baseState());
+    tester.view.physicalSize = const Size(800, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const UnifiedGoalsPage(),
+        mediaQueryData: const MediaQueryData(size: Size(800, 2600)),
+        overrides: [
+          habitsControllerProvider.overrideWith(() => controller),
+          habitsNowProvider.overrideWithValue(() => _now),
+          habitHeatmapControllerProvider.overrideWith(
+            _FakeHeatmapController.new,
+          ),
+          firstDayOfWeekIndexProvider.overrideWith((ref) => 1),
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-1', 'Fitness')],
+          ),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => health('goal-1')),
+          goalAgentProgressViewProvider('goal-1').overrideWith((ref) async {
+            progressReads++;
+            return progress();
+          }),
+          goalAssessmentHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(progressReads, 1);
+
+    // The controller refetched completions (a quick-complete, a sync): the
+    // mounted projection must recompute instead of serving its cached
+    // pre-completion read. A REAL record, because the notifier only emits
+    // when freezed equality changes.
+    controller.emit(
+      controller.state.copyWith(
+        habitCompletions: habitCompletionRecordsFrom([
+          testHabitCompletionEntry,
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(progressReads, 2);
   });
 }

@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Added
+- **A unified Goals page, behind a flag.** Turning on "Enable unified Goals
+  page" in Settings → Flags adds a Goals tab that merges Habits and Goal
+  Agents into one surface: each goal is a card with its health pill (with the
+  recovery hint folded in), a one-line summary computed from live data, and
+  its habits directly inside it with the familiar one-tap complete. Habits
+  that belong to no goal keep their own group, and the consistency heatmap
+  and completion-rate chart close out the page. Both existing tabs stay
+  unchanged while the flag is off.
 - **A fourth day verdict: Improving.** A day where you missed some of the goal
   but moved the right way now has its own verdict and its own colour, instead
   of sharing "Mixed" with days that simply stalled.

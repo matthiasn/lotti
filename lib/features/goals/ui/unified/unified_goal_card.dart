@@ -59,9 +59,17 @@ class UnifiedGoalCard extends ConsumerWidget {
     // health carries a verdict; while loading the card shows no pill rather
     // than a false "No data".
     final health = healthAsync.value;
-    final progress = health?.spec == null
+    final progressAsync = health?.spec == null
         ? null
-        : ref.watch(goalAgentProgressViewProvider(identity.agentId)).value;
+        : ref.watch(goalAgentProgressViewProvider(identity.agentId));
+    final progress = progressAsync?.value;
+    // A spec claims this goal's habits for the page's grouping even while
+    // the progress projection is unavailable — so a FAILED first progress
+    // read must not make every linked habit vanish (not here, not in the
+    // orphan group). Fall back to plain action rows built from the spec's
+    // own criteria tree: no window readings, but the daily loop survives.
+    final progressFailedFirstLoad =
+        progressAsync != null && progress == null && progressAsync.hasError;
     final status = healthAsync.hasValue
         ? unifiedGoalStatusOf(health?.trackStatus)
         : null;
@@ -105,6 +113,9 @@ class UnifiedGoalCard extends ConsumerWidget {
             specVersionId: health!.spec!.id,
           );
 
+    final fallbackHabitIds = progressFailedFirstLoad
+        ? goalCriterionHabitIds(health!.spec!.criteria)
+        : const <String>{};
     final habitRows = [
       for (final habit in progress?.habits ?? const <GoalHabitProgressView>[])
         if (visibleHabitIds?.contains(habit.habitId) ?? true)
@@ -120,6 +131,14 @@ class UnifiedGoalCard extends ConsumerWidget {
             completedToday: successToday.contains(habit.habitId),
             currentStreak: streaksByHabit[habit.habitId] ?? 0,
             history: _HabitWindowReading(habit: habit),
+          ),
+      for (final habitId in fallbackHabitIds)
+        if (visibleHabitIds?.contains(habitId) ?? true)
+          HabitActionRow(
+            key: Key('unified-goal-${identity.agentId}-fallback-$habitId'),
+            habitId: habitId,
+            completedToday: successToday.contains(habitId),
+            currentStreak: streaksByHabit[habitId] ?? 0,
           ),
     ];
 

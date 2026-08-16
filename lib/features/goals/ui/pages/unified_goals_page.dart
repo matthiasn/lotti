@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -74,6 +75,23 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     // ungrouped habit (the agents list's own rule).
     final identities = agents.value ?? const [];
     final failedFirstLoad = agents.value == null && agents.hasError;
+
+    // A quick-complete on any row writes through the shared habit
+    // persistence path; the habits controller refetches on the completion
+    // notification, but the mounted per-goal progress projections would keep
+    // serving their cached pre-completion read. Invalidate them whenever the
+    // controller's completion data changes, so "N of M this window", the
+    // attention words and the templated summaries recompute deterministically
+    // in the same beat as the row's done flip. (The PILL deliberately stays
+    // on the evaluator's persisted register until the agent runtime ticks.)
+    ref.listen(habitsControllerProvider, (previous, next) {
+      if (identical(previous?.habitCompletions, next.habitCompletions)) {
+        return;
+      }
+      for (final identity in identities) {
+        ref.invalidate(goalAgentProgressViewProvider(identity.agentId));
+      }
+    });
 
     // The due/later/done tabs select habit ROWS; `all` shows every habit
     // that is recordable TODAY. Deliberately the category-UNFILTERED
@@ -149,9 +167,15 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         ...state.completedAll,
       ],
     };
+    // Same lifecycle gate as the goal-owned rows: an orphan row's
+    // quick-complete must not offer what the recording path would reject.
     final orphanHabits = healthsResolved
         ? orphanSource
-              .where((habit) => !claimedHabitIds.contains(habit.id))
+              .where(
+                (habit) =>
+                    recordableIds.contains(habit.id) &&
+                    !claimedHabitIds.contains(habit.id),
+              )
               .toList()
         : const <HabitDefinition>[];
 
@@ -206,7 +230,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
                             .setDisplayFilter,
                       ),
                       SizedBox(height: tokens.spacing.sectionGap),
-                      const HabitsSummaryCard(),
+                      HabitsSummaryCard(visibleHabitIds: recordableIds),
                       SizedBox(height: tokens.spacing.step5),
                       if (failedFirstLoad)
                         Padding(

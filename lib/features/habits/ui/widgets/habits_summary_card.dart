@@ -18,7 +18,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// before this card; surfacing "don't break the chain" makes the habit loop's
 /// reward visible, which is the whole point of a habits surface.
 class HabitsSummaryCard extends ConsumerStatefulWidget {
-  const HabitsSummaryCard({super.key});
+  const HabitsSummaryCard({this.visibleHabitIds, super.key});
+
+  /// When set, the fraction and progress bar count only these habit ids —
+  /// the unified Goals page passes today's RECORDABLE definitions so a habit
+  /// whose activeFrom/activeUntil window excludes today (hidden from every
+  /// row on that surface) cannot inflate the "to go" tally with a habit the
+  /// user can neither see nor record. Null (the Habits tab) keeps the full
+  /// definition count.
+  final Set<String>? visibleHabitIds;
 
   @override
   ConsumerState<HabitsSummaryCard> createState() => _HabitsSummaryCardState();
@@ -40,9 +48,24 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
   /// that makes the day-done flourish read as caused by the final completion.
   static const _allDoneGlowStart = 0.27;
 
-  static bool _isAllDone(HabitsState state) =>
-      state.habitDefinitions.isNotEmpty &&
-      state.completedToday.length >= state.habitDefinitions.length;
+  bool _isAllDone(HabitsState state) {
+    final (total, done) = _counts(state);
+    return total > 0 && done >= total;
+  }
+
+  /// The (total, done) pair under the optional [HabitsSummaryCard
+  /// .visibleHabitIds] scope.
+  (int, int) _counts(HabitsState state) {
+    final filter = widget.visibleHabitIds;
+    if (filter == null) {
+      return (state.habitDefinitions.length, state.completedToday.length);
+    }
+    final total = state.habitDefinitions
+        .where((habit) => filter.contains(habit.id))
+        .length;
+    final done = state.completedToday.where(filter.contains).length;
+    return (total, done);
+  }
 
   @override
   void dispose() {
@@ -71,8 +94,7 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     });
 
     final state = ref.watch(habitsControllerProvider);
-    final total = state.habitDefinitions.length;
-    final done = state.completedToday.length;
+    final (total, done) = _counts(state);
     final fraction = total == 0 ? 0.0 : (done / total).clamp(0.0, 1.0);
 
     final card = DecoratedBox(

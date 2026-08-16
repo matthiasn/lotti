@@ -132,6 +132,7 @@ void main() {
     WidgetTester tester, {
     required GoalAgentHealth agentHealth,
     GoalProgressView? progressView,
+    bool progressFails = false,
     Set<String>? visibleHabitIds,
     Set<String> successToday = const {},
     Map<String, int> streaks = const {},
@@ -148,9 +149,14 @@ void main() {
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => agentHealth),
-          goalAgentProgressViewProvider(
-            'goal-1',
-          ).overrideWith((ref) async => progressView),
+          if (progressFails)
+            goalAgentProgressViewProvider('goal-1').overrideWith(
+              (ref) async => throw StateError('progress read failed'),
+            )
+          else
+            goalAgentProgressViewProvider(
+              'goal-1',
+            ).overrideWith((ref) async => progressView),
           goalAssessmentHistoryProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -291,5 +297,31 @@ void main() {
       find.byType(GoalCompactWindowStrip).first,
     );
     expect(stripRect.top, greaterThan(titleRect.bottom - 1));
+  });
+
+  testWidgets('a FAILED first progress read falls back to plain action rows '
+      'from the spec claims — linked habits never vanish', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+      ),
+      progressFails: true,
+    );
+
+    // Both claimed habits keep their one-tap rows (fallback keys, no window
+    // readings), instead of disappearing from every group on the page.
+    expect(
+      find.byKey(Key('unified-goal-goal-1-fallback-${habitFlossing.id}')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        Key('unified-goal-goal-1-fallback-${habitFlossingDueLater.id}'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('this window'), findsNothing);
   });
 }
