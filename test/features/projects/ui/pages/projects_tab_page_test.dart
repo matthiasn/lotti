@@ -504,6 +504,55 @@ void main() {
     },
   );
 
+  testWidgets('preserves category filters while overview metadata reloads', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup(), buildStudyGroup()];
+    final snapshot = ProjectsOverviewSnapshot(groups: groups);
+    final reloading = const AsyncLoading<ProjectsOverviewSnapshot>()
+        .copyWithPrevious(
+          AsyncData(snapshot),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWithValue(reloading),
+          visibleProjectGroupsProvider.overrideWith(
+            (ref) => AsyncValue.data(groups),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ProjectsTabPage)),
+    );
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setSelectedCategoryIds({'work'});
+    await tester.pump();
+    expect(container.read(projectsOverviewProvider).isLoading, isTrue);
+    expect(container.read(projectsOverviewProvider).value, isNotNull);
+
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
+    final applyButton = find.byKey(
+      const ValueKey('design-system-task-filter-apply'),
+    );
+    await tester.ensureVisible(applyButton);
+    await tester.tap(applyButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedCategoryIds,
+      {'work'},
+    );
+  });
+
   testWidgets('opens the shared DS status picker from the filter sheet', (
     tester,
   ) async {

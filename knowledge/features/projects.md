@@ -164,7 +164,8 @@ Project-agent one-liners are resolved in two bulk reads when the snapshot is
 assembled, then stored on each `ProjectListItemData`. Rows therefore render a
 stable subtitle without one provider/query chain per card, and local search
 matches the same one-liner text that the list displays. Background enrichment
-reloads preserve the last rendered snapshot until the replacement is ready.
+reloads preserve the last rendered snapshot and its category-filter metadata
+until the replacement is ready.
 
 The default `Current` scope keeps open, active, monitoring and on-hold work in
 view; `All` restores completed and archived projects. Projects sort by
@@ -202,7 +203,8 @@ write compensates by resuming the retired agent and restoring its runtime
 subscriptions. The detail keeps the last resolved agent identity during
 provider reloads, and captures the subscription restorer before deletion
 awaits, so neither a sync refresh nor route disposal can bypass that lifecycle
-cleanup.
+cleanup. Task creation and deletion each hold the shared detail mutation lock
+through completion, preventing overlapping edits, task creation, or deletion.
 
 # Health is agent-authored
 

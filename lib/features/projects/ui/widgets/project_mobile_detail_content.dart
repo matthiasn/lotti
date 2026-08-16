@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -63,7 +65,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onStatusTap;
   final VoidCallback? onEdit;
   final VoidCallback? onArchive;
-  final VoidCallback? onDelete;
+  final FutureOr<void> Function()? onDelete;
   final Future<void> Function()? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
@@ -81,16 +83,33 @@ class _ProjectMobileDetailContentState
     extends State<ProjectMobileDetailContent> {
   late final ScrollController _scrollController = ScrollController();
   bool _isAddingTask = false;
+  bool _isDeleting = false;
 
   Future<void> _handleAddTask() async {
     final onAddTask = widget.onAddTask;
-    if (onAddTask == null || widget.isSaving || _isAddingTask) return;
+    if (onAddTask == null || widget.isSaving || _isAddingTask || _isDeleting) {
+      return;
+    }
 
     setState(() => _isAddingTask = true);
     try {
       await onAddTask();
     } finally {
       if (mounted) setState(() => _isAddingTask = false);
+    }
+  }
+
+  Future<void> _handleDelete() async {
+    final onDelete = widget.onDelete;
+    if (onDelete == null || widget.isSaving || _isAddingTask || _isDeleting) {
+      return;
+    }
+
+    setState(() => _isDeleting = true);
+    try {
+      await onDelete();
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
     }
   }
 
@@ -109,7 +128,7 @@ class _ProjectMobileDetailContentState
         .where((summary) => summary.task.data.status is TaskBlocked)
         .toList(growable: false);
     final firstBlockedTask = blockedTasks.isEmpty ? null : blockedTasks.first;
-    final isMutating = widget.isSaving || _isAddingTask;
+    final isMutating = widget.isSaving || _isAddingTask || _isDeleting;
     final menuItems = <DesignSystemContextMenuItem>[
       if (widget.onEdit != null)
         DesignSystemContextMenuItem(
@@ -127,7 +146,7 @@ class _ProjectMobileDetailContentState
         DesignSystemContextMenuItem(
           label: context.messages.projectActionDelete,
           icon: Icons.delete_outline,
-          onTap: isMutating ? null : widget.onDelete,
+          onTap: isMutating ? null : _handleDelete,
           isDestructive: true,
         ),
     ];
@@ -254,7 +273,7 @@ class _ProjectMobileDetailContentState
                             onAddTask: widget.onAddTask == null
                                 ? null
                                 : _handleAddTask,
-                            isAddTaskEnabled: !widget.isSaving,
+                            isAddTaskEnabled: !widget.isSaving && !_isDeleting,
                             isAddingTask: _isAddingTask,
                           ),
                         ],

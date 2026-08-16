@@ -368,6 +368,49 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('disables project actions while deletion is pending', (
+      tester,
+    ) async {
+      final deletion = Completer<void>();
+      var addRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onEdit: () {},
+            onArchive: () {},
+            onDelete: () => deletion.future,
+            onAddTask: () async => addRequests++,
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+
+      tester
+          .widget<DesignSystemContextMenuButton>(
+            find.byType(DesignSystemContextMenuButton),
+          )
+          .items
+          .last
+          .onTap!();
+      await tester.pump();
+
+      final pendingMenu = tester.widget<DesignSystemContextMenuButton>(
+        find.byType(DesignSystemContextMenuButton),
+      );
+      expect(pendingMenu.items.every((item) => item.onTap == null), isTrue);
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+      expect(tester.widget<DesignSystemButton>(addButton).onPressed, isNull);
+      await tester.tap(addButton, warnIfMissed: false);
+      expect(addRequests, 0);
+
+      deletion.complete();
+      await tester.pump();
+    });
+
     testWidgets('opens the first blocked task from the health action', (
       tester,
     ) async {

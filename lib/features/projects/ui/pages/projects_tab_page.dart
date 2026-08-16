@@ -236,6 +236,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
         splitController?.listPaneVisible == true &&
         splitController?.canHideListPane == true;
     final overviewAsync = ref.watch(projectsOverviewProvider);
+    final overview = overviewAsync.value;
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
     final filtersActive =
@@ -253,15 +254,11 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final listBottomPadding =
         DesignSystemBottomNavigationBar.occupiedHeight(context) +
         tokens.spacing.step12;
-    final categories = overviewAsync.maybeWhen(
-      data: (overview) => _filterCategoriesFromOverview(overview.groups),
-      orElse: () => const <CategoryDefinition>[],
-    );
-    final rawHasProjects = overviewAsync.maybeWhen(
-      data: (overview) =>
-          overview.groups.any((group) => group.projects.isNotEmpty),
-      orElse: () => false,
-    );
+    final categories = overview == null
+        ? const <CategoryDefinition>[]
+        : _filterCategoriesFromOverview(overview.groups);
+    final rawHasProjects =
+        overview?.groups.any((group) => group.projects.isNotEmpty) ?? false;
     final isDefaultCurrent =
         const SetEquality<String>().equals(
           filter.selectedStatusIds,
