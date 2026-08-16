@@ -10655,6 +10655,12 @@ abstract class AppLocalizations {
   /// **'{agentName} is replying…'**
   String goalChatResponding(String agentName);
 
+  /// Button that opens a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to {agentName}'**
+  String goalChatTalkTo(String agentName);
+
   /// Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)
   ///
   /// In en, this message translates to:
@@ -10712,6 +10718,12 @@ abstract class AppLocalizations {
     int dimensionCount,
     int requiredCount,
   );
+
+  /// No description provided for @goalCompositeProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole goal'**
+  String get goalCompositeProgressTitle;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///
@@ -10863,11 +10875,23 @@ abstract class AppLocalizations {
   /// **'as of {ago}'**
   String goalDetailReadAsOf(String ago);
 
+  /// No description provided for @goalDetailSayingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What your agent is saying'**
+  String get goalDetailSayingTitle;
+
   /// Section heading over the data-signal dimension cards on goal detail.
   ///
   /// In en, this message translates to:
   /// **'Signals'**
   String get goalDetailSignalsTitle;
+
+  /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalDetailStatementLabel;
 
   /// Title of the goal detail hero card holding the whole-goal 7-day strip.
   ///
@@ -10898,6 +10922,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
+
+  /// No description provided for @goalDetailWatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching'**
+  String get goalDetailWatchingTitle;
 
   /// No description provided for @goalDimensionCategoryTimeSource.
   ///
@@ -11025,6 +11055,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} · 7-day average'**
   String goalDimensionRollingAverageRow(String name);
+
+  /// No description provided for @goalDominantIssueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimensionName} needs attention'**
+  String goalDominantIssueBadge(Object dimensionName);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11614,7 +11650,7 @@ abstract class AppLocalizations {
   /// **'Timing pattern'**
   String get goalPatternTitle;
 
-  /// Chip on a goal card when a revision proposal is pending review.
+  /// Badge on an agent card when a revision proposal is pending.
   ///
   /// In en, this message translates to:
   /// **'Proposal awaiting review'**
@@ -11835,6 +11871,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recovering'**
   String get goalStatusRecovering;
+
+  /// No description provided for @goalWatchingMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates from its linked source · {windowLabel}'**
+  String goalWatchingMetric(String windowLabel);
 
   /// No description provided for @goalWindowCalendarMonth.
   ///
@@ -12097,7 +12139,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsGoalLineLabel.
   ///
   /// In en, this message translates to:
-  /// **'Target'**
+  /// **'Goal'**
   String get habitsGoalLineLabel;
 
   /// No description provided for @habitsHeatmapEmpty.
@@ -12151,7 +12193,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points, plural, one{1 pt to target} other{{points} pts to target}}'**
+  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
   String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.

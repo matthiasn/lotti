@@ -3140,7 +3140,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInInteractionInPerson => 'En persona';
 
   @override
-  String get checkInInteractionLabel => '¿Cómo contactasteis?';
+  String get checkInInteractionLabel => '¿Cómo hablasteis?';
 
   @override
   String get checkInInteractionMessage => 'Mensaje';
@@ -6296,6 +6296,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Hablar con $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Hablar con el agente';
 
   @override
@@ -6335,6 +6340,9 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return 'Ayer: $metCount de $dimensionCount dimensiones · $_temp0.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'todo el objetivo';
 
   @override
   String get goalCreateFailed =>
@@ -6431,7 +6439,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Lo que dice tu agente';
+
+  @override
   String get goalDetailSignalsTitle => 'Señales';
+
+  @override
+  String get goalDetailStatementLabel => 'Tu objetivo';
 
   @override
   String get goalDetailThisWeekTitle => 'Esta semana';
@@ -6450,6 +6464,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Las señales anteriores se actualizan en segundos. Tu agente solo ve las señales indicadas aquí.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Observa';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Tiempo de categoría rastreado';
@@ -6537,6 +6554,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · media de 7 días';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName necesita atención';
   }
 
   @override
@@ -7084,6 +7106,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'Recuperándose';
+
+  @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Actualizaciones desde su fuente vinculada · $windowLabel';
+  }
 
   @override
   String get goalWindowCalendarMonth => 'mes natural';
@@ -10361,7 +10388,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipImportantLabel => 'Importante';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Tareas vinculadas';
+  String get relationshipLinkedTasksLabel => 'Tareas';
 
   @override
   String get relationshipLinkTaskButton => 'Vincular tarea';

@@ -3099,7 +3099,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInInteractionInPerson => 'Personligt';
 
   @override
-  String get checkInInteractionLabel => 'Hvordan havde I kontakt?';
+  String get checkInInteractionLabel => 'Hvordan talte I sammen?';
 
   @override
   String get checkInInteractionMessage => 'Besked';
@@ -3437,7 +3437,7 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count timer siden',
+      other: '$count h ago',
       one: '1 time siden',
     );
     return '$_temp0';
@@ -6215,6 +6215,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Tal med $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Tal med agenten';
 
   @override
@@ -6248,6 +6253,9 @@ class AppLocalizationsDa extends AppLocalizations {
   ) {
     return 'I går: $metCount af $dimensionCount dimensioner · $requiredCount kræves.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Hele målet';
 
   @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
@@ -6342,7 +6350,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Det siger din agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signaler';
+
+  @override
+  String get goalDetailStatementLabel => 'Dit mål';
 
   @override
   String get goalDetailThisWeekTitle => 'Denne uge';
@@ -6361,6 +6375,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Følger';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Sporet kategoritid';
@@ -6448,6 +6465,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-dages gennemsnit';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName har brug for opmærksomhed';
   }
 
   @override
@@ -6990,6 +7012,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalStatusRecovering => 'På vej tilbage';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Opdateringer fra dens linkede kilde · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermåned';
 
   @override
@@ -7141,7 +7168,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitsFilterPendingLater => 'Senere';
 
   @override
-  String get habitsGoalLineLabel => 'Målværdi';
+  String get habitsGoalLineLabel => 'Mål';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7175,8 +7202,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points point til målværdien',
-      one: '1 point til målværdien',
+      other: '$points point til mål',
+      one: '1 point til mål',
     );
     return '$_temp0';
   }
@@ -10206,7 +10233,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipLinkedTasksLabel => 'Opgaver';
 
   @override
-  String get relationshipLinkTaskButton => 'Tilknyt opgave';
+  String get relationshipLinkTaskButton => 'Link opgave';
 
   @override
   String get relationshipLogCheckIn => 'Registrér check-in';
@@ -10225,7 +10252,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen check-ins endnu — registrér et efter jeres næste snak.';
 
   @override
-  String get relationshipNoLinkedTasks => 'Ingen opgaver er tilknyttet endnu.';
+  String get relationshipNoLinkedTasks => 'Ingen opgaver linket endnu.';
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';

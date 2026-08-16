@@ -265,6 +265,62 @@ void main() {
     },
   );
 
+  testWidgets(
+    'delete shows an error toast when the repository returns false',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not delete this person. Please try again.'),
+        findsOne,
+      );
+    },
+  );
+
+  testWidgets(
+    'delete shows an error toast when the repository throws',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenThrow(Exception('db locked'));
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not delete this person. Please try again.'),
+        findsOne,
+      );
+    },
+  );
+
   testWidgets('tapping a check-in row opens the edit sheet prefilled', (
     tester,
   ) async {

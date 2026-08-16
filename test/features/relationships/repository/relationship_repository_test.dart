@@ -428,8 +428,28 @@ void main() {
               'rel-001',
         );
 
+        final mockLogger = getIt<DomainLogger>() as MockDomainLogger;
+        when(
+          () => mockLogger.error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
         expect(await repository.deleteRelationship('rel-001'), isTrue);
         verify(() => mockPersistence.updateDbEntity(any())).called(2);
+        verify(
+          () => mockLogger.error(
+            LogDomain.persistence,
+            any(),
+            message: 'orphaned check-in left behind by relationship cascade',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'deleteRelationship',
+          ),
+        ).called(1);
       },
     );
 

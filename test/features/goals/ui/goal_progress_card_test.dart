@@ -1203,10 +1203,10 @@ void main() {
       // named no mark on the chart at all.
       expect(find.text('Systolic'), findsOneWidget);
       expect(find.text('Diastolic'), findsOneWidget);
-      expect(find.text('Target ≤ 125'), findsOneWidget);
-      expect(find.text('Target ≤ 85'), findsOneWidget);
-      expect(find.text('Systolic · Target ≤ 125'), findsNothing);
-      expect(find.text('Diastolic · Target ≤ 85'), findsNothing);
+      expect(find.text('Goal ≤ 125'), findsOneWidget);
+      expect(find.text('Goal ≤ 85'), findsOneWidget);
+      expect(find.text('Systolic · Goal ≤ 125'), findsNothing);
+      expect(find.text('Diastolic · Goal ≤ 85'), findsNothing);
       expect(
         tester
             .widget<TimeSeriesMultiLineChart>(
@@ -1406,8 +1406,8 @@ void main() {
 
       expect(find.text('122 / 81 mmHg'), findsOneWidget);
       expect(find.text('On target today'), findsOneWidget);
-      expect(find.text('Target ≤ 125'), findsOneWidget);
-      expect(find.text('Target ≤ 85'), findsOneWidget);
+      expect(find.text('Goal ≤ 125'), findsOneWidget);
+      expect(find.text('Goal ≤ 85'), findsOneWidget);
       expect(
         find.text("Today's latest reading is on target; keep it going."),
         findsOneWidget,
@@ -1481,7 +1481,7 @@ void main() {
     );
     expect(find.text('Weight'), findsNWidgets(2));
     expect(find.text('7-day average'), findsOneWidget);
-    expect(find.text('Target'), findsOneWidget);
+    expect(find.text('Goal'), findsOneWidget);
     expect(find.text('≤ 88'), findsOneWidget);
     // One legend entry per line drawn, and nothing else: the above/below
     // sentence was a reading of the data wearing a swatch that matched no
@@ -1627,7 +1627,7 @@ void main() {
         8500,
       ]);
       expect(find.text('7-day average'), findsOneWidget);
-      expect(find.text('Target'), findsOneWidget);
+      expect(find.text('Goal'), findsOneWidget);
       expect(find.text('≥ 10,000'), findsOneWidget);
       expect(find.textContaining('7-day average · '), findsNothing);
     },
