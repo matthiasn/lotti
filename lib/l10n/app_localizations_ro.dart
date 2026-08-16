@@ -6234,6 +6234,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'De ce este acest obiectiv $status în acest moment?';
+  }
+
+  @override
   String get goalChatYou => 'Dvs.';
 
   @override
@@ -6273,9 +6278,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return 'Ieri: $metCount din $_temp0 · $_temp1.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Tot scopul';
 
   @override
   String get goalCreateFailed =>
@@ -6344,6 +6346,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDeleteMenuItem => 'Ștergeți obiectivul';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Și în $goals';
+  }
+
+  @override
+  String get goalDetailAskWhy => 'De ce?';
+
+  @override
+  String get goalDetailCompletionRateTitle =>
+      'Rata de finalizare · acest obiectiv';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Zilele obiectivului';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Starea acestui obiectiv nu a putut fi încărcată momentan.';
 
@@ -6355,10 +6372,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailNotFound => 'Acest agent de obiectiv nu mai există.';
 
   @override
-  String get goalDetailSayingTitle => 'Ce spune agentul dvs.';
+  String goalDetailReadAsOf(String ago) {
+    return 'actualizat $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Semnale';
 
   @override
   String get goalDetailStatementLabel => 'Obiectivul dvs.';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Săptămâna aceasta';
 
   @override
   String get goalDetailTimelineTitle => 'Interacțiuni';
@@ -6366,9 +6391,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Timp de categorie urmărit';
@@ -6798,6 +6820,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalPatternTitle => 'Model de sincronizare';
 
   @override
+  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
+
+  @override
   String get goalProgressAgesOut => 'iese în această seară';
 
   @override
@@ -6966,11 +6991,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'În revenire';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Actualizări din sursa conectată · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'lună calendaristică';
@@ -13215,7 +13235,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
 }

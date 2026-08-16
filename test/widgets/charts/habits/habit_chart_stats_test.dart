@@ -272,4 +272,77 @@ void main() {
       expect(stats.laggardName, isNull);
     });
   });
+
+  group('scopeHabitsStateToHabits — the goal-scoped chart input', () {
+    test('rates, definitions and the tap-a-day breakdown see only the '
+        "goal's habits", () {
+      final state = stateWith(
+        days: ['2024-03-14', '2024-03-15'],
+        allByDay: {
+          '2024-03-14': {'walk', 'read', 'floss'},
+          '2024-03-15': {'walk', 'read', 'floss'},
+        },
+        successfulByDay: {
+          // Whole roster: 1/3 then 3/3. Goal slice {walk, read}: 0/2 then
+          // 2/2 — a different line entirely.
+          '2024-03-14': {'floss'},
+          '2024-03-15': {'walk', 'read', 'floss'},
+        },
+        habitDefinitions: [
+          habitFlossing.copyWith(id: 'walk', name: 'Walk'),
+          habitFlossing.copyWith(id: 'read', name: 'Read'),
+          habitFlossing.copyWith(id: 'floss', name: 'Floss'),
+        ],
+      ).copyWith(selectedInfoYmd: '2024-03-14');
+
+      final scoped = scopeHabitsStateToHabits(state, {'walk', 'read'});
+
+      expect(habitChartStats(scoped).dailyRates, [0.0, 100.0]);
+      expect(
+        [for (final habit in scoped.habitDefinitions) habit.id],
+        ['walk', 'read'],
+      );
+      // The selected day's breakdown is recomputed on the scoped maps:
+      // 0 of 2 goal habits succeeded on the 14th, not the roster's 1 of 3.
+      expect(scoped.successPercentage, 0);
+    });
+
+    test('window and interaction fields pass through unchanged so the '
+        'shared range control keeps working', () {
+      final state = stateWith(
+        days: ['2024-03-14', '2024-03-15'],
+        allByDay: {
+          '2024-03-14': {'walk'},
+        },
+        successfulByDay: {
+          '2024-03-14': {'walk'},
+        },
+      ).copyWith(timeSpanDays: 30);
+
+      final scoped = scopeHabitsStateToHabits(state, {'walk'});
+
+      expect(scoped.days, state.days);
+      expect(scoped.timeSpanDays, 30);
+    });
+
+    test('the scoped chart is always zero-based — the goal card has no '
+        'baseline control to undo an inherited dynamic floor', () {
+      final state = stateWith(
+        days: ['2024-03-14', '2024-03-15'],
+        allByDay: {
+          '2024-03-14': {'walk'},
+          '2024-03-15': {'walk'},
+        },
+        successfulByDay: {
+          '2024-03-14': {'walk'},
+          '2024-03-15': {'walk'},
+        },
+      ).copyWith(zeroBased: false, minY: 60);
+
+      final scoped = scopeHabitsStateToHabits(state, {'walk'});
+
+      expect(scoped.zeroBased, isTrue);
+      expect(scoped.minY, 0);
+    });
+  });
 }

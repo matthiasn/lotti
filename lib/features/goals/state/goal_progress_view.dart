@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,20 +81,36 @@ class GoalHabitProgressView {
   /// way the metric headline once did.
   final int? evaluatedSuccesses;
 
-  int get successesInWindow =>
-      evaluatedSuccesses ??
-      switch (window) {
-        GoalWindowRollingDays() => days.where((day) => day.value > 0).length,
-        _ => days.fold(0, (total, day) => total + day.value.toInt()),
-      };
+  /// The evaluator's creditable-success count where available; the local
+  /// fold otherwise. The fold is WINDOW-aware: [days] may render extra
+  /// history for the page's shared span, and counting the whole list read
+  /// "4 of 2 this window" the moment a track showed more than the window.
+  int get successesInWindow {
+    if (evaluatedSuccesses case final evaluated?) return evaluated;
+    if (days.isEmpty) return 0;
+    final range = window.periodRange(days.last.day);
+    final inWindow = days.where(
+      (day) => !day.day.isBefore(range.start) && !day.day.isAfter(range.end),
+    );
+    return switch (window) {
+      GoalWindowRollingDays() => inWindow.where((day) => day.value > 0).length,
+      _ => inWindow.fold(0, (total, day) => total + day.value.toInt()),
+    };
+  }
 
   int get deficit => (targetCount - successesInWindow).clamp(0, targetCount);
 
-  bool get oldestSuccessAgesOutTonight =>
-      window is GoalWindowRollingDays &&
-      successesInWindow == targetCount &&
-      days.isNotEmpty &&
-      days.first.value > 0;
+  /// Whether tonight's midnight slide drops the OLDEST in-window success.
+  /// Window-aware: [days] may render extra history ahead of the window, so
+  /// the check anchors at the window's own first day, not the list head.
+  bool get oldestSuccessAgesOutTonight {
+    final window = this.window;
+    if (window is! GoalWindowRollingDays) return false;
+    if (successesInWindow != targetCount) return false;
+    if (days.isEmpty) return false;
+    if (days.length < window.count) return days.first.value > 0;
+    return days[days.length - window.count].value > 0;
+  }
 }
 
 /// Metric contributions for the criterion's actual evaluation period.
@@ -211,7 +228,14 @@ class GoalProgressView {
     this.compositeRule,
     this.requiredSuccesses,
     this.rootOnTrack = false,
-  }) : metrics = metric == null ? metrics : [metric, ...metrics];
+    int? compactWindowDays,
+  }) : metrics = metric == null ? metrics : [metric, ...metrics],
+       compactWindowDays = compactWindowDays ?? 7;
+
+  /// How many days [compactWindow] covers — seven on list surfaces, the
+  /// page's shared history span on the detail page, so the whole-goal strip
+  /// renders the same days as every other track.
+  final int compactWindowDays;
 
   final DateTime today;
   final List<GoalHabitProgressView> habits;
@@ -233,7 +257,7 @@ class GoalProgressView {
   List<GoalCompactDayState> get compactWindow {
     if (compositeCompactWindow case final compact?) return compact;
     final activeDays = [
-      for (var offset = 6; offset >= 0; offset--)
+      for (var offset = compactWindowDays - 1; offset >= 0; offset--)
         GoalWindow.dayUtc(today.subtract(Duration(days: offset))),
     ];
     if (habits.isNotEmpty) {
@@ -249,9 +273,9 @@ class GoalProgressView {
     final periodDays = series.days
         .where((entry) => !entry.day.isAfter(today))
         .toList(growable: false);
-    final compactDays = periodDays.length <= 7
+    final compactDays = periodDays.length <= compactWindowDays
         ? periodDays
-        : periodDays.sublist(periodDays.length - 7);
+        : periodDays.sublist(periodDays.length - compactWindowDays);
     return [
       for (final day in compactDays)
         // The same per-day policy as the bars and the reflection sheet this
@@ -430,6 +454,7 @@ GoalProgressView buildGoalProgressView({
   required GoalCriterion criteria,
   required GoalSignalWindow signals,
   required DateTime reference,
+  int? historyDays,
   Map<String, String> habitNames = const {},
   Map<String, MeasurableDataType> measurableDefinitions = const {},
   Map<String, String> categoryNames = const {},
@@ -477,6 +502,7 @@ GoalProgressView buildGoalProgressView({
         reference: reference,
         today: today,
         habitNames: habitNames,
+        historyDays: historyDays,
       ),
   ];
 
@@ -484,7 +510,7 @@ GoalProgressView buildGoalProgressView({
     GoalCriterionAllOf() ||
     GoalCriterionAnyOf() ||
     GoalCriterionAtLeastCount() => [
-      for (var offset = 6; offset >= 0; offset--)
+      for (var offset = (historyDays ?? 7) - 1; offset >= 0; offset--)
         _criterionDayState(
           criteria,
           signals,
@@ -499,6 +525,7 @@ GoalProgressView buildGoalProgressView({
         metric: metric,
         signals: signals,
         reference: reference,
+        historyDays: historyDays,
         projectedOnTrack:
             evaluation.results[metric.criterionId]?.projectedDaysToTarget !=
             null,
@@ -508,6 +535,7 @@ GoalProgressView buildGoalProgressView({
         measurable: measurable,
         signals: signals,
         reference: reference,
+        historyDays: historyDays,
         definition: measurableDefinitions[measurable.dataTypeId],
         agentRecordedMeasurementIds: agentRecordedMeasurementIds,
         recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
@@ -520,6 +548,7 @@ GoalProgressView buildGoalProgressView({
         categoryTime: categoryTime,
         signals: signals,
         reference: reference,
+        historyDays: historyDays,
         categoryName: categoryNames[categoryTime.categoryId],
         projectedOnTrack:
             evaluation
@@ -530,6 +559,7 @@ GoalProgressView buildGoalProgressView({
   ];
   return GoalProgressView(
     today: today,
+    compactWindowDays: historyDays,
     rootOnTrack: evaluation.satisfied || evaluation.onTrackByTrend,
     habits: [
       for (final habit in habits)
@@ -561,8 +591,10 @@ GoalMetricProgressView _metricProgressView({
   required GoalSignalWindow signals,
   required DateTime reference,
   bool projectedOnTrack = false,
+  int? historyDays,
 }) {
   return _numericProgressView(
+    historyDays: historyDays,
     criterion: metric,
     criterionId: metric.criterionId,
     sourceId: metric.dataType,
@@ -597,6 +629,7 @@ GoalMetricProgressView _measurableProgressView({
       recordedMeasurementProvenanceById =
       const {},
   bool projectedOnTrack = false,
+  int? historyDays,
 }) {
   final agentRecordedDays = agentRecordedMeasurementIds
       .map((entryId) => signals.measurableEntryDaysById[entryId])
@@ -608,6 +641,7 @@ GoalMetricProgressView _measurableProgressView({
     if (day != null) provenanceByDay[day] = entry.value;
   }
   return _numericProgressView(
+    historyDays: historyDays,
     criterion: measurable,
     criterionId: measurable.criterionId,
     sourceId: measurable.dataTypeId,
@@ -635,7 +669,9 @@ GoalMetricProgressView _categoryTimeProgressView({
   required DateTime reference,
   String? categoryName,
   bool projectedOnTrack = false,
+  int? historyDays,
 }) => _numericProgressView(
+  historyDays: historyDays,
   criterion: categoryTime,
   criterionId: categoryTime.criterionId,
   sourceId: categoryTime.categoryId,
@@ -657,6 +693,18 @@ GoalMetricProgressView _categoryTimeProgressView({
   projectedOnTrack: projectedOnTrack,
   zeroIsObserved: true,
 );
+
+/// The first rendered day: the authored range start, or further back when
+/// the page's shared [historyDays] span (ending today) reaches earlier.
+DateTime _historyStart({
+  required DateTime rangeStart,
+  required DateTime today,
+  required int? historyDays,
+}) {
+  if (historyDays == null) return rangeStart;
+  final spanStart = today.subtract(Duration(days: historyDays - 1));
+  return spanStart.isBefore(rangeStart) ? spanStart : rangeStart;
+}
 
 GoalMetricProgressView _numericProgressView({
   required GoalCriterion criterion,
@@ -680,9 +728,15 @@ GoalMetricProgressView _numericProgressView({
       const {},
   List<GoalCategoryTimeSession> categoryTimeSessions = const [],
   bool projectedOnTrack = false,
+  int? historyDays,
 }) {
   final range = window.periodRange(reference);
   final today = GoalWindow.dayUtc(reference);
+  final start = _historyStart(
+    rangeStart: range.start,
+    today: today,
+    historyDays: historyDays,
+  );
   return GoalMetricProgressView(
     evaluatedActual: const GoalProgressEvaluator()
         .evaluate(criterion, signals, reference)
@@ -704,7 +758,7 @@ GoalMetricProgressView _numericProgressView({
     projectedOnTrack: projectedOnTrack,
     days: [
       for (
-        var day = range.start;
+        var day = start;
         !day.isAfter(range.end);
         day = day.add(const Duration(days: 1))
       )
@@ -766,8 +820,18 @@ GoalHabitProgressView _habitProgressView({
   required DateTime reference,
   required DateTime today,
   required Map<String, String> habitNames,
+  int? historyDays,
 }) {
   final range = habit.window.periodRange(reference);
+  // The rendered day span: the authored window, extended backwards to the
+  // page's shared history span when one is selected. Aggregates never fold
+  // this list — the evaluator's numbers win — so a longer rendering cannot
+  // change a verdict.
+  final start = _historyStart(
+    rangeStart: range.start,
+    today: today,
+    historyDays: historyDays,
+  );
   // Per-day verdict of the habit's own window ending that day: a completed
   // day whose window quota was not yet met renders as a partial success.
   GoalProgressDay projection(DateTime day) => GoalProgressDay(
@@ -796,7 +860,7 @@ GoalHabitProgressView _habitProgressView({
         : null,
     days: [
       for (
-        var day = range.start;
+        var day = start;
         !day.isAfter(range.end);
         day = day.add(const Duration(days: 1))
       )
@@ -839,114 +903,145 @@ int _successfulWeeks({
 /// the active seven-day window.
 final FutureProviderFamily<GoalProgressView?, String>
 goalAgentProgressViewProvider = FutureProvider.autoDispose
-    .family<GoalProgressView?, String>((ref, agentId) async {
-      final health = await ref.watch(goalAgentHealthProvider(agentId).future);
-      final spec = health.spec;
-      if (spec == null) return null;
-      final reference = clock.now();
-      final nextMidnight = DateTime(
-        reference.year,
-        reference.month,
-        reference.day + 1,
-      );
-      final midnightTimer = Timer(
-        nextMidnight.difference(reference),
-        ref.invalidateSelf,
-      );
-      ref.onDispose(midnightTimer.cancel);
-      final signals = await ref
-          .watch(goalSignalReaderProvider)
-          .read(
-            criteria: spec.criteria,
-            reference: reference,
-            shortTermDays: 43,
-          );
+    .family<GoalProgressView?, String>(
+      (ref, agentId) => _progressView(ref, agentId, null),
+      name: 'goalAgentProgressViewProvider',
+    );
 
-      final habitIds = <String>{};
-      void collect(GoalCriterion criterion) {
-        switch (criterion) {
-          case GoalCriterionHabit(:final habitId):
-            habitIds.add(habitId);
-          case GoalCriterionMetric() ||
-              GoalCriterionMeasurable() ||
-              GoalCriterionCategoryTime():
-            return;
-          case GoalCriterionAllOf(criteria: final children):
-            children.forEach(collect);
-          case GoalCriterionAnyOf(criteria: final children):
-            children.forEach(collect);
-          case GoalCriterionAtLeastCount(criteria: final children):
-            children.forEach(collect);
-        }
-      }
+/// One goal's progress-view request: the agent plus an optional shared
+/// history span. Null renders each dimension's authored window only.
+typedef GoalProgressViewRequest = ({String agentId, int? historyDays});
 
-      collect(spec.criteria);
-      final db = ref.watch(journalDbProvider);
-      final names = <String, String>{};
-      final measurableDefinitions = <String, MeasurableDataType>{};
-      final categoryNames = <String, String>{};
-      for (final habitId in habitIds) {
-        final habit = await db.getHabitById(habitId);
-        if (habit != null) names[habitId] = habit.name;
-      }
-      final measurableIds = <String>{};
-      final categoryIds = <String>{};
-      void collectDefinitions(GoalCriterion criterion) {
-        switch (criterion) {
-          case GoalCriterionMeasurable(:final dataTypeId):
-            measurableIds.add(dataTypeId);
-          case GoalCriterionCategoryTime(:final categoryId):
-            categoryIds.add(categoryId);
-          case GoalCriterionMetric() || GoalCriterionHabit():
-            return;
-          case GoalCriterionAllOf(criteria: final children):
-            children.forEach(collectDefinitions);
-          case GoalCriterionAnyOf(criteria: final children):
-            children.forEach(collectDefinitions);
-          case GoalCriterionAtLeastCount(criteria: final children):
-            children.forEach(collectDefinitions);
-        }
-      }
+/// The span-aware sibling of [goalAgentProgressViewProvider]: the detail
+/// page keys it with its shared range so every day track renders the same
+/// days. Both providers run the same computation independently — writers
+/// that invalidate one must invalidate the other (the span side as the
+/// whole family), or a recording refreshes the list but not the open
+/// detail page.
+final FutureProviderFamily<GoalProgressView?, GoalProgressViewRequest>
+goalAgentProgressViewForSpanProvider = FutureProvider.autoDispose
+    .family<GoalProgressView?, GoalProgressViewRequest>(
+      (ref, request) =>
+          _progressView(ref, request.agentId, request.historyDays),
+      name: 'goalAgentProgressViewForSpanProvider',
+    );
 
-      collectDefinitions(spec.criteria);
-      for (final measurableId in measurableIds) {
-        final definition = await db.getMeasurableDataTypeById(measurableId);
-        if (definition != null) {
-          measurableDefinitions[measurableId] = definition;
-        }
-      }
-      for (final categoryId in categoryIds) {
-        final definition = await db.getCategoryById(categoryId);
-        if (definition != null) categoryNames[categoryId] = definition.name;
-      }
-      final captureDecisions = measurableIds.isEmpty
-          ? const <String, GoalMeasurableCaptureDecision>{}
-          : await ref.watch(
-              goalMeasurableCaptureDecisionsProvider(agentId).future,
-            );
-      final agentRecordedMeasurementIds = {
-        for (final decision in captureDecisions.values)
-          if (decision.recorded) ...decision.entryIds,
-      };
-      final recordedMeasurementProvenanceById = {
-        for (final decision in captureDecisions.values)
-          if (decision.recorded &&
-              decision.recordedAt != null &&
-              decision.agentName != null)
-            for (final entryId in decision.entryIds)
-              entryId: GoalRecordedMeasurementProvenance(
-                agentName: decision.agentName!,
-                recordedAt: decision.recordedAt!,
-              ),
-      };
-      return buildGoalProgressView(
+Future<GoalProgressView?> _progressView(
+  Ref ref,
+  String agentId,
+  int? historyDays,
+) async {
+  final health = await ref.watch(goalAgentHealthProvider(agentId).future);
+  final spec = health.spec;
+  if (spec == null) return null;
+  final reference = clock.now();
+  final nextMidnight = DateTime(
+    reference.year,
+    reference.month,
+    reference.day + 1,
+  );
+  final midnightTimer = Timer(
+    nextMidnight.difference(reference),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(midnightTimer.cancel);
+  final signals = await ref
+      .watch(goalSignalReaderProvider)
+      .read(
         criteria: spec.criteria,
-        signals: signals,
         reference: reference,
-        habitNames: names,
-        measurableDefinitions: measurableDefinitions,
-        categoryNames: categoryNames,
-        agentRecordedMeasurementIds: agentRecordedMeasurementIds,
-        recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
+        // Six weeks for the reliability tail; wider when the page's
+        // shared range reaches further back (plus a week so rolling
+        // verdicts at the span's oldest day still see their window).
+        shortTermDays: math.max(43, (historyDays ?? 0) + 7),
       );
-    }, name: 'goalAgentProgressViewProvider');
+
+  final habitIds = <String>{};
+  void collect(GoalCriterion criterion) {
+    switch (criterion) {
+      case GoalCriterionHabit(:final habitId):
+        habitIds.add(habitId);
+      case GoalCriterionMetric() ||
+          GoalCriterionMeasurable() ||
+          GoalCriterionCategoryTime():
+        return;
+      case GoalCriterionAllOf(criteria: final children):
+        children.forEach(collect);
+      case GoalCriterionAnyOf(criteria: final children):
+        children.forEach(collect);
+      case GoalCriterionAtLeastCount(criteria: final children):
+        children.forEach(collect);
+    }
+  }
+
+  collect(spec.criteria);
+  final db = ref.watch(journalDbProvider);
+  final names = <String, String>{};
+  final measurableDefinitions = <String, MeasurableDataType>{};
+  final categoryNames = <String, String>{};
+  for (final habitId in habitIds) {
+    final habit = await db.getHabitById(habitId);
+    if (habit != null) names[habitId] = habit.name;
+  }
+  final measurableIds = <String>{};
+  final categoryIds = <String>{};
+  void collectDefinitions(GoalCriterion criterion) {
+    switch (criterion) {
+      case GoalCriterionMeasurable(:final dataTypeId):
+        measurableIds.add(dataTypeId);
+      case GoalCriterionCategoryTime(:final categoryId):
+        categoryIds.add(categoryId);
+      case GoalCriterionMetric() || GoalCriterionHabit():
+        return;
+      case GoalCriterionAllOf(criteria: final children):
+        children.forEach(collectDefinitions);
+      case GoalCriterionAnyOf(criteria: final children):
+        children.forEach(collectDefinitions);
+      case GoalCriterionAtLeastCount(criteria: final children):
+        children.forEach(collectDefinitions);
+    }
+  }
+
+  collectDefinitions(spec.criteria);
+  for (final measurableId in measurableIds) {
+    final definition = await db.getMeasurableDataTypeById(measurableId);
+    if (definition != null) {
+      measurableDefinitions[measurableId] = definition;
+    }
+  }
+  for (final categoryId in categoryIds) {
+    final definition = await db.getCategoryById(categoryId);
+    if (definition != null) categoryNames[categoryId] = definition.name;
+  }
+  final captureDecisions = measurableIds.isEmpty
+      ? const <String, GoalMeasurableCaptureDecision>{}
+      : await ref.watch(
+          goalMeasurableCaptureDecisionsProvider(agentId).future,
+        );
+  final agentRecordedMeasurementIds = {
+    for (final decision in captureDecisions.values)
+      if (decision.recorded) ...decision.entryIds,
+  };
+  final recordedMeasurementProvenanceById = {
+    for (final decision in captureDecisions.values)
+      if (decision.recorded &&
+          decision.recordedAt != null &&
+          decision.agentName != null)
+        for (final entryId in decision.entryIds)
+          entryId: GoalRecordedMeasurementProvenance(
+            agentName: decision.agentName!,
+            recordedAt: decision.recordedAt!,
+          ),
+  };
+  return buildGoalProgressView(
+    criteria: spec.criteria,
+    signals: signals,
+    reference: reference,
+    historyDays: historyDays,
+    habitNames: names,
+    measurableDefinitions: measurableDefinitions,
+    categoryNames: categoryNames,
+    agentRecordedMeasurementIds: agentRecordedMeasurementIds,
+    recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
+  );
+}

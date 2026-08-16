@@ -15,6 +15,12 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 /// Shared by every banner surface: the shell dock (where a docked tenant
 /// is visible whenever the app is foregrounded) and the uncapped list on
 /// the goal detail page (where scroll position matters).
+///
+/// The same visibility verdict also gates a [TickerMode] around the child:
+/// the detail page builds its banners eagerly, and a below-the-fold banner
+/// with a repeating headline animation would otherwise burn frame work the
+/// user cannot see. TickerMode composes with ancestors by AND, so enabling
+/// it here never overrides the app shell's inactive-tab muting.
 class GoalBannerExposureTracker extends ConsumerStatefulWidget {
   const GoalBannerExposureTracker({
     required this.nudgeId,
@@ -36,10 +42,30 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
   GoalNudgeInteractionsFlush? _flush;
   ScrollPosition? _position;
 
+  /// Starts false — the first layout-safe visibility sample is the
+  /// post-frame recheck, so an off-screen banner never animates even for
+  /// its first frame.
+  bool _childTickerEnabled = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _armFrameRecheck();
+  }
+
+  /// One cheap rect check per DRAWN frame: a local reveal animation (the
+  /// Agent's-read card expanding, the About section unfolding) moves this
+  /// banner across the viewport boundary with no scroll event and no
+  /// rebuild of this widget, so scroll/lifecycle/update hooks alone leave
+  /// the ticker gate stale. Re-arming a post-frame callback does not itself
+  /// schedule frames — while nothing animates, nothing runs.
+  void _armFrameRecheck() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _recheck();
+      _armFrameRecheck();
+    });
   }
 
   @override
@@ -104,6 +130,9 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
     } else if (_visible.isRunning) {
       _flushEpisode();
     }
+    if (visible != _childTickerEnabled && mounted) {
+      setState(() => _childTickerEnabled = visible);
+    }
   }
 
   bool _inViewport() {
@@ -141,5 +170,8 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) => TickerMode(
+    enabled: _childTickerEnabled,
+    child: widget.child,
+  );
 }

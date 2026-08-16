@@ -6192,6 +6192,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'Porque é que esta meta está $status neste momento?';
+  }
+
+  @override
   String get goalChatYou => 'Tu';
 
   @override
@@ -6223,9 +6228,6 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return 'Ontem: $metCount de $dimensionCount dimensões · $_temp0.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Todo o objetivo';
 
   @override
   String get goalCreateFailed =>
@@ -6291,6 +6293,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDeleteMenuItem => 'Eliminar objetivo';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Também em $goals';
+  }
+
+  @override
+  String get goalDetailAskWhy => 'Porquê?';
+
+  @override
+  String get goalDetailCompletionRateTitle => 'Taxa de conclusão · esta meta';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Dias da meta';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Não foi possível carregar a saúde desta meta agora.';
 
@@ -6302,10 +6318,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailNotFound => 'Este agente de meta não existe mais.';
 
   @override
-  String get goalDetailSayingTitle => 'O que o teu agente diz';
+  String goalDetailReadAsOf(String ago) {
+    return 'atualizado $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Sinais';
 
   @override
   String get goalDetailStatementLabel => 'Sua meta';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Esta semana';
 
   @override
   String get goalDetailTimelineTitle => 'Interações';
@@ -6313,9 +6337,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Os sinais acima são atualizados em segundos. O teu agente vê apenas os sinais indicados aqui.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Acompanha';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Tempo da categoria rastreada';
@@ -6744,6 +6765,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalPatternTitle => 'Padrão de tempo';
 
   @override
+  String get goalPendingProposalBadge => 'Proposta a aguardar revisão';
+
+  @override
   String get goalProgressAgesOut => 'sai esta noite';
 
   @override
@@ -6909,11 +6933,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'A recuperar';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Atualizações de sua fonte vinculada · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'mês de calendário';
@@ -13080,7 +13099,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String get goalPendingProposalBadge => 'Proposta a aguardar revisão';
 }

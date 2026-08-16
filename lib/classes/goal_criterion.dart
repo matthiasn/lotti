@@ -275,3 +275,20 @@ sealed class GoalCriterion with _$GoalCriterion {
     );
   }
 }
+
+/// Every habit id referenced anywhere in [criterion]'s tree — the join used
+/// to decide which habits a goal claims (and, by complement, which habits are
+/// "not in a goal" on the unified list, and which goals share a habit for the
+/// detail page's "also in {goal}" suffix).
+Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
+    switch (criterion) {
+      GoalCriterionHabit(:final habitId) => {habitId},
+      GoalCriterionAllOf(:final criteria) ||
+      GoalCriterionAnyOf(:final criteria) ||
+      GoalCriterionAtLeastCount(:final criteria) => {
+        for (final child in criteria) ...goalCriterionHabitIds(child),
+      },
+      GoalCriterionMetric() ||
+      GoalCriterionMeasurable() ||
+      GoalCriterionCategoryTime() => const {},
+    };

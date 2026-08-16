@@ -3375,7 +3375,7 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count h geleden',
+      other: '$count u geleden',
       one: '1 uur geleden',
     );
     return '$_temp0';
@@ -6154,6 +6154,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'Waarom staat dit doel nu op $status?';
+  }
+
+  @override
   String get goalChatYou => 'Jij';
 
   @override
@@ -6179,9 +6184,6 @@ class AppLocalizationsNl extends AppLocalizations {
   ) {
     return 'Gisteren: $metCount van $dimensionCount dimensies · $requiredCount vereist.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Het hele doel';
 
   @override
   String get goalCreateFailed =>
@@ -6248,6 +6250,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDeleteMenuItem => 'Doel verwijderen';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Ook in $goals';
+  }
+
+  @override
+  String get goalDetailAskWhy => 'Waarom?';
+
+  @override
+  String get goalDetailCompletionRateTitle => 'Afrondingspercentage · dit doel';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Doeldagen';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'De gezondheid van dit doel kon nu niet worden geladen.';
 
@@ -6259,10 +6275,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailNotFound => 'Deze doel-agent bestaat niet meer.';
 
   @override
-  String get goalDetailSayingTitle => 'Wat je agent zegt';
+  String goalDetailReadAsOf(String ago) {
+    return 'bijgewerkt $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Signalen';
 
   @override
   String get goalDetailStatementLabel => 'Jouw doel';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Deze week';
 
   @override
   String get goalDetailTimelineTitle => 'Interacties';
@@ -6270,9 +6294,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Volgt';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Bijgehouden categorietijd';
@@ -6694,6 +6715,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalPatternTitle => 'Timingpatroon';
 
   @override
+  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
+
+  @override
   String get goalProgressAgesOut => 'valt vanavond weg';
 
   @override
@@ -6859,11 +6883,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'Herstellend';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Updates van de gekoppelde bron · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendermaand';
@@ -12995,7 +13014,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -9,16 +10,20 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
@@ -32,15 +37,25 @@ import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/misc/linked_scroll_group.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-/// One goal agent: rolling progress, active banners (including any that the
-/// host strips' visible cap holds back), pending revision proposals, watching
-/// metadata and outcome history. Desktop gives the durable conversation a
-/// peer pane; mobile opens the same projection as a pushed page.
+/// One goal — the §4b dashboard: header (name · unified status pill ·
+/// trend), the hero pair (the deterministic This-week card beside the
+/// timestamped Agent's-read card), active banners and pending proposals,
+/// then the Habits and Signals evidence sections, the reflection history,
+/// the About-this-agent expander (cost pills + automation), and the
+/// bounded banner timeline. Desktop hosts the durable conversation as a
+/// non-modal right-overlay drawer; mobile opens the same projection as a
+/// pushed page.
 class GoalAgentDetailPage extends ConsumerStatefulWidget {
   const GoalAgentDetailPage({required this.agentId, super.key});
 
@@ -57,6 +72,40 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
   final GlobalKey _progressSectionKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
 
+  /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
+  /// either way (a slid-out overlay, not a conditional subtree), so the
+  /// composer draft survives closing it.
+  bool _chatOpen = false;
+
+  /// One scroll group for every extended day track — goal strip, habit
+  /// rows, signal bars — so a span longer than the viewport scrolls in
+  /// unison and the same date stays aligned down the page.
+  final LinkedScrollGroup _trackScrollGroup = LinkedScrollGroup();
+
+  /// Focused when the drawer opens, so the Esc shortcut has a focus path
+  /// even before the user clicks into the composer — CallbackShortcuts only
+  /// sees keys travelling up from a focused descendant.
+  final FocusNode _drawerFocusNode = FocusNode(
+    debugLabel: 'goal-chat-drawer',
+    skipTraversal: true,
+  );
+
+  void _setChatOpen({required bool open}) {
+    setState(() => _chatOpen = open);
+    if (open) {
+      // Post-frame: while closed the node sits inside ExcludeFocus, and a
+      // same-tick request is denied before the rebuild lifts the exclusion.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _chatOpen) _drawerFocusNode.requestFocus();
+      });
+    }
+  }
+
+  /// One tap-region group for the drawer and every control that opens it:
+  /// a tap on the Talk-to button or the Ask-why link must not first count
+  /// as "outside the drawer" and close what it is about to open.
+  static const Object _chatRegionGroup = 'goal-detail-chat-drawer';
+
   String get agentId => widget.agentId;
 
   @override
@@ -71,6 +120,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
       ..removeListener(_syncAppBarTitle)
       ..dispose();
     _appBarTitleVisible.dispose();
+    _drawerFocusNode.dispose();
+    _trackScrollGroup.dispose();
     super.dispose();
   }
 
@@ -115,6 +166,28 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
       curve: MotionCurves.emphasizedDecelerate,
       alignment: 0.02,
     );
+  }
+
+  /// §4b's Ask-why: the conversation arrives pre-filled with the current
+  /// computed state, so the agent is asked about the exact verdict on
+  /// screen. An existing draft is never clobbered — the prefill only fills
+  /// an empty composer.
+  void _askWhy(UnifiedGoalStatus status) {
+    final draft = ref.read(goalChatControllerProvider(agentId)).draft;
+    if (draft.trim().isEmpty) {
+      ref
+          .read(goalChatControllerProvider(agentId).notifier)
+          .updateDraft(
+            context.messages.goalChatWhyPrefill(
+              unifiedGoalStatusLabel(context.messages, status),
+            ),
+          );
+    }
+    if (isDesktopLayout(context)) {
+      _setChatOpen(open: true);
+    } else {
+      beamToNamed(goalChatPath(agentId));
+    }
   }
 
   @override
@@ -188,9 +261,22 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
+    // The page's ONE time range: the same shared span the completion chart
+    // reads, applied to every day track so any date lines up vertically
+    // down the page.
+    final timeSpanDays = ref.watch(
+      habitsControllerProvider.select((state) => state.timeSpanDays),
+    );
     final progress = spec == null
         ? null
-        : ref.watch(goalAgentProgressViewProvider(agentId)).value;
+        : ref
+              .watch(
+                goalAgentProgressViewForSpanProvider((
+                  agentId: agentId,
+                  historyDays: timeSpanDays,
+                )),
+              )
+              .value;
     final assessments =
         ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
     // Same render-time staleness contract as the strip: retained data
@@ -207,6 +293,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??
         const <GoalNudgeEntity>[];
+    // The OTHER goals sharing each of this goal's habits, pre-joined for the
+    // habit cards' "also in {goal}" suffix (§5: one recording, reflected
+    // everywhere).
+    final memberships =
+        ref.watch(goalHabitMembershipsProvider).value ??
+        const <String, List<GoalHabitMembership>>{};
+    final alsoInGoalTitlesByHabitId = <String, String>{
+      for (final entry in memberships.entries)
+        if ([
+              for (final m in entry.value)
+                if (m.agentId != agentId) m.title,
+            ]
+            case final others when others.isNotEmpty)
+          entry.key: others.join(', '),
+    };
     final report = ref.watch(agentReportProvider(agentId)).value;
     AgentReportEntity? latestReport;
     if (report is AgentReportEntity &&
@@ -222,73 +323,40 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         latestReport = report;
       }
     }
+    final hasStandingAssessment =
+        (latestReport?.tldr?.trim().isNotEmpty ?? false) ||
+        latestReport?.content.trim().isNotEmpty == true ||
+        (health?.reportOneLiner?.trim().isNotEmpty ?? false);
+    final unifiedStatus = healthAsync.hasValue
+        ? unifiedGoalStatusOf(health?.trackStatus)
+        : null;
     Widget detailList({
       required bool showChatAction,
       double? contentMaxWidth,
     }) {
-      final sections = <Widget>[
-        _GoalHeader(
-          key: _headerKey,
-          agentId: agentId,
-          identity: goalIdentity,
-          health: health,
-          healthAvailable: healthAsync.hasValue,
-          spec: spec,
-          // Whatever the page is ACTUALLY showing as an assessment — the
-          // spec-matched report when there is one, otherwise the one-liner
-          // the card falls back to. Keying only off the report let the chip
-          // reappear on exactly the surfaces still displaying a summary.
-          hasStandingAssessment:
-              (latestReport?.tldr?.trim().isNotEmpty ?? false) ||
-              latestReport?.content.trim().isNotEmpty == true ||
-              (health?.reportOneLiner?.trim().isNotEmpty ?? false),
-        ),
-        // The agent's voice — standing report and active banners — stays
-        // grouped with the goal definition at the top; the evidence
-        // (habit cards, then charts) follows below it.
-        SizedBox(height: tokens.spacing.cardItemSpacing),
-        _AgentSayingSection(
-          agentId: agentId,
-          healthAsync: healthAsync,
-          nudges: nudges,
-          report: latestReport,
-          identity: goalIdentity,
-          agentState: agentState is AgentStateEntity ? agentState : null,
-          canRefresh: isActive,
-          // Always non-null: a null callback would fall back to the card's
-          // default navigate-to-detail — a self-navigation no-op on this
-          // page. While the evidence is still resolving the CTA anchors
-          // (or quietly no-ops) and heals when progress lands.
-          onBannerCta: () {
-            final resolved = progress;
-            if (resolved != null) {
-              _logToday(resolved);
-            } else {
-              _scrollToProgress();
-            }
-          },
-        ),
-        if (progress != null) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          KeyedSubtree(
-            key: _progressSectionKey,
-            child: GoalProgressCard(
+      final canReflect = isActive && spec != null;
+      final thisWeek =
+          progress != null &&
+              GoalThisWeekCard.shouldShow(progress, canReflect: canReflect)
+          ? GoalThisWeekCard(
               progress: progress,
-              // The user's own verdict outranks the measurement in the strip:
-              // a day they filed as missed must not keep rendering as the
-              // neutral grey of a day with no data.
+              scrollGroup: _trackScrollGroup,
+              // The user's own verdict outranks the measurement in the
+              // strip: a day they filed as missed must not keep rendering as
+              // the neutral grey of a day with no data.
               //
-              // Scoped to the ACTIVE spec. Spec versions are immutable and the
-              // history keeps them all, so an unscoped map would let a verdict
-              // passed on the old criteria colour the same date under the new
-              // ones — a judgement of a goal that no longer exists.
+              // Scoped to the ACTIVE spec. Spec versions are immutable and
+              // the history keeps them all, so an unscoped map would let a
+              // verdict passed on the old criteria colour the same date
+              // under the new ones — a judgement of a goal that no longer
+              // exists.
               ratingsByDay: spec == null
                   ? const {}
                   : latestRatingsByDay(
                       assessments,
                       specVersionId: spec.id,
                     ),
-              onReflectDay: !isActive || spec == null
+              onReflectDay: !canReflect
                   ? null
                   : (day) => showModalBottomSheet<void>(
                       context: context,
@@ -309,6 +377,129 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                         )[DateTime.utc(day.year, day.month, day.day)],
                       ),
                     ),
+            )
+          : null;
+      final agentRead = _AgentReadCard(
+        agentId: agentId,
+        identity: goalIdentity,
+        agentState: agentState is AgentStateEntity ? agentState : null,
+        canRefresh: isActive,
+        healthAsync: healthAsync,
+        report: latestReport,
+        isStale:
+            (agentState is AgentStateEntity ? agentState : null)
+                ?.isReportStale ??
+            false,
+        // Ask-why needs a DISPLAYED verdict to ask about AND a read to
+        // question (§4b ties it to the narrative card). "No data" never
+        // qualifies: beside a standing assessment the page suppresses that
+        // pill as self-contradictory, and a prefill quoting the suppressed
+        // verdict would resurrect the contradiction in the composer.
+        onAskWhy:
+            unifiedStatus != null &&
+                unifiedStatus != UnifiedGoalStatus.noData &&
+                hasStandingAssessment &&
+                isActive
+            ? () => _askWhy(unifiedStatus)
+            : null,
+      );
+      final sections = <Widget>[
+        _GoalHeader(
+          key: _headerKey,
+          identity: goalIdentity,
+          health: health,
+          healthAvailable: healthAsync.hasValue,
+          spec: spec,
+          // Whatever the page is ACTUALLY showing as an assessment — the
+          // spec-matched report when there is one, otherwise the one-liner
+          // the card falls back to. Keying only off the report let the chip
+          // reappear on exactly the surfaces still displaying a summary.
+          hasStandingAssessment: hasStandingAssessment,
+        ),
+        SizedBox(height: tokens.spacing.cardItemSpacing),
+        // The §4b hero pair: the deterministic week beside the agent's
+        // narrative — the two answers to "how is this going" — side by side
+        // where the measure allows, stacked below it.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final sideBySide =
+                thisWeek != null &&
+                constraints.maxWidth >= kGoalHeroPairMinWidth;
+            if (!sideBySide) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (thisWeek != null) ...[
+                    thisWeek,
+                    SizedBox(height: tokens.spacing.cardItemSpacing),
+                  ],
+                  agentRead,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: thisWeek),
+                SizedBox(width: tokens.spacing.cardItemSpacing),
+                Expanded(child: agentRead),
+              ],
+            );
+          },
+        ),
+        // Every active banner remains reachable here, uncapped. The shell
+        // rotates one slot; this goal-owned surface does not. Banners are an
+        // interaction channel, not a replacement for the standing report.
+        for (final entry in nudges) ...[
+          SizedBox(height: tokens.spacing.step3),
+          GoalBannerExposureTracker(
+            key: ValueKey('${entry.nudge.id}:${entry.nudge.activationCount}'),
+            nudgeId: entry.nudge.id,
+            child: GoalBannerCard(
+              entry: entry,
+              // Always non-null: a null callback would fall back to the
+              // card's default navigate-to-detail — a self-navigation no-op
+              // on this page. While the evidence is still resolving the CTA
+              // anchors (or quietly no-ops) and heals when progress lands.
+              onCtaPressed: () {
+                final resolved = progress;
+                if (resolved != null) {
+                  _logToday(resolved);
+                } else {
+                  _scrollToProgress();
+                }
+              },
+            ),
+          ),
+        ],
+        // Gated on there BEING a change set, not merely on the agent being
+        // active. The card renders nothing when nothing is pending, so an
+        // active goal with no proposal still paid a full card gap here — the
+        // one broken interval in an otherwise even stack.
+        if (isActive && (health?.pendingProposals ?? 0) > 0) ...[
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          ChangeSetSummaryCard.selfTargeted(
+            agentId: agentId,
+            confirmationProvider: goalChangeSetConfirmationServiceProvider,
+          ),
+        ],
+        if (progress != null) ...[
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          KeyedSubtree(
+            key: _progressSectionKey,
+            child: GoalProgressCard(
+              progress: progress,
+              scrollGroup: _trackScrollGroup,
+              // The page-wide range picker rides the first evidence
+              // heading — one control for every day track and the chart.
+              habitsHeadingTrailing: TimeSpanSegmentedControl(
+                timeSpanDays: timeSpanDays,
+                onValueChanged: ref
+                    .read(habitsControllerProvider.notifier)
+                    .setTimeSpan,
+                segments: HabitsChartCard.timeSpans,
+              ),
+              alsoInGoalTitlesByHabitId: alsoInGoalTitlesByHabitId,
               onHabitOutcomeSelected: !isActive
                   ? null
                   : ({
@@ -325,30 +516,30 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                             outcome: outcome,
                           );
                       if (saved) {
-                        ref.invalidate(goalAgentProgressViewProvider(agentId));
+                        ref
+                          ..invalidate(goalAgentProgressViewProvider(agentId))
+                          ..invalidate(goalAgentProgressViewForSpanProvider);
                       }
                       return saved;
                     },
             ),
           ),
         ],
-        // The gap belongs to the card, not to the position: emitted
-        // unconditionally it doubled up with the next section's own gap
-        // whenever this card had nothing to show.
-        // Gated on there BEING a change set, not merely on the agent being
-        // active. The card renders nothing when nothing is pending, so an
-        // active goal with no proposal still paid a full card gap here — the
-        // one broken interval in an otherwise even stack.
-        if (isActive && (health?.pendingProposals ?? 0) > 0) ...[
+        // The completion-rate chart scoped to THIS goal's habits — same
+        // card shell as the habits page, the line computed on the goal's
+        // slice of the shared day maps. Gate AND scope from the same
+        // retained progress snapshot: during a spec revision the health can
+        // carry the new spec while the progress deliberately retains the
+        // old one, and mixing the two flashed an empty chart scoped by a
+        // habit set the visible rows do not show.
+        if (progress != null && progress.habits.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
-          ChangeSetSummaryCard.selfTargeted(
-            agentId: agentId,
-            confirmationProvider: goalChangeSetConfirmationServiceProvider,
+          HabitsChartCard(
+            habitIds: {for (final habit in progress.habits) habit.habitId},
+            title: context.messages.goalDetailCompletionRateTitle,
+            // The page-level picker on the Habits heading governs the range.
+            showTimeSpanPicker: false,
           ),
-        ],
-        if (progress != null && progress.dimensionCount > 0) ...[
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-          _WatchingSection(progress: progress),
         ],
         if (progress != null && assessments.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -400,12 +591,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 section
               else
                 // The reading measure belongs to the CONTENT, not the scroll
-                // view. Constraining the scroll view itself parked the
-                // desktop scrollbar at the measure's right edge — floating
-                // mid-pane — instead of at the pane's own edge beside the
-                // chat divider.
+                // view (constraining the scroll view parks the scrollbar at
+                // the measure's edge, floating mid-pane). CENTERED in the
+                // available width: left-aligned, a wide window carried a
+                // dead right half whenever the chat drawer was closed.
                 Align(
-                  alignment: AlignmentDirectional.topStart,
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: contentMaxWidth),
                     child: section,
@@ -460,41 +651,264 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 ),
                 onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
+            // Desktop: the drawer's named doorway (§4b header). In the
+            // drawer's tap-region group so opening it never first registers
+            // as an outside tap that closes it.
+            if (desktop && chatAvailable)
+              TapRegion(
+                groupId: _chatRegionGroup,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: tokens.spacing.step2,
+                  ),
+                  // Goal names are user-written and unbounded; capped so a
+                  // long persona name ellipsizes inside the button instead
+                  // of overflowing the toolbar. The tooltip keeps the full
+                  // name reachable.
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: tokens.spacing.step13,
+                    ),
+                    child: Tooltip(
+                      message: context.messages.goalChatTalkTo(
+                        goalIdentity.displayName,
+                      ),
+                      child: DesignSystemButton(
+                        key: const ValueKey('goal-detail-talk-to'),
+                        label: context.messages.goalChatTalkTo(
+                          goalIdentity.displayName,
+                        ),
+                        leadingIcon: Icons.chat_bubble_outline_rounded,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.dense,
+                        onPressed: () => _setChatOpen(open: !_chatOpen),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             _GoalActionsMenuButton(
               agentId: agentId,
               agentName: goalIdentity.displayName,
               canEdit: isActive && spec != null,
+              onUpdateRead: isActive
+                  ? () => ref
+                        .read(goalHabitCompletionServiceProvider)
+                        .requestReportRefresh(agentId)
+                  : null,
             ),
           ],
         ),
         body: SafeArea(
-          child: desktop && chatAvailable
-              ? Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      // A reading measure, not a column width. Unbounded, the
-                      // report's section bodies ran ~90 characters per line
-                      // on a wide window — roughly twice a comfortable
-                      // measure — and the automation row's spaceBetween
-                      // opened a void across the same span. Applied INSIDE
-                      // the list (per section), so the scroll view spans the
-                      // pane and its scrollbar hugs the chat divider.
-                      child: detailList(
-                        showChatAction: false,
-                        contentMaxWidth: tokens.spacing.step13 * 3,
+          child: !desktop || !chatAvailable
+              ? detailList(showChatAction: !desktop && chatAvailable)
+              : CallbackShortcuts(
+                  bindings: {
+                    const SingleActivator(LogicalKeyboardKey.escape): () {
+                      if (_chatOpen) setState(() => _chatOpen = false);
+                    },
+                  },
+                  // §4b: the dashboard is the page; conversation is a
+                  // non-modal overlay drawer that slides over it without
+                  // reflow. The drawer stays mounted while closed so its
+                  // draft survives, and it takes no pointer/focus traffic
+                  // off-screen.
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => Stack(
+                      children: [
+                        // The drawer overlays without reflowing the cards, but
+                        // the COLUMN glides: closed, it centers in the window
+                        // (a fixed left-aligned measure left the right half of
+                        // wide windows dead); open, it centers in what the
+                        // drawer leaves free. Clamped to the PANE's real
+                        // constraints: with a wide navigation sidebar the pane
+                        // can be barely wider than the drawer, and always
+                        // subtracting the drawer span would squeeze the
+                        // dashboard into an unusable sliver — below the fold
+                        // width the drawer stays a true overlay instead.
+                        AnimatedPadding(
+                          duration: MotionDurations.medium2,
+                          curve: MotionCurves.emphasizedDecelerate,
+                          padding: EdgeInsetsDirectional.only(
+                            end:
+                                _chatOpen &&
+                                    constraints.maxWidth -
+                                            kGoalChatDrawerWidth >=
+                                        kPageHeaderFoldWidth
+                                ? kGoalChatDrawerWidth
+                                : 0,
+                          ),
+                          child: detailList(
+                            showChatAction: false,
+                            contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                          ),
+                        ),
+                        PositionedDirectional(
+                          top: 0,
+                          bottom: 0,
+                          end: 0,
+                          child: TapRegion(
+                            groupId: _chatRegionGroup,
+                            onTapOutside: (_) {
+                              if (_chatOpen) setState(() => _chatOpen = false);
+                            },
+                            child: AnimatedSlide(
+                              offset: _chatOpen
+                                  ? Offset.zero
+                                  : const Offset(1, 0),
+                              duration: MotionDurations.medium2,
+                              curve: MotionCurves.emphasizedDecelerate,
+                              child: IgnorePointer(
+                                ignoring: !_chatOpen,
+                                // Off-screen means out of the semantics tree
+                                // too: without this a screen reader traverses
+                                // the slid-away drawer's composer and close
+                                // button.
+                                child: ExcludeSemantics(
+                                  excluding: !_chatOpen,
+                                  child: ExcludeFocus(
+                                    excluding: !_chatOpen,
+                                    child: Focus(
+                                      focusNode: _drawerFocusNode,
+                                      child: _GoalChatDrawer(
+                                        agentId: agentId,
+                                        identity: goalIdentity,
+                                        status: unifiedStatus,
+                                        hasStandingAssessment:
+                                            hasStandingAssessment,
+                                        recoveryHint: switch (health?.deficit) {
+                                          final int deficit when deficit > 0 =>
+                                            context.messages.goalDaysToRecover(
+                                              deficit,
+                                            ),
+                                          _ => null,
+                                        },
+                                        onClose: () =>
+                                            setState(() => _chatOpen = false),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The §4b chat drawer: a ~400px non-modal overlay hosting the goal's
+/// durable conversation. Its header carries the SAME computed pill as the
+/// page — one status vocabulary, one source, so the two can never disagree.
+class _GoalChatDrawer extends StatelessWidget {
+  const _GoalChatDrawer({
+    required this.agentId,
+    required this.identity,
+    required this.status,
+    required this.hasStandingAssessment,
+    required this.recoveryHint,
+    required this.onClose,
+  });
+
+  final String agentId;
+  final AgentIdentityEntity identity;
+  final UnifiedGoalStatus? status;
+  final bool hasStandingAssessment;
+  final String? recoveryHint;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final status = this.status;
+    final showPill =
+        status != null &&
+        !(status == UnifiedGoalStatus.noData && hasStandingAssessment);
+    final color = status == null
+        ? tokens.colors.text.lowEmphasis
+        : unifiedGoalStatusColor(status, tokens.colors);
+    // A bordered card surface rather than a shadow: the design system has no
+    // elevation-shadow token, and the calm card-on-canvas language separates
+    // surfaces with the decorative hairline instead.
+    return Material(
+      color: dsCardSurface(context),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: BorderDirectional(
+            start: BorderSide(color: tokens.colors.decorative.level01),
+          ),
+        ),
+        child: SizedBox(
+          width: kGoalChatDrawerWidth,
+          child: Column(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: tokens.colors.decorative.level01),
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(tokens.spacing.step3),
+                  child: Row(
+                    children: [
+                      GoalBannerPersonaChip(
+                        monogram: GoalBannerPersonaChip.monogramFor(
+                          identity.displayName,
+                        ),
+                        fill: color.withValues(alpha: SurfaceAlphas.washChip),
                       ),
-                    ),
-                    VerticalDivider(
-                      color: tokens.colors.decorative.level01,
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: GoalAgentChatPane(agentId: agentId),
-                    ),
-                  ],
-                )
-              : detailList(showChatAction: !desktop && chatAvailable),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Wrap(
+                          spacing: tokens.spacing.step3,
+                          runSpacing: tokens.spacing.step1,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              identity.displayName,
+                              // User-authored and unbounded; above an
+                              // Expanded chat pane a many-line name would
+                              // overflow the drawer's column, so two lines
+                              // is the ceiling (the page app bar's rule).
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.subtitle.subtitle2
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                            if (showPill)
+                              UnifiedGoalStatusPill(
+                                status: status,
+                                recoveryHint: recoveryHint,
+                              ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        key: const ValueKey('goal-chat-drawer-close'),
+                        icon: const Icon(Icons.close_rounded),
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                        onPressed: onClose,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GoalAgentChatPane(agentId: agentId, showHeader: false),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -503,7 +917,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
 
 class _GoalHeader extends StatelessWidget {
   const _GoalHeader({
-    required this.agentId,
     required this.identity,
     required this.health,
     required this.healthAvailable,
@@ -512,30 +925,38 @@ class _GoalHeader extends StatelessWidget {
     super.key,
   });
 
-  final String agentId;
   final AgentIdentityEntity identity;
   final GoalAgentHealth? health;
   final bool healthAvailable;
   final GoalSpecVersionEntity? spec;
 
   /// Whether the agent has already published an assessment of this goal.
-  /// Suppresses the "Not enough data" chip, which would otherwise sit
-  /// directly above a report that plainly does assess the goal.
+  /// Suppresses the "No data" pill, which would otherwise sit directly
+  /// above a report that plainly does assess the goal.
   final bool hasStandingAssessment;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // A header that sits directly above a populated report must not claim
-    // there is not enough data to have written one.
-    final coarse = coarseHealthChip(
-      health?.trackStatus,
-      hasStandingAssessment: hasStandingAssessment,
-    );
-    final color = goalCoarseHealthColor(
-      coarse ?? coarseHealthOf(health?.trackStatus),
-      tokens.colors,
-    );
+    final messages = context.messages;
+    // The SAME four-pill vocabulary as the unified Goals list (§4b: the
+    // page pill and the drawer pill can never disagree, and neither may the
+    // list's) — with the same display rules: only a resolved health carries
+    // a verdict, and a "No data" pill must not sit directly above a
+    // standing assessment that plainly contains data-driven judgement.
+    final status = healthAvailable
+        ? unifiedGoalStatusOf(health?.trackStatus)
+        : null;
+    final showPill =
+        status != null &&
+        !(status == UnifiedGoalStatus.noData && hasStandingAssessment);
+    final recoveryHint = switch (health?.deficit) {
+      final int deficit when deficit > 0 => messages.goalDaysToRecover(deficit),
+      _ => null,
+    };
+    final color = status == null
+        ? tokens.colors.text.lowEmphasis
+        : unifiedGoalStatusColor(status, tokens.colors);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -566,14 +987,15 @@ class _GoalHeader extends StatelessWidget {
                       color: tokens.colors.text.highEmphasis,
                     ),
                   ),
-                  if (healthAvailable && coarse != null)
-                    GoalCoarseHealthChip(health: coarse),
-                  // Gated on the RAW health, not the displayed chip: `coarse`
-                  // is null exactly when the not-enough-data chip is being
-                  // suppressed, so comparing against it never fired. With too
-                  // little data to judge the goal, a green "Trending up" was
-                  // the most confident statement in the header and the least
-                  // supported by the evidence under it.
+                  if (showPill)
+                    UnifiedGoalStatusPill(
+                      status: status,
+                      recoveryHint: recoveryHint,
+                    ),
+                  // Gated on the RAW health: with too little data to judge
+                  // the goal, a green "Trending up" was the most confident
+                  // statement in the header and the least supported by the
+                  // evidence under it.
                   if (coarseHealthOf(health?.trackStatus) !=
                       GoalCoarseHealth.notEnoughData)
                     if (health?.direction case final direction?)
@@ -583,7 +1005,6 @@ class _GoalHeader extends StatelessWidget {
             ),
           ],
         ),
-        GoalAgentLifetimePills(agentId: agentId),
         if (spec?.statement case final statement?) ...[
           SizedBox(height: tokens.spacing.step3),
           // Explicitly labelled as the aspiration: unlabelled, the statement
@@ -608,47 +1029,89 @@ class _GoalHeader extends StatelessWidget {
   }
 }
 
-class _AgentSayingSection extends ConsumerStatefulWidget {
-  const _AgentSayingSection({
+/// The §4b "Agent's read" hero card: the narrative half of the hero pair.
+///
+/// Deterministic numbers on this page are never stale by construction; the
+/// narrative IS allowed to age, so it carries its generation timestamp — and
+/// when the runtime marks the report stale, the timestamp slot self-demotes
+/// to the out-of-date notice instead (the §4b freshness contract). Ask-why
+/// hands the verdict on screen to the conversation.
+/// The goal agent's read — the same "intelligence" panel as the task
+/// agent section on Task Details, wearing the shared [aiCardDecoration]
+/// chrome and [TldrHeader], with the same reload affordances
+/// ([AgentAutomationRow]) and the goal's cumulative inference cost pills
+/// in the footer. One panel language across agent surfaces: change the
+/// tokens or the wash once, both cards follow.
+///
+/// Deterministic numbers on this page are never stale by construction; the
+/// narrative IS allowed to age, so the header's trailing slot carries its
+/// generation age — and when the runtime marks the report stale it
+/// self-demotes to the out-of-date notice (the freshness contract). Ask-why
+/// hands the verdict on screen to the conversation.
+class _AgentReadCard extends ConsumerStatefulWidget {
+  const _AgentReadCard({
     required this.agentId,
-    required this.healthAsync,
-    required this.nudges,
-    required this.report,
     required this.identity,
     required this.agentState,
     required this.canRefresh,
-    this.onBannerCta,
+    required this.healthAsync,
+    required this.report,
+    required this.isStale,
+    required this.onAskWhy,
   });
 
   final String agentId;
-  final AsyncValue<GoalAgentHealth> healthAsync;
-  final List<GoalBannerEntry> nudges;
-  final AgentReportEntity? report;
   final AgentIdentityEntity identity;
   final AgentStateEntity? agentState;
   final bool canRefresh;
-
-  /// Anchor-scroll to the evidence this page hosts — the banner CTA must
-  /// never navigate to the route the user is already on.
-  final VoidCallback? onBannerCta;
+  final AsyncValue<GoalAgentHealth> healthAsync;
+  final AgentReportEntity? report;
+  final bool isStale;
+  final VoidCallback? onAskWhy;
 
   @override
-  ConsumerState<_AgentSayingSection> createState() =>
-      _AgentSayingSectionState();
+  ConsumerState<_AgentReadCard> createState() => _AgentReadCardState();
 }
 
-class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
+class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
+  /// Re-renders the "as of" caption when its DISPLAYED bucket next changes:
+  /// computed only at build, a read rendered "just now" kept that label for
+  /// hours. Armed at the next minute/hour/day boundary of the read's age —
+  /// one wake per visible change, not a per-second tick.
+  Timer? _ageTick;
   bool _automationBusy = false;
   bool _cancelledManually = false;
 
   @override
-  void didUpdateWidget(covariant _AgentSayingSection oldWidget) {
+  void dispose() {
+    _ageTick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AgentReadCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     final oldWake = oldWidget.agentState?.nextWakeAt;
     final newWake = widget.agentState?.nextWakeAt;
     if (newWake != oldWake && newWake?.isAfter(clock.now()) == true) {
       _cancelledManually = false;
     }
+  }
+
+  void _armAgeTick(DateTime generatedAt) {
+    _ageTick?.cancel();
+    final age = clock.now().difference(generatedAt);
+    final Duration untilNextBucket;
+    if (age.inHours < 1) {
+      untilNextBucket = Duration(seconds: 60 - (age.inSeconds % 60) + 1);
+    } else if (age.inDays < 1) {
+      untilNextBucket = Duration(seconds: 3600 - (age.inSeconds % 3600) + 1);
+    } else {
+      untilNextBucket = Duration(seconds: 86400 - (age.inSeconds % 86400) + 1);
+    }
+    _ageTick = Timer(untilNextBucket, () {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _updateAutomaticUpdates(bool enabled) async {
@@ -667,12 +1130,44 @@ class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
     }
   }
 
+  void _openInternals() {
+    Navigator.of(context).push(
+      AgentInternalsPanel.route(
+        context: context,
+        agentId: widget.agentId,
+        agentName: widget.identity.displayName,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
+    final report = widget.report;
+    final oneLiner = widget.healthAsync.value?.reportOneLiner;
+    final generatedAt = report?.createdAt;
+    // Staleness is a judgement OF a displayed read: with no report and no
+    // one-liner there is nothing whose freshness could be out of date, and
+    // "Out of date" directly above "No report yet" reads as a contradiction.
+    final hasReadContent =
+        report != null || (oneLiner?.trim().isNotEmpty ?? false);
+    final String? freshness;
+    if (widget.isStale && hasReadContent) {
+      freshness = messages.taskAgentStatusOutOfDate;
+      _ageTick?.cancel();
+    } else if (generatedAt == null) {
+      freshness = null;
+      _ageTick?.cancel();
+    } else {
+      freshness = messages.goalDetailReadAsOf(
+        _relativeAgo(messages, clock.now().difference(generatedAt)),
+      );
+      _armAgeTick(generatedAt);
+    }
+
     final isRefreshing =
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
-    final oneLiner = widget.healthAsync.value?.reportOneLiner;
     final nextWakeAt = widget.agentState?.nextWakeAt;
     final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
       widget.identity,
@@ -683,83 +1178,120 @@ class _AgentSayingSectionState extends ConsumerState<_AgentSayingSection> {
         !isRefreshing &&
         !_cancelledManually &&
         nextWakeAt?.isAfter(clock.now()) == true;
-    final hasReportContent = widget.report != null || oneLiner != null;
-    final header = Text(
-      context.messages.goalDetailSayingTitle,
-      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-        color: tokens.colors.text.highEmphasis,
+
+    return DecoratedBox(
+      decoration: aiCardDecoration(context),
+      child: ClipRRect(
+        borderRadius: aiCardRadius(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // The same header as the task agent section: sparkle badge, the
+            // shared card title, the persona underneath, tap → internals.
+            // The trailing slot carries the read's freshness instead of a
+            // playback control.
+            TldrHeader(
+              agentName: widget.identity.displayName,
+              onAgentTap: _openInternals,
+              playbackControl: freshness == null
+                  ? null
+                  : Text(
+                      freshness,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: widget.isStale && hasReadContent
+                            ? tokens.colors.alert.warning.ink
+                            : tokens.colors.aiCard.metaText,
+                      ),
+                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                0,
+                tokens.spacing.cardPadding,
+                tokens.spacing.step3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _GoalReportCard(
+                    report: report,
+                    fallback:
+                        oneLiner ??
+                        (widget.healthAsync.hasError
+                            ? messages.goalDetailHealthUnavailable
+                            : messages.goalDetailNoReport),
+                    fallbackMuted: oneLiner == null,
+                  ),
+                  if (widget.onAskWhy != null) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    DesignSystemButton(
+                      key: const ValueKey('goal-detail-ask-why'),
+                      label: messages.goalDetailAskWhy,
+                      onPressed: widget.onAskWhy,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                      trailingIcon: Icons.arrow_forward_rounded,
+                      alignsLabelToLeadingEdge: true,
+                    ),
+                  ],
+                  // The goal's cumulative inference cost, in the panel that
+                  // spends it — the same footer position as the task card's
+                  // consumption pills.
+                  GoalAgentLifetimePills(agentId: widget.agentId),
+                  if (widget.canRefresh) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    // The same reload affordances as the task agent section:
+                    // freshness state, countdown, skip-once, Update now and
+                    // the automatic-updates switch.
+                    AgentAutomationRow(
+                      automaticUpdatesEnabled: automaticUpdatesEnabled,
+                      automationBusy: _automationBusy,
+                      inferenceAvailable: true,
+                      isRunning: isRefreshing,
+                      showCountdown: showCountdown,
+                      nextWakeAt: nextWakeAt,
+                      hasReportContent: hasReadContent,
+                      isStale: widget.agentState?.isReportStale ?? false,
+                      onAutomaticUpdatesChanged: (enabled) =>
+                          unawaited(_updateAutomaticUpdates(enabled)),
+                      onRunNow: () => ref
+                          .read(goalHabitCompletionServiceProvider)
+                          .requestReportRefresh(widget.agentId),
+                      onSkipScheduledUpdate: () {
+                        ref
+                            .read(goalAgentServiceProvider)
+                            .skipPendingReportRefresh(widget.agentId);
+                        setState(() => _cancelledManually = true);
+                      },
+                      onCountdownExpired: () =>
+                          ref.invalidate(agentStateProvider(widget.agentId)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-    final reportCard = _GoalReportCard(
-      report: widget.report,
-      fallback:
-          oneLiner ??
-          (widget.healthAsync.hasError
-              ? context.messages.goalDetailHealthUnavailable
-              : context.messages.goalDetailNoReport),
-      fallbackMuted: oneLiner == null,
-    );
-    return Column(
-      // Stretch, not start: on wide panes the report card must share the
-      // banners' right edge instead of shrink-wrapping to its prose.
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        header,
-        SizedBox(height: tokens.spacing.step2),
-        reportCard,
-        // Below the report, not above it. The automation controls describe
-        // how the report is kept fresh, so ahead of it they made the plumbing
-        // the first thing on the page and pushed what the agent actually SAYS
-        // below the fold — three rows of scheduling before a single word of
-        // the assessment.
-        if (widget.canRefresh) ...[
-          SizedBox(height: tokens.spacing.step2),
-          AgentAutomationRow(
-            automaticUpdatesEnabled: automaticUpdatesEnabled,
-            automationBusy: _automationBusy,
-            inferenceAvailable: true,
-            isRunning: isRefreshing,
-            showCountdown: showCountdown,
-            nextWakeAt: nextWakeAt,
-            hasReportContent: hasReportContent,
-            isStale: widget.agentState?.isReportStale ?? false,
-            onAutomaticUpdatesChanged: (enabled) =>
-                unawaited(_updateAutomaticUpdates(enabled)),
-            onRunNow: () => ref
-                .read(goalHabitCompletionServiceProvider)
-                .requestReportRefresh(widget.agentId),
-            onSkipScheduledUpdate: () {
-              ref
-                  .read(goalAgentServiceProvider)
-                  .skipPendingReportRefresh(widget.agentId);
-              setState(() => _cancelledManually = true);
-            },
-            onCountdownExpired: () =>
-                ref.invalidate(agentStateProvider(widget.agentId)),
-          ),
-        ],
-        // Every active banner remains reachable here, uncapped. The shell
-        // rotates one slot; this goal-owned surface does not. Banners are an
-        // interaction channel, not a replacement for the standing report.
-        for (var index = 0; index < widget.nudges.length; index++) ...[
-          SizedBox(height: tokens.spacing.step3),
-          GoalBannerExposureTracker(
-            key: ValueKey(
-              '${widget.nudges[index].nudge.id}:'
-              '${widget.nudges[index].nudge.activationCount}',
-            ),
-            nudgeId: widget.nudges[index].nudge.id,
-            child: GoalBannerCard(
-              entry: widget.nudges[index],
-              onCtaPressed: widget.onBannerCta,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
 
+/// "as of …" bucketing for the read's generation timestamp. Reuses the
+/// generic relative-age catalog entries (minute/hour/day granularity) so no
+/// parallel vocabulary drifts per language.
+String _relativeAgo(AppLocalizations messages, Duration age) {
+  if (age.inMinutes < 1) return messages.conflictBannerAgoJustNow;
+  if (age.inHours < 1) return messages.conflictBannerAgoMinutes(age.inMinutes);
+  if (age.inDays < 1) return messages.conflictBannerAgoHours(age.inHours);
+  return messages.conflictBannerAgoDays(age.inDays);
+}
+
+/// The §4b "About this agent" expander: the plumbing — lifetime cost pills
+/// and the automatic-updates controls — folded behind one quiet row at the
+/// foot of the dashboard, so what the agent SAYS outranks how it is kept
+/// fresh everywhere above the fold.
 class _GoalReportCard extends StatefulWidget {
   const _GoalReportCard({
     required this.report,
@@ -827,208 +1359,122 @@ class _GoalReportCardState extends State<_GoalReportCard>
         ? content
         : widget.fallback;
 
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Selectable, like the task-details agent section: a standing
-          // report carries exact readings a user may well want to copy.
+    // No card wrapper of its own: this body renders INSIDE the
+    // Agent's-read hero card, which owns the surface, title and freshness
+    // caption.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Selectable, like the task-details agent section: a standing
+        // report carries exact readings a user may well want to copy.
+        SelectionArea(
+          child: AgentMarkdownView(
+            primary,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: report == null && widget.fallbackMuted
+                  ? tokens.colors.text.lowEmphasis
+                  : tokens.colors.text.highEmphasis,
+            ),
+          ),
+        ),
+        // The actions sit with the summary, not behind Show more. Inside
+        // the expanded body they were reachable only by a tap most readers
+        // never make — the one part of a standing report that asks
+        // something of you, gated behind the part that only informs.
+        if (_actionsOf(sections) case final actions?) ...[
+          SizedBox(height: tokens.spacing.step3),
           SelectionArea(
             child: AgentMarkdownView(
-              primary,
+              [for (final action in actions) '- $action'].join('\n'),
               style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: report == null && widget.fallbackMuted
-                    ? tokens.colors.text.lowEmphasis
-                    : tokens.colors.text.highEmphasis,
+                color: tokens.colors.text.highEmphasis,
               ),
             ),
           ),
-          // The actions sit with the summary, not behind Show more. Inside
-          // the expanded body they were reachable only by a tap most readers
-          // never make — the one part of a standing report that asks
-          // something of you, gated behind the part that only informs.
-          if (_actionsOf(sections) case final actions?) ...[
-            SizedBox(height: tokens.spacing.step3),
-            SelectionArea(
-              child: AgentMarkdownView(
-                [for (final action in actions) '- $action'].join('\n'),
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ],
-          if (expandable) ...[
-            AnimatedBuilder(
-              animation: _revealCurve,
-              builder: (context, child) => _revealCurve.value == 0
-                  ? const SizedBox.shrink()
-                  : ClipRect(
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        heightFactor: _revealCurve.value,
-                        child: child,
-                      ),
+        ],
+        if (expandable) ...[
+          AnimatedBuilder(
+            animation: _revealCurve,
+            builder: (context, child) => _revealCurve.value == 0
+                ? const SizedBox.shrink()
+                : ClipRect(
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      heightFactor: _revealCurve.value,
+                      child: child,
                     ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: tokens.spacing.step3),
-                  // Sections when the report carries them, the flat text when
-                  // it does not. The sentences are model-authored in the
-                  // user's own language, so the composer cannot wrap them in
-                  // headings without injecting English — the headings are
-                  // added here instead, which also means they follow the app
-                  // language rather than whichever one the report was
-                  // written in.
-                  SelectionArea(
-                    child: sections != null
-                        ? _GoalReportSections(sections: sections)
-                        // Non-null by construction: with no sections,
-                        // `expandable` is only true when there IS content.
-                        : AgentMarkdownView(
-                            content!,
-                            style: tokens.typography.styles.body.bodySmall
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                ),
-                          ),
                   ),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: tokens.spacing.step3),
+                // Sections when the report carries them, the flat text when
+                // it does not. The sentences are model-authored in the
+                // user's own language, so the composer cannot wrap them in
+                // headings without injecting English — the headings are
+                // added here instead, which also means they follow the app
+                // language rather than whichever one the report was
+                // written in.
+                SelectionArea(
+                  child: sections != null
+                      ? _GoalReportSections(sections: sections)
+                      // Non-null by construction: with no sections,
+                      // `expandable` is only true when there IS content.
+                      : AgentMarkdownView(
+                          content!,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                ),
+              ],
             ),
-            SizedBox(height: tokens.spacing.step1),
-            DesignSystemButton(
-              label: _expanded
-                  ? context.messages.aiResponseShowLess
-                  : context.messages.aiResponseShowMore,
-              onPressed: _toggle,
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.dense,
-              trailingIcon: _expanded
-                  ? Icons.expand_less_rounded
-                  : Icons.expand_more_rounded,
-              alignsLabelToLeadingEdge: true,
-            ),
-          ],
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          DesignSystemButton(
+            label: _expanded
+                ? context.messages.aiResponseShowLess
+                : context.messages.aiResponseShowMore,
+            onPressed: _toggle,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            trailingIcon: _expanded
+                ? Icons.expand_less_rounded
+                : Icons.expand_more_rounded,
+            alignsLabelToLeadingEdge: true,
+          ),
         ],
-      ),
+      ],
     );
   }
 }
 
-class _WatchingSection extends StatelessWidget {
-  const _WatchingSection({required this.progress});
-
-  final GoalProgressView progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.messages.goalDetailWatchingTitle,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (var index = 0; index < progress.habits.length; index++) ...[
-            if (index > 0) SizedBox(height: tokens.spacing.step3),
-            Builder(
-              builder: (context) {
-                final habit = progress.habits[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      habit.name,
-                      key: ValueKey('goal-watching-name-${habit.habitId}'),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                    SizedBox(height: tokens.spacing.step1),
-                    Text(
-                      // Cadence only. The streak is already stated on this
-                      // habit's own card one screen up, and repeating the
-                      // counter verbatim at a third size made the page look
-                      // like two views of one fact that had not been
-                      // reconciled.
-                      goalHabitTargetLabel(
-                        context,
-                        targetCount: habit.targetCount,
-                        window: habit.window,
-                      ),
-                      key: ValueKey('goal-watching-meta-${habit.habitId}'),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-          for (var index = 0; index < progress.metrics.length; index++) ...[
-            if (progress.habits.isNotEmpty || index > 0)
-              SizedBox(height: tokens.spacing.step3),
-            Builder(
-              builder: (context) {
-                final metric = progress.metrics[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      metric.name,
-                      key: ValueKey(
-                        'goal-watching-name-${metric.criterionId}',
-                      ),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                    SizedBox(height: tokens.spacing.step1),
-                    Text(
-                      context.messages.goalWatchingMetric(
-                        goalWindowLabel(context, metric.window),
-                      ),
-                      key: ValueKey(
-                        'goal-watching-meta-${metric.criterionId}',
-                      ),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.goalDetailWatchingSignals,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalHistorySection extends StatelessWidget {
+class _GoalHistorySection extends StatefulWidget {
   const _GoalHistorySection({required this.history});
 
   final List<GoalNudgeEntity> history;
 
   @override
+  State<_GoalHistorySection> createState() => _GoalHistorySectionState();
+}
+
+class _GoalHistorySectionState extends State<_GoalHistorySection> {
+  /// Initial render bound. `goalNudgeHistoryProvider` is deliberately
+  /// unbounded, and this page builds eagerly (no lazy list on this surface),
+  /// so a mature goal must not pay layout for years of retired banners on
+  /// page open. Show more reveals the full list — a user choice, still
+  /// eagerly built once made.
+  static const int _initialRows = 20;
+
+  bool _showAll = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final history = _showAll
+        ? widget.history
+        : widget.history.take(_initialRows).toList(growable: false);
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1067,24 +1513,40 @@ class _GoalHistorySection extends StatelessWidget {
               ],
             ),
           ],
+          if (!_showAll && widget.history.length > _initialRows) ...[
+            SizedBox(height: tokens.spacing.step1),
+            DesignSystemButton(
+              label: context.messages.aiResponseShowMore,
+              onPressed: () => setState(() => _showAll = true),
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.dense,
+              trailingIcon: Icons.expand_more_rounded,
+              alignsLabelToLeadingEdge: true,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-enum _GoalDetailMenuAction { edit, internals, delete }
+enum _GoalDetailMenuAction { edit, updateRead, internals, delete }
 
 class _GoalActionsMenuButton extends ConsumerWidget {
   const _GoalActionsMenuButton({
     required this.agentId,
     required this.agentName,
     required this.canEdit,
+    required this.onUpdateRead,
   });
 
   final String agentId;
   final String agentName;
   final bool canEdit;
+
+  /// Requests a report refresh (§4b overflow: "Update read"); null while
+  /// the goal is not active.
+  final VoidCallback? onUpdateRead;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1096,6 +1558,8 @@ class _GoalActionsMenuButton extends ConsumerWidget {
         switch (action) {
           case _GoalDetailMenuAction.edit:
             beamToNamed(goalEditPath(agentId));
+          case _GoalDetailMenuAction.updateRead:
+            onUpdateRead?.call();
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1119,6 +1583,22 @@ class _GoalActionsMenuButton extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     context.messages.goalFormEditTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (onUpdateRead != null)
+          PopupMenuItem<_GoalDetailMenuAction>(
+            value: _GoalDetailMenuAction.updateRead,
+            child: Row(
+              children: [
+                const Icon(Icons.refresh_rounded),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    context.messages.taskAgentUpdateNow,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

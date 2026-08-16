@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -19,11 +20,15 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
@@ -32,12 +37,20 @@ import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
+import '../../../habits/test_utils.dart';
 
 void main() {
   final goalIdentity =
@@ -93,6 +106,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -108,7 +126,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: DateTime.utc(2026, 8, 11),
               metric: GoalMetricProgressView(
@@ -139,20 +160,20 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // App bar + detail header both carry the goal name.
-    expect(find.text('Move more'), findsNWidgets(2));
-    // Runtime atRisk collapses to the handover's coarse Behind vocabulary,
-    // and the detail surface never displays a percentage.
-    expect(find.text('Behind'), findsOneWidget);
+    // App bar + detail header + the read card's persona subtitle.
+    expect(find.text('Move more'), findsNWidgets(3));
+    // The SAME four-pill vocabulary as the unified Goals list: runtime
+    // atRisk reads "At risk" here exactly as it does on the list row — and
+    // the detail surface never displays a percentage.
+    expect(find.text('At risk'), findsOneWidget);
     expect(find.text('Trending up'), findsOneWidget);
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
-    expect(find.text('At risk'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
-    // The metric card AND the eagerly built Watching row both carry the
-    // dimension name — the whole page mounts up front, nothing waits for a
-    // lazy build window.
-    expect(find.text('Daily steps'), findsNWidgets(2));
-    expect(find.text('Watching'), findsOneWidget);
+    // The metric card (the §4b Signals section) carries the dimension name
+    // under its section heading; the old Watching list is gone.
+    expect(find.text('Daily steps'), findsOneWidget);
+    expect(find.text('Signals'), findsOneWidget);
+    expect(find.text('Watching'), findsNothing);
     expect(find.text('Health data'), findsOneWidget);
     expect(
       find.textContaining(
@@ -160,6 +181,9 @@ void main() {
       ),
       findsOneWidget,
     );
+    // The narrative hero card wears the task agent section's shared panel
+    // (same title, same chrome) with the no-report fallback.
+    expect(find.text('AI summary'), findsOneWidget);
     expect(
       find.text(
         'No report yet — the agent reports after its first meaningful '
@@ -168,6 +192,13 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Interactions'), findsNothing);
+
+    // The reload affordances ride the read card itself, exactly like the
+    // task agent section — no expander in between.
+    expect(find.text('About this agent'), findsNothing);
+    await tester.ensureVisible(
+      find.widgetWithText(DesignSystemButton, 'Update now'),
+    );
     final refreshButton = tester.widget<DesignSystemButton>(
       find.widgetWithText(DesignSystemButton, 'Update now'),
     );
@@ -193,7 +224,7 @@ void main() {
     );
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
-    expect(find.text('Watching'), findsOneWidget);
+    expect(find.text('Signals'), findsOneWidget);
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
@@ -205,6 +236,22 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentConsumptionTotalsProvider.overrideWith(
+            (ref, agentId) => Stream.value(
+              makeConsumptionTotals(
+                callCount: 3,
+                inputTokens: 1200,
+                outputTokens: 800,
+                totalTokens: 2000,
+                credits: 0.42,
+              ),
+            ),
+          ),
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -245,8 +292,16 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Seven for seven. Keep coasting.'), findsOneWidget);
-    expect(find.text('Out of date'), findsOneWidget);
+    // Header slot + automation row, like the task agent section.
+    expect(find.text('Out of date'), findsNWidgets(2));
     expect(find.textContaining('No report yet'), findsNothing);
+    // The shared AI panel chrome: same header widget as the task agent
+    // section, with the goal's cumulative inference cost pills on the card.
+    expect(find.byType(TldrHeader), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-agent-lifetime-pills')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a sections payload with nothing in it falls back to the flat '
@@ -274,6 +329,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -352,6 +412,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -441,6 +506,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -522,6 +592,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider('goal-1').overrideWith(
               (ref) async => goalIdentity.copyWith(
                 config: const AgentConfig(automaticUpdatesEnabled: true),
@@ -559,7 +634,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Out of date'), findsOneWidget);
+      // The read card self-demotes — its header slot carries the
+      // out-of-date notice — and the automation row on the same card
+      // echoes the verdict, exactly like the task agent section.
+      expect(find.text('Out of date'), findsNWidgets(2));
       expect(find.textContaining('1:30'), findsOneWidget);
       expect(find.text('Skip once'), findsOneWidget);
       expect(find.text('Automatic updates'), findsOneWidget);
@@ -616,6 +694,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) => never.future),
@@ -633,6 +716,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => throw StateError('db gone')),
@@ -726,6 +814,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -846,6 +939,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -861,7 +959,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -894,16 +995,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final sayingTop = tester
-        .getTopLeft(find.text('What your agent is saying'))
-        .dy;
+    final readTop = tester.getTopLeft(find.text('AI summary')).dy;
     final progressTop = tester.getTopLeft(find.byType(GoalProgressCard)).dy;
     expect(
-      sayingTop,
+      readTop,
       lessThan(progressTop),
       reason:
-          'the report/banner group belongs directly under the goal '
-          'definition, with the habit and chart evidence below it',
+          'the hero pair (this week + the read) belongs directly under the '
+          'goal definition, with the habit and chart evidence below it',
     );
   });
 
@@ -957,6 +1056,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -972,7 +1076,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -1099,6 +1206,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1114,7 +1226,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               metric: GoalMetricProgressView(
@@ -1204,6 +1319,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1220,7 +1340,10 @@ void main() {
             ),
           ),
           // Progress never resolves: the first load is still in flight.
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) => Completer<GoalProgressView?>().future,
           ),
           activeGoalNudgesProvider.overrideWith(
@@ -1277,6 +1400,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider(
               'goal-1',
             ).overrideWith((ref) async => goalIdentity),
@@ -1334,6 +1462,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1384,6 +1517,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1415,6 +1553,98 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Six days of quiet soles.'), findsOneWidget);
     expect(find.text('Dismissed'), findsOneWidget);
+  });
+
+  testWidgets('a long timeline renders a bounded first page — the eager '
+      'layout must not pay for years of retired banners on open', (
+    tester,
+  ) async {
+    GoalNudgeEntity past(int index) =>
+        AgentDomainEntity.goalNudge(
+              id: 'ad-past-$index',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.dismissed,
+              brief: GoalNudgeBrief(
+                headline: 'Past voice $index',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$index',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalNudgeHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [for (var i = 0; i < 25; i++) past(i)]),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // First page only: 20 of the 25 rows are built, plus the reveal.
+    expect(
+      find.textContaining('Past voice', skipOffstage: false),
+      findsNWidgets(20),
+    );
+    expect(
+      find.textContaining('Past voice 19', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Past voice 20', skipOffstage: false),
+      findsNothing,
+    );
+
+    final showMore = find.widgetWithText(DesignSystemButton, 'Show more');
+    await tester.scrollUntilVisible(
+      showMore,
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SingleChildScrollView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(showMore);
+    await tester.pump();
+    expect(
+      find.textContaining('Past voice', skipOffstage: false),
+      findsNWidgets(25),
+    );
   });
 
   testWidgets('desktop keeps chat beside watched habits and complete banner '
@@ -1477,6 +1707,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1492,7 +1727,10 @@ void main() {
               buffer: 1,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async {
               progressReads++;
               return GoalProgressView(
@@ -1557,63 +1795,131 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // §4b: the permanent chat column is gone. The pane stays MOUNTED inside
+    // the slid-out drawer (so a draft survives closing), but takes no
+    // pointer traffic and no layout column — the dashboard owns the width,
+    // capped at the unified-Goals measure.
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
-    expect(find.text('Talk to Move more'), findsNothing);
-
-    // The middle column's scroll view spans its whole pane, so the desktop
-    // scrollbar hugs the divider beside the chat. Constraining the scroll
-    // view itself parked the scrollbar at the reading measure's right edge,
-    // floating mid-pane. The measure still applies — to the content inside.
-    final detailListFinder = find
-        .ancestor(
-          of: find.text('Two walks landed this week.'),
-          matching: find.byType(SingleChildScrollView),
-        )
-        .first;
-    final dividerLeft = tester.getTopLeft(find.byType(VerticalDivider)).dx;
+    expect(find.byType(VerticalDivider), findsNothing);
     expect(
-      tester.getTopRight(detailListFinder).dx,
-      moreOrLessEquals(dividerLeft, epsilon: 1),
+      tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring,
+      isTrue,
+      reason: 'a closed drawer must not swallow clicks along the right edge',
     );
-    final measure =
-        tester
-            .element(find.byType(GoalAgentDetailPage))
-            .designTokens
-            .spacing
-            .step13 *
-        3;
+    // Off-screen means out of the semantics tree too: a screen reader must
+    // not traverse the slid-away drawer's composer and close button.
+    expect(
+      tester
+          .widget<ExcludeSemantics>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(ExcludeSemantics),
+                )
+                .first,
+          )
+          .excluding,
+      isTrue,
+    );
     expect(
       tester.getSize(find.byType(GoalProgressCard)).width,
-      lessThanOrEqualTo(measure),
+      lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
     );
-    // Below the fold now that the whole-goal strip has its own card on this
-    // goal — it has two dimensions, so the strip sums a week the individual
-    // habit rows cannot.
+    // Closed drawer: the column centers in the WHOLE window — a fixed
+    // left-aligned measure left the right half of wide windows dead.
+    expect(
+      tester.getCenter(find.byType(GoalProgressCard)).dx,
+      moreOrLessEquals(desktopSize.width / 2, epsilon: 1),
+    );
+
+    // The drawer opens from the named app-bar doorway and closes from its
+    // own × — non-modal, the dashboard stays interactive throughout.
+    await tester.tap(find.text('Talk to Move more'));
+    await tester.pumpAndSettle();
+    // Open drawer: the column glides to the center of what the drawer
+    // leaves free instead of hiding under it.
+    expect(
+      tester.getCenter(find.byType(GoalProgressCard)).dx,
+      moreOrLessEquals(
+        (desktopSize.width - kGoalChatDrawerWidth) / 2,
+        epsilon: 1,
+      ),
+    );
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring,
+      isFalse,
+    );
+    expect(
+      tester
+          .widget<ExcludeSemantics>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(ExcludeSemantics),
+                )
+                .first,
+          )
+          .excluding,
+      isFalse,
+      reason: 'the open drawer is part of the accessible page',
+    );
+    // The drawer header carries the same computed pill as the page: the
+    // same widget fed the same status, twice on screen, never disagreeing.
+    expect(find.byType(UnifiedGoalStatusPill), findsNWidgets(2));
+    expect(
+      find.descendant(
+        of: find.byType(UnifiedGoalStatusPill),
+        matching: find.text('On track'),
+      ),
+      findsNWidgets(2),
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-chat-drawer-close')));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring,
+      isTrue,
+    );
+
+    // The evidence sections: Habits heading over the habit cards, Signals
+    // over the data dimensions (this goal has none), the old Watching list
+    // gone — each habit renders once, on its own card.
     await tester.scrollUntilVisible(
-      find.text('Watching'),
+      find.text('Habits'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Watching'), findsOneWidget);
-    expect(find.text('Morning walk'), findsNWidgets(2));
-    expect(find.text('Monthly walk'), findsNWidgets(2));
-    expect(find.text('20× · calendar month'), findsNWidgets(2));
+    expect(find.text('Watching'), findsNothing);
+    expect(find.text('Morning walk'), findsOneWidget);
+    expect(find.text('Monthly walk'), findsOneWidget);
+    expect(find.text('20× · calendar month'), findsOneWidget);
     expect(find.textContaining('null / 6'), findsNothing);
-    expect(find.textContaining('signals listed here'), findsOneWidget);
-    expect(
-      tester
-          .getCenter(
-            find.byKey(const ValueKey('goal-watching-meta-walk')),
-          )
-          .dy,
-      greaterThan(
-        tester
-            .getCenter(
-              find.byKey(const ValueKey('goal-watching-name-walk')),
-            )
-            .dy,
-      ),
-    );
 
     await tester.tap(
       find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
@@ -1658,6 +1964,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider('goal-1').overrideWith(
             (ref) async => goalIdentity.copyWith(
               lifecycle: AgentLifecycle.dormant,
@@ -1676,7 +1987,10 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -1709,7 +2023,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Move more'), findsNWidgets(2));
+    expect(find.text('Move more'), findsNWidgets(3));
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Update now'), findsNothing);
@@ -1724,6 +2038,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1762,6 +2081,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const SizedBox.shrink(),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1819,6 +2143,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1872,6 +2201,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentServiceProvider.overrideWithValue(service),
           agentIdentityProvider(
             'goal-1',
@@ -1946,6 +2280,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1993,6 +2332,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'task-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider('task-1').overrideWith((ref) async => null),
           goalAgentHealthProvider('task-1').overrideWith(
             (ref) async => (
@@ -2015,5 +2359,930 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('No report yet'), findsNothing);
+  });
+
+  testWidgets('the desktop drawer opens from Ask why with a pre-filled '
+      'composer, closes on Esc and on an outside tap, and never clobbers '
+      'an existing draft', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    final now = DateTime(2026, 8, 13, 12);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          mediaQueryData: const MediaQueryData(size: desktopSize),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Two walks landed this week.',
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: 0,
+                buffer: 1,
+              ),
+            ),
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
+              (ref) async => GoalProgressView(
+                today: DateTime.utc(2026, 8, 13),
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentReport(
+                        id: 'report-1',
+                        agentId: 'goal-1',
+                        scope: AgentReportScopes.current,
+                        createdAt: now.subtract(const Duration(hours: 2)),
+                        vectorClock: null,
+                        oneLiner: 'Two walks landed this week.',
+                        tldr: 'Two walks landed this week.',
+                        content: 'Two walks landed this week.',
+                        provenance: {'specVersionId': 'goal-1:spec-v1'},
+                      )
+                      as AgentReportEntity,
+            ),
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The narrative wears its age (§4b freshness contract).
+      expect(find.text('as of 2 h ago'), findsOneWidget);
+
+      bool drawerIgnoring() => tester
+          .widget<IgnorePointer>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(IgnorePointer),
+                )
+                .first,
+          )
+          .ignoring;
+      expect(drawerIgnoring(), isTrue);
+
+      // Ask why: the drawer opens with the computed verdict pre-filled.
+      await tester.tap(find.byKey(const ValueKey('goal-detail-ask-why')));
+      await tester.pumpAndSettle();
+      expect(drawerIgnoring(), isFalse);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(GoalAgentDetailPage)),
+        listen: false,
+      );
+      expect(
+        container.read(goalChatControllerProvider('goal-1')).draft,
+        'Why is this goal On track right now?',
+      );
+
+      // Esc closes — the drawer takes focus on open, so the shortcut has a
+      // focus path before the user ever clicks into the composer.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(drawerIgnoring(), isTrue);
+
+      // Talk-to reopens; a click on the dashboard closes it (non-modal — the
+      // same click still reaches the dashboard, there is no barrier).
+      await tester.tap(find.text('Talk to Move more'));
+      await tester.pumpAndSettle();
+      expect(drawerIgnoring(), isFalse);
+      await tester.tapAt(const Offset(200, 500));
+      await tester.pumpAndSettle();
+      expect(drawerIgnoring(), isTrue);
+
+      // A composer with words in it is never clobbered by Ask why.
+      container
+          .read(goalChatControllerProvider('goal-1').notifier)
+          .updateDraft('my own words');
+      await tester.tap(find.byKey(const ValueKey('goal-detail-ask-why')));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(goalChatControllerProvider('goal-1')).draft,
+        'my own words',
+      );
+    });
+  });
+
+  testWidgets('mobile Ask why pre-fills the composer and opens the chat '
+      'route', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Three walks remain before Sunday.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('goal-detail-ask-why')),
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-detail-ask-why')));
+    await tester.pump();
+    expect(navigated, ['/goals/details/goal-1/chat']);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalAgentDetailPage)),
+      listen: false,
+    );
+    expect(
+      container.read(goalChatControllerProvider('goal-1')).draft,
+      'Why is this goal Behind right now?',
+    );
+  });
+
+  testWidgets('the overflow menu refreshes the read and jumps to the About '
+      'section', (tester) async {
+    final completionService = MockGoalHabitCompletionService();
+    when(
+      () => completionService.requestReportRefresh('goal-1'),
+    ).thenReturn('refresh-run');
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalHabitCompletionServiceProvider.overrideWithValue(
+            completionService,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Update read: the §4b overflow shortcut to the same refresh the
+    // automation row offers.
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    // `.last`: the automation row on the read card shares the label with
+    // the overflow entry; the menu overlay renders last.
+    await tester.tap(find.text('Update now').last);
+    await tester.pumpAndSettle();
+    verify(() => completionService.requestReportRefresh('goal-1')).called(1);
+
+    // The reload affordances live on the read card itself now — no
+    // expander, matching the task agent section.
+    expect(
+      find.widgetWithText(DesignSystemButton, 'Update now'),
+      findsOneWidget,
+    );
+    expect(find.text('About this agent'), findsNothing);
+  });
+
+  testWidgets('a goal with habit dimensions renders the goal-scoped '
+      'completion-rate card — scoped from the SAME retained progress '
+      'snapshot, not the (possibly newer) spec', (tester) async {
+    // A metric-only spec beside habit progress models the mid-revision
+    // window: health has advanced to a new spec while the progress
+    // deliberately retains the old one. The chart must gate AND scope from
+    // the progress, or it flashes an empty chart scoped by habits the
+    // visible rows do not show.
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    final habitsController = FakeHabitsController(
+      HabitsState.initial(now: DateTime(2026, 8, 11)).copyWith(
+        // An ACTIVE definition for the goal's habit: the scoped chart
+        // suppresses itself when every referenced habit is deactivated.
+        habitDefinitions: [habitFlossing.copyWith(id: 'walk', name: 'Walk')],
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(() => habitsController),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two walks landed.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalHabitMembershipsProvider.overrideWith(
+            (ref) async => {
+              'walk': [
+                (agentId: 'goal-1', title: 'Move more'),
+                (agentId: 'goal-2', title: 'Heart Health'),
+              ],
+            },
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // A habit shared with another goal names it — one recording, reflected
+    // everywhere — while the owning goal itself is never listed in the
+    // suffix (the page header is where its own name belongs).
+    final alsoIn = tester.widget<Text>(
+      find.byKey(const ValueKey('goal-habit-also-in-walk')),
+    );
+    expect(alsoIn.data, 'Also in Heart Health');
+
+    // ONE page-level range picker on the Habits heading governs every day
+    // track and the chart — the chart card's own picker is hidden here, so
+    // the page never renders two controls fighting over one shared span.
+    expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+    await tester.tap(find.text('30d').first);
+    await tester.pump();
+    expect(habitsController.lastTimeSpan, 30);
+
+    // The goal-scoped chart card: same shell as the habits page, its
+    // own title, the chart scoped to this goal's criterion habit ids.
+    expect(find.text('Completion rate · this goal'), findsOneWidget);
+    expect(
+      tester
+          .widget<HabitCompletionRateChart>(
+            find.byType(HabitCompletionRateChart),
+          )
+          .habitIds,
+      {'walk'},
+    );
+  });
+
+  testWidgets("the read's age ticks across its bucket boundary without any "
+      'provider update', (tester) async {
+    var current = DateTime(2026, 8, 13, 12, 59, 30);
+    final generatedAt = DateTime(2026, 8, 13, 12);
+    // The report only counts as the standing read while it matches the
+    // ACTIVE spec version.
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await withClock(Clock(() => current), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
+              (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentReport(
+                        id: 'report-1',
+                        agentId: 'goal-1',
+                        scope: AgentReportScopes.current,
+                        createdAt: generatedAt,
+                        vectorClock: null,
+                        oneLiner: 'Seven for seven.',
+                        tldr: 'Seven for seven.',
+                        content: 'Seven for seven.',
+                        provenance: const {
+                          'specVersionId': 'goal-1:spec-v1',
+                        },
+                      )
+                      as AgentReportEntity,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('as of 59 min ago'), findsOneWidget);
+
+      // Nothing rebuilds the page — only the boundary timer may. Rendered
+      // once at build, "59 min ago" would sit there for hours.
+      current = current.add(const Duration(seconds: 40));
+      await tester.pump(const Duration(seconds: 40));
+      expect(find.text('as of 1 h ago'), findsOneWidget);
+
+      // Drain the re-armed hourly timer so the test ends clean.
+      current = current.add(const Duration(hours: 1, seconds: 2));
+      await tester.pump(const Duration(hours: 1, seconds: 2));
+    });
+  });
+
+  testWidgets('Ask why never quotes a suppressed No-data verdict', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          // No register yet, but a standing one-liner: the page suppresses
+          // the No-data pill as self-contradictory — Ask why must not
+          // resurrect that verdict in the composer.
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: null,
+              attainment: null,
+              reportOneLiner: 'Two days in.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Two days in.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-detail-ask-why')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a marathon-length agent name cannot overflow the desktop '
+      'toolbar — the Talk-to button ellipsizes inside its cap', (
+    tester,
+  ) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider('goal-1').overrideWith(
+            (ref) async => goalIdentity.copyWith(
+              displayName:
+                  'The Grand Unified Everything Fitness Longevity '
+                  'Mobility And General Flourishing Programme',
+            ),
+          ),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.atRisk,
+              attainment: 0.8,
+              reportOneLiner: 'Close, not there.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              // A deficit folds the recovery hint into the drawer pill too.
+              deficit: 2,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final button = tester.getSize(
+      find.byKey(const ValueKey('goal-detail-talk-to')),
+    );
+    final measure = tester
+        .element(find.byType(GoalAgentDetailPage))
+        .designTokens
+        .spacing
+        .step13;
+    expect(button.width, lessThanOrEqualTo(measure));
+
+    // The drawer header carries the same unbounded name over an Expanded
+    // chat pane — capped at two lines, it cannot overflow the drawer's
+    // column either.
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    // And it folds the recovery hint into its pill, like the page header.
+    expect(find.text('At risk · 2 days to recover'), findsNWidgets(2));
+  });
+
+  testWidgets('a stale flag with NO displayed read renders no out-of-date '
+      'notice — there is nothing whose freshness could be judged', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 8, 13, 12);
+    final agentState =
+        AgentDomainEntity.agentState(
+              id: 'goal-1:state',
+              agentId: 'goal-1',
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+              reportStaleAt: now,
+            )
+            as AgentStateEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: null,
+                attainment: null,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            agentStateProvider(
+              'goal-1',
+            ).overrideWith((ref) async => agentState),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('No report yet'), findsOneWidget);
+      expect(find.text('Out of date'), findsNothing);
+    });
+  });
+
+  testWidgets('a legacy report with content but no one-liner still counts as '
+      "report content for the About section's freshness state", (
+    tester,
+  ) async {
+    final now = DateTime(2026, 8, 13, 12);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final agentState =
+        AgentDomainEntity.agentState(
+              id: 'goal-1:state',
+              agentId: 'goal-1',
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+              reportStaleAt: now,
+            )
+            as AgentStateEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 13)),
+              ),
+            ),
+            agentIdentityProvider('goal-1').overrideWith(
+              (ref) async => goalIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            ),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
+              (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
+            ),
+            agentStateProvider(
+              'goal-1',
+            ).overrideWith((ref) async => agentState),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentReport(
+                        id: 'report-1',
+                        agentId: 'goal-1',
+                        scope: AgentReportScopes.current,
+                        createdAt: now.subtract(const Duration(hours: 3)),
+                        vectorClock: null,
+                        // No oneLiner/tldr: the legacy report shape.
+                        content: 'Two walks landed this week.',
+                        provenance: const {
+                          'specVersionId': 'goal-1:spec-v1',
+                        },
+                      )
+                      as AgentReportEntity,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The read card demotes to the notice (a report IS displayed) and
+      // the automation row on the same card echoes it: a legacy report
+      // with content but no one-liner still counts as report content.
+      expect(find.text('Out of date'), findsNWidgets(2));
+    });
+  });
+
+  testWidgets('a pending revision proposal mounts the shared change-set card '
+      'on the dashboard', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 1,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+  });
+
+  testWidgets('desktop still offers the drawer while health is erroring — '
+      'the header pill is simply absent', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // A verdictless page keeps the conversation reachable; neither the page
+    // header nor the drawer wears a pill it cannot back.
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalAgentChatPane), findsOneWidget);
+    expect(find.byType(UnifiedGoalStatusPill), findsNothing);
+  });
+
+  testWidgets('a narrow desktop pane keeps the drawer a pure overlay — the '
+      'column never gets squeezed below a usable width', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        // A 500px sidebar stand-in: the page pane is 900px wide, so
+        // subtracting the 400px drawer would leave 500 — under the fold
+        // width — and the shift must not happen.
+        const Row(
+          children: [
+            SizedBox(width: 500),
+            Expanded(child: GoalAgentDetailPage(agentId: 'goal-1')),
+          ],
+        ),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final closedCenter = tester.getCenter(find.text('AI summary')).dx;
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getCenter(find.text('AI summary')).dx,
+      moreOrLessEquals(closedCenter, epsilon: 1),
+      reason:
+          'below the fold width the drawer overlays instead of shifting '
+          'the column into a sliver',
+    );
   });
 }

@@ -88,7 +88,9 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
     if (!mounted) return;
     if (saved) {
       setState(() => _recorded.add(habit.habitId));
-      ref.invalidate(goalAgentProgressViewProvider(widget.agentId));
+      ref
+        ..invalidate(goalAgentProgressViewProvider(widget.agentId))
+        ..invalidate(goalAgentProgressViewForSpanProvider);
     } else {
       ScaffoldMessenger.maybeOf(context)
         ?..hideCurrentSnackBar()

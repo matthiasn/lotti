@@ -6140,6 +6140,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'Varför är det här målet $status just nu?';
+  }
+
+  @override
   String get goalChatYou => 'Du';
 
   @override
@@ -6165,9 +6170,6 @@ class AppLocalizationsSv extends AppLocalizations {
   ) {
     return 'I går: $metCount av $dimensionCount dimensioner · $requiredCount krävs.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Hela målet';
 
   @override
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
@@ -6232,6 +6234,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDeleteMenuItem => 'Ta bort mål';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Även i $goals';
+  }
+
+  @override
+  String get goalDetailAskWhy => 'Varför?';
+
+  @override
+  String get goalDetailCompletionRateTitle => 'Slutförandegrad · det här målet';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Måldagar';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Det gick inte att läsa in målets hälsa just nu.';
 
@@ -6243,10 +6259,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailNotFound => 'Den här målagenten finns inte längre.';
 
   @override
-  String get goalDetailSayingTitle => 'Det här säger din agent';
+  String goalDetailReadAsOf(String ago) {
+    return 'uppdaterad $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Signaler';
 
   @override
   String get goalDetailStatementLabel => 'Ditt mål';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Den här veckan';
 
   @override
   String get goalDetailTimelineTitle => 'Interaktioner';
@@ -6254,9 +6278,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Följer';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Spårad kategoritid';
@@ -6682,6 +6703,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalPatternTitle => 'Tidsmönster';
 
   @override
+  String get goalPendingProposalBadge => 'Förslag väntar';
+
+  @override
   String get goalProgressAgesOut => 'faller bort i kväll';
 
   @override
@@ -6847,11 +6871,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'På väg tillbaka';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Uppdateringar från dess länkade källa · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendermånad';
@@ -12965,7 +12984,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get goalPendingProposalBadge => 'Förslag väntar';
 }

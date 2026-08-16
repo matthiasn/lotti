@@ -19,6 +19,7 @@ import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -537,25 +538,32 @@ void main() {
   testWidgets('the whole-goal week shares the habit squares’ column pitch', (
     tester,
   ) async {
+    // The strip and the habit squares now live on two widgets (the page
+    // stacks the This-week hero above the evidence sections), but they are
+    // still the same seven days one card apart — the shared pitch remains
+    // the contract.
+    final progress = GoalProgressView(
+      today: today,
+      compositeRule: GoalCompositeRuleKind.all,
+      habits: [
+        GoalHabitProgressView(
+          habitId: 'gym',
+          name: 'Gym',
+          targetCount: 3,
+          days: [
+            for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+          ],
+          successfulWeeks: 0,
+        ),
+      ],
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            compositeRule: GoalCompositeRuleKind.all,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'gym',
-                name: 'Gym',
-                targetCount: 3,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
-              ),
-            ],
-          ),
-          onReflectDay: (_) {},
+        Column(
+          children: [
+            GoalThisWeekCard(progress: progress, onReflectDay: (_) {}),
+            GoalProgressCard(progress: progress),
+          ],
         ),
       ),
     );
@@ -589,7 +597,7 @@ void main() {
     final tapped = <DateTime>[];
     Future<void> pump({GoalAssessmentRating? recorded}) => tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
+        GoalThisWeekCard(
           progress: GoalProgressView(
             today: today,
             compositeRule: GoalCompositeRuleKind.all,
@@ -620,7 +628,7 @@ void main() {
     expect(reflect.top, greaterThan(strip.top));
     expect(
       reflect.top - strip.bottom,
-      lessThan(tester.getSize(find.byType(GoalProgressCard)).height / 4),
+      lessThan(tester.getSize(find.byType(GoalThisWeekCard)).height / 4),
       reason: 'the reflect row drifted away from its strip',
     );
 
@@ -674,32 +682,31 @@ void main() {
   testWidgets('a goal with no composite rule still gets a reflectable week', (
     tester,
   ) async {
-    Future<void> pump({required bool reflectable}) => tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'gym',
-                name: 'Gym',
-                targetCount: 3,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
-              ),
-            ],
-          ),
-          onReflectDay: reflectable ? (_) {} : null,
+    final progress = GoalProgressView(
+      today: today,
+      habits: [
+        GoalHabitProgressView(
+          habitId: 'gym',
+          name: 'Gym',
+          targetCount: 3,
+          days: [
+            for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+          ],
+          successfulWeeks: 0,
         ),
-      ),
+      ],
     );
 
     // Gating the whole-goal card on a composite rule left a single-habit goal
     // unable to reflect on a past day at all, and showing none of the verdict
     // colours — the feature is about goal days, and this goal has those too.
-    await pump(reflectable: true);
+    // The page applies the same gate through [GoalThisWeekCard.shouldShow].
+    expect(GoalThisWeekCard.shouldShow(progress, canReflect: true), isTrue);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalThisWeekCard(progress: progress, onReflectDay: (_) {}),
+      ),
+    );
     expect(find.byType(GoalCompactWindowStrip), findsOneWidget);
     expect(
       find.descendant(
@@ -712,9 +719,8 @@ void main() {
     expect(find.textContaining('dimensions'), findsNothing);
 
     // Read-only, the card would only put a second, near-identical week above
-    // the one the habit row already draws.
-    await pump(reflectable: false);
-    expect(find.byType(GoalCompactWindowStrip), findsNothing);
+    // the one the habit row already draws — the page's gate keeps it out.
+    expect(GoalThisWeekCard.shouldShow(progress, canReflect: false), isFalse);
   });
 
   testWidgets('a read-only strip hugs its cells while a tappable one spans '
@@ -837,7 +843,7 @@ void main() {
       'day squares, while a read-only strip stays compact', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
+        GoalThisWeekCard(
           progress: GoalProgressView(
             today: today,
             compositeRule: GoalCompositeRuleKind.all,
@@ -2650,7 +2656,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         SingleChildScrollView(
-          child: GoalProgressCard(
+          child: GoalThisWeekCard(
             progress: GoalProgressView(
               today: today,
               compositeRule: GoalCompositeRuleKind.atLeast,
@@ -2693,7 +2699,7 @@ void main() {
       ),
     );
 
-    expect(find.text('The whole goal'), findsOneWidget);
+    expect(find.text('This week'), findsOneWidget);
     expect(
       find.text('Yesterday: 2 of 3 dimensions · 2 required.'),
       findsOneWidget,
@@ -2884,7 +2890,7 @@ void main() {
       "day's own value", (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
+        GoalThisWeekCard(
           progress: GoalProgressView(
             today: today,
             compositeRule: GoalCompositeRuleKind.all,
@@ -2913,5 +2919,91 @@ void main() {
       find.text('Yesterday: 1 of 1 dimensions · 1 required.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('extended day tracks scroll in unison — goal strip, habit '
+      'squares and signal bars — and open at the recent end', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final group = LinkedScrollGroup();
+    addTearDown(group.dispose);
+    final progress = GoalProgressView(
+      today: today,
+      compositeRule: GoalCompositeRuleKind.all,
+      compositeCompactWindow: [
+        for (var i = 0; i < 14; i++)
+          if (i.isEven) GoalCompactDayState.full else GoalCompactDayState.none,
+      ],
+      habits: [
+        GoalHabitProgressView(
+          habitId: 'gym',
+          name: 'Gym',
+          targetCount: 3,
+          days: [
+            for (var offset = 13; offset >= 0; offset--)
+              day(offset, offset.isEven ? 1 : 0),
+          ],
+          successfulWeeks: 0,
+        ),
+      ],
+      metric: GoalMetricProgressView(
+        name: 'Steps',
+        target: 10000,
+        days: [
+          for (var offset = 13; offset >= 0; offset--) day(offset, 8000),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              GoalThisWeekCard(
+                progress: progress,
+                onReflectDay: (_) {},
+                scrollGroup: group,
+              ),
+              GoalProgressCard(progress: progress, scrollGroup: group),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The strip renders the WHOLE span, no seven-day cap.
+    expect(
+      find.descendant(
+        of: find.byType(GoalCompactWindowStrip),
+        matching: find.byType(InkWell),
+      ),
+      findsNWidgets(14),
+    );
+
+    // Every extended track is a trailing-anchored scroller: offset 0 means
+    // today is on screen from the first frame.
+    final scrollers = find.byWidgetPredicate(
+      (widget) => widget is SingleChildScrollView && widget.reverse,
+    );
+    expect(scrollers, findsNWidgets(3));
+    List<ScrollController> controllers() => [
+      for (final element in scrollers.evaluate())
+        (element.widget as SingleChildScrollView).controller!,
+    ];
+    for (final controller in controllers()) {
+      expect(controller.offset, 0);
+    }
+
+    // Dragging ANY track moves every track — one gesture, one shared
+    // horizontal position for the same date down the page.
+    await tester.drag(scrollers.at(1), const Offset(120, 0));
+    await tester.pump();
+    final offsets = [for (final c in controllers()) c.offset];
+    expect(offsets.first, greaterThan(0));
+    for (final offset in offsets) {
+      expect(offset, moreOrLessEquals(offsets.first, epsilon: 0.5));
+    }
   });
 }

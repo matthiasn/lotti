@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,7 +14,6 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
-import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
@@ -128,7 +128,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         return;
       }
       for (final identity in identities) {
-        ref.invalidate(goalAgentProgressViewProvider(identity.agentId));
+        ref
+          ..invalidate(goalAgentProgressViewProvider(identity.agentId))
+          ..invalidate(goalAgentProgressViewForSpanProvider);
       }
     });
 

@@ -84,6 +84,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cards up front instead of mounting them lazily mid-scroll, which removes
   the stutter while flinging through a goal's progress, watching and history
   sections.
+- **The goal detail page is a dashboard, with the agent as a drawer.** The
+  permanent desktop chat column is gone: the page is one focused column —
+  "This week" beside the agent's read (now carrying an "as of" timestamp),
+  then your habits and data signals under their own headings and a
+  completion-rate chart scoped to just that goal's habits — and the
+  conversation slides in as a compact drawer from "Talk to …" or the new
+  "Ask why" link, which arrives pre-filled with the exact status on screen.
+  The agent's read wears the same panel as the task agent section on Task
+  Details — same colors, same header, same update controls, and the goal's
+  cumulative inference cost pills — so the two agent surfaces read as one
+  product and restyle together. The page wears the same status pill as the
+  Goals list, so a goal never reads two different ways one tap apart. And
+  the whole page shares one time range: a single 14/30/90-day picker
+  drives the goal's day strip, every habit and signal track and the chart
+  together; longer spans open at today and all tracks scroll as one, so
+  the same date stays lined up down the page.
+- **Habit cards say where else a habit counts.** A habit shared by several
+  goals shows "Also in {goal}" on each goal's detail card — recorded once,
+  reflected everywhere.
 
 ### Removed
 - **The experimental "Enable Agents Page?" flag and its tab.** The unified

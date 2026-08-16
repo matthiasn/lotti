@@ -3361,7 +3361,7 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count h ago',
+      other: '$count timer siden',
       one: '1 time siden',
     );
     return '$_temp0';
@@ -6134,6 +6134,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'Hvorfor er dette mål $status lige nu?';
+  }
+
+  @override
   String get goalChatYou => 'Dig';
 
   @override
@@ -6159,9 +6164,6 @@ class AppLocalizationsDa extends AppLocalizations {
   ) {
     return 'I går: $metCount af $dimensionCount dimensioner · $requiredCount kræves.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Hele målet';
 
   @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
@@ -6226,6 +6228,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDeleteMenuItem => 'Slet mål';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Også i $goals';
+  }
+
+  @override
+  String get goalDetailAskWhy => 'Hvorfor?';
+
+  @override
+  String get goalDetailCompletionRateTitle => 'Gennemførelsesrate · dette mål';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Måldage';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Kunne ikke indlæse dette måls tilstand lige nu.';
 
@@ -6237,10 +6253,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailNotFound => 'Denne målagent findes ikke længere.';
 
   @override
-  String get goalDetailSayingTitle => 'Det siger din agent';
+  String goalDetailReadAsOf(String ago) {
+    return 'opdateret $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Signaler';
 
   @override
   String get goalDetailStatementLabel => 'Dit mål';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Denne uge';
 
   @override
   String get goalDetailTimelineTitle => 'Interaktioner';
@@ -6248,9 +6272,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Følger';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Sporet kategoritid';
@@ -6675,6 +6696,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalPatternTitle => 'Timing mønster';
 
   @override
+  String get goalPendingProposalBadge => 'Forslag afventer';
+
+  @override
   String get goalProgressAgesOut => 'udløber i aften';
 
   @override
@@ -6839,11 +6863,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'På vej tilbage';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Opdateringer fra dens linkede kilde · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendermåned';
@@ -12955,7 +12974,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get goalPendingProposalBadge => 'Forslag afventer';
 }

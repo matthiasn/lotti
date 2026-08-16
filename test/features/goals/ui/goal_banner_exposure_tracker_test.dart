@@ -107,6 +107,84 @@ void main() {
     expect(exposures, hasLength(2));
   });
 
+  testWidgets('the child ticker is muted off-screen and unmuted in view — '
+      'an eagerly built below-the-fold banner must not animate', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              tracked(id: 'ad-top'),
+              const SizedBox(height: 3000),
+              tracked(id: 'ad-below'),
+            ],
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    bool tickerOf(String id) => TickerMode.valuesOf(
+      tester.element(
+        find.descendant(
+          of: find.byKey(ValueKey(id)),
+          matching: find.byType(Placeholder),
+        ),
+      ),
+    ).enabled;
+    expect(tickerOf('ad-top'), isTrue);
+    expect(
+      tickerOf('ad-below'),
+      isFalse,
+      reason: 'off-screen banners must not consume frame work',
+    );
+
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -3000),
+    );
+    await tester.pumpAndSettle();
+    expect(tickerOf('ad-below'), isTrue);
+  });
+
+  testWidgets('a LAYOUT-only move — content above growing via its own local '
+      'setState — still mutes the ticker and flushes the episode', (
+    tester,
+  ) async {
+    final growKey = GlobalKey<_GrowBoxState>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              _GrowBox(key: growKey),
+              tracked(),
+              const SizedBox(height: 3000),
+            ],
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    bool ticker() => TickerMode.valuesOf(
+      tester.element(find.byType(Placeholder)),
+    ).enabled;
+    expect(ticker(), isTrue);
+    expect(exposures, isEmpty);
+
+    // Only the sibling rebuilds: the tracker keeps its element AND its
+    // widget, so neither scroll events nor didUpdateWidget fire — the
+    // frame-boundary recheck is the only thing that can catch this.
+    growKey.currentState!.grow(3000);
+    await tester.pump();
+    await tester.pump();
+    expect(ticker(), isFalse);
+    expect(exposures, hasLength(1));
+  });
+
   testWidgets('a sibling growing in above moves the tracker across the '
       'viewport boundary with NO scroll gesture — the same element updates '
       'in place (didUpdateWidget), and its post-frame recheck flushes the '
@@ -228,4 +306,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(exposures, hasLength(2));
   });
+}
+
+class _GrowBox extends StatefulWidget {
+  const _GrowBox({super.key});
+
+  @override
+  State<_GrowBox> createState() => _GrowBoxState();
+}
+
+class _GrowBoxState extends State<_GrowBox> {
+  double _height = 0;
+
+  void grow(double height) => setState(() => _height = height);
+
+  @override
+  Widget build(BuildContext context) => SizedBox(height: _height);
 }

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -23,6 +24,99 @@ void main() {
   DateTime day(int offset) => GoalWindow.dayUtc(
     today.subtract(Duration(days: offset)),
   );
+
+  test('without an evaluator figure, successesInWindow folds only the days '
+      'inside the authored window — never the rendered history', () {
+    final view = GoalHabitProgressView(
+      habitId: 'gym',
+      name: 'Gym',
+      targetCount: 2,
+      successfulWeeks: null,
+      days: [
+        for (var offset = 13; offset >= 0; offset--)
+          GoalProgressDay(
+            day: day(offset),
+            // Successes at 12, 8 (history) and 5, 1 (in-window).
+            value: offset == 12 || offset == 8 || offset == 5 || offset == 1
+                ? 1
+                : 0,
+          ),
+      ],
+    );
+    expect(view.successesInWindow, 2);
+    expect(view.deficit, 0);
+  });
+
+  test('a shared history span extends every day track backwards without '
+      'touching the window maths — and the ages-out ring stays anchored at '
+      'the WINDOW, not the list head', () {
+    final successes = <DateTime, int>{
+      // Exactly at target inside the rolling week, with the oldest
+      // in-window success sitting on the window\'s first day.
+      day(6): 1,
+      day(2): 1,
+      // History beyond the window, visible only through the span.
+      day(20): 1,
+    };
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: 'gym-id',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 10000,
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {'gym-id': successes},
+        quantitativeDailySums: {
+          'cumulative_step_count': {day(0): 12000, day(25): 8000},
+        },
+      ),
+      reference: today,
+      habitNames: const {'gym-id': 'Gym'},
+      historyDays: 30,
+    );
+
+    final habit = view.habits.single;
+    // 30 rendered days ending today, oldest first.
+    expect(habit.days, hasLength(30));
+    expect(habit.days.first.day, day(29));
+    expect(habit.days.last.day, day(0));
+    // The 20-days-ago success renders in the history…
+    expect(
+      habit.days.firstWhere((entry) => entry.day == day(20)).value,
+      1,
+    );
+    // …but the WINDOW maths are untouched: two in-window successes, no
+    // deficit, and the ages-out ring anchors at the window\'s first day
+    // (day 6), not at the 30-day list head.
+    expect(habit.successesInWindow, 2);
+    expect(habit.deficit, 0);
+    expect(habit.oldestSuccessAgesOutTonight, isTrue);
+
+    final metric = view.metrics.single;
+    expect(metric.days, hasLength(30));
+    expect(metric.days.first.day, day(29));
+    expect(
+      metric.days.firstWhere((entry) => entry.day == day(25)).value,
+      8000,
+    );
+
+    // The whole-goal strip follows the shared span too, so the hero card
+    // renders the same days as every other track.
+    expect(view.compositeCompactWindow, hasLength(30));
+  });
 
   test('habit projection separates the slipped day, active window, deficit and '
       'six-week reliability on the evaluator signal source', () {
@@ -955,5 +1049,141 @@ void main() {
     expect(periodTotal.targetIsPerDay, isFalse);
     expect(periodTotal.dayMark(periodTotal.days.single), isTrue);
     expect(periodTotal.valueMeetsTarget(periodTotal.days.single), isFalse);
+  });
+
+  test('provider resolves measurable and category definitions and folds '
+      'recorded capture decisions into agent-recorded provenance', () async {
+    final reference = DateTime(2026, 8, 11, 14);
+    final db = MockJournalDb();
+    when(
+      () => db.getMeasurementsByType(
+        type: any(named: 'type'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        // The entry the recorded capture decision points at — the reader
+        // maps its id to a day, which is what turns a decision into
+        // agent-recorded provenance on that day's bar.
+        buildMeasurementEntry(
+          id: 'entry-1',
+          timestamp: DateTime(2026, 8, 10, 9),
+          value: 500,
+        ),
+      ],
+    );
+    when(
+      () => db.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
+    when(
+      () => db.getMeasurableDataTypeById(measurableWater.id),
+    ).thenAnswer((_) async => measurableWater);
+    when(
+      () => db.getCategoryById(categoryMindfulness.id),
+    ).thenAnswer((_) async => categoryMindfulness);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Hydrate mindfully',
+              statement: 'Water and quiet time.',
+              criteria: GoalCriterion.allOf(
+                criterionId: 'root',
+                criteria: [
+                  GoalCriterion.measurable(
+                    criterionId: 'water',
+                    dataTypeId: measurableWater.id,
+                    window: const GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.dailySumThenAverage,
+                    target: 2000,
+                  ),
+                  GoalCriterion.categoryTime(
+                    criterionId: 'calm',
+                    categoryId: categoryMindfulness.id,
+                    window: const GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.sum,
+                    targetHours: 2,
+                    direction: GoalDirection.atLeast,
+                  ),
+                ],
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final container = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(db),
+        goalAgentHealthProvider('goal-1').overrideWith(
+          (ref) async => (
+            trackStatus: GoalTrackStatus.onTrack,
+            attainment: 1.0,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: spec,
+            direction: null,
+            deficit: 0,
+            buffer: 1,
+          ),
+        ),
+        goalMeasurableCaptureDecisionsProvider('goal-1').overrideWith(
+          (ref) async => {
+            'msg-1': GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-1',
+              recorded: true,
+              entryCount: 1,
+              entryIds: const ['entry-1'],
+              agentName: 'Hydrate mindfully',
+              recordedAt: DateTime(2026, 8, 10),
+            ),
+            // Not recorded: contributes to neither set.
+            const GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-2',
+              recorded: false,
+              entryCount: 0,
+            ).sourceMessageId: const GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-2',
+              recorded: false,
+              entryCount: 0,
+            ),
+          },
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final view = await withClock(
+      Clock.fixed(reference),
+      () => container.read(goalAgentProgressViewProvider('goal-1').future),
+    );
+
+    // The measurable resolved its definition (name + unit), the category
+    // resolved its display name.
+    final names = {for (final metric in view!.metrics) metric.name};
+    expect(names, contains(measurableWater.displayName));
+    expect(names, contains(categoryMindfulness.name));
+    verify(() => db.getMeasurableDataTypeById(measurableWater.id)).called(1);
+    verify(() => db.getCategoryById(categoryMindfulness.id)).called(1);
+
+    // The RECORDED decision's entry flows into agent-recorded provenance on
+    // its day; the unrecorded msg-2 contributes nothing — so exactly one
+    // day is marked, carrying the recording agent's name.
+    final water = view.metrics.singleWhere(
+      (metric) => metric.name == measurableWater.displayName,
+    );
+    final recordedDay = DateTime.utc(2026, 8, 10);
+    expect(water.agentRecordedDays, {recordedDay});
+    expect(
+      water.agentRecordedProvenanceByDay[recordedDay]?.agentName,
+      'Hydrate mindfully',
+    );
   });
 }

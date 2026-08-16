@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_controls_footer.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -453,7 +454,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
     final agentId = widget.identity.agentId;
 
     final reportAsync = ref.watch(agentReportProvider(agentId));
@@ -634,30 +634,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             settling: _exitingFingerprints.isNotEmpty,
           );
 
-    final cardRadius = BorderRadius.circular(tokens.radii.l);
+    final cardRadius = aiCardRadius(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        // A directional accent wash anchored at the top-left (where the
-        // sparkle badge sits) leads the eye to the AI identity, then falls off
-        // to the flat background — a crafted "intelligence" panel that stays
-        // within the aiCard palette and the design system's flat aesthetic.
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0, 0.55, 1],
-          colors: [
-            // A gentle top-left accent wash that falls off to the flat
-            // background — a touch more present than the original (which read
-            // as muted) but without carrying the accent across the whole card
-            // (which read as too loud). Landed between the two.
-            Color.alphaBlend(ai.accent.withValues(alpha: 0.12), ai.background),
-            ai.background,
-            ai.background,
-          ],
-        ),
-        borderRadius: cardRadius,
-        border: Border.all(color: ai.border),
-      ),
+      // The chrome both AI panels share — see [aiCardDecoration].
+      decoration: aiCardDecoration(context),
       child: ClipRRect(
         borderRadius: cardRadius,
         child: Column(

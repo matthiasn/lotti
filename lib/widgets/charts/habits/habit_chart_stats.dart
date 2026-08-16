@@ -138,3 +138,38 @@ HabitChartStats habitChartStats(HabitsState state, {double target = 80}) {
     laggardActive: laggardActive,
   );
 }
+
+/// A copy of [state] whose per-day maps, definitions and derived numbers see
+/// only [habitIds] — the input for the goal-scoped completion chart (design
+/// handover §4b: "Completion rate scoped to the goal"). The selected-day
+/// percentages are recomputed on the scoped maps so the tap-a-day breakdown
+/// describes the goal's habits, not the whole
+/// roster; window and interaction fields (days, timeSpanDays,
+/// selectedInfoYmd) pass through unchanged, so the shared range control
+/// keeps working. The scoped chart is ALWAYS zero-based: the goal card
+/// exposes no baseline control, so a dynamic floor inherited from the
+/// Habits page would crop the axis with no way to identify or reset it.
+HabitsState scopeHabitsStateToHabits(HabitsState state, Set<String> habitIds) {
+  Map<String, Set<String>> scope(Map<String, Set<String>> byDay) => {
+    for (final entry in byDay.entries)
+      entry.key: entry.value.intersection(habitIds),
+  };
+  final scoped = state.copyWith(
+    habitDefinitions: [
+      for (final habit in state.habitDefinitions)
+        if (habitIds.contains(habit.id)) habit,
+    ],
+    successfulByDay: scope(state.successfulByDay),
+    skippedByDay: scope(state.skippedByDay),
+    failedByDay: scope(state.failedByDay),
+    allByDay: scope(state.allByDay),
+  );
+  final percentages = dayPercentages(scoped);
+  return scoped.copyWith(
+    successPercentage: percentages.success,
+    skippedPercentage: percentages.skipped,
+    failedPercentage: percentages.failed,
+    minY: 0,
+    zeroBased: true,
+  );
+}
