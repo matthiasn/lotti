@@ -892,7 +892,7 @@ void main() {
         expect(tracking.saveChangesCallCount, 1);
       });
 
-      testWidgets('edit preserves a return route to the project workspace', (
+      testWidgets('edit stays on the project-owned editor route', (
         tester,
       ) async {
         final capturedPaths = <String>[];
@@ -917,8 +917,8 @@ void main() {
             .onEdit!();
 
         final route = Uri.parse(capturedPaths.single);
-        expect(route.path, '/settings/projects/test-project-id');
-        expect(route.queryParameters['returnTo'], '/projects/test-project-id');
+        expect(route.path, '/projects/test-project-id/edit');
+        expect(route.queryParameters, isEmpty);
       });
 
       testWidgets('failed inline actions roll back and surface the error', (

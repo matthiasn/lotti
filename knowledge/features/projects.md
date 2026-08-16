@@ -195,9 +195,11 @@ measure with its one standard horizontal gutter, keeping report lines and cards
 readable when the list releases a wide canvas without double-insetting mobile
 content.
 
-Project detail actions preserve workspace continuity. Edit carries an explicit
-return path back to the selected project, and Add task creates a project-linked
-task with the project's privacy, serializes concurrent taps and project saves,
+Project detail actions preserve workspace continuity. Edit uses the
+Projects-owned `/projects/<id>/edit` route on mobile and desktop, with an
+explicit return path back to the selected project. Add task creates a
+project-linked task with the project's privacy, serializes concurrent taps and
+project saves,
 awaits the category's default task-agent assignment, then opens the task. If
 the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.

@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/get_it.dart';
@@ -20,6 +21,7 @@ class ProjectsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
     '/projects',
+    '/projects/:projectId/edit',
     '/projects/:projectId',
   ];
 
@@ -28,6 +30,11 @@ class ProjectsLocation extends BeamLocation<BeamState> {
     final rawProjectId = state.pathParameters['projectId'];
     final isStaleCreateSlug = rawProjectId == _reservedCreateSlug;
     final projectId = isStaleCreateSlug ? null : rawProjectId;
+    final segments = state.uri.pathSegments;
+    final isEditRoute =
+        segments.length == 3 &&
+        segments.first == 'projects' &&
+        segments.last == 'edit';
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
 
@@ -44,7 +51,15 @@ class ProjectsLocation extends BeamLocation<BeamState> {
         title: 'Projects',
         child: ProjectsTabPage(),
       ),
-      if (!isDesktop && projectId != null)
+      if (projectId != null && isEditRoute)
+        BeamPage(
+          key: ValueKey('project-edit-$projectId'),
+          child: ProjectDetailPage(
+            projectId: projectId,
+            returnPath: '/projects/$projectId',
+          ),
+        )
+      else if (!isDesktop && projectId != null)
         BeamPage(
           key: ValueKey('project-details-$projectId'),
           title: 'Project Details',

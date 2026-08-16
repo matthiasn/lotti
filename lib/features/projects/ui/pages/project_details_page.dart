@@ -132,12 +132,7 @@ class ProjectDetailsPage extends ConsumerWidget {
               onTargetDateTap: () =>
                   _pickTargetDate(context, ref, record.project),
               onStatusTap: () => _pickStatus(context, ref, record.project),
-              onEdit: () => beamToNamed(
-                Uri(
-                  path: '/settings/projects/$projectId',
-                  queryParameters: {'returnTo': '/projects/$projectId'},
-                ).toString(),
-              ),
+              onEdit: () => beamToNamed('/projects/$projectId/edit'),
               onArchive: record.project.data.status is ProjectArchived
                   ? null
                   : () => _archiveProject(context, ref),

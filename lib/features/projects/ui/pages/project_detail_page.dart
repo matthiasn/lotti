@@ -24,8 +24,8 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
-/// Full-screen, form-style project editor used on the settings/category route
-/// (e.g. `/settings/categories/<id>`) and any push-navigation entry point.
+/// Full-screen, form-style project editor used by the Projects-owned
+/// `/projects/<id>/edit` route and settings/category entry points.
 ///
 /// Edits go through [ProjectDetailController]: the status picker, title field,
 /// and target-date field mutate the controller's pending project, and the
