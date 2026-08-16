@@ -10655,6 +10655,24 @@ abstract class AppLocalizations {
   /// **'Snooze banner'**
   String get goalBannerSnoozeTitle;
 
+  /// No description provided for @goalChartSevenDayAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day average'**
+  String get goalChartSevenDayAverage;
+
+  /// No description provided for @goalChartStepsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps per day'**
+  String get goalChartStepsPerDay;
+
+  /// Legend label comparing the latest value with its trailing seven-day average and interpreting the direction against the goal.
+  ///
+  /// In en, this message translates to:
+  /// **'{trend, select, aboveToward{Current above 7-day average · toward target} aboveAway{Current above 7-day average · away from target} belowToward{Current below 7-day average · toward target} belowAway{Current below 7-day average · away from target} steady{Current matches 7-day average} other{Current matches 7-day average}}'**
+  String goalChartTrend(String trend);
+
   /// Empty-state invitation in a goal-agent conversation.
   ///
   /// In en, this message translates to:

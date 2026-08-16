@@ -6217,6 +6217,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Banner snoozen';
 
   @override
+  String get goalChartSevenDayAverage => '7-daags gemiddelde';
+
+  @override
+  String get goalChartStepsPerDay => 'Stappen per dag';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward':
+            'Huidige waarde boven het 7-daags gemiddelde · richting doel',
+        'aboveAway':
+            'Huidige waarde boven het 7-daags gemiddelde · weg van doel',
+        'belowToward':
+            'Huidige waarde onder het 7-daags gemiddelde · richting doel',
+        'belowAway':
+            'Huidige waarde onder het 7-daags gemiddelde · weg van doel',
+        'steady': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
+        'other': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Begin een gesprek met $agentName.';
   }

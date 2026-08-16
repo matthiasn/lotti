@@ -6276,6 +6276,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Posponer banner';
 
   @override
+  String get goalChartSevenDayAverage => 'Media de 7 días';
+
+  @override
+  String get goalChartStepsPerDay => 'Pasos al día';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward':
+            'Valor actual por encima de la media de 7 días · hacia el objetivo',
+        'aboveAway':
+            'Valor actual por encima de la media de 7 días · alejándose del objetivo',
+        'belowToward':
+            'Valor actual por debajo de la media de 7 días · hacia el objetivo',
+        'belowAway':
+            'Valor actual por debajo de la media de 7 días · alejándose del objetivo',
+        'steady': 'Valor actual igual a la media de 7 días',
+        'other': 'Valor actual igual a la media de 7 días',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Empieza una conversación con $agentName.';
   }

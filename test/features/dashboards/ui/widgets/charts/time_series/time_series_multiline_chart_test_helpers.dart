@@ -22,6 +22,7 @@ Future<void> hPumpChart(
   String unit = '',
   bool dateOnly = false,
   List<HorizontalLine> horizontalLines = const [],
+  List<String> seriesLabels = const [],
   Size physicalSize = const Size(800, 600),
 }) async {
   tester.view.physicalSize = physicalSize;
@@ -43,6 +44,7 @@ Future<void> hPumpChart(
             unit: unit,
             dateOnly: dateOnly,
             horizontalLines: horizontalLines,
+            seriesLabels: seriesLabels,
           ),
         ),
       ),

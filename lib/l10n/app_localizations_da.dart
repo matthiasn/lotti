@@ -6197,6 +6197,31 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Udsæt banner';
 
   @override
+  String get goalChartSevenDayAverage => '7-dages gennemsnit';
+
+  @override
+  String get goalChartStepsPerDay => 'Skridt pr. dag';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward': 'Nuværende værdi over 7-dages gennemsnittet · mod målet',
+        'aboveAway':
+            'Nuværende værdi over 7-dages gennemsnittet · væk fra målet',
+        'belowToward':
+            'Nuværende værdi under 7-dages gennemsnittet · mod målet',
+        'belowAway':
+            'Nuværende værdi under 7-dages gennemsnittet · væk fra målet',
+        'steady': 'Nuværende værdi matcher 7-dages gennemsnittet',
+        'other': 'Nuværende værdi matcher 7-dages gennemsnittet',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Start en samtale med $agentName.';
   }
