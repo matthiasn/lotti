@@ -589,9 +589,40 @@ class EntryController extends AsyncNotifier<EntryState?> {
     final item = await _journalDb.journalEntityById(id);
     if (item != null) {
       final prev = item.meta.private ?? false;
-      await _persistenceLogic.updateJournalEntity(
+      final nextPrivate = !prev;
+      final updated = await _persistenceLogic.updateJournalEntity(
         item,
-        item.meta.copyWith(private: !prev),
+        item.meta.copyWith(private: nextPrivate),
+      );
+      if (updated && item is Task) {
+        await _dropPrivacyMismatchedProjectLink(item.id, nextPrivate);
+      }
+    }
+  }
+
+  /// Removes a task's project membership when a successful privacy toggle
+  /// makes the two entries incompatible.
+  ///
+  /// The direct linked-project lookup deliberately bypasses the private gate:
+  /// after the toggle, the invalid project may be hidden from ordinary reads,
+  /// but its persisted link still has to be removed.
+  Future<void> _dropPrivacyMismatchedProjectLink(
+    String taskId,
+    bool taskIsPrivate,
+  ) async {
+    try {
+      final repository = ref.read(projectRepositoryProvider);
+      final project = await repository.getLinkedProjectForTask(taskId);
+      if (project == null || (project.meta.private ?? false) == taskIsPrivate) {
+        return;
+      }
+      await repository.unlinkTaskFromProject(taskId);
+    } catch (e, stackTrace) {
+      developer.log(
+        'Failed to drop privacy-incompatible project link for entry $id: $e',
+        name: 'EntryController',
+        error: e,
+        stackTrace: stackTrace,
       );
     }
   }

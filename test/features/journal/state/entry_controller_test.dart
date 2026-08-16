@@ -746,6 +746,55 @@ void main() {
       verify(testFn).called(1);
     });
 
+    test('toggle private unlinks a task from a public project', () async {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTask,
+          testTask.meta.copyWith(private: true),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockProjectRepository.getLinkedProjectForTask(testTask.id),
+      ).thenAnswer(
+        (_) async => makeTestProject(
+          id: 'project-public',
+          categoryId: testTask.meta.categoryId,
+        ),
+      );
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTask.id).notifier,
+      );
+
+      await notifier.togglePrivate();
+
+      verify(
+        () => mockProjectRepository.unlinkTaskFromProject(testTask.id),
+      ).called(1);
+    });
+
+    test('failed privacy toggle keeps the existing project link', () async {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(
+          testTask,
+          testTask.meta.copyWith(private: true),
+        ),
+      ).thenAnswer((_) async => false);
+      final container = makeProviderContainer();
+      final notifier = container.read(
+        entryControllerProvider(testTask.id).notifier,
+      );
+
+      await notifier.togglePrivate();
+
+      verifyNever(
+        () => mockProjectRepository.getLinkedProjectForTask(any()),
+      );
+      verifyNever(() => mockProjectRepository.unlinkTaskFromProject(any()));
+    });
+
     test('toggle flagged', () async {
       reset(mockPersistenceLogic);
       final container = makeProviderContainer();

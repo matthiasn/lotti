@@ -148,6 +148,10 @@ final projectAgentOverviewUpdateStreamProvider =
       )) {
         final affectedIds = ids.where((id) => id != agentNotification).toSet();
         if (affectedIds.isEmpty) continue;
+        if (affectedIds.contains(AgentNotificationScopes.projectOverview)) {
+          yield ids;
+          continue;
+        }
 
         try {
           final entities = await agentRepository.getEntitiesByIds(affectedIds);

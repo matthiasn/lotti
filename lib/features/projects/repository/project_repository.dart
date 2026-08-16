@@ -5,6 +5,11 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -29,6 +34,7 @@ class ProjectRepository {
     required this._persistenceLogic,
     required this._updateNotifications,
     required this._vectorClockService,
+    this.projectHasActiveAgent,
     this.projectsOverviewRefetchDebounce = const Duration(milliseconds: 300),
   });
 
@@ -37,6 +43,7 @@ class ProjectRepository {
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
+  final Future<bool> Function(String projectId)? projectHasActiveAgent;
 
   /// Debounce window applied to notification-driven `watchProjectsOverview`
   /// refetches. Each refetch reruns the project rollup aggregate, so a burst
@@ -303,8 +310,9 @@ class ProjectRepository {
   /// Saves an updated project entity.
   ///
   /// Bumps vector clock and enqueues sync via [PersistenceLogic]. A project
-  /// with linked tasks cannot change category because membership is scoped to
-  /// matching categories; callers must unlink those tasks first.
+  /// with linked tasks or an active project agent cannot change category
+  /// because both membership and agent permissions are category-scoped;
+  /// callers must unlink the tasks and retire the agent first.
   ///
   /// [PersistenceLogic.updateDbEntity] can report failure after the journal
   /// row committed (for example when a later search-index update fails), so a
@@ -318,9 +326,14 @@ class ProjectRepository {
           ? null
           : fromDbEntity(persistedRow);
       if (persisted is! ProjectEntry) return false;
-      if (persisted.meta.categoryId != project.meta.categoryId &&
-          (await _journalDb.getTaskIdsForProjects({project.id})).isNotEmpty) {
-        return false;
+      if (persisted.meta.categoryId != project.meta.categoryId) {
+        if ((await _journalDb.getTaskIdsForProjects({project.id})).isNotEmpty) {
+          return false;
+        }
+        final hasActiveAgent = projectHasActiveAgent;
+        if (hasActiveAgent != null && await hasActiveAgent(project.id)) {
+          return false;
+        }
       }
 
       final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
@@ -749,5 +762,30 @@ ProjectRepository projectRepository(Ref ref) {
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
     vectorClockService: getIt<VectorClockService>(),
+    projectHasActiveAgent: projectHasActiveAgent,
+  );
+}
+
+/// Returns whether [projectId] still owns a non-destroyed project agent.
+///
+/// Project and agent state live in separate databases, so the repository takes
+/// this as an injected integrity guard. The production provider resolves it
+/// directly from the agent store; tests can supply a deterministic callback.
+Future<bool> projectHasActiveAgent(String projectId) async {
+  if (!getIt.isRegistered<AgentDatabase>()) return false;
+  final repository = AgentRepository(getIt<AgentDatabase>());
+  final links = await repository.getLinksTo(
+    projectId,
+    type: AgentLinkTypes.agentProject,
+  );
+  if (links.isEmpty) return false;
+  final entities = await repository.getEntitiesByIds(
+    links.map((link) => link.fromId).toSet(),
+  );
+  return entities.values.any(
+    (entity) =>
+        entity is AgentIdentityEntity &&
+        entity.kind == AgentKinds.projectAgent &&
+        entity.lifecycle != AgentLifecycle.destroyed,
   );
 }

@@ -127,6 +127,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
     required this._syncService,
     this.domainLogger,
     this._clock = const Clock(),
+    this.retireProjectAgent,
     ProjectActivityCancellationCoordinator? cancellationCoordinator,
   }) : _cancellationCoordinator =
            cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
@@ -136,6 +137,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
   final ProjectRepository _projectRepository;
   final AgentSyncService _syncService;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
+  final Future<void> Function(String agentId)? retireProjectAgent;
   @override
   final DomainLogger? domainLogger;
 
@@ -144,6 +146,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
   final Clock _clock;
 
   StreamSubscription<Set<String>>? _subscription;
+  StreamSubscription<Set<String>>? _syncSubscription;
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
@@ -156,17 +159,72 @@ class ProjectActivityMonitor with AgentErrorLogging {
   /// Start tracking local project activity.
   void start() {
     _subscription?.cancel();
+    _syncSubscription?.cancel();
     _subscription = _notifications.localUpdateStream.listen((affectedIds) {
       final observedAt = _clock.now();
       final observedSequence = _cancellationCoordinator.captureActivity();
       unawaited(_handleBatch(affectedIds, observedAt, observedSequence));
     });
+    if (retireProjectAgent != null) {
+      _syncSubscription = _notifications.syncUpdateStream.listen((affectedIds) {
+        unawaited(_reconcileSyncedProjectTombstones(affectedIds));
+      });
+    }
   }
 
   /// Stop tracking project activity.
   Future<void> stop() async {
-    await _subscription?.cancel();
+    await Future.wait([
+      if (_subscription != null) _subscription!.cancel(),
+      if (_syncSubscription != null) _syncSubscription!.cancel(),
+    ]);
     _subscription = null;
+    _syncSubscription = null;
+  }
+
+  /// Retires project agents after a project tombstone arrives through sync.
+  ///
+  /// Provisioning necessarily spans the journal and agent databases. Even
+  /// after its final existence check, a peer can commit a project tombstone
+  /// before the new identity is announced and woken. The sync notification is
+  /// the durable reconciliation point for that last race: a missing project
+  /// must not retain active agents or queued work.
+  Future<void> _reconcileSyncedProjectTombstones(
+    Set<String> affectedIds,
+  ) async {
+    final retireAgent = retireProjectAgent;
+    if (retireAgent == null || !affectedIds.contains(projectNotification)) {
+      return;
+    }
+
+    final candidateProjectIds = affectedIds.difference({
+      projectNotification,
+      labelUsageNotification,
+    });
+    for (final projectId in candidateProjectIds) {
+      try {
+        if (await _projectRepository.getProjectById(projectId) != null) {
+          continue;
+        }
+        final links = await _agentRepository.getLinksTo(
+          projectId,
+          type: AgentLinkTypes.agentProject,
+        );
+        final retiredAgentIds = <String>{};
+        for (final link in links) {
+          if (retiredAgentIds.add(link.fromId)) {
+            await retireAgent(link.fromId);
+          }
+        }
+      } catch (error, stackTrace) {
+        logError(
+          'failed to reconcile project tombstone for '
+          '${DomainLogger.sanitizeId(projectId)}',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
   }
 
   Future<void> _handleBatch(

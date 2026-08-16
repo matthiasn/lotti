@@ -1073,6 +1073,56 @@ void main() {
     }
 
     group('deleteAgent', () {
+      test(
+        'refreshes linked project surfaces after hard-deleting a project agent',
+        () async {
+          final identity = makeTestIdentity(
+            id: 'project-agent-1',
+            agentId: 'project-agent-1',
+            kind: AgentKinds.projectAgent,
+            lifecycle: AgentLifecycle.destroyed,
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: identity.agentId,
+            toId: 'project-1',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          when(
+            () => mockRepository.getEntity(identity.agentId),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getLinksFrom(
+              identity.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          when(
+            () => mockOrchestrator.removeSubscriptions(identity.agentId),
+          ).thenReturn(null);
+          when(
+            () => mockRepository.hardDeleteAgent(identity.agentId),
+          ).thenAnswer(
+            (_) async => (entityIds: <String>[], linkIds: <String>[]),
+          );
+
+          await service.deleteAgent(identity.agentId);
+
+          expect(notifiedAgentIds, [
+            AgentNotificationScopes.projectOverview,
+            'project-1',
+          ]);
+          verify(
+            () => mockRepository.getLinksFrom(
+              identity.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).called(1);
+        },
+      );
+
       test('reclaims the sidecars of everything it deleted', () async {
         // The database rows are only half of what a synced agent leaves
         // behind: its JSON sidecars stay readable on disk otherwise,

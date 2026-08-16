@@ -454,6 +454,7 @@ void main() {
       final monitor = container.read(projectActivityMonitorProvider);
 
       expect(monitor, isA<ProjectActivityMonitor>());
+      expect(monitor.retireProjectAgent, isNotNull);
 
       // Dispose should exercise the provider cleanup hook without errors.
       container.dispose();

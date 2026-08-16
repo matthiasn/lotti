@@ -65,6 +65,11 @@ and retires every linked agent and writes the project tombstone. Agent and
 journal data use separate databases, so the coordinator provides the local
 cross-store exclusion that a database transaction cannot; the post-create
 existence check covers an independent tombstone arriving through sync.
+Because a peer can still apply its tombstone after that final check,
+`ProjectActivityMonitor` also listens to `syncUpdateStream` for project rows.
+When the announced project is already absent, it cancels queued/running work
+and destroys every linked project agent. This is reconciliation only: synced
+edits never enter the local activity path and therefore never arm a new wake.
 
 ## Announcing a newly created agent
 

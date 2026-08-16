@@ -296,6 +296,7 @@ ProjectRepository _createProjectRepository() {
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
     vectorClockService: getIt<VectorClockService>(),
+    projectHasActiveAgent: projectHasActiveAgent,
   );
 }
 

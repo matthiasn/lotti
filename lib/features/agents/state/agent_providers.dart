@@ -397,11 +397,18 @@ final projectActivityMonitorProvider = Provider<ProjectActivityMonitor>(
   name: 'projectActivityMonitorProvider',
 );
 ProjectActivityMonitor projectActivityMonitor(Ref ref) {
+  final agentService = ref.watch(agentServiceProvider);
   final monitor = ProjectActivityMonitor(
     notifications: ref.watch(updateNotificationsProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
     projectRepository: ref.watch(projectRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    retireProjectAgent: (agentId) async {
+      agentService
+        ..abortRunningWake(agentId)
+        ..cancelPendingWake(agentId);
+      await agentService.destroyAgent(agentId);
+    },
     domainLogger: ref.watch(domainLoggerProvider),
     cancellationCoordinator: ref.watch(
       projectActivityCancellationCoordinatorProvider,

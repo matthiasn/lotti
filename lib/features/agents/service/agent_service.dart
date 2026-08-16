@@ -305,9 +305,17 @@ class AgentService {
   /// transition, which syncs the `destroyed` lifecycle to all devices.
   ///
   /// Destroys the agent first if it is not already destroyed, then hard-deletes
-  /// all entities, links, wake runs, and saga ops from the database.
+  /// all entities, links, wake runs, and saga ops from the database. Linked
+  /// project IDs are captured first so project detail/list providers can drop
+  /// agent-authored summaries after the link rows disappear.
   Future<void> deleteAgent(String agentId) async {
     final identity = await getAgent(agentId);
+    final projectIds = identity?.kind == AgentKinds.projectAgent
+        ? (await repository.getLinksFrom(
+            agentId,
+            type: AgentLinkTypes.agentProject,
+          )).map((link) => link.toId).toSet()
+        : const <String>{};
     if (identity != null && identity.lifecycle != AgentLifecycle.destroyed) {
       await destroyAgent(agentId);
     } else {
@@ -322,6 +330,11 @@ class AgentService {
       entityIds: removed.entityIds,
       linkIds: removed.linkIds,
     );
+    final notifyPersistedStateChanged = onPersistedStateChanged;
+    if (projectIds.isNotEmpty && notifyPersistedStateChanged != null) {
+      notifyPersistedStateChanged(AgentNotificationScopes.projectOverview);
+      projectIds.forEach(notifyPersistedStateChanged);
+    }
     developer.log(
       'Deleted all data for agent ${DomainLogger.sanitizeId(agentId)}',
       name: 'AgentService',

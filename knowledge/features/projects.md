@@ -119,6 +119,12 @@ A task whose category write did not land is not swept. A failed write means the
 entity was not found — deleted since it was read, or never there — so it keeps
 the category it had, and its project is still correct for it.
 
+Privacy toggles follow the same invariant. After a task privacy write commits,
+`EntryController.togglePrivate` resolves the persisted project link through
+`getLinkedProjectForTask`; if project and task now disagree, it unlinks them.
+The cleanup does not run after a failed privacy write, so a task that stayed
+public cannot lose a still-valid public-project membership.
+
 The sweep covers the entries the same call re-categorized, not just the edited
 one. `getLinkedEntities` is **not filtered by link type**, so the propagation
 loop rewrites the category of linked *tasks* along with the timers and images it
@@ -132,13 +138,17 @@ controller is the single funnel this rule has to sit in.
 **The project side refuses to create a mismatch.**
 `ProjectRepository.updateProject` compares the stored and requested category
 inside the same journal transaction that writes the project. When they differ,
-any linked task makes the update fail; the tasks must be unlinked before the
-project can move. The guard reads the unfiltered denormalized `project_id`
-membership rather than the visible task list, so hidden private tasks still
-protect the invariant. `linkTaskToProject` uses the same database transaction
-domain, so a new membership cannot land between the guard and the category
-write. Keeping that guard in the repository covers both the inline picker and
-the full editor instead of relying on either UI to remember the invariant.
+any linked task or non-destroyed project agent makes the update fail; the tasks
+must be unlinked and the category-scoped agent retired before the project can
+move. The task guard reads the unfiltered denormalized `project_id` membership
+rather than the visible task list, so hidden private tasks still protect the
+invariant. The agent guard resolves active `agent_project` links from the
+independent agent store, preventing a moved project from retaining permissions
+and template context scoped to its former category. `linkTaskToProject` uses the
+same database transaction domain, so a new membership cannot land between the
+task guard and the category write. Keeping the guards in the repository covers
+both the inline picker and the full editor instead of relying on either UI to
+remember the invariant.
 
 # Two hot reads are shaped for bursts
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -142,6 +143,58 @@ void main() {
       );
       expect(result, isNull);
     });
+  });
+
+  group('projectAgentOverviewUpdateStreamProvider', () {
+    test(
+      'refreshes when a hard-deleted project agent loses its identity',
+      () async {
+        final notifications = MockUpdateNotifications();
+        final agentRepository = MockAgentRepository();
+        final controller = StreamController<Set<String>>.broadcast();
+        addTearDown(controller.close);
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => controller.stream);
+
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            updateNotificationsProvider.overrideWithValue(notifications),
+            agentRepositoryProvider.overrideWithValue(agentRepository),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final updateCompleter = Completer<Set<String>>();
+        final subscription = scopedContainer.listen(
+          projectAgentOverviewUpdateStreamProvider,
+          (_, next) {
+            next.whenData((ids) {
+              if (!updateCompleter.isCompleted) updateCompleter.complete(ids);
+            });
+          },
+        );
+        addTearDown(subscription.close);
+        await pumpEventQueue();
+
+        controller.add({
+          agentNotification,
+          AgentNotificationScopes.projectOverview,
+          'project-1',
+        });
+
+        await expectLater(
+          updateCompleter.future,
+          completion(
+            containsAll({
+              agentNotification,
+              AgentNotificationScopes.projectOverview,
+              'project-1',
+            }),
+          ),
+        );
+        verifyNever(() => agentRepository.getEntitiesByIds(any()));
+      },
+    );
   });
 
   group('projectHealthMetricsProvider', () {

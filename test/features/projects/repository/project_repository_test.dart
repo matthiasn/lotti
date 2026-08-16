@@ -86,6 +86,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late StreamController<Set<String>> updateStreamController;
   late ProjectRepository repository;
+  late bool hasActiveProjectAgent;
 
   final projectMeta = Metadata(
     id: 'project-001',
@@ -162,6 +163,7 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockOutboxService = MockOutboxService();
     updateStreamController = StreamController<Set<String>>.broadcast();
+    hasActiveProjectAgent = false;
 
     // Register OutboxService via the central helper (used by
     // _enqueueLinkSync); setUpTestGetIt owns reset + base registrations.
@@ -218,6 +220,7 @@ void main() {
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
       vectorClockService: mockVectorClockService,
+      projectHasActiveAgent: (_) async => hasActiveProjectAgent,
       // Collapse the refetch debounce so the stream-matcher tests below see
       // notification-driven refetches without waiting on a real timer. The
       // debounce timing itself is covered by a dedicated fakeAsync test.
@@ -892,6 +895,26 @@ void main() {
       verifyNever(() => mockPersistence.updateDbEntity(any()));
       verifyNever(() => mockNotifications.notify(any()));
     });
+
+    test(
+      'rejects category changes while a project agent remains active',
+      () async {
+        hasActiveProjectAgent = true;
+        final movedProject = projectEntry.copyWith(
+          meta: projectMeta.copyWith(categoryId: 'cat-2'),
+        );
+        when(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).thenAnswer((_) async => const {});
+
+        final result = await repository.updateProject(movedProject);
+
+        expect(result, isFalse);
+        verifyNever(() => mockPersistence.updateMetadata(any()));
+        verifyNever(() => mockPersistence.updateDbEntity(any()));
+        verifyNever(() => mockNotifications.notify(any()));
+      },
+    );
 
     test(
       'rejects category changes when private linked tasks are hidden',
