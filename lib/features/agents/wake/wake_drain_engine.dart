@@ -25,11 +25,17 @@ extension WakeDrainEngine on WakeOrchestrator {
   /// a stuck drain.
   Future<void> processNextImpl() async {
     if (_isDraining) {
+      var oldestProgressAt = _drainLastProgressAt;
+      for (final progressAt in _drainLeaseProgressAt.values) {
+        if (oldestProgressAt == null || progressAt.isBefore(oldestProgressAt)) {
+          oldestProgressAt = progressAt;
+        }
+      }
       // Fix B: force-reset stale drain lock after timeout.
-      if (_drainLastProgressAt != null &&
-          clock.now().difference(_drainLastProgressAt!) >
+      if (oldestProgressAt != null &&
+          clock.now().difference(oldestProgressAt) >
               WakeOrchestrator._drainTimeout) {
-        final stalledFor = clock.now().difference(_drainLastProgressAt!);
+        final stalledFor = clock.now().difference(oldestProgressAt);
         _log(
           'force-resetting stale drain lock '
           '(last progress ${stalledFor.inSeconds}s ago)',
@@ -85,9 +91,11 @@ extension WakeDrainEngine on WakeOrchestrator {
 
   void _trackDrainLease(int generation, WakeRunnerLease lease) {
     (_drainLeasesByGeneration[generation] ??= <WakeRunnerLease>{}).add(lease);
+    _drainLeaseProgressAt[lease] = clock.now();
   }
 
   void _releaseDrainLease(int generation, WakeRunnerLease lease) {
+    _drainLeaseProgressAt.remove(lease);
     final leases = _drainLeasesByGeneration[generation];
     leases?.remove(lease);
     if (leases != null && leases.isEmpty) {
@@ -99,7 +107,9 @@ extension WakeDrainEngine on WakeOrchestrator {
   void _releaseDrainGenerationLeases(int generation) {
     final leases = _drainLeasesByGeneration.remove(generation);
     if (leases == null) return;
-    leases.forEach(runner.releaseLease);
+    leases
+      ..forEach(_drainLeaseProgressAt.remove)
+      ..forEach(runner.releaseLease);
   }
 
   void _trackDrainOwnedJob(WakeJob job) {
@@ -419,7 +429,9 @@ extension WakeDrainEngine on WakeOrchestrator {
       // Clear run-key history only when the queue is fully drained (no
       // deferred jobs left). This prevents stale keys from blocking future
       // wakes while avoiding premature clearing that could allow duplicates.
-      if (_drainGeneration == generation && queue.isEmpty) {
+      if (_drainGeneration == generation &&
+          queue.isEmpty &&
+          _drainOwnedJobs.isEmpty) {
         _log('run-key history cleared (queue empty)', subDomain: 'drain');
         queue.clearHistory();
       }
@@ -515,13 +527,16 @@ extension WakeDrainEngine on WakeOrchestrator {
         try {
           await repository.insertWakeRun(entry: entry);
         } catch (error, stackTrace) {
-          _forgetDrainOwnedJob(job);
+          final cancellation = _takeDrainOwnedCancellation(job);
           logError(
             'insertWakeRun failed for ${DomainLogger.sanitizeId(job.runKey)}',
             error: error,
             stackTrace: stackTrace,
           );
-          _emitRunCompletion(job, WakeRunStatus.failed, error: error);
+          if (cancellation == null) {
+            _forgetDrainOwnedJob(job);
+            _emitRunCompletion(job, WakeRunStatus.failed, error: error);
+          }
           return;
         }
       }
@@ -617,6 +632,9 @@ extension WakeDrainEngine on WakeOrchestrator {
       final startTime = clock.now();
       if (_drainGeneration == generation) {
         _drainLastProgressAt = startTime;
+        if (_drainLeaseProgressAt.containsKey(lease)) {
+          _drainLeaseProgressAt[lease] = startTime;
+        }
       }
       Timer? timeoutTimer;
       try {

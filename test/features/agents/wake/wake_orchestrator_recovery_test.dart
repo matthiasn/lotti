@@ -1,3 +1,5 @@
+import 'package:lotti/features/agents/wake/run_key_factory.dart';
+
 import 'wake_orchestrator_test_harness.dart';
 
 class _AcquisitionGatedWakeRunner extends WakeRunner {
@@ -799,6 +801,63 @@ void main() {
         });
       });
 
+      test('keeps an aborted outcome when cancelled insertion fails', () {
+        fakeAsync((async) {
+          final insertGate = Completer<void>();
+          final executedRunKeys = <String>[];
+          final completions = <WakeRunCompletion>[];
+          String? oldRunKey;
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((call) async {
+            final entry = call.namedArguments[#entry] as WakeRunLogData;
+            if (entry.runKey == oldRunKey) {
+              await insertGate.future;
+              throw StateError('insert failed after cancellation');
+            }
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedRunKeys.add(runKey);
+              return Future.value();
+            },
+          );
+          final completionSub = orchestrator.runCompletions.listen(
+            completions.add,
+          );
+
+          oldRunKey = orchestrator.enqueueManualWake(
+            agentId: 'failed-insert-cancel-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+
+          async.elapse(const Duration(milliseconds: 1));
+          final newRunKey = orchestrator.enqueueManualWake(
+            agentId: 'failed-insert-cancel-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          insertGate.complete();
+          async.flushMicrotasks();
+
+          expect(executedRunKeys, equals([newRunKey]));
+          final oldCompletions = completions
+              .where((completion) => completion.runKey == oldRunKey)
+              .toList();
+          expect(oldCompletions, hasLength(1));
+          expect(oldCompletions.single.status, WakeRunStatus.aborted);
+
+          completionSub.cancel();
+          async.flushMicrotasks();
+        });
+      });
+
       test('aborts a manual wake superseded during final policy read', () {
         fakeAsync((async) {
           final finalPolicyGate = Completer<AgentDomainEntity?>();
@@ -962,6 +1021,82 @@ void main() {
 
           completionSub.cancel();
           async.flushMicrotasks();
+        });
+      });
+
+      test('deduplicates restoration while a stale handoff is owned', () {
+        fakeAsync((async) {
+          final policyGate = Completer<AgentDomainEntity?>();
+          final executedAgentIds = <String>[];
+          var restoredInsertCount = 0;
+          when(() => mockRepository.getEntity(any())).thenAnswer((call) {
+            final agentId = call.positionalArguments.first as String;
+            if (agentId == 'restored-agent') return policyGate.future;
+            return Future.value();
+          });
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((call) async {
+            final entry = call.namedArguments[#entry] as WakeRunLogData;
+            if (entry.agentId == 'restored-agent') restoredInsertCount++;
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              return Future.value();
+            },
+          );
+          final dueAt = clock.now().subtract(const Duration(minutes: 1));
+          const reasonId = 'restore-dedupe';
+          final restoredRunKey = RunKeyFactory.forSubscription(
+            agentId: 'restored-agent',
+            subscriptionId: reasonId,
+            batchTokens: const {},
+            wakeCounter: 0,
+            timestamp: dueAt,
+          );
+
+          orchestrator.restorePendingWake(
+            agentId: 'restored-agent',
+            dueAt: dueAt,
+            reasonId: reasonId,
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, isEmpty);
+
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          expect(
+            queue.enqueue(
+              WakeJob(
+                runKey: restoredRunKey,
+                agentId: 'restored-agent',
+                reason: WakeReason.subscription.name,
+                triggerTokens: const {},
+                reasonId: reasonId,
+                createdAt: dueAt,
+              ),
+            ),
+            isFalse,
+          );
+          policyGate.complete(null);
+          async.flushMicrotasks();
+
+          expect(
+            executedAgentIds,
+            equals(['replacement-agent', 'restored-agent']),
+          );
+          expect(restoredInsertCount, 1);
         });
       });
     });
@@ -1143,6 +1278,80 @@ void main() {
           });
         },
       );
+
+      test('healthy concurrent wakes do not hide a stalled lease', () {
+        fakeAsync((async) {
+          final abortedStatusGate = Completer<void>();
+          final executedAgentIds = <String>[];
+          String? firstStuckRunKey;
+          var stuckExecutionCount = 0;
+          when(
+            () => mockRepository.updateWakeRunStatus(
+              any(),
+              any(),
+              completedAt: any(named: 'completedAt'),
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).thenAnswer((call) async {
+            final runKey = call.positionalArguments.first as String;
+            final status = call.positionalArguments[1] as String;
+            if (runKey == firstStuckRunKey &&
+                status == WakeRunStatus.aborted.name) {
+              await abortedStatusGate.future;
+            }
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 2,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              if (agentId == 'stuck-agent' && stuckExecutionCount++ == 0) {
+                return Completer<Map<String, VectorClock>?>().future;
+              }
+              return Future.value();
+            },
+          );
+
+          firstStuckRunKey = orchestrator.enqueueManualWake(
+            agentId: 'stuck-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['stuck-agent']));
+
+          async
+            ..elapse(WakeOrchestrator.wakeRunMaxDuration)
+            ..flushMicrotasks();
+          orchestrator.enqueueManualWake(
+            agentId: 'healthy-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['stuck-agent', 'healthy-agent']),
+          );
+
+          // The healthy completion refreshed generation-wide progress only
+          // two minutes ago, but the stuck lease has made no progress for
+          // more than the full twelve-minute recovery window.
+          async.elapse(const Duration(minutes: 2, milliseconds: 1));
+          orchestrator.enqueueManualWake(
+            agentId: 'stuck-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['stuck-agent', 'healthy-agent', 'stuck-agent']),
+          );
+
+          abortedStatusGate.complete();
+          async.flushMicrotasks();
+        });
+      });
     });
   });
 }

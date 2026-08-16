@@ -222,13 +222,18 @@ Two independent limits apply:
 Each acquisition carries an ownership lease. Stale-drain recovery releases the
 superseded generation's leases before starting its replacement; late cleanup or
 timeout callbacks from the old generation cannot release or abort the newer
-run that now owns the same agent lock. A dequeued job also rechecks its drain
+run that now owns the same agent lock. Each lease keeps its own progress time,
+so unrelated healthy wakes cannot hide a stalled slot by refreshing only the
+generation-wide clock. A dequeued job also rechecks its drain
 generation after every pre-dispatch await. Before run-log insertion, a
 superseded drain returns the job to the queue and wakes the active scheduler;
 after insertion, it returns a persisted continuation that resumes the same run
 key without inserting a duplicate row. Drain-owned jobs remain visible to
 manual supersession and cancellation while outside the queue, so an obsolete
 older request is discarded rather than resurrected by a late continuation.
+Run-key history remains intact until both the visible queue and the drain-owned
+handoff set are empty, preventing restoration from duplicating an in-flight
+logical wake.
 
 Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its

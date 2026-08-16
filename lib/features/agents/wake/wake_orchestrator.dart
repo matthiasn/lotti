@@ -502,6 +502,10 @@ class WakeOrchestrator with AgentErrorLogging {
   /// run for the same agent.
   final _drainLeasesByGeneration = <int, Set<WakeRunnerLease>>{};
 
+  /// Latest meaningful progress for each active lease. Generation-wide
+  /// progress cannot let unrelated healthy wakes hide one stalled slot.
+  final _drainLeaseProgressAt = <WakeRunnerLease, DateTime>{};
+
   /// Jobs temporarily owned by the drain while they are outside [queue] but
   /// have not started executor work yet.
   final _drainOwnedJobs = <String, WakeJob>{};
