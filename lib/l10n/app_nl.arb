@@ -2820,6 +2820,7 @@
   "goalAttainmentLabel": "{percent}% van het doel",
   "goalBannerActionFailed": "Dat is niet opgeslagen — probeer het opnieuw.",
   "goalBannerDismissForDay": "Voor vandaag verbergen",
+  "goalBannerHiddenFromBar": "Verborgen uit de bannerbalk · terug over {countdown}",
   "goalBannerRateTooltip": "Beoordeel deze banner",
   "goalBannerRatingSkip": "Overslaan",
   "goalBannerRatingTitle": "Wat vond je van deze banner?",

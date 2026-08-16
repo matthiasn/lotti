@@ -60,6 +60,40 @@ List<GoalBannerEntry> visibleGoalBannerEntries({
   ];
 }
 
+/// When [entry] returns to the SHELL dock, or null while it is eligible now.
+///
+/// Snoozes and day dismissals quiet the rotating dock only — the goal detail
+/// page always shows its goal's current banner, captioned with this deadline
+/// as a countdown, so "where did my banner go" is answered on the page that
+/// owns it. Considers the durable snooze, the durable rest-of-day dismissal
+/// (until the next local midnight) and this device's optimistic local echo,
+/// returning the LATEST active deadline.
+DateTime? goalBannerShellHiddenUntil(
+  GoalBannerEntry entry, {
+  required Map<String, GoalBannerLocalSuppression> locallySnoozedDeadlines,
+  DateTime? now,
+}) {
+  final instant = now ?? clock.now();
+  DateTime? latest;
+  void consider(DateTime? candidate) {
+    if (candidate == null || !candidate.isAfter(instant)) return;
+    if (latest == null || candidate.isAfter(latest!)) latest = candidate;
+  }
+
+  if (goalBannerIsSnoozed(entry.nudge, instant)) {
+    consider(goalBannerSnoozedUntil(entry.nudge));
+  }
+  if (goalBannerIsDismissedForDay(entry.nudge, instant)) {
+    consider(goalBannerNextLocalMidnight(instant));
+  }
+  final suppression = locallySnoozedDeadlines[entry.nudge.id];
+  if (suppression != null &&
+      suppression.activation == entry.nudge.activationCount) {
+    consider(suppression.until);
+  }
+  return latest;
+}
+
 /// Clearance the compact (mobile) dock claims above the bottom bar when a
 /// goal is speaking — the shell reserves it in the overlay-height scope so
 /// page content and FABs never sit underneath (handover 1b's reserved lane).
@@ -94,33 +128,47 @@ double goalBannerDockReservedHeight(
       ? spacing.step2 *
             2 // dot row + its bottom padding
       : 0;
+  // The persona chip scales with text size (see [GoalBannerPersonaChip]).
+  final chipSize = spacing.step6 * scaler.scale(1);
   final reservedHorizontally =
       spacing.step3 * 2 + // outer dock padding
       spacing.cardPadding + // tenant leading padding
+      chipSize + // persona chip
+      spacing.step3 + // chip → copy gap
       spacing.step2 + // tenant trailing padding
       TapTargets.minimum; // snooze target
   final measuredWidth = MediaQuery.sizeOf(context).width - reservedHorizontally;
   final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
+  // The goal-title caption rides above every headline (one ellipsized line).
+  final captionLine = _textBlockHeight(
+    tokens.typography.styles.others.caption,
+    1,
+    scaler,
+  );
   var textBlock = 0.0;
   for (final brief in activeBriefs) {
     final height =
-        brief.animation == GoalBannerAnimation.marquee && !animationsDisabled
-        ? _textBlockHeight(
-            tokens.typography.styles.subtitle.subtitle2,
-            1,
-            scaler,
-          )
-        : (TextPainter(
-            text: TextSpan(
-              text: brief.headline,
-              style: tokens.typography.styles.subtitle.subtitle2,
-            ),
-            textDirection: Directionality.of(context),
-            textScaler: scaler,
-          )..layout(maxWidth: availableWidth)).height;
+        captionLine +
+        (brief.animation == GoalBannerAnimation.marquee && !animationsDisabled
+            ? _textBlockHeight(
+                tokens.typography.styles.subtitle.subtitle2,
+                1,
+                scaler,
+              )
+            : (TextPainter(
+                text: TextSpan(
+                  text: brief.headline,
+                  style: tokens.typography.styles.subtitle.subtitle2,
+                ),
+                textDirection: Directionality.of(context),
+                textScaler: scaler,
+              )..layout(maxWidth: availableWidth)).height);
     if (height > textBlock) textBlock = height;
   }
-  final row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
+  // The row is as tall as its tallest occupant: the copy column, the
+  // visibility-action tap target, or the scale-grown persona chip.
+  var row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
+  if (chipSize > row) row = chipSize;
   // A `step1` cushion absorbs sub-pixel rounding between TextPainter and the
   // rendered animation wrapper.
   return chrome + footer + row + spacing.step1;
@@ -616,15 +664,48 @@ class _DockTenant extends ConsumerWidget {
             ),
             child: Row(
               children: [
+                // The same identity language as the full banner card: the
+                // persona chip and the goal's name, so the voice in the dock
+                // is never anonymous — a nudge only makes sense as SOME
+                // goal's nudge. Excluded from semantics: the enclosing node
+                // already announces the goal via goalBannerSemanticLabel,
+                // and merging these in would read the name (and monogram)
+                // twice before the headline.
+                ExcludeSemantics(
+                  child: GoalBannerPersonaChip.forStyle(
+                    monogram: GoalBannerPersonaChip.monogramFor(
+                      entry.goalTitle,
+                    ),
+                    style: style,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
                 Expanded(
                   key: const ValueKey('goal-banner-copy-region'),
-                  child: GoalBannerAnimatedText(
-                    text: brief.headline,
-                    animation: brief.animation,
-                    maxLines: null,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ExcludeSemantics(
+                        child: Text(
+                          entry.goalTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ),
+                      GoalBannerAnimatedText(
+                        text: brief.headline,
+                        animation: brief.animation,
+                        maxLines: null,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
                 if (!compact && brief.cta != null) ...[

@@ -2820,6 +2820,7 @@
   "goalAttainmentLabel": "{percent}% da meta",
   "goalBannerActionFailed": "Isso não foi salvo — tente novamente.",
   "goalBannerDismissForDay": "Ocultar por hoje",
+  "goalBannerHiddenFromBar": "Oculto da barra de banners · volta em {countdown}",
   "goalBannerRateTooltip": "Avaliar este banner",
   "goalBannerRatingSkip": "Ignorar",
   "goalBannerRatingTitle": "O que achaste deste banner?",

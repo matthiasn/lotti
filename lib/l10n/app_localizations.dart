@@ -10397,6 +10397,12 @@ abstract class AppLocalizations {
   /// **'Dismiss for today'**
   String get goalBannerDismissForDay;
 
+  /// Caption under a banner on the goal detail page while it is snoozed or dismissed from the shell banner bar
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden from the banner bar · back in {countdown}'**
+  String goalBannerHiddenFromBar(String countdown);
+
   /// No description provided for @goalBannerRateTooltip.
   ///
   /// In en, this message translates to:

@@ -66,34 +66,45 @@ Future<bool> showGoalBannerSnoozeSheet(
                 ),
               ),
               SizedBox(height: tokens.spacing.step4),
-              for (final option in <(_GoalBannerVisibilityAction, String)>[
-                (
-                  _GoalBannerVisibilityAction.oneHour,
-                  messages.goalBannerSnoozeOneHour,
-                ),
-                (
-                  _GoalBannerVisibilityAction.threeHours,
-                  messages.goalBannerSnoozeThreeHours,
-                ),
-                (
-                  _GoalBannerVisibilityAction.sixHours,
-                  messages.goalBannerSnoozeSixHours,
-                ),
-                (
-                  _GoalBannerVisibilityAction.eightHours,
-                  messages.goalBannerSnoozeEightHours,
-                ),
-              ]) ...[
-                DesignSystemButton(
-                  label: option.$2,
-                  leadingIcon: Icons.snooze_rounded,
-                  size: DesignSystemButtonSize.medium,
-                  fullWidth: true,
-                  onPressed: () => Navigator.of(sheetContext).pop(option.$1),
-                ),
-                SizedBox(height: tokens.spacing.step2),
-              ],
-              SizedBox(height: tokens.spacing.step1),
+              // Compact duration chips, not a wall of full-width primary
+              // slabs: four stacked medium buttons gave a quiet quick-pick
+              // the visual weight of four competing calls to action.
+              Wrap(
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  for (final option in <(_GoalBannerVisibilityAction, String)>[
+                    (
+                      _GoalBannerVisibilityAction.oneHour,
+                      messages.goalBannerSnoozeOneHour,
+                    ),
+                    (
+                      _GoalBannerVisibilityAction.threeHours,
+                      messages.goalBannerSnoozeThreeHours,
+                    ),
+                    (
+                      _GoalBannerVisibilityAction.sixHours,
+                      messages.goalBannerSnoozeSixHours,
+                    ),
+                    (
+                      _GoalBannerVisibilityAction.eightHours,
+                      messages.goalBannerSnoozeEightHours,
+                    ),
+                  ])
+                    DesignSystemButton(
+                      label: option.$2,
+                      leadingIcon: Icons.snooze_rounded,
+                      variant: DesignSystemButtonVariant.secondary,
+                      size: DesignSystemButtonSize.dense,
+                      // Compact PILLS, full-size TARGETS: these are the
+                      // sheet's primary choices, not metadata controls.
+                      tapTargetSize: MaterialTapTargetSize.padded,
+                      onPressed: () =>
+                          Navigator.of(sheetContext).pop(option.$1),
+                    ),
+                ],
+              ),
+              SizedBox(height: tokens.spacing.step3),
               DesignSystemButton(
                 label: messages.goalBannerDismissForDay,
                 variant: DesignSystemButtonVariant.tertiary,

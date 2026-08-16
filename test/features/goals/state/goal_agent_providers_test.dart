@@ -28,6 +28,7 @@ import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
+import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -723,7 +724,8 @@ void main() {
     verifyNever(() => orchestrator.addSubscription(any()));
   });
 
-  test('activeGoalNudgesProvider surfaces only ACTIVE ads of goal agents, '
+  test('activeGoalNudgesProvider surfaces ACTIVE ads of goal agents — '
+      'snoozed rows included, since snooze only quiets the shell dock — '
       'newest first, with the goal title attached', () async {
     GoalNudgeEntity nudgeRow(
       String id,
@@ -828,9 +830,14 @@ void main() {
     addTearDown(flagSub.close);
     await container.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     final entries = await container.read(activeGoalNudgesProvider.future);
+    // The SNOOZED row stays in the list: a snooze quiets the shell dock
+    // (visibleGoalBannerEntries filters per surface), while the goal detail
+    // page keeps the banner with its return countdown — dropping it here
+    // made the banner vanish from the page the moment the durable snooze
+    // reloaded this provider.
     expect(
       [for (final entry in entries) entry.nudge.id],
-      ['ad-new', 'ad-old'],
+      ['ad-snoozed', 'ad-new', 'ad-old'],
     );
     expect(entries.first.goalTitle, 'Walk daily');
 
@@ -1626,6 +1633,32 @@ void main() {
     });
   });
 
+  test('an already-expired deadline SUPERSEDES the previous local echo — a '
+      'dismissal that captured midnight before its transaction committed '
+      'must clear the stale snooze echo, not leave it standing', () {
+    final start = DateTime.utc(2026, 8, 11, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        final notifier = container.read(
+          locallySnoozedNudgeDeadlinesProvider.notifier,
+        )..add('ad-1', 1, start.add(const Duration(hours: 6)));
+        expect(
+          container.read(locallySnoozedNudgeDeadlinesProvider),
+          isNotEmpty,
+        );
+
+        // The late-committing dismissal returns a deadline already behind
+        // the clock; the durable snooze is gone, so the echo must go too.
+        notifier.add('ad-1', 1, start.subtract(const Duration(minutes: 1)));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+
+        // And its cancelled timer must not resurrect or crash later.
+        async.elapse(const Duration(hours: 7));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+      });
+    });
+  });
+
   test('a snoozed banner automatically returns at its deadline without an '
       'agent notification', () {
     final start = DateTime.utc(2026, 8, 10, 12);
@@ -1673,13 +1706,31 @@ void main() {
           ..flushMicrotasks()
           ..elapse(const Duration(milliseconds: 1))
           ..flushMicrotasks();
-        expect(container.read(activeGoalNudgesProvider).value, isEmpty);
+        // The provider KEEPS the snoozed row (the goal page shows it with
+        // a countdown); the shell dock's render-time filter hides it until
+        // the deadline...
+        expect(
+          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          'ad-snoozed',
+        );
+        expect(
+          visibleGoalBannerEntries(
+            entries: container.read(activeGoalNudgesProvider).value,
+            locallySnoozedDeadlines: const {},
+          ),
+          isEmpty,
+        );
 
         async
           ..elapse(const Duration(hours: 1, seconds: 1))
           ..flushMicrotasks();
+        // ...and at the deadline the provider's own timer invalidates it,
+        // so shell surfaces rebuild and the filter lets the row through.
         expect(
-          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          visibleGoalBannerEntries(
+            entries: container.read(activeGoalNudgesProvider).value,
+            locallySnoozedDeadlines: const {},
+          ).single.nudge.id,
           'ad-snoozed',
         );
       });
@@ -1728,13 +1779,28 @@ void main() {
           ..flushMicrotasks()
           ..elapse(const Duration(milliseconds: 1))
           ..flushMicrotasks();
-        expect(container.read(activeGoalNudgesProvider).value, isEmpty);
+        // Present in the provider (the goal page keeps it), hidden from
+        // the shell by the render-time filter until local midnight...
+        expect(
+          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          'ad-dismissed-today',
+        );
+        expect(
+          visibleGoalBannerEntries(
+            entries: container.read(activeGoalNudgesProvider).value,
+            locallySnoozedDeadlines: const {},
+          ),
+          isEmpty,
+        );
 
         async
           ..elapse(const Duration(minutes: 31))
           ..flushMicrotasks();
         expect(
-          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          visibleGoalBannerEntries(
+            entries: container.read(activeGoalNudgesProvider).value,
+            locallySnoozedDeadlines: const {},
+          ).single.nudge.id,
           'ad-dismissed-today',
         );
       });

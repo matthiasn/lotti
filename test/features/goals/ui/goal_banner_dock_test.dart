@@ -170,6 +170,86 @@ void main() {
     expect(visible.map((entry) => entry.nudge.id), ['visible']);
   });
 
+  test('goalBannerShellHiddenUntil reports the LATEST active quiet deadline '
+      '— snooze, rest-of-day dismissal or the local echo — and null once '
+      'every interval has passed', () {
+    final now = DateTime(2026, 8, 11, 12);
+
+    // Visible: no quiet interval at all.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(id: 'plain', headline: 'Visible'),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      isNull,
+    );
+
+    // A durable snooze reports its own deadline.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'snoozed',
+          headline: 'Snoozed',
+          snoozedUntil: now.add(const Duration(hours: 3)),
+        ),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      now.add(const Duration(hours: 3)).toUtc(),
+    );
+
+    // A rest-of-day dismissal hides until the next local midnight.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(id: 'dismissed', headline: 'Dismissed', dismissedForDayAt: now),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      DateTime(2026, 8, 12),
+    );
+
+    // The optimistic local echo counts for ITS activation — and the latest
+    // of several active deadlines wins.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'echoed',
+          headline: 'Echoed',
+          snoozedUntil: now.add(const Duration(hours: 1)),
+        ),
+        locallySnoozedDeadlines: {
+          'echoed': (
+            activation: 1,
+            until: now.add(const Duration(hours: 6)),
+          ),
+        },
+        now: now,
+      ),
+      now.add(const Duration(hours: 6)),
+    );
+
+    // A stale-activation echo and an expired snooze decide nothing.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'expired',
+          headline: 'Expired',
+          activationCount: 2,
+          snoozedUntil: now.subtract(const Duration(minutes: 1)),
+        ),
+        locallySnoozedDeadlines: {
+          'expired': (
+            activation: 1,
+            until: now.add(const Duration(hours: 6)),
+          ),
+        },
+        now: now,
+      ),
+      isNull,
+    );
+  });
+
   test('local suppression never hides a newer activation of the same row', () {
     final now = DateTime.utc(2026, 8, 11, 12);
     final visible = visibleGoalBannerEntries(
@@ -266,13 +346,15 @@ void main() {
           .maxLines,
       isNull,
     );
-    expect(find.byType(GoalBannerPersonaChip), findsNothing);
+    // The COMPACT (bottom) dock names its goal too — compact trims the CTA
+    // and button labels for width, never the attribution.
+    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
+    expect(find.text('Move more'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('the dock spans its host and omits secondary identity copy', (
-    tester,
-  ) async {
+  testWidgets('the dock spans its host, NAMES its goal, and omits the '
+      'tagline', (tester) async {
     await pumpDock(tester, [
       entry(
         id: 'tagline',
@@ -283,8 +365,10 @@ void main() {
     ]);
 
     expect(find.text('One walk puts the rumors to bed.'), findsNothing);
-    expect(find.text('Walk'), findsNothing);
-    expect(find.byType(GoalBannerPersonaChip), findsNothing);
+    // The voice must not be anonymous: the persona chip and the goal's name
+    // attribute the nudge — a dock tenant reads as SOME goal speaking.
+    expect(find.text('Walk'), findsOneWidget);
+    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
     expect(
       tester.getSize(find.byType(GoalBannerDock)).width,
       tester.getSize(find.byType(Scaffold)).width,
@@ -319,8 +403,10 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
           .width,
-      greaterThan(frameRect.width * 0.45),
-      reason: 'a short CTA must not reserve half the dock from the copy',
+      greaterThan(frameRect.width * 0.4),
+      reason:
+          'a short CTA must not reserve half the dock from the copy — the '
+          'persona chip and its gap are the only other fixed claims',
     );
   });
 

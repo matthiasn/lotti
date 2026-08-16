@@ -2821,6 +2821,7 @@
   "goalAttainmentLabel": "{percent} % av målet",
   "goalBannerActionFailed": "Det sparades inte — försök igen.",
   "goalBannerDismissForDay": "Dölj resten av dagen",
+  "goalBannerHiddenFromBar": "Dold från bannerfältet · tillbaka om {countdown}",
   "goalBannerRateTooltip": "Betygsätt den här bannern",
   "goalBannerRatingSkip": "Hoppa över",
   "goalBannerRatingTitle": "Vad tyckte du om den här bannern?",

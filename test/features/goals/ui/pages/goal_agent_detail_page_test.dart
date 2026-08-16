@@ -530,6 +530,202 @@ void main() {
     });
   });
 
+  testWidgets('a banner snoozed from the shell dock STAYS on its goal page, '
+      'captioned with when it returns to the bar', (tester) async {
+    final now = DateTime(2026, 8, 11, 12);
+    final snoozed =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-goal-1',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Two walks left this window.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            activeGoalNudgesProvider.overrideWith(
+              (ref) async => [
+                (
+                  nudge: snoozed.copyWith(
+                    snoozedUntil: now.add(const Duration(hours: 1)),
+                  ),
+                  goalTitle: 'Move more',
+                ),
+              ],
+            ),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      // Bounded pumps: the return countdown runs a real second-tick.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // The shell dock filters this banner out (visibleGoalBannerEntries),
+      // but the goal page does NOT: the banner card stays, and the caption
+      // says when it returns to the bar instead of letting it vanish.
+      expect(find.text('Two walks left this window.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('goal-banner-shell-return-countdown')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Hidden from the banner bar'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('1:00:00'), findsOneWidget);
+    });
+  });
+
+  testWidgets('the return countdown ticks down, disappears when the quiet '
+      'interval passes, and re-arms when a new snooze lands on the same '
+      'banner', (tester) async {
+    var current = DateTime(2026, 8, 11, 12);
+    final entriesNotifier = ValueNotifier<List<GoalBannerEntry>>([]);
+    addTearDown(entriesNotifier.dispose);
+    GoalBannerEntry snoozedEntry(DateTime until) => (
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: 'ad-goal-1',
+                agentId: 'goal-1',
+                status: GoalNudgeStatus.active,
+                brief: const GoalNudgeBrief(
+                  headline: 'Two walks left this window.',
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                snoozedUntil: until,
+                createdAt: DateTime(2026, 8, 10),
+                updatedAt: DateTime(2026, 8, 10),
+                vectorClock: null,
+              )
+              as GoalNudgeEntity,
+      goalTitle: 'Move more',
+    );
+    entriesNotifier.value = [
+      snoozedEntry(current.add(const Duration(seconds: 2))),
+    ];
+    await withClock(Clock(() => current), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            activeGoalNudgesProvider.overrideWith((ref) async {
+              final listener = entriesNotifier;
+              void refresh() => ref.invalidateSelf();
+              listener.addListener(refresh);
+              ref.onDispose(() => listener.removeListener(refresh));
+              return listener.value;
+            }),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final countdown = find.byKey(
+        const ValueKey('goal-banner-shell-return-countdown'),
+      );
+      expect(countdown, findsOneWidget);
+
+      // The deadline passes: the next tick recomputes zero remaining and
+      // the caption disappears — it must never state a falsehood about a
+      // banner the bar is already showing again.
+      current = current.add(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(countdown, findsNothing);
+      // The banner card itself stays, of course.
+      expect(find.text('Two walks left this window.'), findsOneWidget);
+
+      // A NEW snooze lands on the same banner: the same countdown element
+      // gets the later deadline (didUpdateWidget resync) and re-arms.
+      entriesNotifier.value = [
+        snoozedEntry(current.add(const Duration(hours: 1))),
+      ];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(countdown, findsOneWidget);
+      expect(find.textContaining('1:00:00'), findsOneWidget);
+
+      // Extending the snooze while the caption is VISIBLE updates the same
+      // element in place — the displayed remaining time jumps to the new
+      // deadline, proving the resync rather than a remount.
+      entriesNotifier.value = [
+        snoozedEntry(current.add(const Duration(hours: 2))),
+      ];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('2:00:00'), findsOneWidget);
+    });
+  });
+
   testWidgets('a standing report renders its one-liner instead of the '
       'no-report hint', (tester) async {
     await tester.pumpWidget(
@@ -1207,8 +1403,14 @@ void main() {
         );
     await tester.pump();
 
-    expect(find.byType(GoalBannerCard), findsNWidgets(2));
-    expect(find.text('The stairs filed a complaint.'), findsNothing);
+    // Snooze quiets the SHELL dock, never this page: the goal's own page
+    // keeps the banner and captions it with the return countdown instead.
+    expect(find.byType(GoalBannerCard), findsNWidgets(3));
+    expect(find.text('The stairs filed a complaint.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-banner-shell-return-countdown')),
+      findsOneWidget,
+    );
     expect(find.text('Shoes miss you.'), findsOneWidget);
     expect(find.text('Third day on the couch.'), findsOneWidget);
   });

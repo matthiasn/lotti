@@ -6159,6 +6159,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalBannerDismissForDay => 'Ascundeți pentru azi';
 
   @override
+  String goalBannerHiddenFromBar(String countdown) {
+    return 'Ascuns din bara de bannere · revine în $countdown';
+  }
+
+  @override
   String get goalBannerRateTooltip => 'Evaluați acest banner';
 
   @override

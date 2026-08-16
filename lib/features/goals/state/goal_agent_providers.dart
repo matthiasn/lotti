@@ -353,16 +353,18 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
                   (activeVersionId == null || origin != activeVersionId))) {
             continue;
           }
-          // Staleness and snooze are both timed visibility boundaries. A
-          // snooze leaves the row active so this exact activation returns.
+          // Staleness ENDS a banner; snoozes and day dismissals only quiet
+          // the SHELL dock. Hidden-from-the-bar rows therefore stay in this
+          // list — the dock and the shell's reserved lane apply
+          // `visibleGoalBannerEntries` per surface, while the goal detail
+          // page keeps the banner and captions it with the return
+          // countdown. Deadlines still arm self-invalidation so every
+          // surface refreshes when a quiet interval passes.
           considerDeadline(nudge.staleAt);
           if (nudge.staleAt != null && !now.isBefore(nudge.staleAt!)) continue;
-          final snoozedUntil = goalBannerSnoozedUntil(nudge);
-          considerDeadline(snoozedUntil);
-          if (goalBannerIsSnoozed(nudge, now)) continue;
+          considerDeadline(goalBannerSnoozedUntil(nudge));
           if (goalBannerIsDismissedForDay(nudge, now)) {
             considerDeadline(goalBannerNextLocalMidnight(now));
-            continue;
           }
           entries.add((
             nudge: nudge,
@@ -476,7 +478,19 @@ class LocallySnoozedNudgeDeadlines
 
   void add(String id, int activation, DateTime until) {
     final now = clock.now();
-    if (!until.isAfter(now)) return;
+    if (!until.isAfter(now)) {
+      // A quiet interval that is already over still supersedes whatever
+      // echo came before it: a "Dismiss for today" that captured midnight
+      // before the transaction but committed after returns an expired
+      // deadline AND cleared the durable snooze — leaving the old echo in
+      // place would keep the banner hidden from the dock on this device
+      // until a deadline the durable state no longer knows.
+      final timer = _timers.remove(id)?..cancel();
+      if (timer != null || state.containsKey(id)) {
+        state = Map.of(state)..remove(id);
+      }
+      return;
+    }
     _timers[id]?.cancel();
     state = {...state, id: (activation: activation, until: until)};
     _timers[id] = Timer(until.difference(now), () {

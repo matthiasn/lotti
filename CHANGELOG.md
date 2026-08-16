@@ -104,6 +104,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Habit cards say where else a habit counts.** A habit shared by several
   goals shows "Also in {goal}" on each goal's detail card — recorded once,
   reflected everywhere.
+- **Banners say whose voice they are.** Every banner in the rotating bar now
+  carries its goal's persona chip and name — on desktop and on the compact
+  bottom bar — so with several goals speaking, each nudge is attributed at
+  a glance.
+- **Snoozing a banner quiets the bar, not the goal's own page.** The goal
+  detail page now always shows its goal's current banner; while it is
+  snoozed or dismissed from the bar, a live countdown under the card says
+  when it returns. The snooze sheet's four full-width buttons became
+  compact duration chips.
 - **A failed agent update says why.** When the goal read cannot refresh —
   the AI provider is out of credits, the network is down — the card now
   shows the reason in an error line, instead of sitting silently on
