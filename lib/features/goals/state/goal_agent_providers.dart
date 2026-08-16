@@ -478,7 +478,19 @@ class LocallySnoozedNudgeDeadlines
 
   void add(String id, int activation, DateTime until) {
     final now = clock.now();
-    if (!until.isAfter(now)) return;
+    if (!until.isAfter(now)) {
+      // A quiet interval that is already over still supersedes whatever
+      // echo came before it: a "Dismiss for today" that captured midnight
+      // before the transaction but committed after returns an expired
+      // deadline AND cleared the durable snooze — leaving the old echo in
+      // place would keep the banner hidden from the dock on this device
+      // until a deadline the durable state no longer knows.
+      final timer = _timers.remove(id)?..cancel();
+      if (timer != null || state.containsKey(id)) {
+        state = Map.of(state)..remove(id);
+      }
+      return;
+    }
     _timers[id]?.cancel();
     state = {...state, id: (activation: activation, until: until)};
     _timers[id] = Timer(until.difference(now), () {

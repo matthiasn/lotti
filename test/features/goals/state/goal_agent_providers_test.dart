@@ -1633,6 +1633,32 @@ void main() {
     });
   });
 
+  test('an already-expired deadline SUPERSEDES the previous local echo — a '
+      'dismissal that captured midnight before its transaction committed '
+      'must clear the stale snooze echo, not leave it standing', () {
+    final start = DateTime.utc(2026, 8, 11, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        final notifier = container.read(
+          locallySnoozedNudgeDeadlinesProvider.notifier,
+        )..add('ad-1', 1, start.add(const Duration(hours: 6)));
+        expect(
+          container.read(locallySnoozedNudgeDeadlinesProvider),
+          isNotEmpty,
+        );
+
+        // The late-committing dismissal returns a deadline already behind
+        // the clock; the durable snooze is gone, so the echo must go too.
+        notifier.add('ad-1', 1, start.subtract(const Duration(minutes: 1)));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+
+        // And its cancelled timer must not resurrect or crash later.
+        async.elapse(const Duration(hours: 7));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+      });
+    });
+  });
+
   test('a snoozed banner automatically returns at its deadline without an '
       'agent notification', () {
     final start = DateTime.utc(2026, 8, 10, 12);

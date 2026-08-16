@@ -464,7 +464,10 @@ flowchart TD
   carrying an explicit UTC marker or numeric offset, and an id from the
   active-ad subset (a retired reusable ad is not a snooze target): the same active nudge
   keeps its activation and rating history, stores typed current snooze state,
-  appends timing evidence, disappears from every banner surface, and returns
+  appends timing evidence, disappears from the SHELL banner surfaces (the
+  rotating dock and its reserved lane — the goal's own detail page keeps the
+  banner with a return countdown, see the banner-surface invariant below),
+  and returns to the dock
   when the active-banner provider reaches the deadline or reloads after it.
   Snooze extends the
   activation's `staleAt` past that reveal instant so the hidden interval cannot

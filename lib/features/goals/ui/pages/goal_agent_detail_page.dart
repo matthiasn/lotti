@@ -1946,11 +1946,12 @@ class _GoalBannerShellReturnCountdownState
         SizedBox(width: tokens.spacing.step1),
         Expanded(
           child: Text(
+            // Wraps freely: the countdown value sits at the END of the
+            // sentence in most locales, and a one-line ellipsis would cut
+            // off the exact return time this caption exists to state.
             context.messages.goalBannerHiddenFromBar(
               formatCountdown(countdownSeconds),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.lowEmphasis,
             ),
