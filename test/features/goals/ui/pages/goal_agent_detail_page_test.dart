@@ -615,6 +615,106 @@ void main() {
     });
   });
 
+  testWidgets('the return countdown ticks down, disappears when the quiet '
+      'interval passes, and re-arms when a new snooze lands on the same '
+      'banner', (tester) async {
+    var current = DateTime(2026, 8, 11, 12);
+    final entriesNotifier = ValueNotifier<List<GoalBannerEntry>>([]);
+    addTearDown(entriesNotifier.dispose);
+    GoalBannerEntry snoozedEntry(DateTime until) => (
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: 'ad-goal-1',
+                agentId: 'goal-1',
+                status: GoalNudgeStatus.active,
+                brief: const GoalNudgeBrief(
+                  headline: 'Two walks left this window.',
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                snoozedUntil: until,
+                createdAt: DateTime(2026, 8, 10),
+                updatedAt: DateTime(2026, 8, 10),
+                vectorClock: null,
+              )
+              as GoalNudgeEntity,
+      goalTitle: 'Move more',
+    );
+    entriesNotifier.value = [
+      snoozedEntry(current.add(const Duration(seconds: 2))),
+    ];
+    await withClock(Clock(() => current), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            activeGoalNudgesProvider.overrideWith((ref) async {
+              final listener = entriesNotifier;
+              void refresh() => ref.invalidateSelf();
+              listener.addListener(refresh);
+              ref.onDispose(() => listener.removeListener(refresh));
+              return listener.value;
+            }),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      final countdown = find.byKey(
+        const ValueKey('goal-banner-shell-return-countdown'),
+      );
+      expect(countdown, findsOneWidget);
+
+      // The deadline passes: the next tick recomputes zero remaining and
+      // the caption disappears — it must never state a falsehood about a
+      // banner the bar is already showing again.
+      current = current.add(const Duration(seconds: 3));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pump();
+      expect(countdown, findsNothing);
+      // The banner card itself stays, of course.
+      expect(find.text('Two walks left this window.'), findsOneWidget);
+
+      // A NEW snooze lands on the same banner: the same countdown element
+      // gets the later deadline (didUpdateWidget resync) and re-arms.
+      entriesNotifier.value = [
+        snoozedEntry(current.add(const Duration(hours: 1))),
+      ];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(countdown, findsOneWidget);
+    });
+  });
+
   testWidgets('a standing report renders its one-liner instead of the '
       'no-report hint', (tester) async {
     await tester.pumpWidget(
