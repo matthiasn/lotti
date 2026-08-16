@@ -213,7 +213,9 @@ extension WakeDrainEngine on WakeOrchestrator {
               return job.runKey;
             },
           );
-          _drainLastProgressAt = clock.now();
+          if (_drainGeneration == generation) {
+            _drainLastProgressAt = clock.now();
+          }
         }
 
         // Requeue skipped busy/throttled jobs before waiting. Active wakes use
@@ -246,7 +248,9 @@ extension WakeDrainEngine on WakeOrchestrator {
         );
         if (completedExecution != null) {
           await completedExecution;
-          _drainLastProgressAt = clock.now();
+          if (_drainGeneration == generation) {
+            _drainLastProgressAt = clock.now();
+          }
         }
       }
     } finally {
