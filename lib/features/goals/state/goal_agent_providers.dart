@@ -294,11 +294,16 @@ typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
 final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
     FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
       // The banner mounts are unconditional on their host pages, so the
-      // rollout flag gates HERE: agents off → no banners, even for ads
-      // that synced in from a device that has the feature enabled.
+      // rollout flags gate HERE: with BOTH goal surfaces off → no banners,
+      // even for ads that synced in from a device that has the feature
+      // enabled. Either surface (the legacy Agents tab or the unified Goals
+      // tab) is enough — the goals-hosted detail page renders the same
+      // banners.
       final agentsEnabled =
           ref.watch(configFlagProvider(enableAgentsPageFlag)).value ?? false;
-      if (!agentsEnabled) return const [];
+      final unifiedGoalsEnabled =
+          ref.watch(configFlagProvider(enableUnifiedGoalsFlag)).value ?? false;
+      if (!agentsEnabled && !unifiedGoalsEnabled) return const [];
       final lifecycleListener = AppLifecycleListener(
         onResume: ref.invalidateSelf,
       );

@@ -541,31 +541,35 @@ void main() {
       expect(navService.index, 0);
     });
 
-    test('getIdFromSavedRoute', () async {
-      await settingsDb.saveSettingsItem(
-        lastRouteKey,
-        '/journal/123e4567-e89b-12d3-a456-426614174000',
-      );
-      final id = await getIdFromSavedRoute();
-      expect(id, '123e4567-e89b-12d3-a456-426614174000');
-    });
+    test('getIdFromSavedRoute resolves the ACTIVE tab, not the persisted '
+        'route', () async {
+      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      final navService = getIt<NavService>();
+      addTearDown(() => navService.beamToNamed('/tasks'));
 
-    test('getIdFromSavedRoute yields NO creation context on agents routes '
-        '— the UUID there is an agent, not a journal parent', () async {
-      await settingsDb.saveSettingsItem(
-        lastRouteKey,
-        '/agents/details/123e4567-e89b-12d3-a456-426614174000',
-      );
+      // A stale persisted route must not leak into creation context…
+      await settingsDb.saveSettingsItem(lastRouteKey, '/journal/$uuid');
+      navService.beamToNamed('/tasks');
+      expect(await getIdFromSavedRoute(), isNull);
+
+      // …while the active tab's live entity route does provide it.
+      navService.beamToNamed('/journal/$uuid');
+      expect(await getIdFromSavedRoute(), uuid);
+
+      // Switching tabs by INDEX (a nav-bar tap persists nothing) drops the
+      // context: the user already left the entity.
+      navService.setIndex(navService.beamerDelegates.length - 1);
       expect(await getIdFromSavedRoute(), isNull);
     });
 
-    test('getIdFromSavedRoute yields NO creation context on unified Goals '
-        'routes either — the same agent id lives under /goals', () async {
-      await settingsDb.saveSettingsItem(
-        lastRouteKey,
-        '/goals/details/123e4567-e89b-12d3-a456-426614174000',
-      );
-      expect(await getIdFromSavedRoute(), isNull);
+    test('creationContextIdForRoute yields NO context on agents or unified '
+        'Goals routes — the UUID there is an agent, not a journal parent', () {
+      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      expect(creationContextIdForRoute('/journal/$uuid'), uuid);
+      expect(creationContextIdForRoute('/agents/details/$uuid'), isNull);
+      expect(creationContextIdForRoute('/goals/details/$uuid'), isNull);
+      expect(creationContextIdForRoute('/tasks'), isNull);
+      expect(creationContextIdForRoute(null), isNull);
     });
 
     group('desktop selected entry id', () {

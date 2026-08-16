@@ -40,10 +40,16 @@ import '../../../habits/test_utils.dart';
 final _now = DateTime(2026, 8, 15, 14);
 
 /// Serves a fixed [HabitHeatmapData] so the page's heatmap card renders
-/// without the database-backed controller.
+/// without the database-backed controller. Counts builds so the midnight
+/// test can assert the projection was invalidated.
+int _heatmapBuilds = 0;
+
 class _FakeHeatmapController extends HabitHeatmapController {
   @override
-  HabitHeatmapData build() => HabitHeatmapData.empty();
+  HabitHeatmapData build() {
+    _heatmapBuilds++;
+    return HabitHeatmapData.empty();
+  }
 }
 
 void main() {
@@ -117,6 +123,7 @@ void main() {
   );
 
   setUp(() {
+    _heatmapBuilds = 0;
     when(
       () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
     ).thenAnswer((_) => habitFlossing);
@@ -627,7 +634,9 @@ void main() {
 
     // And the CONTROLLER was asked to rebucket: `showFrom` bucketing and the
     // per-day maps are time-derived, so a bare rebuild would keep serving
-    // yesterday's split.
+    // yesterday's split. The heatmap projection has no clock of its own, so
+    // it must be rebuilt too (range cap, today-cell, streak baselines).
     expect(controller.refreshNowCalls, 1);
+    expect(_heatmapBuilds, greaterThanOrEqualTo(2));
   });
 }

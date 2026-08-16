@@ -77,8 +77,11 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         if (!mounted) return;
         // The controller's buckets are time-derived too (`showFrom` moves a
         // habit between Due and Later at the boundary) — a bare rebuild
-        // would re-gate against yesterday's split.
+        // would re-gate against yesterday's split. The heatmap projection
+        // has no clock of its own either: without this it keeps yesterday's
+        // range cap, today-cell and streak baselines until a data event.
         unawaited(ref.read(habitsControllerProvider.notifier).refreshNow());
+        ref.invalidate(habitHeatmapControllerProvider);
         setState(() {});
         _scheduleMidnightRebuild();
       },

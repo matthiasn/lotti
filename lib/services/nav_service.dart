@@ -476,19 +476,37 @@ class NavService {
   }
 }
 
-Future<String?> getIdFromSavedRoute() async {
+/// The linked-entity id a global create command should attach to for
+/// [route], or null for an unlinked start.
+///
+/// Agents and unified-Goals routes carry an AGENT id: no journal parent
+/// exists there, so creation must start unlinked instead of pointing a new
+/// entry at a goal agent.
+@visibleForTesting
+String? creationContextIdForRoute(String? route) {
+  if (route == null) return null;
+  if (route.startsWith('/agents') || route.startsWith('/goals')) return null;
   final regExp = RegExp(
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,
   );
-  final route = await getIt<NavService>().getSavedRoute();
-  // Agents and unified-Goals routes carry an AGENT id: no journal parent
-  // exists there, so a global create command must start unlinked instead of
-  // pointing a new entry at a goal agent.
-  if ('$route'.startsWith('/agents') || '$route'.startsWith('/goals')) {
-    return null;
+  return regExp.firstMatch(route)?.group(0);
+}
+
+Future<String?> getIdFromSavedRoute() async {
+  // The ACTIVE tab's live location, not the persisted route: tab taps change
+  // only the index, so the persisted route can still point at an entity on a
+  // tab the user already left — and a global create command would silently
+  // link the new entry to it. The persisted route stays as the fallback for
+  // the window before the delegate list is available.
+  final navService = getIt<NavService>();
+  final delegates = navService.beamerDelegates;
+  String? route;
+  if (navService.index >= 0 && navService.index < delegates.length) {
+    route = delegates[navService.index].configuration.uri.path;
   }
-  return regExp.firstMatch('$route')?.group(0);
+  route ??= await navService.getSavedRoute();
+  return creationContextIdForRoute(route);
 }
 
 // Global override for testing
