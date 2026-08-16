@@ -1844,7 +1844,10 @@ void main() {
     expect(find.text('No active habits are available yet.'), findsOneWidget);
     await tester.ensureVisible(find.text('Create a habit first'));
     await tester.tap(find.text('Create a habit first'));
-    expect(navigated, ['/habits']);
+    // Habit settings, not the flag-gated Habits tab: creation lives there,
+    // and the settings tab is always enabled — /habits would be normalized
+    // to /tasks when only the unified Goals flag is on.
+    expect(navigated, ['/settings/habits']);
   });
 
   testWidgets('an empty measurable source links to measurable setup', (

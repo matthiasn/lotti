@@ -97,10 +97,13 @@ void main() {
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
-        // The banner provider is gated on the agents rollout flag.
+        // The banner provider is gated on the goal-surface rollout flags.
         configFlagProvider(
           enableAgentsPageFlag,
         ).overrideWith((ref) => Stream.value(true)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
+        ).overrideWith((ref) => Stream.value(false)),
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
@@ -1978,12 +1981,15 @@ void main() {
     expect([for (final a in agents) a.agentId], ['goal-a']);
   });
 
-  test('the banner provider returns nothing while the rollout flag is '
-      'off', () async {
+  test('the banner provider returns nothing while BOTH goal-surface flags '
+      'are off', () async {
     final gated = ProviderContainer(
       overrides: [
         configFlagProvider(
           enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(false)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
         ).overrideWith((ref) => Stream.value(false)),
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
@@ -1995,10 +2001,53 @@ void main() {
       (_, _) {},
     );
     addTearDown(flagSub.close);
+    final unifiedSub = gated.listen(
+      configFlagProvider(enableUnifiedGoalsFlag),
+      (_, _) {},
+    );
+    addTearDown(unifiedSub.close);
     await gated.read(configFlagProvider(enableAgentsPageFlag).future);
+    await gated.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
     verifyNever(
       () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
     );
+  });
+
+  test('the unified Goals flag ALONE opens the banner gate — the '
+      'goals-hosted detail page renders the same banners with the legacy '
+      'Agents tab off', () async {
+    when(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    ).thenAnswer((_) async => []);
+    final gated = ProviderContainer(
+      overrides: [
+        configFlagProvider(
+          enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(false)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
+        ).overrideWith((ref) => Stream.value(true)),
+        agentServiceProvider.overrideWithValue(agentService),
+        agentRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(gated.dispose);
+    final flagSub = gated.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    final unifiedSub = gated.listen(
+      configFlagProvider(enableUnifiedGoalsFlag),
+      (_, _) {},
+    );
+    addTearDown(unifiedSub.close);
+    await gated.read(configFlagProvider(enableAgentsPageFlag).future);
+    await gated.read(configFlagProvider(enableUnifiedGoalsFlag).future);
+    expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
+    verify(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    ).called(1);
   });
 }

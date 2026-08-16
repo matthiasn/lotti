@@ -115,8 +115,43 @@ void main() {
 
       expect(find.byType(LineChart), findsOneWidget);
       expect(find.textContaining('7-day avg'), findsOneWidget);
-      // Empty data → the forward-looking goal line, not a pass/fail count.
-      expect(find.textContaining('goal'), findsOneWidget);
+      // Empty data → the forward-looking target line, not a pass/fail count.
+      expect(find.textContaining('target'), findsOneWidget);
+    });
+
+    testWidgets('the headline flows to a second line at phone width '
+        'instead of overflowing', (tester) async {
+      // Regression: renaming the badge to "pts to target" made the headline
+      // row (rate block + target chip + trend chip) wider than a phone-width
+      // card, overflowing its right edge by a few pixels. The headline is a
+      // Wrap now, so the chips drop to a second line. Reverting the Wrap
+      // makes this fail with a RenderFlex overflow exception.
+      tester.view.physicalSize = const Size(358, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpChart(tester, state: _fourteenDayState());
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('to target'), findsOneWidget);
+    });
+
+    testWidgets('a wrapped headline grows downward instead of overlapping '
+        'the plot', (tester) async {
+      tester.view.physicalSize = const Size(358, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpChart(tester, state: _fourteenDayState());
+      expect(tester.takeException(), isNull);
+
+      // Second run: the target chip sits BELOW the rate block…
+      final rateRect = tester.getRect(find.textContaining('7-day avg'));
+      final chipRect = tester.getRect(find.textContaining('to target'));
+      expect(chipRect.top, greaterThanOrEqualTo(rateRect.bottom - 1));
+      // …and the plot starts below the grown header instead of underneath it.
+      final chartRect = tester.getRect(find.byType(LineChart));
+      expect(chartRect.top, greaterThanOrEqualTo(chipRect.bottom - 1));
     });
 
     testWidgets('disables the implicit data-swap animation', (tester) async {
@@ -137,8 +172,8 @@ void main() {
       // The rate and its unit read as one inline group "50%  7-day avg".
       expect(find.textContaining('50%'), findsOneWidget);
       expect(find.textContaining('7-day avg'), findsOneWidget);
-      // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
-      expect(find.textContaining('30 pts to goal'), findsOneWidget);
+      // 50% average → 30 pts to the 80% target (gain-framed, not pass/fail).
+      expect(find.textContaining('30 pts to target'), findsOneWidget);
       // A full prior week exists and is identical → flat trend.
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
       // The never-kept habit is named as the laggard, gain-framed.
@@ -146,7 +181,7 @@ void main() {
       expect(find.textContaining('kept 0 of 14'), findsOneWidget);
     });
 
-    testWidgets('the goal chip flips to "On track" at/above target', (
+    testWidgets('the target chip flips to "On track" at/above target', (
       tester,
     ) async {
       final days = [
@@ -160,7 +195,7 @@ void main() {
           allByDay: {
             for (final day in days) day: const {'h1'},
           },
-          // Every day kept → 100% average, at/above the 80% goal.
+          // Every day kept → 100% average, at/above the 80% target.
           successfulByDay: {
             for (final day in days) day: const {'h1'},
           },
@@ -168,7 +203,7 @@ void main() {
       );
 
       expect(find.text('On track'), findsOneWidget);
-      expect(find.textContaining('to goal'), findsNothing);
+      expect(find.textContaining('to target'), findsNothing);
     });
 
     testWidgets('hides the trend chip on the short 7-day window', (

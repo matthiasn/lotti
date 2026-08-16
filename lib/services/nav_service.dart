@@ -29,7 +29,8 @@ class NavService {
     resetTabsToRoots();
 
     _navigationFlagsSub =
-        Rx.combineLatest6<
+        Rx.combineLatest7<
+              bool,
               bool,
               bool,
               bool,
@@ -43,6 +44,7 @@ class NavService {
                 bool projects,
                 bool events,
                 bool agents,
+                bool unifiedGoals,
               })
             >(
               _journalDb.watchConfigFlag(enableHabitsPageFlag),
@@ -51,13 +53,23 @@ class NavService {
               _journalDb.watchConfigFlag(enableProjectsFlag),
               _journalDb.watchConfigFlag(enableEventsFlag),
               _journalDb.watchConfigFlag(enableAgentsPageFlag),
-              (habits, dashboards, dailyOs, projects, events, agents) => (
+              _journalDb.watchConfigFlag(enableUnifiedGoalsFlag),
+              (
+                habits,
+                dashboards,
+                dailyOs,
+                projects,
+                events,
+                agents,
+                unifiedGoals,
+              ) => (
                 habits: habits,
                 dashboards: dashboards,
                 dailyOs: dailyOs,
                 projects: projects,
                 events: events,
                 agents: agents,
+                unifiedGoals: unifiedGoals,
               ),
             )
             .listen(_handleNavigationFlagsUpdated);
@@ -73,6 +85,7 @@ class NavService {
       bool projects,
       bool events,
       bool agents,
+      bool unifiedGoals,
     })
   >
   _navigationFlagsSub;
@@ -134,6 +147,7 @@ class NavService {
 
   bool _isHabitsPageEnabled = false;
   bool _isAgentsPageEnabled = false;
+  bool _isUnifiedGoalsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
   bool _isDailyOsPageEnabled = false;
   bool _isProjectsPageEnabled = false;
@@ -155,6 +169,7 @@ class NavService {
   final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
   final BeamerDelegate agentsDelegate = agentsBeamerDelegate;
+  final BeamerDelegate goalsDelegate = goalsBeamerDelegate;
 
   /// Sends every tab back to its root path and selects Tasks.
   ///
@@ -181,6 +196,7 @@ class NavService {
 
   bool get isHabitsPageEnabled => _isHabitsPageEnabled;
   bool get isAgentsPageEnabled => _isAgentsPageEnabled;
+  bool get isUnifiedGoalsPageEnabled => _isUnifiedGoalsPageEnabled;
   bool get isDashboardsPageEnabled => _isDashboardsPageEnabled;
   bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
@@ -204,6 +220,13 @@ class NavService {
       enabled: _isProjectsPageEnabled,
       rootPath: '/projects',
       delegate: projectsDelegate,
+    );
+    // The unified Goals tab occupies the Habits slot (the design handover's
+    // cutover position); both can be on at once during the flagged rollout.
+    yield (
+      enabled: _isUnifiedGoalsPageEnabled,
+      rootPath: '/goals',
+      delegate: goalsDelegate,
     );
     yield (
       enabled: _isHabitsPageEnabled,
@@ -267,11 +290,13 @@ class NavService {
       bool projects,
       bool events,
       bool agents,
+      bool unifiedGoals,
     })
     flags,
   ) {
     _isHabitsPageEnabled = flags.habits;
     _isAgentsPageEnabled = flags.agents;
+    _isUnifiedGoalsPageEnabled = flags.unifiedGoals;
     _isDashboardsPageEnabled = flags.dashboards;
     _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;
@@ -325,6 +350,7 @@ class NavService {
 
   int get calendarIndex => beamerDelegates.indexOf(calendarDelegate);
   int get habitsIndex => beamerDelegates.indexOf(habitsDelegate);
+  int get goalsIndex => beamerDelegates.indexOf(goalsDelegate);
   int get dashboardsIndex => beamerDelegates.indexOf(dashboardsDelegate);
   int get projectsIndex => beamerDelegates.indexOf(projectsDelegate);
   int get journalIndex => beamerDelegates.indexOf(journalDelegate);
@@ -450,17 +476,37 @@ class NavService {
   }
 }
 
-Future<String?> getIdFromSavedRoute() async {
+/// The linked-entity id a global create command should attach to for
+/// [route], or null for an unlinked start.
+///
+/// Agents and unified-Goals routes carry an AGENT id: no journal parent
+/// exists there, so creation must start unlinked instead of pointing a new
+/// entry at a goal agent.
+@visibleForTesting
+String? creationContextIdForRoute(String? route) {
+  if (route == null) return null;
+  if (route.startsWith('/agents') || route.startsWith('/goals')) return null;
   final regExp = RegExp(
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}',
     caseSensitive: false,
   );
-  final route = await getIt<NavService>().getSavedRoute();
-  // Agents routes carry an AGENT id: no journal parent exists there, so
-  // a global create command must start unlinked instead of pointing a
-  // new entry at a goal agent.
-  if ('$route'.startsWith('/agents')) return null;
-  return regExp.firstMatch('$route')?.group(0);
+  return regExp.firstMatch(route)?.group(0);
+}
+
+Future<String?> getIdFromSavedRoute() async {
+  // The ACTIVE tab's live location, not the persisted route: tab taps change
+  // only the index, so the persisted route can still point at an entity on a
+  // tab the user already left — and a global create command would silently
+  // link the new entry to it. The persisted route stays as the fallback for
+  // the window before the delegate list is available.
+  final navService = getIt<NavService>();
+  final delegates = navService.beamerDelegates;
+  String? route;
+  if (navService.index >= 0 && navService.index < delegates.length) {
+    route = delegates[navService.index].configuration.uri.path;
+  }
+  route ??= await navService.getSavedRoute();
+  return creationContextIdForRoute(route);
 }
 
 // Global override for testing

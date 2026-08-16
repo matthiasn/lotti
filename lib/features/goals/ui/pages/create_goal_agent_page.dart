@@ -25,6 +25,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
@@ -797,6 +798,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     final goalAgentService = container.read(goalAgentServiceProvider);
+    // Captured before the awaits: the exits must stay on the surface whose
+    // Beamer hosts this wizard, and the context may be unmounted by the time
+    // the service round-trips.
+    final surfaceRoot = goalSurfaceRootPath(context);
     try {
       final agentId = widget.agentId;
       if (agentId == null) {
@@ -809,7 +814,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         container
           ..invalidate(activeGoalAgentsProvider)
           ..invalidate(activeGoalNudgesProvider);
-        if (mounted) beamToNamed('/agents');
+        if (mounted) beamToNamed(surfaceRoot);
         return;
       }
 
@@ -831,7 +836,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         :final reason,
       ) when reason == GoalSpecRevisionService.ownerStaleVersionReason) {
         _invalidateGoalViews(container, agentId);
-        if (mounted) beamToNamed('/agents/details/$agentId');
+        if (mounted) beamToNamed('$surfaceRoot/details/$agentId');
         return;
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
@@ -839,7 +844,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         throw StateError(reason);
       }
       _invalidateGoalViews(container, agentId);
-      if (mounted) beamToNamed('/agents/details/$agentId');
+      if (mounted) beamToNamed('$surfaceRoot/details/$agentId');
     } on Object {
       if (mounted) {
         setState(() {
@@ -899,7 +904,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     final agentId = widget.agentId;
-    beamToNamed(agentId == null ? '/agents' : '/agents/details/$agentId');
+    beamToNamed(
+      agentId == null
+          ? goalSurfaceRootPath(context)
+          : goalDetailPath(context, agentId),
+    );
   }
 
   @override
@@ -990,6 +999,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       size: DesignSystemButtonSize.large,
       fullWidth: true,
     );
+    // Captured while the wizard's context is still hosted: the pop callback
+    // fires post-frame, after the route — and its Beamer lookup — is gone.
+    final surfaceRoot = goalSurfaceRootPath(context);
     return PopScope(
       canPop: _step == _visibleSteps.first,
       onPopInvokedWithResult: (didPop, _) {
@@ -997,7 +1009,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final agentId = widget.agentId;
             beamToNamed(
-              agentId == null ? '/agents' : '/agents/details/$agentId',
+              agentId == null ? surfaceRoot : '$surfaceRoot/details/$agentId',
             );
           });
         } else {
@@ -2679,7 +2691,12 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                         label: messages.goalFormOpenHabits,
                         onPressed: () {
                           Navigator.of(context).pop();
-                          beamToNamed('/habits');
+                          // Habit definitions are CREATED in settings, and the
+                          // settings tab is always enabled — the Habits tab is
+                          // flag-gated (and has no create affordance), so
+                          // routing there strands the wizard on /tasks when
+                          // only the unified Goals flag is on.
+                          beamToNamed('/settings/habits');
                         },
                         variant: DesignSystemButtonVariant.secondary,
                         fullWidth: true,

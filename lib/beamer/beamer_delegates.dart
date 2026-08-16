@@ -3,6 +3,7 @@ import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
+import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
@@ -103,6 +104,21 @@ final settingsBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.uri.path.contains('settings')) {
       return SettingsLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.uri.path);
+  },
+);
+
+final goalsBeamerDelegate = BeamerDelegate(
+  initialPath: '/goals',
+  updateParent: false,
+  updateFromParent: false,
+  locationBuilder: (routeInformation, _) {
+    // Root-path match (the events pattern), not a substring: `/goals` must
+    // not swallow unrelated paths that merely contain the word.
+    final path = routeInformation.uri.path;
+    if (path == '/goals' || path.startsWith('/goals/')) {
+      return GoalsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },

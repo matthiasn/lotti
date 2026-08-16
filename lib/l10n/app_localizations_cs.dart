@@ -3369,6 +3369,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit užitečné nápovědy v celé aplikaci, které vás provedou funkcemi.';
 
   @override
+  String get configFlagEnableUnifiedGoals => 'Zapnout sjednocenou stránku Cíle';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Zobrazí sjednocenou stránku Cíle v hlavní navigaci – cíle s jejich návyky uvnitř, jedna plocha pro obojí.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Vektorové vyhledávání';
 
   @override
@@ -7115,7 +7122,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsFilterPendingLater => 'později';
 
   @override
-  String get habitsGoalLineLabel => 'Cíl';
+  String get habitsGoalLineLabel => 'Cílová hodnota';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7146,7 +7153,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points b. k cíli';
+    return '$points b. k cílové hodnotě';
   }
 
   @override
@@ -8991,6 +8998,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Události';
+
+  @override
+  String get navTabTitleGoals => 'Cíle';
 
   @override
   String get navTabTitleHabits => 'Zvyky';
@@ -13060,6 +13070,43 @@ class AppLocalizationsCs extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'V ohrožení';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Žádná data';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Všech $count návyků je na dobré cestě – dnes není potřeba nic.',
+      few: 'Všechny $count návyky jsou na dobré cestě – dnes není potřeba nic.',
+      one: 'Tvůj návyk je na dobré cestě – dnes není potřeba nic.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Zatím žádná data – zaznamenej návyk nebo připoj signál a začni sledovat.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack z $total návyků na dobré cestě',
+      few: '$onTrack z $total návyků na dobré cestě',
+      one: '$onTrack z 1 návyku na dobré cestě',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Bez cíle';
 
   @override
   String get unlinkButton => 'Zrušit propojení';

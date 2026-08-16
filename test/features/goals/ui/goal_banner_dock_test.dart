@@ -11,6 +11,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -839,6 +840,23 @@ void main() {
     await tester.tap(find.text('Log a walk'));
     await tester.pump();
     expect(navigated, ['/agents/details/goal-a']);
+  });
+
+  testWidgets('with only the unified Goals flag on, dock taps route to the '
+      'Goals surface — a disabled Agents route would normalize to /tasks', (
+    tester,
+  ) async {
+    final navService = MockNavService()..unifiedGoalsPageEnabled = true;
+    getIt.registerSingleton<NavService>(navService);
+    addTearDown(() => getIt.unregister<NavService>());
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
+    ]);
+    await tester.tap(find.text('Log a walk'));
+    await tester.pump();
+    expect(navigated, ['/goals/details/goal-a']);
   });
 
   testWidgets('compact dock has no swipe-dismiss and snoozes from its action', (

@@ -128,6 +128,9 @@ void main() {
     ).thenAnswer((_) => updateController.stream);
 
     when(() => mockNavService.habitsIndex).thenReturn(habitsTabIndex);
+    // The unified Goals tab is absent in these harnesses; a disabled tab's
+    // index getter reports -1 (delegate not in the enabled list).
+    when(() => mockNavService.goalsIndex).thenReturn(-1);
     when(() => mockNavService.index).thenReturn(habitsTabIndex);
     when(
       mockNavService.getIndexStream,
@@ -283,6 +286,14 @@ void main() {
       state = container.read(habitsControllerProvider);
       expect(state.openNow.length, 1);
       expect(state.openNow.first.id, 'habit-1');
+
+      // The unfiltered buckets keep BOTH habits: the unified Goals page
+      // reads these so it can never inherit the Habits tab's hidden
+      // category selection.
+      expect(
+        state.openNowAll.map((habit) => habit.id),
+        containsAll(['habit-1', 'habit-2']),
+      );
     });
 
     test('filters completed by selected category', () async {

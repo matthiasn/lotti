@@ -72,6 +72,14 @@ sources:
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
     title: Goal create/edit flow — three-step creation, two-step editing
     last_modified: 2026-08-15
+  - id: unified-goals-page
+    resource: ../../lib/features/goals/ui/pages/unified_goals_page.dart
+    title: UnifiedGoalsPage — flag-gated Goals + Habits merge (phase 1)
+    last_modified: 2026-08-16
+  - id: goal-routes
+    resource: ../../lib/features/goals/ui/goal_routes.dart
+    title: goalSurfaceRootPath — tab-aware goal-page exits
+    last_modified: 2026-08-16
   - id: measurable-capture
     resource: ../../lib/features/goals/service/goal_measurable_capture_service.dart
     title: Approval-gated measurable capture from goal chat
@@ -976,6 +984,34 @@ flowchart TD
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate
   `activeGoalNudgesProvider` after snooze/day-dismiss/rate.
+
+- **The unified Goals surface (phase 1, flag `enable_unified_goals`)**:
+  `ui/pages/unified_goals_page.dart` merges the Habits and Goal Agents
+  tabs into one goal-centric list at `/goals`, in the Habits nav slot —
+  the Habits page's visual language (Done-today card, due/later/done/all
+  filter tabs, consistency heatmap, completion-rate chart) with one
+  expanded card per goal (`ui/unified/unified_goal_card.dart`). Cards
+  carry a four-pill status vocabulary
+  (`ui/unified/unified_goal_status.dart`: On track / At risk / Behind /
+  No data, collapsed from `GoalTrackStatus`; `recovering` reads as At
+  risk with the deterministic recovery hint folded into the pill), a
+  templated summary computed locally (never generated prose — it cannot
+  go stale), and the shared `HabitActionRow` per habit dimension. Row
+  done-state uses **success-only** completions (`successfulByDay[today]`,
+  not `successfulToday`, which also counts skips) because goal criteria
+  credit only real successes; the page reads the category-UNFILTERED
+  buckets (`openNowAll` etc.) so it cannot inherit the Habits tab's
+  hidden category filter, and every filter branch intersects with
+  `GoalHabitCompletionService.isRecordableDay` — the recording path's own
+  lifecycle gate (active flag plus the activeFrom/activeUntil window) — so
+  no row offers a quick-complete the service would reject. Habits that no goal's criteria tree claims
+  (`goalCriterionHabitIds`) render in a "not in a goal" group — gated on
+  every per-goal health having resolved, so cached habits never flash in
+  as ungrouped. `GoalsLocation` hosts the detail/chat/wizard pages under
+  `/goals/...` and the pages' exits go through `goalSurfaceRootPath()`,
+  keeping navigation inside whichever tab opened them (see
+  [navigation](../architecture/navigation.md)). Both old tabs stay
+  intact while the flag is off.
 
 ## Gotchas
 

@@ -128,6 +128,25 @@ not invalidate copy that could not cite them. Goal Agents
 list rows share one silhouette — reserved week-strip footprint, shared trend
 chip, right-aligned data block on wide rows inside a centered reading-measure
 column.
+
+A **unified Goals page** is landing behind `enable_unified_goals` (Phase 1 of
+the Habits + Goal Agents merge; `ui/pages/unified_goals_page.dart`, `/goals`
+route in the Habits nav slot): one centered column carrying the reused
+Done-today card and due/later/done/all filter tabs, one expanded card per goal
+(`ui/unified/unified_goal_card.dart` — persona chip, four-pill status with the
+recovery hint folded in, deterministic templated summary, the goal's habit
+rows with one-tap quick-complete and "N of M this window" readings), a
+"not in a goal" group for unclaimed habits, and the aggregate consistency
+heatmap and completion-rate chart (whose dashed line is now labeled *Target*,
+never "Goal", to avoid colliding with this entity). The four-pill vocabulary
+and the criterion→habit-id join live in `ui/unified/unified_goal_status.dart`.
+Goal-card rows count only real successes as done (goal criteria ignore
+skips), and the page reads the category-unfiltered habit buckets so it never
+inherits the Habits tab's hidden category filter. `GoalsLocation` hosts the
+same detail, chat and wizard pages under `/goals/...`, and those pages'
+exits go through `goalSurfaceRootPath()` (`ui/goal_routes.dart`) so Back
+stays on whichever tab opened them — the tab's actions work even with
+`enable_agents_page` off. Both old tabs stay intact while the flag is off.
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to

@@ -30,6 +30,7 @@ import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -128,17 +129,23 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     // EVERY pop — AppBar button, Android system back, iOS gesture —
     // routes through NavService so currentPath and the persisted route
     // return to the Agents root instead of pinning this child.
-    final backToList = BackButton(onPressed: () => beamToNamed('/agents'));
+    // Captured NOW, while this page's context still sits inside its hosting
+    // Beamer: the pop/deletion closures below fire after the route (and its
+    // context) is gone, when the surface could no longer be resolved.
+    final surfaceRoot = goalSurfaceRootPath(context);
+    final backToList = BackButton(
+      onPressed: () => beamToNamed(surfaceRoot),
+    );
     Widget popSafe(Widget child) => PopScope(
       // canPop stays TRUE: false would disable the iOS swipe-back
       // gesture entirely. The route pops normally; the completed pop
-      // then persists the Agents root through NavService.
+      // then persists the surface root through NavService.
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) return;
         // Post-frame: the pop is mid-router-update — persisting the root
         // synchronously would re-enter the delegate while it notifies.
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => beamToNamed('/agents'),
+          (_) => beamToNamed(surfaceRoot),
         );
       },
       child: child,
@@ -358,7 +365,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
             label: context.messages.goalChatTalkTo(goalIdentity.displayName),
-            onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
+            onPressed: () => beamToNamed(goalChatPath(context, agentId)),
             leadingIcon: Icons.chat_bubble_outline_rounded,
             // Secondary: the persistent app-bar action is the primary
             // doorway; this tail button is the convenience for readers who
@@ -446,7 +453,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 tooltip: context.messages.goalChatTalkTo(
                   goalIdentity.displayName,
                 ),
-                onPressed: () => beamToNamed('/agents/details/$agentId/chat'),
+                onPressed: () => beamToNamed(goalChatPath(context, agentId)),
               ),
             _GoalActionsMenuButton(
               agentId: agentId,
@@ -1083,7 +1090,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
       onSelected: (action) {
         switch (action) {
           case _GoalDetailMenuAction.edit:
-            beamToNamed('/agents/details/$agentId/edit');
+            beamToNamed(goalEditPath(context, agentId));
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1148,6 +1155,10 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   }
 
   Future<void> _confirmAndDelete(BuildContext context, WidgetRef ref) async {
+    // Resolved before any await: the surface must come from the page's own
+    // hosting Beamer, and the context may be gone by the time the confirm
+    // dialog and the delete round-trip.
+    final surfaceRoot = goalSurfaceRootPath(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -1176,7 +1187,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             .read(goalAgentServiceProvider)
             .deleteGoalAgent(agentId);
         if (!deleted || !context.mounted) return;
-        beamToNamed('/agents');
+        beamToNamed(surfaceRoot);
       } catch (_) {
         if (!context.mounted) return;
         ScaffoldMessenger.maybeOf(context)

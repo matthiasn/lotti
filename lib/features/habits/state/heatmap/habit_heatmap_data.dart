@@ -54,7 +54,7 @@ class HeatmapDay extends Equatable {
 /// this function is fully deterministic (no wall clock).
 ///
 /// The denominator for each day is the union of [activeBy] (habits whose
-/// `activeFrom` is on/before the day) and habits with any recorded completion
+/// activeFrom/activeUntil window contains the day) and habits with any recorded completion
 /// that day — identical to [totalForDay]. The numerator counts only `success`
 /// completions: the heatmap measures actual wins, not avoidance. To fold skips
 /// into "done", widen the type guard below to
@@ -219,6 +219,7 @@ class HabitHeatmapData extends Equatable {
     required this.hasHabits,
     required this.isLoading,
     this.streaksByHabit = const {},
+    this.daysAll,
   });
 
   factory HabitHeatmapData.empty() =>
@@ -228,9 +229,23 @@ class HabitHeatmapData extends Equatable {
   final bool hasHabits;
   final bool isLoading;
 
+  /// [days] recomputed WITHOUT the tab's category filter, for surfaces that
+  /// reuse this state but expose no category-filter control (the unified
+  /// Goals page). Null — the common case, no filter active — means [days]
+  /// already is the unfiltered picture; read through [unfilteredDays].
+  final List<HeatmapDay>? daysAll;
+
+  List<HeatmapDay> get unfilteredDays => daysAll ?? days;
+
   /// Per-habit current streak (see [currentStreaksByHabit]); habit id → length.
   final Map<String, int> streaksByHabit;
 
   @override
-  List<Object?> get props => [days, hasHabits, isLoading, streaksByHabit];
+  List<Object?> get props => [
+    days,
+    hasHabits,
+    isLoading,
+    streaksByHabit,
+    daysAll,
+  ];
 }

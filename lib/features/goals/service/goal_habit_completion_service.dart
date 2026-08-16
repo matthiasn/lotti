@@ -30,6 +30,33 @@ class GoalHabitCompletionService {
   final PersistenceLogic persistenceLogic;
   final WakeOrchestrator orchestrator;
 
+  /// Whether [habitDefinition] may receive a completion for the local
+  /// calendar [day] as of [now]: the definition is active, the day is not in
+  /// the future, and the day lies inside the `activeFrom`/`activeUntil`
+  /// window. The single source for goal-surface lifecycle gating — [record]
+  /// enforces it, and the unified Goals page uses it to decide which habit
+  /// rows are actionable at all, so the two cannot drift.
+  static bool isRecordableDay(
+    HabitDefinition habitDefinition, {
+    required DateTime day,
+    required DateTime now,
+  }) {
+    final selectedDay = DateTime(day.year, day.month, day.day);
+    final today = DateTime(now.year, now.month, now.day);
+    final activeFrom = habitDefinition.activeFrom;
+    final activeUntil = habitDefinition.activeUntil;
+    return habitDefinition.active &&
+        !selectedDay.isAfter(today) &&
+        (activeFrom == null ||
+            !selectedDay.isBefore(
+              DateTime(activeFrom.year, activeFrom.month, activeFrom.day),
+            )) &&
+        (activeUntil == null ||
+            selectedDay.isBefore(
+              DateTime(activeUntil.year, activeUntil.month, activeUntil.day),
+            ));
+  }
+
   /// Writes [outcome] for the selected local calendar [day].
   ///
   /// Historical corrections borrow the current wall-clock time while keeping
@@ -54,20 +81,7 @@ class GoalHabitCompletionService {
     if (habitDefinition == null) return false;
 
     final now = clock.now();
-    final selectedDay = DateTime(day.year, day.month, day.day);
-    final today = DateTime(now.year, now.month, now.day);
-    final activeFrom = habitDefinition.activeFrom;
-    final activeUntil = habitDefinition.activeUntil;
-    if (!habitDefinition.active ||
-        selectedDay.isAfter(today) ||
-        (activeFrom != null &&
-            selectedDay.isBefore(
-              DateTime(activeFrom.year, activeFrom.month, activeFrom.day),
-            )) ||
-        (activeUntil != null &&
-            !selectedDay.isBefore(
-              DateTime(activeUntil.year, activeUntil.month, activeUntil.day),
-            ))) {
+    if (!isRecordableDay(habitDefinition, day: day, now: now)) {
       return false;
     }
     final isToday =

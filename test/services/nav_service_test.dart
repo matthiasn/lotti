@@ -19,6 +19,8 @@ enum _GeneratedNavPathKind {
   projectsChild,
   calendarRoot,
   calendarChild,
+  goalsRoot,
+  goalsChild,
   habitsRoot,
   habitsChild,
   dashboardsRoot,
@@ -48,6 +50,8 @@ class _GeneratedNavPath {
       _GeneratedNavPathKind.projectsChild => '/projects/$suffix',
       _GeneratedNavPathKind.calendarRoot => '/calendar',
       _GeneratedNavPathKind.calendarChild => '/calendar/$suffix',
+      _GeneratedNavPathKind.goalsRoot => '/goals',
+      _GeneratedNavPathKind.goalsChild => '/goals/$suffix',
       _GeneratedNavPathKind.habitsRoot => '/habits',
       _GeneratedNavPathKind.habitsChild => '/habits/$suffix',
       _GeneratedNavPathKind.dashboardsRoot => '/dashboards',
@@ -70,6 +74,7 @@ class _GeneratedNavScenario {
   const _GeneratedNavScenario({
     required this.dailyOs,
     required this.projects,
+    required this.unifiedGoals,
     required this.habits,
     required this.dashboards,
     required this.paths,
@@ -77,6 +82,7 @@ class _GeneratedNavScenario {
 
   final bool dailyOs;
   final bool projects;
+  final bool unifiedGoals;
   final bool habits;
   final bool dashboards;
   final List<_GeneratedNavPath> paths;
@@ -87,6 +93,7 @@ class _GeneratedNavScenario {
     '/tasks',
     if (dailyOs) '/calendar',
     if (projects) '/projects',
+    if (unifiedGoals) '/goals',
     if (habits) '/habits',
     if (dashboards) '/dashboards',
     '/journal',
@@ -115,7 +122,8 @@ class _GeneratedNavScenario {
   @override
   String toString() {
     return '_GeneratedNavScenario(dailyOs: $dailyOs, projects: $projects, '
-        'habits: $habits, dashboards: $dashboards, paths: $paths)';
+        'unifiedGoals: $unifiedGoals, habits: $habits, '
+        'dashboards: $dashboards, paths: $paths)';
   }
 }
 
@@ -134,7 +142,8 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 
   glados.Generator<_GeneratedNavScenario> get navScenario =>
-      glados.CombinableAny(this).combine5(
+      glados.CombinableAny(this).combine6(
+        glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
         glados.AnyUtils(this).choose([false, true]),
@@ -143,12 +152,14 @@ extension _AnyGeneratedNavScenario on glados.Any {
         (
           bool dailyOs,
           bool projects,
+          bool unifiedGoals,
           bool habits,
           bool dashboards,
           List<_GeneratedNavPath> paths,
         ) => _GeneratedNavScenario(
           dailyOs: dailyOs,
           projects: projects,
+          unifiedGoals: unifiedGoals,
           habits: habits,
           dashboards: dashboards,
           paths: paths,
@@ -156,8 +167,9 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 }
 
-/// Bench for the flag-driven NavService tests: wires the five optional-tab
-/// flag stream controllers into a fresh NavService and registers teardown.
+/// Bench for the flag-driven NavService tests: wires the optional-tab flag
+/// stream controllers (one per flag-gated destination) into a fresh
+/// NavService and registers teardown.
 class _NavFlagBench {
   _NavFlagBench({bool registerTeardown = true}) {
     final settingsDb = SettingsDb(inMemoryDatabase: true);
@@ -172,6 +184,7 @@ class _NavFlagBench {
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
         enableAgentsPageFlag => agents.stream,
+        enableUnifiedGoalsFlag => unifiedGoals.stream,
         _ => Stream<bool>.value(false),
       };
     });
@@ -188,11 +201,13 @@ class _NavFlagBench {
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
   final agents = StreamController<bool>.broadcast(sync: true);
+  final unifiedGoals = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
-  /// Emits the five optional-tab flags at once; the Events flag stays off so
-  /// existing tab indices/delegates are unaffected (toggle [events] directly to
-  /// exercise the Events destination).
+  /// Emits the base optional-tab flags at once; the Events, Agents and
+  /// unified-Goals flags stay off so existing tab indices/delegates are
+  /// unaffected (toggle their controllers directly to exercise those
+  /// destinations).
   void emitAll({required bool enabled}) {
     dailyOs.add(enabled);
     projects.add(enabled);
@@ -200,6 +215,7 @@ class _NavFlagBench {
     dashboards.add(enabled);
     events.add(false);
     agents.add(false);
+    unifiedGoals.add(false);
   }
 
   Future<void> dispose() async {
@@ -211,6 +227,7 @@ class _NavFlagBench {
       dashboards.close(),
       events.close(),
       agents.close(),
+      unifiedGoals.close(),
     ]);
   }
 }
@@ -377,6 +394,7 @@ void main() {
       try {
         bench.dailyOs.add(scenario.dailyOs);
         bench.projects.add(scenario.projects);
+        bench.unifiedGoals.add(scenario.unifiedGoals);
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
@@ -387,6 +405,7 @@ void main() {
           navService.tasksDelegate,
           if (scenario.dailyOs) navService.calendarDelegate,
           if (scenario.projects) navService.projectsDelegate,
+          if (scenario.unifiedGoals) navService.goalsDelegate,
           if (scenario.habits) navService.habitsDelegate,
           if (scenario.dashboards) navService.dashboardsDelegate,
           navService.journalDelegate,
@@ -522,22 +541,35 @@ void main() {
       expect(navService.index, 0);
     });
 
-    test('getIdFromSavedRoute', () async {
-      await settingsDb.saveSettingsItem(
-        lastRouteKey,
-        '/journal/123e4567-e89b-12d3-a456-426614174000',
-      );
-      final id = await getIdFromSavedRoute();
-      expect(id, '123e4567-e89b-12d3-a456-426614174000');
+    test('getIdFromSavedRoute resolves the ACTIVE tab, not the persisted '
+        'route', () async {
+      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      final navService = getIt<NavService>();
+      addTearDown(() => navService.beamToNamed('/tasks'));
+
+      // A stale persisted route must not leak into creation context…
+      await settingsDb.saveSettingsItem(lastRouteKey, '/journal/$uuid');
+      navService.beamToNamed('/tasks');
+      expect(await getIdFromSavedRoute(), isNull);
+
+      // …while the active tab's live entity route does provide it.
+      navService.beamToNamed('/journal/$uuid');
+      expect(await getIdFromSavedRoute(), uuid);
+
+      // Switching tabs by INDEX (a nav-bar tap persists nothing) drops the
+      // context: the user already left the entity.
+      navService.setIndex(navService.beamerDelegates.length - 1);
+      expect(await getIdFromSavedRoute(), isNull);
     });
 
-    test('getIdFromSavedRoute yields NO creation context on agents routes '
-        '— the UUID there is an agent, not a journal parent', () async {
-      await settingsDb.saveSettingsItem(
-        lastRouteKey,
-        '/agents/details/123e4567-e89b-12d3-a456-426614174000',
-      );
-      expect(await getIdFromSavedRoute(), isNull);
+    test('creationContextIdForRoute yields NO context on agents or unified '
+        'Goals routes — the UUID there is an agent, not a journal parent', () {
+      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      expect(creationContextIdForRoute('/journal/$uuid'), uuid);
+      expect(creationContextIdForRoute('/agents/details/$uuid'), isNull);
+      expect(creationContextIdForRoute('/goals/details/$uuid'), isNull);
+      expect(creationContextIdForRoute('/tasks'), isNull);
+      expect(creationContextIdForRoute(null), isNull);
     });
 
     group('desktop selected entry id', () {
@@ -697,6 +729,7 @@ void main() {
         bench.dashboards.add(false);
         bench.events.add(true);
         bench.agents.add(false);
+        bench.unifiedGoals.add(false);
         await pumpEventQueue();
 
         expect(bench.navService.isEventsPageEnabled, isTrue);
@@ -864,6 +897,42 @@ void main() {
         );
         expect(navService.currentPath, '/tasks');
       });
+
+      test('enable_unified_goals shows the Goals tab between projects and '
+          'habits, and disabling it falls back to tasks', () async {
+        final bench = _NavFlagBench();
+        final navService = bench.navService;
+        bench.emitAll(enabled: true);
+
+        // Off (the emitAll default): the delegate is absent and the index
+        // getter reports -1 — the value the habits controller relies on to
+        // treat a disabled Goals tab as never-active.
+        expect(navService.isUnifiedGoalsPageEnabled, isFalse);
+        expect(navService.goalsIndex, -1);
+
+        bench.unifiedGoals.add(true);
+
+        expect(navService.isUnifiedGoalsPageEnabled, isTrue);
+        // The Goals tab occupies the slot directly before Habits (the design
+        // handover's cutover position).
+        expect(
+          navService.goalsIndex,
+          navService.beamerDelegates.indexOf(navService.projectsDelegate) + 1,
+        );
+        expect(navService.habitsIndex, navService.goalsIndex + 1);
+
+        navService.beamToNamed('/goals');
+        expect(navService.currentPath, '/goals');
+        expect(navService.index, navService.goalsIndex);
+
+        bench.unifiedGoals.add(false);
+        expect(navService.isUnifiedGoalsPageEnabled, isFalse);
+        expect(
+          navService.beamerDelegates.contains(navService.goalsDelegate),
+          isFalse,
+        );
+        expect(navService.currentPath, '/tasks');
+      });
     });
 
     group('_handleNavigationFlagsUpdated fallback', () {
@@ -885,6 +954,9 @@ void main() {
           );
           final eventsController = StreamController<bool>.broadcast(sync: true);
           final agentsController = StreamController<bool>.broadcast(sync: true);
+          final unifiedGoalsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
 
           when(
             () => localJournalDb.watchConfigFlag(any()),
@@ -897,6 +969,7 @@ void main() {
               enableDailyOsPageFlag => dailyOsController.stream,
               enableEventsFlag => eventsController.stream,
               enableAgentsPageFlag => agentsController.stream,
+              enableUnifiedGoalsFlag => unifiedGoalsController.stream,
               _ => Stream<bool>.value(false),
             };
           });
@@ -914,6 +987,7 @@ void main() {
               dailyOsController.close(),
               eventsController.close(),
               agentsController.close(),
+              unifiedGoalsController.close(),
             ]);
           });
 
@@ -924,6 +998,7 @@ void main() {
           dailyOsController.add(true);
           eventsController.add(false);
           agentsController.add(false);
+          unifiedGoalsController.add(false);
 
           navService.beamToNamed('/habits');
           expect(navService.currentPath, '/habits');

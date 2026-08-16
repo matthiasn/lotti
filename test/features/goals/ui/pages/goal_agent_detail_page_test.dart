@@ -1795,6 +1795,50 @@ void main() {
     expect(navigated, ['/agents']);
   });
 
+  testWidgets('the AppBar back button routes to the goal surface root — '
+      '/agents when opened from the legacy tab', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No NavService registered here, so goalSurfaceRootPath() resolves the
+    // legacy surface (see goal_routes.dart) — the pre-merge behavior.
+    await tester.tap(find.byType(BackButton));
+    await tester.pump();
+    expect(navigated, ['/agents']);
+  });
+
   testWidgets('delete failures stay on the goal and a later success returns '
       'to the list', (
     tester,

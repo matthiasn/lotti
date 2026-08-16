@@ -10,6 +10,7 @@ class FakeHabitsController extends HabitsController {
   final HabitsState _state;
 
   final List<HabitDisplayFilter?> displayFilterCalls = [];
+  int refreshNowCalls = 0;
   int toggleShowSearchCalls = 0;
   int toggleZeroBasedCalls = 0;
   bool setTimeSpanCalled = false;
@@ -22,6 +23,11 @@ class FakeHabitsController extends HabitsController {
   /// habit) against a page that watches this controller.
   // ignore: use_setters_to_change_properties
   void emit(HabitsState next) => state = next;
+
+  @override
+  Future<void> refreshNow() async {
+    refreshNowCalls++;
+  }
 
   @override
   void setDisplayFilter(HabitDisplayFilter? displayFilter) {

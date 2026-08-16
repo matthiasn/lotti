@@ -93,6 +93,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableUnifiedGoalsFlag,
+      description: 'Enable unified Goals page?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableDailyOsPageFlag,
       description: 'Enable DailyOS Page?',
       status: false,

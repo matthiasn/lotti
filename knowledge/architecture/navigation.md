@@ -52,7 +52,7 @@ sources:
 
 # One stack per tab
 
-Lotti does not have a single navigation stack. It has **eight**, one per
+Lotti does not have a single navigation stack. It has **ten**, one per
 top-level destination, each a `BeamerDelegate` with its own history:
 
 | Destination | Root path | Enabled |
@@ -60,11 +60,23 @@ top-level destination, each a `BeamerDelegate` with its own history:
 | Tasks | `/tasks` | always |
 | Daily OS (calendar) | `/calendar` | `enable_daily_os_page` |
 | Projects | `/projects` | flag |
+| Goals (unified) | `/goals` | `enable_unified_goals` |
 | Habits | `/habits` | flag |
 | Dashboards | `/dashboards` | flag |
+| Goal Agents | `/agents` | `enable_agents_page` |
 | Journal | `/journal` | always |
 | Events | `/events` | flag |
 | Settings | `/settings` | always |
+
+The unified Goals tab (phase 1 of the Habits + Goal Agents merge) sits in the
+slot directly before Habits; while its flag is off nothing changes, and while
+it is on it can coexist with both older tabs. It hosts the same goal detail,
+chat and wizard pages as the Agents tab under its own `/goals/...` paths, so
+its primary actions work — and Back returns to `/goals` — even when
+`enable_agents_page` is off (a route under a disabled tab is normalized to
+`/tasks`). The goal pages therefore compute their exits through
+`goalSurfaceRootPath()` (`lib/features/goals/ui/goal_routes.dart`), which
+keeps navigation inside whichever tab opened them.
 
 The delegates live in `lib/beamer/beamer_delegates.dart` and are all configured
 `updateParent: false, updateFromParent: false`. That is what keeps the stacks
@@ -176,6 +188,8 @@ Each delegate routes into one `BeamLocation` under
 | `ProjectsLocation` | `/projects`, `/projects/:projectId` |
 | `DashboardsLocation` | `/dashboards`, `/dashboards/impact`, `/dashboards/:dashboardId` |
 | `EventsLocation` | `/events`, `/events/:eventId` |
+| `AgentsLocation` | `/agents`, `/agents/create`, `/agents/details/:agentId[/chat\|/edit]` |
+| `GoalsLocation` | `/goals`, `/goals/create`, `/goals/details/:agentId[/chat\|/edit]` |
 | `HabitsLocation` | `/habits` |
 | `SettingsLocation` | the deepest tree in the app — `/settings` plus AI, agents, sync, advanced and entity-definition subtrees |
 
@@ -237,6 +251,7 @@ state decide what the bottom edge belongs to, following one product rule:
 | `settingsRouteHidesBottomNav` | AI and Agents sections, sync/advanced leaves, entity editors | Bar **slides away** |
 | `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
 | `agentsRouteHidesBottomNav` | `/agents/create`, `/agents/details/<id>[/chat\|/edit]` | Bar **slides away** |
+| `goalsRouteHidesBottomNav` | `/goals/create`, `/goals/details/<id>[/chat\|/edit]` | Bar **slides away** |
 
 Removal and slide-away differ on purpose: a page that docks its own bar can
 swap instantly, while a page that replaces the bar with nothing would read as a

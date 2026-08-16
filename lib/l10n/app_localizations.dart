@@ -5658,6 +5658,18 @@ abstract class AppLocalizations {
   /// **'Show helpful tooltips throughout the app to guide you through features.'**
   String get configFlagEnableTooltipDescription;
 
+  /// Settings flag title: enable the unified Goals page.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable unified Goals page'**
+  String get configFlagEnableUnifiedGoals;
+
+  /// Settings flag description for the unified Goals page.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the unified Goals page in the main navigation — goals with their habits inside, one surface for both.'**
+  String get configFlagEnableUnifiedGoalsDescription;
+
   /// No description provided for @configFlagEnableVectorSearch.
   ///
   /// In en, this message translates to:
@@ -11937,7 +11949,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsGoalLineLabel.
   ///
   /// In en, this message translates to:
-  /// **'Goal'**
+  /// **'Target'**
   String get habitsGoalLineLabel;
 
   /// No description provided for @habitsHeatmapEmpty.
@@ -11991,7 +12003,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
+  /// **'{points, plural, one{1 pt to target} other{{points} pts to target}}'**
   String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.
@@ -15098,6 +15110,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Events'**
   String get navTabTitleEvents;
+
+  /// Navigation label for the unified Goals page (goals with their habits inside).
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get navTabTitleGoals;
 
   /// No description provided for @navTabTitleHabits.
   ///
@@ -21794,6 +21812,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model: {provider}, {model}'**
   String transcriptModelLabel(String provider, String model);
+
+  /// Unified goal status pill: the goal is at risk of falling behind.
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get unifiedGoalStatusAtRisk;
+
+  /// Unified goal status pill: no data recorded yet, health cannot be judged.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get unifiedGoalStatusNoData;
+
+  /// Templated goal-card summary when every habit dimension is on track. Deterministic, computed locally — never generated prose.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Your habit is on track — nothing needed today.} other{All {count} habits on track — nothing needed today.}}'**
+  String unifiedGoalSummaryAllOnTrack(int count);
+
+  /// Templated goal-card summary for a goal with no recorded data yet — a setup nudge, not an error.
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet — record a habit or connect a signal to start tracking.'**
+  String get unifiedGoalSummaryNoData;
+
+  /// Templated goal-card summary when only some habit dimensions are on track. Deterministic, computed locally.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, one{{onTrack} of 1 habit on track} other{{onTrack} of {total} habits on track}}'**
+  String unifiedGoalSummaryPartial(int onTrack, int total);
+
+  /// Section header on the unified Goals page for habits that belong to no goal.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in a goal'**
+  String get unifiedGoalsUngroupedHabitsHeader;
 
   /// No description provided for @unlinkButton.
   ///

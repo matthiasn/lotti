@@ -362,6 +362,68 @@ void main() {
         state.days.firstWhere((d) => d.ymd == '2026-06-16').successCount,
         0,
       );
+      // The unfiltered companion keeps the full picture: the unified Goals
+      // page reads it so its aggregate heatmap cannot inherit the Habits
+      // tab's hidden category selection.
+      expect(
+        state.unfilteredDays
+            .firstWhere((d) => d.ymd == '2026-06-16')
+            .successCount,
+        1,
+      );
+
+      // With the filter cleared, no duplicate fold is paid: daysAll is null
+      // and the getter falls back to the filtered-equals-unfiltered list.
+      (container.read(habitsControllerProvider.notifier) as _FilterController)
+          .emitCategories({});
+      async.flushMicrotasks();
+      final cleared = container.read(habitHeatmapControllerProvider);
+      expect(cleared.daysAll, isNull);
+      expect(cleared.unfilteredDays, same(cleared.days));
+    }, initialTime: fixedNow);
+  });
+
+  test('refreshNow refetches in place and never republishes loading — the '
+      'day-boundary refresh must not flash the grid empty', () {
+    fakeAsync((async) {
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer(
+        (_) async => habitCompletionRecordsFrom([
+          completion(habitId: 'h1', date: DateTime(2026, 6, 16)),
+        ]),
+      );
+      final container = makeContainer();
+      addTearDown(container.dispose);
+      final loadingFlags = <bool>[];
+      container.listen(
+        habitHeatmapControllerProvider,
+        (_, next) => loadingFlags.add(next.isLoading),
+        fireImmediately: true,
+      );
+      async.flushMicrotasks();
+      definitionsController.add([habit(id: 'h1', activeFrom: DateTime(2026))]);
+      async.flushMicrotasks();
+      final before = container.read(habitHeatmapControllerProvider);
+      expect(before.isLoading, isFalse);
+
+      container.read(habitHeatmapControllerProvider.notifier).refreshNow();
+      async.flushMicrotasks();
+
+      final after = container.read(habitHeatmapControllerProvider);
+      expect(after.isLoading, isFalse);
+      expect(
+        after.days.firstWhere((d) => d.ymd == '2026-06-16').successCount,
+        1,
+      );
+      // No emission along the way flipped back to the loading placeholder.
+      final firstResolved = loadingFlags.indexOf(false);
+      expect(
+        loadingFlags.sublist(firstResolved).any((loading) => loading),
+        isFalse,
+      );
     }, initialTime: fixedNow);
   });
 

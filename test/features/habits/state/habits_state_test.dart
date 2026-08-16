@@ -160,6 +160,25 @@ void main() {
       expect(result.first.id, '1');
     });
 
+    test('excludes days on/after the exclusive activeUntil while keeping '
+        'days inside the window — a retired habit must not deflate later '
+        'denominators', () {
+      final retired = createHabit('r', lastWeek).copyWith(
+        activeUntil: DateTime(2024, 3, 10),
+      );
+      // Inside the window: counted.
+      expect(activeBy([retired], '2024-03-09').map((h) => h.id), ['r']);
+      // The activeUntil day itself is exclusive, matching the recording
+      // paths' isRecordableDay.
+      expect(activeBy([retired], '2024-03-10'), isEmpty);
+      expect(activeBy([retired], '2024-03-15'), isEmpty);
+      // Open-ended window keeps counting.
+      expect(
+        activeBy([createHabit('o', lastWeek)], '2024-03-15').length,
+        1,
+      );
+    });
+
     test('includes habits with null activeFrom (defaults to DateTime(0))', () {
       final habits = [
         createHabit('1', null),

@@ -8,6 +8,7 @@ import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
 import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -55,7 +56,11 @@ class GoalBannerCard extends ConsumerWidget {
           borderRadius: radius,
           // The card body is the doorway to the conversation about this
           // nudge; rating and visibility actions own separate controls.
-          onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
+          // Surface-aware: rendered on a Goals-hosted detail page this must
+          // stay in the Goals delegate (from the shell dock, where no goal
+          // surface encloses it, the helper resolves the legacy /agents).
+          onTap: () =>
+              beamToNamed(goalDetailPath(context, entry.nudge.agentId)),
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: radius,
@@ -164,7 +169,7 @@ class GoalBannerCard extends ConsumerWidget {
                       onTap:
                           onCtaPressed ??
                           () => beamToNamed(
-                            '/agents/details/${entry.nudge.agentId}',
+                            goalDetailPath(context, entry.nudge.agentId),
                           ),
                     ),
                   ],

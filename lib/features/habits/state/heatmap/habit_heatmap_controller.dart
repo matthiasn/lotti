@@ -112,6 +112,14 @@ class HabitHeatmapController extends Notifier<HabitHeatmapData> {
   /// Fetches the wide completion range and recomputes, but only applies the
   /// result if no newer refresh started in the meantime — so concurrent
   /// definition/completion events can't regress the grid to stale data.
+  /// Day-boundary refresh that PRESERVES the established grid: refetches
+  /// (the range cap depends on the current instant) and recomputes in
+  /// place. The unified Goals page calls this from its midnight timer —
+  /// invalidating the provider instead would flash the populated grid to
+  /// the empty placeholder and zero every row's streak while the
+  /// multi-year query reruns (the no-flash refresh rule).
+  Future<void> refreshNow() => _refreshAndRecompute();
+
   Future<void> _refreshAndRecompute() async {
     final epoch = ++_refreshEpoch;
     final completions = await _repository.getHabitCompletionsInRange(
@@ -170,6 +178,19 @@ class HabitHeatmapController extends Notifier<HabitHeatmapData> {
         selectedCategoryIds: _selectedCategoryIds,
         todayYmd: now.ymd,
       ),
+      // The unified Goals page has no category-filter control and must not
+      // inherit the Habits tab's hidden selection; recomputing the pure fold
+      // is only paid while a filter is actually active.
+      daysAll: _selectedCategoryIds.isEmpty
+          ? null
+          : buildHeatmapDays(
+              completions: _habitCompletions,
+              habitDefinitions: _habitDefinitions,
+              rangeStartYmd: _rangeStart(now).ymd,
+              rangeEndYmd: now.ymd,
+              selectedCategoryIds: const {},
+              todayYmd: now.ymd,
+            ),
       // Streaks are per habit and ignore the category filter — a habit's own
       // chain shouldn't vanish because a different category is selected.
       streaksByHabit: currentStreaksByHabit(

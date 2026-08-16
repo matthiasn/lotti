@@ -1982,6 +1982,14 @@
   "configFlagEnableSessionRatingsDescription": "Prompt for a quick session rating when you stop a timer.",
   "configFlagEnableTooltip": "Enable tooltips",
   "configFlagEnableTooltipDescription": "Show helpful tooltips throughout the app to guide you through features.",
+  "configFlagEnableUnifiedGoals": "Enable unified Goals page",
+  "@configFlagEnableUnifiedGoals": {
+    "description": "Settings flag title: enable the unified Goals page."
+  },
+  "configFlagEnableUnifiedGoalsDescription": "Show the unified Goals page in the main navigation — goals with their habits inside, one surface for both.",
+  "@configFlagEnableUnifiedGoalsDescription": {
+    "description": "Settings flag description for the unified Goals page."
+  },
   "configFlagEnableVectorSearch": "Vector Search",
   "configFlagEnableVectorSearchDescription": "Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.",
   "configFlagEnableWhatsNew": "Show What's New",
@@ -4147,7 +4155,7 @@
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
-  "habitsGoalLineLabel": "Goal",
+  "habitsGoalLineLabel": "Target",
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
@@ -4169,7 +4177,7 @@
   },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}",
+  "habitsPointsToGoal": "{points, plural, one{1 pt to target} other{{points} pts to target}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
@@ -5053,6 +5061,10 @@
   },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleEvents": "Events",
+  "navTabTitleGoals": "Goals",
+  "@navTabTitleGoals": {
+    "description": "Navigation label for the unified Goals page (goals with their habits inside)."
+  },
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Insights",
   "navTabTitleJournal": "Logbook",
@@ -6965,6 +6977,43 @@
         "type": "String"
       }
     }
+  },
+  "unifiedGoalStatusAtRisk": "At risk",
+  "@unifiedGoalStatusAtRisk": {
+    "description": "Unified goal status pill: the goal is at risk of falling behind."
+  },
+  "unifiedGoalStatusNoData": "No data",
+  "@unifiedGoalStatusNoData": {
+    "description": "Unified goal status pill: no data recorded yet, health cannot be judged."
+  },
+  "unifiedGoalSummaryAllOnTrack": "{count, plural, one{Your habit is on track — nothing needed today.} other{All {count} habits on track — nothing needed today.}}",
+  "@unifiedGoalSummaryAllOnTrack": {
+    "description": "Templated goal-card summary when every habit dimension is on track. Deterministic, computed locally — never generated prose.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unifiedGoalSummaryNoData": "No data yet — record a habit or connect a signal to start tracking.",
+  "@unifiedGoalSummaryNoData": {
+    "description": "Templated goal-card summary for a goal with no recorded data yet — a setup nudge, not an error."
+  },
+  "unifiedGoalSummaryPartial": "{total, plural, one{{onTrack} of 1 habit on track} other{{onTrack} of {total} habits on track}}",
+  "@unifiedGoalSummaryPartial": {
+    "description": "Templated goal-card summary when only some habit dimensions are on track. Deterministic, computed locally.",
+    "placeholders": {
+      "onTrack": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "unifiedGoalsUngroupedHabitsHeader": "Not in a goal",
+  "@unifiedGoalsUngroupedHabitsHeader": {
+    "description": "Section header on the unified Goals page for habits that belong to no goal."
   },
   "unlinkButton": "Unlink",
   "unlinkTaskConfirm": "Are you sure you want to unlink this task?",

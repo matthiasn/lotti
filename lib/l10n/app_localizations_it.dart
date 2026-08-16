@@ -3374,6 +3374,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra utili tooltips in tutta l\'app per guidarti attraverso le funzionalità.';
 
   @override
+  String get configFlagEnableUnifiedGoals =>
+      'Attiva la pagina Obiettivi unificata';
+
+  @override
+  String get configFlagEnableUnifiedGoalsDescription =>
+      'Mostra la pagina Obiettivi unificata nella navigazione principale: obiettivi con le loro abitudini, un\'unica superficie per entrambi.';
+
+  @override
   String get configFlagEnableVectorSearch => 'Ricerca vettoriale';
 
   @override
@@ -7128,7 +7136,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get habitsFilterPendingLater => 'più tardi';
 
   @override
-  String get habitsGoalLineLabel => 'Gol';
+  String get habitsGoalLineLabel => 'Traguardo';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7162,8 +7170,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts a gol',
-      one: '1 pt a gol',
+      other: '$points pt al traguardo',
+      one: '1 pt al traguardo',
     );
     return '$_temp0';
   }
@@ -8999,6 +9007,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get navTabTitleEvents => 'Eventi';
+
+  @override
+  String get navTabTitleGoals => 'Obiettivi';
 
   @override
   String get navTabTitleHabits => 'Abitazioni';
@@ -13085,6 +13096,41 @@ class AppLocalizationsIt extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String get unifiedGoalStatusAtRisk => 'A rischio';
+
+  @override
+  String get unifiedGoalStatusNoData => 'Nessun dato';
+
+  @override
+  String unifiedGoalSummaryAllOnTrack(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Le $count abitudini sono tutte in linea: oggi non serve nulla.',
+      one: 'La tua abitudine è in linea: oggi non serve nulla.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalSummaryNoData =>
+      'Ancora nessun dato: registra un\'abitudine o collega un segnale per iniziare.';
+
+  @override
+  String unifiedGoalSummaryPartial(int onTrack, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$onTrack su $total abitudini in linea',
+      one: '$onTrack su 1 abitudine in linea',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsUngroupedHabitsHeader => 'Senza obiettivo';
 
   @override
   String get unlinkButton => 'Un link';

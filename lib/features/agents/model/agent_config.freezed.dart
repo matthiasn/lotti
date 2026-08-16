@@ -24,10 +24,12 @@ mixin _$AgentConfig {
 /// Once present, this setup is authoritative: configured setups resolve
 /// only their direct model override or base profile, while disabled setups
 /// prohibit inference instead of falling through to legacy defaults.
- AgentInferenceSetup? get inferenceSetup;/// Whether task changes may schedule coalesced automatic wakes.
+ AgentInferenceSetup? get inferenceSetup;/// Whether watched changes may schedule coalesced automatic wakes.
 ///
-/// Null means off. New task agents and the first switch edit persist an
-/// explicit value independently from profile/model selection.
+/// New agents and the first switch edit persist an explicit value
+/// independently from profile/model selection. Legacy task agents read
+/// null as off; legacy goal agents preserve their shipped on behavior in
+/// the goal service.
  bool? get automaticUpdatesEnabled;/// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.
 /// Null falls back to the default window. Reads accept the legacy
@@ -263,10 +265,12 @@ class _AgentConfig implements AgentConfig {
 /// only their direct model override or base profile, while disabled setups
 /// prohibit inference instead of falling through to legacy defaults.
 @override final  AgentInferenceSetup? inferenceSetup;
-/// Whether task changes may schedule coalesced automatic wakes.
+/// Whether watched changes may schedule coalesced automatic wakes.
 ///
-/// Null means off. New task agents and the first switch edit persist an
-/// explicit value independently from profile/model selection.
+/// New agents and the first switch edit persist an explicit value
+/// independently from profile/model selection. Legacy task agents read
+/// null as off; legacy goal agents preserve their shipped on behavior in
+/// the goal service.
 @override final  bool? automaticUpdatesEnabled;
 /// Improver ritual cadence in days. Re-homed from `AgentSlots` (PR 4 B4):
 /// it is configuration set once at creation, not mutable derived state.

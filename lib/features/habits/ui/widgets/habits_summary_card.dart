@@ -18,7 +18,34 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// before this card; surfacing "don't break the chain" makes the habit loop's
 /// reward visible, which is the whole point of a habits surface.
 class HabitsSummaryCard extends ConsumerStatefulWidget {
-  const HabitsSummaryCard({super.key});
+  const HabitsSummaryCard({
+    this.visibleHabitIds,
+    this.doneHabitIds,
+    this.streakCounts,
+    super.key,
+  });
+
+  /// When set, the fraction and progress bar count only these habit ids —
+  /// the unified Goals page passes today's RECORDABLE definitions so a habit
+  /// whose activeFrom/activeUntil window excludes today (hidden from every
+  /// row on that surface) cannot inflate the "to go" tally with a habit the
+  /// user can neither see nor record. Null (the Habits tab) keeps the full
+  /// definition count.
+  final Set<String>? visibleHabitIds;
+
+  /// When set, "done" counts these ids instead of the controller's
+  /// `completedToday` — the unified Goals page passes its success-only set,
+  /// because on that surface a skipped habit is still due and must not read
+  /// as done. Null (the Habits tab) keeps the broader handled-today count.
+  final Set<String>? doneHabitIds;
+
+  /// When set, the streak badge shows these counts instead of the
+  /// controller-wide ones — the unified Goals page derives them from the
+  /// per-habit streaks of its RECORDABLE definitions, so a hidden
+  /// out-of-window habit's streak cannot be advertised beside totals
+  /// computed from a different set. Null (the Habits tab) keeps the
+  /// controller-wide counts.
+  final ({int short, int long})? streakCounts;
 
   @override
   ConsumerState<HabitsSummaryCard> createState() => _HabitsSummaryCardState();
@@ -40,9 +67,25 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
   /// that makes the day-done flourish read as caused by the final completion.
   static const _allDoneGlowStart = 0.27;
 
-  static bool _isAllDone(HabitsState state) =>
-      state.habitDefinitions.isNotEmpty &&
-      state.completedToday.length >= state.habitDefinitions.length;
+  bool _isAllDone(HabitsState state) {
+    final (total, done) = _counts(state);
+    return total > 0 && done >= total;
+  }
+
+  /// The (total, done) pair under the optional [HabitsSummaryCard
+  /// .visibleHabitIds] scope.
+  (int, int) _counts(HabitsState state) {
+    final filter = widget.visibleHabitIds;
+    final doneSet = widget.doneHabitIds ?? state.completedToday;
+    if (filter == null) {
+      return (state.habitDefinitions.length, doneSet.length);
+    }
+    final total = state.habitDefinitions
+        .where((habit) => filter.contains(habit.id))
+        .length;
+    final done = doneSet.where(filter.contains).length;
+    return (total, done);
+  }
 
   @override
   void dispose() {
@@ -71,8 +114,14 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     });
 
     final state = ref.watch(habitsControllerProvider);
-    final total = state.habitDefinitions.length;
-    final done = state.completedToday.length;
+    final (total, done) = _counts(state);
+    // A SCOPED card with nothing in scope renders nothing: "0 / 0 · All done
+    // today" would present an achievement where there was nothing recordable
+    // (every definition outside today's active window). The unscoped Habits
+    // tab keeps its zero-state card.
+    if (widget.visibleHabitIds != null && total == 0) {
+      return const SizedBox.shrink();
+    }
     final fraction = total == 0 ? 0.0 : (done / total).clamp(0.0, 1.0);
 
     final card = DecoratedBox(
@@ -86,10 +135,18 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
+            // A full-width Wrap, not a Row: on narrow cards, longer locales
+            // or large text scales the streak pill drops under the fraction
+            // instead of squeezing it into an overflow.
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: tokens.spacing.step4,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -100,13 +157,14 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
                       _DoneFraction(done: done, total: total),
                     ],
                   ),
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                _StreakBadge(
-                  shortStreakCount: state.shortStreakCount,
-                  longStreakCount: state.longStreakCount,
-                ),
-              ],
+                  _StreakBadge(
+                    shortStreakCount:
+                        widget.streakCounts?.short ?? state.shortStreakCount,
+                    longStreakCount:
+                        widget.streakCounts?.long ?? state.longStreakCount,
+                  ),
+                ],
+              ),
             ),
             SizedBox(height: tokens.spacing.step4),
             _ProgressBar(fraction: fraction),

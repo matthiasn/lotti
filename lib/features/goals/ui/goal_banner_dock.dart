@@ -12,6 +12,7 @@ import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -605,7 +606,8 @@ class _DockTenant extends ConsumerWidget {
         label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
         child: InkWell(
           key: const ValueKey('goal-banner-dock-tenant'),
-          onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
+          onTap: () =>
+              beamToNamed(goalDetailPathFromShell(entry.nudge.agentId)),
           child: Padding(
             padding: EdgeInsets.only(
               left: tokens.spacing.cardPadding,
@@ -635,7 +637,7 @@ class _DockTenant extends ConsumerWidget {
                     label: brief.cta!,
                     style: style,
                     onTap: () => beamToNamed(
-                      '/agents/details/${entry.nudge.agentId}',
+                      goalDetailPathFromShell(entry.nudge.agentId),
                     ),
                   ),
                 ],

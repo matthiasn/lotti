@@ -47,12 +47,19 @@ class HabitsController extends Notifier<HabitsState> {
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<HabitCompletionRecord> _habitCompletions = [];
 
-  /// Tracks whether the habits tab was the active top-level tab on the
+  /// Tracks whether a habits-rendering surface (the Habits tab or the
+  /// unified Goals tab — see [_isHabitsSurfaceActive]) was active on the
   /// previous nav-index emission. Used to detect the off→on edge that
   /// triggers a recompute — `showHabit()` depends on the current time,
-  /// so re-entering the tab is the cue to refresh the due/later split
+  /// so re-entering such a tab is the cue to refresh the due/later split
   /// without keeping a background ticker alive.
   bool _wasHabitsActive = false;
+
+  /// The previous nav-index emission, so a DIRECT switch between the two
+  /// habits-rendering surfaces (Habits tab ↔ unified Goals tab) still counts
+  /// as entering one — [_wasHabitsActive] alone stays true across it and
+  /// would swallow the refresh.
+  int _lastNavIndex = -1;
 
   late HabitsRepository _repository;
   late final NavService _navService = getIt<NavService>();
@@ -68,7 +75,8 @@ class HabitsController extends Notifier<HabitsState> {
     // Subscribe synchronously inside build() so the subscriptions are
     // anchored to this controller's lifecycle even if disposal races
     // with init — they are guaranteed to be cancelled by _cleanup.
-    _wasHabitsActive = _navService.index == _navService.habitsIndex;
+    _wasHabitsActive = _isHabitsSurfaceActive(_navService.index);
+    _lastNavIndex = _navService.index;
     _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
@@ -272,6 +280,9 @@ class HabitsController extends Notifier<HabitsState> {
       openNow: filteredOpenNow,
       pendingLater: filteredPendingLater,
       completed: filteredCompleted,
+      openNowAll: openNow,
+      pendingLaterAll: pendingLater,
+      completedAll: completed,
       days: days,
       successfulToday: successfulToday,
       successfulByDay: successfulByDay,
@@ -287,24 +298,48 @@ class HabitsController extends Notifier<HabitsState> {
     );
   }
 
-  /// Recomputes habit success on the inactive→active edge of the habits
-  /// tab — time may have passed while the tab was off-screen, so the
+  /// Recomputes habit success on the inactive→active edge of a
+  /// habits-rendering surface (Habits tab or unified Goals tab) — time may
+  /// have passed while the tab was off-screen, so the
   /// due/later split needs refreshing. Refetches completions first so a
   /// midnight rollover (which extends the relevant day range) is also
   /// reflected, not just the wall-clock-driven `showHabit` bucketing.
   Future<void> _handleNavIndex(int newIndex) async {
     if (!ref.mounted) return;
 
-    final isHabitsActive = newIndex == _navService.habitsIndex;
+    final isHabitsActive = _isHabitsSurfaceActive(newIndex);
     final wasActive = _wasHabitsActive;
+    final switchedTab = newIndex != _lastNavIndex;
     _wasHabitsActive = isHabitsActive;
+    _lastNavIndex = newIndex;
 
-    if (isHabitsActive && !wasActive) {
+    if (isHabitsActive && (!wasActive || switchedTab)) {
       await _fetchHabitCompletions();
       if (!ref.mounted) return;
       _determineHabitSuccessByDays();
     }
   }
+
+  /// Refetches completions and rebuckets for the current instant — the
+  /// day-boundary refresh a habits-rendering surface requests when its own
+  /// midnight timer fires while it stays mounted (no nav emission, no
+  /// database event): `showHabit` bucketing and the per-day maps are
+  /// time-derived and would otherwise serve yesterday's split.
+  Future<void> refreshNow() async {
+    if (!ref.mounted) return;
+    await _fetchHabitCompletions();
+    if (!ref.mounted) return;
+    _determineHabitSuccessByDays();
+  }
+
+  /// Whether [navIndex] is a tab that renders habit rows from this
+  /// controller. The unified Goals page (flag-gated) reuses the habits state
+  /// wholesale, so it must trigger the same on-activation refresh the Habits
+  /// tab gets — otherwise its rows would go stale the moment the old tab is
+  /// disabled. A disabled tab's index getter returns -1, which no live
+  /// [navIndex] matches.
+  bool _isHabitsSurfaceActive(int navIndex) =>
+      navIndex == _navService.habitsIndex || navIndex == _navService.goalsIndex;
 
   /// Sets the time span for habit history display.
   Future<void> setTimeSpan(int timeSpanDays) async {
