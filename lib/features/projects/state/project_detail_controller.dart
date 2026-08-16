@@ -58,13 +58,15 @@ final projectDetailControllerProvider = NotifierProvider.autoDispose
 /// project. A reload rebases only locally changed fields onto the newest
 /// persisted entity, so concurrent sync updates to other fields are retained.
 /// If the project was deleted remotely, the pending editor is invalidated so a
-/// later save cannot recreate it.
+/// later save cannot recreate it. Reload completions are generation-guarded,
+/// preventing an older in-flight read from overwriting a newer sync result.
 class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectDetailController(this._projectId);
 
   final String _projectId;
   late final ProjectRepository _repository;
   StreamSubscription<Set<String>>? _subscription;
+  int _reloadGeneration = 0;
 
   ProjectEntry? _originalProject;
   ProjectEntry? _pendingProject;
@@ -91,11 +93,13 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   }
 
   Future<void> _reload() async {
+    final reloadGeneration = ++_reloadGeneration;
     try {
       final (project, tasks) = await (
         _repository.getProjectById(_projectId),
         _repository.getTasksForProject(_projectId),
       ).wait;
+      if (!ref.mounted || reloadGeneration != _reloadGeneration) return;
 
       if (project == null) {
         _originalProject = null;
@@ -115,17 +119,15 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
         }
       }
 
-      if (ref.mounted) {
-        state = state.copyWith(
-          project: _hasChanges() ? _pendingProject : project,
-          linkedTasks: tasks,
-          isLoading: false,
-          hasChanges: _hasChanges(),
-          error: null,
-        );
-      }
+      state = state.copyWith(
+        project: _hasChanges() ? _pendingProject : project,
+        linkedTasks: tasks,
+        isLoading: false,
+        hasChanges: _hasChanges(),
+        error: null,
+      );
     } catch (e) {
-      if (ref.mounted) {
+      if (ref.mounted && reloadGeneration == _reloadGeneration) {
         state = state.copyWith(
           isLoading: false,
           error: ProjectDetailError.loadFailed,

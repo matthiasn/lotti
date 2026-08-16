@@ -218,10 +218,13 @@ the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
 project and invalidates pending edits when sync reports that the project was
-deleted. Cancel and system-back exits discard the shared editor draft before
-returning to the still-mounted desktop detail, so canceled values cannot appear
-there or leak into a later inline save. Project deletion aborts any running wake and retires its project agent
-before soft-deleting the project, so runtime subscriptions and pending work
+deleted. Overlapping reloads are generation-guarded, so an older read that
+finishes after a newer deletion cannot repopulate the editor and resurrect the
+tombstoned project on save. Cancel and system-back exits discard the shared
+editor draft before returning to the still-mounted desktop detail, so canceled
+values cannot appear there or leak into a later inline save. Project deletion
+aborts any running wake and retires its project agent before soft-deleting the
+project, so runtime subscriptions and pending work
 cannot outlive the project. A retirement error aborts deletion instead of
 claiming success; when that error followed a committed lifecycle write, the
 deletion path re-reads the agent, resumes it and restores its subscriptions

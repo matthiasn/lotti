@@ -553,6 +553,65 @@ void main() {
       verifyNever(() => mockRepo.updateProject(any()));
     });
 
+    test('ignores an older reload that completes after a deletion', () async {
+      final container = await createLoadedContainer();
+      final staleTasks = Completer<List<Task>>();
+      final firstReloadStarted = Completer<void>();
+      var projectReloadCount = 0;
+      var taskReloadCount = 0;
+      final staleProject = makeTestProject(
+        id: projectId,
+        title: 'Stale project',
+      );
+      final deletionMarker = makeTestTask(id: 'deletion-marker');
+      final staleTask = makeTestTask(id: 'stale-task');
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async {
+        projectReloadCount++;
+        return projectReloadCount == 1 ? staleProject : null;
+      });
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) {
+        taskReloadCount++;
+        if (taskReloadCount == 1) {
+          firstReloadStarted.complete();
+          return staleTasks.future;
+        }
+        return Future.value([deletionMarker]);
+      });
+
+      updateStreamController.add({projectId});
+      await firstReloadStarted.future;
+
+      final deletionObserved = Completer<void>();
+      final subscription = container.listen(
+        projectDetailControllerProvider(projectId),
+        (_, next) {
+          if (next.project == null &&
+              next.linkedTasks.any((task) => task.id == deletionMarker.id) &&
+              !deletionObserved.isCompleted) {
+            deletionObserved.complete();
+          }
+        },
+      );
+      updateStreamController.add({projectId});
+      await deletionObserved.future;
+
+      staleTasks.complete([staleTask]);
+      await pumpEventQueue();
+      await pumpEventQueue();
+      subscription.close();
+
+      final state = container.read(
+        projectDetailControllerProvider(projectId),
+      );
+      expect(state.project, isNull);
+      expect(state.linkedTasks.map((task) => task.id), [deletionMarker.id]);
+      expect(state.hasChanges, isFalse);
+    });
+
     test('saveChanges sets updateFailed on exception', () async {
       when(
         () => mockRepo.updateProject(any()),
