@@ -497,9 +497,10 @@ class WakeOrchestrator with AgentErrorLogging {
 
   /// Runner leases owned by each drain generation.
   ///
-  /// Stale recovery releases only the superseded generation's slots. Lease
-  /// identity ensures its late cleanup cannot release or abort a replacement
-  /// run for the same agent.
+  /// Stale recovery releases only individually stale slots from the
+  /// superseded generation. Healthy slots retain ownership until completion,
+  /// and lease identity ensures late cleanup cannot release or abort a
+  /// replacement run for the same agent.
   final _drainLeasesByGeneration = <int, Set<WakeRunnerLease>>{};
 
   /// Latest meaningful progress for each active lease. Generation-wide

@@ -219,12 +219,15 @@ Two independent limits apply:
 - **Per agent**: `WakeRunner` enforces single-flight, so two wakes for the same
   agent never overlap even when global capacity is free.
 
-Each acquisition carries an ownership lease. Stale-drain recovery releases the
-superseded generation's leases before starting its replacement; late cleanup or
-timeout callbacks from the old generation cannot release or abort the newer
-run that now owns the same agent lock. Each lease keeps its own progress time,
-so unrelated healthy wakes cannot hide a stalled slot by refreshing only the
-generation-wide clock. A dequeued job also rechecks its drain
+Each acquisition carries an ownership lease. Stale-drain recovery releases
+only the superseded generation's individually stale leases before starting its
+replacement. Healthy concurrent leases retain their agent locks until their
+own executors settle, while late cleanup or timeout callbacks from a stale lease
+cannot release or abort the newer run that now owns the same agent lock. Each
+lease keeps its own progress time, so unrelated healthy wakes cannot hide a
+stalled slot by refreshing only the generation-wide clock. A healthy lease
+retained from a superseded generation is excluded from the replacement
+generation's stale calculation. A dequeued job also rechecks its drain
 generation after every pre-dispatch await. Before run-log insertion, a
 superseded drain returns the job to the queue and wakes the active scheduler;
 after insertion, it returns a persisted continuation that resumes the same run
@@ -264,13 +267,14 @@ progress**. Dispatching or completing a wake resets that clock, so a healthy
 drain can process several slow wakes without being judged by its total age. If
 work remains queued, the one-minute safety net re-enters stale detection even
 while a drain is active; this recovers terminal persistence stalls without
-waiting for another enqueue. Recovery releases the superseded generation's
-runner leases before replacement dispatch, so a terminal status write cannot
-consume the only global slot indefinitely. The threshold deliberately exceeds
-the wake cap, leaving room for the bounded pre-wake hook and terminal status
-persistence. Progress is refreshed again immediately before the executor timer
-is armed, so pre-execution persistence and policy latency never shorten the
-executor's own ten-minute window.
+waiting for another enqueue. Recovery releases each individually stale runner
+lease before replacement dispatch, so a terminal status write cannot consume a
+global slot indefinitely, but it preserves newer healthy leases from the same
+superseded generation. The threshold deliberately exceeds the wake cap, leaving
+room for the bounded pre-wake hook and terminal status persistence. Progress is
+refreshed again immediately before the executor timer is armed, so pre-execution
+persistence and policy latency never shorten the executor's own ten-minute
+window.
 
 # Completion signalling
 

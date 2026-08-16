@@ -1506,9 +1506,11 @@ void main() {
       test('healthy concurrent wakes do not hide a stalled lease', () {
         fakeAsync((async) {
           final abortedStatusGate = Completer<void>();
+          final healthyExecutionGate = Completer<Map<String, VectorClock>?>();
           final executedAgentIds = <String>[];
           String? firstStuckRunKey;
           var stuckExecutionCount = 0;
+          var healthyExecutionCount = 0;
           when(
             () => mockRepository.updateWakeRunStatus(
               any(),
@@ -1534,6 +1536,9 @@ void main() {
               if (agentId == 'stuck-agent' && stuckExecutionCount++ == 0) {
                 return Completer<Map<String, VectorClock>?>().future;
               }
+              if (agentId == 'healthy-agent' && healthyExecutionCount++ == 0) {
+                return healthyExecutionGate.future;
+              }
               return Future.value();
             },
           );
@@ -1558,18 +1563,44 @@ void main() {
             equals(['stuck-agent', 'healthy-agent']),
           );
 
-          // The healthy completion refreshed generation-wide progress only
-          // two minutes ago, but the stuck lease has made no progress for
-          // more than the full twelve-minute recovery window.
+          // The healthy execution started only two minutes ago, but the stuck
+          // lease has made no progress for the full recovery window.
           async.elapse(const Duration(minutes: 2, milliseconds: 1));
           orchestrator.enqueueManualWake(
-            agentId: 'stuck-agent',
+            agentId: 'replacement-agent',
             reason: 'manual',
           );
           async.flushMicrotasks();
           expect(
             executedAgentIds,
-            equals(['stuck-agent', 'healthy-agent', 'stuck-agent']),
+            equals(['stuck-agent', 'healthy-agent', 'replacement-agent']),
+          );
+          expect(runner.isRunning('healthy-agent'), isTrue);
+
+          // Recovery frees the individually stale slot, but the healthy
+          // executor keeps its agent lock until its own future settles.
+          orchestrator.enqueueManualWake(
+            agentId: 'healthy-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['stuck-agent', 'healthy-agent', 'replacement-agent']),
+          );
+
+          healthyExecutionGate.complete(null);
+          async.flushMicrotasks();
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals([
+              'stuck-agent',
+              'healthy-agent',
+              'replacement-agent',
+              'healthy-agent',
+            ]),
           );
 
           abortedStatusGate.complete();

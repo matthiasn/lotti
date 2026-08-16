@@ -22,30 +22,35 @@ extension WakeDrainEngine on WakeOrchestrator {
   ///
   /// Fix B: If a drain has made no progress for longer than
   /// [WakeOrchestrator._drainTimeout], force-reset the guard to recover from
-  /// a stuck drain.
+  /// a stuck drain while preserving healthy concurrent runner leases.
   Future<void> processNextImpl() async {
     if (_isDraining) {
+      final now = clock.now();
       var oldestProgressAt = _drainLastProgressAt;
-      for (final progressAt in _drainLeaseProgressAt.values) {
+      final activeGenerationLeases =
+          _drainLeasesByGeneration[_drainGeneration] ?? const {};
+      for (final lease in activeGenerationLeases) {
+        final progressAt = _drainLeaseProgressAt[lease];
+        if (progressAt == null) continue;
         if (oldestProgressAt == null || progressAt.isBefore(oldestProgressAt)) {
           oldestProgressAt = progressAt;
         }
       }
       // Fix B: force-reset stale drain lock after timeout.
       if (oldestProgressAt != null &&
-          clock.now().difference(oldestProgressAt) >
-              WakeOrchestrator._drainTimeout) {
-        final stalledFor = clock.now().difference(oldestProgressAt);
+          now.difference(oldestProgressAt) > WakeOrchestrator._drainTimeout) {
+        final stalledFor = now.difference(oldestProgressAt);
         _log(
           'force-resetting stale drain lock '
           '(last progress ${stalledFor.inSeconds}s ago)',
           subDomain: 'drain',
         );
         // Increment generation so the old drain's loop bails out, then free
-        // only the runner slots owned by that superseded generation.
+        // only individually stale runner slots. Healthy concurrent executions
+        // keep their agent locks until their own futures settle.
         final staleGeneration = _drainGeneration;
         _drainGeneration++;
-        _releaseDrainGenerationLeases(staleGeneration);
+        _releaseStaleDrainLeases(staleGeneration, now);
         final wakeSignal = _drainWakeSignal;
         if (wakeSignal != null && !wakeSignal.isCompleted) {
           wakeSignal.complete();
@@ -104,12 +109,19 @@ extension WakeDrainEngine on WakeOrchestrator {
     runner.releaseLease(lease);
   }
 
-  void _releaseDrainGenerationLeases(int generation) {
-    final leases = _drainLeasesByGeneration.remove(generation);
+  void _releaseStaleDrainLeases(int generation, DateTime now) {
+    final leases = _drainLeasesByGeneration[generation];
     if (leases == null) return;
-    leases
-      ..forEach(_drainLeaseProgressAt.remove)
-      ..forEach(runner.releaseLease);
+    final staleLeases = leases
+        .where((lease) {
+          final progressAt = _drainLeaseProgressAt[lease];
+          return progressAt != null &&
+              now.difference(progressAt) > WakeOrchestrator._drainTimeout;
+        })
+        .toList(growable: false);
+    for (final lease in staleLeases) {
+      _releaseDrainLease(generation, lease);
+    }
   }
 
   void _trackDrainOwnedJob(WakeJob job) {
