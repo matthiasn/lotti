@@ -164,8 +164,8 @@ Project-agent one-liners are resolved in two bulk reads when the snapshot is
 assembled, then stored on each `ProjectListItemData`. Rows therefore render a
 stable subtitle without one provider/query chain per card, and local search
 matches the same one-liner text that the list displays. Background enrichment
-reloads preserve the last rendered snapshot and its category-filter metadata
-until the replacement is ready.
+reloads preserve the last rendered snapshot, category-filter metadata, and
+create affordance until the replacement is ready.
 
 The default `Current` scope keeps open, active, monitoring and on-hold work in
 view; `All` restores completed and archived projects. Projects sort by

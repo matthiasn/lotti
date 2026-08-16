@@ -194,15 +194,10 @@ class _ProjectMobileDetailContentState
                           SliverToBoxAdapter(
                             child: _ProjectMobileHeader(
                               record: widget.record,
-                              onCategoryTap: widget.isSaving
-                                  ? null
-                                  : widget.onCategoryTap,
-                              onTargetDateTap: widget.isSaving
-                                  ? null
-                                  : widget.onTargetDateTap,
-                              onStatusTap: widget.isSaving
-                                  ? null
-                                  : widget.onStatusTap,
+                              onCategoryTap: widget.onCategoryTap,
+                              onTargetDateTap: widget.onTargetDateTap,
+                              onStatusTap: widget.onStatusTap,
+                              isInteractive: !isMutating,
                             ),
                           ),
                           SliverToBoxAdapter(
@@ -211,7 +206,9 @@ class _ProjectMobileDetailContentState
                           SliverToBoxAdapter(
                             child: widget.record.healthMetrics == null
                                 ? ProjectHealthEmptyState(
-                                    onRunReport: widget.onRefreshReport,
+                                    onRunReport: isMutating
+                                        ? null
+                                        : widget.onRefreshReport,
                                     hasAgent: widget.hasProjectAgent,
                                     isRunningReport: widget.isRefreshingReport,
                                   )
@@ -258,9 +255,12 @@ class _ProjectMobileDetailContentState
                                       currentTime: widget.currentTime,
                                     ),
                               nextWakeAt: widget.record.reportNextWakeAt,
-                              onRefresh: widget.onRefreshReport,
-                              onCancelScheduledWake:
-                                  widget.onCancelScheduledReportWake,
+                              onRefresh: isMutating
+                                  ? null
+                                  : widget.onRefreshReport,
+                              onCancelScheduledWake: isMutating
+                                  ? null
+                                  : widget.onCancelScheduledReportWake,
                               isRefreshing: widget.isRefreshingReport,
                             ),
                           ),
@@ -331,12 +331,14 @@ class _ProjectMobileHeader extends StatelessWidget {
     this.onCategoryTap,
     this.onTargetDateTap,
     this.onStatusTap,
+    this.isInteractive = true,
   });
 
   final ProjectRecord record;
   final VoidCallback? onCategoryTap;
   final VoidCallback? onTargetDateTap;
   final VoidCallback? onStatusTap;
+  final bool isInteractive;
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +350,7 @@ class _ProjectMobileHeader extends StatelessWidget {
     final statusPill = ProjectStatusPill(
       status: record.project.data.status,
       large: true,
-      onTap: onStatusTap,
+      onTap: isInteractive ? onStatusTap : null,
     );
 
     return LayoutBuilder(
@@ -408,13 +410,13 @@ class _ProjectMobileHeader extends StatelessWidget {
                     color: colorFromCssHex(
                       category.color ?? defaultCategoryColorHex,
                     ),
-                    onTap: onCategoryTap,
+                    onTap: isInteractive ? onCategoryTap : null,
                   )
                 else if (onCategoryTap != null)
                   OutlinedMetaTag(
                     icon: Icons.label_outline,
                     label: context.messages.habitCategoryLabel,
-                    onTap: onCategoryTap,
+                    onTap: isInteractive ? onCategoryTap : null,
                     isPlaceholder: true,
                   ),
                 if (record.project.data.targetDate case final targetDate?)
@@ -423,13 +425,13 @@ class _ProjectMobileHeader extends StatelessWidget {
                     label: DateFormat.yMMMd(
                       Localizations.localeOf(context).toString(),
                     ).format(targetDate),
-                    onTap: onTargetDateTap,
+                    onTap: isInteractive ? onTargetDateTap : null,
                   )
                 else if (onTargetDateTap != null)
                   OutlinedMetaTag(
                     icon: Icons.watch_later_outlined,
                     label: context.messages.projectTargetDateLabel,
-                    onTap: onTargetDateTap,
+                    onTap: isInteractive ? onTargetDateTap : null,
                     isPlaceholder: true,
                   ),
               ],

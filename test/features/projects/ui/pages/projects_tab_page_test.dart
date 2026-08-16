@@ -787,6 +787,7 @@ void main() {
 
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
 
   testWidgets('shows localized error message on failure', (tester) async {

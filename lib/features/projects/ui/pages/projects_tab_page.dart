@@ -267,13 +267,12 @@ class _ProjectsListScaffold extends ConsumerWidget {
         filter.selectedCategoryIds.isEmpty &&
         filter.textQuery.trim().isEmpty &&
         filter.sortMode == ProjectsSortMode.actionable;
-    final floatingActionButton = visibleGroupsAsync.maybeWhen(
-      data: (_) => DesignSystemFloatingActionButton(
-        semanticLabel: context.messages.projectCreateButton,
-        onPressed: () => showProjectCreateModal(context: context),
-      ),
-      orElse: () => null,
-    );
+    final floatingActionButton = visibleGroupsAsync.value == null
+        ? null
+        : DesignSystemFloatingActionButton(
+            semanticLabel: context.messages.projectCreateButton,
+            onPressed: () => showProjectCreateModal(context: context),
+          );
 
     return Scaffold(
       backgroundColor: ShowcasePalette.page(context),

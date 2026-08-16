@@ -347,6 +347,9 @@ void main() {
             onArchive: () {},
             onDelete: () {},
             onAddTask: () => pending.future,
+            onCategoryTap: () {},
+            onTargetDateTap: () {},
+            onStatusTap: () {},
           ),
           size: const Size(430, 1200),
         ),
@@ -363,6 +366,18 @@ void main() {
       );
       expect(menu.items, hasLength(3));
       expect(menu.items.every((item) => item.onTap == null), isTrue);
+      expect(
+        tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
+        isNull,
+      );
+      expect(
+        tester.widget<ProjectStatusPill>(find.byType(ProjectStatusPill)).onTap,
+        isNull,
+      );
+      expect(
+        tester.widget<OutlinedMetaTag>(find.byType(OutlinedMetaTag)).onTap,
+        isNull,
+      );
 
       pending.complete();
       await tester.pump();
@@ -382,6 +397,11 @@ void main() {
             onArchive: () {},
             onDelete: () => deletion.future,
             onAddTask: () async => addRequests++,
+            onCategoryTap: () {},
+            onTargetDateTap: () {},
+            onStatusTap: () {},
+            onRefreshReport: () {},
+            onCancelScheduledReportWake: () {},
           ),
           size: const Size(430, 1200),
         ),
@@ -401,6 +421,23 @@ void main() {
         find.byType(DesignSystemContextMenuButton),
       );
       expect(pendingMenu.items.every((item) => item.onTap == null), isTrue);
+      expect(
+        tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
+        isNull,
+      );
+      expect(
+        tester.widget<ProjectStatusPill>(find.byType(ProjectStatusPill)).onTap,
+        isNull,
+      );
+      expect(
+        tester.widget<OutlinedMetaTag>(find.byType(OutlinedMetaTag)).onTap,
+        isNull,
+      );
+      final report = tester.widget<ExpandableReportSection>(
+        find.byType(ExpandableReportSection),
+      );
+      expect(report.onRefresh, isNull);
+      expect(report.onCancelScheduledWake, isNull);
       final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
       await tester.ensureVisible(addButton);
       expect(tester.widget<DesignSystemButton>(addButton).onPressed, isNull);
