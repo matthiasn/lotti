@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -402,6 +403,155 @@ void main() {
         expect(restored.error, isNull);
       },
     );
+
+    test('rebases pending fields onto a concurrently synced project', () async {
+      ProjectEntry? persisted;
+      when(() => mockRepo.updateProject(any())).thenAnswer((invocation) async {
+        persisted = invocation.positionalArguments.single as ProjectEntry;
+        return true;
+      });
+      final container = await createLoadedContainer();
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      );
+      final localTargetDate = DateTime(2026, 9);
+      notifier.updateTargetDate(localTargetDate);
+
+      final syncedStatus = ProjectStatus.active(
+        id: 'synced-status',
+        createdAt: DateTime(2026, 8, 16),
+        utcOffset: 0,
+      );
+      final syncedProject = makeTestProject(id: projectId).copyWith(
+        data: makeTestProject(id: projectId).data.copyWith(
+          title: 'Synced title',
+          status: syncedStatus,
+        ),
+      );
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => syncedProject);
+      final syncedTask = makeTestTask(id: 'rebased-sync-task');
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [syncedTask]);
+      final reloadObserved = Completer<void>();
+      final subscription = container.listen(
+        projectDetailControllerProvider(projectId),
+        (_, next) {
+          if (next.linkedTasks.any((task) => task.id == syncedTask.id) &&
+              !reloadObserved.isCompleted) {
+            reloadObserved.complete();
+          }
+        },
+      );
+
+      updateStreamController.add({projectId});
+      await reloadObserved.future;
+      subscription.close();
+
+      final rebased = container.read(
+        projectDetailControllerProvider(projectId),
+      );
+      expect(rebased.project!.data.title, 'Synced title');
+      expect(rebased.project!.data.status, syncedStatus);
+      expect(rebased.project!.data.targetDate, localTargetDate);
+      expect(rebased.hasChanges, isTrue);
+
+      await notifier.saveChanges();
+
+      expect(persisted!.data.title, 'Synced title');
+      expect(persisted!.data.status, syncedStatus);
+      expect(persisted!.data.targetDate, localTargetDate);
+
+      final locallyEditedStatus = ProjectStatus.active(
+        id: 'locally-edited-status',
+        createdAt: DateTime(2026, 8, 17),
+        utcOffset: 0,
+      );
+      notifier
+        ..updateTitle('Locally edited title')
+        ..updateCategoryId('local-category')
+        ..updateStatus(locallyEditedStatus);
+      final secondSyncedAt = DateTime(2026, 8, 18);
+      final secondSyncedProject = persisted!.copyWith(
+        meta: persisted!.meta.copyWith(updatedAt: secondSyncedAt),
+        entryText: const EntryText(plainText: 'Body received from sync'),
+      );
+      final secondSyncedTask = makeTestTask(id: 'second-rebased-sync-task');
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => secondSyncedProject);
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [secondSyncedTask]);
+      final secondReloadObserved = Completer<void>();
+      final secondSubscription = container.listen(
+        projectDetailControllerProvider(projectId),
+        (_, next) {
+          if (next.linkedTasks.any(
+                (task) => task.id == secondSyncedTask.id,
+              ) &&
+              !secondReloadObserved.isCompleted) {
+            secondReloadObserved.complete();
+          }
+        },
+      );
+
+      updateStreamController.add({projectId});
+      await secondReloadObserved.future;
+      secondSubscription.close();
+
+      final fullyRebased = container.read(
+        projectDetailControllerProvider(projectId),
+      );
+      expect(fullyRebased.project!.data.title, 'Locally edited title');
+      expect(fullyRebased.project!.meta.categoryId, 'local-category');
+      expect(fullyRebased.project!.data.status, locallyEditedStatus);
+      expect(fullyRebased.project!.data.targetDate, localTargetDate);
+      expect(fullyRebased.project!.meta.updatedAt, secondSyncedAt);
+      expect(
+        fullyRebased.project!.entryText,
+        const EntryText(plainText: 'Body received from sync'),
+      );
+    });
+
+    test('clears pending edits when a synced deletion is observed', () async {
+      final container = await createLoadedContainer();
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      )..updateTitle('Unsaved title');
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => null);
+      final syncedTask = makeTestTask(id: 'deleted-project-sync-task');
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [syncedTask]);
+      final deletionObserved = Completer<void>();
+      final subscription = container.listen(
+        projectDetailControllerProvider(projectId),
+        (_, next) {
+          if (next.linkedTasks.any((task) => task.id == syncedTask.id) &&
+              !deletionObserved.isCompleted) {
+            deletionObserved.complete();
+          }
+        },
+      );
+
+      updateStreamController.add({projectId});
+      await deletionObserved.future;
+      subscription.close();
+
+      final deleted = container.read(
+        projectDetailControllerProvider(projectId),
+      );
+      expect(deleted.project, isNull);
+      expect(deleted.hasChanges, isFalse);
+
+      await notifier.saveChanges();
+      verifyNever(() => mockRepo.updateProject(any()));
+    });
 
     test('saveChanges sets updateFailed on exception', () async {
       when(

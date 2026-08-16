@@ -231,6 +231,91 @@ void main() {
     );
 
     test(
+      'projectsOverviewProvider preserves one-liners when refresh enrichment fails',
+      () async {
+        final snapshot = makeSnapshot();
+        final link = AgentLink.agentProject(
+          id: 'link-work',
+          fromId: 'agent-work',
+          toId: 'project-work',
+          createdAt: DateTime(2026, 4, 2),
+          updatedAt: DateTime(2026, 4, 2),
+          vectorClock: null,
+        );
+        final agentUpdates = StreamController<Set<String>>.broadcast();
+        addTearDown(agentUpdates.close);
+        var enrichmentAttempt = 0;
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(snapshot));
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            ['project-work', 'project-study'],
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async {
+          enrichmentAttempt++;
+          if (enrichmentAttempt > 1) {
+            throw StateError('agent database unavailable');
+          }
+          return <String, List<AgentLink>>{
+            'project-work': [link],
+          };
+        });
+        when(
+          () => mockAgentRepo.getLatestReportsByAgentIds(
+            ['agent-work'],
+            AgentReportScopes.current,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'agent-work': makeTestReport(
+              agentId: 'agent-work',
+              oneLiner: 'Release review is ready',
+            ),
+          },
+        );
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            agentUpdateStreamProvider(
+              agentNotification,
+            ).overrideWith((ref) => agentUpdates.stream),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final values = <ProjectsOverviewSnapshot>[];
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (_, next) {
+            if (next case AsyncData(:final value)) values.add(value);
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final initial = await scopedContainer.read(
+          projectsOverviewProvider.future,
+        );
+        expect(
+          initial.groups.first.projects.single.oneLiner,
+          'Release review is ready',
+        );
+
+        agentUpdates.add({agentNotification});
+        await pumpEventQueue();
+        await pumpEventQueue();
+
+        expect(enrichmentAttempt, greaterThan(1));
+        expect(
+          values.last.groups.first.projects.single.oneLiner,
+          'Release review is ready',
+        );
+      },
+    );
+
+    test(
       'visibleProjectGroupsProvider reflects updated project status from the overview stream',
       () async {
         final controller = StreamController<ProjectsOverviewSnapshot>();

@@ -126,6 +126,12 @@ class _FailingProjectDetailController extends ProjectDetailController {
 
 const _projectId = 'test-project-id';
 
+MockAgentService _makeMockAgentService() {
+  final service = MockAgentService();
+  when(() => service.abortRunningWake(any())).thenReturn(false);
+  return service;
+}
+
 /// The shared set of provider overrides that all tests need.
 ///
 /// [recordOverride] controls the record provider. When it returns
@@ -570,7 +576,7 @@ void main() {
           final pendingReload = Completer<AgentDomainEntity?>();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
           final mockRepository = MockProjectRepository();
-          final mockAgentService = MockAgentService();
+          final mockAgentService = _makeMockAgentService();
           when(
             () => mockRepository.deleteProject(
               any(),
@@ -960,7 +966,7 @@ void main() {
         beamToNamedOverride = (_) {};
         addTearDown(() => beamToNamedOverride = null);
         final mockRepository = MockProjectRepository();
-        final mockAgentService = MockAgentService();
+        final mockAgentService = _makeMockAgentService();
         final identity = makeTestIdentity(agentId: 'agent-project-1');
         when(
           () => mockRepository.deleteProject(
@@ -971,6 +977,9 @@ void main() {
         when(
           () => mockAgentService.destroyAgent(identity.agentId),
         ).thenAnswer((_) async => true);
+        when(
+          () => mockAgentService.abortRunningWake(identity.agentId),
+        ).thenReturn(true);
         await pumpPageWithData(
           tester,
           controllerState: ProjectDetailState(
@@ -998,6 +1007,7 @@ void main() {
         await tester.tap(find.text('Delete').last);
         await tester.pumpAndSettle();
         verifyInOrder([
+          () => mockAgentService.abortRunningWake(identity.agentId),
           () => mockAgentService.destroyAgent(identity.agentId),
           () => mockRepository.deleteProject(
             testProject,
@@ -1017,7 +1027,7 @@ void main() {
         beamToNamedOverride = (_) {};
         addTearDown(() => beamToNamedOverride = null);
         final mockRepository = MockProjectRepository();
-        final mockAgentService = MockAgentService();
+        final mockAgentService = _makeMockAgentService();
         final identity = makeTestIdentity(agentId: 'agent-project-1');
         when(
           () => mockRepository.deleteProject(
@@ -1072,7 +1082,7 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         final mockRepository = MockProjectRepository();
-        final mockAgentService = MockAgentService();
+        final mockAgentService = _makeMockAgentService();
         final identity = makeTestIdentity(agentId: 'agent-project-1');
         when(
           () => mockAgentService.destroyAgent(identity.agentId),
@@ -1124,7 +1134,7 @@ void main() {
           addTearDown(tester.view.resetPhysicalSize);
           addTearDown(tester.view.resetDevicePixelRatio);
           final mockRepository = MockProjectRepository();
-          final mockAgentService = MockAgentService();
+          final mockAgentService = _makeMockAgentService();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
           final lifecycleEvents = <String>[];
           when(
@@ -1194,7 +1204,7 @@ void main() {
           addTearDown(tester.view.resetPhysicalSize);
           addTearDown(tester.view.resetDevicePixelRatio);
           final mockRepository = MockProjectRepository();
-          final mockAgentService = MockAgentService();
+          final mockAgentService = _makeMockAgentService();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
           var restoreCalls = 0;
           when(
@@ -1257,7 +1267,7 @@ void main() {
           addTearDown(tester.view.resetDevicePixelRatio);
           final deletion = Completer<bool>();
           final mockRepository = MockProjectRepository();
-          final mockAgentService = MockAgentService();
+          final mockAgentService = _makeMockAgentService();
           final identity = makeTestIdentity(agentId: 'agent-project-1');
           var restoreCalls = 0;
           when(

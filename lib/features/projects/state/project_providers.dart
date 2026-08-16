@@ -130,20 +130,27 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
 }
 
 /// Raw grouped projects snapshot for the top-level tab.
+final _projectOneLinerCacheProvider = Provider<Map<String, String?>>(
+  (ref) => <String, String?>{},
+);
+
 final projectsOverviewProvider =
     StreamProvider.autoDispose<ProjectsOverviewSnapshot>((ref) {
       final repository = ref.watch(projectRepositoryProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
+      final oneLinerCache = ref.watch(_projectOneLinerCacheProvider);
       ref.watch(agentUpdateStreamProvider(agentNotification));
       return repository
           .watchProjectsOverview(query: const ProjectsQuery())
           .asyncMap(
             (snapshot) async {
               try {
-                return await _attachProjectOneLiners(
+                final enriched = await _attachProjectOneLiners(
                   snapshot,
                   agentRepository,
                 );
+                _replaceProjectOneLinerCache(oneLinerCache, enriched);
+                return enriched;
               } catch (error, stackTrace) {
                 // Agent summaries are optional enrichment. A failed sidecar
                 // read must not replace the established list with an error.
@@ -153,11 +160,51 @@ final projectsOverviewProvider =
                   error: error,
                   stackTrace: stackTrace,
                 );
-                return snapshot;
+                return _restoreCachedProjectOneLiners(
+                  snapshot,
+                  oneLinerCache,
+                );
               }
             },
           );
     });
+
+void _replaceProjectOneLinerCache(
+  Map<String, String?> cache,
+  ProjectsOverviewSnapshot snapshot,
+) {
+  cache
+    ..clear()
+    ..addEntries(
+      snapshot.groups.expand(
+        (group) => group.projects.map(
+          (item) => MapEntry(item.project.meta.id, item.oneLiner),
+        ),
+      ),
+    );
+}
+
+ProjectsOverviewSnapshot _restoreCachedProjectOneLiners(
+  ProjectsOverviewSnapshot snapshot,
+  Map<String, String?> cache,
+) {
+  return ProjectsOverviewSnapshot(
+    groups: [
+      for (final group in snapshot.groups)
+        group.copyWith(
+          projects: [
+            for (final item in group.projects)
+              ProjectListItemData(
+                project: item.project,
+                category: item.category,
+                taskRollup: item.taskRollup,
+                oneLiner: cache[item.project.meta.id] ?? item.oneLiner,
+              ),
+          ],
+        ),
+    ],
+  );
+}
 
 Future<ProjectsOverviewSnapshot> _attachProjectOneLiners(
   ProjectsOverviewSnapshot snapshot,

@@ -44,8 +44,7 @@ flowchart TD
 
 A project is a `JournalEntity.project` variant. `ProjectData` carries `title`,
 `status`, `statusHistory`, `targetDate`, `dateFrom` and `dateTo`, plus free-form
-body text through `entryText` — which the detail page uses as fallback when no
-project-agent TL;DR exists yet.
+body text through `entryText`.
 
 **`ProjectStatus` has six variants**: `open`, `active`, `monitoring`, `onHold`
 (with a **required reason**), `completed`, `archived`.
@@ -165,7 +164,9 @@ assembled, then stored on each `ProjectListItemData`. Rows therefore render a
 stable subtitle without one provider/query chain per card, and local search
 matches the same one-liner text that the list displays. Background enrichment
 reloads preserve the last rendered snapshot, category-filter metadata, and
-create affordance until the replacement is ready.
+create affordance until the replacement is ready. If agent enrichment fails,
+the replacement snapshot retains the last resolved one-liner for each surviving
+project instead of dropping visible subtitles and their searchable text.
 
 The default `Current` scope keeps open, active, monitoring and on-hold work in
 view; `All` restores completed and archived projects. Projects sort by
@@ -196,15 +197,18 @@ Project detail actions preserve workspace continuity. Edit carries an explicit
 return path back to the selected project, and Add task creates a project-linked
 task with the project's privacy, serializes concurrent taps and project saves,
 awaits the category's default task-agent assignment, then opens the task.
-Project deletion retires its project agent before soft-deleting the project,
-so runtime subscriptions and pending work cannot outlive the project. A
-retirement error aborts deletion instead of claiming success; a failed project
-write compensates by resuming the retired agent and restoring its runtime
-subscriptions. The detail keeps the last resolved agent identity during
-provider reloads, and captures the subscription restorer before deletion
-awaits, so neither a sync refresh nor route disposal can bypass that lifecycle
-cleanup. Task creation and deletion each hold the shared detail mutation lock
-through completion, preventing overlapping edits, task creation, or deletion.
+The inline editor rebases only locally changed fields onto a concurrently synced
+project and invalidates pending edits when sync reports that the project was
+deleted. Project deletion aborts any running wake and retires its project agent
+before soft-deleting the project, so runtime subscriptions and pending work
+cannot outlive the project. A retirement error aborts deletion instead of
+claiming success; a failed project write compensates by resuming the retired
+agent and restoring its runtime subscriptions. The detail keeps the last
+resolved agent identity during provider reloads, and captures the subscription
+restorer before deletion awaits, so neither a sync refresh nor route disposal
+can bypass that lifecycle cleanup. Task creation and deletion each hold the
+shared detail mutation lock through completion, preventing overlapping edits,
+task creation, or deletion.
 
 # Health is agent-authored
 

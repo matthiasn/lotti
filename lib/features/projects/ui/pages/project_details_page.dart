@@ -306,6 +306,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     var agentRetired = false;
     if (projectAgentId != null && agentService != null) {
       try {
+        agentService.abortRunningWake(projectAgentId);
         final retired = await agentService.destroyAgent(projectAgentId);
         agentRetired = retired;
         if (!retired) {
@@ -316,7 +317,7 @@ class ProjectDetailsPage extends ConsumerWidget {
         }
       } catch (error, stackTrace) {
         developer.log(
-          'Failed to retire project agent after deleting its project',
+          'Failed to stop and retire project agent while deleting its project',
           name: 'ProjectDetailsPage',
           error: error,
           stackTrace: stackTrace,

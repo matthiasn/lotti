@@ -55,10 +55,10 @@ final projectDetailControllerProvider = NotifierProvider.autoDispose
 /// changed), then promotes it to the new baseline.
 ///
 /// It subscribes to the repository update stream and reloads on changes to this
-/// project. A reload preserves the pending edit shown to the user while still
-/// refreshing the persisted baseline underneath it, so concurrent sync never
-/// clobbers what the user is typing and a later discard restores the newest
-/// persisted project.
+/// project. A reload rebases only locally changed fields onto the newest
+/// persisted entity, so concurrent sync updates to other fields are retained.
+/// If the project was deleted remotely, the pending editor is invalidated so a
+/// later save cannot recreate it.
 class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectDetailController(this._projectId);
 
@@ -97,15 +97,20 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
         _repository.getTasksForProject(_projectId),
       ).wait;
 
-      if (project != null) {
+      if (project == null) {
+        _originalProject = null;
+        _pendingProject = null;
+      } else {
         if (_originalProject == null || !_hasChanges()) {
           // First load or clean reload: update both baseline and pending.
           _originalProject = project;
           _pendingProject = project;
         } else {
-          // Preserve the user's pending edit, but retain the concurrently
-          // fetched persisted baseline so a failed save can roll back to the
-          // newest synchronized project rather than an older snapshot.
+          _pendingProject = _rebasePendingProject(
+            persisted: project,
+            original: _originalProject!,
+            pending: _pendingProject!,
+          );
           _originalProject = project;
         }
       }
@@ -135,6 +140,35 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
         _pendingProject!.meta.categoryId != _originalProject!.meta.categoryId ||
         _pendingProject!.data.targetDate != _originalProject!.data.targetDate ||
         _pendingProject!.data.status != _originalProject!.data.status;
+  }
+
+  ProjectEntry _rebasePendingProject({
+    required ProjectEntry persisted,
+    required ProjectEntry original,
+    required ProjectEntry pending,
+  }) {
+    var rebased = persisted;
+    if (pending.data.title != original.data.title) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(title: pending.data.title),
+      );
+    }
+    if (pending.meta.categoryId != original.meta.categoryId) {
+      rebased = rebased.copyWith(
+        meta: rebased.meta.copyWith(categoryId: pending.meta.categoryId),
+      );
+    }
+    if (pending.data.targetDate != original.data.targetDate) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(targetDate: pending.data.targetDate),
+      );
+    }
+    if (pending.data.status != original.data.status) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(status: pending.data.status),
+      );
+    }
+    return rebased;
   }
 
   /// Updates the pending project title.
