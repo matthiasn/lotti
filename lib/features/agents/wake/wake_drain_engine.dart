@@ -124,6 +124,7 @@ extension WakeDrainEngine on WakeOrchestrator {
   }) {
     if (_takeDrainOwnedCancellation(job) == null) return false;
     if (lease != null) _releaseDrainLease(generation, lease);
+    if (_drainGeneration != generation) unawaited(processNext());
     return true;
   }
 
