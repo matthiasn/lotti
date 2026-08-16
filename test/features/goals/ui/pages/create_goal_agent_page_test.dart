@@ -161,6 +161,7 @@ void main() {
     List<CategoryDefinition> categories = const [],
     Stream<List<CategoryDefinition>>? categoriesStream,
     List<LabelDefinition> labels = const [],
+    Stream<List<LabelDefinition>>? labelsStream,
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
@@ -169,7 +170,9 @@ void main() {
     categoriesStreamProvider.overrideWith(
       (ref) => categoriesStream ?? Stream.value(categories),
     ),
-    labelsStreamProvider.overrideWith((ref) => Stream.value(labels)),
+    labelsStreamProvider.overrideWith(
+      (ref) => labelsStream ?? Stream.value(labels),
+    ),
     if (editSpec != null ||
         identityFails ||
         healthFails ||
@@ -804,6 +807,64 @@ void main() {
           .text,
       '1',
     );
+    await tester.enterText(target, '');
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set a target to continue.'), findsOneWidget);
+    await tester.enterText(target, '2,5');
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey('goal-form-label-time-direction-content'),
+            ),
+            matching: find.text('No more than'),
+          )
+          .last,
+    );
+    await tester.pump();
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey('goal-form-label-time-direction-content'),
+            ),
+            matching: find.text('At least'),
+          )
+          .last,
+    );
+    await tester.pump();
+    final card = find.byKey(
+      const ValueKey('goal-form-label-time-card-content'),
+    );
+    await tester.tap(
+      find.descendant(of: card, matching: find.byType(DesignSystemIconAction)),
+    );
+    await tester.pumpAndSettle();
+    expect(card, findsNothing);
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(source);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(source);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+    expect(card, findsNothing);
+    await tester.tap(find.byKey(const ValueKey('goal-form-add-signal')));
+    await tester.pumpAndSettle();
+    await tester.tap(source);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-picker-done')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-label-time-target-content')),
+      '1',
+    );
     final categoryScope = find.byKey(
       const ValueKey('goal-form-label-time-category-content'),
     );
@@ -850,6 +911,117 @@ void main() {
         aggregation: GoalAggregation.sum,
         targetHours: 1,
       ),
+    );
+  });
+
+  testWidgets('matches label time from the intention with safe defaults', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(labels: [_label('content', 'Content')]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Content every day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-label-time-target-content'),
+    );
+    expect(target, findsOneWidget);
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '1',
+    );
+  });
+
+  testWidgets('rematches labels that load after the first mapping', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final labels = StreamController<List<LabelDefinition>>.broadcast();
+    addTearDown(labels.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(labelsStream: labels.stream),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Content every day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('goal-form-label-time-card-content')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byType(BackButton));
+    labels.add([_label('content', 'Content')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-label-time-card-content')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('editing retains unavailable label and category identifiers', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const criteria = GoalCriterion.labelTime(
+      criterionId: 'archived-content',
+      labelId: 'archived-label',
+      categoryId: 'archived-category',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    final current = _spec(criteria: criteria);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final category = find.byKey(
+      const ValueKey('goal-form-label-time-category-archived-label'),
+    );
+    expect(
+      tester.widget<DesignSystemDropdown>(category).inputLabel,
+      'archived-category',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('archived-label: At least 2 hours per day'),
+      findsOneWidget,
     );
   });
 

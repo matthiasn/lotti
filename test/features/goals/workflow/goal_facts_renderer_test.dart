@@ -1130,6 +1130,29 @@ void main() {
     );
   });
 
+  test('criterionJson exposes label-time category and daily band', () {
+    final json = criterionJson(
+      const GoalCriterion.labelTime(
+        criterionId: 'late-content',
+        labelId: 'content',
+        categoryId: 'work',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 20 * 60,
+          endMinute: 23 * 60,
+        ),
+      ),
+    );
+
+    expect(json['categoryId'], 'work');
+    expect(json['dailyTimeRange'], {
+      'startMinute': 20 * 60,
+      'endMinute': 23 * 60,
+    });
+  });
+
   test('label-time facts retain a bounded recent markdown sample', () {
     final entries = [
       for (var index = 0; index < 205; index++)

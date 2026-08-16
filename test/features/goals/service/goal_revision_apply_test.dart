@@ -312,7 +312,7 @@ void main() {
     },
   );
 
-  test('label time takes target changes and binds by stable label id', () {
+  test('label time takes target and period changes and binds by category', () {
     const labelTime = GoalCriterion.labelTime(
       criterionId: 'daily-content',
       labelId: 'content',
@@ -329,7 +329,11 @@ void main() {
     final result = applied(
       applyGoalRevisionChanges(
         criteria: composite,
-        changes: {'metric': 'content', 'targetValue': 1.5},
+        changes: {
+          'metric': 'work',
+          'targetValue': 1.5,
+          'period': 'rolling 3 days',
+        },
       ),
     );
     final revised = result.criteria as GoalCriterionAllOf;
@@ -337,21 +341,21 @@ void main() {
 
     expect(time.targetHours, 1.5);
     expect(time.categoryId, 'work');
-    expect(time.window, const GoalWindow.day());
+    expect(time.window, const GoalWindow.rollingDays(count: 3));
     expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
   });
 
-  test('a category-time sibling does not make habit cadence ambiguous', () {
-    const categoryTime = GoalCriterion.categoryTime(
-      criterionId: 'late-coding',
-      categoryId: 'vibe-coding',
+  test('a label-time sibling does not make habit cadence ambiguous', () {
+    const labelTime = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
       window: GoalWindow.day(),
       aggregation: GoalAggregation.sum,
-      targetHours: 0,
+      targetHours: 1,
     );
     const composite = GoalCriterion.allOf(
       criterionId: 'balanced-day',
-      criteria: [gym, categoryTime],
+      criteria: [gym, labelTime],
     );
 
     final result = applied(
@@ -363,7 +367,7 @@ void main() {
     final revised = result.criteria as GoalCriterionAllOf;
 
     expect((revised.criteria.first as GoalCriterionHabit).targetCount, 2);
-    expect(revised.criteria.last, categoryTime);
+    expect(revised.criteria.last, labelTime);
   });
 
   test('two habit leaves make a cadence change ambiguous — rejected', () {

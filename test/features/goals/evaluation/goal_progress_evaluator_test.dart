@@ -124,6 +124,24 @@ void main() {
       expect(evaluation.attainment, 1);
       expect(evaluation.satisfied, isTrue);
     });
+
+    test('short-term attainment re-windows the same label-time ledger', () {
+      final attainment = evaluator.shortTermAttainment(
+        criterion,
+        GoalSignalWindow(
+          labelTimeDailyHours: {
+            'daily-content': {
+              d(6): 0.25,
+              d(7): 0.5,
+              d(8): 0.75,
+            },
+          },
+        ),
+        saturday,
+      );
+
+      expect(attainment, 1);
+    });
   });
 
   group('metric leaf — directions and aggregations', () {

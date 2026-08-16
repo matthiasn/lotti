@@ -345,4 +345,26 @@ void main() {
     expect(digest(changedOmitted), digest(entries));
     expect(digest(changedRetained), isNot(digest(entries)));
   });
+
+  test('label-time model evidence has a deterministic complete tie-break', () {
+    final at = DateTime(2026, 8, 9, 9);
+    GoalLabelTimeEntryEvidence evidence(String entryId) =>
+        GoalLabelTimeEntryEvidence(
+          entryId: entryId,
+          labelId: 'content',
+          dateFrom: at,
+          dateTo: at.add(const Duration(minutes: 5)),
+          markdown: entryId,
+        );
+
+    final ordered = goalLabelTimeEvidenceForFacts({
+      'criterion-b': [evidence('entry-b'), evidence('entry-a')],
+      'criterion-a': [evidence('entry-z')],
+    });
+
+    expect(
+      ordered.map((entry) => '${entry.criterionId}:${entry.evidence.entryId}'),
+      ['criterion-a:entry-z', 'criterion-b:entry-a', 'criterion-b:entry-b'],
+    );
+  });
 }

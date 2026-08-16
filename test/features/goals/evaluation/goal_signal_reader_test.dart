@@ -931,6 +931,111 @@ void main() {
     },
   );
 
+  test(
+    'label time applies scoped active-timer privacy, fallback and ordering',
+    () async {
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'writing-signals',
+        criteria: [
+          GoalCriterion.labelTime(
+            criterionId: 'daily-content',
+            labelId: 'content',
+            categoryId: 'writing',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            targetHours: 1,
+          ),
+          GoalCriterion.labelTime(
+            criterionId: 'daily-research',
+            labelId: 'research',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            targetHours: 1,
+          ),
+        ],
+      );
+      final startedAt = DateTime(2026, 8, 8, 9);
+      when(
+        () => journalDb.goalLabelTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          for (final entryId in ['entry-b', 'entry-a'])
+            (
+              entryId: entryId,
+              labelId: 'content',
+              dateFrom: startedAt,
+              dateTo: startedAt.add(const Duration(minutes: 15)),
+              categoryId: 'writing',
+              markdown: entryId,
+            ),
+          (
+            entryId: 'entry-b',
+            labelId: 'research',
+            dateFrom: startedAt,
+            dateTo: startedAt.add(const Duration(minutes: 15)),
+            categoryId: 'writing',
+            markdown: 'Research notes',
+          ),
+          (
+            entryId: 'wrong-category',
+            labelId: 'content',
+            dateFrom: startedAt,
+            dateTo: startedAt.add(const Duration(minutes: 30)),
+            categoryId: 'admin',
+            markdown: 'Must not count',
+          ),
+        ],
+      );
+      when(
+        () => journalDb.getConfigFlag('private'),
+      ).thenAnswer((_) async => true);
+      when(timeService.getCurrent).thenReturn(
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'running',
+            createdAt: startedAt,
+            updatedAt: startedAt,
+            dateFrom: startedAt,
+            dateTo: startedAt,
+            categoryId: 'writing',
+            labelIds: const ['research', 'content'],
+            private: true,
+          ),
+          entryText: const EntryText(
+            plainText: 'Plain semantic content',
+            markdown: '   ',
+          ),
+        ),
+      );
+
+      final window = await reader.read(
+        criteria: criteria,
+        reference: DateTime(2026, 8, 8, 10),
+      );
+
+      expect(window.hasActiveLabelTimer, isTrue);
+      expect(window.labelTimeDailyHours['daily-content'], {
+        DateTime.utc(2026, 8, 8): 1,
+      });
+      final content = window.labelTimeEntriesByCriterion['daily-content']!;
+      expect(content.map((entry) => entry.entryId), [
+        'entry-a',
+        'entry-b',
+        'running',
+      ]);
+      expect(content.last.markdown, 'Plain semantic content');
+      expect(
+        content.any((entry) => entry.entryId == 'wrong-category'),
+        isFalse,
+      );
+      verify(() => journalDb.getConfigFlag('private')).called(1);
+    },
+  );
+
   test('a hidden private active timer contributes no category time', () async {
     const criterion = GoalCriterion.categoryTime(
       criterionId: 'coding-cap',
