@@ -6272,7 +6272,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get goalChatTalkToAgent => 'Falar com o agente';
+  String get goalChatTalkToAgent => 'Falar com o agente de meta';
 
   @override
   String goalChatWhyPrefill(String status) {

@@ -2865,7 +2865,7 @@
   "goalChatPageTitle": "Conversa",
   "goalChatPlaceholder": "Fala com {agentName}…",
   "goalChatResponding": "{agentName} está a responder…",
-  "goalChatTalkToAgent": "Falar com o agente",
+  "goalChatTalkToAgent": "Falar com o agente de meta",
   "goalChatWhyPrefill": "Porque é que esta meta está {status} neste momento?",
   "goalChatYou": "Tu",
   "goalCoarseHealthBehind": "Atrasado",
