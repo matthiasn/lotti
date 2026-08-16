@@ -12995,4 +12995,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
 }

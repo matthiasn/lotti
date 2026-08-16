@@ -75,6 +75,7 @@
   "goalCreateValidationMissing": "Give the goal a name and at least one criterion.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "goalDetailTimelineTitle": "Interactions",
+  "goalPendingProposalBadge": "Proposal awaiting review",
   "goalStatusAchieved": "Achieved",
   "goalStatusAtRisk": "At risk",
   "goalStatusInsufficientData": "No data",

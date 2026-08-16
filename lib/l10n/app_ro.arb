@@ -2724,6 +2724,7 @@
   "goalNudgeStatusSuperseded": "Înlocuit",
   "goalPatternBusiestHour": "Cele mai multe sesiuni încep în jurul {hour}:00. Deschideți Perspective pentru o analiză mai profundă.",
   "goalPatternTitle": "Model de sincronizare",
+  "goalPendingProposalBadge": "Propunere în așteptarea evaluării",
   "goalProgressAgesOut": "iese în această seară",
   "goalProgressAtRate": "în ritm",
   "goalProgressCaption": "ultimele 7 zile · glisează la miezul nopții",

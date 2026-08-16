@@ -2724,6 +2724,7 @@
   "goalNudgeStatusSuperseded": "Reemplazado",
   "goalPatternBusiestHour": "La mayoría de las sesiones comienzan alrededor de {hour}:00. Abra Insights para un análisis más profundo.",
   "goalPatternTitle": "Patrón de sincronización",
+  "goalPendingProposalBadge": "Propuesta pendiente",
   "goalProgressAgesOut": "sale esta noche",
   "goalProgressAtRate": "al ritmo",
   "goalProgressCaption": "últimos 7 días · avanza a medianoche",

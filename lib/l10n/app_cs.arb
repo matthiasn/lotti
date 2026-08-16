@@ -2731,6 +2731,7 @@
   "goalNudgeStatusSuperseded": "Nahrazeno",
   "goalPatternBusiestHour": "Většina relací začíná kolem {hour}:00. Pro podrobnější analýzu otevři Přehledy.",
   "goalPatternTitle": "Vzorek časování",
+  "goalPendingProposalBadge": "Návrh čeká na posouzení",
   "goalProgressAgesOut": "dnes vypadne",
   "goalProgressAtRate": "v tempu",
   "goalProgressCaption": "posledních 7 dní · posouvá se o půlnoci",

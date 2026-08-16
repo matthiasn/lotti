@@ -13080,4 +13080,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta a aguardar revisão';
 }

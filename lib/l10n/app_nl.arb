@@ -2980,6 +2980,7 @@
   "goalNudgeStatusSuperseded": "Vervangen",
   "goalPatternBusiestHour": "De meeste sessies beginnen rond {hour}:00. Open Insights voor diepere analyses.",
   "goalPatternTitle": "Timingpatroon",
+  "goalPendingProposalBadge": "Voorstel wacht op beoordeling",
   "goalProgressAgesOut": "valt vanavond weg",
   "goalProgressAtRate": "op tempo",
   "goalProgressCaption": "laatste 7 dagen · schuift om middernacht",

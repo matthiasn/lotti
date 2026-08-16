@@ -12955,4 +12955,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get goalPendingProposalBadge => 'Forslag afventer';
 }

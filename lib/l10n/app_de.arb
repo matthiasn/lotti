@@ -2724,6 +2724,7 @@
   "goalNudgeStatusSuperseded": "Überholt",
   "goalPatternBusiestHour": "Die meisten Sitzungen beginnen gegen {hour}:00. Öffne Insights für eine genauere Analyse.",
   "goalPatternTitle": "Zeitmuster",
+  "goalPendingProposalBadge": "Vorschlag wartet auf Prüfung",
   "goalProgressAgesOut": "fällt heute Abend raus",
   "goalProgressAtRate": "im Soll",
   "goalProgressCaption": "letzte 7 Tage · verschiebt sich um Mitternacht",

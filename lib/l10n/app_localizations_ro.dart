@@ -13215,4 +13215,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
 }
