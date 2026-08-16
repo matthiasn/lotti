@@ -6292,6 +6292,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacties';
 
   @override
+  String get goalDetailUpdateFailed => 'Laatste update mislukt';
+
+  @override
   String get goalDetailWatchingSignals =>
       'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
 
@@ -13014,7 +13017,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get goalDetailUpdateFailed => 'Laatste update mislukt';
 }

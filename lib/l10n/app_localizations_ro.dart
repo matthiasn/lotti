@@ -6389,6 +6389,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacțiuni';
 
   @override
+  String get goalDetailUpdateFailed => 'Ultima actualizare a eșuat';
+
+  @override
   String get goalDetailWatchingSignals =>
       'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
 
@@ -13235,7 +13238,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get goalDetailUpdateFailed => 'Ultima actualizare a eșuat';
 }

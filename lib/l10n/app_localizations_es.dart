@@ -6358,6 +6358,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacciones';
 
   @override
+  String get goalDetailUpdateFailed => 'La última actualización falló';
+
+  @override
   String get goalDetailWatchingSignals =>
       'Las señales anteriores se actualizan en segundos. Tu agente solo ve las señales indicadas aquí.';
 
@@ -13166,7 +13169,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get goalDetailUpdateFailed => 'La última actualización falló';
 }

@@ -10743,6 +10743,12 @@ abstract class AppLocalizations {
   /// **'Interactions'**
   String get goalDetailTimelineTitle;
 
+  /// Error line on the goal read card when the last report update wake failed
+  ///
+  /// In en, this message translates to:
+  /// **'Last update failed'**
+  String get goalDetailUpdateFailed;
+
   /// No description provided for @goalDetailWatchingSignals.
   ///
   /// In en, this message translates to:
@@ -21890,12 +21896,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Error line on the goal read card when the last report update wake failed
-  ///
-  /// In en, this message translates to:
-  /// **'Last update failed'**
-  String get goalDetailUpdateFailed;
 }
 
 class _AppLocalizationsDelegate

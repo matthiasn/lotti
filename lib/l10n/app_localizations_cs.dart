@@ -6336,6 +6336,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interakce';
 
   @override
+  String get goalDetailUpdateFailed => 'Poslední aktualizace se nezdařila';
+
+  @override
   String get goalDetailWatchingSignals =>
       'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
 
@@ -13128,7 +13131,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get goalDetailUpdateFailed => 'Poslední aktualizace se nezdařila';
 }

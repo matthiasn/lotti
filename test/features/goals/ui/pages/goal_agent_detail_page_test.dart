@@ -326,6 +326,96 @@ void main() {
       );
     });
 
+    testWidgets('one mounted page walks failed → retrying → completed: the '
+        'line shows, steps aside for the running state, and stays gone '
+        'after the retry lands', (tester) async {
+      final outcomes = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(outcomes.close);
+      final running = StreamController<bool>.broadcast();
+      addTearDown(running.close);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalReportWakeOutcomeProvider(
+              'goal-1',
+            ).overrideWith((ref) => outcomes.stream),
+            agentIsRunningProvider(
+              'goal-1',
+            ).overrideWith((ref) => running.stream),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            agentStateProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final failureLine = find.byKey(
+        const ValueKey('goal-agent-update-failed'),
+      );
+      expect(failureLine, findsNothing);
+
+      // The refresh dies: the line appears.
+      running.add(false);
+      outcomes.add(
+        WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          error: StateError('Insufficient balance for request'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(failureLine, findsOneWidget);
+
+      // A retry starts: the running state takes the stage. Bounded pumps —
+      // the automation row's progress affordance animates, so the tree
+      // never settles while a run is active.
+      running.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(failureLine, findsNothing);
+
+      // The retry lands: completed clears the failure for good.
+      running.add(false);
+      outcomes.add(
+        const WakeRunCompletion(
+          runKey: 'run-ok',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+          triggerTokens: {goalReportRefreshTriggerToken},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(failureLine, findsNothing);
+    });
+
     testWidgets('a success synced from ANOTHER device outranks an older '
         'local failure — the freshness watermark hides the line', (
       tester,

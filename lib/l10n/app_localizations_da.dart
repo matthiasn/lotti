@@ -6270,6 +6270,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override
+  String get goalDetailUpdateFailed => 'Seneste opdatering mislykkedes';
+
+  @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
 
@@ -12974,7 +12977,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get goalDetailUpdateFailed => 'Seneste opdatering mislykkedes';
 }
