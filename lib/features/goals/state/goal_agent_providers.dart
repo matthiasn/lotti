@@ -16,6 +16,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -698,3 +700,33 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
         buffer: latest?.buffer,
       );
     }, name: 'goalAgentHealthProvider');
+
+/// The latest decisive outcome of this goal's REPORT-PRODUCING wakes.
+///
+/// Narrows [agentWakeOutcomeProvider]'s per-agent stream to the runs that can
+/// actually change the standing read — explicit report refreshes (the
+/// Update-now button, the automation's armed refresh) and escalations, both
+/// of which run Phase B. Chat runs and the €0 Phase A subscription wakes
+/// share the same agent id but never touch the report: a failed chat must
+/// not print "Last update failed" on the read card, and the subscription
+/// wakes completing every few seconds must not silently clear a refresh
+/// failure that is still true. Kept alive for the session for the same
+/// reason as the provider it narrows.
+final StreamProviderFamily<WakeRunCompletion, String>
+goalReportWakeOutcomeProvider = StreamProvider.autoDispose
+    .family<WakeRunCompletion, String>(
+      goalReportWakeOutcome,
+      name: 'goalReportWakeOutcomeProvider',
+    );
+Stream<WakeRunCompletion> goalReportWakeOutcome(Ref ref, String agentId) {
+  ref.keepAlive();
+  final orchestrator = ref.watch(wakeOrchestratorProvider);
+  return orchestrator.runCompletions.where(
+    (completion) =>
+        completion.agentId == agentId &&
+        completion.isDecisive &&
+        (goalReportRefreshRequested(completion.triggerTokens) ||
+            goalEscalationPeriodFromTriggerTokens(completion.triggerTokens) !=
+                null),
+  );
+}

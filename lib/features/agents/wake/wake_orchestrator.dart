@@ -158,6 +158,9 @@ class WakeRunCompletion {
     required this.runKey,
     required this.status,
     this.agentId,
+    this.reason,
+    this.triggerTokens = const {},
+    this.finishedAt,
     this.error,
   });
 
@@ -170,6 +173,33 @@ class WakeRunCompletion {
   /// need the id carried on the event itself. Always set by the
   /// orchestrator; nullable only for hand-built fixtures.
   final String? agentId;
+
+  /// The wake's reason (see [WakeReason]) as enqueued. Always set by the
+  /// orchestrator; nullable only for hand-built fixtures.
+  final String? reason;
+
+  /// The job's trigger tokens, so listeners can scope outcomes to a wake
+  /// PURPOSE — a goal's report-refresh runs versus its chat runs — without
+  /// guessing from the reason string.
+  final Set<String> triggerTokens;
+
+  /// When the run reached its terminal status, so a listener can reconcile
+  /// an in-process outcome against durable state that arrived later (a
+  /// successful report synced from another device outranks an older local
+  /// failure). Always set by the orchestrator; nullable only for fixtures.
+  final DateTime? finishedAt;
+
+  /// Whether this outcome is a decision an agent-scoped surface should act
+  /// on. Completed and failed runs decide; of the aborted runs only the
+  /// executor TIMEOUT does — a superseded or cancelled wake is bookkeeping
+  /// for a run that was replaced, and must neither surface as an error nor
+  /// clear one that is showing.
+  bool get isDecisive => switch (status) {
+    WakeRunStatus.completed || WakeRunStatus.failed => true,
+    _ =>
+      error is TimeoutException &&
+          (error! as TimeoutException).message == 'timeout',
+  };
 
   /// Terminal status: [WakeRunStatus.completed], [WakeRunStatus.failed], or
   /// [WakeRunStatus.aborted].
@@ -330,6 +360,9 @@ class WakeOrchestrator with AgentErrorLogging {
       WakeRunCompletion(
         runKey: job.runKey,
         agentId: job.agentId,
+        reason: job.reason,
+        triggerTokens: job.triggerTokens,
+        finishedAt: clock.now(),
         status: status,
         error: error,
       ),

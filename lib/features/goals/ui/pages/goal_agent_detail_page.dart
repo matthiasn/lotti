@@ -1144,7 +1144,12 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
   static String _failureReason(WakeRunCompletion completion) {
     final raw = completion.error?.toString().trim();
     if (raw == null || raw.isEmpty) return '';
-    const wrappers = ['Bad state: ', 'StateError: ', 'Exception: '];
+    const wrappers = [
+      'Bad state: ',
+      'StateError: ',
+      'TimeoutException: ',
+      'Exception: ',
+    ];
     var reason = raw;
     for (final wrapper in wrappers) {
       if (reason.startsWith(wrapper)) {
@@ -1182,16 +1187,27 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
 
     final isRefreshing =
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
-    // The last decisive wake outcome, so a refresh that DIED (provider out
-    // of credits, network down) tells the user instead of leaving a dead
-    // button under an eternal "Out of date". A later successful update
-    // emits a completed outcome and clears the line; while a retry is in
-    // flight the running state takes the stage instead.
+    // The last decisive report-wake outcome, so a refresh that DIED
+    // (provider out of credits, network down, the executor timeout) tells
+    // the user instead of leaving a dead button under an eternal "Out of
+    // date". A later successful update emits a completed outcome and clears
+    // the line; while a retry is in flight the running state takes the
+    // stage; and a success that arrives by SYNC (another device refreshed)
+    // outranks an older local failure via the freshness watermark, since
+    // the completion stream is process-local and cannot see it.
     final lastOutcome = ref
-        .watch(agentWakeOutcomeProvider(widget.agentId))
+        .watch(goalReportWakeOutcomeProvider(widget.agentId))
         .value;
+    final reportFreshAt = widget.agentState?.reportFreshAt;
+    final supersededBySyncedSuccess =
+        lastOutcome?.finishedAt != null &&
+        reportFreshAt != null &&
+        reportFreshAt.isAfter(lastOutcome!.finishedAt!);
     final updateFailure =
-        !isRefreshing && lastOutcome?.status == WakeRunStatus.failed
+        !isRefreshing &&
+            lastOutcome != null &&
+            lastOutcome.status != WakeRunStatus.completed &&
+            !supersededBySyncedSuccess
         ? lastOutcome
         : null;
     final nextWakeAt = widget.agentState?.nextWakeAt;

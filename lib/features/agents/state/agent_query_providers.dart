@@ -55,27 +55,31 @@ Stream<bool> agentIsRunningInWorkspace(
   yield* runner.runningAgentIds.map((_) => matches()).distinct();
 }
 
-/// The latest decisive wake outcome for one agent: failed or completed.
+/// The latest decisive wake outcome for one agent.
 ///
 /// Filters the orchestrator's [WakeOrchestrator.runCompletions] broadcast to
-/// this agent's runs, dropping aborted events — a superseded wake (pressing
-/// "Update now" twice) is not a failure and must not flash an error over an
-/// attempt that is still in flight. The last emitted value is therefore the
-/// truth a card needs for failure feedback: a `failed` event surfaces the
-/// error, and the next `completed` event clears it. In-process only, like
-/// the stream it wraps: outcomes from before an app restart are not
-/// replayed (the durable record is the `wake_run_log` row).
+/// this agent's decisive runs ([WakeRunCompletion.isDecisive]: completed,
+/// failed, or the executor timeout) — a superseded wake (pressing "Update
+/// now" twice) is not a decision and must neither flash an error over an
+/// attempt still in flight nor clear one that is showing. The last emitted
+/// value is therefore the truth a card needs for failure feedback: a failure
+/// surfaces its error, and the next completed run clears it.
+///
+/// Kept alive for the app session ([Ref.keepAlive]): the underlying
+/// broadcast stream does not replay, so an autoDisposing subscription would
+/// forget a surfaced failure the moment the watching page navigates away.
+/// Outcomes from before an app restart are still not replayed — the durable
+/// record is the `wake_run_log` row.
 final StreamProviderFamily<WakeRunCompletion, String> agentWakeOutcomeProvider =
     StreamProvider.autoDispose.family<WakeRunCompletion, String>(
       agentWakeOutcome,
       name: 'agentWakeOutcomeProvider',
     );
 Stream<WakeRunCompletion> agentWakeOutcome(Ref ref, String agentId) {
+  ref.keepAlive();
   final orchestrator = ref.watch(wakeOrchestratorProvider);
   return orchestrator.runCompletions.where(
-    (completion) =>
-        completion.agentId == agentId &&
-        completion.status != WakeRunStatus.aborted,
+    (completion) => completion.agentId == agentId && completion.isDecisive,
   );
 }
 

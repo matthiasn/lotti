@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -236,6 +237,7 @@ void main() {
     Future<void> pump(
       WidgetTester tester, {
       required WakeRunCompletion outcome,
+      AgentStateEntity? agentState,
     }) => tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -248,7 +250,7 @@ void main() {
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
-          agentWakeOutcomeProvider(
+          goalReportWakeOutcomeProvider(
             'goal-1',
           ).overrideWith((ref) => Stream.value(outcome)),
           goalAgentHealthProvider('goal-1').overrideWith(
@@ -270,6 +272,7 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentStateProvider('goal-1').overrideWith((ref) async => agentState),
         ],
       ),
     );
@@ -283,6 +286,8 @@ void main() {
           runKey: 'run-fail',
           agentId: 'goal-1',
           status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          finishedAt: DateTime(2026, 8, 16, 19, 14),
           error: StateError(
             'MeliousInferenceException (HTTP 429): Insufficient balance '
             'for request. Required: 74, Available: 0',
@@ -311,7 +316,43 @@ void main() {
           runKey: 'run-ok',
           agentId: 'goal-1',
           status: WakeRunStatus.completed,
+          triggerTokens: {goalReportRefreshTriggerToken},
         ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a success synced from ANOTHER device outranks an older '
+        'local failure — the freshness watermark hides the line', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          finishedAt: DateTime(2026, 8, 16, 19, 14),
+          error: StateError('Insufficient balance for request'),
+        ),
+        // The other device's successful refresh arrives by sync as agent
+        // state whose freshness watermark postdates the local failure.
+        agentState:
+            AgentDomainEntity.agentState(
+                  id: 'goal-1:state',
+                  agentId: 'goal-1',
+                  slots: const AgentSlots(),
+                  updatedAt: DateTime(2026, 8, 16, 19, 30),
+                  vectorClock: null,
+                  reportFreshAt: DateTime(2026, 8, 16, 19, 30),
+                  reportStaleAt: DateTime(2026, 8, 16, 19, 13),
+                )
+                as AgentStateEntity,
       );
       await tester.pumpAndSettle();
       expect(

@@ -700,11 +700,15 @@ flowchart TD
   `AgentAutomationRow` reload affordances, and the goal's cumulative
   inference cost pills (`GoalAgentLifetimePills`) in its footer — one
   panel language, changed in one place for both. A refresh that DIES
-  (provider out of credits, network down) says so on the card: the card
-  watches `agentWakeOutcomeProvider` and renders the last failed outcome's
-  reason in an error line above the automation row, cleared by the next
-  completed wake and hidden while a retry is in flight — fourteen silent
-  429s once read as a dead button. The page has ONE time
+  (provider out of credits, network down, the executor timeout) says so on
+  the card: it watches `goalReportWakeOutcomeProvider` — report-refresh and
+  escalation wakes only, so a failed chat run or a passing Phase A
+  subscription tick can neither raise nor clear the line — and renders the
+  last failure's reason in an error line above the automation row. The line
+  hides while a retry runs, clears on the next completed report wake, and
+  yields to a SYNCED success (another device's refresh) whose
+  `reportFreshAt` postdates the failure — fourteen silent 429s once read
+  as a dead button. The page has ONE time
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which

@@ -282,19 +282,26 @@ window.
 
 `runCompletions` is a broadcast `Stream<WakeRunCompletion>` — one event per
 finished wake (`completed` / `failed` / `aborted`, carrying the error object for
-failures), keyed by the run key `enqueueManualWake` returns and naming the
-`agentId` the run belonged to (run keys are opaque hashes, so agent-scoped
-listeners cannot recover it from the key).
+failures), keyed by the run key `enqueueManualWake` returns. Each event also
+names the `agentId`, `reason` and `triggerTokens` of the job (run keys are
+opaque hashes, so agent- or purpose-scoped listeners cannot recover them from
+the key) and a `finishedAt` stamp, so a listener can reconcile an in-process
+outcome against durable state that arrived later by sync.
 
 It is **in-process only, never persisted**. Callers that enqueued a wake and
 need its precise outcome without polling — the Daily OS durable
 `draftPlan`/`refinePlan` job executor (ADR 0032 phase 1) — subscribe *before*
 enqueueing and filter on the returned run key. Agent-scoped consumers use
-`agentWakeOutcomeProvider` instead, which filters the stream to one agent's
-decisive outcomes (`failed` / `completed`, dropping `aborted` so a superseded
-retry never overwrites a surfaced failure) — the goal read card's
-update-failure line is its first consumer. The durable record of the same
-outcome remains the `wake_run_log` row.
+`agentWakeOutcomeProvider` instead (session-kept-alive, since the broadcast
+stream does not replay across navigation), which filters to one agent's
+*decisive* outcomes — `WakeRunCompletion.isDecisive`: completed, failed, or
+the executor-timeout abort; a superseded or cancelled abort is bookkeeping
+for a replaced run and neither surfaces as an error nor clears one. The goals
+feature narrows further with `goalReportWakeOutcomeProvider` (report-refresh
+and escalation wakes only — chat runs and Phase A subscription ticks share
+the agent id but never touch the standing report), which feeds the goal read
+card's update-failure line. The durable record of the same outcome remains
+the `wake_run_log` row.
 
 # Deferred deadlines are device-local
 

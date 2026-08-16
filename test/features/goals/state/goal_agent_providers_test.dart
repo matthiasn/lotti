@@ -2116,4 +2116,68 @@ void main() {
       );
     },
   );
+
+  test('goalReportWakeOutcomeProvider surfaces only report-producing wakes — '
+      'a failed chat stays off the read card and the constant subscription '
+      'ticks cannot clear a refresh failure', () async {
+    final completions = StreamController<WakeRunCompletion>.broadcast();
+    addTearDown(completions.close);
+    when(
+      () => wakeOrchestrator.runCompletions,
+    ).thenAnswer((_) => completions.stream);
+
+    final seen = <WakeRunCompletion>[];
+    container.listen(
+      goalReportWakeOutcomeProvider('goal-1'),
+      (_, next) {
+        if (next.value case final value?) seen.add(value);
+      },
+      fireImmediately: true,
+    );
+    await pumpEventQueue();
+
+    final refreshFailure = WakeRunCompletion(
+      runKey: 'run-refresh',
+      agentId: 'goal-1',
+      status: WakeRunStatus.failed,
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      error: StateError('Insufficient balance for request'),
+    );
+    completions
+      // A failed CHAT wake shares the agent id but never touches the
+      // report: invisible here.
+      ..add(
+        WakeRunCompletion(
+          runKey: 'run-chat',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {'goal-chat-message:message-1'},
+          error: StateError('chat failed'),
+        ),
+      )
+      // The refresh dies: surfaces.
+      ..add(refreshFailure)
+      // Phase A subscription ticks complete every few seconds with no
+      // report involvement — they must not clear the surfaced failure.
+      ..add(
+        const WakeRunCompletion(
+          runKey: 'run-subscription',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+        ),
+      );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure]);
+
+    // An escalation is a report-producing wake too: its success clears.
+    const escalationSuccess = WakeRunCompletion(
+      runKey: 'run-escalation',
+      agentId: 'goal-1',
+      status: WakeRunStatus.completed,
+      triggerTokens: {'goal-escalation:2026-08-09'},
+    );
+    completions.add(escalationSuccess);
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, escalationSuccess]);
+  });
 }

@@ -471,17 +471,31 @@ void main() {
           )
           // This agent fails: surfaces.
           ..add(failure)
-          // Pressing Update again supersedes the queued retry: aborted is
-          // not a decision, so the failure must stay the latest outcome.
+          // Pressing Update again supersedes the queued retry: that abort
+          // is not a decision, so the failure must stay the latest outcome.
           ..add(
-            const WakeRunCompletion(
+            WakeRunCompletion(
               runKey: 'run-superseded',
               agentId: 'goal-1',
               status: WakeRunStatus.aborted,
+              error: StateError('wake superseded by a newer manual request'),
             ),
           );
         await pumpEventQueue();
         expect(seen, [failure]);
+
+        // The executor TIMEOUT is the one abort that IS a decision — a
+        // stalled ten-minute run is exactly the silent failure this stream
+        // exists to surface.
+        final timedOut = WakeRunCompletion(
+          runKey: 'run-timeout',
+          agentId: 'goal-1',
+          status: WakeRunStatus.aborted,
+          error: TimeoutException('timeout'),
+        );
+        completions.add(timedOut);
+        await pumpEventQueue();
+        expect(seen, [failure, timedOut]);
 
         // The retry lands: completed replaces the failure, clearing it.
         const success = WakeRunCompletion(
@@ -491,7 +505,7 @@ void main() {
         );
         completions.add(success);
         await pumpEventQueue();
-        expect(seen, [failure, success]);
+        expect(seen, [failure, timedOut, success]);
       });
     });
 
