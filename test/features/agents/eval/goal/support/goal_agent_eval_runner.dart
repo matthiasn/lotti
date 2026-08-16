@@ -423,11 +423,18 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   // always tolerated unless explicitly forbidden — the policy regulates
   // them by situation, and over-reporting is measured by the no-op and
   // budget checks, not by this allow-list.
+  //
+  // `reply_to_user` is tolerated for the same reason it is not optional:
+  // the shipped contract orders "unanswered user message → call
+  // reply_to_user exactly once first". Scoring the contract-mandated reply
+  // as an unexpected call made every dialogue scenario unpassable. The
+  // no-op scenario forbids every tool by name, so restraint is unaffected.
   final allowedNames = {
     for (final expected in scenario.expectedToolCalls) expected.name,
     GoalAgentToolNames.updateGoalReport,
     GoalAgentToolNames.recordGoalObservation,
     GoalAgentToolNames.retireGoalAd,
+    GoalAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {
     return GoalAgentEvalFailureCategory.unexpectedToolCall;
@@ -513,18 +520,40 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     }
   }
 
+  final userVisibleText = _userVisibleText(assistantContent, toolCalls);
   if (scenario.requiredAssistantContentTermGroups.any(
-    (group) => !containsAnyEvalTerm(assistantContent, group),
+    (group) => !containsAnyEvalTerm(userVisibleText, group),
   )) {
     return GoalAgentEvalFailureCategory.missingAssistantContent;
   }
   if (scenario.forbiddenAssistantContentClaims.any(
-    (claim) => containsAffirmativeReportClaim(assistantContent, claim),
+    (claim) => containsAffirmativeReportClaim(userVisibleText, claim),
   )) {
     return GoalAgentEvalFailureCategory.forbiddenAssistantClaim;
   }
 
   return GoalAgentEvalFailureCategory.none;
+}
+
+/// Everything the user actually reads this turn.
+///
+/// Under the shipped contract a dialogue turn answers through
+/// `reply_to_user`, so bare assistant text is empty exactly when the model
+/// obeyed the contract. Asserting prose against assistant text alone
+/// therefore measured the harness; the reply argument is the same surface
+/// to the user and belongs in both the required and forbidden checks.
+String _userVisibleText(
+  String assistantContent,
+  List<GoalAgentEvalToolCall> toolCalls,
+) {
+  final parts = [
+    if (assistantContent.isNotEmpty) assistantContent,
+    for (final call in toolCalls)
+      if (call.name == GoalAgentToolNames.replyToUser)
+        if (call.jsonObjectArguments?['message'] case final String message)
+          if (message.isNotEmpty) message,
+  ];
+  return parts.join('\n');
 }
 
 String _argumentsFor(List<GoalAgentEvalToolCall> toolCalls, String name) =>

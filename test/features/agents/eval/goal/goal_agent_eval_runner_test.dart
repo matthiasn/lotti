@@ -230,6 +230,79 @@ void main() {
       );
     });
 
+    test('the contract-mandated reply carrier is not an unexpected call', () {
+      // The shipped contract orders "unanswered user message → call
+      // reply_to_user exactly once first", and the eval offers the tool.
+      // Scoring that reply as unexpected made every dialogue scenario
+      // unpassable and hid real model differences behind a harness artifact.
+      final category = classifyGoalAgentResult(
+        scenario: scenarioById('evo_adjust_target'),
+        toolCalls: [
+          call(
+            GoalAgentToolNames.replyToUser,
+            '{"message":"Your goal is 10,000 steps per day; I can lower it."}',
+          ),
+          call(
+            GoalAgentToolNames.proposeGoalRevision,
+            '{"changes":{"targetValue":8000},"rationale":"user asked"}',
+          ),
+        ],
+        assistantContent: '',
+      );
+      expect(category, GoalAgentEvalFailureCategory.none);
+    });
+
+    test('the reply carrier counts as text the user actually reads', () {
+      final scenario = scenarioById('wk_dialogue_over_report');
+      // Restating the goal inside reply_to_user is the contract-shaped way
+      // to answer, so it must satisfy the prose requirement...
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Your goal is an average of 10,000 steps per day '
+              'over a rolling 7-day window."}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+      // ...and a reply that omits the restatement must still fail, or the
+      // check would pass on the mere presence of a reply.
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"All good, keep it up!"}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.missingAssistantContent,
+      );
+    });
+
+    test('tolerating the reply carrier leaves no-op restraint intact', () {
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('gp_noop'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Nothing changed since the last wake."}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.noOpViolated,
+      );
+    });
+
     test('reuse scenario fails a model that regenerates instead', () {
       final category = classifyGoalAgentResult(
         scenario: scenarioById('ad_reuse_top_rated'),

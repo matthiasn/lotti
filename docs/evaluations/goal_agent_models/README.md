@@ -168,6 +168,30 @@ recovery-window fabrication against the committed regression check. The scenario
 catalog, objective classifier, and this run record are the reproducible source
 of truth committed to the repository.
 
+## Scorer correction — 2026-08-16
+
+The classifier scored `reply_to_user` as an unexpected tool call. That tool is
+part of the shipped contract, the runner offers it to the model, and the system
+prompt orders "unanswered user message → call reply_to_user exactly once
+first". Every dialogue scenario was therefore unpassable by a model that obeyed
+the contract: in a 3-sample GLM 5.2 baseline, 14 of 28 failures were this
+artifact alone, and `evo_*`, `wk_*` and `tone_roast_request` scored 0/3 across
+the board — the "all models fail" smell this README warns about.
+
+Compounding it, the prose assertions read bare assistant text, which is empty
+exactly when the model answers through the tool, so
+`requiredAssistantContentTermGroups` failed even once the call was tolerated.
+
+Two changes in `goal_agent_eval_runner.dart`: `reply_to_user` joins the
+tolerated set (the no-op scenario forbids every tool by name, so restraint is
+unaffected), and the prose checks — required terms and forbidden claims alike —
+now read assistant text plus every `reply_to_user.message`, which is the same
+surface to the user.
+
+**Results above this line predate the correction.** Dialogue and evolution
+scores are not comparable across it; a jump in those rows is the scorer, not
+the model. Cost, latency and the health-scenario rows are unaffected.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
