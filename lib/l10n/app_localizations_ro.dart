@@ -706,28 +706,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSettingsTitle => 'Agenți';
 
   @override
-  String get agentsFirstRunControl =>
-      'Puteți vorbi cu el, îl puteți corecta, reorienta, întrerupe, șterge.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Rulează pe modelele dumneavoastră — de obicei fracțiuni de cent pe zi.';
-
-  @override
-  String get agentsFirstRunCta => 'Stabiliți o intenție';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Vorbește prin bannere scurte, acolo unde vă aflați deja. Respingeți unul și va tăcea pentru tot restul zilei.';
-
-  @override
-  String get agentsFirstRunTitle => 'Un agent per obiectiv';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Urmărește lucrurile de care depinde obiectivul — obiceiuri bifate, numărul de pași. Nimic ce nu poate vedea, nimic ce trebuie să raportați.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-lingușire';
 
   @override
@@ -3278,14 +3256,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
-
-  @override
-  String get configFlagEnableAgentsPage =>
-      'Activați pagina Agenți de obiective';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Afișează pagina Agenți de obiective în navigarea principală. Urmăriți dintr-o privire starea agenților dvs. de obiective și verificați fiecare agent.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6224,19 +6194,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Amânați bannerul';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de zile de rezervă',
-      few: '$count zile de rezervă',
-      one: '1 zi de rezervă',
-      zero: 'Rezerva se termină azi',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Începeți o conversație cu $agentName.';
   }
@@ -6483,11 +6440,6 @@ class AppLocalizationsRo extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Spus de dvs., înregistrat de $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName are nevoie de atenție';
   }
 
   @override
@@ -6844,9 +6796,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Model de sincronizare';
-
-  @override
-  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
 
   @override
   String get goalProgressAgesOut => 'iese în această seară';

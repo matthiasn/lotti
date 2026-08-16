@@ -11,7 +11,7 @@ sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -78,7 +78,7 @@ sources:
     last_modified: 2026-08-16
   - id: goal-routes
     resource: ../../lib/features/goals/ui/goal_routes.dart
-    title: goalSurfaceRootPath — tab-aware goal-page exits
+    title: goal route helpers — every goal page path under /goals
     last_modified: 2026-08-16
   - id: measurable-capture
     resource: ../../lib/features/goals/service/goal_measurable_capture_service.dart
@@ -115,9 +115,9 @@ every wake; Phase B is the lease-elected LLM tier that consumes the
 escalation wakes Phase A arms, speaking the contract that was validated
 in the eval harness *before* this runtime existed (the prompt and tool
 definitions live in `goal_agent_contract.dart` and the eval suite imports
-them — one artifact, zero drift). The banner surface, Agents tab, rolling
-progress detail, and the first durable two-way chat slice are visible behind
-the rollout flag.
+them — one artifact, zero drift). The banner surface, unified Goals tab,
+rolling progress detail, and the first durable two-way chat slice are
+visible behind the `enable_unified_goals` rollout flag.
 
 ## Runtime flow
 
@@ -655,10 +655,9 @@ flowchart TD
   The card keeps `cardPadding` on its lateral and bottom edges but uses
   `spacing.step2` above the fixed-height action header, preventing the rating
   and snooze tap targets from creating a visually double-padded top edge.
-- **The Goal Agents tab** (`enable_agents_page` flag; labelled "Goal Agents"
-  via `agentsPageTitle` in every catalog, while the `/agents` route path is
-  deliberately unchanged so deep links survive): one card per
-  goal agent with health at a glance — a coarse-health chip
+- **The goal detail surface** (hosted by the unified Goals tab under
+  `/goals/details/:agentId`): per-goal health at a glance — a coarse-health
+  chip
   (`coarseHealthOf` collapses the runtime `GoalTrackStatus` into Healthy /
   Behind / Restarting / Not enough data; `recovering` reads Restarting, never
   a failure), the report one-liner, a pending-proposal badge and a trend
@@ -804,14 +803,14 @@ flowchart TD
   to the evidence for goals without habit dimensions. The chat pane's
   subtitle is the coarse-health label, current state rather than the
   aspiration statement. Mobile opens durable conversation
-  at `/agents/details/:agentId/chat`; desktop renders the same
+  at `/goals/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
   for an active goal identity, shows the coarse-health label (current state,
   never the aspiration statement) in its compact
   chat header, and persists the detail
   route after system/gesture back. **Every one of a goal's own pages — detail,
   chat, create and edit — slides the mobile bottom nav away**
-  (`agentsRouteHidesBottomNav`; the `/agents` list root keeps it), because each
+  (`goalsRouteHidesBottomNav`; the `/goals` list root keeps it), because each
   docks its own surface at the bottom edge: the day-assessment sheet's record
   button and the wizards' pinned Continue band. Hiding the bar also stops it
   being reserved, so those surfaces reach the edge instead of floating above a
@@ -1007,11 +1006,10 @@ flowchart TD
   no row offers a quick-complete the service would reject. Habits that no goal's criteria tree claims
   (`goalCriterionHabitIds`) render in a "not in a goal" group — gated on
   every per-goal health having resolved, so cached habits never flash in
-  as ungrouped. `GoalsLocation` hosts the detail/chat/wizard pages under
-  `/goals/...` and the pages' exits go through `goalSurfaceRootPath()`,
-  keeping navigation inside whichever tab opened them (see
-  [navigation](../architecture/navigation.md)). Both old tabs stay
-  intact while the flag is off.
+  as ungrouped. `GoalsLocation` is the sole host of the detail/chat/wizard
+  pages, all under `/goals/...` paths built by the plain helpers in
+  `goal_routes.dart` (see [navigation](../architecture/navigation.md)); the
+  never-released `/agents` twin tab was removed after this surface landed.
 
 ## Gotchas
 

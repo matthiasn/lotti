@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recovery hint folded in), a one-line summary computed from live data, and
   its habits directly inside it with the familiar one-tap complete. Habits
   that belong to no goal keep their own group, and the consistency heatmap
-  and completion-rate chart close out the page. Both existing tabs stay
+  and completion-rate chart close out the page. The Habits tab stays
   unchanged while the flag is off.
 - **A fourth day verdict: Improving.** A day where you missed some of the goal
   but moved the right way now has its own verdict and its own colour, instead
@@ -80,6 +80,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The habit card lost its empty row.** The weekly streak sits on the section
   heading line rather than alone under the day squares.
 - **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
+
+### Removed
+- **The experimental "Enable Agents Page?" flag and its tab.** The unified
+  Goals page replaces that surface, so the toggle is gone from
+  Settings → Flags (and cleared on existing installs); goal details, chat
+  and the goal wizard now live under the Goals tab.
 
 ### Fixed
 - **Toast borders follow their rounded corners cleanly.** Countdown and tone

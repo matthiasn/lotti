@@ -70,10 +70,10 @@ sync-outbox flush reports failure, and the workflow persists a sanitized answer 
 `reply_to_user` action that the shared bounded chat projection can display
 without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake
 ids, so a transaction that commits before its deferred outbox flush fails is
-recognized as complete instead of rerunning inference. The visible layer shipped behind the
-`enable_agents_page` flag: procedural text banners (ADR 0058) on the day
-and habits pages (`ui/goal_banner_*`), and a Goal Agents tab (`ui/pages/`;
-the `/agents` route path is unchanged)
+recognized as complete instead of rerunning inference. The visible layer ships behind the
+`enable_unified_goals` flag: procedural text banners (ADR 0058) on the day
+and habits pages (`ui/goal_banner_*`), and the unified Goals tab (`ui/pages/`,
+route root `/goals`)
 with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
 pushed phone page or desktop peer pane. Agent replies retain their Markdown
@@ -142,11 +142,11 @@ never "Goal", to avoid colliding with this entity). The four-pill vocabulary
 and the criterion→habit-id join live in `ui/unified/unified_goal_status.dart`.
 Goal-card rows count only real successes as done (goal criteria ignore
 skips), and the page reads the category-unfiltered habit buckets so it never
-inherits the Habits tab's hidden category filter. `GoalsLocation` hosts the
-same detail, chat and wizard pages under `/goals/...`, and those pages'
-exits go through `goalSurfaceRootPath()` (`ui/goal_routes.dart`) so Back
-stays on whichever tab opened them — the tab's actions work even with
-`enable_agents_page` off. Both old tabs stay intact while the flag is off.
+inherits the Habits tab's hidden category filter. `GoalsLocation` is the
+sole host of the detail, chat and wizard pages under `/goals/...`, built by
+the plain path helpers in `ui/goal_routes.dart`. (The never-released Goal
+Agents tab that hosted the same pages under `/agents/...` behind
+`enable_agents_page` was removed after the unified surface landed.)
 Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to

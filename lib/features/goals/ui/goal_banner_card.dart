@@ -56,11 +56,7 @@ class GoalBannerCard extends ConsumerWidget {
           borderRadius: radius,
           // The card body is the doorway to the conversation about this
           // nudge; rating and visibility actions own separate controls.
-          // Surface-aware: rendered on a Goals-hosted detail page this must
-          // stay in the Goals delegate (from the shell dock, where no goal
-          // surface encloses it, the helper resolves the legacy /agents).
-          onTap: () =>
-              beamToNamed(goalDetailPath(context, entry.nudge.agentId)),
+          onTap: () => beamToNamed(goalDetailPath(entry.nudge.agentId)),
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: radius,
@@ -169,7 +165,7 @@ class GoalBannerCard extends ConsumerWidget {
                       onTap:
                           onCtaPressed ??
                           () => beamToNamed(
-                            goalDetailPath(context, entry.nudge.agentId),
+                            goalDetailPath(entry.nudge.agentId),
                           ),
                     ),
                   ],

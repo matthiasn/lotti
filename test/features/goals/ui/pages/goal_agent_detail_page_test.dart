@@ -180,7 +180,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit goal'));
-    expect(navigated, ['/agents/details/goal-1/edit']);
+    expect(navigated, ['/goals/details/goal-1/edit']);
     navigated.clear();
 
     final scrollable = tester.state<ScrollableState>(
@@ -194,7 +194,7 @@ void main() {
     expect(find.text('Watching'), findsOneWidget);
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
-    expect(navigated, ['/agents/details/goal-1/chat']);
+    expect(navigated, ['/goals/details/goal-1/chat']);
   });
 
   testWidgets('a standing report renders its one-liner instead of the '
@@ -1041,7 +1041,7 @@ void main() {
     // The persistent chat doorway beside the overflow menu.
     await tester.tap(find.byKey(const ValueKey('goal-detail-chat-action')));
     await tester.pump();
-    expect(navigated, ['/agents/details/goal-1/chat']);
+    expect(navigated, ['/goals/details/goal-1/chat']);
   });
 
   testWidgets('a habit-less goal falls back to the anchor scroll and the '
@@ -1792,11 +1792,12 @@ void main() {
 
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();
-    expect(navigated, ['/agents']);
+    expect(navigated, ['/goals']);
   });
 
-  testWidgets('the AppBar back button routes to the goal surface root — '
-      '/agents when opened from the legacy tab', (tester) async {
+  testWidgets('the AppBar back button routes to the unified Goals root', (
+    tester,
+  ) async {
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -1832,11 +1833,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No NavService registered here, so goalSurfaceRootPath() resolves the
-    // legacy surface (see goal_routes.dart) — the pre-merge behavior.
     await tester.tap(find.byType(BackButton));
     await tester.pump();
-    expect(navigated, ['/agents']);
+    expect(navigated, ['/goals']);
   });
 
   testWidgets('delete failures stay on the goal and a later success returns '
@@ -1924,7 +1923,7 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => service.deleteGoalAgent('goal-1')).called(2);
-    expect(navigated, ['/agents']);
+    expect(navigated, ['/goals']);
   });
 
   testWidgets('the overflow menu opens the shared agent internals panel', (

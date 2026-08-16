@@ -9,7 +9,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
@@ -211,9 +210,9 @@ bool projectsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   return segments[1] != 'create';
 }
 
-/// True when the agents beamer location points at a goal agent's own pages —
-/// the detail page, its chat, its edit wizard (`/agents/details/{id}/...`) or
-/// the create wizard (`/agents/create`).
+/// True when the GOALS beamer location points at a goal's own pages —
+/// the detail page, its chat, its edit wizard (`/goals/details/{id}/...`)
+/// or the create wizard (`/goals/create`).
 ///
 /// Every one of them is a terminal page that owns its bottom edge: the detail
 /// page's day-assessment sheet docks its `Record for <day>` CTA there, and
@@ -221,32 +220,11 @@ bool projectsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
 /// blurred pill sits on top of that CTA. They slide the bar away for the same
 /// reason as [projectsRouteHidesBottomNav]. Pure function of router state.
 ///
-/// The `/agents` list root keeps the bar — it is a tab you navigate *from*.
+/// The `/goals` list root keeps the bar — it is a tab you navigate *from*.
 ///
-/// The shapes are matched exactly, not by prefix: [AgentsLocation.buildPages]
-/// renders the plain list for anything malformed (`/agents/details` with no
+/// The shapes are matched exactly, not by prefix: [GoalsLocation.buildPages]
+/// renders the plain list for anything malformed (`/goals/details` with no
 /// id, an unknown trailing segment), and that list must keep its tab bar.
-bool agentsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
-  if (location is! AgentsLocation) return false;
-  final segments = location.state.uri.pathSegments;
-  if (segments.isEmpty || segments.first != 'agents') return false;
-  return switch (segments.length) {
-    2 => segments[1] == 'create',
-    3 => segments[1] == 'details' && segments[2].isNotEmpty,
-    4 =>
-      segments[1] == 'details' &&
-          segments[2].isNotEmpty &&
-          (segments[3] == 'chat' || segments[3] == 'edit'),
-    _ => false,
-  };
-}
-
-/// True when the GOALS beamer location points at a goal's own pages —
-/// the detail page, its chat, its edit wizard (`/goals/details/{id}/...`)
-/// or the create wizard (`/goals/create`). Identical shape rules to
-/// [agentsRouteHidesBottomNav]: the unified Goals tab hosts the same
-/// terminal pages under its own paths, and they own their bottom edge the
-/// same way. The `/goals` list root keeps the bar.
 bool goalsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   if (location is! GoalsLocation) return false;
   final segments = location.state.uri.pathSegments;
@@ -277,7 +255,6 @@ enum _AppNavigationDestinationKind {
   goals,
   habits,
   dashboards,
-  agents,
   journal,
   events,
   settings,
@@ -312,7 +289,6 @@ class _AppNavigationDestination {
     _AppNavigationDestinationKind.goals ||
     _AppNavigationDestinationKind.habits ||
     _AppNavigationDestinationKind.dashboards ||
-    _AppNavigationDestinationKind.agents ||
     _AppNavigationDestinationKind.events ||
     _AppNavigationDestinationKind.settings => false,
   };
@@ -378,7 +354,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.tasksDelegate,
     navService.projectsDelegate,
     navService.settingsDelegate,
-    navService.agentsDelegate,
     navService.goalsDelegate,
   ]);
 
@@ -608,7 +583,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final isHabitsPageEnabled = navService.isHabitsPageEnabled;
         final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
         final isEventsPageEnabled = navService.isEventsPageEnabled;
-        final isAgentsPageEnabled = navService.isAgentsPageEnabled;
         final isUnifiedGoalsPageEnabled = navService.isUnifiedGoalsPageEnabled;
 
         final destinations = _buildNavigationDestinations(
@@ -619,7 +593,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           isHabitsPageEnabled: isHabitsPageEnabled,
           isDashboardsPageEnabled: isDashboardsPageEnabled,
           isEventsPageEnabled: isEventsPageEnabled,
-          isAgentsPageEnabled: isAgentsPageEnabled,
         );
         final itemCount = destinations.length;
 
@@ -645,20 +618,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             Beamer(routerDelegate: navService.habitsDelegate),
           if (isDashboardsPageEnabled)
             Beamer(routerDelegate: navService.dashboardsDelegate),
-          if (isAgentsPageEnabled)
-            Beamer(routerDelegate: navService.agentsDelegate),
           Beamer(routerDelegate: navService.journalDelegate),
           if (isEventsPageEnabled)
             Beamer(routerDelegate: navService.eventsDelegate),
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, projects, settings and agents delegates so
+        // Listen to the tasks, projects, settings and goals delegates so
         // the mobile shell rebuilds when their routes change (push to / pop
-        // from task, project or goal agent details, into / out of settings
+        // from task, project or goal details, into / out of settings
         // entity editors). That's how we know whether to hide the mobile
         // bottom nav. See [_isTaskDetailRoute], [projectsRouteHidesBottomNav],
-        // [settingsRouteHidesBottomNav] and [agentsRouteHidesBottomNav].
+        // [settingsRouteHidesBottomNav] and [goalsRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => isWide
@@ -870,10 +841,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         (destinations[index].kind == _AppNavigationDestinationKind.projects &&
             projectsRouteHidesBottomNav(
               navService.projectsDelegate.currentBeamLocation,
-            )) ||
-        (destinations[index].kind == _AppNavigationDestinationKind.agents &&
-            agentsRouteHidesBottomNav(
-              navService.agentsDelegate.currentBeamLocation,
             )) ||
         (destinations[index].kind == _AppNavigationDestinationKind.goals &&
             goalsRouteHidesBottomNav(
@@ -1119,7 +1086,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required bool isHabitsPageEnabled,
     required bool isDashboardsPageEnabled,
     required bool isEventsPageEnabled,
-    required bool isAgentsPageEnabled,
   }) {
     final allDestinations = <_AppNavigationDestination>[
       _AppNavigationDestination(
@@ -1170,13 +1136,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         expandedChildBuilder: () => const ImpactSidebarEntry(),
       ),
       _AppNavigationDestination(
-        kind: _AppNavigationDestinationKind.agents,
-        label: context.messages.agentsPageTitle,
-        iconBuilder: ({required active}) => Icon(
-          active ? Icons.psychology_rounded : Icons.psychology_outlined,
-        ),
-      ),
-      _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,
         label: context.messages.navTabTitleJournal,
         iconBuilder: ({required active}) => Icon(
@@ -1205,7 +1164,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isHabitsPageEnabled: isHabitsPageEnabled,
       isDashboardsPageEnabled: isDashboardsPageEnabled,
       isEventsPageEnabled: isEventsPageEnabled,
-      isAgentsPageEnabled: isAgentsPageEnabled,
     );
     final result = allDestinations
         .where((destination) => enabledKinds.contains(destination.kind))
@@ -1238,7 +1196,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isHabitsPageEnabled: navService.isHabitsPageEnabled,
       isDashboardsPageEnabled: navService.isDashboardsPageEnabled,
       isEventsPageEnabled: navService.isEventsPageEnabled,
-      isAgentsPageEnabled: navService.isAgentsPageEnabled,
     ).indexOf(kind);
     return index == -1 ? null : index;
   }
@@ -1403,7 +1360,6 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isHabitsPageEnabled,
   required bool isDashboardsPageEnabled,
   required bool isEventsPageEnabled,
-  required bool isAgentsPageEnabled,
 }) {
   return [
     _AppNavigationDestinationKind.tasks,
@@ -1412,7 +1368,6 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
     if (isUnifiedGoalsPageEnabled) _AppNavigationDestinationKind.goals,
     if (isHabitsPageEnabled) _AppNavigationDestinationKind.habits,
     if (isDashboardsPageEnabled) _AppNavigationDestinationKind.dashboards,
-    if (isAgentsPageEnabled) _AppNavigationDestinationKind.agents,
     _AppNavigationDestinationKind.journal,
     if (isEventsPageEnabled) _AppNavigationDestinationKind.events,
     _AppNavigationDestinationKind.settings,

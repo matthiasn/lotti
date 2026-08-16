@@ -247,7 +247,7 @@ void main() {
     await pumpCard(tester);
     await tester.tap(find.text('Lace up now'));
     await tester.pumpAndSettle();
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
   });
 
   testWidgets('a host-provided CTA handler replaces navigation — on the goal '
@@ -341,7 +341,7 @@ void main() {
     await pumpCard(tester);
     await tester.tap(find.text('Your shoes filed a missing person report.'));
     await tester.pumpAndSettle();
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
     expect(find.text('How was this banner?'), findsNothing);
   });
 }

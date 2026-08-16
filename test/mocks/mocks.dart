@@ -695,15 +695,9 @@ class MockAudioTranscriptionService extends Mock
 
 class MockNavService extends Mock implements NavService {
   /// Concrete default (mutable) so the many app-shell tests that predate
-  /// the agents tab don't each need a stub; a test exercising the tab
-  /// flips [agentsPageEnabled] instead of `when()` (which cannot stub a
-  /// concrete member).
-  bool agentsPageEnabled = false;
-
-  @override
-  bool get isAgentsPageEnabled => agentsPageEnabled;
-
-  /// Same contract for the unified Goals tab (`enable_unified_goals`).
+  /// the unified Goals tab don't each need a stub; a test exercising the
+  /// tab flips [unifiedGoalsPageEnabled] instead of `when()` (which cannot
+  /// stub a concrete member).
   bool unifiedGoalsPageEnabled = false;
 
   @override

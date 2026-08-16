@@ -183,7 +183,6 @@ class _NavFlagBench {
         enableHabitsPageFlag => habits.stream,
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
-        enableAgentsPageFlag => agents.stream,
         enableUnifiedGoalsFlag => unifiedGoals.stream,
         _ => Stream<bool>.value(false),
       };
@@ -200,11 +199,10 @@ class _NavFlagBench {
   final habits = StreamController<bool>.broadcast(sync: true);
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
-  final agents = StreamController<bool>.broadcast(sync: true);
   final unifiedGoals = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
-  /// Emits the base optional-tab flags at once; the Events, Agents and
+  /// Emits the base optional-tab flags at once; the Events and
   /// unified-Goals flags stay off so existing tab indices/delegates are
   /// unaffected (toggle their controllers directly to exercise those
   /// destinations).
@@ -214,7 +212,6 @@ class _NavFlagBench {
     habits.add(enabled);
     dashboards.add(enabled);
     events.add(false);
-    agents.add(false);
     unifiedGoals.add(false);
   }
 
@@ -226,7 +223,6 @@ class _NavFlagBench {
       habits.close(),
       dashboards.close(),
       events.close(),
-      agents.close(),
       unifiedGoals.close(),
     ]);
   }
@@ -398,7 +394,6 @@ void main() {
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
-        bench.agents.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -562,11 +557,10 @@ void main() {
       expect(await getIdFromSavedRoute(), isNull);
     });
 
-    test('creationContextIdForRoute yields NO context on agents or unified '
-        'Goals routes — the UUID there is an agent, not a journal parent', () {
+    test('creationContextIdForRoute yields NO context on unified Goals '
+        'routes — the UUID there is an agent, not a journal parent', () {
       const uuid = '123e4567-e89b-12d3-a456-426614174000';
       expect(creationContextIdForRoute('/journal/$uuid'), uuid);
-      expect(creationContextIdForRoute('/agents/details/$uuid'), isNull);
       expect(creationContextIdForRoute('/goals/details/$uuid'), isNull);
       expect(creationContextIdForRoute('/tasks'), isNull);
       expect(creationContextIdForRoute(null), isNull);
@@ -728,7 +722,6 @@ void main() {
         bench.habits.add(false);
         bench.dashboards.add(false);
         bench.events.add(true);
-        bench.agents.add(false);
         bench.unifiedGoals.add(false);
         await pumpEventQueue();
 
@@ -870,34 +863,7 @@ void main() {
       );
     });
 
-    group('agents tab flag', () {
-      test('enable_agents_page shows the tab between dashboards and journal, '
-          'and disabling it falls back to tasks', () async {
-        final bench = _NavFlagBench();
-        final navService = bench.navService;
-        bench.emitAll(enabled: true);
-        bench.agents.add(true);
-
-        // The getter mirrors the config flag stream directly, independent
-        // of the delegate list it also drives.
-        expect(navService.isAgentsPageEnabled, isTrue);
-        expect(
-          navService.beamerDelegates.indexOf(navService.agentsDelegate),
-          navService.beamerDelegates.indexOf(navService.dashboardsDelegate) + 1,
-        );
-
-        navService.setPath('/agents/details/goal-1');
-        expect(navService.currentPath, '/agents/details/goal-1');
-
-        bench.agents.add(false);
-        expect(navService.isAgentsPageEnabled, isFalse);
-        expect(
-          navService.beamerDelegates.contains(navService.agentsDelegate),
-          isFalse,
-        );
-        expect(navService.currentPath, '/tasks');
-      });
-
+    group('goals tab flag', () {
       test('enable_unified_goals shows the Goals tab between projects and '
           'habits, and disabling it falls back to tasks', () async {
         final bench = _NavFlagBench();
@@ -953,7 +919,6 @@ void main() {
             sync: true,
           );
           final eventsController = StreamController<bool>.broadcast(sync: true);
-          final agentsController = StreamController<bool>.broadcast(sync: true);
           final unifiedGoalsController = StreamController<bool>.broadcast(
             sync: true,
           );
@@ -968,7 +933,6 @@ void main() {
               enableDashboardsPageFlag => dashboardsController.stream,
               enableDailyOsPageFlag => dailyOsController.stream,
               enableEventsFlag => eventsController.stream,
-              enableAgentsPageFlag => agentsController.stream,
               enableUnifiedGoalsFlag => unifiedGoalsController.stream,
               _ => Stream<bool>.value(false),
             };
@@ -986,7 +950,6 @@ void main() {
               dashboardsController.close(),
               dailyOsController.close(),
               eventsController.close(),
-              agentsController.close(),
               unifiedGoalsController.close(),
             ]);
           });
@@ -997,7 +960,6 @@ void main() {
           dashboardsController.add(true);
           dailyOsController.add(true);
           eventsController.add(false);
-          agentsController.add(false);
           unifiedGoalsController.add(false);
 
           navService.beamToNamed('/habits');

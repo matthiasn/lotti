@@ -1303,42 +1303,6 @@ abstract class AppLocalizations {
   /// **'Agents'**
   String get agentSettingsTitle;
 
-  /// First-run explainer: what the user can do with an agent
-  ///
-  /// In en, this message translates to:
-  /// **'You can talk to it, correct it, retarget it, pause it, delete it.'**
-  String get agentsFirstRunControl;
-
-  /// First-run explainer: cost honesty line
-  ///
-  /// In en, this message translates to:
-  /// **'Runs on your models — typically fractions of a cent per day.'**
-  String get agentsFirstRunCost;
-
-  /// First-run explainer call to action to create the first goal
-  ///
-  /// In en, this message translates to:
-  /// **'Set an intention'**
-  String get agentsFirstRunCta;
-
-  /// First-run explainer: how a goal agent speaks and dismissal contract
-  ///
-  /// In en, this message translates to:
-  /// **'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.'**
-  String get agentsFirstRunSpeaks;
-
-  /// Title of the agents-list first-run explainer
-  ///
-  /// In en, this message translates to:
-  /// **'One agent per goal'**
-  String get agentsFirstRunTitle;
-
-  /// First-run explainer: what a goal agent watches
-  ///
-  /// In en, this message translates to:
-  /// **'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.'**
-  String get agentsFirstRunWatches;
-
   /// No description provided for @agentSoulAntiSycophancyLabel.
   ///
   /// In en, this message translates to:
@@ -5483,18 +5447,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.'**
   String get configFlagDailyOsOnboardingEnabledDescription;
-
-  /// No description provided for @configFlagEnableAgentsPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Goal Agents page'**
-  String get configFlagEnableAgentsPage;
-
-  /// No description provided for @configFlagEnableAgentsPageDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the Goal Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.'**
-  String get configFlagEnableAgentsPageDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
   ///
@@ -10511,12 +10463,6 @@ abstract class AppLocalizations {
   /// **'Snooze banner'**
   String get goalBannerSnoozeTitle;
 
-  /// Rolling-window goal at rate: days until the oldest success ages out.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}'**
-  String goalBufferDays(int count);
-
   /// Empty-state invitation in a goal-agent conversation.
   ///
   /// In en, this message translates to:
@@ -10881,12 +10827,6 @@ abstract class AppLocalizations {
     String agentName,
     String recordedAt,
   );
-
-  /// No description provided for @goalDominantIssueBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'{dimensionName} needs attention'**
-  String goalDominantIssueBadge(Object dimensionName);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11441,12 +11381,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Timing pattern'**
   String get goalPatternTitle;
-
-  /// Badge on an agent card when a revision proposal is pending.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposal awaiting review'**
-  String get goalPendingProposalBadge;
 
   /// No description provided for @goalProgressAgesOut.
   ///

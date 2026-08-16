@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
-import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
@@ -182,24 +181,10 @@ class _TestProjectsLocation extends ProjectsLocation {
   }
 }
 
-/// An [AgentsLocation] whose pages are inert stubs: route matching (and
-/// therefore [agentsRouteHidesBottomNav]) behaves exactly like production,
+/// A [GoalsLocation] whose pages are inert stubs: route matching (and
+/// therefore [goalsRouteHidesBottomNav]) behaves exactly like production,
 /// but none of the goal pages — with their provider and getIt dependency
 /// fan-out — is ever built.
-class _TestAgentsLocation extends AgentsLocation {
-  _TestAgentsLocation(super.routeInformation);
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    return [
-      BeamPage(
-        key: ValueKey('test-agents-${state.uri.path}'),
-        child: const SizedBox.shrink(),
-      ),
-    ];
-  }
-}
-
 class _TestGoalsLocation extends GoalsLocation {
   _TestGoalsLocation(super.routeInformation);
 
@@ -237,18 +222,13 @@ Future<void> _stubNavService(
   required bool Function() isHabitsEnabled,
   required bool Function() isDashboardsEnabled,
   bool Function() isEventsEnabled = _eventsDisabledByDefault,
-  bool? isAgentsEnabled,
   bool? isUnifiedGoalsEnabled,
   BeamerDelegate? settingsDelegate,
   BeamerDelegate? projectsDelegate,
-  BeamerDelegate? agentsDelegate,
   BeamerDelegate? goalsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
-  // AppScreen listens to the agents delegate too, so the bottom bar can
-  // slide away on a goal agent's own pages.
-  agentsDelegate ??= await _createEmptyDelegate('/agents');
   final calendarDelegate = await _createEmptyDelegate('/calendar');
   final habitsDelegate = await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
@@ -274,14 +254,11 @@ Future<void> _stubNavService(
   when(() => navService.dashboardsDelegate).thenReturn(dashboardsDelegate);
   when(() => navService.journalDelegate).thenReturn(journalDelegate);
   when(() => navService.settingsDelegate).thenReturn(settingsDelegate);
-  when(() => navService.agentsDelegate).thenReturn(agentsDelegate);
   when(() => navService.goalsDelegate).thenReturn(goalsDelegate);
-  // `isAgentsPageEnabled` is a concrete member on MockNavService, so it is
-  // flipped through the field rather than stubbed with `when()`. Left alone
-  // unless the caller asks, so a test that set it before stubbing keeps it.
-  if (isAgentsEnabled != null) {
-    navService.agentsPageEnabled = isAgentsEnabled;
-  }
+  // `isUnifiedGoalsPageEnabled` is a concrete member on MockNavService, so it
+  // is flipped through the field rather than stubbed with `when()`. Left
+  // alone unless the caller asks, so a test that set it before stubbing
+  // keeps it.
   if (isUnifiedGoalsEnabled != null) {
     navService.unifiedGoalsPageEnabled = isUnifiedGoalsEnabled;
   }
@@ -765,51 +742,6 @@ void main() {
 
       expect(find.text('Projects'), findsNothing);
       expect(find.text('Tasks'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
-
-    testWidgets('the flag-gated Agents destination appears in the desktop '
-        'sidebar when enabled', (tester) async {
-      final mockNavService = MockNavService()..agentsPageEnabled = true;
-      await _stubNavService(
-        mockNavService,
-        indexStream: const Stream<int>.empty(),
-        isProjectsEnabled: () => false,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      final agentsDelegate = await _createEmptyDelegate('/agents');
-      when(() => mockNavService.agentsDelegate).thenReturn(agentsDelegate);
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
-
-      await _pumpAppScreen(
-        tester,
-        navService: mockNavService,
-        viewportSize: _desktopViewportSize,
-      );
-
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Icon &&
-              (w.icon == Icons.psychology_outlined ||
-                  w.icon == Icons.psychology_rounded),
-        ),
-        findsWidgets,
-      );
-      // The agents tab is mounted but not active, so its Beamer child sits
-      // offstage in the shell's IndexedStack.
-      expect(
-        find.byWidgetPredicate(
-          (w) => w is Beamer && w.routerDelegate == agentsDelegate,
-          skipOffstage: false,
-        ),
-        findsOneWidget,
-      );
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -2396,84 +2328,7 @@ void main() {
     });
   });
 
-  group('agentsRouteHidesBottomNav', () {
-    AgentsLocation agentsLocationFor(String path) =>
-        AgentsLocation(RouteInformation(uri: Uri.parse(path)));
-
-    test('a null location keeps the bar', () {
-      expect(agentsRouteHidesBottomNav(null), isFalse);
-    });
-
-    test('a non-agents location keeps the bar even at an agents-like path', () {
-      expect(
-        agentsRouteHidesBottomNav(
-          ProjectsLocation(
-            RouteInformation(uri: Uri.parse('/agents/details/goal-1')),
-          ),
-        ),
-        isFalse,
-      );
-    });
-
-    test('the /agents list root keeps the bar', () {
-      // The list is a tab you navigate *from*, so it keeps its own tab bar.
-      expect(agentsRouteHidesBottomNav(agentsLocationFor('/agents')), isFalse);
-    });
-
-    test('an AgentsLocation whose path is not under /agents keeps the bar', () {
-      // Exercises the `segments.first != 'agents'` guard: an AgentsLocation
-      // can be constructed for any URI.
-      expect(
-        agentsRouteHidesBottomNav(agentsLocationFor('/elsewhere/deep')),
-        isFalse,
-      );
-    });
-
-    test('a goal agent detail hides the bar', () {
-      // The detail page docks its day-assessment CTA on the bottom edge.
-      expect(
-        agentsRouteHidesBottomNav(agentsLocationFor('/agents/details/goal-1')),
-        isTrue,
-      );
-    });
-
-    test('the nested goal chat hides the bar', () {
-      expect(
-        agentsRouteHidesBottomNav(
-          agentsLocationFor('/agents/details/goal-1/chat'),
-        ),
-        isTrue,
-      );
-    });
-
-    test('the nested goal edit wizard hides the bar', () {
-      expect(
-        agentsRouteHidesBottomNav(
-          agentsLocationFor('/agents/details/goal-1/edit'),
-        ),
-        isTrue,
-      );
-    });
-
-    test('the create wizard hides the bar', () {
-      // Both wizards pin their Continue band to the bottom edge.
-      expect(
-        agentsRouteHidesBottomNav(agentsLocationFor('/agents/create')),
-        isTrue,
-      );
-    });
-
-    test('an unknown agents sub-route keeps the bar', () {
-      expect(
-        agentsRouteHidesBottomNav(agentsLocationFor('/agents/settings')),
-        isFalse,
-      );
-    });
-  });
-
   group('goalsRouteHidesBottomNav', () {
-    // Same shape rules as agentsRouteHidesBottomNav: the unified Goals tab
-    // hosts the same terminal pages under its own paths.
     GoalsLocation goalsLocationFor(String path) =>
         GoalsLocation(RouteInformation(uri: Uri.parse(path)));
 
@@ -2731,112 +2586,6 @@ void main() {
     );
 
     testWidgets(
-      'slides the bar away inside a goal agent page and back on the list',
-      (tester) async {
-        final mockNavService = MockNavService();
-        final indexController = StreamController<int>.broadcast();
-        addTearDown(indexController.close);
-
-        final agentsDelegate = BeamerDelegate(
-          setBrowserTabTitle: false,
-          initialPath: '/agents',
-          locationBuilder: (routeInformation, _) =>
-              _TestAgentsLocation(routeInformation),
-        );
-        addTearDown(agentsDelegate.dispose);
-        await agentsDelegate.setNewRoutePath(
-          RouteInformation(uri: Uri.parse('/agents')),
-        );
-
-        await _stubNavService(
-          mockNavService,
-          indexStream: indexController.stream,
-          isProjectsEnabled: () => false,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
-          isAgentsEnabled: true,
-          agentsDelegate: agentsDelegate,
-        );
-        await _registerAppScreenGetIt(mockNavService);
-        addTearDown(tearDownTestGetIt);
-
-        await _pumpAppScreen(tester, navService: mockNavService);
-
-        // Activate the Agents tab (destinations: Tasks, Agents, Journal,
-        // Settings).
-        indexController.add(1);
-        await tester.pump();
-
-        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
-          find
-              .ancestor(
-                of: find.byType(DesignSystemBottomNavigationBar),
-                matching: find.byType(AnimatedSlide),
-              )
-              .first,
-        );
-        IgnorePointer ignorePointer() => tester.widget<IgnorePointer>(
-          find
-              .ancestor(
-                of: find.byType(DesignSystemBottomNavigationBar),
-                matching: find.byType(IgnorePointer),
-              )
-              .first,
-        );
-
-        // The bar's own ExcludeFocus, not the IndexedStack's per-tab one:
-        // `find.ancestor` walks outwards from the bar, and the tab barrier
-        // sits on a sibling subtree of the Positioned holding the bar.
-        ExcludeFocus excludeFocus() => tester.widget<ExcludeFocus>(
-          find
-              .ancestor(
-                of: find.byType(DesignSystemBottomNavigationBar),
-                matching: find.byType(ExcludeFocus),
-              )
-              .first,
-        );
-
-        // The /agents list is a tab you navigate from, so it keeps the bar.
-        expect(slide().offset, Offset.zero);
-        expect(ignorePointer().ignoring, isFalse);
-        // A docked bar is a real destination: Tab must still reach its slots.
-        expect(excludeFocus().excluding, isFalse);
-
-        // A goal's own page owns its bottom edge: the bar stays mounted so
-        // the move can animate, but slides down and goes inert.
-        agentsDelegate.beamToNamed('/agents/details/goal-1');
-        await tester.pump();
-        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
-        expect(slide().offset, const Offset(0, 1));
-        expect(ignorePointer().ignoring, isTrue);
-        // Off-screen means out of keyboard traversal too, or Tab still lands
-        // on a slot and Enter navigates away from the page the user is on.
-        expect(excludeFocus().excluding, isTrue);
-        await tester.pump(const Duration(milliseconds: 450));
-
-        // The create wizard pins its own Continue band there too.
-        agentsDelegate.beamToNamed('/agents/create');
-        await tester.pump();
-        expect(slide().offset, const Offset(0, 1));
-        expect(ignorePointer().ignoring, isTrue);
-        expect(excludeFocus().excluding, isTrue);
-        await tester.pump(const Duration(milliseconds: 450));
-
-        // Popping back to the list slides the bar into place.
-        agentsDelegate.beamToNamed('/agents');
-        await tester.pump();
-        expect(slide().offset, Offset.zero);
-        expect(ignorePointer().ignoring, isFalse);
-        expect(excludeFocus().excluding, isFalse);
-        await tester.pump(const Duration(milliseconds: 450));
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
       'slides the bar away inside a Goals-hosted goal page and back on the '
       'unified list',
       (tester) async {
@@ -2888,7 +2637,7 @@ void main() {
         expect(slide().offset, Offset.zero);
 
         // A Goals-hosted goal page owns its bottom edge, exactly like its
-        // /agents twin: the bar stays mounted but slides down.
+        // The bar stays mounted but slides down.
         goalsDelegate.beamToNamed('/goals/details/goal-1');
         await tester.pump();
         expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);

@@ -65,11 +65,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: enableAgentsPageFlag,
-    description: 'Enable Agents Page?',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableUnifiedGoalsFlag,
     description: 'Enable unified Goals page?',
     status: false,

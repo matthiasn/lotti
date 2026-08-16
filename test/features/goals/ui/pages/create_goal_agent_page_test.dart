@@ -289,7 +289,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(BackButton));
-      expect(navigated, ['/agents']);
+      expect(navigated, ['/goals']);
 
       await tester.enterText(
         find.byKey(const ValueKey('goal-form-intention')),
@@ -629,7 +629,7 @@ void main() {
         criteria: any(named: 'criteria'),
       ),
     ).called(1);
-    expect(navigated, ['/agents']);
+    expect(navigated, ['/goals']);
   });
 
   testWidgets('selects category time and saves its rolling weekly hour cap', (
@@ -2521,7 +2521,7 @@ void main() {
         criteria: revised.criteria,
       ),
     ).called(1);
-    expect(navigated, contains('/agents/details/goal-1'));
+    expect(navigated, contains('/goals/details/goal-1'));
   });
 
   for (final failure in ['identity', 'health']) {
@@ -3187,7 +3187,7 @@ void main() {
         criteria: any(named: 'criteria'),
       ),
     );
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
   });
 
   testWidgets('a habit removed while confirming is not saved as a criterion', (
@@ -3390,7 +3390,7 @@ void main() {
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
     expect(
       find.text('Saving the goal failed — please try again.'),
       findsNothing,
@@ -5521,7 +5521,7 @@ void main() {
 
     expect(find.text('Step 1 of 2'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
   });
 
   testWidgets('editing blocks continue while the statement is empty', (

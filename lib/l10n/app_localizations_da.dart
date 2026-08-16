@@ -696,28 +696,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
-  String get agentsFirstRunControl =>
-      'Du kan tale med den, rette den, ændre mål, sætte den på pause, slette den.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Kører på dine modeller — typisk brøkdele af en cent om dagen.';
-
-  @override
-  String get agentsFirstRunCta => 'Sæt en intention';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Den taler i korte bannere, dér hvor du allerede er. Afvis et, og resten af dagen er der ro.';
-
-  @override
-  String get agentsFirstRunTitle => 'Én agent pr. mål';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Den holder øje med det, målet bygger på — afkrydsede vaner, skridttal. Intet, den ikke kan se, intet, du skal rapportere.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smiskerpolitik';
 
   @override
@@ -3223,13 +3201,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Guid førstegangsbrugere af Daily OS gennem en rigtig check-in, der gør tale til en opgave og en dagsplan.';
-
-  @override
-  String get configFlagEnableAgentsPage => 'Aktivér målagenter-siden';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Vis målagenter-siden i hovednavigationen. Følg dine målagenters tilstand med et blik, og kig ind til hver enkelt.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6124,18 +6095,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Udsæt banner';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dages buffer',
-      one: '1 dags buffer',
-      zero: 'Buffer slutter i dag',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Start en samtale med $agentName.';
   }
@@ -6363,11 +6322,6 @@ class AppLocalizationsDa extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Sagt af dig, optaget af $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName har brug for opmærksomhed';
   }
 
   @override
@@ -6719,9 +6673,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Timing mønster';
-
-  @override
-  String get goalPendingProposalBadge => 'Forslag afventer';
 
   @override
   String get goalProgressAgesOut => 'udløber i aften';

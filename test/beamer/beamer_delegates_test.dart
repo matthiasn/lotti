@@ -180,17 +180,12 @@ void main() {
         routeInformation,
         null,
       );
-      final agentsLocation = agentsBeamerDelegate.locationBuilder(
-        routeInformation,
-        null,
-      );
       final goalsLocation = goalsBeamerDelegate.locationBuilder(
         routeInformation,
         null,
       );
 
       expect(habitsLocation, isA<NotFound>());
-      expect(agentsLocation, isA<NotFound>());
       expect(goalsLocation, isA<NotFound>());
       expect(eventsLocation, isA<NotFound>());
       expect(projectsLocation, isA<NotFound>());
