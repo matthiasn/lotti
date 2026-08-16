@@ -219,6 +219,13 @@ Two independent limits apply:
 - **Per agent**: `WakeRunner` enforces single-flight, so two wakes for the same
   agent never overlap even when global capacity is free.
 
+Each acquisition carries an ownership lease. Stale-drain recovery releases the
+superseded generation's leases before starting its replacement; late cleanup or
+timeout callbacks from the old generation cannot release or abort the newer
+run that now owns the same agent lock. A dequeued job also rechecks its drain
+generation after every pre-dispatch await. If superseded, it releases any lease
+it acquired, returns the job to the queue, and wakes the active scheduler.
+
 Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its
 `WakeRunner` agent lock. Workflows and conversation managers are created per
@@ -248,8 +255,11 @@ progress**. Dispatching or completing a wake resets that clock, so a healthy
 drain can process several slow wakes without being judged by its total age. If
 work remains queued, the one-minute safety net re-enters stale detection even
 while a drain is active; this recovers terminal persistence stalls without
-waiting for another enqueue. The threshold deliberately exceeds the wake cap,
-leaving room for the bounded pre-wake hook and terminal status persistence.
+waiting for another enqueue. Recovery releases the superseded generation's
+runner leases before replacement dispatch, so a terminal status write cannot
+consume the only global slot indefinitely. The threshold deliberately exceeds
+the wake cap, leaving room for the bounded pre-wake hook and terminal status
+persistence.
 
 # Completion signalling
 

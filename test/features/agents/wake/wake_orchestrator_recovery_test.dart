@@ -163,6 +163,88 @@ void main() {
           controller.close();
         });
       });
+
+      test('requeues work superseded during a policy lookup', () {
+        fakeAsync((async) {
+          final policyLookupGate = Completer<AgentDomainEntity?>();
+          final replacementExecutionGate =
+              Completer<Map<String, VectorClock>?>();
+          final originalExecutionGate = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          var activeExecutions = 0;
+          var maxActiveExecutions = 0;
+
+          when(() => mockRepository.getEntity(any())).thenAnswer((invocation) {
+            final agentId = invocation.positionalArguments.first as String;
+            if (agentId == 'policy-agent') return policyLookupGate.future;
+            return Future.value();
+          });
+
+          Future<Map<String, VectorClock>?> execute(
+            String agentId,
+            Completer<Map<String, VectorClock>?> gate,
+          ) async {
+            executedAgentIds.add(agentId);
+            activeExecutions++;
+            if (activeExecutions > maxActiveExecutions) {
+              maxActiveExecutions = activeExecutions;
+            }
+            try {
+              return await gate.future;
+            } finally {
+              activeExecutions--;
+            }
+          }
+
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              return switch (agentId) {
+                'policy-agent' => execute(agentId, originalExecutionGate),
+                _ => execute(agentId, replacementExecutionGate),
+              };
+            },
+          );
+
+          orchestrator.enqueueManualWake(
+            agentId: 'policy-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, isEmpty);
+
+          // Supersede the drain while its dequeued job is still awaiting the
+          // policy lookup, then occupy the only global execution slot.
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          // The stale continuation must hand its owned job back instead of
+          // acquiring a second runner slot from the old loop iteration.
+          policyLookupGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+          expect(maxActiveExecutions, 1);
+
+          replacementExecutionGate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['replacement-agent', 'policy-agent']),
+          );
+          expect(maxActiveExecutions, 1);
+
+          originalExecutionGate.complete(null);
+          async.flushMicrotasks();
+        });
+      });
     });
   });
 
@@ -176,7 +258,7 @@ void main() {
       // *aborted* status write, freezing _executeJob (and thus the drain)
       // inside _safeUpdateStatus.
       test(
-        'force-resets the stuck drain lock and the superseded drain bails out',
+        'releases the stale slot without releasing its replacement',
         () {
           fakeAsync((async) {
             final logger = MockDomainLogger();
@@ -237,7 +319,7 @@ void main() {
                   queue: stuckQueue,
                   runner: stuckRunner,
                   domainLogger: logger,
-                  maxConcurrentWakes: () => 2,
+                  maxConcurrentWakes: () => 1,
                   wakeExecutor: (agentId, runKey, triggers, threadId) {
                     executedAgentIds.add(agentId);
                     if (agentId == 'stuck-agent') {
@@ -306,10 +388,12 @@ void main() {
                 level: any(named: 'level'),
               ),
             ).called(1);
-            expect(executedAgentIds, equals(['stuck-agent']));
+            expect(executedAgentIds, equals(['stuck-agent', 'stuck-agent']));
+            expect(stuckRunner.isRunning('stuck-agent'), isTrue);
 
             // Now release the hung aborted write so the old (superseded) drain
-            // resumes, observes the bumped generation, and bails out (line 883).
+            // resumes and bails out. Its stale lease must not release the
+            // replacement wake's lock.
             abortedStatusGate.complete();
             async.flushMicrotasks();
 
@@ -321,24 +405,19 @@ void main() {
                 level: any(named: 'level'),
               ),
             ).called(1);
+            expect(stuckRunner.isRunning('stuck-agent'), isTrue);
 
-            // The next safety-net tick dispatches the queued same-agent wake
-            // after the old drain releases its runner lock.
-            async
-              ..elapse(WakeOrchestrator.safetyNetInterval)
-              ..flushMicrotasks();
-            expect(executedAgentIds, equals(['stuck-agent', 'stuck-agent']));
-
-            // The replacement drain is still waiting on stuck-agent and has one
-            // free global slot. Releasing the old drain must not clear the
-            // replacement drain's wake signal, otherwise this newly queued
-            // agent would wait despite the available capacity.
+            // Concurrency one remains enforced while the replacement runs.
             stuck.enqueueManualWake(agentId: 'third-agent', reason: 'manual');
             async.flushMicrotasks();
-            expect(executedAgentIds, contains('third-agent'));
+            expect(executedAgentIds, isNot(contains('third-agent')));
 
             replacementDrainGate.complete(null);
             async.flushMicrotasks();
+            expect(
+              executedAgentIds,
+              equals(['stuck-agent', 'stuck-agent', 'third-agent']),
+            );
 
             stuck.stop();
             controller.close();
