@@ -294,6 +294,18 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
                       HabitsSummaryCard(
                         visibleHabitIds: recordableIds,
                         doneHabitIds: summaryDoneIds,
+                        // Scoped to the recordable set, from the SAME
+                        // per-habit streaks the visible row chains render —
+                        // a hidden out-of-window habit's streak must not be
+                        // advertised here.
+                        streakCounts: (
+                          short: recordableIds
+                              .where((id) => (streaks[id] ?? 0) >= 3)
+                              .length,
+                          long: recordableIds
+                              .where((id) => (streaks[id] ?? 0) >= 7)
+                              .length,
+                        ),
                       ),
                       SizedBox(height: tokens.spacing.step5),
                       if (failedFirstLoad)

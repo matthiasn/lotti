@@ -21,6 +21,7 @@ class HabitsSummaryCard extends ConsumerStatefulWidget {
   const HabitsSummaryCard({
     this.visibleHabitIds,
     this.doneHabitIds,
+    this.streakCounts,
     super.key,
   });
 
@@ -37,6 +38,14 @@ class HabitsSummaryCard extends ConsumerStatefulWidget {
   /// because on that surface a skipped habit is still due and must not read
   /// as done. Null (the Habits tab) keeps the broader handled-today count.
   final Set<String>? doneHabitIds;
+
+  /// When set, the streak badge shows these counts instead of the
+  /// controller-wide ones — the unified Goals page derives them from the
+  /// per-habit streaks of its RECORDABLE definitions, so a hidden
+  /// out-of-window habit's streak cannot be advertised beside totals
+  /// computed from a different set. Null (the Habits tab) keeps the
+  /// controller-wide counts.
+  final ({int short, int long})? streakCounts;
 
   @override
   ConsumerState<HabitsSummaryCard> createState() => _HabitsSummaryCardState();
@@ -149,8 +158,10 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
                     ],
                   ),
                   _StreakBadge(
-                    shortStreakCount: state.shortStreakCount,
-                    longStreakCount: state.longStreakCount,
+                    shortStreakCount:
+                        widget.streakCounts?.short ?? state.shortStreakCount,
+                    longStreakCount:
+                        widget.streakCounts?.long ?? state.longStreakCount,
                   ),
                 ],
               ),

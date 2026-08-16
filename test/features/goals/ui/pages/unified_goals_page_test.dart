@@ -47,10 +47,19 @@ int _heatmapRefreshes = 0;
 int _heatmapBuilds = 0;
 
 class _FakeHeatmapController extends HabitHeatmapController {
+  _FakeHeatmapController([this.streaks = const {}]);
+
+  final Map<String, int> streaks;
+
   @override
   HabitHeatmapData build() {
     _heatmapBuilds++;
-    return HabitHeatmapData.empty();
+    return HabitHeatmapData(
+      days: const [],
+      hasHabits: streaks.isNotEmpty,
+      isLoading: false,
+      streaksByHabit: streaks,
+    );
   }
 
   @override
@@ -153,6 +162,7 @@ void main() {
     bool healthFails = false,
     GoalProgressView? Function()? progressOverride,
     DateTime Function()? now,
+    Map<String, int> streaks = const {},
     Size viewport = const Size(800, 2600),
   }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
@@ -171,7 +181,7 @@ void main() {
           habitsControllerProvider.overrideWith(() => controller),
           habitsNowProvider.overrideWithValue(now ?? () => _now),
           habitHeatmapControllerProvider.overrideWith(
-            _FakeHeatmapController.new,
+            () => _FakeHeatmapController(streaks),
           ),
           firstDayOfWeekIndexProvider.overrideWith((ref) => 1),
           if (agentsNeverResolve)
@@ -513,6 +523,28 @@ void main() {
     // and done counts SUCCESS-ONLY, matching the rows.
     expect(summaryCard.visibleHabitIds, {habitFlossingDueLater.id});
     expect(summaryCard.doneHabitIds, isNotNull);
+  });
+
+  testWidgets('the streak badge is scoped to recordable habits — a hidden '
+      "out-of-window habit's streak is not advertised", (tester) async {
+    final expired = habitFlossing.copyWith(
+      activeUntil: DateTime(2026, 8, 10),
+    );
+    final state = baseState().copyWith(
+      habitDefinitions: [expired, habitFlossingDueLater],
+      openNowAll: [habitFlossingDueLater],
+    );
+    // The EXPIRED habit carries the only long streak.
+    await pump(
+      tester,
+      state,
+      streaks: {expired.id: 9, habitFlossingDueLater.id: 4},
+    );
+
+    final summaryCard = tester.widget<HabitsSummaryCard>(
+      find.byType(HabitsSummaryCard),
+    );
+    expect(summaryCard.streakCounts, (short: 1, long: 0));
   });
 
   testWidgets("the summary's done set mirrors each group's semantics: a "

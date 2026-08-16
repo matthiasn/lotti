@@ -143,6 +143,34 @@ void main() {
       expect(find.text('All done today'), findsNothing);
     });
 
+    testWidgets('streakCounts overrides the controller-wide badge numbers', (
+      tester,
+    ) async {
+      final state = _state(
+        definitionCount: 2,
+        shortStreakCount: 5,
+        longStreakCount: 3,
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const HabitsSummaryCard(
+            visibleHabitIds: {'def-0', 'def-1'},
+            streakCounts: (short: 1, long: 0),
+          ),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(state),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      // The scoped count renders, never the controller-wide 5/3.
+      expect(find.textContaining('1 on a 3-day streak'), findsOneWidget);
+      expect(find.textContaining('5'), findsNothing);
+    });
+
     testWidgets('a SCOPED card with nothing in scope renders nothing — '
         'never a "0 / 0 · All done today" achievement', (tester) async {
       final state = _state(definitionCount: 2);
