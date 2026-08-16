@@ -134,6 +134,36 @@ void main() {
     );
   });
 
+  test(
+    'clears a day by appending a latest completion with no outcome',
+    () async {
+      final now = DateTime(2026, 8, 11, 15, 45);
+
+      final saved = await withClock(
+        Clock.fixed(now),
+        () => service.record(
+          agentId: 'goal-1',
+          habitId: 'walk',
+          day: DateTime.utc(2026, 8, 11),
+          outcome: HabitCompletionType.open,
+        ),
+      );
+
+      expect(saved, isTrue);
+      final captured =
+          verify(
+                () => persistenceLogic.createHabitCompletionEntry(
+                  data: captureAny(named: 'data'),
+                  habitDefinition: habit,
+                  comment: '',
+                ),
+              ).captured.single
+              as HabitCompletionData;
+      expect(captured.dateFrom, now);
+      expect(captured.completionType, isNull);
+    },
+  );
+
   test('the explicit refresh action still wakes Phase B immediately', () {
     service.requestReportRefresh('goal-1');
 

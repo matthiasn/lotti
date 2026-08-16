@@ -11,6 +11,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
@@ -1694,13 +1695,6 @@ void main() {
       ),
       findsOneWidget,
     );
-    final futureButton = tester.widget<PopupMenuButton<HabitCompletionType>>(
-      find.descendant(
-        of: find.byKey(finalDayKey),
-        matching: find.byType(PopupMenuButton<HabitCompletionType>),
-      ),
-    );
-    expect(futureButton.enabled, isFalse);
     expect(
       find.descendant(
         of: find.byKey(finalDayKey),
@@ -1709,8 +1703,10 @@ void main() {
       findsNothing,
     );
     await tester.ensureVisible(find.byKey(finalDayKey));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(finalDayKey));
+    await tester.pump();
     expect(find.byKey(finalDayKey), findsOneWidget);
+    expect(find.byType(DesignSystemContextMenu), findsNothing);
     expect(outcomes, isEmpty);
   });
 
@@ -1928,34 +1924,146 @@ void main() {
     final dayFinder = find.byKey(
       const ValueKey('goal-habit-day-walk-2026-08-08'),
     );
-    final menuButton = tester.widget<PopupMenuButton<HabitCompletionType>>(
-      find.descendant(
-        of: dayFinder,
-        matching: find.byType(PopupMenuButton<HabitCompletionType>),
-      ),
-    );
-    expect(menuButton.position, PopupMenuPosition.under);
-    expect(menuButton.menuPadding, EdgeInsets.zero);
-    expect(menuButton.tooltip, 'Aug 8, 2026: No entry');
     expect(
       find.bySemanticsLabel('Aug 8, 2026: No entry'),
       findsOneWidget,
     );
-    expect(menuButton.shape, isA<RoundedRectangleBorder>());
-    expect(menuButton.constraints?.hasTightWidth, isTrue);
 
     await tester.tap(dayFinder);
     await tester.pumpAndSettle();
+    expect(find.byType(DesignSystemContextMenu), findsOneWidget);
     expect(find.text('Success'), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget);
     expect(find.text('Missed'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(DesignSystemContextMenu),
+        matching: find.text('No entry'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
     await tester.pump();
 
     expect(selected?.habitId, 'walk');
     expect(selected?.day, DateTime.utc(2026, 8, 8));
     expect(selected?.outcome, HabitCompletionType.fail);
+  });
+
+  testWidgets('skip and no-entry actions append the intended goal outcomes', (
+    tester,
+  ) async {
+    final outcomes = <HabitCompletionType>[];
+    Future<void> pump(HabitCompletionType? currentOutcome) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset > 3; offset--) day(offset, 0),
+                  GoalProgressDay(
+                    day: today.subtract(const Duration(days: 3)),
+                    value: currentOutcome == HabitCompletionType.success
+                        ? 1
+                        : 0,
+                    habitCompletionType: currentOutcome,
+                  ),
+                  for (var offset = 2; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async {
+                outcomes.add(outcome);
+                return true;
+              },
+        ),
+      ),
+    );
+
+    await pump(HabitCompletionType.success);
+
+    const dayKey = ValueKey('goal-habit-day-walk-2026-08-08');
+    await tester.tap(find.byKey(dayKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-skipped')));
+    await tester.pump();
+
+    expect(outcomes, [HabitCompletionType.skip]);
+
+    await pump(HabitCompletionType.skip);
+    await tester.tap(find.byKey(dayKey));
+    await tester.pumpAndSettle();
+    final menuRect = tester.getRect(
+      find.byKey(const ValueKey('goal-habit-day-menu')),
+    );
+    final noneRect = tester.getRect(
+      find.byKey(const ValueKey('goal-habit-day-none')),
+    );
+    expect(
+      noneRect.bottom,
+      menuRect.bottom,
+      reason: 'the last hover row reaches the clipped bottom border',
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-none')));
+    await tester.pump();
+
+    expect(outcomes, [HabitCompletionType.skip, HabitCompletionType.open]);
+  });
+
+  testWidgets('a skipped day uses a neutral fill and skip glyph', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 6; offset > 0; offset--) day(offset, 0),
+                  GoalProgressDay(
+                    day: today,
+                    value: 0,
+                    habitCompletionType: HabitCompletionType.skip,
+                  ),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+    final cell = tester.widget<Container>(
+      find.byKey(const ValueKey('goal-habit-day-visual-walk-2026-08-11')),
+    );
+    expect(
+      (cell.decoration! as BoxDecoration).color,
+      tokens.colors.background.level03,
+    );
+    expect(find.byIcon(Icons.remove_rounded), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Aug 11, 2026: Skip'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the outcome menu opens with the concrete date of the selected '
@@ -2614,17 +2722,9 @@ void main() {
 
     expect(find.text("That didn't save — please try again."), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(
-      tester
-          .widget<PopupMenuButton<HabitCompletionType>>(
-            find.descendant(
-              of: find.byKey(dayKey),
-              matching: find.byType(PopupMenuButton<HabitCompletionType>),
-            ),
-          )
-          .enabled,
-      isTrue,
-    );
+    await tester.tap(find.byKey(dayKey));
+    await tester.pumpAndSettle();
+    expect(find.byType(DesignSystemContextMenu), findsOneWidget);
   });
 
   testWidgets('a pending completion disables that day and shows progress', (
@@ -2668,17 +2768,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      tester
-          .widget<PopupMenuButton<HabitCompletionType>>(
-            find.descendant(
-              of: find.byKey(dayKey),
-              matching: find.byType(PopupMenuButton<HabitCompletionType>),
-            ),
-          )
-          .enabled,
-      isFalse,
-    );
+    await tester.tap(find.byKey(dayKey));
+    await tester.pump();
+    expect(find.byType(DesignSystemContextMenu), findsNothing);
 
     completion.complete(true);
     await tester.pumpAndSettle();

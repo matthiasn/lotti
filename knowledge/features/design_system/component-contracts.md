@@ -11,7 +11,7 @@ sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: contact-row
     resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
     title: DesignSystemContactRow — the support footer both navigation surfaces close with
@@ -120,6 +120,13 @@ gradient to one token-derived rounded outline, then paints the border in the
 foreground. The order is part of the component contract: both tone layers reach
 the interior edge of the curve, but neither can overpaint the outline and create
 a doubled or discontinuous corner.
+
+`DesignSystemContextMenu` follows the same single-outline rule. An optional
+quiet header can name the concrete date or object being acted on, item identity
+and selected semantics travel with each row, and `edgeToEdge` removes the
+ordinary outer row padding. The hover ink is painted by an inner Material and
+then clipped by the menu outline, so the final action reaches the rounded bottom
+edge instead of leaving an unhighlighted strip above the border.
 
 ## Beside the button tier: `DesignSystemIconAction`
 

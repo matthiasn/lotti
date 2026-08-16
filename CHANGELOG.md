@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   flag all apply.
 
 ### Changed
+- **Goal habit days now offer every quick status.** The day menu adds Skip and
+  No entry alongside Success and Missed; clearing appends an empty latest
+  outcome without deleting the day's history, and the polished rounded menu's
+  hover fill now reaches its bottom edge cleanly.
 - **Slow local agents get more time to finish.** An agent wake can now run for
   up to ten minutes instead of two, so larger local reasoning models are less
   likely to be aborted before they return.

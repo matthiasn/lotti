@@ -71,9 +71,12 @@ class _DesignSystemContextMenuButtonState
           items: [
             for (final item in widget.items)
               DesignSystemContextMenuItem(
+                key: item.key,
                 label: item.label,
                 icon: item.icon,
+                iconColor: item.iconColor,
                 isDestructive: item.isDestructive,
+                isSelected: item.isSelected,
                 onTap: () {
                   _controller.close();
                   item.onTap?.call();

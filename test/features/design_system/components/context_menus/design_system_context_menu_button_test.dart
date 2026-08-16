@@ -84,5 +84,53 @@ void main() {
         expect(find.byType(DesignSystemContextMenu), findsNothing);
       },
     );
+
+    testWidgets('forwards item identity, icon color, and selected state', (
+      tester,
+    ) async {
+      const itemKey = Key('selected-action');
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemContextMenuButton(
+            tooltip: 'More actions',
+            items: [
+              DesignSystemContextMenuItem(
+                key: itemKey,
+                label: 'Current action',
+                icon: Icons.check_rounded,
+                iconColor: Colors.green,
+                isSelected: true,
+                onTap: _noop,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(itemKey), findsOneWidget);
+      expect(
+        tester.widget<Icon>(find.byIcon(Icons.check_rounded)).color,
+        Colors.green,
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Current action')),
+        matchesSemantics(
+          label: 'Current action',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          isSelected: true,
+          hasSelectedState: true,
+        ),
+      );
+      semantics.dispose();
+    });
   });
 }
+
+void _noop() {}

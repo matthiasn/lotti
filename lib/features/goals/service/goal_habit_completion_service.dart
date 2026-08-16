@@ -12,7 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 
-/// Records the success or failure of a habit watched by a goal agent.
+/// Records or clears the outcome of a habit watched by a goal agent.
 ///
 /// The service deliberately uses the established habit-completion persistence
 /// path, preserving privacy metadata, sync notifications, and reminder
@@ -59,6 +59,10 @@ class GoalHabitCompletionService {
 
   /// Writes [outcome] for the selected local calendar [day].
   ///
+  /// [HabitCompletionType.open] is the goal-details clear command. It appends
+  /// a completion whose nullable outcome is empty, preserving the day's older
+  /// completion stack while making this latest write resolve to no entry.
+  ///
   /// Historical corrections borrow the current wall-clock time while keeping
   /// the selected calendar date. Habit-completion IDs are derived from their
   /// data, so pinning every correction to 23:59:59 made a later switch back to
@@ -103,7 +107,7 @@ class GoalHabitCompletionService {
         habitId: habitId,
         dateFrom: recordedAt,
         dateTo: recordedAt,
-        completionType: outcome,
+        completionType: outcome == HabitCompletionType.open ? null : outcome,
       ),
       habitDefinition: habitDefinition,
       comment: '',
