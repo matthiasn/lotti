@@ -697,28 +697,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSettingsTitle => 'Middelen';
 
   @override
-  String get agentsFirstRunControl =>
-      'Je kunt met hem praten, hem corrigeren, opnieuw richten, pauzeren, verwijderen.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Draait op jouw modellen — meestal fracties van een cent per dag.';
-
-  @override
-  String get agentsFirstRunCta => 'Stel een intentie in';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Hij spreekt in korte banners, waar je al bent. Wijs er een af en de rest van de dag is het stil.';
-
-  @override
-  String get agentsFirstRunTitle => 'Eén agent per doel';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Hij let op waar het doel van afhangt — afgevinkte gewoonten, stappen. Niets wat hij niet kan zien, niets wat je hoeft te melden.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Antisycophancybeleid';
 
   @override
@@ -3234,13 +3212,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Begeleid de eerste keer Dagelijkse OS gebruikers door een echte check-in die spraak verandert in een taak en een dagplan.';
-
-  @override
-  String get configFlagEnableAgentsPage => 'Doelagentenpagina inschakelen';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Toon de doelagentenpagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doelagenten en kijk bij elk van hen binnen.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6144,18 +6115,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Banner snoozen';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dagen buffer',
-      one: '1 dag buffer',
-      zero: 'Buffer loopt vandaag af',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Begin een gesprek met $agentName.';
   }
@@ -6385,11 +6344,6 @@ class AppLocalizationsNl extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Door jou gezegd, opgenomen door $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName heeft aandacht nodig';
   }
 
   @override
@@ -6738,9 +6692,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Timingpatroon';
-
-  @override
-  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
 
   @override
   String get goalProgressAgesOut => 'valt vanavond weg';

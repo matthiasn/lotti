@@ -9,11 +9,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// The unified Goals tab (flag: `enable_unified_goals`): goals at the top
 /// level with their habits inside.
 ///
-/// Hosts the same detail, chat and wizard pages as [`AgentsLocation`] under
-/// `/goals/...` paths, so the tab's primary actions work — and Back returns
-/// here — even when the independent `enable_agents_page` flag is off (a
-/// route under a disabled tab is normalized to `/tasks` by `NavService`).
-/// Anything malformed renders the plain list, mirroring the agents tab.
+/// The sole host of the goal detail, chat and wizard pages, all under
+/// `/goals/...` paths. Anything malformed renders the plain list.
 class GoalsLocation extends BeamLocation<BeamState> {
   GoalsLocation(RouteInformation super.routeInformation);
 

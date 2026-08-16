@@ -128,13 +128,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     // the spinner. An errored load must not claim "no report yet".
     // EVERY pop — AppBar button, Android system back, iOS gesture —
     // routes through NavService so currentPath and the persisted route
-    // return to the Agents root instead of pinning this child.
-    // Captured NOW, while this page's context still sits inside its hosting
-    // Beamer: the pop/deletion closures below fire after the route (and its
-    // context) is gone, when the surface could no longer be resolved.
-    final surfaceRoot = goalSurfaceRootPath(context);
+    // return to the Goals root instead of pinning this child.
     final backToList = BackButton(
-      onPressed: () => beamToNamed(surfaceRoot),
+      onPressed: () => beamToNamed(goalsRootPath),
     );
     Widget popSafe(Widget child) => PopScope(
       // canPop stays TRUE: false would disable the iOS swipe-back
@@ -145,7 +141,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // Post-frame: the pop is mid-router-update — persisting the root
         // synchronously would re-enter the delegate while it notifies.
         WidgetsBinding.instance.addPostFrameCallback(
-          (_) => beamToNamed(surfaceRoot),
+          (_) => beamToNamed(goalsRootPath),
         );
       },
       child: child,
@@ -365,7 +361,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
             label: context.messages.goalChatTalkTo(goalIdentity.displayName),
-            onPressed: () => beamToNamed(goalChatPath(context, agentId)),
+            onPressed: () => beamToNamed(goalChatPath(agentId)),
             leadingIcon: Icons.chat_bubble_outline_rounded,
             // Secondary: the persistent app-bar action is the primary
             // doorway; this tail button is the convenience for readers who
@@ -453,7 +449,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 tooltip: context.messages.goalChatTalkTo(
                   goalIdentity.displayName,
                 ),
-                onPressed: () => beamToNamed(goalChatPath(context, agentId)),
+                onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
             _GoalActionsMenuButton(
               agentId: agentId,
@@ -1090,7 +1086,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
       onSelected: (action) {
         switch (action) {
           case _GoalDetailMenuAction.edit:
-            beamToNamed(goalEditPath(context, agentId));
+            beamToNamed(goalEditPath(agentId));
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1155,10 +1151,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   }
 
   Future<void> _confirmAndDelete(BuildContext context, WidgetRef ref) async {
-    // Resolved before any await: the surface must come from the page's own
-    // hosting Beamer, and the context may be gone by the time the confirm
-    // dialog and the delete round-trip.
-    final surfaceRoot = goalSurfaceRootPath(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -1187,7 +1179,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             .read(goalAgentServiceProvider)
             .deleteGoalAgent(agentId);
         if (!deleted || !context.mounted) return;
-        beamToNamed(surfaceRoot);
+        beamToNamed(goalsRootPath);
       } catch (_) {
         if (!context.mounted) return;
         ScaffoldMessenger.maybeOf(context)

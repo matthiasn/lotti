@@ -106,7 +106,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     resendAttachments,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
-    enableAgentsPageFlag,
     enableUnifiedGoalsFlag,
     enableDailyOsPageFlag,
     enableEventsFlag,
@@ -170,8 +169,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
         return Icons.dashboard_rounded;
-      case enableAgentsPageFlag:
-        return Icons.psychology_outlined;
       case enableUnifiedGoalsFlag:
         return Icons.track_changes_outlined;
       case enableDailyOsPageFlag:
@@ -221,8 +218,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPageDescription;
-      case enableAgentsPageFlag:
-        return context.messages.configFlagEnableAgentsPageDescription;
       case enableUnifiedGoalsFlag:
         return context.messages.configFlagEnableUnifiedGoalsDescription;
       case enableDailyOsPageFlag:
@@ -272,8 +267,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:
         return context.messages.configFlagEnableDashboardsPage;
-      case enableAgentsPageFlag:
-        return context.messages.configFlagEnableAgentsPage;
       case enableUnifiedGoalsFlag:
         return context.messages.configFlagEnableUnifiedGoals;
       case enableDailyOsPageFlag:

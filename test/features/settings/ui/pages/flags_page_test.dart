@@ -827,11 +827,6 @@ void main() {
               status: false,
             ),
             const ConfigFlag(
-              name: enableAgentsPageFlag,
-              description: 'Enable Agents page?',
-              status: false,
-            ),
-            const ConfigFlag(
               name: enableUnifiedGoalsFlag,
               description: 'Enable unified Goals page?',
               status: false,
@@ -898,12 +893,6 @@ void main() {
         icon: Icons.dashboard_rounded,
       ),
       (
-        name: enableAgentsPageFlag,
-        description: 'Enable Agents page?',
-        status: false,
-        icon: Icons.psychology_outlined,
-      ),
-      (
         name: enableUnifiedGoalsFlag,
         description: 'Enable unified Goals page?',
         status: false,
@@ -967,10 +956,6 @@ void main() {
             enableDashboardsPageFlag => (
               context.messages.configFlagEnableDashboardsPage,
               context.messages.configFlagEnableDashboardsPageDescription,
-            ),
-            enableAgentsPageFlag => (
-              context.messages.configFlagEnableAgentsPage,
-              context.messages.configFlagEnableAgentsPageDescription,
             ),
             enableUnifiedGoalsFlag => (
               context.messages.configFlagEnableUnifiedGoals,

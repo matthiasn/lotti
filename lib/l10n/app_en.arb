@@ -354,30 +354,6 @@
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
-  "agentsFirstRunControl": "You can talk to it, correct it, retarget it, pause it, delete it.",
-  "@agentsFirstRunControl": {
-    "description": "First-run explainer: what the user can do with an agent"
-  },
-  "agentsFirstRunCost": "Runs on your models — typically fractions of a cent per day.",
-  "@agentsFirstRunCost": {
-    "description": "First-run explainer: cost honesty line"
-  },
-  "agentsFirstRunCta": "Set an intention",
-  "@agentsFirstRunCta": {
-    "description": "First-run explainer call to action to create the first goal"
-  },
-  "agentsFirstRunSpeaks": "It speaks in short banners, where you already are. Dismiss one and it's quiet for the rest of the day.",
-  "@agentsFirstRunSpeaks": {
-    "description": "First-run explainer: how a goal agent speaks and dismissal contract"
-  },
-  "agentsFirstRunTitle": "One agent per goal",
-  "@agentsFirstRunTitle": {
-    "description": "Title of the agents-list first-run explainer"
-  },
-  "agentsFirstRunWatches": "It watches what the goal depends on — habit check-offs, step counts. Nothing it can't see, nothing you have to report.",
-  "@agentsFirstRunWatches": {
-    "description": "First-run explainer: what a goal agent watches"
-  },
   "agentSoulAntiSycophancyLabel": "Anti-Sycophancy Policy",
   "agentSoulAssignedTemplatesTitle": "Assigned Templates",
   "agentSoulAssignmentLabel": "Soul",
@@ -1953,8 +1929,6 @@
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
   "configFlagDailyOsOnboardingEnabled": "Daily OS walkthrough",
   "configFlagDailyOsOnboardingEnabledDescription": "Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.",
-  "configFlagEnableAgentsPage": "Enable Goal Agents page",
-  "configFlagEnableAgentsPageDescription": "Show the Goal Agents page in the main navigation. Follow your goal agents' health at a glance and check in on each one.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
@@ -3347,15 +3321,6 @@
   "goalBannerSnoozeSixHours": "6 hours",
   "goalBannerSnoozeThreeHours": "3 hours",
   "goalBannerSnoozeTitle": "Snooze banner",
-  "goalBufferDays": "{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}",
-  "@goalBufferDays": {
-    "description": "Rolling-window goal at rate: days until the oldest success ages out.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "goalChatEmpty": "Start a conversation with {agentName}.",
   "@goalChatEmpty": {
     "description": "Empty-state invitation in a goal-agent conversation.",
@@ -3604,7 +3569,6 @@
       }
     }
   },
-  "goalDominantIssueBadge": "{dimensionName} needs attention",
   "goalFormAddDimension": "Add dimension",
   "goalFormAddSignal": "Add a signal",
   "@goalFormAddSignal": {
@@ -3885,10 +3849,6 @@
     }
   },
   "goalPatternTitle": "Timing pattern",
-  "goalPendingProposalBadge": "Proposal awaiting review",
-  "@goalPendingProposalBadge": {
-    "description": "Badge on an agent card when a revision proposal is pending."
-  },
   "goalProgressAgesOut": "ages out tonight",
   "goalProgressAtRate": "at rate",
   "goalProgressCaption": "trailing 7 days · slides at midnight",

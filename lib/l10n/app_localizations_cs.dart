@@ -700,28 +700,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSettingsTitle => 'Agenti';
 
   @override
-  String get agentsFirstRunControl =>
-      'Můžeš s ním mluvit, opravit ho, přesměrovat, pozastavit, smazat.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Běží na tvých modelech — obvykle zlomky centu za den.';
-
-  @override
-  String get agentsFirstRunCta => 'Nastavit záměr';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Ozývá se krátkými bannery tam, kde právě jsi. Jeden zavři a zbytek dne je klid.';
-
-  @override
-  String get agentsFirstRunTitle => 'Jeden agent na cíl';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Sleduje, na čem cíl stojí — odškrtnuté návyky, počty kroků. Nic, co nevidí, nic, co musíš hlásit.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Zásady proti pochlebování';
 
   @override
@@ -3265,13 +3243,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
-
-  @override
-  String get configFlagEnableAgentsPage => 'Povolit stránku Agenti cílů';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Zobrazí stránku Agenti cílů v hlavní navigaci. Sleduj zdraví svých agentů cílů na první pohled a nahlédni ke každému z nich.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6188,19 +6159,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Odložit banner';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dní rezervy',
-      few: '$count dny rezervy',
-      one: '1 den rezervy',
-      zero: 'Rezerva dnes končí',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Začni konverzaci s agentem $agentName.';
   }
@@ -6429,11 +6387,6 @@ class AppLocalizationsCs extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Řekl(a) jsi to ty, zaznamenal(a) $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName vyžaduje pozornost';
   }
 
   @override
@@ -6791,9 +6744,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Vzorek časování';
-
-  @override
-  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
 
   @override
   String get goalProgressAgesOut => 'dnes vypadne';

@@ -10,7 +10,6 @@ const enableLoggingFlag = 'enable_logging';
 
 const enableHabitsPageFlag = 'enable_habits_page';
 const enableDashboardsPageFlag = 'enable_dashboards_page';
-const enableAgentsPageFlag = 'enable_agents_page';
 const enableUnifiedGoalsFlag = 'enable_unified_goals';
 const enableDailyOsPageFlag = 'enable_daily_os_page';
 const enableEventsFlag = 'enable_events';

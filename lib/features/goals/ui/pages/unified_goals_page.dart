@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -257,7 +258,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
         child: DesignSystemFloatingActionButton(
           semanticLabel: messages.agentsCreateGoal,
-          onPressed: () => beamToNamed('/goals/create'),
+          onPressed: () => beamToNamed(goalCreatePath),
         ),
       ),
       body: SafeArea(

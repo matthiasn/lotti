@@ -606,8 +606,7 @@ class _DockTenant extends ConsumerWidget {
         label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
         child: InkWell(
           key: const ValueKey('goal-banner-dock-tenant'),
-          onTap: () =>
-              beamToNamed(goalDetailPathFromShell(entry.nudge.agentId)),
+          onTap: () => beamToNamed(goalDetailPath(entry.nudge.agentId)),
           child: Padding(
             padding: EdgeInsets.only(
               left: tokens.spacing.cardPadding,
@@ -637,7 +636,7 @@ class _DockTenant extends ConsumerWidget {
                     label: brief.cta!,
                     style: style,
                     onTap: () => beamToNamed(
-                      goalDetailPathFromShell(entry.nudge.agentId),
+                      goalDetailPath(entry.nudge.agentId),
                     ),
                   ),
                 ],

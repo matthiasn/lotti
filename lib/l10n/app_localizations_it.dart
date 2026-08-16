@@ -704,28 +704,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentSettingsTitle => 'Agenti';
 
   @override
-  String get agentsFirstRunControl =>
-      'Puoi parlargli, correggerlo, riorientarlo, metterlo in pausa, eliminarlo.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Funziona con i tuoi modelli: di solito frazioni di centesimo al giorno.';
-
-  @override
-  String get agentsFirstRunCta => 'Imposta un\'intenzione';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Parla con brevi banner, dove sei già. Chiudine uno e resterà in silenzio per il resto della giornata.';
-
-  @override
-  String get agentsFirstRunTitle => 'Un agente per obiettivo';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Osserva ciò da cui dipende l\'obiettivo: abitudini spuntate, passi. Niente che non possa vedere, niente che tu debba segnalare.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-sicofanzia';
 
   @override
@@ -3268,14 +3246,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Guidare gli utenti del sistema operativo giornaliero di prima volta attraverso un check-in reale che trasforma il discorso in un compito e un piano di giorno.';
-
-  @override
-  String get configFlagEnableAgentsPage =>
-      'Attivare la pagina Agenti degli obiettivi';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Mostra la pagina Agenti degli obiettivi nella navigazione principale. Segui a colpo d\'occhio lo stato dei tuoi agenti degli obiettivi e dai un\'occhiata a ciascuno.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6199,18 +6169,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Posticipa banner';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count giorni di margine',
-      one: '1 giorno di margine',
-      zero: 'Il margine scade oggi',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Inizia una conversazione con $agentName.';
   }
@@ -6447,11 +6405,6 @@ class AppLocalizationsIt extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Detto da te, registrato da $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName ha bisogno di attenzione';
   }
 
   @override
@@ -6807,9 +6760,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Modello di tempistica';
-
-  @override
-  String get goalPendingProposalBadge => 'Proposta in attesa';
 
   @override
   String get goalProgressAgesOut => 'esce stasera';

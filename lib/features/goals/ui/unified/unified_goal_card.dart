@@ -10,6 +10,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -144,7 +145,7 @@ class UnifiedGoalCard extends ConsumerWidget {
 
     final header = InkWell(
       borderRadius: BorderRadius.circular(tokens.radii.l),
-      onTap: () => beamToNamed('/goals/details/${identity.agentId}'),
+      onTap: () => beamToNamed(goalDetailPath(identity.agentId)),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
         child: LayoutBuilder(

@@ -700,28 +700,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
-  String get agentsFirstRunControl =>
-      'Du kan prata med den, rätta den, styra om den, pausa den, radera den.';
-
-  @override
-  String get agentsFirstRunCost =>
-      'Körs på dina modeller — oftast bråkdelar av ett öre per dag.';
-
-  @override
-  String get agentsFirstRunCta => 'Ange en avsikt';
-
-  @override
-  String get agentsFirstRunSpeaks =>
-      'Den visas i korta banners, där du redan är. Avfärda en så är det tyst resten av dagen.';
-
-  @override
-  String get agentsFirstRunTitle => 'En agent per mål';
-
-  @override
-  String get agentsFirstRunWatches =>
-      'Den håller koll på det målet bygger på — bockade vanor, stegräkning. Inget den inte kan se, inget du behöver rapportera.';
-
-  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smygningspolitik';
 
   @override
@@ -3232,13 +3210,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Vägled förstagångsanvändare av Daily OS genom en riktig avstämning som förvandlar tal till en uppgift och en dagsplan.';
-
-  @override
-  String get configFlagEnableAgentsPage => 'Aktivera målagenter-sidan';
-
-  @override
-  String get configFlagEnableAgentsPageDescription =>
-      'Visa sidan Målagenter i huvudnavigeringen. Följ dina målagenters hälsa med en blick och titta in hos var och en.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6129,18 +6100,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Snooza banderollen';
 
   @override
-  String goalBufferDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dagars marginal',
-      one: '1 dags marginal',
-      zero: 'Marginalen tar slut idag',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String goalChatEmpty(String agentName) {
     return 'Starta en konversation med $agentName.';
   }
@@ -6369,11 +6328,6 @@ class AppLocalizationsSv extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Sagt av dig, inspelat av $agentName, $recordedAt';
-  }
-
-  @override
-  String goalDominantIssueBadge(Object dimensionName) {
-    return '$dimensionName behöver uppmärksamhet';
   }
 
   @override
@@ -6726,9 +6680,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalPatternTitle => 'Tidsmönster';
-
-  @override
-  String get goalPendingProposalBadge => 'Förslag väntar';
 
   @override
   String get goalProgressAgesOut => 'faller bort i kväll';

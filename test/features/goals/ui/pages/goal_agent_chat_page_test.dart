@@ -106,7 +106,7 @@ void main() {
     );
     await tester.tap(find.byType(BackButton));
     await tester.pump();
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
   });
 
   testWidgets('rejects a non-goal identity without mounting a composer', (
@@ -194,6 +194,6 @@ void main() {
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();
 
-    expect(navigated, ['/agents/details/goal-1']);
+    expect(navigated, ['/goals/details/goal-1']);
   });
 }

@@ -63,20 +63,18 @@ top-level destination, each a `BeamerDelegate` with its own history:
 | Goals (unified) | `/goals` | `enable_unified_goals` |
 | Habits | `/habits` | flag |
 | Dashboards | `/dashboards` | flag |
-| Goal Agents | `/agents` | `enable_agents_page` |
 | Journal | `/journal` | always |
 | Events | `/events` | flag |
 | Settings | `/settings` | always |
 
-The unified Goals tab (phase 1 of the Habits + Goal Agents merge) sits in the
-slot directly before Habits; while its flag is off nothing changes, and while
-it is on it can coexist with both older tabs. It hosts the same goal detail,
-chat and wizard pages as the Agents tab under its own `/goals/...` paths, so
-its primary actions work — and Back returns to `/goals` — even when
-`enable_agents_page` is off (a route under a disabled tab is normalized to
-`/tasks`). The goal pages therefore compute their exits through
-`goalSurfaceRootPath()` (`lib/features/goals/ui/goal_routes.dart`), which
-keeps navigation inside whichever tab opened them.
+The unified Goals tab (the Habits + Goal Agents merge) sits in the slot
+directly before Habits; while its flag is off nothing changes, and while it
+is on it coexists with the Habits tab. It is the sole host of the goal
+detail, chat and wizard pages, all under `/goals/...` paths built by the
+helpers in `lib/features/goals/ui/goal_routes.dart`. (The never-released
+Goal Agents tab that previously hosted the same pages under `/agents/...`
+behind `enable_agents_page` was removed once the unified surface landed;
+the flag row is deleted from existing installs via `retiredConfigFlags`.)
 
 The delegates live in `lib/beamer/beamer_delegates.dart` and are all configured
 `updateParent: false, updateFromParent: false`. That is what keeps the stacks
@@ -188,7 +186,6 @@ Each delegate routes into one `BeamLocation` under
 | `ProjectsLocation` | `/projects`, `/projects/:projectId` |
 | `DashboardsLocation` | `/dashboards`, `/dashboards/impact`, `/dashboards/:dashboardId` |
 | `EventsLocation` | `/events`, `/events/:eventId` |
-| `AgentsLocation` | `/agents`, `/agents/create`, `/agents/details/:agentId[/chat\|/edit]` |
 | `GoalsLocation` | `/goals`, `/goals/create`, `/goals/details/:agentId[/chat\|/edit]` |
 | `HabitsLocation` | `/habits` |
 | `SettingsLocation` | the deepest tree in the app — `/settings` plus AI, agents, sync, advanced and entity-definition subtrees |
@@ -250,7 +247,6 @@ state decide what the bottom edge belongs to, following one product rule:
 | `isTaskDetailRoute` | `/tasks/<uuid>` | Bar **unmounted** — `TaskActionBar` replaces it outright |
 | `settingsRouteHidesBottomNav` | AI and Agents sections, sync/advanced leaves, entity editors | Bar **slides away** |
 | `projectsRouteHidesBottomNav` | `/projects/<id>` | Bar **slides away** |
-| `agentsRouteHidesBottomNav` | `/agents/create`, `/agents/details/<id>[/chat\|/edit]` | Bar **slides away** |
 | `goalsRouteHidesBottomNav` | `/goals/create`, `/goals/details/<id>[/chat\|/edit]` | Bar **slides away** |
 
 Removal and slide-away differ on purpose: a page that docks its own bar can
@@ -258,7 +254,7 @@ swap instantly, while a page that replaces the bar with nothing would read as a
 glitch, so the bar animates out and back instead.
 
 The predicates match **exact route shapes, not prefixes.** A malformed or
-restored URL like `/agents/details` with no id renders the plain list, and that
+restored URL like `/goals/details` with no id renders the plain list, and that
 list must keep its tab bar — so matching on the second path segment alone is a
 bug, not a shortcut.
 
@@ -279,7 +275,7 @@ stateDiagram-v2
     note right of BarVisible
       Settings root, menu hubs (advanced, sync,
       definitions), entity list pages, conflicts list,
-      the Projects and Goal Agents list roots
+      the Projects and Goals list roots
     end note
     note right of BarHidden
       All of AI and Agents, every sync and advanced

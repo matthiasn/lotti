@@ -86,13 +86,6 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: enableAgentsPageFlag,
-      description: 'Enable Agents Page?',
-      status: false,
-    ),
-  );
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableUnifiedGoalsFlag,
       description: 'Enable unified Goals page?',
       status: false,
@@ -217,4 +210,8 @@ const retiredConfigFlags = <String>[
   // Removed with the sync actor isolate (ADR 0046). Never read by any code
   // path: the actor it would have gated was never wired into the app.
   'enable_sync_actor',
+  // The legacy Agents tab (never released, off by default) was superseded by
+  // the unified Goals surface (`enable_unified_goals`); the tab, its list
+  // page and its `/agents` routes were removed with it.
+  'enable_agents_page',
 ];

@@ -97,13 +97,10 @@ void main() {
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
-        // The banner provider is gated on the goal-surface rollout flags.
-        configFlagProvider(
-          enableAgentsPageFlag,
-        ).overrideWith((ref) => Stream.value(true)),
+        // The banner provider is gated on the unified-Goals rollout flag.
         configFlagProvider(
           enableUnifiedGoalsFlag,
-        ).overrideWith((ref) => Stream.value(false)),
+        ).overrideWith((ref) => Stream.value(true)),
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
@@ -824,11 +821,11 @@ void main() {
     // stream's latest value, and an autodisposed flag provider would be
     // torn down between reads.
     final flagSub = container.listen(
-      configFlagProvider(enableAgentsPageFlag),
+      configFlagProvider(enableUnifiedGoalsFlag),
       (_, _) {},
     );
     addTearDown(flagSub.close);
-    await container.read(configFlagProvider(enableAgentsPageFlag).future);
+    await container.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     final entries = await container.read(activeGoalNudgesProvider.future);
     expect(
       [for (final entry in entries) entry.nudge.id],
@@ -1577,7 +1574,7 @@ void main() {
         // Keep the flag and the banner provider alive: the deadline timer
         // dies with the provider on autodispose.
         final flagSub = container.listen(
-          configFlagProvider(enableAgentsPageFlag),
+          configFlagProvider(enableUnifiedGoalsFlag),
           (_, _) {},
         );
         addTearDown(flagSub.close);
@@ -1665,7 +1662,7 @@ void main() {
         );
 
         final flagSub = container.listen(
-          configFlagProvider(enableAgentsPageFlag),
+          configFlagProvider(enableUnifiedGoalsFlag),
           (_, _) {},
         );
         addTearDown(flagSub.close);
@@ -1720,7 +1717,7 @@ void main() {
         );
 
         final flagSub = container.listen(
-          configFlagProvider(enableAgentsPageFlag),
+          configFlagProvider(enableUnifiedGoalsFlag),
           (_, _) {},
         );
         addTearDown(flagSub.close);
@@ -1806,11 +1803,11 @@ void main() {
     );
 
     final flagSub = container.listen(
-      configFlagProvider(enableAgentsPageFlag),
+      configFlagProvider(enableUnifiedGoalsFlag),
       (_, _) {},
     );
     addTearDown(flagSub.close);
-    await container.read(configFlagProvider(enableAgentsPageFlag).future);
+    await container.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     final entries = await container.read(activeGoalNudgesProvider.future);
     expect(
       {for (final e in entries) e.nudge.id},
@@ -1981,13 +1978,10 @@ void main() {
     expect([for (final a in agents) a.agentId], ['goal-a']);
   });
 
-  test('the banner provider returns nothing while BOTH goal-surface flags '
-      'are off', () async {
+  test('the banner provider returns nothing while the unified Goals flag '
+      'is off', () async {
     final gated = ProviderContainer(
       overrides: [
-        configFlagProvider(
-          enableAgentsPageFlag,
-        ).overrideWith((ref) => Stream.value(false)),
         configFlagProvider(
           enableUnifiedGoalsFlag,
         ).overrideWith((ref) => Stream.value(false)),
@@ -1996,17 +1990,11 @@ void main() {
       ],
     );
     addTearDown(gated.dispose);
-    final flagSub = gated.listen(
-      configFlagProvider(enableAgentsPageFlag),
-      (_, _) {},
-    );
-    addTearDown(flagSub.close);
     final unifiedSub = gated.listen(
       configFlagProvider(enableUnifiedGoalsFlag),
       (_, _) {},
     );
     addTearDown(unifiedSub.close);
-    await gated.read(configFlagProvider(enableAgentsPageFlag).future);
     await gated.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
     verifyNever(
@@ -2014,17 +2002,12 @@ void main() {
     );
   });
 
-  test('the unified Goals flag ALONE opens the banner gate — the '
-      'goals-hosted detail page renders the same banners with the legacy '
-      'Agents tab off', () async {
+  test('the unified Goals flag opens the banner gate', () async {
     when(
       () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
     ).thenAnswer((_) async => []);
     final gated = ProviderContainer(
       overrides: [
-        configFlagProvider(
-          enableAgentsPageFlag,
-        ).overrideWith((ref) => Stream.value(false)),
         configFlagProvider(
           enableUnifiedGoalsFlag,
         ).overrideWith((ref) => Stream.value(true)),
@@ -2033,17 +2016,11 @@ void main() {
       ],
     );
     addTearDown(gated.dispose);
-    final flagSub = gated.listen(
-      configFlagProvider(enableAgentsPageFlag),
-      (_, _) {},
-    );
-    addTearDown(flagSub.close);
     final unifiedSub = gated.listen(
       configFlagProvider(enableUnifiedGoalsFlag),
       (_, _) {},
     );
     addTearDown(unifiedSub.close);
-    await gated.read(configFlagProvider(enableAgentsPageFlag).future);
     await gated.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
     verify(
