@@ -6214,25 +6214,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalBannerActionFailed =>
-      'To se neuložilo — zkus to prosím znovu.';
-
-  @override
-  String get goalBannerDismissForDay => 'Skrýt na dnešek';
-
-  @override
   String goalBannerHiddenFromBar(String countdown) {
     return 'Skryto z lišty bannerů · zpět za $countdown';
   }
-
-  @override
-  String get goalBannerRateTooltip => 'Ohodnotit tento banner';
-
-  @override
-  String get goalBannerRatingSkip => 'Přeskočit';
-
-  @override
-  String get goalBannerRatingTitle => 'Jaký byl tento banner?';
 
   @override
   String goalBannerSemanticLabel(String goalTitle) {
@@ -6240,25 +6224,17 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalBannerSnoozeEightHours => '8 hodin';
-
-  @override
-  String get goalBannerSnoozeLabel => 'Odložit';
-
-  @override
-  String get goalBannerSnoozeOneHour => '1 hodina';
-
-  @override
-  String get goalBannerSnoozePrompt => 'Kdy se má znovu zobrazit?';
-
-  @override
-  String get goalBannerSnoozeSixHours => '6 hodin';
-
-  @override
-  String get goalBannerSnoozeThreeHours => '3 hodiny';
-
-  @override
-  String get goalBannerSnoozeTitle => 'Odložit banner';
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní rezervy',
+      few: '$count dny rezervy',
+      one: '1 den rezervy',
+      zero: 'Rezerva dnes končí',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalChartSevenDayAverage => '7denní průměr';
@@ -9219,6 +9195,39 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get nudgeBannerDismissForDay => 'Skrýt na dnešek';
+
+  @override
+  String get nudgeBannerRateTooltip => 'Ohodnotit tento banner';
+
+  @override
+  String get nudgeBannerRatingSkip => 'Přeskočit';
+
+  @override
+  String get nudgeBannerRatingTitle => 'Jaký byl tento banner?';
+
+  @override
+  String get nudgeBannerSnoozeEightHours => '8 hodin';
+
+  @override
+  String get nudgeBannerSnoozeLabel => 'Odložit';
+
+  @override
+  String get nudgeBannerSnoozeOneHour => '1 hodina';
+
+  @override
+  String get nudgeBannerSnoozePrompt => 'Kdy se má znovu zobrazit?';
+
+  @override
+  String get nudgeBannerSnoozeSixHours => '6 hodin';
+
+  @override
+  String get nudgeBannerSnoozeThreeHours => '3 hodiny';
+
+  @override
+  String get nudgeBannerSnoozeTitle => 'Odložit banner';
+
+  @override
   String get onboardingApiKeyConnect => 'Připojit';
 
   @override
@@ -10260,7 +10269,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get referenceImageSkip => 'Přeskočit';
 
   @override
-  String get relationshipAddChannelButton => 'Přidat kontaktní údaj';
+  String get relationshipAddChannelButton => 'Přidat kontakt';
+
+  @override
+  String relationshipBannerSemanticLabel(String personName) {
+    return 'Banner vztahu s $personName';
+  }
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10387,6 +10401,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get saveButtonLabel => 'Uložit';
+
+  @override
+  String get saveFailedRetry => 'To se neuložilo — zkus to prosím znovu.';
 
   @override
   String get saveLabel => 'Uložit';

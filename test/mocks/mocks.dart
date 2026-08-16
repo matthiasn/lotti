@@ -110,7 +110,6 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -121,6 +120,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
+import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
@@ -1221,7 +1221,7 @@ class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 class MockGoalAgentService extends Mock implements GoalAgentService {}
 
-class MockGoalNudgeInteractions extends Mock implements GoalNudgeInteractions {}
+class MockNudgeInteractions extends Mock implements NudgeInteractions {}
 
 class MockGoalHabitCompletionService extends Mock
     implements GoalHabitCompletionService {}

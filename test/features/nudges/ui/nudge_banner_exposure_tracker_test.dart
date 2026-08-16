@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -14,7 +14,7 @@ void main() {
   late List<(String, Duration)> exposures;
 
   List<Override> overrides() => [
-    goalNudgeExposureFlushProvider.overrideWithValue(
+    nudgeExposureFlushProvider.overrideWithValue(
       (nudgeId, visibleFor) => exposures.add((nudgeId, visibleFor)),
     ),
   ];
@@ -22,7 +22,7 @@ void main() {
   setUp(() => exposures = []);
 
   Widget tracked({String id = 'ad-1', double height = 80}) =>
-      GoalBannerExposureTracker(
+      NudgeBannerExposureTracker(
         key: ValueKey(id),
         nudgeId: id,
         child: SizedBox(height: height, child: const Placeholder()),
@@ -211,7 +211,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(exposures, isEmpty);
     final elementBefore = tester.element(
-      find.byType(GoalBannerExposureTracker),
+      find.byType(NudgeBannerExposureTracker),
     );
 
     // Only content ABOVE the tracker grows, pushing it below the fold. The
@@ -220,7 +220,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final elementAfter = tester.element(
-      find.byType(GoalBannerExposureTracker),
+      find.byType(NudgeBannerExposureTracker),
     );
     expect(
       identical(elementBefore, elementAfter),
@@ -269,7 +269,7 @@ void main() {
       }
 
       setSliverTextDirection(null);
-      final state = tester.state(find.byType(GoalBannerExposureTracker));
+      final state = tester.state(find.byType(NudgeBannerExposureTracker));
 
       // The test deliberately invokes the lifecycle hook at the same transient
       // render state that triggered the production assertion.

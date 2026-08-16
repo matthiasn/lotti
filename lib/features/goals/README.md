@@ -8,13 +8,11 @@ This feature is landing in phases (see the ADR cluster below). What exists
 today:
 
 - The **vocabulary lives in `lib/classes/`** (`goal_criterion.dart`,
-  `goal_window.dart`, `goal_enums.dart`, `goal_nudge_models.dart`,
-  `goal_progress_models.dart`) — the shared-vocabulary rule that lets the
-  agent entity union embed these types without `features/agents` depending
-  on a feature (the `day_plan.dart` precedent). The nudge vocabulary itself
-  is kind-agnostic since ADR 0059 (`nudge_models.dart`);
-  `goal_nudge_models.dart` re-exports it under the goal-prefixed aliases
-  these docs and this feature still use.
+  `goal_window.dart`, `goal_enums.dart`, `goal_progress_models.dart`) — the
+  shared-vocabulary rule that lets the agent entity union embed these types
+  without `features/agents` depending on a feature (the `day_plan.dart`
+  precedent). The banner-nudge vocabulary moved out of this feature
+  entirely in ADR 0059 and is now the kind-agnostic `nudge_models.dart`.
   `GoalCriterion.fromAutoCompleteRule` imports an existing habit rule as a
   goal seed.
 - `evaluation/` — `GoalProgressEvaluator`, a pure fold over a
@@ -79,7 +77,9 @@ without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake
 ids, so a transaction that commits before its deferred outbox flush fails is
 recognized as complete instead of rerunning inference. The visible layer ships behind the
 `enable_unified_goals` flag: procedural text banners (ADR 0058) on the day
-and habits pages (`ui/goal_banner_*`), and the unified Goals tab (`ui/pages/`,
+and habits pages — rendered through the kind-agnostic banner substrate in
+`lib/features/nudges/` since ADR 0059, with `ui/goal_banner_card.dart` as
+the goal-owned surface — and the unified Goals tab (`ui/pages/`,
 route root `/goals`)
 with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a

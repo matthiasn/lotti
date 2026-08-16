@@ -31,13 +31,15 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
@@ -805,8 +807,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                       ],
                     ),
                   ),
-                  if (_showsGoalBannerDock(destinations[index].kind))
-                    const GoalBannerDock(compact: false),
+                  if (_nudgeBannerSurfaceFor(destinations[index].kind)
+                      case final NudgeBannerSurface surface)
+                    NudgeBannerDock(compact: false, surface: surface),
                 ],
               ),
             ),
@@ -994,11 +997,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             // details and settings details dock their own pinned surfaces at
             // the bottom edge and must not pad around a bar that is gone.
             barDocked: showBottomNav && !slideNavAway,
-            // The goal-agent dock rides in the same bottom overlay on the
+            // The banner dock rides in the same bottom overlay on the
             // main working tabs; reserve its lane so page content and FABs
-            // clear it when a goal is speaking.
-            goalDockAllowed:
-                showBottomNav && _showsGoalBannerDock(destinations[index].kind),
+            // clear it when a banner is speaking.
+            dockSurface: showBottomNav
+                ? _nudgeBannerSurfaceFor(destinations[index].kind)
+                : null,
             child: IndexedStack(
               index: index,
               children: [
@@ -1050,9 +1054,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!slideNavAway &&
-                      _showsGoalBannerDock(destinations[index].kind))
-                    const GoalBannerDock(compact: true),
+                  if (!slideNavAway)
+                    if (_nudgeBannerSurfaceFor(destinations[index].kind)
+                        case final NudgeBannerSurface surface)
+                      NudgeBannerDock(compact: true, surface: surface),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1076,14 +1081,21 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     );
   }
 
-  /// The goal-agent dock mounts on the main working tabs only — the surface
-  /// set from the design handover (Tasks, DailyOS, Habits). Settings and the
-  /// Logbook are deliberately excluded; goal detail shows its own goal's
-  /// banner uncycled instead.
-  static bool _showsGoalBannerDock(_AppNavigationDestinationKind kind) =>
-      kind == _AppNavigationDestinationKind.tasks ||
-      kind == _AppNavigationDestinationKind.dailyOs ||
-      kind == _AppNavigationDestinationKind.habits;
+  /// The banner surface a destination maps onto, or null where no dock
+  /// mounts — Settings and the Logbook are deliberately excluded, and goal
+  /// detail shows its own goal's banner uncycled instead. Per-kind
+  /// visibility on a surface is the dock's own filter (ADR 0059 Decision 6):
+  /// goal nudges keep the main working tabs from the design handover
+  /// (Tasks, DailyOS, Habits); relationship nudges add the People pages.
+  static NudgeBannerSurface? _nudgeBannerSurfaceFor(
+    _AppNavigationDestinationKind kind,
+  ) => switch (kind) {
+    _AppNavigationDestinationKind.tasks => NudgeBannerSurface.tasks,
+    _AppNavigationDestinationKind.dailyOs => NudgeBannerSurface.dailyOs,
+    _AppNavigationDestinationKind.habits => NudgeBannerSurface.habits,
+    _AppNavigationDestinationKind.people => NudgeBannerSurface.people,
+    _ => null,
+  };
 
   List<_AppNavigationDestination> _buildNavigationDestinations({
     required BuildContext context,
@@ -1230,7 +1242,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
     required this.barDocked,
-    required this.goalDockAllowed,
+    required this.dockSurface,
     required this.child,
   });
 
@@ -1240,11 +1252,11 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
   /// see [DesignSystemBottomNavigationOverlayHeight.barDocked].
   final bool barDocked;
 
-  /// Whether the goal-agent dock may mount on this tab (a main working tab
-  /// with the bar visible). Its lane is reserved only when it is ALSO
-  /// speaking (there is an active nudge), so a collapsed dock reserves
-  /// nothing.
-  final bool goalDockAllowed;
+  /// The banner surface of this tab when the dock may mount here (a main
+  /// working tab with the bar visible), or null. The lane is reserved only
+  /// when the dock is ALSO speaking (there is an active nudge on this
+  /// surface), so a collapsed dock reserves nothing.
+  final NudgeBannerSurface? dockSurface;
 
   final Widget child;
 
@@ -1269,21 +1281,23 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
     }
 
     // The dock speaks only when at least one renderable nudge remains; the
-    // shell uses the dock's own stale/dismissed/snoozed filter so a hidden
-    // banner never leaves a blank reserved lane behind.
+    // shell uses the dock's own stale/dismissed/snoozed/surface filter so a
+    // hidden banner never leaves a blank reserved lane behind.
     // The compact dock renders its empty child while the keyboard is up
-    // (`GoalBannerDock` yields to it), so the reserve must drop to zero then —
+    // (`NudgeBannerDock` yields to it), so the reserve must drop to zero then —
     // otherwise it would push scroll clearance and FABs an extra lane above
     // the keyboard for the whole editing session. Mirror that collapse here.
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final goalDockEntries = visibleGoalBannerEntries(
-      entries: ref.watch(activeGoalNudgesProvider).value,
-      locallySnoozedDeadlines: ref.watch(
-        locallySnoozedNudgeDeadlinesProvider,
-      ),
-    );
-    final goalDockSpeaking =
-        goalDockAllowed && !keyboardUp && goalDockEntries.isNotEmpty;
+    final dockEntries = dockSurface == null
+        ? const <NudgeBannerEntry>[]
+        : visibleNudgeBannerEntries(
+            entries: ref.watch(activeNudgeBannersProvider),
+            locallySnoozedDeadlines: ref.watch(
+              locallySnoozedNudgeDeadlinesProvider,
+            ),
+            surface: dockSurface,
+          );
+    final dockSpeaking = !keyboardUp && dockEntries.isNotEmpty;
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
@@ -1307,10 +1321,10 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         // The reserved lane is derived from the dock's own DS dimensions and
         // is scale-aware (the tenant's copy grows with accessibility text),
         // so content and FABs clear the dock at every text scale.
-        if (goalDockSpeaking) {
-          height += goalBannerDockReservedHeight(
+        if (dockSpeaking) {
+          height += nudgeBannerDockReservedHeight(
             context,
-            briefs: goalDockEntries.map((entry) => entry.nudge.brief),
+            briefs: dockEntries.map((entry) => entry.nudge.brief),
           );
         }
         return DesignSystemBottomNavigationOverlayHeight(

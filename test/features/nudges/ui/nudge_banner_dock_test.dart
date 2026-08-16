@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
-import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,41 +22,49 @@ import '../../../widget_test_utils.dart';
 
 /// Mutable entry source so tests can push new provider snapshots into the
 /// dock mid-flight (queue-jumps, snoozes, collapse).
-class _TestEntries extends Notifier<List<GoalBannerEntry>> {
-  static List<GoalBannerEntry> initial = const [];
+class _TestEntries extends Notifier<List<NudgeBannerEntry>> {
+  static List<NudgeBannerEntry> initial = const [];
 
   @override
-  List<GoalBannerEntry> build() => initial;
+  List<NudgeBannerEntry> build() => initial;
 
   // ignore: avoid_setters_without_getters
-  set entries(List<GoalBannerEntry> value) => state = value;
+  set entries(List<NudgeBannerEntry> value) => state = value;
 }
 
 final _testEntriesProvider =
-    NotifierProvider<_TestEntries, List<GoalBannerEntry>>(_TestEntries.new);
+    NotifierProvider<_TestEntries, List<NudgeBannerEntry>>(_TestEntries.new);
+
+/// The registered banner source under test — the shape every kind's real
+/// source has (`activeGoalNudgesProvider`).
+final _testSourceProvider = FutureProvider<List<NudgeBannerEntry>>(
+  (ref) async => ref.watch(_testEntriesProvider),
+);
 
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  GoalBannerEntry entry({
+  NudgeBannerEntry entry({
     required String id,
     required String headline,
-    String goalTitle = 'Move more',
+    String subjectTitle = 'Move more',
+    NudgeBannerKind kind = NudgeBannerKind.goal,
     String? tagline,
     String? cta,
     int activationCount = 1,
-    GoalNudgeTone tone = GoalNudgeTone.nudge,
-    GoalBannerAnimation animation = GoalBannerAnimation.steady,
+    NudgeTone tone = NudgeTone.nudge,
+    NudgeBannerAnimation animation = NudgeBannerAnimation.steady,
     DateTime? staleAt,
     DateTime? snoozedUntil,
     DateTime? dismissedForDayAt,
   }) => (
-    nudge:
-        AgentDomainEntity.goalNudge(
+    nudge: NudgeEntityView.of(
+      kind == NudgeBannerKind.goal
+          ? AgentDomainEntity.goalNudge(
               id: id,
               agentId: 'goal-$id',
-              status: GoalNudgeStatus.active,
-              brief: GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
                 headline: headline,
                 tagline: tagline,
                 cta: cta,
@@ -70,14 +80,43 @@ void main() {
               updatedAt: DateTime(2026, 8, 9),
               vectorClock: null,
             )
-            as GoalNudgeEntity,
-    goalTitle: goalTitle,
+          : AgentDomainEntity.relationshipNudge(
+              id: id,
+              agentId: 'relationship-$id',
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
+                headline: headline,
+                tagline: tagline,
+                cta: cta,
+                tone: tone,
+                animation: animation,
+              ),
+              briefDigest: id,
+              activationCount: activationCount,
+              staleAt: staleAt,
+              snoozedUntil: snoozedUntil,
+              dismissedForDayAt: dismissedForDayAt,
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            ),
+    )!,
+    subjectTitle: subjectTitle,
+    kind: kind,
+    // The destination follows the KIND, as the real sources build it: a
+    // relationship tenant that routed to a goal page would let a
+    // People-surface navigation test pass while sending the user to the
+    // wrong feature entirely.
+    tapRoute: switch (kind) {
+      NudgeBannerKind.goal => '/goals/details/goal-$id',
+      NudgeBannerKind.relationship => '/people/person-$id',
+    },
   );
 
-  late MockGoalNudgeInteractions interactions;
+  late MockNudgeInteractions interactions;
 
   setUp(() {
-    interactions = MockGoalNudgeInteractions();
+    interactions = MockNudgeInteractions();
     when(
       () => interactions.snooze(
         any(),
@@ -98,23 +137,25 @@ void main() {
   tearDown(() => beamToNamedOverride = null);
 
   List<Override> overrides() => [
-    activeGoalNudgesProvider.overrideWith(
-      (ref) async => ref.watch(_testEntriesProvider),
-    ),
-    goalNudgeInteractionsProvider.overrideWithValue(interactions),
-    goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+    nudgeBannerSourcesProvider.overrideWithValue([_testSourceProvider]),
+    nudgeInteractionsProvider.overrideWithValue(interactions),
+    nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
   ];
 
   Future<void> pumpDock(
     WidgetTester tester,
-    List<GoalBannerEntry> entries, {
+    List<NudgeBannerEntry> entries, {
     bool compact = false,
+    NudgeBannerSurface surface = NudgeBannerSurface.tasks,
   }) async {
     _TestEntries.initial = entries;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Scaffold(
-          bottomNavigationBar: GoalBannerDock(compact: compact),
+          bottomNavigationBar: NudgeBannerDock(
+            compact: compact,
+            surface: surface,
+          ),
         ),
         overrides: overrides(),
       ),
@@ -128,7 +169,7 @@ void main() {
   }
 
   _TestEntries notifier(WidgetTester tester) => ProviderScope.containerOf(
-    tester.element(find.byType(GoalBannerDock)),
+    tester.element(find.byType(NudgeBannerDock)),
     listen: false,
   ).read(_testEntriesProvider.notifier);
 
@@ -144,7 +185,7 @@ void main() {
 
   test('visibility filtering is shared by the dock and its reserved lane', () {
     final now = DateTime.utc(2026, 8, 11, 12);
-    final visible = visibleGoalBannerEntries(
+    final visible = visibleNudgeBannerEntries(
       entries: [
         entry(id: 'visible', headline: 'Visible voice'),
         entry(
@@ -164,20 +205,21 @@ void main() {
         ),
       ],
       locallySnoozedDeadlines: const {},
+      surface: NudgeBannerSurface.tasks,
       now: now,
     );
 
     expect(visible.map((entry) => entry.nudge.id), ['visible']);
   });
 
-  test('goalBannerShellHiddenUntil reports the LATEST active quiet deadline '
+  test('nudgeBannerShellHiddenUntil reports the LATEST active quiet deadline '
       '— snooze, rest-of-day dismissal or the local echo — and null once '
       'every interval has passed', () {
     final now = DateTime(2026, 8, 11, 12);
 
     // Visible: no quiet interval at all.
     expect(
-      goalBannerShellHiddenUntil(
+      nudgeBannerShellHiddenUntil(
         entry(id: 'plain', headline: 'Visible'),
         locallySnoozedDeadlines: const {},
         now: now,
@@ -187,7 +229,7 @@ void main() {
 
     // A durable snooze reports its own deadline.
     expect(
-      goalBannerShellHiddenUntil(
+      nudgeBannerShellHiddenUntil(
         entry(
           id: 'snoozed',
           headline: 'Snoozed',
@@ -201,7 +243,7 @@ void main() {
 
     // A rest-of-day dismissal hides until the next local midnight.
     expect(
-      goalBannerShellHiddenUntil(
+      nudgeBannerShellHiddenUntil(
         entry(id: 'dismissed', headline: 'Dismissed', dismissedForDayAt: now),
         locallySnoozedDeadlines: const {},
         now: now,
@@ -212,7 +254,7 @@ void main() {
     // The optimistic local echo counts for ITS activation — and the latest
     // of several active deadlines wins.
     expect(
-      goalBannerShellHiddenUntil(
+      nudgeBannerShellHiddenUntil(
         entry(
           id: 'echoed',
           headline: 'Echoed',
@@ -231,7 +273,7 @@ void main() {
 
     // A stale-activation echo and an expired snooze decide nothing.
     expect(
-      goalBannerShellHiddenUntil(
+      nudgeBannerShellHiddenUntil(
         entry(
           id: 'expired',
           headline: 'Expired',
@@ -252,7 +294,7 @@ void main() {
 
   test('local suppression never hides a newer activation of the same row', () {
     final now = DateTime.utc(2026, 8, 11, 12);
-    final visible = visibleGoalBannerEntries(
+    final visible = visibleNudgeBannerEntries(
       entries: [
         entry(
           id: 'rerun',
@@ -266,11 +308,104 @@ void main() {
           until: now.add(const Duration(hours: 12)),
         ),
       },
+      surface: NudgeBannerSurface.tasks,
       now: now,
     );
 
     expect(visible.map((entry) => entry.nudge.id), ['rerun']);
   });
+
+  testWidgets('the People surface hides goal tenants and speaks '
+      'relationship ones with their own semantic label (ADR 0059)', (
+    tester,
+  ) async {
+    await pumpDock(
+      tester,
+      [
+        entry(id: 'g1', headline: 'Goal voice'),
+        entry(
+          id: 'r1',
+          headline: 'Call Anna — five weeks.',
+          kind: NudgeBannerKind.relationship,
+          subjectTitle: 'Anna',
+        ),
+      ],
+      surface: NudgeBannerSurface.people,
+    );
+
+    expect(find.text('Goal voice'), findsNothing);
+    expect(find.text('Call Anna — five weeks.'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Relationship banner for Anna')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a relationship tenant stays off no surface — it also speaks '
+      'on the goal surfaces', (tester) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'r1',
+        headline: 'Call Anna — five weeks.',
+        kind: NudgeBannerKind.relationship,
+        subjectTitle: 'Anna',
+      ),
+    ]);
+    expect(find.text('Call Anna — five weeks.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'the rotation survives a surface whose tenants are all filtered out — '
+    "the shell swaps one mounted dock's surface, it does not remount it",
+    (tester) async {
+      _TestEntries.initial = [
+        entry(id: 'v1', headline: 'Voice one'),
+        entry(id: 'v2', headline: 'Voice two'),
+      ];
+      // One dock element for the whole test, exactly as the shell mounts it:
+      // only the `surface` property changes as the user switches tabs.
+      final surface = ValueNotifier(NudgeBannerSurface.tasks);
+      addTearDown(surface.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            bottomNavigationBar: ValueListenableBuilder(
+              valueListenable: surface,
+              builder: (_, value, _) =>
+                  NudgeBannerDock(compact: false, surface: value),
+            ),
+          ),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Voice one'), findsOneWidget);
+
+      // Park on People, where every goal tenant is filtered out, long
+      // enough for the tenure to run out with nothing to advance to.
+      surface.value = NudgeBannerSurface.people;
+      await tester.pump();
+      await settleTransition(tester);
+      expect(find.text('Voice one'), findsNothing);
+      await tester.pump(nudgeBannerDockTenure + const Duration(seconds: 1));
+      await tester.pump();
+
+      // Back on Tasks the cycle must be running again.
+      surface.value = NudgeBannerSurface.tasks;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Voice one'), findsOneWidget);
+      await tester.pump(nudgeBannerDockTenure);
+      await settleTransition(tester);
+      expect(
+        find.text('Voice two'),
+        findsOneWidget,
+        reason: 'the tenure died on the empty surface and never restarted',
+      );
+    },
+  );
 
   testWidgets('a single tenant just sits: no dots, no auto-advance after '
       'a full tenure', (tester) async {
@@ -281,7 +416,7 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.pump(goalBannerDockTenure + const Duration(seconds: 1));
+    await tester.pump(nudgeBannerDockTenure + const Duration(seconds: 1));
     expect(find.text('Only voice'), findsOneWidget);
     // No dot row: the tenant's dot would be the only one.
     expect(
@@ -303,11 +438,11 @@ void main() {
       entry(
         id: 'pulse',
         headline: 'Animated standing voice',
-        animation: GoalBannerAnimation.pulse,
+        animation: NudgeBannerAnimation.pulse,
       ),
     ]);
 
-    expect(find.byType(GoalBannerAnimatedText), findsOneWidget);
+    expect(find.byType(NudgeBannerAnimatedText), findsOneWidget);
     final samples = <double>[];
     for (var i = 0; i < 4; i++) {
       samples.add(tester.widget<Opacity>(find.byType(Opacity)).opacity);
@@ -324,14 +459,14 @@ void main() {
     final animated = entry(
       id: 'pulse',
       headline: 'Animated standing voice',
-      animation: GoalBannerAnimation.pulse,
+      animation: NudgeBannerAnimation.pulse,
     );
 
     await pumpDock(tester, [animated]);
     expect(
       tester
-          .widget<GoalBannerAnimatedText>(
-            find.byType(GoalBannerAnimatedText),
+          .widget<NudgeBannerAnimatedText>(
+            find.byType(NudgeBannerAnimatedText),
           )
           .maxLines,
       isNull,
@@ -340,15 +475,15 @@ void main() {
     await pumpDock(tester, [animated], compact: true);
     expect(
       tester
-          .widget<GoalBannerAnimatedText>(
-            find.byType(GoalBannerAnimatedText),
+          .widget<NudgeBannerAnimatedText>(
+            find.byType(NudgeBannerAnimatedText),
           )
           .maxLines,
       isNull,
     );
     // The COMPACT (bottom) dock names its goal too — compact trims the CTA
     // and button labels for width, never the attribution.
-    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
+    expect(find.byType(NudgeBannerPersonaChip), findsOneWidget);
     expect(find.text('Move more'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -360,7 +495,7 @@ void main() {
         id: 'tagline',
         headline: 'Your shoes are getting suspicious.',
         tagline: 'One walk puts the rumors to bed.',
-        goalTitle: 'Walk',
+        subjectTitle: 'Walk',
       ),
     ]);
 
@@ -368,9 +503,9 @@ void main() {
     // The voice must not be anonymous: the persona chip and the goal's name
     // attribute the nudge — a dock tenant reads as SOME goal speaking.
     expect(find.text('Walk'), findsOneWidget);
-    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
+    expect(find.byType(NudgeBannerPersonaChip), findsOneWidget);
     expect(
-      tester.getSize(find.byType(GoalBannerDock)).width,
+      tester.getSize(find.byType(NudgeBannerDock)).width,
       tester.getSize(find.byType(Scaffold)).width,
     );
   });
@@ -387,8 +522,8 @@ void main() {
       ),
     ]);
 
-    final frame = find.byKey(const ValueKey('goal-banner-dock-frame'));
-    final tenant = find.byKey(const ValueKey('goal-banner-dock-tenant'));
+    final frame = find.byKey(const ValueKey('nudge-banner-dock-frame'));
+    final tenant = find.byKey(const ValueKey('nudge-banner-dock-tenant'));
     expect(frame, findsOneWidget);
     expect(tenant, findsOneWidget);
     final frameRect = tester.getRect(frame);
@@ -396,12 +531,12 @@ void main() {
     expect(tenantRect.center.dx, frameRect.center.dx);
     expect(tenantRect.width, closeTo(frameRect.width, 2));
     final snoozeRect = tester.getRect(
-      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
     );
     expect(frameRect.right - snoozeRect.right, lessThan(20));
     expect(
       tester
-          .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
+          .getSize(find.byKey(const ValueKey('nudge-banner-copy-region')))
           .width,
       greaterThan(frameRect.width * 0.4),
       reason:
@@ -424,7 +559,7 @@ void main() {
     ).join(' ');
     // Two active goals (so the dot-row footer renders), each with a headline
     // longer than five visual lines at both text scales.
-    List<GoalBannerEntry> tallEntries() => [
+    List<NudgeBannerEntry> tallEntries() => [
       entry(
         id: 'a',
         headline: longHeadline,
@@ -452,12 +587,15 @@ void main() {
                 builder: (context) {
                   // Read the reserve through the SAME scaled context the shell
                   // uses in `_MobileNavOverlayHeightScope`.
-                  reserved = goalBannerDockReservedHeight(
+                  reserved = nudgeBannerDockReservedHeight(
                     context,
                     briefs: tallEntries().map((entry) => entry.nudge.brief),
                   );
                   return const Scaffold(
-                    bottomNavigationBar: GoalBannerDock(compact: true),
+                    bottomNavigationBar: NudgeBannerDock(
+                      compact: true,
+                      surface: NudgeBannerSurface.tasks,
+                    ),
                   );
                 },
               ),
@@ -469,8 +607,8 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      final animatedText = find.byType(GoalBannerAnimatedText);
-      final animatedTextWidget = tester.widget<GoalBannerAnimatedText>(
+      final animatedText = find.byType(NudgeBannerAnimatedText);
+      final animatedTextWidget = tester.widget<NudgeBannerAnimatedText>(
         animatedText,
       );
       final linePainter = TextPainter(
@@ -480,7 +618,7 @@ void main() {
         maxLines: 1,
       )..layout();
       return (
-        tester.getSize(find.byType(GoalBannerDock)).height,
+        tester.getSize(find.byType(NudgeBannerDock)).height,
         reserved,
         tester.getSize(animatedText).height,
         linePainter.height,
@@ -530,7 +668,7 @@ void main() {
       final marquee = entry(
         id: 'marquee',
         headline: headline,
-        animation: GoalBannerAnimation.marquee,
+        animation: NudgeBannerAnimation.marquee,
       );
       _TestEntries.initial = [marquee];
       late double reserved;
@@ -543,12 +681,15 @@ void main() {
               ).copyWith(disableAnimations: true),
               child: Builder(
                 builder: (context) {
-                  reserved = goalBannerDockReservedHeight(
+                  reserved = nudgeBannerDockReservedHeight(
                     context,
                     briefs: [marquee.nudge.brief],
                   );
                   return const Scaffold(
-                    bottomNavigationBar: GoalBannerDock(compact: true),
+                    bottomNavigationBar: NudgeBannerDock(
+                      compact: true,
+                      surface: NudgeBannerSurface.tasks,
+                    ),
                   );
                 },
               ),
@@ -561,8 +702,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      final animated = find.byType(GoalBannerAnimatedText);
-      final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+      final animated = find.byType(NudgeBannerAnimatedText);
+      final animatedWidget = tester.widget<NudgeBannerAnimatedText>(animated);
       final linePainter = TextPainter(
         text: TextSpan(text: 'Xg', style: animatedWidget.style),
         textDirection: TextDirection.ltr,
@@ -572,7 +713,7 @@ void main() {
       expect(
         reserved,
         greaterThanOrEqualTo(
-          tester.getSize(find.byType(GoalBannerDock)).height,
+          tester.getSize(find.byType(NudgeBannerDock)).height,
         ),
       );
     },
@@ -591,7 +732,7 @@ void main() {
         2,
         'The moving headline remains one complete horizontal line.',
       ).join(' '),
-      animation: GoalBannerAnimation.marquee,
+      animation: NudgeBannerAnimation.marquee,
     );
     _TestEntries.initial = [marquee];
     late double reserved;
@@ -599,12 +740,15 @@ void main() {
       makeTestableWidgetNoScroll(
         Builder(
           builder: (context) {
-            reserved = goalBannerDockReservedHeight(
+            reserved = nudgeBannerDockReservedHeight(
               context,
               briefs: [marquee.nudge.brief],
             );
             return const Scaffold(
-              bottomNavigationBar: GoalBannerDock(compact: true),
+              bottomNavigationBar: NudgeBannerDock(
+                compact: true,
+                surface: NudgeBannerSurface.tasks,
+              ),
             );
           },
         ),
@@ -615,8 +759,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    final animated = find.byType(GoalBannerAnimatedText);
-    final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+    final animated = find.byType(NudgeBannerAnimatedText);
+    final animatedWidget = tester.widget<NudgeBannerAnimatedText>(animated);
     final linePainter = TextPainter(
       text: TextSpan(text: 'Xg', style: animatedWidget.style),
       textDirection: TextDirection.ltr,
@@ -628,7 +772,7 @@ void main() {
     );
     expect(
       reserved,
-      greaterThanOrEqualTo(tester.getSize(find.byType(GoalBannerDock)).height),
+      greaterThanOrEqualTo(tester.getSize(find.byType(NudgeBannerDock)).height),
     );
   });
 
@@ -640,12 +784,12 @@ void main() {
     ]);
     expect(find.text('First voice'), findsOneWidget);
 
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
     expect(find.text('First voice'), findsNothing);
 
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('First voice'), findsOneWidget, reason: 'wraps');
   });
@@ -665,7 +809,7 @@ void main() {
       tester.getCenter(find.text('First voice')),
     );
     await tester.pump();
-    await tester.pump(goalBannerDockTenure * 2);
+    await tester.pump(nudgeBannerDockTenure * 2);
     expect(
       find.text('First voice'),
       findsOneWidget,
@@ -675,7 +819,7 @@ void main() {
     // Release: the clock resumes and the next tenure advances.
     await gesture.up();
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
   });
@@ -695,7 +839,7 @@ void main() {
     await gesture.moveTo(tester.getCenter(find.text('First voice')));
     await tester.pump();
 
-    await tester.pump(goalBannerDockTenure * 2);
+    await tester.pump(nudgeBannerDockTenure * 2);
     expect(
       find.text('First voice'),
       findsOneWidget,
@@ -704,7 +848,7 @@ void main() {
 
     await gesture.moveTo(Offset.zero);
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
   });
@@ -725,7 +869,7 @@ void main() {
         id: 'c',
         headline: 'Walk done. That’s the rhythm.',
         tagline: 'One more outing keeps the streak alive.',
-        goalTitle: 'Walk more',
+        subjectTitle: 'Walk more',
       ),
     ];
     await tester.pump();
@@ -735,7 +879,7 @@ void main() {
     expect(find.textContaining('just now'), findsNothing);
     expect(find.text('One more outing keeps the streak alive.'), findsNothing);
 
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.textContaining('just now'), findsNothing);
   });
@@ -779,7 +923,7 @@ void main() {
       '(a fresh voice) and the cycle then rotates', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
     // Lone tenant: the tenure clock is stopped.
-    await tester.pump(goalBannerDockTenure * 2);
+    await tester.pump(nudgeBannerDockTenure * 2);
     expect(find.text('First voice'), findsOneWidget);
 
     // A second voice appears: a banner arriving after the dock is already
@@ -793,7 +937,7 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
 
     // The cycle resumed: one tenure later it rotates on to the other tenant.
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('First voice'), findsOneWidget);
   });
@@ -810,7 +954,7 @@ void main() {
     // Cancel (not release): the pointer-cancel path must also resume.
     await gesture.cancel();
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
   });
@@ -832,7 +976,7 @@ void main() {
     verify(
       () => interactions.snooze(
         'a',
-        duration: GoalBannerSnoozeDuration.oneHour,
+        duration: NudgeBannerSnoozeDuration.oneHour,
         forActivation: 1,
       ),
     ).called(1);
@@ -857,7 +1001,7 @@ void main() {
     ]);
 
     // Advance to the middle tenant (b).
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
 
@@ -885,12 +1029,12 @@ void main() {
     await tester.pump();
     // Held across two tenures while backgrounded — a rotation nobody can
     // see is wasted motion.
-    await tester.pump(goalBannerDockTenure * 2);
+    await tester.pump(nudgeBannerDockTenure * 2);
     expect(find.text('First voice'), findsOneWidget);
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
   });
@@ -927,6 +1071,30 @@ void main() {
     expect(navigated, ['/goals/details/goal-a']);
   });
 
+  testWidgets('tapping a relationship tenant on People opens that person, '
+      'not a goal', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(
+      tester,
+      [
+        entry(
+          id: 'anna',
+          headline: 'Call Anna — five weeks.',
+          cta: 'Say hello',
+          kind: NudgeBannerKind.relationship,
+          subjectTitle: 'Anna',
+        ),
+      ],
+      surface: NudgeBannerSurface.people,
+    );
+
+    await tester.tap(find.text('Say hello'));
+    await tester.pump();
+
+    expect(navigated, ['/people/person-anna']);
+  });
+
   testWidgets('compact dock has no swipe-dismiss and snoozes from its action', (
     tester,
   ) async {
@@ -937,7 +1105,7 @@ void main() {
     );
     expect(find.byType(Dismissible), findsNothing);
     await tester.tap(
-      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -946,7 +1114,7 @@ void main() {
     verify(
       () => interactions.snooze(
         'a',
-        duration: GoalBannerSnoozeDuration.threeHours,
+        duration: NudgeBannerSnoozeDuration.threeHours,
         forActivation: 1,
       ),
     ).called(1);
@@ -957,24 +1125,26 @@ void main() {
   ) async {
     await pumpDock(tester, [
       (
-        nudge:
-            AgentDomainEntity.goalNudge(
-                  id: 'stale',
-                  agentId: 'goal-stale',
-                  status: GoalNudgeStatus.active,
-                  brief: const GoalNudgeBrief(
-                    headline: 'Stale voice',
-                    tone: GoalNudgeTone.nudge,
-                    animation: GoalBannerAnimation.steady,
-                  ),
-                  briefDigest: 'stale',
-                  staleAt: DateTime.utc(2000),
-                  createdAt: DateTime(2026, 8, 9),
-                  updatedAt: DateTime(2026, 8, 9),
-                  vectorClock: null,
-                )
-                as GoalNudgeEntity,
-        goalTitle: 'Move more',
+        nudge: NudgeEntityView.of(
+          AgentDomainEntity.goalNudge(
+            id: 'stale',
+            agentId: 'goal-stale',
+            status: NudgeStatus.active,
+            brief: const NudgeBrief(
+              headline: 'Stale voice',
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
+            ),
+            briefDigest: 'stale',
+            staleAt: DateTime.utc(2000),
+            createdAt: DateTime(2026, 8, 9),
+            updatedAt: DateTime(2026, 8, 9),
+            vectorClock: null,
+          ),
+        )!,
+        subjectTitle: 'Move more',
+        kind: NudgeBannerKind.goal,
+        tapRoute: '/goals/details/goal-stale',
       ),
       entry(id: 'fresh', headline: 'Fresh voice'),
     ]);
@@ -990,7 +1160,7 @@ void main() {
       entry(id: 'b', headline: 'Still here'),
     ]);
     final container = ProviderScope.containerOf(
-      tester.element(find.byType(GoalBannerDock)),
+      tester.element(find.byType(NudgeBannerDock)),
       listen: false,
     );
 
@@ -1006,7 +1176,7 @@ void main() {
   testWidgets('zero tenants render nothing at all', (tester) async {
     await pumpDock(tester, const []);
     expect(
-      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
       findsNothing,
     );
   });
@@ -1024,7 +1194,10 @@ void main() {
               viewInsets: const EdgeInsets.only(bottom: 280),
             ),
             child: const Scaffold(
-              bottomNavigationBar: GoalBannerDock(compact: true),
+              bottomNavigationBar: NudgeBannerDock(
+                compact: true,
+                surface: NudgeBannerSurface.tasks,
+              ),
             ),
           ),
         ),
@@ -1046,7 +1219,7 @@ void main() {
     );
     expect(find.byTooltip('Rate this banner'), findsNothing);
     expect(
-      find.byKey(const ValueKey('goal-banner-dock-snooze')),
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
       findsOneWidget,
     );
   });
@@ -1063,7 +1236,10 @@ void main() {
           builder: (context) => MediaQuery(
             data: MediaQuery.of(context).copyWith(disableAnimations: true),
             child: const Scaffold(
-              bottomNavigationBar: GoalBannerDock(compact: false),
+              bottomNavigationBar: NudgeBannerDock(
+                compact: false,
+                surface: NudgeBannerSurface.tasks,
+              ),
             ),
           ),
         ),
@@ -1073,7 +1249,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.text('First voice'), findsOneWidget);
-    await tester.pump(goalBannerDockTenure);
+    await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
   });

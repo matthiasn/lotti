@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -478,17 +478,17 @@ void main() {
       GoalNudgeEntity nudgeRow({
         required VectorClock vc,
         required GCounter visibleMs,
-        required List<GoalNudgeRating> ratings,
-        GoalNudgeStatus status = GoalNudgeStatus.active,
+        required List<NudgeRating> ratings,
+        NudgeStatus status = NudgeStatus.active,
       }) =>
           AgentDomainEntity.goalNudge(
                 id: 'nudge-1',
                 agentId: 'agent-1',
                 status: status,
-                brief: const GoalNudgeBrief(
+                brief: const NudgeBrief(
                   headline: 'h',
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
+                  tone: NudgeTone.nudge,
+                  animation: NudgeBannerAnimation.steady,
                 ),
                 briefDigest: 'd',
                 createdAt: DateTime(2026, 8),
@@ -503,19 +503,19 @@ void main() {
         vc: localVc,
         visibleMs: const GCounter({'host-A': 5000}),
         ratings: [
-          GoalNudgeRating(
+          NudgeRating(
             activation: 1,
             ratedAt: DateTime(2026, 8, 1, 9),
             rating: 5,
           ),
         ],
-        status: GoalNudgeStatus.dismissed,
+        status: NudgeStatus.dismissed,
       );
       final incoming = nudgeRow(
         vc: incomingVc,
         visibleMs: const GCounter({'host-B': 3000}),
         ratings: [
-          GoalNudgeRating(
+          NudgeRating(
             activation: 1,
             ratedAt: DateTime(2026, 8, 1, 11),
             rating: 4,
@@ -542,7 +542,7 @@ void main() {
       // The dismissal-terminal override picked local as the winner, and
       // the accumulator join recovered the other device's exposure and
       // rating anyway.
-      expect(upserted.status, GoalNudgeStatus.dismissed);
+      expect(upserted.status, NudgeStatus.dismissed);
       expect(
         upserted.totalVisibleMs.byHost,
         {'host-A': 5000, 'host-B': 3000},
@@ -563,11 +563,11 @@ void main() {
           AgentDomainEntity.goalNudge(
                 id: 'nudge-2',
                 agentId: 'agent-1',
-                status: GoalNudgeStatus.active,
-                brief: const GoalNudgeBrief(
+                status: NudgeStatus.active,
+                brief: const NudgeBrief(
                   headline: 'old copy',
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
+                  tone: NudgeTone.nudge,
+                  animation: NudgeBannerAnimation.steady,
                 ),
                 briefDigest: 'd',
                 createdAt: DateTime(2026, 8),
@@ -580,11 +580,11 @@ void main() {
           AgentDomainEntity.goalNudge(
                 id: 'nudge-2',
                 agentId: 'agent-1',
-                status: GoalNudgeStatus.retired,
-                brief: const GoalNudgeBrief(
+                status: NudgeStatus.retired,
+                brief: const NudgeBrief(
                   headline: 'old copy',
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
+                  tone: NudgeTone.nudge,
+                  animation: NudgeBannerAnimation.steady,
                 ),
                 briefDigest: 'd',
                 createdAt: DateTime(2026, 8),
@@ -611,7 +611,7 @@ void main() {
       final upserted =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
               as GoalNudgeEntity;
-      expect(upserted.status, GoalNudgeStatus.retired);
+      expect(upserted.status, NudgeStatus.retired);
       expect(
         upserted.totalVisibleMs.byHost,
         {'host-A': 100, 'host-B': 200},

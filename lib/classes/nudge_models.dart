@@ -7,9 +7,6 @@
 /// serialized form is unchanged: these are non-union classes (no
 /// `runtimeType` marker) and every enum keeps its value names, so rows
 /// written under the goal-typed names decode identically.
-///
-/// `goal_nudge_models.dart` re-exports everything here under the original
-/// goal-prefixed aliases during the migration.
 library;
 
 import 'package:freezed_annotation/freezed_annotation.dart';

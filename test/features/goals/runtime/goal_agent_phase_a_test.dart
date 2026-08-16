@@ -2,10 +2,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -150,11 +150,11 @@ void main() {
       AgentDomainEntity.goalNudge(
             id: 'ad-overdue',
             agentId: agentId,
-            status: GoalNudgeStatus.active,
-            brief: const GoalNudgeBrief(
+            status: NudgeStatus.active,
+            brief: const NudgeBrief(
               headline: 'Old copy',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.steady,
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
             ),
             briefDigest: 'old-copy',
             createdAt: DateTime(2026, 8, 5),
@@ -262,11 +262,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8, 5),
@@ -291,7 +291,7 @@ void main() {
     final expired = upserts.whereType<GoalNudgeEntity>().toList();
     expect(expired, hasLength(1));
     expect(expired.single.id, 'ad-overdue');
-    expect(expired.single.status, GoalNudgeStatus.expired);
+    expect(expired.single.status, NudgeStatus.expired);
     expect(
       expired.single.expiredAt,
       deadline.toUtc(),
@@ -337,7 +337,7 @@ void main() {
 
     expect(
       upserts.whereType<GoalNudgeEntity>().single.status,
-      GoalNudgeStatus.expired,
+      NudgeStatus.expired,
     );
     expect(
       refreshRequests,
@@ -366,7 +366,7 @@ void main() {
 
     expect(
       upserts.whereType<GoalNudgeEntity>().single.status,
-      GoalNudgeStatus.expired,
+      NudgeStatus.expired,
     );
     expect(
       upserts.whereType<ScheduledWakeEntity>().where(
@@ -383,11 +383,11 @@ void main() {
       AgentDomainEntity.goalNudge(
             id: 'ad-stamped',
             agentId: agentId,
-            status: GoalNudgeStatus.active,
-            brief: const GoalNudgeBrief(
+            status: NudgeStatus.active,
+            brief: const NudgeBrief(
               headline: 'Your blood pressure is 129/94',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.steady,
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
             ),
             briefDigest: 'stamped',
             createdAt: activatedAt,
@@ -450,7 +450,7 @@ void main() {
     await run(badWeek());
 
     final expired = upserts.whereType<GoalNudgeEntity>().single;
-    expect(expired.status, GoalNudgeStatus.expired);
+    expect(expired.status, NudgeStatus.expired);
     expect(
       expired.expiredAt,
       now.toUtc(),
@@ -673,11 +673,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-foreign-spec',
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 5),
@@ -693,7 +693,7 @@ void main() {
 
     final swept = upserts.whereType<GoalNudgeEntity>().single;
     expect(swept.id, 'ad-foreign-spec');
-    expect(swept.status, GoalNudgeStatus.superseded);
+    expect(swept.status, NudgeStatus.superseded);
 
     // Partial sync: a NEW spec's banner arriving before that spec's head
     // (origin version unresolvable) is left alone, not destroyed.

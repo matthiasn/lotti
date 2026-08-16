@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Renders a banner headline through one of the code-owned animation
@@ -9,22 +9,23 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///
 /// Every preset degrades to plain text when the platform asks for
 /// reduced motion — the animation is a garnish, never the content.
-class GoalBannerAnimatedText extends StatefulWidget {
-  const GoalBannerAnimatedText({
+class NudgeBannerAnimatedText extends StatefulWidget {
+  const NudgeBannerAnimatedText({
     required this.text,
     required this.animation,
     required this.style,
-    this.maxLines = _GoalBannerMotion.defaultMaxLines,
+    this.maxLines = _NudgeBannerMotion.defaultMaxLines,
     super.key,
   });
 
   final String text;
-  final GoalBannerAnimation animation;
+  final NudgeBannerAnimation animation;
   final TextStyle style;
   final int? maxLines;
 
   @override
-  State<GoalBannerAnimatedText> createState() => _GoalBannerAnimatedTextState();
+  State<NudgeBannerAnimatedText> createState() =>
+      _NudgeBannerAnimatedTextState();
 }
 
 /// The preset parameters — the code-owned animation catalog itself
@@ -32,7 +33,7 @@ class GoalBannerAnimatedText extends StatefulWidget {
 /// are motion amplitudes, not layout values, which is why they live here
 /// as the catalog rather than in the spacing/typography token pipeline;
 /// durations and easing come from the motion tokens where they apply.
-abstract final class _GoalBannerMotion {
+abstract final class _NudgeBannerMotion {
   /// One full animation cycle for every preset.
   static const cycle = Duration(seconds: 3);
 
@@ -59,7 +60,7 @@ abstract final class _GoalBannerMotion {
   static const defaultMaxLines = 2;
 }
 
-class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
+class _NudgeBannerAnimatedTextState extends State<NudgeBannerAnimatedText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -68,7 +69,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: _GoalBannerMotion.cycle,
+      duration: _NudgeBannerMotion.cycle,
     );
   }
 
@@ -79,7 +80,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   }
 
   @override
-  void didUpdateWidget(GoalBannerAnimatedText oldWidget) {
+  void didUpdateWidget(NudgeBannerAnimatedText oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync can swap the preset under the SAME element (deterministic row
     // id, unchanged key): a steady→pulse update must start the stopped
@@ -89,7 +90,8 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
 
   void _syncController() {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    final animated = !reduced && widget.animation != GoalBannerAnimation.steady;
+    final animated =
+        !reduced && widget.animation != NudgeBannerAnimation.steady;
     if (animated && !_controller.isAnimating) {
       _controller.repeat();
     } else if (!animated && _controller.isAnimating) {
@@ -108,18 +110,18 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.disableAnimationsOf(context) ||
-        widget.animation == GoalBannerAnimation.steady) {
+        widget.animation == NudgeBannerAnimation.steady) {
       return _capped(widget.text);
     }
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => switch (widget.animation) {
-        GoalBannerAnimation.steady => _capped(widget.text),
-        GoalBannerAnimation.typewriter => _typewriter(),
-        GoalBannerAnimation.pulse => _pulse(),
-        GoalBannerAnimation.wave => _wave(),
-        GoalBannerAnimation.marquee => _marquee(),
-        GoalBannerAnimation.glitch => _glitch(),
+        NudgeBannerAnimation.steady => _capped(widget.text),
+        NudgeBannerAnimation.typewriter => _typewriter(),
+        NudgeBannerAnimation.pulse => _pulse(),
+        NudgeBannerAnimation.wave => _wave(),
+        NudgeBannerAnimation.marquee => _marquee(),
+        NudgeBannerAnimation.glitch => _glitch(),
       },
     );
   }
@@ -138,7 +140,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   /// Grapheme-cluster stepping: model copy can carry emoji and composed
   /// characters, and a UTF-16 substring would split them mid-glyph.
   Widget _typewriter() {
-    final t = (_controller.value / _GoalBannerMotion.typewriterRevealFraction)
+    final t = (_controller.value / _NudgeBannerMotion.typewriterRevealFraction)
         .clamp(0.0, 1.0);
     final graphemes = widget.text.characters;
     final count = (graphemes.length * t).round();
@@ -161,7 +163,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
 
   Widget _pulse() {
     final phase = math.sin(_controller.value * 2 * math.pi);
-    const floor = _GoalBannerMotion.pulseFloorOpacity;
+    const floor = _NudgeBannerMotion.pulseFloorOpacity;
     return Opacity(
       opacity: floor + (1 - floor) * ((phase + 1) / 2),
       child: _capped(widget.text),
@@ -204,12 +206,12 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
           Transform.translate(
             offset: Offset(
               0,
-              -_GoalBannerMotion.waveAmplitude *
+              -_NudgeBannerMotion.waveAmplitude *
                   math.sin(
                     2 *
                         math.pi *
                         (_controller.value +
-                            i * _GoalBannerMotion.wavePhaseStep),
+                            i * _NudgeBannerMotion.wavePhaseStep),
                   ),
             ),
             child: Text(word, style: widget.style),
@@ -266,11 +268,11 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   /// the controller value, so tests and replays render identically.
   Widget _glitch() {
     final t = _controller.value;
-    final active = (t % 0.5) < _GoalBannerMotion.glitchActiveFraction;
+    final active = (t % 0.5) < _NudgeBannerMotion.glitchActiveFraction;
     final seed = (t * 997).floor();
-    const range = 2 * _GoalBannerMotion.glitchMaxOffset + 1;
+    const range = 2 * _NudgeBannerMotion.glitchMaxOffset + 1;
     final dx = active
-        ? (seed % range) - _GoalBannerMotion.glitchMaxOffset
+        ? (seed % range) - _NudgeBannerMotion.glitchMaxOffset
         : 0.0;
     return Transform.translate(
       offset: Offset(dx, 0),

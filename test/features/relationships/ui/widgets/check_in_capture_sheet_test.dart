@@ -52,6 +52,36 @@ void main() {
     ],
   );
 
+  final interactionTime = DateTime(2026, 8, 10, 19, 45);
+
+  CheckInEntry existing() => CheckInEntry(
+    meta: Metadata(
+      id: 'check-1',
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: interactionTime,
+      dateTo: interactionTime,
+    ),
+    data: const CheckInData(
+      relationshipId: 'rel-001',
+      interactionType: CheckInInteractionType.call,
+      sentiment: CheckInSentiment.good,
+      topics: ['travel', 'work'],
+      payAttentionTo: 'Job interview',
+    ),
+    entryText: const EntryText(plainText: 'Planned the trip.'),
+  );
+
+  Widget buildEditForm() => makeTestableWidgetWithScaffold(
+    CheckInCaptureForm(
+      relationshipId: 'rel-001',
+      initial: existing(),
+    ),
+    overrides: [
+      relationshipRepositoryProvider.overrideWithValue(mockRepository),
+    ],
+  );
+
   ({CheckInData data, EntryText? entryText, DateTime? dateFrom})
   capturedSave() {
     final captured = verify(
@@ -233,36 +263,6 @@ void main() {
   });
 
   group('edit mode', () {
-    final interactionTime = DateTime(2026, 8, 10, 19, 45);
-
-    CheckInEntry existing() => CheckInEntry(
-      meta: Metadata(
-        id: 'check-1',
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: interactionTime,
-        dateTo: interactionTime,
-      ),
-      data: const CheckInData(
-        relationshipId: 'rel-001',
-        interactionType: CheckInInteractionType.call,
-        sentiment: CheckInSentiment.good,
-        topics: ['travel', 'work'],
-        payAttentionTo: 'Job interview',
-      ),
-      entryText: const EntryText(plainText: 'Planned the trip.'),
-    );
-
-    Widget buildEditForm() => makeTestableWidgetWithScaffold(
-      CheckInCaptureForm(
-        relationshipId: 'rel-001',
-        initial: existing(),
-      ),
-      overrides: [
-        relationshipRepositoryProvider.overrideWithValue(mockRepository),
-      ],
-    );
-
     setUp(() {
       when(
         () => mockRepository.updateCheckIn(any()),

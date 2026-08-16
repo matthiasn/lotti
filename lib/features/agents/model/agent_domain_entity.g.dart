@@ -1912,7 +1912,7 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(
       (json['snoozeHistory'] as List<dynamic>?)
           ?.map((e) => NudgeSnooze.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <GoalNudgeSnooze>[],
+      const <NudgeSnooze>[],
   dismissedForDayAt: json['dismissedForDayAt'] == null
       ? null
       : DateTime.parse(json['dismissedForDayAt'] as String),
@@ -1920,13 +1920,13 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(
       (json['dismissalHistory'] as List<dynamic>?)
           ?.map((e) => NudgeDayDismissal.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <GoalNudgeDayDismissal>[],
+      const <NudgeDayDismissal>[],
   activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
   ratings:
       (json['ratings'] as List<dynamic>?)
           ?.map((e) => NudgeRating.fromJson(e as Map<String, dynamic>))
           .toList() ??
-      const <GoalNudgeRating>[],
+      const <NudgeRating>[],
   totalVisibleMs: json['totalVisibleMsByHost'] == null
       ? const GCounter.empty()
       : GCounter.fromJson(json['totalVisibleMsByHost'] as Map<String, dynamic>),

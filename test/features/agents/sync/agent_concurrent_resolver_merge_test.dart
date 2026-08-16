@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -11,9 +11,9 @@ import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
   GoalNudgeEntity goalNudge({
-    required GoalNudgeStatus status,
+    required NudgeStatus status,
     String id = 'n1',
-    List<GoalNudgeRating> ratings = const [],
+    List<NudgeRating> ratings = const [],
     GCounter visibleMs = const GCounter.empty(),
     GCounter impressions = const GCounter.empty(),
     int activationCount = 1,
@@ -21,19 +21,19 @@ void main() {
     DateTime? lastShownAt,
     DateTime? staleAt,
     DateTime? snoozedUntil,
-    GoalBannerSnoozeDuration? lastSnoozeDuration,
-    List<GoalNudgeSnooze> snoozeHistory = const [],
+    NudgeBannerSnoozeDuration? lastSnoozeDuration,
+    List<NudgeSnooze> snoozeHistory = const [],
     DateTime? dismissedForDayAt,
-    List<GoalNudgeDayDismissal> dismissalHistory = const [],
+    List<NudgeDayDismissal> dismissalHistory = const [],
   }) =>
       AgentDomainEntity.goalNudge(
             id: id,
             agentId: 'a1',
             status: status,
-            brief: const GoalNudgeBrief(
+            brief: const NudgeBrief(
               headline: 'Your shoes filed a missing person report.',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.pulse,
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.pulse,
             ),
             briefDigest: 'digest-1',
             createdAt: DateTime(2026, 8),
@@ -514,10 +514,10 @@ void main() {
 
   group('goal nudge — dismissal is terminal', () {
     test('a concurrent dismissal beats any other status, both directions', () {
-      final dismissed = goalNudge(status: GoalNudgeStatus.dismissed);
+      final dismissed = goalNudge(status: NudgeStatus.dismissed);
       for (final other in [
-        goalNudge(status: GoalNudgeStatus.active),
-        goalNudge(status: GoalNudgeStatus.retired),
+        goalNudge(status: NudgeStatus.active),
+        goalNudge(status: NudgeStatus.retired),
       ]) {
         expect(
           resolveConcurrentAgentEntityOverride(
@@ -540,13 +540,13 @@ void main() {
     test('a terminal status beats a concurrent NON-advancing live write — '
         'a stale exposure flush cannot revive a retired ad', () {
       for (final terminalStatus in [
-        GoalNudgeStatus.retired,
-        GoalNudgeStatus.expired,
-        GoalNudgeStatus.superseded,
-        GoalNudgeStatus.failed,
+        NudgeStatus.retired,
+        NudgeStatus.expired,
+        NudgeStatus.superseded,
+        NudgeStatus.failed,
       ]) {
         final terminal = goalNudge(status: terminalStatus);
-        final staleActive = goalNudge(status: GoalNudgeStatus.active);
+        final staleActive = goalNudge(status: NudgeStatus.active);
         expect(
           resolveConcurrentAgentEntityOverride(
             local: terminal,
@@ -567,9 +567,9 @@ void main() {
 
     test('a genuine reactivation — the activation count ADVANCED — beats a '
         'concurrent terminal write', () {
-      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      final retired = goalNudge(status: NudgeStatus.retired);
       final rerun = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         activationCount: 2,
       );
       expect(
@@ -585,15 +585,15 @@ void main() {
     test('two terminal (or two live) statuses defer to LWW (null)', () {
       expect(
         resolveConcurrentAgentEntityOverride(
-          local: goalNudge(status: GoalNudgeStatus.retired),
-          incoming: goalNudge(status: GoalNudgeStatus.expired),
+          local: goalNudge(status: NudgeStatus.retired),
+          incoming: goalNudge(status: NudgeStatus.expired),
         ),
         isNull,
       );
       expect(
         resolveConcurrentAgentEntityOverride(
-          local: goalNudge(status: GoalNudgeStatus.active),
-          incoming: goalNudge(status: GoalNudgeStatus.ready),
+          local: goalNudge(status: NudgeStatus.active),
+          incoming: goalNudge(status: NudgeStatus.ready),
         ),
         isNull,
       );
@@ -601,8 +601,8 @@ void main() {
 
     test('supersession dominates a concurrent retirement — the revision '
         'sweep stays monotonic, the reuse library stays clean', () {
-      final superseded = goalNudge(status: GoalNudgeStatus.superseded);
-      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      final superseded = goalNudge(status: NudgeStatus.superseded);
+      final retired = goalNudge(status: NudgeStatus.retired);
       expect(
         resolveConcurrentAgentEntityOverride(
           local: superseded,
@@ -622,9 +622,9 @@ void main() {
     test('supersession outranks even a HIGHER activation — an offline '
         'old-spec rerun cannot resurrect the banner beside the revised '
         'goal', () {
-      final swept = goalNudge(status: GoalNudgeStatus.superseded);
+      final swept = goalNudge(status: NudgeStatus.superseded);
       final offlineRerun = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         activationCount: 3,
       );
       expect(
@@ -647,11 +647,11 @@ void main() {
         'write for the PREVIOUS run cannot stamp the rerun with its old '
         'deadline', () {
       final rerun = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         activationCount: 3,
       );
       final staleBookkeeping = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         activationCount: 2,
       );
       expect(
@@ -672,11 +672,11 @@ void main() {
   });
 
   group('mergeGoalNudgeAccumulators', () {
-    GoalNudgeSnooze snooze(
+    NudgeSnooze snooze(
       String id, {
       required int hour,
       required int durationHours,
-    }) => GoalNudgeSnooze(
+    }) => NudgeSnooze(
       id: id,
       activation: 1,
       snoozedAt: DateTime.utc(2026, 8, 13, hour),
@@ -686,28 +686,28 @@ void main() {
         13,
         hour + durationHours,
       ),
-      duration: goalBannerSnoozeDurationFor(
+      duration: nudgeBannerSnoozeDurationFor(
         Duration(hours: durationHours),
       ),
       durationMinutes: durationHours * 60,
       utcOffsetMinutes: 120,
     );
 
-    GoalNudgeRating rating(
+    NudgeRating rating(
       int activation, {
       int? value,
       bool skipped = false,
-    }) => GoalNudgeRating(
+    }) => NudgeRating(
       activation: activation,
       ratedAt: DateTime(2026, 8, activation),
       rating: value,
       skipped: skipped,
     );
 
-    GoalNudgeDayDismissal dismissal(
+    NudgeDayDismissal dismissal(
       String id, {
       required int hour,
-    }) => GoalNudgeDayDismissal(
+    }) => NudgeDayDismissal(
       id: id,
       activation: 1,
       dismissedAt: DateTime.utc(2026, 8, 13, hour),
@@ -718,7 +718,7 @@ void main() {
     test('joins exposure counters, unions ratings and widens watermarks — '
         "no device's outcome is ever lost", () {
       final local = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         visibleMs: const GCounter({'phone': 4000}),
         impressions: const GCounter({'phone': 3}),
         ratings: [rating(1, value: 5)],
@@ -727,7 +727,7 @@ void main() {
         lastShownAt: DateTime(2026, 8, 3),
       );
       final incoming = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         visibleMs: const GCounter({'phone': 1000, 'desktop': 9000}),
         impressions: const GCounter({'desktop': 7}),
         ratings: [rating(1, value: 5), rating(2, skipped: true)],
@@ -756,19 +756,19 @@ void main() {
     test('concurrent outcomes for ONE activation collapse to a single '
         'deterministic entry on both replicas — a run is never counted '
         'twice', () {
-      final skippedEntry = GoalNudgeRating(
+      final skippedEntry = NudgeRating(
         activation: 1,
         ratedAt: DateTime(2026, 8, 2, 9),
         skipped: true,
       );
-      final rated = GoalNudgeRating(
+      final rated = NudgeRating(
         activation: 1,
         ratedAt: DateTime(2026, 8, 2, 10),
         rating: 3,
       );
-      final a = goalNudge(status: GoalNudgeStatus.active, ratings: [rated]);
+      final a = goalNudge(status: NudgeStatus.active, ratings: [rated]);
       final b = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         ratings: [skippedEntry],
       );
       final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
@@ -783,10 +783,10 @@ void main() {
       // A full tie (same instant) breaks on the remaining total order:
       // skipped=false sorts first, then the lower rating value.
       final at = DateTime(2026, 8, 2, 9);
-      final low = GoalNudgeRating(activation: 2, ratedAt: at, rating: 2);
-      final high = GoalNudgeRating(activation: 2, ratedAt: at, rating: 5);
-      final c = goalNudge(status: GoalNudgeStatus.active, ratings: [low]);
-      final d = goalNudge(status: GoalNudgeStatus.active, ratings: [high]);
+      final low = NudgeRating(activation: 2, ratedAt: at, rating: 2);
+      final high = NudgeRating(activation: 2, ratedAt: at, rating: 5);
+      final c = goalNudge(status: NudgeStatus.active, ratings: [low]);
+      final d = goalNudge(status: NudgeStatus.active, ratings: [high]);
       final cd = mergeGoalNudgeAccumulators(winner: c, local: c, incoming: d);
       final dc = mergeGoalNudgeAccumulators(winner: c, local: d, incoming: c);
       expect(cd.ratings, [low]);
@@ -796,12 +796,12 @@ void main() {
     test('is symmetric: swapping local/incoming converges on the same '
         'accumulators', () {
       final a = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         visibleMs: const GCounter({'phone': 4000}),
         ratings: [rating(1, value: 3)],
       );
       final b = goalNudge(
-        status: GoalNudgeStatus.retired,
+        status: NudgeStatus.retired,
         visibleMs: const GCounter({'desktop': 2000}),
         ratings: [rating(2, value: 5)],
         activationCount: 2,
@@ -821,14 +821,14 @@ void main() {
         final short = snooze('short', hour: 10, durationHours: 1);
         final long = snooze('long', hour: 9, durationHours: 8);
         final local = goalNudge(
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           snoozedUntil: short.snoozedUntil,
           lastSnoozeDuration: short.duration,
           snoozeHistory: [short],
           staleAt: DateTime.utc(2026, 8, 14, 11),
         );
         final incoming = goalNudge(
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           snoozedUntil: long.snoozedUntil,
           lastSnoozeDuration: long.duration,
           snoozeHistory: [long],
@@ -852,7 +852,7 @@ void main() {
           ['long', 'short'],
         );
         expect(ab.snoozedUntil, long.snoozedUntil);
-        expect(ab.lastSnoozeDuration, GoalBannerSnoozeDuration.eightHours);
+        expect(ab.lastSnoozeDuration, NudgeBannerSnoozeDuration.eightHours);
         expect(ab.dismissedForDayAt, DateTime.utc(2026, 8, 13, 11));
         expect(
           ab.staleAt,
@@ -868,16 +868,16 @@ void main() {
         'tie-breaker', () {
       final baseline = snooze('same-id', hour: 10, durationHours: 3);
 
-      GoalNudgeSnooze selected(
-        GoalNudgeSnooze a,
-        GoalNudgeSnooze b,
+      NudgeSnooze selected(
+        NudgeSnooze a,
+        NudgeSnooze b,
       ) {
         final local = goalNudge(
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           snoozeHistory: [a],
         );
         final incoming = goalNudge(
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           snoozeHistory: [b],
         );
         return mergeGoalNudgeAccumulators(
@@ -903,7 +903,7 @@ void main() {
       expect(selected(laterActivation, baseline), baseline);
 
       final laterPreset = baseline.copyWith(
-        duration: GoalBannerSnoozeDuration.sixHours,
+        duration: NudgeBannerSnoozeDuration.sixHours,
       );
       expect(selected(laterPreset, baseline), baseline);
 
@@ -942,11 +942,11 @@ void main() {
       );
       final other = dismissal('other-id', hour: 11);
       final local = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         dismissalHistory: [earlier],
       );
       final incoming = goalNudge(
-        status: GoalNudgeStatus.active,
+        status: NudgeStatus.active,
         dismissalHistory: [other, conflictingCopy],
       );
 
@@ -1101,7 +1101,7 @@ void main() {
       // Same id, different nudge kinds: neither per-variant branch matches,
       // so the pair falls through to the generic path instead of one kind's
       // rules being misapplied to the other.
-      final goal = goalNudge(status: GoalNudgeStatus.dismissed, id: 'same-id');
+      final goal = goalNudge(status: NudgeStatus.dismissed, id: 'same-id');
       final relationship = relationshipNudge(
         status: NudgeStatus.active,
         id: 'same-id',
@@ -1110,6 +1110,16 @@ void main() {
         resolveConcurrentAgentEntityOverride(
           local: goal,
           incoming: relationship,
+        ),
+        isNull,
+      );
+      // Both orders: each per-variant branch guards `local is X && incoming
+      // is X`, so a half-written condition (`local is RelationshipNudge &&
+      // incoming is GoalNudge`) would still satisfy a one-sided assertion.
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: relationship,
+          incoming: goal,
         ),
         isNull,
       );

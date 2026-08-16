@@ -387,7 +387,7 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   }
 
   // The banner contract is enforced, not just advertised: a create call
-  // whose arguments cannot decode into GoalNudgeBrief must not score as a
+  // whose arguments cannot decode into NudgeBrief must not score as a
   // success just because its name matched (JSON-schema enums are advisory
   // to many providers).
   for (final call in toolCalls) {

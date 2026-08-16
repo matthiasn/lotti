@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -340,11 +340,11 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     entity: AgentDomainEntity.goalNudge(
       id: 'nudge-1',
       agentId: 'goal-1',
-      status: GoalNudgeStatus.active,
-      brief: const GoalNudgeBrief(
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
         headline: 'The trail is lapping you.',
-        tone: GoalNudgeTone.roast,
-        animation: GoalBannerAnimation.typewriter,
+        tone: NudgeTone.roast,
+        animation: NudgeBannerAnimation.typewriter,
       ),
       briefDigest: 'digest-1',
       createdAt: _created,

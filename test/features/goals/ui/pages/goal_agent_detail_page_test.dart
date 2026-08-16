@@ -8,9 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -36,7 +36,6 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
-import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
@@ -44,6 +43,10 @@ import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -541,11 +544,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-goal-1',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'Two walks left this window.',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 10),
@@ -581,14 +584,18 @@ void main() {
             activeGoalNudgesProvider.overrideWith(
               (ref) async => [
                 (
-                  nudge: snoozed.copyWith(
-                    snoozedUntil: now.add(const Duration(hours: 1)),
-                  ),
-                  goalTitle: 'Move more',
+                  nudge: NudgeEntityView.of(
+                    snoozed.copyWith(
+                      snoozedUntil: now.add(const Duration(hours: 1)),
+                    ),
+                  )!,
+                  subjectTitle: 'Move more',
+                  kind: NudgeBannerKind.goal,
+                  tapRoute: '/goals/details/goal-1',
                 ),
               ],
             ),
-            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
             selfTargetedPendingChangeSetsProvider(
               'goal-1',
             ).overrideWith((ref) async => []),
@@ -603,7 +610,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // The shell dock filters this banner out (visibleGoalBannerEntries),
+      // The shell dock filters this banner out (visibleNudgeBannerEntries),
       // but the goal page does NOT: the banner card stays, and the caption
       // says when it returns to the bar instead of letting it vanish.
       expect(find.text('Two walks left this window.'), findsOneWidget);
@@ -623,27 +630,29 @@ void main() {
       'interval passes, and re-arms when a new snooze lands on the same '
       'banner', (tester) async {
     var current = DateTime(2026, 8, 11, 12);
-    final entriesNotifier = ValueNotifier<List<GoalBannerEntry>>([]);
+    final entriesNotifier = ValueNotifier<List<NudgeBannerEntry>>([]);
     addTearDown(entriesNotifier.dispose);
-    GoalBannerEntry snoozedEntry(DateTime until) => (
-      nudge:
-          AgentDomainEntity.goalNudge(
-                id: 'ad-goal-1',
-                agentId: 'goal-1',
-                status: GoalNudgeStatus.active,
-                brief: const GoalNudgeBrief(
-                  headline: 'Two walks left this window.',
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
-                ),
-                briefDigest: 'd',
-                snoozedUntil: until,
-                createdAt: DateTime(2026, 8, 10),
-                updatedAt: DateTime(2026, 8, 10),
-                vectorClock: null,
-              )
-              as GoalNudgeEntity,
-      goalTitle: 'Move more',
+    NudgeBannerEntry snoozedEntry(DateTime until) => (
+      nudge: NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+          id: 'ad-goal-1',
+          agentId: 'goal-1',
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Two walks left this window.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'd',
+          snoozedUntil: until,
+          createdAt: DateTime(2026, 8, 10),
+          updatedAt: DateTime(2026, 8, 10),
+          vectorClock: null,
+        ),
+      )!,
+      subjectTitle: 'Move more',
+      kind: NudgeBannerKind.goal,
+      tapRoute: '/goals/details/goal-1',
     );
     entriesNotifier.value = [
       snoozedEntry(current.add(const Duration(seconds: 2))),
@@ -680,7 +689,7 @@ void main() {
               ref.onDispose(() => listener.removeListener(refresh));
               return listener.value;
             }),
-            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
             selfTargetedPendingChangeSetsProvider(
               'goal-1',
             ).overrideWith((ref) async => []),
@@ -1244,24 +1253,26 @@ void main() {
 
   testWidgets("the standing report stays surfaced while the goal's active "
       'banners render uncapped — only its own', (tester) async {
-    GoalBannerEntry entry(String agentId, String headline) => (
-      nudge:
-          AgentDomainEntity.goalNudge(
-                id: 'ad-$agentId-$headline',
-                agentId: agentId,
-                status: GoalNudgeStatus.active,
-                brief: GoalNudgeBrief(
-                  headline: headline,
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
-                ),
-                briefDigest: 'd',
-                createdAt: DateTime(2026, 8, 10),
-                updatedAt: DateTime(2026, 8, 10),
-                vectorClock: null,
-              )
-              as GoalNudgeEntity,
-      goalTitle: agentId,
+    NudgeBannerEntry entry(String agentId, String headline) => (
+      nudge: NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+          id: 'ad-$agentId-$headline',
+          agentId: agentId,
+          status: NudgeStatus.active,
+          brief: NudgeBrief(
+            headline: headline,
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'd',
+          createdAt: DateTime(2026, 8, 10),
+          updatedAt: DateTime(2026, 8, 10),
+          vectorClock: null,
+        ),
+      )!,
+      subjectTitle: agentId,
+      kind: NudgeBannerKind.goal,
+      tapRoute: '/goals/details/$agentId',
     );
     final report =
         AgentDomainEntity.agentReport(
@@ -1342,7 +1353,7 @@ void main() {
               entry('goal-2', 'Sleep is a skill too.'),
             ],
           ),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1363,7 +1374,7 @@ void main() {
     // two-visible cap — and none of the other goal's. Each is wrapped in
     // the shared exposure tracker: detail views count too.
     expect(find.byType(GoalBannerCard), findsNWidgets(3));
-    expect(find.byType(GoalBannerExposureTracker), findsNWidgets(3));
+    expect(find.byType(NudgeBannerExposureTracker), findsNWidgets(3));
     expect(find.textContaining('Three walks'), findsOneWidget);
     expect(find.textContaining('Delayed historical report'), findsNothing);
     expect(find.text('Show more'), findsOneWidget);
@@ -1489,7 +1500,7 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1585,7 +1596,7 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1648,12 +1659,12 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-goal-1',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'Two walks left this window.',
                 cta: 'Log today',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 10),
@@ -1709,9 +1720,16 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith(
-            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+            (ref) async => [
+              (
+                nudge: NudgeEntityView.of(banner)!,
+                subjectTitle: 'Move more',
+                kind: NudgeBannerKind.goal,
+                tapRoute: '/goals/details/goal-1',
+              ),
+            ],
           ),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1798,12 +1816,12 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-goal-1',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'Two averages left to move.',
                 cta: 'Log today',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 10),
@@ -1855,9 +1873,16 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith(
-            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+            (ref) async => [
+              (
+                nudge: NudgeEntityView.of(banner)!,
+                subjectTitle: 'Move more',
+                kind: NudgeBannerKind.goal,
+                tapRoute: '/goals/details/goal-1',
+              ),
+            ],
           ),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1911,12 +1936,12 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-goal-1',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'Still warming up.',
                 cta: 'Log today',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 10),
@@ -1956,9 +1981,16 @@ void main() {
             (ref) => Completer<GoalProgressView?>().future,
           ),
           activeGoalNudgesProvider.overrideWith(
-            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+            (ref) async => [
+              (
+                nudge: NudgeEntityView.of(banner)!,
+                subjectTitle: 'Move more',
+                kind: NudgeBannerKind.goal,
+                tapRoute: '/goals/details/goal-1',
+              ),
+            ],
           ),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -1983,25 +2015,27 @@ void main() {
   testWidgets('a banner past its staleAt is filtered out at render time even '
       'while still active — the fresh sibling still renders', (tester) async {
     final now = DateTime(2026, 8, 10, 12);
-    GoalBannerEntry entry(String id, String headline, DateTime staleAt) => (
-      nudge:
-          AgentDomainEntity.goalNudge(
-                id: id,
-                agentId: 'goal-1',
-                status: GoalNudgeStatus.active,
-                brief: GoalNudgeBrief(
-                  headline: headline,
-                  tone: GoalNudgeTone.nudge,
-                  animation: GoalBannerAnimation.steady,
-                ),
-                briefDigest: 'd-$id',
-                createdAt: DateTime(2026, 8, 9),
-                updatedAt: DateTime(2026, 8, 9),
-                vectorClock: null,
-                staleAt: staleAt,
-              )
-              as GoalNudgeEntity,
-      goalTitle: 'goal-1',
+    NudgeBannerEntry entry(String id, String headline, DateTime staleAt) => (
+      nudge: NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+          id: id,
+          agentId: 'goal-1',
+          status: NudgeStatus.active,
+          brief: NudgeBrief(
+            headline: headline,
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'd-$id',
+          createdAt: DateTime(2026, 8, 9),
+          updatedAt: DateTime(2026, 8, 9),
+          vectorClock: null,
+          staleAt: staleAt,
+        ),
+      )!,
+      subjectTitle: 'goal-1',
+      kind: NudgeBannerKind.goal,
+      tapRoute: '/goals/details/goal-1',
     );
 
     await withClock(Clock.fixed(now), () async {
@@ -2043,7 +2077,7 @@ void main() {
                 ),
               ],
             ),
-            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
             selfTargetedPendingChangeSetsProvider(
               'goal-1',
             ).overrideWith((ref) async => []),
@@ -2110,11 +2144,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-past',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.dismissed,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.dismissed,
+              brief: const NudgeBrief(
                 headline: 'Six days of quiet soles.',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8, 9),
@@ -2172,11 +2206,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-past-$index',
               agentId: 'goal-1',
-              status: GoalNudgeStatus.dismissed,
-              brief: GoalNudgeBrief(
+              status: NudgeStatus.dismissed,
+              brief: NudgeBrief(
                 headline: 'Past voice $index',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$index',
               createdAt: DateTime(2026, 8, 9),
@@ -2291,16 +2325,16 @@ void main() {
     GoalNudgeEntity history(
       String id,
       String headline,
-      GoalNudgeStatus status,
+      NudgeStatus status,
     ) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: 'goal-1',
               status: status,
-              brief: GoalNudgeBrief(
+              brief: NudgeBrief(
                 headline: headline,
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'digest-$id',
               createdAt: DateTime(2026, 8, 10),
@@ -2378,11 +2412,11 @@ void main() {
           ),
           goalNudgeHistoryProvider('goal-1').overrideWith(
             (ref) async => [
-              history('old-1', 'Shoes by the door.', GoalNudgeStatus.retired),
+              history('old-1', 'Shoes by the door.', NudgeStatus.retired),
               history(
                 'old-2',
                 'One lap still counts.',
-                GoalNudgeStatus.dismissed,
+                NudgeStatus.dismissed,
               ),
             ],
           ),
@@ -3346,7 +3380,7 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
-          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),

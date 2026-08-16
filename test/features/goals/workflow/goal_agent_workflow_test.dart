@@ -4,9 +4,9 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -767,9 +767,9 @@ void main() {
     expect(head.reportId, report.id);
 
     final nudge = upserts.whereType<GoalNudgeEntity>().single;
-    expect(nudge.status, GoalNudgeStatus.active);
+    expect(nudge.status, NudgeStatus.active);
     expect(nudge.brief.headline, 'Your pedometer misses you.');
-    expect(nudge.brief.accent, GoalBannerAccent.tide);
+    expect(nudge.brief.accent, NudgeBannerAccent.tide);
     expect(nudge.briefDigest, goalBriefDigest(nudge.brief));
     expect(nudge.staleAt, now.toUtc().add(goalAdLifetime));
     expect(nudge.runKey, 'run-1');
@@ -941,15 +941,15 @@ void main() {
       aiConfigRepository,
     );
     _stubBadPrior(repository, agentId, now);
-    const retiredBrief = GoalNudgeBrief(
+    const retiredBrief = NudgeBrief(
       headline: 'Below target.',
-      tone: GoalNudgeTone.nudge,
-      animation: GoalBannerAnimation.steady,
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.steady,
     );
     final dismissedTransitionBanner = AgentDomainEntity.goalNudge(
       id: 'goal_nudge:$agentId:2026-08-09:atRisk:$agentId:spec-v1',
       agentId: agentId,
-      status: GoalNudgeStatus.dismissed,
+      status: NudgeStatus.dismissed,
       brief: retiredBrief,
       briefDigest: goalBriefDigest(retiredBrief),
       createdAt: now.subtract(const Duration(hours: 2)),
@@ -1142,7 +1142,7 @@ void main() {
       isTrue,
     );
     final replacement = upserts.whereType<GoalNudgeEntity>().single;
-    expect(replacement.status, GoalNudgeStatus.active);
+    expect(replacement.status, NudgeStatus.active);
     expect(
       replacement.id,
       'goal_nudge:$agentId:2026-08-09:chat:message-1:$agentId:spec-v1',
@@ -1166,15 +1166,15 @@ void main() {
         aiConfigRepository,
       );
       _stubBadPrior(repository, agentId, now);
-      const retiredBrief = GoalNudgeBrief(
+      const retiredBrief = NudgeBrief(
         headline: 'Old banner.',
-        tone: GoalNudgeTone.nudge,
-        animation: GoalBannerAnimation.steady,
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
       );
       final dismissedBanner = AgentDomainEntity.goalNudge(
         id: 'dismissed-banner',
         agentId: agentId,
-        status: GoalNudgeStatus.dismissed,
+        status: NudgeStatus.dismissed,
         brief: retiredBrief,
         briefDigest: goalBriefDigest(retiredBrief),
         createdAt: now.subtract(const Duration(hours: 2)),
@@ -1261,7 +1261,7 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportUpdated, isTrue);
       final replacement = upserts.whereType<GoalNudgeEntity>().single;
-      expect(replacement.status, GoalNudgeStatus.active);
+      expect(replacement.status, NudgeStatus.active);
       expect(replacement.brief.headline, 'Zeit, wieder loszulegen.');
     },
   );
@@ -1444,7 +1444,7 @@ void main() {
       'proposal lands as a pending ChangeSet', () async {
     GoalNudgeEntity nudgeRow(
       String id,
-      GoalNudgeStatus status, {
+      NudgeStatus status, {
       DateTime? staleAt,
       Map<String, String> provenance = const {},
     }) =>
@@ -1452,10 +1452,10 @@ void main() {
               id: id,
               agentId: agentId,
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8),
@@ -1487,10 +1487,10 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => [
-        nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
+        nudgeRow('ad-dismissed', NudgeStatus.dismissed),
         nudgeRow(
           'ad-retired',
-          GoalNudgeStatus.retired,
+          NudgeStatus.retired,
           provenance: const {
             'snoozedUntil': '2026-08-10T08:30:00.000Z',
             'snoozeReason': 'old snooze',
@@ -1498,21 +1498,21 @@ void main() {
             'campaign': 'morning-walk',
           },
         ),
-        nudgeRow('ad-active', GoalNudgeStatus.active),
-        nudgeRow('ad-snooze', GoalNudgeStatus.active),
+        nudgeRow('ad-active', NudgeStatus.active),
+        nudgeRow('ad-snooze', NudgeStatus.active),
         nudgeRow(
           'ad-snooze-long',
-          GoalNudgeStatus.active,
+          NudgeStatus.active,
           staleAt: DateTime.utc(2100),
         ),
       ],
     );
     // The retire loops re-read each row inside the transaction.
     when(() => repository.getEntity('ad-dismissed')).thenAnswer(
-      (_) async => nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
+      (_) async => nudgeRow('ad-dismissed', NudgeStatus.dismissed),
     );
     when(() => repository.getEntity('ad-active')).thenAnswer(
-      (_) async => nudgeRow('ad-active', GoalNudgeStatus.active),
+      (_) async => nudgeRow('ad-active', NudgeStatus.active),
     );
     await strategy.processToolCalls(
       toolCalls: [
@@ -1584,10 +1584,10 @@ void main() {
     // ad was re-run.
     expect(written, hasLength(5));
     final retired = written.singleWhere((n) => n.id == 'ad-active');
-    expect(retired.status, GoalNudgeStatus.retired);
+    expect(retired.status, NudgeStatus.retired);
     expect(retired.provenance['retireReason'], 'quota completed');
     final rerun = written.singleWhere((n) => n.id == 'ad-retired');
-    expect(rerun.status, GoalNudgeStatus.active);
+    expect(rerun.status, NudgeStatus.active);
     expect(rerun.activationCount, 2);
     expect(rerun.provenance['rerunReason'], 'proven copy');
     expect(rerun.provenance['campaign'], 'morning-walk');
@@ -1598,14 +1598,14 @@ void main() {
     expect(rerun.lastSnoozeDuration, isNull);
     expect(rerun.dismissedForDayAt, isNull);
     final snoozed = written.lastWhere((n) => n.id == 'ad-snooze');
-    expect(snoozed.status, GoalNudgeStatus.active);
+    expect(snoozed.status, NudgeStatus.active);
     expect(
       snoozed.snoozedUntil,
       DateTime.utc(2099, 8, 12, 9, 30),
     );
     expect(
       snoozed.lastSnoozeDuration,
-      GoalBannerSnoozeDuration.custom,
+      NudgeBannerSnoozeDuration.custom,
     );
     expect(snoozed.snoozeHistory, hasLength(2));
     expect(
@@ -1668,18 +1668,18 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-top',
               agentId: agentId,
-              status: GoalNudgeStatus.retired,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.retired,
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8),
               updatedAt: DateTime(2026, 8),
               vectorClock: null,
               ratings: [
-                GoalNudgeRating(
+                NudgeRating(
                   activation: 1,
                   ratedAt: DateTime(2026, 8, 2),
                   rating: 5,
@@ -1691,11 +1691,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-live',
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'live',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd2',
               createdAt: DateTime(2026, 8),
@@ -1805,7 +1805,7 @@ void main() {
     expect(result.success, isTrue);
 
     final rerun = upserts.whereType<GoalNudgeEntity>().single;
-    expect(rerun.status, GoalNudgeStatus.active);
+    expect(rerun.status, NudgeStatus.active);
     expect(rerun.activationCount, 2);
 
     // The strategy's mixin records in-conversation assistant markers as
@@ -2439,11 +2439,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-current',
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'The revised goal still needs you.',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd',
               createdAt: DateTime(2026, 8),
@@ -2514,15 +2514,15 @@ void main() {
         await repository.getEntity('$agentId:spec-v1')
             as GoalSpecVersionEntity?;
     final derivation = await _onTrackDerivation(repository, version!, now);
-    GoalNudgeEntity recoveryRow(String id, GoalNudgeStatus status) =>
+    GoalNudgeEntity recoveryRow(String id, NudgeStatus status) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'Still on the couch?',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8),
@@ -2537,11 +2537,11 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => [
-        recoveryRow('ad-obsolete', GoalNudgeStatus.active),
+        recoveryRow('ad-obsolete', NudgeStatus.active),
         // The snapshot is read INSIDE the output transaction, so a
         // dismissal that landed while the model was thinking is already
         // visible in it — and must be skipped, not retired.
-        recoveryRow('ad-just-dismissed', GoalNudgeStatus.dismissed),
+        recoveryRow('ad-just-dismissed', NudgeStatus.dismissed),
       ],
     );
     final strategy = GoalAgentStrategy(
@@ -2576,7 +2576,7 @@ void main() {
 
     final retired = upserts.whereType<GoalNudgeEntity>().single;
     expect(retired.id, 'ad-obsolete');
-    expect(retired.status, GoalNudgeStatus.retired);
+    expect(retired.status, NudgeStatus.retired);
     expect(
       retired.provenance['retireReason'],
       'status no longer permits ads',
@@ -2589,11 +2589,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-quiet',
               agentId: agentId,
-              status: GoalNudgeStatus.dismissed,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.dismissed,
+              brief: const NudgeBrief(
                 headline: 'dismissed',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-quiet',
               createdAt: DateTime(2026, 8),
@@ -2703,10 +2703,10 @@ void main() {
 
     // Dedupe: the same copy as a RETIRED library entry → skipped (an
     // in-response duplicate is already blocked by the fresh-active guard).
-    const sameWords = GoalNudgeBrief(
+    const sameWords = NudgeBrief(
       headline: 'Same words.',
-      tone: GoalNudgeTone.nudge,
-      animation: GoalBannerAnimation.pulse,
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.pulse,
     );
     await withClock(
       fixedClock,
@@ -2721,7 +2721,7 @@ void main() {
             AgentDomainEntity.goalNudge(
                   id: 'ad-old-copy',
                   agentId: agentId,
-                  status: GoalNudgeStatus.retired,
+                  status: NudgeStatus.retired,
                   brief: sameWords,
                   briefDigest: goalBriefDigest(sameWords),
                   createdAt: DateTime(2026, 8),
@@ -2780,11 +2780,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-dismissed',
               agentId: agentId,
-              status: GoalNudgeStatus.dismissed,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.dismissed,
+              brief: const NudgeBrief(
                 headline: 'Quiet now.',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'dismissed-digest',
               createdAt: now.subtract(const Duration(hours: 3)),
@@ -2818,23 +2818,23 @@ void main() {
       ),
     );
     final afterDismissal = upserts.whereType<GoalNudgeEntity>().single;
-    expect(afterDismissal.status, GoalNudgeStatus.active);
+    expect(afterDismissal.status, NudgeStatus.active);
     expect(
       afterDismissal.brief.headline,
       'The requested post-dismissal banner.',
     );
     upserts.clear();
 
-    const ratedBrief = GoalNudgeBrief(
+    const ratedBrief = NudgeBrief(
       headline: 'Already rated.',
-      tone: GoalNudgeTone.nudge,
-      animation: GoalBannerAnimation.steady,
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.steady,
     );
     final ratedActive =
         AgentDomainEntity.goalNudge(
               id: 'ad-rated-active',
               agentId: agentId,
-              status: GoalNudgeStatus.active,
+              status: NudgeStatus.active,
               brief: ratedBrief,
               briefDigest: goalBriefDigest(ratedBrief),
               createdAt: now.subtract(const Duration(hours: 3)),
@@ -2842,7 +2842,7 @@ void main() {
               vectorClock: null,
               activatedAt: now.subtract(const Duration(hours: 3)),
               ratings: [
-                GoalNudgeRating(
+                NudgeRating(
                   activation: 1,
                   ratedAt: now.subtract(const Duration(hours: 1)),
                   rating: 4,
@@ -2878,7 +2878,7 @@ void main() {
     final retired = afterRating.singleWhere(
       (nudge) => nudge.id == 'ad-rated-active',
     );
-    expect(retired.status, GoalNudgeStatus.retired);
+    expect(retired.status, NudgeStatus.retired);
     expect(
       retired.provenance['retireReason'],
       'replaced by explicit chat request',
@@ -2886,7 +2886,7 @@ void main() {
     final replacement = afterRating.singleWhere(
       (nudge) => nudge.id != 'ad-rated-active',
     );
-    expect(replacement.status, GoalNudgeStatus.active);
+    expect(replacement.status, NudgeStatus.active);
     expect(replacement.brief.headline, 'The replacement after rating.');
 
     upserts.clear();
@@ -2956,7 +2956,7 @@ void main() {
     expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
     expect(
       upserts.whereType<GoalNudgeEntity>().single.status,
-      GoalNudgeStatus.active,
+      NudgeStatus.active,
     );
   });
 
@@ -2974,11 +2974,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: now,
@@ -3253,7 +3253,7 @@ void main() {
     // fresh-active guard first, and the new brief's digest differs, so
     // it does not trip the digest guard first either.
     final priorRow = created.copyWith(
-      status: GoalNudgeStatus.retired,
+      status: NudgeStatus.retired,
       retiredAt: now.subtract(const Duration(hours: 1)),
     );
     when(
@@ -3610,11 +3610,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'live',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8),
@@ -3703,11 +3703,11 @@ void main() {
     expect(written, hasLength(2));
     expect(
       written.singleWhere((n) => n.id == 'ad-live').status,
-      GoalNudgeStatus.retired,
+      NudgeStatus.retired,
     );
     expect(
       written.singleWhere((n) => n.id != 'ad-live').status,
-      GoalNudgeStatus.active,
+      NudgeStatus.active,
     );
   });
 
@@ -3898,11 +3898,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-live',
               agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'live',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-live',
               createdAt: DateTime(2026, 8),
@@ -4067,11 +4067,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'ad-lib',
               agentId: agentId,
-              status: GoalNudgeStatus.retired,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.retired,
+              brief: const NudgeBrief(
                 headline: 'old',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-lib',
               createdAt: DateTime(2026, 8),
@@ -4197,7 +4197,7 @@ void main() {
       ),
     );
     final requested = upserts.whereType<GoalNudgeEntity>().single;
-    expect(requested.status, GoalNudgeStatus.active);
+    expect(requested.status, NudgeStatus.active);
     expect(requested.brief.headline, 'One more walk. Make it count.');
     upserts.clear();
 

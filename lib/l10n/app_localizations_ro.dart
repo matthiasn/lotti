@@ -6250,25 +6250,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalBannerActionFailed =>
-      'Nu s-a salvat — vă rugăm să încercați din nou.';
-
-  @override
-  String get goalBannerDismissForDay => 'Ascundeți pentru azi';
-
-  @override
   String goalBannerHiddenFromBar(String countdown) {
     return 'Ascuns din bara de bannere · revine în $countdown';
   }
-
-  @override
-  String get goalBannerRateTooltip => 'Evaluați acest banner';
-
-  @override
-  String get goalBannerRatingSkip => 'Omiteți';
-
-  @override
-  String get goalBannerRatingTitle => 'Cum vi s-a părut acest banner?';
 
   @override
   String goalBannerSemanticLabel(String goalTitle) {
@@ -6276,25 +6260,17 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalBannerSnoozeEightHours => '8 ore';
-
-  @override
-  String get goalBannerSnoozeLabel => 'Amânați';
-
-  @override
-  String get goalBannerSnoozeOneHour => '1 oră';
-
-  @override
-  String get goalBannerSnoozePrompt => 'Când doriți să reapară?';
-
-  @override
-  String get goalBannerSnoozeSixHours => '6 ore';
-
-  @override
-  String get goalBannerSnoozeThreeHours => '3 ore';
-
-  @override
-  String get goalBannerSnoozeTitle => 'Amânați bannerul';
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile de rezervă',
+      few: '$count zile de rezervă',
+      one: '1 zi de rezervă',
+      zero: 'Rezerva se termină azi',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalChartSevenDayAverage => 'Media pe 7 zile';
@@ -9287,6 +9263,39 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get nudgeBannerDismissForDay => 'Ascundeți pentru azi';
+
+  @override
+  String get nudgeBannerRateTooltip => 'Evaluați acest banner';
+
+  @override
+  String get nudgeBannerRatingSkip => 'Omiteți';
+
+  @override
+  String get nudgeBannerRatingTitle => 'Cum vi s-a părut acest banner?';
+
+  @override
+  String get nudgeBannerSnoozeEightHours => '8 ore';
+
+  @override
+  String get nudgeBannerSnoozeLabel => 'Amânați';
+
+  @override
+  String get nudgeBannerSnoozeOneHour => '1 oră';
+
+  @override
+  String get nudgeBannerSnoozePrompt => 'Când doriți să reapară?';
+
+  @override
+  String get nudgeBannerSnoozeSixHours => '6 ore';
+
+  @override
+  String get nudgeBannerSnoozeThreeHours => '3 ore';
+
+  @override
+  String get nudgeBannerSnoozeTitle => 'Amânați bannerul';
+
+  @override
   String get onboardingApiKeyConnect => 'Conectați';
 
   @override
@@ -10336,6 +10345,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
 
   @override
+  String relationshipBannerSemanticLabel(String personName) {
+    return 'Banner de relație pentru $personName';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10461,6 +10475,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get saveButtonLabel => 'Salvați';
+
+  @override
+  String get saveFailedRetry =>
+      'Nu s-a salvat — vă rugăm să încercați din nou.';
 
   @override
   String get saveLabel => 'Salvați';

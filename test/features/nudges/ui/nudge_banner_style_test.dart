@@ -1,9 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/ui/goal_banner_style.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -11,10 +11,10 @@ void main() {
   final tokens = resolveTestTheme().extension<DsTokens>()!;
   final colors = tokens.colors;
 
-  GoalBannerStyle style(
-    GoalNudgeTone tone, [
-    GoalBannerAccent accent = GoalBannerAccent.calm,
-  ]) => goalBannerStyle(
+  NudgeBannerStyle style(
+    NudgeTone tone, [
+    NudgeBannerAccent accent = NudgeBannerAccent.calm,
+  ]) => nudgeBannerStyle(
     tone: tone,
     accent: accent,
     colors: colors,
@@ -23,17 +23,17 @@ void main() {
 
   test('the register tints the accent: doing well reads green, a restart '
       'reads teal, urgency ember, roast lime', () {
-    expect(style(GoalNudgeTone.encourage).accent, colors.aiCard.accent);
+    expect(style(NudgeTone.encourage).accent, colors.aiCard.accent);
     expect(
-      style(GoalNudgeTone.celebrate).accent,
+      style(NudgeTone.celebrate).accent,
       colors.alert.success.defaultColor,
     );
     expect(
-      style(GoalNudgeTone.nudge).accent,
+      style(NudgeTone.nudge).accent,
       colors.alert.warning.defaultColor,
     );
     expect(
-      style(GoalNudgeTone.roast).accent,
+      style(NudgeTone.roast).accent,
       GoalAccentHues.neon(Brightness.dark),
     );
   });
@@ -41,12 +41,12 @@ void main() {
   test('calm/ember/neon accent picks ride the register default — they are '
       'the register families, not overrides', () {
     for (final accent in [
-      GoalBannerAccent.calm,
-      GoalBannerAccent.ember,
-      GoalBannerAccent.neon,
+      NudgeBannerAccent.calm,
+      NudgeBannerAccent.ember,
+      NudgeBannerAccent.neon,
     ]) {
       expect(
-        style(GoalNudgeTone.celebrate, accent).accent,
+        style(NudgeTone.celebrate, accent).accent,
         colors.alert.success.defaultColor,
         reason: '$accent must not override the celebrate register',
       );
@@ -56,11 +56,11 @@ void main() {
   test('tide and aurora are energy variants that DO override the register '
       'hue', () {
     expect(
-      style(GoalNudgeTone.nudge, GoalBannerAccent.tide).accent,
+      style(NudgeTone.nudge, NudgeBannerAccent.tide).accent,
       colors.alert.info.defaultColor,
     );
     expect(
-      style(GoalNudgeTone.encourage, GoalBannerAccent.aurora).accent,
+      style(NudgeTone.encourage, NudgeBannerAccent.aurora).accent,
       GoalAccentHues.aurora(Brightness.dark),
     );
   });
@@ -80,7 +80,7 @@ void main() {
   test('one hue, three washes: border, chip and control carry the accent '
       'hue at the token alphas, and the fill is opaque over the card '
       'surface', () {
-    final s = style(GoalNudgeTone.nudge);
+    final s = style(NudgeTone.nudge);
     int rgb(Color c) => c.toARGB32() & 0x00FFFFFF;
     expect(rgb(s.border), rgb(s.accent));
     expect(rgb(s.chipFill), rgb(s.accent));

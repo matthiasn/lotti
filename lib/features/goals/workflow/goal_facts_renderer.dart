@@ -3,17 +3,18 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 
 // The dismissal quiet window is the REST OF THE LOCAL CALENDAR DAY (see
 // `GoalFactsRenderer.dismissalCooldownActive`): a rolling duration would
@@ -60,9 +61,7 @@ class GoalFactsRenderer {
     String? personaTonePreference,
   }) {
     final now = clock.now();
-    final active = nudges
-        .where((n) => n.status == GoalNudgeStatus.active)
-        .toList();
+    final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
     final priorAttainments = [
       for (final row in priorRegisters) row.attainment,
     ];
@@ -620,7 +619,7 @@ class GoalFactsRenderer {
   List<GoalNudgeEntity> reusableTopRated(List<GoalNudgeEntity> nudges) {
     final rated = <(GoalNudgeEntity, double)>[];
     for (final nudge in nudges) {
-      if (nudge.status != GoalNudgeStatus.retired) continue;
+      if (nudge.status != NudgeStatus.retired) continue;
       final ratings = [
         for (final r in nudge.ratings)
           if (r.rating != null) r.rating!,
@@ -649,7 +648,7 @@ class GoalFactsRenderer {
       'outcomeRecorded': nudge.ratings.any(
         (rating) => rating.activation == nudge.activationCount,
       ),
-      'snoozedUntil': ?goalBannerSnoozedUntil(nudge)?.toIso8601String(),
+      'snoozedUntil': ?_snoozedUntilIso(nudge),
     };
   }
 
@@ -765,3 +764,6 @@ String _windowLabel(GoalWindow window) => switch (window) {
 String _factsBlock(Map<String, Object?> facts) =>
     'FACTS (deterministic, authoritative — restate, never recompute):\n'
     '```json\n${const JsonEncoder.withIndent('  ').convert(facts)}\n```';
+
+String? _snoozedUntilIso(GoalNudgeEntity nudge) =>
+    nudgeBannerSnoozedUntil(NudgeEntityView.of(nudge)!)?.toIso8601String();

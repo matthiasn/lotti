@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 
 import '../../../widget_test_utils.dart';
@@ -29,7 +29,7 @@ void main() {
   group('goalNudgeStatusLabel', () {
     /// Captures the function's return value under a real localized
     /// BuildContext, since the function itself is not a widget.
-    Future<String> labelFor(WidgetTester tester, GoalNudgeStatus status) async {
+    Future<String> labelFor(WidgetTester tester, NudgeStatus status) async {
       late String result;
       await tester.pumpWidget(
         makeTestableWidget(
@@ -48,7 +48,7 @@ void main() {
       tester,
     ) async {
       expect(
-        await labelFor(tester, GoalNudgeStatus.retired),
+        await labelFor(tester, NudgeStatus.retired),
         'Retired',
       );
     });
@@ -57,7 +57,7 @@ void main() {
       tester,
     ) async {
       expect(
-        await labelFor(tester, GoalNudgeStatus.expired),
+        await labelFor(tester, NudgeStatus.expired),
         'Expired',
       );
     });
@@ -66,7 +66,7 @@ void main() {
       tester,
     ) async {
       expect(
-        await labelFor(tester, GoalNudgeStatus.superseded),
+        await labelFor(tester, NudgeStatus.superseded),
         'Superseded',
       );
     });
@@ -75,7 +75,7 @@ void main() {
       tester,
     ) async {
       expect(
-        await labelFor(tester, GoalNudgeStatus.dismissed),
+        await labelFor(tester, NudgeStatus.dismissed),
         'Dismissed',
       );
     });
@@ -85,10 +85,10 @@ void main() {
       'PAST-outcome label — they return the empty string',
       (tester) async {
         for (final status in [
-          GoalNudgeStatus.draft,
-          GoalNudgeStatus.ready,
-          GoalNudgeStatus.active,
-          GoalNudgeStatus.failed,
+          NudgeStatus.draft,
+          NudgeStatus.ready,
+          NudgeStatus.active,
+          NudgeStatus.failed,
         ]) {
           expect(
             await labelFor(tester, status),

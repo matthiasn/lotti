@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -22,18 +22,20 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart'
@@ -274,27 +276,16 @@ final goalChangeSetConfirmationServiceProvider =
       name: 'goalChangeSetConfirmationServiceProvider',
     );
 
-/// The user's side of the ad contract: snooze, dismiss for today, rate, and
-/// account for exposure.
-final goalNudgeInteractionsProvider = Provider<GoalNudgeInteractions>(
-  (ref) => GoalNudgeInteractions(
-    repository: ref.watch(agentRepositoryProvider),
-    syncService: ref.watch(agentSyncServiceProvider),
-  ),
-  name: 'goalNudgeInteractionsProvider',
-);
-
-/// One live goal banner: the nudge plus the goal it advertises for.
-typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
-
-/// The ACTIVE banners across all active goal agents, newest first.
+/// The ACTIVE goal banners across all active goal agents, newest first —
+/// the goal kind's registered source for the shared banner dock
+/// (`nudgeBannerSourcesProvider`, merged in `app_bootstrap.dart`).
 ///
 /// Watches the agent-level notification token so wake writes refresh it;
 /// interaction writes go through the sync service (which deliberately
 /// does not notify), so the UI handlers invalidate this provider after
 /// visibility/rating actions.
-final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
-    FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
+final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
+    FutureProvider.autoDispose<List<NudgeBannerEntry>>((ref) async {
       // The banner mounts are unconditional on their host pages, so the
       // rollout flag gates HERE: with the unified Goals surface off → no
       // banners, even for ads that synced in from a device that has the
@@ -313,7 +304,7 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           .watch(agentServiceProvider)
           .listAgents(lifecycle: AgentLifecycle.active);
       final repository = ref.watch(agentRepositoryProvider);
-      final entries = <GoalBannerEntry>[];
+      final entries = <NudgeBannerEntry>[];
       final now = clock.now();
       DateTime? nextDeadline;
       void considerDeadline(DateTime? deadline) {
@@ -348,7 +339,7 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
         for (final nudge in nudges) {
           final origin = nudge.provenance['specVersionId'];
           if (nudge.deletedAt != null ||
-              nudge.status != GoalNudgeStatus.active ||
+              nudge.status != NudgeStatus.active ||
               (origin is String &&
                   (activeVersionId == null || origin != activeVersionId))) {
             continue;
@@ -356,21 +347,24 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           // Staleness ENDS a banner; snoozes and day dismissals only quiet
           // the SHELL dock. Hidden-from-the-bar rows therefore stay in this
           // list — the dock and the shell's reserved lane apply
-          // `visibleGoalBannerEntries` per surface, while the goal detail
+          // `visibleNudgeBannerEntries` per surface, while the goal detail
           // page keeps the banner and captions it with the return
           // countdown. Deadlines still arm self-invalidation so every
           // surface refreshes when a quiet interval passes.
           considerDeadline(nudge.staleAt);
           if (nudge.staleAt != null && !now.isBefore(nudge.staleAt!)) continue;
-          considerDeadline(goalBannerSnoozedUntil(nudge));
-          if (goalBannerIsDismissedForDay(nudge, now)) {
-            considerDeadline(goalBannerNextLocalMidnight(now));
+          final view = NudgeEntityView.of(nudge)!;
+          considerDeadline(nudgeBannerSnoozedUntil(view));
+          if (nudgeBannerIsDismissedForDay(view, now)) {
+            considerDeadline(nudgeBannerNextLocalMidnight(now));
           }
           entries.add((
-            nudge: nudge,
-            goalTitle: headVersion is GoalSpecVersionEntity
+            nudge: view,
+            subjectTitle: headVersion is GoalSpecVersionEntity
                 ? headVersion.title
                 : identity.displayName,
+            kind: NudgeBannerKind.goal,
+            tapRoute: goalDetailPath(identity.agentId),
           ));
         }
       }
@@ -456,93 +450,6 @@ final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
       ];
     }, name: 'activeGoalAgentsProvider');
 
-/// Snooze deadlines learned from a just-committed chat wake before the async
-/// active-banner projection has reloaded. Banner surfaces subtract these ids
-/// from retained data, so a background refresh cannot flash the old active row
-/// throughout its quiet interval. Each deadline removes itself on time.
-typedef GoalBannerLocalSuppression = ({int activation, DateTime until});
-
-class LocallySnoozedNudgeDeadlines
-    extends Notifier<Map<String, GoalBannerLocalSuppression>> {
-  final _timers = <String, Timer>{};
-
-  @override
-  Map<String, GoalBannerLocalSuppression> build() {
-    ref.onDispose(() {
-      for (final timer in _timers.values) {
-        timer.cancel();
-      }
-    });
-    return const {};
-  }
-
-  void add(String id, int activation, DateTime until) {
-    final now = clock.now();
-    if (!until.isAfter(now)) {
-      // A quiet interval that is already over still supersedes whatever
-      // echo came before it: a "Dismiss for today" that captured midnight
-      // before the transaction but committed after returns an expired
-      // deadline AND cleared the durable snooze — leaving the old echo in
-      // place would keep the banner hidden from the dock on this device
-      // until a deadline the durable state no longer knows.
-      final timer = _timers.remove(id)?..cancel();
-      if (timer != null || state.containsKey(id)) {
-        state = Map.of(state)..remove(id);
-      }
-      return;
-    }
-    _timers[id]?.cancel();
-    state = {...state, id: (activation: activation, until: until)};
-    _timers[id] = Timer(until.difference(now), () {
-      _timers.remove(id);
-      state = Map.of(state)..remove(id);
-    });
-  }
-}
-
-final NotifierProvider<
-  LocallySnoozedNudgeDeadlines,
-  Map<String, GoalBannerLocalSuppression>
->
-locallySnoozedNudgeDeadlinesProvider =
-    NotifierProvider<
-      LocallySnoozedNudgeDeadlines,
-      Map<String, GoalBannerLocalSuppression>
-    >(
-      LocallySnoozedNudgeDeadlines.new,
-      name: 'locallySnoozedNudgeDeadlinesProvider',
-    );
-
-/// Fire-and-forget exposure flush, captured by the banner's tracker
-/// while its element is live and safe to call from `dispose`.
-typedef GoalNudgeInteractionsFlush =
-    void Function(String nudgeId, Duration visibleFor);
-
-final goalNudgeExposureFlushProvider = Provider<GoalNudgeInteractionsFlush>(
-  (ref) {
-    final interactions = ref.watch(goalNudgeInteractionsProvider);
-    final logger = ref.watch(domainLoggerProvider);
-    return (nudgeId, visibleFor) {
-      // The dispose path cannot await this, so a persistence failure must
-      // be contained here — logged, never an uncaught async error.
-      unawaited(
-        interactions.recordExposure(nudgeId, visibleFor: visibleFor).catchError(
-          (Object e, StackTrace st) {
-            logger.error(
-              LogDomain.agentRuntime,
-              e,
-              stackTrace: st,
-              subDomain: 'goalNudgeExposure',
-              message: 'exposure flush for $nudgeId was not persisted',
-            );
-          },
-        ),
-      );
-    };
-  },
-  name: 'goalNudgeExposureFlushProvider',
-);
-
 /// The goal's PAST ads — every terminal nudge, newest outcome first —
 /// for the detail page's durable interaction history (ADR 0055: past
 /// ads and their outcomes remain browsable; only `draft`/`ready`
@@ -553,10 +460,10 @@ goalNudgeHistoryProvider = FutureProvider.autoDispose
       ref.watch(agentUpdateStreamProvider(agentId));
       final repository = ref.watch(agentRepositoryProvider);
       const shown = {
-        GoalNudgeStatus.dismissed,
-        GoalNudgeStatus.retired,
-        GoalNudgeStatus.expired,
-        GoalNudgeStatus.superseded,
+        NudgeStatus.dismissed,
+        NudgeStatus.retired,
+        NudgeStatus.expired,
+        NudgeStatus.superseded,
       };
       // The timestamp of the CURRENT terminal state: a reactivated row
       // keeps its old retiredAt, so null-coalescing across all stamps
@@ -564,10 +471,10 @@ goalNudgeHistoryProvider = FutureProvider.autoDispose
       // updatedAt is mutable bookkeeping (exposure flushes bump it) and
       // only a legacy fallback.
       DateTime outcomeAt(GoalNudgeEntity n) => switch (n.status) {
-        GoalNudgeStatus.dismissed => n.dismissedAt ?? n.updatedAt,
-        GoalNudgeStatus.retired => n.retiredAt ?? n.updatedAt,
-        GoalNudgeStatus.expired => n.expiredAt ?? n.updatedAt,
-        GoalNudgeStatus.superseded => n.supersededAt ?? n.updatedAt,
+        NudgeStatus.dismissed => n.dismissedAt ?? n.updatedAt,
+        NudgeStatus.retired => n.retiredAt ?? n.updatedAt,
+        NudgeStatus.expired => n.expiredAt ?? n.updatedAt,
+        NudgeStatus.superseded => n.supersededAt ?? n.updatedAt,
         _ => n.updatedAt,
       };
       return (await repository.getEntitiesByAgentId(

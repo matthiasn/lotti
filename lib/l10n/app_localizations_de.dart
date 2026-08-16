@@ -6192,25 +6192,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get goalBannerActionFailed =>
-      'Das wurde nicht gespeichert — bitte versuch es noch einmal.';
-
-  @override
-  String get goalBannerDismissForDay => 'Für heute ausblenden';
-
-  @override
   String goalBannerHiddenFromBar(String countdown) {
     return 'Aus der Bannerleiste ausgeblendet · wieder in $countdown';
   }
-
-  @override
-  String get goalBannerRateTooltip => 'Dieses Banner bewerten';
-
-  @override
-  String get goalBannerRatingSkip => 'Überspringen';
-
-  @override
-  String get goalBannerRatingTitle => 'Wie fandest du dieses Banner?';
 
   @override
   String goalBannerSemanticLabel(String goalTitle) {
@@ -6218,25 +6202,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get goalBannerSnoozeEightHours => '8 Stunden';
-
-  @override
-  String get goalBannerSnoozeLabel => 'Pausieren';
-
-  @override
-  String get goalBannerSnoozeOneHour => '1 Stunde';
-
-  @override
-  String get goalBannerSnoozePrompt => 'Wann soll es wieder erscheinen?';
-
-  @override
-  String get goalBannerSnoozeSixHours => '6 Stunden';
-
-  @override
-  String get goalBannerSnoozeThreeHours => '3 Stunden';
-
-  @override
-  String get goalBannerSnoozeTitle => 'Banner pausieren';
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage Puffer',
+      one: '1 Tag Puffer',
+      zero: 'Puffer endet heute',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalChartSevenDayAverage => '7-Tage-Durchschnitt';
@@ -9162,6 +9137,39 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get nudgeBannerDismissForDay => 'Für heute ausblenden';
+
+  @override
+  String get nudgeBannerRateTooltip => 'Dieses Banner bewerten';
+
+  @override
+  String get nudgeBannerRatingSkip => 'Überspringen';
+
+  @override
+  String get nudgeBannerRatingTitle => 'Wie fandest du dieses Banner?';
+
+  @override
+  String get nudgeBannerSnoozeEightHours => '8 Stunden';
+
+  @override
+  String get nudgeBannerSnoozeLabel => 'Pausieren';
+
+  @override
+  String get nudgeBannerSnoozeOneHour => '1 Stunde';
+
+  @override
+  String get nudgeBannerSnoozePrompt => 'Wann soll es wieder erscheinen?';
+
+  @override
+  String get nudgeBannerSnoozeSixHours => '6 Stunden';
+
+  @override
+  String get nudgeBannerSnoozeThreeHours => '3 Stunden';
+
+  @override
+  String get nudgeBannerSnoozeTitle => 'Banner pausieren';
+
+  @override
   String get onboardingApiKeyConnect => 'Verbinden';
 
   @override
@@ -10186,6 +10194,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipAddChannelButton => 'Kontaktweg hinzufügen';
 
   @override
+  String relationshipBannerSemanticLabel(String personName) {
+    return 'Beziehungs-Banner für $personName';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10311,6 +10324,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get saveButtonLabel => 'Speichern';
+
+  @override
+  String get saveFailedRetry =>
+      'Das wurde nicht gespeichert — bitte versuch es noch einmal.';
 
   @override
   String get saveLabel => 'Speichern';

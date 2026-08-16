@@ -4,50 +4,54 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-/// The shared banner-action contract (`showGoalBannerSnoozeSheet`,
-/// `showGoalBannerRatingSheet`) used by BOTH the card and the dock — its
+/// The shared banner-action contract (`showNudgeBannerSnoozeSheet`,
+/// `showNudgeBannerRatingSheet`) used by BOTH the card and the dock — its
 /// own path-mirrored suite, so neither caller's widget test owns behaviour
 /// the other relies on. Caller-specific wiring (which button, which
 /// gesture) stays in each widget suite.
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  GoalBannerEntry entryFor({int activationCount = 1}) => (
-    nudge:
-        AgentDomainEntity.goalNudge(
-              id: 'ad-1',
-              agentId: 'goal-1',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
-                headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
-              ),
-              briefDigest: 'd',
-              activationCount: activationCount,
-              createdAt: DateTime(2026, 8, 9),
-              updatedAt: DateTime(2026, 8, 9),
-              vectorClock: null,
-            )
-            as GoalNudgeEntity,
-    goalTitle: 'Move more',
+  NudgeBannerEntry entryFor({int activationCount = 1}) => (
+    nudge: NudgeEntityView.of(
+      AgentDomainEntity.goalNudge(
+        id: 'ad-1',
+        agentId: 'goal-1',
+        status: NudgeStatus.active,
+        brief: const NudgeBrief(
+          headline: 'h',
+          tone: NudgeTone.nudge,
+          animation: NudgeBannerAnimation.steady,
+        ),
+        briefDigest: 'd',
+        activationCount: activationCount,
+        createdAt: DateTime(2026, 8, 9),
+        updatedAt: DateTime(2026, 8, 9),
+        vectorClock: null,
+      ),
+    )!,
+    subjectTitle: 'Move more',
+    kind: NudgeBannerKind.goal,
+    tapRoute: '/goals/details/goal-1',
   );
 
-  late MockGoalNudgeInteractions interactions;
+  late MockNudgeInteractions interactions;
   final persistedDeadline = DateTime.utc(2030);
 
   setUp(() {
-    interactions = MockGoalNudgeInteractions();
+    interactions = MockNudgeInteractions();
     when(
       () => interactions.snooze(
         any(),
@@ -89,7 +93,7 @@ void main() {
           ),
         ),
         overrides: [
-          goalNudgeInteractionsProvider.overrideWithValue(interactions),
+          nudgeInteractionsProvider.overrideWithValue(interactions),
         ],
       ),
     );
@@ -99,12 +103,12 @@ void main() {
   ProviderContainer containerOf(BuildContext ctx) =>
       ProviderScope.containerOf(ctx, listen: false);
 
-  group('showGoalBannerSnoozeSheet', () {
+  group('showNudgeBannerSnoozeSheet', () {
     testWidgets('snooze choices are prominent and day dismissal is last', (
       tester,
     ) async {
       final (ctx, ref) = await host(tester);
-      unawaited(showGoalBannerSnoozeSheet(ctx, ref, entryFor()));
+      unawaited(showNudgeBannerSnoozeSheet(ctx, ref, entryFor()));
       await tester.pumpAndSettle();
 
       expect(find.text('Snooze banner'), findsOneWidget);
@@ -122,7 +126,7 @@ void main() {
       tester,
     ) async {
       final (ctx, ref) = await host(tester);
-      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      final resultFuture = showNudgeBannerSnoozeSheet(ctx, ref, entryFor());
       await tester.pumpAndSettle();
       await tester.tap(find.text('3 hours'));
       await tester.pumpAndSettle();
@@ -136,7 +140,7 @@ void main() {
       verify(
         () => interactions.snooze(
           'ad-1',
-          duration: GoalBannerSnoozeDuration.threeHours,
+          duration: NudgeBannerSnoozeDuration.threeHours,
           forActivation: 1,
         ),
       ).called(1);
@@ -146,7 +150,7 @@ void main() {
       tester,
     ) async {
       final (ctx, ref) = await host(tester);
-      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      final resultFuture = showNudgeBannerSnoozeSheet(ctx, ref, entryFor());
       await tester.pumpAndSettle();
       await tester.tap(find.text('Dismiss for today'));
       await tester.pumpAndSettle();
@@ -179,7 +183,7 @@ void main() {
         ),
       ).thenAnswer((_) async => throw StateError('sync down'));
       final (ctx, ref) = await host(tester);
-      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      final resultFuture = showNudgeBannerSnoozeSheet(ctx, ref, entryFor());
       await tester.pumpAndSettle();
       await tester.tap(find.text('1 hour'));
       await tester.pumpAndSettle();
@@ -202,7 +206,7 @@ void main() {
         ),
       ).thenAnswer((_) async => null);
       final (ctx, ref) = await host(tester);
-      final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+      final resultFuture = showNudgeBannerSnoozeSheet(ctx, ref, entryFor());
       await tester.pumpAndSettle();
       await tester.tap(find.text('6 hours'));
       await tester.pumpAndSettle();
@@ -215,7 +219,7 @@ void main() {
       verify(
         () => interactions.snooze(
           'ad-1',
-          duration: GoalBannerSnoozeDuration.sixHours,
+          duration: NudgeBannerSnoozeDuration.sixHours,
           forActivation: 1,
         ),
       ).called(1);
@@ -235,7 +239,7 @@ void main() {
         Clock.fixed(persistedMidnight.add(const Duration(seconds: 1))),
         () async {
           final (ctx, ref) = await host(tester);
-          final resultFuture = showGoalBannerSnoozeSheet(ctx, ref, entryFor());
+          final resultFuture = showNudgeBannerSnoozeSheet(ctx, ref, entryFor());
           await tester.pumpAndSettle();
           await tester.tap(find.text('Dismiss for today'));
           await tester.pumpAndSettle();
@@ -250,12 +254,27 @@ void main() {
     });
   });
 
-  group('showGoalBannerRatingSheet', () {
+  testWidgets('the 8-hour preset maps to its exact duration', (tester) async {
+    final (ctx, ref) = await host(tester);
+    unawaited(showNudgeBannerSnoozeSheet(ctx, ref, entryFor()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('8 hours'));
+    await tester.pumpAndSettle();
+    verify(
+      () => interactions.snooze(
+        'ad-1',
+        duration: NudgeBannerSnoozeDuration.eightHours,
+        forActivation: 1,
+      ),
+    ).called(1);
+  });
+
+  group('showNudgeBannerRatingSheet', () {
     testWidgets('picking a star records the rating for the shown activation', (
       tester,
     ) async {
       final (ctx, ref) = await host(tester);
-      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      unawaited(showNudgeBannerRatingSheet(ctx, ref, entryFor()));
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('4'));
       await tester.pumpAndSettle();
@@ -266,7 +285,7 @@ void main() {
 
     testWidgets('the Skip button records a skip', (tester) async {
       final (ctx, ref) = await host(tester);
-      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      unawaited(showNudgeBannerRatingSheet(ctx, ref, entryFor()));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Skip'));
       await tester.pumpAndSettle();
@@ -279,7 +298,7 @@ void main() {
     testWidgets('a barrier dismissal consumes NOTHING — the one rating '
         'opportunity survives an accidental swipe-away', (tester) async {
       final (ctx, ref) = await host(tester);
-      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      unawaited(showNudgeBannerRatingSheet(ctx, ref, entryFor()));
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();

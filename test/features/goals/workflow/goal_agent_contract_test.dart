@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
@@ -124,15 +124,15 @@ void main() {
     );
     expect(
       goalBannerAnimationNames,
-      [for (final v in GoalBannerAnimation.values) v.name],
+      [for (final v in NudgeBannerAnimation.values) v.name],
     );
     expect(
       goalBannerAccentNames,
-      [for (final v in GoalBannerAccent.values) v.name],
+      [for (final v in NudgeBannerAccent.values) v.name],
     );
     expect(
       goalNudgeToneNames,
-      [for (final v in GoalNudgeTone.values) v.name],
+      [for (final v in NudgeTone.values) v.name],
     );
   });
 

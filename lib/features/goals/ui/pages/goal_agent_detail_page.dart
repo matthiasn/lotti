@@ -32,9 +32,6 @@ import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
-import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
-import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -44,6 +41,11 @@ import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart'
     show formatCountdown;
 import 'package:lotti/l10n/app_localizations.dart';
@@ -296,13 +298,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final nudges = [
       for (final entry
           in ref.watch(activeGoalNudgesProvider).value ??
-              const <GoalBannerEntry>[])
+              const <NudgeBannerEntry>[])
         if (entry.nudge.agentId == agentId &&
             (entry.nudge.staleAt == null ||
                 clock.now().isBefore(entry.nudge.staleAt!)))
           (
             entry: entry,
-            shellHiddenUntil: goalBannerShellHiddenUntil(
+            shellHiddenUntil: nudgeBannerShellHiddenUntil(
               entry,
               locallySnoozedDeadlines: locallySnoozed,
             ),
@@ -464,7 +466,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // interaction channel, not a replacement for the standing report.
         for (final item in nudges) ...[
           SizedBox(height: tokens.spacing.step3),
-          GoalBannerExposureTracker(
+          NudgeBannerExposureTracker(
             key: ValueKey(
               '${item.entry.nudge.id}:${item.entry.nudge.activationCount}',
             ),
@@ -881,8 +883,8 @@ class _GoalChatDrawer extends StatelessWidget {
                   padding: EdgeInsets.all(tokens.spacing.step3),
                   child: Row(
                     children: [
-                      GoalBannerPersonaChip(
-                        monogram: GoalBannerPersonaChip.monogramFor(
+                      NudgeBannerPersonaChip(
+                        monogram: NudgeBannerPersonaChip.monogramFor(
                           identity.displayName,
                         ),
                         fill: color.withValues(alpha: SurfaceAlphas.washChip),
@@ -996,8 +998,8 @@ class _GoalHeader extends StatelessWidget {
           children: [
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step1),
-              child: GoalBannerPersonaChip(
-                monogram: GoalBannerPersonaChip.monogramFor(
+              child: NudgeBannerPersonaChip(
+                monogram: NudgeBannerPersonaChip.monogramFor(
                   identity.displayName,
                 ),
                 fill: color.withValues(alpha: SurfaceAlphas.washChip),
@@ -1787,7 +1789,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
         ScaffoldMessenger.maybeOf(context)
           ?..hideCurrentSnackBar()
           ..showSnackBar(
-            SnackBar(content: Text(context.messages.goalBannerActionFailed)),
+            SnackBar(content: Text(context.messages.saveFailedRetry)),
           );
       }
     }

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:mocktail/mocktail.dart';
@@ -413,9 +413,9 @@ void main() {
     );
     final ad = strategy.createdAds.single;
     expect(ad.brief.headline, 'Your shoes filed a missing person report.');
-    expect(ad.brief.tone, GoalNudgeTone.nudge);
-    expect(ad.brief.animation, GoalBannerAnimation.typewriter);
-    expect(ad.brief.accent, GoalBannerAccent.calm);
+    expect(ad.brief.tone, NudgeTone.nudge);
+    expect(ad.brief.animation, NudgeBannerAnimation.typewriter);
+    expect(ad.brief.accent, NudgeBannerAccent.calm);
     expect(ad.brief.cta, 'Lace up now');
   });
 

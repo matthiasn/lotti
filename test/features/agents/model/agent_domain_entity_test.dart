@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1216,6 +1216,63 @@ void main() {
         expect(unknown.vectorClock, equals(const VectorClock({'node-x': 7})));
         expect(unknown.deletedAt, equals(DateTime(2026, 2, 20, 16, 30)));
       });
+
+      // What an older peer writes when it receives a variant it cannot read:
+      // the fallback keeps five fields, and its toJson preserves the ORIGINAL
+      // discriminator. Upgrading that peer must not turn every read of the row
+      // into a crash.
+      Map<String, dynamic> oldPeerRoundTrip(String runtimeType) =>
+          jsonDecode(
+                jsonEncode(
+                  AgentDomainEntity.unknown(
+                    id: 'truncated-001',
+                    agentId: 'agent-003',
+                    createdAt: createdAt,
+                    // ignore: avoid_redundant_argument_values
+                    vectorClock: null,
+                  ).toJson()..['runtimeType'] = runtimeType,
+                ),
+              )
+              as Map<String, dynamic>;
+
+      for (final variant in const ['relationshipNudge', 'goalNudge']) {
+        test(
+          "an older peer's truncated $variant round-trip degrades to "
+          'unknown instead of throwing',
+          () {
+            // Reverting the degradation makes this throw ArgumentError from
+            // the NudgeStatus converter — required fields the old peer
+            // dropped — and takes the whole batched read down with it.
+            final decoded = AgentDomainEntity.fromJson(
+              oldPeerRoundTrip(variant),
+            );
+
+            expect(decoded, isA<AgentUnknownEntity>());
+            final unknown = decoded as AgentUnknownEntity;
+            expect(unknown.id, equals('truncated-001'));
+            expect(unknown.agentId, equals('agent-003'));
+            expect(unknown.createdAt, equals(createdAt));
+          },
+        );
+      }
+
+      test('a payload keeping ANY field of its own still throws', () {
+        // The degradation must not swallow genuine corruption: a row that
+        // still carries part of its real payload is not an old peer's
+        // round-trip, so it stays a poison payload sync can classify.
+        final partial = oldPeerRoundTrip('relationshipNudge')
+          ..['status'] = 'active';
+
+        expect(() => AgentDomainEntity.fromJson(partial), throwsA(anything));
+      });
+
+      test('a genuinely unknown runtimeType still decodes to unknown', () {
+        // The narrow test must not have broken the ordinary forward-compat
+        // path it sits in front of.
+        final future = oldPeerRoundTrip('someVariantFromTheFuture');
+
+        expect(AgentDomainEntity.fromJson(future), isA<AgentUnknownEntity>());
+      });
     });
 
     group('ChangeDecisionEntity (changeDecision variant)', () {
@@ -1441,16 +1498,16 @@ void main() {
   });
 
   group('GoalNudgeEntity snooze persistence', () {
-    final snooze = GoalNudgeSnooze(
+    final snooze = NudgeSnooze(
       id: 'snooze-1',
       activation: 2,
       snoozedAt: DateTime.utc(2026, 8, 13, 8),
       snoozedUntil: DateTime.utc(2026, 8, 13, 11),
-      duration: GoalBannerSnoozeDuration.threeHours,
+      duration: NudgeBannerSnoozeDuration.threeHours,
       durationMinutes: 180,
       utcOffsetMinutes: 120,
     );
-    final dismissal = GoalNudgeDayDismissal(
+    final dismissal = NudgeDayDismissal(
       id: 'dismiss-1',
       activation: 2,
       dismissedAt: DateTime.utc(2026, 8, 12, 18),
@@ -1460,11 +1517,11 @@ void main() {
     final entity = AgentDomainEntity.goalNudge(
       id: 'nudge-1',
       agentId: 'goal-1',
-      status: GoalNudgeStatus.active,
-      brief: const GoalNudgeBrief(
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
         headline: 'Take a walk',
-        tone: GoalNudgeTone.nudge,
-        animation: GoalBannerAnimation.steady,
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
       ),
       briefDigest: 'digest',
       createdAt: createdAt,

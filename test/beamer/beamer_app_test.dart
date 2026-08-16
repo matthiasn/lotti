@@ -12,8 +12,8 @@ import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
@@ -32,9 +32,12 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
@@ -226,9 +229,11 @@ Future<void> _stubNavService(
   BeamerDelegate? settingsDelegate,
   BeamerDelegate? projectsDelegate,
   BeamerDelegate? goalsDelegate,
+  BeamerDelegate? relationshipsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   projectsDelegate ??= await _createEmptyDelegate('/projects');
+  relationshipsDelegate ??= await _createEmptyDelegate('/people');
   final calendarDelegate = await _createEmptyDelegate('/calendar');
   final habitsDelegate = await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
@@ -255,6 +260,9 @@ Future<void> _stubNavService(
   when(() => navService.journalDelegate).thenReturn(journalDelegate);
   when(() => navService.settingsDelegate).thenReturn(settingsDelegate);
   when(() => navService.goalsDelegate).thenReturn(goalsDelegate);
+  when(
+    () => navService.relationshipsDelegate,
+  ).thenReturn(relationshipsDelegate);
   // `isUnifiedGoalsPageEnabled` is a concrete member on MockNavService, so it
   // is flipped through the field rather than stubbed with `when()`. Left
   // alone unless the caller asks, so a test that set it before stubbing
@@ -953,6 +961,31 @@ void main() {
     );
   });
 
+  group('AppScreen relationships gating', () {
+    testWidgets('surfaces the People tab when the flag is enabled', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService()..relationshipsPageEnabled = true;
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => false,
+        isHabitsEnabled: () => false,
+        isDashboardsEnabled: () => false,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(tester, navService: mockNavService);
+
+      expect(find.text('People'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+  });
+
   group('AppScreen events gating', () {
     testWidgets('surfaces Events in the More sheet when the flag is enabled', (
       tester,
@@ -1449,30 +1482,40 @@ void main() {
         );
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
-        final nudge =
-            AgentDomainEntity.goalNudge(
-                  id: 'goal-banner',
-                  agentId: 'goal-walk',
-                  status: GoalNudgeStatus.active,
-                  brief: const GoalNudgeBrief(
-                    headline: 'One more walk keeps the week moving.',
-                    tone: GoalNudgeTone.nudge,
-                    animation: GoalBannerAnimation.steady,
-                  ),
-                  briefDigest: 'goal-banner',
-                  createdAt: DateTime.utc(2026, 8, 11),
-                  updatedAt: DateTime.utc(2026, 8, 11),
-                  vectorClock: null,
-                )
-                as GoalNudgeEntity;
-        final entry = (nudge: nudge, goalTitle: 'Walk');
+        final nudge = NudgeEntityView.of(
+          AgentDomainEntity.goalNudge(
+            id: 'goal-banner',
+            agentId: 'goal-walk',
+            status: NudgeStatus.active,
+            brief: const NudgeBrief(
+              headline: 'One more walk keeps the week moving.',
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.steady,
+            ),
+            briefDigest: 'goal-banner',
+            createdAt: DateTime.utc(2026, 8, 11),
+            updatedAt: DateTime.utc(2026, 8, 11),
+            vectorClock: null,
+          ),
+        )!;
+        final entry = (
+          nudge: nudge,
+          subjectTitle: 'Walk',
+          kind: NudgeBannerKind.goal,
+          tapRoute: '/goals/details/goal-walk',
+        );
 
         await _pumpAppScreen(
           tester,
           navService: mockNavService,
           extraOverrides: [
+            // The shell's dock reads the merged provider; register the goal
+            // source exactly as app_bootstrap does.
+            nudgeBannerSourcesProvider.overrideWithValue([
+              activeGoalNudgesProvider,
+            ]),
             activeGoalNudgesProvider.overrideWith((ref) async => [entry]),
-            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           ],
         );
 
@@ -1481,7 +1524,7 @@ void main() {
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
           DesignSystemFiveSlotNavBar.barHeight(pageContext) +
-              goalBannerDockReservedHeight(
+              nudgeBannerDockReservedHeight(
                 pageContext,
                 briefs: [nudge.brief],
               ),

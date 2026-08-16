@@ -60,8 +60,6 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "goalAttainmentLabel": "{percent}% of target",
-  "goalBannerRatingSkip": "Skip",
-  "goalBannerRatingTitle": "How was this banner?",
   "goalBannerSemanticLabel": "Goal banner for {goalTitle}",
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "goalCreateHabitCountLabel": "Times per week (each habit)",

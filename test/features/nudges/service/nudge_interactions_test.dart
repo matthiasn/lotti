@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -21,11 +22,11 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late List<AgentDomainEntity> upserts;
-  late GoalNudgeInteractions interactions;
+  late NudgeInteractions interactions;
 
   GoalNudgeEntity nudge({
-    GoalNudgeStatus status = GoalNudgeStatus.active,
-    List<GoalNudgeRating> ratings = const [],
+    NudgeStatus status = NudgeStatus.active,
+    List<NudgeRating> ratings = const [],
     int activationCount = 1,
     GCounter visibleMs = const GCounter.empty(),
     DateTime? firstShownAt,
@@ -34,10 +35,10 @@ void main() {
             id: 'ad-1',
             agentId: 'goal-1',
             status: status,
-            brief: const GoalNudgeBrief(
+            brief: const NudgeBrief(
               headline: 'Your shoes filed a missing person report.',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.pulse,
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.pulse,
             ),
             briefDigest: 'd',
             createdAt: DateTime(2026, 8, 9),
@@ -57,7 +58,7 @@ void main() {
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
-    interactions = GoalNudgeInteractions(
+    interactions = NudgeInteractions(
       repository: repository,
       syncService: syncService,
       newId: () => 'snooze-event-1',
@@ -71,16 +72,16 @@ void main() {
         fixedClock,
         () => interactions.snooze(
           'ad-1',
-          duration: GoalBannerSnoozeDuration.threeHours,
+          duration: NudgeBannerSnoozeDuration.threeHours,
         ),
       );
       final written = upserts.whereType<GoalNudgeEntity>().single;
       expect(savedUntil, now.add(const Duration(hours: 3)).toUtc());
-      expect(written.status, GoalNudgeStatus.active);
+      expect(written.status, NudgeStatus.active);
       expect(written.snoozedUntil, now.add(const Duration(hours: 3)).toUtc());
       expect(
         written.lastSnoozeDuration,
-        GoalBannerSnoozeDuration.threeHours,
+        NudgeBannerSnoozeDuration.threeHours,
       );
       final event = written.snoozeHistory.single;
       expect(event.id, 'snooze-event-1');
@@ -102,7 +103,7 @@ void main() {
       );
       final staleResult = await interactions.snooze(
         'ad-1',
-        duration: GoalBannerSnoozeDuration.oneHour,
+        duration: NudgeBannerSnoozeDuration.oneHour,
         forActivation: 2,
       );
       expect(staleResult, isNull);
@@ -112,7 +113,7 @@ void main() {
         fixedClock,
         () => interactions.snooze(
           'ad-1',
-          duration: GoalBannerSnoozeDuration.oneHour,
+          duration: NudgeBannerSnoozeDuration.oneHour,
           forActivation: 3,
         ),
       );
@@ -138,7 +139,7 @@ void main() {
       when(
         () => repository.getEntity('ad-1'),
       ).thenAnswer((_) async => persisted);
-      final reconciling = GoalNudgeInteractions(
+      final reconciling = NudgeInteractions(
         repository: repository,
         syncService: throwing,
         newId: () => 'durable-snooze',
@@ -148,7 +149,7 @@ void main() {
         fixedClock,
         () => reconciling.snooze(
           'ad-1',
-          duration: GoalBannerSnoozeDuration.oneHour,
+          duration: NudgeBannerSnoozeDuration.oneHour,
         ),
       );
 
@@ -166,25 +167,25 @@ void main() {
         () => interactions.dismissForDay('ad-1'),
       );
       final written = upserts.whereType<GoalNudgeEntity>().single;
-      final expectedUntil = goalBannerNextLocalMidnight(now).toUtc();
+      final expectedUntil = nudgeBannerNextLocalMidnight(now).toUtc();
       expect(savedUntil, expectedUntil);
-      expect(written.status, GoalNudgeStatus.active);
+      expect(written.status, NudgeStatus.active);
       expect(written.dismissedForDayAt, now.toUtc());
       expect(written.dismissedAt, isNull);
       final event = written.dismissalHistory.single;
       expect(event.id, 'snooze-event-1');
       expect(event.dismissedAt, now.toUtc());
       expect(event.dismissedUntil, expectedUntil);
-      expect(written.staleAt, expectedUntil.add(goalBannerLifetime));
+      expect(written.staleAt, expectedUntil.add(nudgeBannerLifetime));
       expect(
-        written.provenance[goalBannerSnoozedUntilKey],
+        written.provenance[nudgeBannerSnoozedUntilKey],
         expectedUntil.toIso8601String(),
       );
     });
 
     test('non-active ads and unknown ids are no-ops', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
-        (_) async => nudge(status: GoalNudgeStatus.retired),
+        (_) async => nudge(status: NudgeStatus.retired),
       );
       expect(await interactions.dismissForDay('ad-1'), isNull);
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => null);
@@ -202,7 +203,7 @@ void main() {
       when(
         () => repository.getEntity('ad-1'),
       ).thenAnswer((_) async => persisted);
-      final reconciling = GoalNudgeInteractions(
+      final reconciling = NudgeInteractions(
         repository: repository,
         syncService: throwing,
         newId: () => 'durable-dismissal',
@@ -213,7 +214,7 @@ void main() {
         () => reconciling.dismissForDay('ad-1'),
       );
 
-      expect(saved, goalBannerNextLocalMidnight(now).toUtc());
+      expect(saved, nudgeBannerNextLocalMidnight(now).toUtc());
       expect(persisted.dismissedForDayAt, now.toUtc());
       expect(persisted.dismissalHistory.single.id, 'durable-dismissal');
     });
@@ -267,7 +268,7 @@ void main() {
       when(
         () => repository.getEntity('ad-1'),
       ).thenAnswer((_) async => persisted);
-      final reconciling = GoalNudgeInteractions(
+      final reconciling = NudgeInteractions(
         repository: repository,
         syncService: throwing,
       );
@@ -386,34 +387,79 @@ void main() {
     });
   });
 
+  test('a custom snooze preset is refused — the UI action needs a fixed '
+      'duration', () async {
+    await expectLater(
+      interactions.snooze(
+        'ad-1',
+        duration: NudgeBannerSnoozeDuration.custom,
+      ),
+      throwsArgumentError,
+    );
+    expect(upserts, isEmpty);
+  });
+
+  test('dismissForDay for a stale activation is a no-op — the outcome is '
+      'never misattributed to a run the user did not see', () async {
+    when(
+      () => repository.getEntity('ad-1'),
+    ).thenAnswer((_) async => nudge(activationCount: 3));
+    final until = await interactions.dismissForDay('ad-1', forActivation: 2);
+    expect(until, isNull);
+    expect(upserts, isEmpty);
+  });
+
+  test(
+    'without an injected id factory, events carry generated UUIDs',
+    () async {
+      when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
+      final defaultIds = NudgeInteractions(
+        repository: repository,
+        syncService: syncService,
+      );
+      await defaultIds.snooze(
+        'ad-1',
+        duration: NudgeBannerSnoozeDuration.oneHour,
+      );
+      final written = NudgeEntityView.of(upserts.single)!;
+      expect(written.snoozeHistory.single.id, isNotEmpty);
+    },
+  );
+
   test('ratingDue: due exactly while active with no outcome for the '
       'current activation', () {
-    expect(GoalNudgeInteractions.ratingDue(nudge()), isTrue);
+    expect(NudgeInteractions.ratingDue(NudgeEntityView.of(nudge())!), isTrue);
     expect(
-      GoalNudgeInteractions.ratingDue(
-        nudge(
-          ratings: [
-            GoalNudgeRating(activation: 1, ratedAt: now, skipped: true),
-          ],
-        ),
+      NudgeInteractions.ratingDue(
+        NudgeEntityView.of(
+          nudge(
+            ratings: [
+              NudgeRating(activation: 1, ratedAt: now, skipped: true),
+            ],
+          ),
+        )!,
       ),
       isFalse,
       reason: 'a skip counts — never nag twice for the same run',
     );
     expect(
-      GoalNudgeInteractions.ratingDue(
-        nudge(
-          ratings: [
-            GoalNudgeRating(activation: 1, ratedAt: now, rating: 4),
-          ],
-          activationCount: 2,
-        ),
+      NudgeInteractions.ratingDue(
+        NudgeEntityView.of(
+          nudge(
+            ratings: [
+              NudgeRating(activation: 1, ratedAt: now, rating: 4),
+            ],
+            activationCount: 2,
+          ),
+        )!,
       ),
       isTrue,
       reason: 'a re-run prompts anew',
     );
     expect(
-      GoalNudgeInteractions.ratingDue(nudge(status: GoalNudgeStatus.retired)),
+      NudgeInteractions.ratingDue(
+        NudgeEntityView.of(nudge(status: NudgeStatus.retired))!,
+      ),
       isFalse,
     );
   });
