@@ -1,5 +1,7 @@
 import 'dart:math' show min;
 
+import 'package:lotti/classes/nudge_models.dart';
+
 /// Truncate [text] to [maxLength] characters, collapsing newlines into spaces
 /// and appending "…" if truncated.
 String truncateAgentText(String text, int maxLength) {
@@ -110,3 +112,19 @@ String sanitizeAgentReportText(String text, {bool stripBareIds = false}) {
       )
       .join('\n');
 }
+
+/// Strips echoed internal ids from every user-visible field of a banner
+/// brief before it is persisted. The FACTS block hands the model literal
+/// `adId=<uuid>` lines, weaker models copy them into copy, and the banner
+/// dock renders the brief verbatim — so a nudge brief gets the same
+/// sanitizer as a report, bare-id stripping included. Shared by the goal
+/// and relationship workflows (one rule, not two copies).
+NudgeBrief sanitizeNudgeBrief(NudgeBrief brief) => brief.copyWith(
+  headline: sanitizeAgentReportText(brief.headline, stripBareIds: true),
+  tagline: brief.tagline == null
+      ? null
+      : sanitizeAgentReportText(brief.tagline!, stripBareIds: true),
+  cta: brief.cta == null
+      ? null
+      : sanitizeAgentReportText(brief.cta!, stripBareIds: true),
+);

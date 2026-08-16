@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -134,7 +135,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _avoidController = TextEditingController(text: data?.avoid ?? '');
     _interactionType = data?.interactionType ?? CheckInInteractionType.inPerson;
     _sentiment = data?.sentiment;
-    _interactionTime = initial?.meta.dateFrom ?? DateTime.now();
+    _interactionTime = initial?.meta.dateFrom ?? clock.now();
   }
 
   @override
@@ -153,7 +154,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       .toList();
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = await showDesignSystemDatePicker(
       context: context,

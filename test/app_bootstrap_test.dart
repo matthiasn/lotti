@@ -27,6 +27,7 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
+import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
@@ -560,7 +561,10 @@ void main() {
         realContext(),
       ).read(nudgeBannerSourcesProvider);
 
-      expect(sources, [activeGoalNudgesProvider]);
+      expect(sources, [
+        activeGoalNudgesProvider,
+        activeRelationshipNudgesProvider,
+      ]);
     });
 
     test('registers both day prompt-log wrap renderers', () {

@@ -10236,6 +10236,37 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Briefingen körs på $provider. Anteckningar om personen skickas dit för bearbetning.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Fortsätt';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Skicka till $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Ingen briefing än — Uppdatera mig tar fram en från dina avstämningar.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing begärd — den visas här strax.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Det gick inte att begära briefingen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Uppdatera mig';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10263,6 +10294,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Varje vecka';
+
+  @override
+  String get relationshipChatTooltip => 'Chatta om den här personen';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Ingen agent än — markera personen som viktig först.';
 
   @override
   String get relationshipCheckInsLabel => 'Avstämningar';
@@ -10302,11 +10340,28 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ändringarna kunde inte sparas. Försök igen.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Behöver uppmärksamhet';
+
+  @override
+  String get relationshipHealthSteady => 'Stabil';
+
+  @override
+  String get relationshipHealthStrained => 'Ansträngd';
+
+  @override
+  String get relationshipHealthThriving => 'Blomstrar';
+
+  @override
   String get relationshipImportantDescription =>
       'Påminn mig om att hålla kontakten';
 
   @override
   String get relationshipImportantLabel => 'Viktig';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Senaste avstämning $date';
+  }
 
   @override
   String get relationshipLinkedTasksLabel => 'Uppgifter';
@@ -10354,6 +10409,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Följs sedan $date';
+  }
 
   @override
   String get saveButton => 'Spara';

@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Relationships
-description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, and how the deterministic agent tier tracks cadence at zero inference cost.
+description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, how the deterministic agent tier tracks cadence at zero inference cost, and how the LLM tier turns a fired escalation into a briefing, a banner and chat without ever seeing a contact channel.
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
@@ -28,6 +28,10 @@ sources:
     resource: ../../lib/features/relationships/runtime/relationship_agent_phase_a.dart
     title: RelationshipAgentPhaseA — the deterministic tier
     last_modified: 2026-08-16
+  - id: workflow
+    resource: ../../lib/features/relationships/workflow/relationship_agent_workflow.dart
+    title: RelationshipAgentWorkflow — the LLM tier
+    last_modified: 2026-08-16
   - id: adr-0059
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
     title: ADR 0059 — Relationship agents on the shared runtime
@@ -49,6 +53,11 @@ timeline**: `entryTypes` — the filter set the journal page queries with — li
 neither `Relationship` nor `CheckIn`. `JournalCard` still renders both, because
 the card's `switch` over the sealed union is exhaustive and would not compile
 otherwise; those branches are reachable only from linked-entry surfaces.
+The exclusion extends to **global search, deliberately**: FTS title
+extraction indexes neither variant, so a person's name is unfindable
+outside the People tab — a privacy posture (ADR 0037: relationship data
+describes third parties), not an oversight. The People list itself is short
+by design and needs no local search.
 
 # Bound twice, on purpose
 
@@ -184,7 +193,17 @@ deletion — the page would navigate away from a person who is still there.
   rows (registers, later reports and nudges) remain under the destroyed
   identity for audit, like every destroyed agent. The leg is fire-and-forget
   and contained — a failed teardown never fails the delete the user watched
-  succeed, and runtime maintenance repairs the rest.
+  succeed.
+
+  That "runtime maintenance repairs the rest" is a real mechanism, not a
+  hope: `RelationshipRuntimeMaintenance.beforeWakeScan` resolves each active
+  relationship agent's watched person before healing anything, and tears the
+  identity down when the person is deleted or gone. It has to, because the
+  delete surfaces are not the only path — the generic journal delete
+  (a deep link to the entry, the journal detail page) reaches
+  `RelationshipRepository.deleteRelationship` without the agent leg at all.
+  A missing agent→relationship link is the creation race, not a deletion, and
+  never reaps.
 
 # Notifications: no private channel
 
@@ -226,22 +245,38 @@ flowchart TD
   T[hourly tick / check-in saved / manual wake] --> A[RelationshipAgentPhaseA]
   A --> L{agent link?}
   L -->|none| OK1[no-op]
-  L --> R[re-arm daily cadence wake<br/>skip if unchanged]
-  R --> E{important AND active<br/>AND not deleted?}
+  L --> G{"person still there?<br/>(unfiltered read)"}
+  G -->|"deleted / gone"| STOP["write NOTHING — not even the tick.<br/>maintenance reaps the orphaned identity"]
+  G --> R[re-arm daily cadence wake<br/>skip if unchanged]
+  R --> E{important AND active?}
   E -->|no| OK2[done — the tick keeps checking]
   E --> D["derive: newest check-in (unfiltered)<br/>?? tracking start, + cadenceDays<br/>(default 30) → ok | due"]
-  D --> REG["recompute relationshipHealth register<br/>ONE row per agent, skip-if-identical"]
-  REG --> N{newly due?}
-  N -->|no| OK3[€0 no-write no-op]
-  N --> ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
+  D --> SW["sweep nudges: expire past staleAt,<br/>retire actives when cadence is ok<br/>(deterministic, skip-if-no-op)"]
+  SW --> REG["recompute relationshipHealth register<br/>ONE row per agent, skip-if-identical"]
+  REG --> N{"newly due?"}
+  N -->|yes| ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
+  N -->|no| ST{"check-in newer than<br/>current briefing?"}
+  ST -->|no| OK3[€0 no-write no-op]
+  ST -->|yes| REF["arm relationship-escalation:refresh-&lt;utcDay&gt;<br/>deadline = the check-in's own instant,<br/>one refresh per UTC day of new evidence"]
 ```
 
-Three decisions keep multi-device runs convergent (ADR 0059 Decision 2):
+Four decisions keep multi-device runs convergent (ADR 0059 Decision 2):
 
-- **The check-in read ignores the private-display filter**
-  (`getAllCheckInsForRelationship`): hiding an entry is a display
+- **Every runtime read ignores the private-display filter** — the check-ins
+  (`getAllCheckInsForRelationship`) and the person herself
+  (`getRelationshipByIdUnfiltered`): hiding an entry is a display
   preference, and devices with different settings must derive the same
-  register.
+  register. The gated `getRelationshipById` is the UI's read, and using it
+  in the runtime silently un-tracks a private person on whichever device
+  hides private entries.
+- **Every derived day is a UTC calendar day.** The due day is
+  `UTC-day(referenceAt) + cadenceDays`, computed with calendar components
+  rather than a `Duration` — UTC has no DST, so the arithmetic is exact and
+  the answer is the same in every timezone. Deriving it through the device's
+  local calendar is not cosmetic: the register's `dueAt` would differ per
+  device, so two peers would rewrite it at each other on every sync, and the
+  episode key below would mint one escalation per timezone and pay for the
+  same lapse twice.
 - **The register is recomputed wholesale, never accumulated**, carries the
   vector clock of the row it read, and is skipped entirely when identical —
   so the uneventful daily tick is a true no-write no-op.
@@ -256,10 +291,81 @@ Three decisions keep multi-device runs convergent (ADR 0059 Decision 2):
 The agent's subscription is a single token: check-ins carry a denormalized
 `relationshipId` that `affectedIds` emits (the table above), so one
 `matchEntityIds = {relationshipId}` covers the person and every check-in,
-draining immediately because the tier is free. The wake router currently
-sends **every** wake — including a fired escalation — through Phase A; the
-LLM tier (briefing, banner, chat) takes over the escalation route in plan v2
-phase 5.
+draining immediately because the tier is free.
+
+Escalation arms on **two facts, not one**, and each fact has its own
+episode family. The cadence newly lapsing arms
+`relationship-escalation:<dueDayKey>` at the due day (already past). A
+check-in landing after the current briefing (`reportStale`) arms
+`relationship-escalation:refresh-<utcDay>` with the check-in's own instant
+as the deadline — immediately due, so "log a call, get a fresh briefing"
+does not wait out the next cadence lapse. The families are deliberately
+separate: an early-fired refresh consuming the lapse episode's record would
+let per-episode idempotence suppress the real lapse escalation. Refresh
+episodes are keyed to the newest check-in's UTC day, debouncing to at most
+one refresh inference per day of new evidence; when a tick sees both facts,
+only the lapse episode arms — its run regenerates the briefing anyway.
+
+# The LLM tier (plan v2 phase 5)
+
+The wake router (`relationship_agent_providers.dart`) splits three ways: a
+`relationship-chat-message:<id>` token runs
+`RelationshipAgentWorkflow.executeUserMessage`, a fired escalation or
+`relationship-report-refresh` token runs the full workflow, and everything
+else stays in Phase A. The workflow is the goal Phase B shape with the goal
+machinery it does not need (spec versions, revisions, proposal review)
+removed:
+
+- **€0 gates before inference.** A non-interactive run re-derives the armed
+  fact and returns success without touching a provider when it no longer
+  holds — the wake fired, the world moved on, nothing to say. A missing
+  provider re-arms the escalation instead of consuming the episode.
+- **`RelationshipFactsRenderer` is the whole ground truth.** Bounded (last
+  10 check-ins, 400-char narrative excerpts) and — the ADR 0041 §5 boundary
+  — its `render` signature has **no channel parameter**, so contact
+  channels are structurally absent from model context, not filtered out.
+- **Four tools, accumulated then persisted once.** `reply_to_user`,
+  `update_relationship_report`, `create_relationship_ad`,
+  `snooze_relationship_ad` accumulate in the strategy; `persistOutputs`
+  writes one transaction, fenced on the person still existing and still
+  important. The briefing lands as an `AgentReportEntity` whose provenance
+  carries the health band + rationale + confidence
+  (`RelationshipReportProvenanceKeys`, parsed fail-closed by
+  `relationship_health_metrics.dart`).
+- **The standing head advances by DUE DAY, not by wall clock.** Report rows
+  accumulate as history; the `agentReportHead` row is what the UI reads. It
+  is stamped with the due day's last instant once that day is over (the
+  wall clock while the day still runs), so two lease-elected devices
+  finishing different overdue episodes resolve under generic LWW by the
+  episode rather than by who wrote last — and it refuses to advance at all
+  when the currently published briefing carries a NEWER `dueDayKey`, which
+  LWW alone cannot prevent for a delayed escalation running locally. This
+  mirrors `GoalAgentWorkflow`'s `_headTimestamp` / `headMayAdvance` pair.
+- **Everything through the outbox is inside the failure path.** The
+  non-interactive FACTS message is persisted inside the guarded region, so
+  a failed outbox flush returns `WakeResult(success: false)` like any other
+  failure — the conversation is deleted, the attribution envelope closed,
+  and the consumed escalation re-armed, rather than the exception escaping
+  `execute` past all three.
+- **At most one banner per wake, deterministically.** The ad id is
+  `relationshipAdId(agentId, runKey)` (uuid v5), so a retried wake
+  overwrites rather than duplicates; a dismissal today opens a quiet
+  window the workflow refuses to post into, and a live banner is never
+  doubled. Active banners surface through the kind-agnostic nudge channel
+  (`activeRelationshipNudgesProvider`, registered at bootstrap) on all
+  surfaces, tapping through to `/people/<id>` — the resolved ADR 0059 open
+  question.
+- **Chat turns are durable before the wake.** `RelationshipChatService`
+  persists the user turn, then enqueues a manual wake whose trigger token
+  carries the message id; a failed wake surfaces that id so retry
+  re-enqueues the same turn instead of re-persisting it. The awaited
+  completion is bounded at both ends: the orchestrator closing its
+  completion stream (shutdown, runtime teardown) fails the turn rather than
+  leaving the caller on a future that can no longer complete, which would
+  strand the composer disabled.
+- **Disclosure fails closed.** The "Brief me" card resolves the agent's
+  model to a provider name; a cloud provider is named in a consent dialog
+  first (ADR 0037), and an unresolvable profile is treated as cloud.
 
 # Privacy
 

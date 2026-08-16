@@ -89,6 +89,12 @@ abstract final class AgentEntityTypes {
   static const goalNudge = 'goalNudge';
   static const relationshipNudge = 'relationshipNudge';
   static const relationshipHealth = 'relationshipHealth';
+
+  /// Every nudge union variant. A new nudge kind MUST be added here so the
+  /// decode-boundary cross-field validation in `agent_domain_entity.dart`
+  /// covers it instead of silently skipping (fail-open) — the compiler
+  /// cannot catch a miss at that string-typed gate.
+  static const Set<String> nudgeTypes = {goalNudge, relationshipNudge};
 }
 
 /// `scope` values for `AgentReport` rows. `current` marks the live report a
