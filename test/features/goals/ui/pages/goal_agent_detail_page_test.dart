@@ -2632,7 +2632,13 @@ void main() {
   });
 
   testWidgets('a goal with habit dimensions renders the goal-scoped '
-      'completion-rate card', (tester) async {
+      'completion-rate card — scoped from the SAME retained progress '
+      'snapshot, not the (possibly newer) spec', (tester) async {
+    // A metric-only spec beside habit progress models the mid-revision
+    // window: health has advanced to a new spec while the progress
+    // deliberately retains the old one. The chart must gate AND scope from
+    // the progress, or it flashes an empty chart scoped by habits the
+    // visible rows do not show.
     final spec =
         AgentDomainEntity.goalSpecVersion(
               id: 'goal-1:spec-v1',
@@ -2642,11 +2648,12 @@ void main() {
               authoredBy: 'user',
               title: 'Move more',
               statement: 'Walk this week.',
-              criteria: const GoalCriterion.habit(
-                criterionId: 'walk',
-                habitId: 'walk',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
                 window: GoalWindow.rollingDays(count: 7),
-                targetCount: 3,
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
               ),
               createdAt: DateTime(2026, 8),
               vectorClock: null,
@@ -3219,5 +3226,70 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(GoalAgentChatPane), findsOneWidget);
     expect(find.byType(UnifiedGoalStatusPill), findsNothing);
+  });
+
+  testWidgets('a narrow desktop pane keeps the drawer a pure overlay — the '
+      'column never gets squeezed below a usable width', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        // A 500px sidebar stand-in: the page pane is 900px wide, so
+        // subtracting the 400px drawer would leave 500 — under the fold
+        // width — and the shift must not happen.
+        const Row(
+          children: [
+            SizedBox(width: 500),
+            Expanded(child: GoalAgentDetailPage(agentId: 'goal-1')),
+          ],
+        ),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final closedCenter = tester.getCenter(find.text("Agent's read")).dx;
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getCenter(find.text("Agent's read")).dx,
+      moreOrLessEquals(closedCenter, epsilon: 1),
+      reason:
+          'below the fold width the drawer overlays instead of shifting '
+          'the column into a sliver',
+    );
   });
 }

@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -526,13 +525,17 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             ),
           ),
         ],
-        // §4b item 5: the completion-rate chart scoped to THIS goal's
-        // habits — same card shell and range tabs as the habits page, the
-        // line computed on the goal's slice of the shared day maps.
-        if (progress != null && progress.habits.isNotEmpty && spec != null) ...[
+        // The completion-rate chart scoped to THIS goal's habits — same
+        // card shell as the habits page, the line computed on the goal's
+        // slice of the shared day maps. Gate AND scope from the same
+        // retained progress snapshot: during a spec revision the health can
+        // carry the new spec while the progress deliberately retains the
+        // old one, and mixing the two flashed an empty chart scoped by a
+        // habit set the visible rows do not show.
+        if (progress != null && progress.habits.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           HabitsChartCard(
-            habitIds: goalCriterionHabitIds(spec.criteria),
+            habitIds: {for (final habit in progress.habits) habit.habitId},
             title: context.messages.goalDetailCompletionRateTitle,
             // The page-level picker on the Habits heading governs the range.
             showTimeSpanPicker: false,
@@ -720,66 +723,79 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                   // reflow. The drawer stays mounted while closed so its
                   // draft survives, and it takes no pointer/focus traffic
                   // off-screen.
-                  child: Stack(
-                    children: [
-                      // The drawer overlays without reflowing the cards, but
-                      // the COLUMN glides: closed, it centers in the window
-                      // (a fixed left-aligned measure left the right half of
-                      // wide windows dead); open, it centers in what the
-                      // drawer leaves free.
-                      AnimatedPadding(
-                        duration: MotionDurations.medium2,
-                        curve: MotionCurves.emphasizedDecelerate,
-                        padding: EdgeInsetsDirectional.only(
-                          end: _chatOpen ? kGoalChatDrawerWidth : 0,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => Stack(
+                      children: [
+                        // The drawer overlays without reflowing the cards, but
+                        // the COLUMN glides: closed, it centers in the window
+                        // (a fixed left-aligned measure left the right half of
+                        // wide windows dead); open, it centers in what the
+                        // drawer leaves free. Clamped to the PANE's real
+                        // constraints: with a wide navigation sidebar the pane
+                        // can be barely wider than the drawer, and always
+                        // subtracting the drawer span would squeeze the
+                        // dashboard into an unusable sliver — below the fold
+                        // width the drawer stays a true overlay instead.
+                        AnimatedPadding(
+                          duration: MotionDurations.medium2,
+                          curve: MotionCurves.emphasizedDecelerate,
+                          padding: EdgeInsetsDirectional.only(
+                            end:
+                                _chatOpen &&
+                                    constraints.maxWidth -
+                                            kGoalChatDrawerWidth >=
+                                        kPageHeaderFoldWidth
+                                ? kGoalChatDrawerWidth
+                                : 0,
+                          ),
+                          child: detailList(
+                            showChatAction: false,
+                            contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                          ),
                         ),
-                        child: detailList(
-                          showChatAction: false,
-                          contentMaxWidth: kUnifiedGoalsContentMaxWidth,
-                        ),
-                      ),
-                      PositionedDirectional(
-                        top: 0,
-                        bottom: 0,
-                        end: 0,
-                        child: TapRegion(
-                          groupId: _chatRegionGroup,
-                          onTapOutside: (_) {
-                            if (_chatOpen) setState(() => _chatOpen = false);
-                          },
-                          child: AnimatedSlide(
-                            offset: _chatOpen
-                                ? Offset.zero
-                                : const Offset(1, 0),
-                            duration: MotionDurations.medium2,
-                            curve: MotionCurves.emphasizedDecelerate,
-                            child: IgnorePointer(
-                              ignoring: !_chatOpen,
-                              // Off-screen means out of the semantics tree
-                              // too: without this a screen reader traverses
-                              // the slid-away drawer's composer and close
-                              // button.
-                              child: ExcludeSemantics(
-                                excluding: !_chatOpen,
-                                child: ExcludeFocus(
+                        PositionedDirectional(
+                          top: 0,
+                          bottom: 0,
+                          end: 0,
+                          child: TapRegion(
+                            groupId: _chatRegionGroup,
+                            onTapOutside: (_) {
+                              if (_chatOpen) setState(() => _chatOpen = false);
+                            },
+                            child: AnimatedSlide(
+                              offset: _chatOpen
+                                  ? Offset.zero
+                                  : const Offset(1, 0),
+                              duration: MotionDurations.medium2,
+                              curve: MotionCurves.emphasizedDecelerate,
+                              child: IgnorePointer(
+                                ignoring: !_chatOpen,
+                                // Off-screen means out of the semantics tree
+                                // too: without this a screen reader traverses
+                                // the slid-away drawer's composer and close
+                                // button.
+                                child: ExcludeSemantics(
                                   excluding: !_chatOpen,
-                                  child: Focus(
-                                    focusNode: _drawerFocusNode,
-                                    child: _GoalChatDrawer(
-                                      agentId: agentId,
-                                      identity: goalIdentity,
-                                      status: unifiedStatus,
-                                      hasStandingAssessment:
-                                          hasStandingAssessment,
-                                      recoveryHint: switch (health?.deficit) {
-                                        final int deficit when deficit > 0 =>
-                                          context.messages.goalDaysToRecover(
-                                            deficit,
-                                          ),
-                                        _ => null,
-                                      },
-                                      onClose: () =>
-                                          setState(() => _chatOpen = false),
+                                  child: ExcludeFocus(
+                                    excluding: !_chatOpen,
+                                    child: Focus(
+                                      focusNode: _drawerFocusNode,
+                                      child: _GoalChatDrawer(
+                                        agentId: agentId,
+                                        identity: goalIdentity,
+                                        status: unifiedStatus,
+                                        hasStandingAssessment:
+                                            hasStandingAssessment,
+                                        recoveryHint: switch (health?.deficit) {
+                                          final int deficit when deficit > 0 =>
+                                            context.messages.goalDaysToRecover(
+                                              deficit,
+                                            ),
+                                          _ => null,
+                                        },
+                                        onClose: () =>
+                                            setState(() => _chatOpen = false),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -787,8 +803,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
         ),

@@ -404,12 +404,27 @@ goalHabitMembershipsProvider = FutureProvider.autoDispose((ref) async {
   ref.watch(agentUpdateStreamProvider(agentNotification));
   final agents = await ref.watch(activeGoalAgentsProvider.future);
   final repository = ref.watch(agentRepositoryProvider);
+  // Two batched round trips — all heads, then all referenced versions —
+  // instead of two awaited lookups per goal in sequence: the shared
+  // notification token retriggers this join on every wake/report/chat
+  // write, and per-goal awaits bypass the repository's same-turn
+  // coalescing.
+  final heads = await repository.getEntitiesByIds([
+    for (final identity in agents) goalSpecHeadId(identity.agentId),
+  ]);
+  final versionIdByAgent = <String, String>{
+    for (final identity in agents)
+      if (heads[goalSpecHeadId(identity.agentId)] case GoalSpecHeadEntity(
+        :final versionId,
+      ))
+        identity.agentId: versionId,
+  };
+  final versions = await repository.getEntitiesByIds(
+    versionIdByAgent.values.toList(),
+  );
   final memberships = <String, List<GoalHabitMembership>>{};
   for (final identity in agents) {
-    final head = await repository.getEntity(goalSpecHeadId(identity.agentId));
-    final specEntity = head is GoalSpecHeadEntity
-        ? await repository.getEntity(head.versionId)
-        : null;
+    final specEntity = versions[versionIdByAgent[identity.agentId]];
     if (specEntity is! GoalSpecVersionEntity) continue;
     final title = specEntity.title.trim().isNotEmpty
         ? specEntity.title

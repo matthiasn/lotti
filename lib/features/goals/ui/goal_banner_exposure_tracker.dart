@@ -51,6 +51,21 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _armFrameRecheck();
+  }
+
+  /// One cheap rect check per DRAWN frame: a local reveal animation (the
+  /// Agent's-read card expanding, the About section unfolding) moves this
+  /// banner across the viewport boundary with no scroll event and no
+  /// rebuild of this widget, so scroll/lifecycle/update hooks alone leave
+  /// the ticker gate stale. Re-arming a post-frame callback does not itself
+  /// schedule frames — while nothing animates, nothing runs.
+  void _armFrameRecheck() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _recheck();
+      _armFrameRecheck();
+    });
   }
 
   @override

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
@@ -1047,5 +1048,117 @@ void main() {
     expect(periodTotal.targetIsPerDay, isFalse);
     expect(periodTotal.dayMark(periodTotal.days.single), isTrue);
     expect(periodTotal.valueMeetsTarget(periodTotal.days.single), isFalse);
+  });
+
+  test('provider resolves measurable and category definitions and folds '
+      'recorded capture decisions into agent-recorded provenance', () async {
+    final reference = DateTime(2026, 8, 11, 14);
+    final db = MockJournalDb();
+    when(
+      () => db.getMeasurementsByType(
+        type: any(named: 'type'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => db.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
+    when(
+      () => db.getMeasurableDataTypeById(measurableWater.id),
+    ).thenAnswer((_) async => measurableWater);
+    when(
+      () => db.getCategoryById(categoryMindfulness.id),
+    ).thenAnswer((_) async => categoryMindfulness);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Hydrate mindfully',
+              statement: 'Water and quiet time.',
+              criteria: GoalCriterion.allOf(
+                criterionId: 'root',
+                criteria: [
+                  GoalCriterion.measurable(
+                    criterionId: 'water',
+                    dataTypeId: measurableWater.id,
+                    window: const GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.dailySumThenAverage,
+                    target: 2000,
+                  ),
+                  GoalCriterion.categoryTime(
+                    criterionId: 'calm',
+                    categoryId: categoryMindfulness.id,
+                    window: const GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.sum,
+                    targetHours: 2,
+                    direction: GoalDirection.atLeast,
+                  ),
+                ],
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final container = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(db),
+        goalAgentHealthProvider('goal-1').overrideWith(
+          (ref) async => (
+            trackStatus: GoalTrackStatus.onTrack,
+            attainment: 1.0,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: spec,
+            direction: null,
+            deficit: 0,
+            buffer: 1,
+          ),
+        ),
+        goalMeasurableCaptureDecisionsProvider('goal-1').overrideWith(
+          (ref) async => {
+            'msg-1': GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-1',
+              recorded: true,
+              entryCount: 1,
+              entryIds: const ['entry-1'],
+              agentName: 'Hydrate mindfully',
+              recordedAt: DateTime(2026, 8, 10),
+            ),
+            // Not recorded: contributes to neither set.
+            const GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-2',
+              recorded: false,
+              entryCount: 0,
+            ).sourceMessageId: const GoalMeasurableCaptureDecision(
+              sourceMessageId: 'msg-2',
+              recorded: false,
+              entryCount: 0,
+            ),
+          },
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final view = await withClock(
+      Clock.fixed(reference),
+      () => container.read(goalAgentProgressViewProvider('goal-1').future),
+    );
+
+    // The measurable resolved its definition (name + unit), the category
+    // resolved its display name.
+    final names = {for (final metric in view!.metrics) metric.name};
+    expect(names, contains(measurableWater.displayName));
+    expect(names, contains(categoryMindfulness.name));
+    verify(() => db.getMeasurableDataTypeById(measurableWater.id)).called(1);
+    verify(() => db.getCategoryById(categoryMindfulness.id)).called(1);
   });
 }

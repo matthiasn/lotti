@@ -2073,18 +2073,28 @@ void main() {
             createdAt: DateTime(2026),
             vectorClock: null,
           );
-      for (final agentId in ['goal-a', 'goal-b']) {
-        when(
-          () => repository.getEntity(goalSpecHeadId(agentId)),
-        ).thenAnswer((_) async => head(agentId));
-      }
+      // The provider batches: one round trip for all heads, one for all
+      // referenced versions.
       when(
-        () => repository.getEntity('goal-a:spec-v1'),
-      ).thenAnswer((_) async => spec('goal-a', 'Fitness'));
-      // A blank title falls back to the agent display name.
+        () => repository.getEntitiesByIds([
+          goalSpecHeadId('goal-a'),
+          goalSpecHeadId('goal-b'),
+        ]),
+      ).thenAnswer(
+        (_) async => {
+          goalSpecHeadId('goal-a'): head('goal-a'),
+          goalSpecHeadId('goal-b'): head('goal-b'),
+        },
+      );
       when(
-        () => repository.getEntity('goal-b:spec-v1'),
-      ).thenAnswer((_) async => spec('goal-b', '   '));
+        () => repository.getEntitiesByIds(['goal-a:spec-v1', 'goal-b:spec-v1']),
+      ).thenAnswer(
+        (_) async => {
+          'goal-a:spec-v1': spec('goal-a', 'Fitness'),
+          // A blank title falls back to the agent display name.
+          'goal-b:spec-v1': spec('goal-b', '   '),
+        },
+      );
 
       final memberships = await container.read(
         goalHabitMembershipsProvider.future,
