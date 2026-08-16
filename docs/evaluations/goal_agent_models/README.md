@@ -192,6 +192,46 @@ surface to the user.
 scores are not comparable across it; a jump in those rows is the scorer, not
 the model. Cost, latency and the health-scenario rows are unaffected.
 
+## Blocked ad tools are withheld, not forbidden — 2026-08-17
+
+Ad over-creation was the largest failure mode of every model measured against
+this contract: all 73 `forbiddenToolCall` failures in a 10-sample two-model
+baseline involved `create_goal_ad` or `rerun_goal_ad`, 58% of all failures.
+Prompt wording could not fix it. Stating the prohibition as a closed list cut
+those failures 73 → 30 but made both models skip ads policy REQUIRES
+(`missingExpectedToolCall` 15 → 37, `cx_retire_then_rerun` 10/10 → 4/10);
+restoring the obligation swung it straight back. The two halves trade against
+each other and the net was a wash.
+
+The deterministic tier already knows the answer — `automaticGoalAdEligible`
+plus the dismissal cooldown — so `GoalAgentWorkflow` now withholds the ad
+tools on a scheduled wake that has ruled a banner out. A tool that is not on
+the wire cannot be called. The runner mirrors this via
+`GoalAgentEvalScenario.adToolsOffered`, so the eval measures the surface the
+app presents rather than a harder problem the runtime never poses.
+
+Two exceptions, both deliberate: the no-op scenario keeps the full surface
+because choosing silence while tools are available IS the measurement, and
+interactive wakes keep it because an explicit request overrides eligibility
+and cooldown (P5) — a judgment made during the turn, not one FACTS can
+precompute.
+
+| Model | Baseline | Withheld | `forbiddenToolCall` | Credits/goal-month | Wh/goal-month |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 203/250 | 209/250 | 37 → 25 | 0.360 | 125.5 |
+| `qwen3.5-122b-a10b` | 171/250 | 200/250 | 36 → 7 | 0.057 | 71.9 |
+
+`gh_gym_pace` 2→10 and 4→10, `cx_dismiss_cooldown_no_ad` 2→10,
+`gp_recovering` 3→10, `gp_slightly_off` 4→10. The interactive half is
+untouched by design and remains the open half of the problem: 122b's
+`noOpViolated` (10/10 on `gp_noop`) is now its largest failure mode, and
+scoring here still counts tool-call ATTEMPTS — a workflow-level eval asserting
+persisted outcomes is the honest next step.
+
+Run-to-run variance was never quantified (the same contract was never run
+twice), so single-scenario moves of ±3 in this table are not interpretable;
+the category shifts and the 29-case total are far outside plausible noise.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:

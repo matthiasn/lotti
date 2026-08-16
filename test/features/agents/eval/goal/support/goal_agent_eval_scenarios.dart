@@ -2,6 +2,8 @@
 /// `goalAgentPolicyMatrix` — every scenario names the policy rule it tests.
 library;
 
+import 'dart:convert';
+
 import 'package:lotti/classes/goal_enums.dart';
 
 import 'goal_agent_eval_fixtures.dart';
@@ -56,6 +58,60 @@ class GoalAgentEvalScenario {
 
   /// The FACTS block sent as the wake's user message.
   final String facts;
+
+  /// Whether `GoalAgentWorkflow` would hand this wake the ad-creation tools.
+  ///
+  /// Mirrors the production gate: the runtime withholds `create_goal_ad` and
+  /// `rerun_goal_ad` on a scheduled wake whose deterministic tier has already
+  /// ruled a banner out, and keeps the full surface on an interactive wake
+  /// because an explicit request overrides eligibility and cooldown (P5).
+  /// Read from the authored FACTS so the eval cannot claim a narrowing the
+  /// shipped runtime would not perform.
+  bool get adToolsOffered {
+    // Restraint scenarios keep the full surface: choosing silence while every
+    // tool is available IS the behaviour under test, and withholding would
+    // make the no-op wake prove nothing.
+    if (expectsNoToolCalls) return true;
+    // Interactive wakes keep it too — an explicit request overrides
+    // eligibility and cooldown (P5), and whether a message asks for a banner
+    // is a judgment made during the turn, not one FACTS can precompute.
+    if (hasPendingUserMessage) return true;
+    final json = _decodedFacts;
+    if (json == null) return true;
+    // `automaticGoalAdEligible` plus the dismissal cooldown — the two halves
+    // of the runtime's pre-turn gate. Deliberately NOT the fresh-active-ad
+    // check: a retire during the turn can clear that, which is why production
+    // leaves it to `_adRequired` after the fact.
+    final ads = json['ads'];
+    if (ads is Map && ads['dismissalCooldownActive'] == true) return false;
+    final evaluation = json['evaluation'];
+    if (evaluation is! Map) return true;
+    // Composite goals nest the rolled-up verdict under `composite`; simple
+    // ones carry it flat. Reading only the flat shape silently withheld the
+    // ad tools from every composite scenario, including the retire-then-rerun
+    // flows that REQUIRE a replacement banner.
+    final composite = evaluation['composite'];
+    final verdict = composite is Map ? composite : evaluation;
+    final status = verdict['trackStatus'];
+    if (status == GoalTrackStatus.offTrack.name) return true;
+    return status == GoalTrackStatus.atRisk.name &&
+        verdict['trendWorsening3PlusDays'] == true;
+  }
+
+  /// Whether the authored FACTS carry a message awaiting an answer.
+  bool get hasPendingUserMessage {
+    final pending = _decodedFacts?['unansweredUserMessages'];
+    return pending is List && pending.isNotEmpty;
+  }
+
+  Map<String, dynamic>? get _decodedFacts {
+    const prefix = '```json\n';
+    final start = facts.indexOf(prefix);
+    final end = facts.lastIndexOf('\n```');
+    if (start < 0 || end <= start) return null;
+    final decoded = jsonDecode(facts.substring(start + prefix.length, end));
+    return decoded is Map<String, dynamic> ? decoded : null;
+  }
 
   /// Additional user turns sent after the model's first response — the
   /// multi-turn dialogue scenarios (each entry is one further exchange).

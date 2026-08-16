@@ -441,7 +441,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       expectedStatus: facts.trackStatus,
     );
 
-    final tools = [
+    final allTools = [
       for (final tool in goalAgentTools)
         ChatCompletionTool(
           type: ChatCompletionToolType.function,
@@ -452,6 +452,30 @@ class GoalAgentWorkflow with AgentErrorLogging {
           ),
         ),
     ];
+
+    // A tool that is not on the wire cannot be called. The deterministic tier
+    // already decides whether a banner is permitted (`automaticGoalAdEligible`
+    // plus the dismissal cooldown), so on a scheduled wake that has ruled one
+    // out the ad tools are simply withheld rather than offered and forbidden
+    // in prose. Ad over-creation was the single largest failure mode across
+    // every evaluated model, and prompt wording could only trade it against
+    // skipping ads policy requires — withholding removes the choice.
+    //
+    // Interactive wakes keep the full surface: an explicit request overrides
+    // cooldown and eligibility (P5), and whether a message asks for a banner
+    // is a judgment made during the turn, not one FACTS can precompute.
+    final adToolsPermitted =
+        pendingUserMessage != null ||
+        (_adsEligible(facts, derivation.priors) &&
+            !_factsRenderer.dismissalCooldownActive(nudges, now));
+    final tools = adToolsPermitted
+        ? allTools
+        : [
+            for (final tool in allTools)
+              if (tool.function.name != GoalAgentToolNames.createGoalAd &&
+                  tool.function.name != GoalAgentToolNames.rerunGoalAd)
+                tool,
+          ];
     final inferenceRepo = CloudInferenceWrapper(
       cloudRepository: _cloudInferenceRepository,
       geminiThinkingMode: resolved.geminiThinkingMode,
@@ -538,7 +562,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
           conversationId: conversationId,
           resolved: resolved,
           inferenceRepo: inferenceRepo,
-          tools: tools,
+          // The full surface on purpose: this path runs only when the
+          // deterministic tier says an ad is REQUIRED, which is exactly the
+          // case the main turn's narrowing must not be able to veto.
+          tools: allTools,
           strategy: strategy,
           agentId: recordConsumption ? agentId : null,
           runKey: recordConsumption ? runKey : null,
