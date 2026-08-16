@@ -6276,6 +6276,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override
+  String get goalDetailUpdateFailed => 'Senaste uppdateringen misslyckades';
+
+  @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Senaste uppdateringen misslyckades — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.';
 

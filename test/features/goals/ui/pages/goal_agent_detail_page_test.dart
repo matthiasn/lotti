@@ -9,6 +9,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -22,6 +23,8 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -228,6 +231,303 @@ void main() {
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
+  });
+
+  group('update-failure feedback on the read card', () {
+    Future<void> pump(
+      WidgetTester tester, {
+      required WakeRunCompletion outcome,
+      AgentStateEntity? agentState,
+      AgentReportEntity? report,
+      GoalSpecVersionEntity? spec,
+    }) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalReportWakeOutcomeProvider(
+            'goal-1',
+          ).overrideWith((ref) => Stream.value(outcome)),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => report),
+          agentStateProvider('goal-1').overrideWith((ref) async => agentState),
+        ],
+      ),
+    );
+
+    testWidgets('a failed update surfaces its reason on the read card', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          finishedAt: DateTime(2026, 8, 16, 19, 14),
+          error: StateError(
+            'MeliousInferenceException (HTTP 429): Insufficient balance '
+            'for request. Required: 74, Available: 0',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Fourteen silent failures cost a debugging session: the card must
+      // SAY the update died, and say why in the provider's own words (the
+      // "Bad state: " executor wrapping stripped).
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Last update failed'), findsOneWidget);
+      expect(find.textContaining('Insufficient balance'), findsOneWidget);
+      expect(find.textContaining('Bad state'), findsNothing);
+    });
+
+    testWidgets('a successful update surfaces nothing — completed outcomes '
+        'clear the failure line', (tester) async {
+      await pump(
+        tester,
+        outcome: const WakeRunCompletion(
+          runKey: 'run-ok',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+          triggerTokens: {goalReportRefreshTriggerToken},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('one mounted page walks failed → retrying → completed: the '
+        'line shows, steps aside for the running state, and stays gone '
+        'after the retry lands', (tester) async {
+      final outcomes = StreamController<WakeRunCompletion>.broadcast();
+      addTearDown(outcomes.close);
+      final running = StreamController<bool>.broadcast();
+      addTearDown(running.close);
+      final refreshRunning = StreamController<bool>.broadcast();
+      addTearDown(refreshRunning.close);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalReportWakeOutcomeProvider(
+              'goal-1',
+            ).overrideWith((ref) => outcomes.stream),
+            agentIsRunningProvider(
+              'goal-1',
+            ).overrideWith((ref) => running.stream),
+            goalReportWakeInFlightProvider(
+              'goal-1',
+            ).overrideWith((ref) => refreshRunning.stream),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+            agentStateProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final failureLine = find.byKey(
+        const ValueKey('goal-agent-update-failed'),
+      );
+      expect(failureLine, findsNothing);
+
+      // The refresh dies: the line appears.
+      running.add(false);
+      outcomes.add(
+        WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          error: StateError('Insufficient balance for request'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(failureLine, findsOneWidget);
+
+      // An UNRELATED wake for the same agent starts — a chat reply, a
+      // Phase A subscription tick. The agent-wide running flag flips, but
+      // the failure line must not blink away: only a report refresh
+      // (workspace-scoped) takes its stage.
+      running.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(failureLine, findsOneWidget);
+
+      // A report-refresh RETRY starts: the running state takes the stage.
+      // Bounded pumps — the automation row's progress affordance animates,
+      // so the tree never settles while a run is active.
+      refreshRunning.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(failureLine, findsNothing);
+
+      // The retry lands: completed clears the failure for good.
+      running.add(false);
+      refreshRunning.add(false);
+      outcomes.add(
+        const WakeRunCompletion(
+          runKey: 'run-ok',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+          triggerTokens: {goalReportRefreshTriggerToken},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(failureLine, findsNothing);
+    });
+
+    testWidgets('a timed-out run that publishes LATE clears its own timeout '
+        'error — the displayed report outranks the aborted outcome', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-timeout',
+          agentId: 'goal-1',
+          status: WakeRunStatus.aborted,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          startedAt: DateTime(2026, 8, 16, 19),
+          finishedAt: DateTime(2026, 8, 16, 19, 10),
+          error: TimeoutException('timeout'),
+        ),
+        // The executor future was allowed to finish after the cap: its
+        // report lands by notification, with no completed outcome and no
+        // fresh watermark.
+        report:
+            AgentDomainEntity.agentReport(
+                  id: 'report-late',
+                  agentId: 'goal-1',
+                  scope: AgentReportScopes.current,
+                  createdAt: DateTime(2026, 8, 16, 19, 12),
+                  vectorClock: null,
+                  oneLiner: 'Late but landed.',
+                  tldr: 'Late but landed.',
+                  content: 'The slow run finished after the cap.',
+                  provenance: const {'specVersionId': 'goal-1:spec-v1'},
+                )
+                as AgentReportEntity,
+        spec:
+            AgentDomainEntity.goalSpecVersion(
+                  id: 'goal-1:spec-v1',
+                  agentId: 'goal-1',
+                  version: 1,
+                  status: GoalSpecVersionStatus.active,
+                  authoredBy: 'user',
+                  title: 'Move more',
+                  statement: 'Walk this week.',
+                  criteria: const GoalCriterion.habit(
+                    criterionId: 'walk',
+                    habitId: 'walk',
+                    window: GoalWindow.rollingDays(count: 7),
+                    targetCount: 3,
+                  ),
+                  createdAt: DateTime(2026, 8),
+                  vectorClock: null,
+                )
+                as GoalSpecVersionEntity,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Late but landed.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a success synced from ANOTHER device outranks an older '
+        'local failure — the freshness watermark hides the line', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          startedAt: DateTime(2026, 8, 16, 19, 13),
+          finishedAt: DateTime(2026, 8, 16, 19, 14),
+          error: StateError('Insufficient balance for request'),
+        ),
+        // The other device's successful refresh arrives by sync as agent
+        // state whose freshness watermark (the successful run's START)
+        // postdates this failure's start.
+        agentState:
+            AgentDomainEntity.agentState(
+                  id: 'goal-1:state',
+                  agentId: 'goal-1',
+                  slots: const AgentSlots(),
+                  updatedAt: DateTime(2026, 8, 16, 19, 30),
+                  vectorClock: null,
+                  reportFreshAt: DateTime(2026, 8, 16, 19, 30),
+                  reportStaleAt: DateTime(2026, 8, 16, 19, 13),
+                )
+                as AgentStateEntity,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
+    });
   });
 
   testWidgets('a standing report renders its one-liner instead of the '

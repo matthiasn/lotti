@@ -6336,6 +6336,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interakce';
 
   @override
+  String get goalDetailUpdateFailed => 'Poslední aktualizace se nezdařila';
+
+  @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Poslední aktualizace se nezdařila — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
 

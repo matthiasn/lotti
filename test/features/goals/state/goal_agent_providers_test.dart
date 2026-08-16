@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -2116,4 +2117,172 @@ void main() {
       );
     },
   );
+
+  test('goalReportWakeOutcomeProvider surfaces only report-producing wakes — '
+      'a failed chat stays off the read card and the constant subscription '
+      'ticks cannot clear a refresh failure', () async {
+    final completions = StreamController<WakeRunCompletion>.broadcast();
+    addTearDown(completions.close);
+    when(
+      () => wakeOrchestrator.runCompletions,
+    ).thenAnswer((_) => completions.stream);
+
+    final seen = <WakeRunCompletion>[];
+    container.listen(
+      goalReportWakeOutcomeProvider('goal-1'),
+      (_, next) {
+        if (next.value case final value?) seen.add(value);
+      },
+      fireImmediately: true,
+    );
+    await pumpEventQueue();
+
+    final refreshFailure = WakeRunCompletion(
+      runKey: 'run-refresh',
+      agentId: 'goal-1',
+      status: WakeRunStatus.failed,
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      error: StateError('Insufficient balance for request'),
+    );
+    completions
+      // A failed CHAT wake shares the agent id but never touches the
+      // report: invisible here.
+      ..add(
+        WakeRunCompletion(
+          runKey: 'run-chat',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          triggerTokens: const {'goal-chat-message:message-1'},
+          error: StateError('chat failed'),
+        ),
+      )
+      // The refresh dies: surfaces.
+      ..add(refreshFailure)
+      // Phase A subscription ticks complete every few seconds with no
+      // report involvement — they must not clear the surfaced failure.
+      ..add(
+        const WakeRunCompletion(
+          runKey: 'run-subscription',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+        ),
+      );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure]);
+
+    // An abort from SUPERSEDING (pressing Update again) is bookkeeping, not
+    // a decision — it must not overwrite the surfaced failure. The executor
+    // TIMEOUT is the one abort that IS a decision.
+    completions.add(
+      WakeRunCompletion(
+        runKey: 'run-superseded',
+        agentId: 'goal-1',
+        status: WakeRunStatus.aborted,
+        triggerTokens: const {goalReportRefreshTriggerToken},
+        error: StateError('wake superseded by a newer manual request'),
+      ),
+    );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure]);
+    final timedOut = WakeRunCompletion(
+      runKey: 'run-timeout',
+      agentId: 'goal-1',
+      status: WakeRunStatus.aborted,
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      error: TimeoutException('timeout'),
+    );
+    completions.add(timedOut);
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut]);
+
+    // A refresh that completed WITHOUT advancing the report (inference
+    // finished without publishing) decides nothing: the surfaced failure
+    // stays until a report actually lands.
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'run-no-publish',
+        agentId: 'goal-1',
+        status: WakeRunStatus.completed,
+        reportUpdated: false,
+        triggerTokens: {goalReportRefreshTriggerToken},
+      ),
+    );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut]);
+
+    // The deferred coalescing arm of the automatic refresh is a report wake
+    // too — its failures must surface, not vanish behind the token filter.
+    final deferredFailure = WakeRunCompletion(
+      runKey: 'run-deferred',
+      agentId: 'goal-1',
+      status: WakeRunStatus.failed,
+      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+      error: StateError('deferred refresh failed'),
+    );
+    completions.add(deferredFailure);
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut, deferredFailure]);
+
+    // An escalation is a report-producing wake too: its success clears.
+    const escalationSuccess = WakeRunCompletion(
+      runKey: 'run-escalation',
+      agentId: 'goal-1',
+      status: WakeRunStatus.completed,
+      triggerTokens: {'goal-escalation:2026-08-09'},
+    );
+    completions.add(escalationSuccess);
+    await pumpEventQueue();
+    expect(
+      seen,
+      [refreshFailure, timedOut, deferredFailure, escalationSuccess],
+    );
+  });
+
+  test('goalReportWakeInFlightProvider is true only while a report wake '
+      'runs — the refresh workspace or an escalation workspace, never a '
+      'chat run', () async {
+    final wakeRunner = WakeRunner();
+    addTearDown(wakeRunner.dispose);
+    final runnerContainer = ProviderContainer(
+      overrides: [wakeRunnerProvider.overrideWithValue(wakeRunner)],
+    );
+    addTearDown(runnerContainer.dispose);
+    final sub = runnerContainer.listen(
+      goalReportWakeInFlightProvider('goal-1'),
+      (_, _) {},
+    );
+    addTearDown(sub.close);
+    await pumpEventQueue();
+    bool inFlight() =>
+        runnerContainer.read(goalReportWakeInFlightProvider('goal-1')).value ??
+        false;
+    expect(inFlight(), isFalse);
+
+    // A chat run holds the agent lock in no report workspace: not a retry.
+    var lease = await wakeRunner.tryAcquireLease('goal-1');
+    await pumpEventQueue();
+    expect(inFlight(), isFalse);
+    wakeRunner.releaseLease(lease!);
+    await pumpEventQueue();
+
+    // The manual/automation refresh workspace IS a running report wake.
+    lease = await wakeRunner.tryAcquireLease(
+      'goal-1',
+      workspaceKey: goalReportRefreshTriggerToken,
+    );
+    await pumpEventQueue();
+    expect(inFlight(), isTrue);
+    wakeRunner.releaseLease(lease!);
+    await pumpEventQueue();
+    expect(inFlight(), isFalse);
+
+    // So is a re-armed escalation retry in its per-period workspace.
+    lease = await wakeRunner.tryAcquireLease(
+      'goal-1',
+      workspaceKey: goalEscalationWorkspaceKey('2026-08-09'),
+    );
+    await pumpEventQueue();
+    expect(inFlight(), isTrue);
+    wakeRunner.releaseLease(lease!);
+  });
 }

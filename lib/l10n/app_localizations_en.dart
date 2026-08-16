@@ -6242,6 +6242,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interactions';
 
   @override
+  String get goalDetailUpdateFailed => 'Last update failed';
+
+  @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Last update failed — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Signals listed above update within seconds. Your agent only sees the signals listed here.';
 

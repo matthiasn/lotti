@@ -2621,6 +2621,8 @@
   "goalDetailStatementLabel": "Ton objectif",
   "goalDetailThisWeekTitle": "Cette semaine",
   "goalDetailTimelineTitle": "Interactions",
+  "goalDetailUpdateFailed": "La dernière mise à jour a échoué",
+  "goalDetailUpdateFailedWithReason": "La dernière mise à jour a échoué — {reason}",
   "goalDetailWatchingSignals": "Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.",
   "goalDimensionCategoryTimeSource": "Temps de catégorie suivi",
   "goalDimensionHabitReading": "{currentCount} de {targetCount} cette fenêtre",

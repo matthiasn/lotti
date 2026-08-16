@@ -14,6 +14,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -1135,6 +1137,28 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     );
   }
 
+  /// The failure's own words, minus executor wrapping. The provider error
+  /// ("Insufficient balance…", a timeout, an HTTP status) is the actionable
+  /// part — a bare "failed" would leave the user exactly as stranded as the
+  /// silence this line replaces.
+  static String _failureReason(WakeRunCompletion completion) {
+    final raw = completion.error?.toString().trim();
+    if (raw == null || raw.isEmpty) return '';
+    const wrappers = [
+      'Bad state: ',
+      'StateError: ',
+      'TimeoutException: ',
+      'Exception: ',
+    ];
+    var reason = raw;
+    for (final wrapper in wrappers) {
+      if (reason.startsWith(wrapper)) {
+        reason = reason.substring(wrapper.length);
+      }
+    }
+    return reason;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -1163,6 +1187,43 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
 
     final isRefreshing =
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
+    // The last decisive report-wake outcome, so a refresh that DIED
+    // (provider out of credits, network down, the executor timeout) tells
+    // the user instead of leaving a dead button under an eternal "Out of
+    // date". A later successful update emits a completed outcome and clears
+    // the line. While a RETRY is in flight the running state takes the
+    // stage — scoped to the report-refresh workspace, so an unrelated chat
+    // run or Phase A subscription tick for the same agent cannot blink the
+    // error away. And a success that arrives by SYNC (another device
+    // refreshed) outranks an older local failure: `reportFreshAt` records
+    // the successful run's START, so it is compared against this failure's
+    // start — a refresh that began after ours began saw at least our
+    // evidence, even when its watermark predates our finish.
+    final lastOutcome = ref
+        .watch(goalReportWakeOutcomeProvider(widget.agentId))
+        .value;
+    final reportRefreshInFlight =
+        ref.watch(goalReportWakeInFlightProvider(widget.agentId)).value ??
+        false;
+    final reportFreshAt = widget.agentState?.reportFreshAt;
+    final failureAnchor = lastOutcome?.startedAt ?? lastOutcome?.finishedAt;
+    // Two ways durable evidence outranks the in-process failure: the
+    // freshness watermark advanced (a successful refresh, local or synced —
+    // start-to-start comparison, see above), or the DISPLAYED report itself
+    // was published after this failure began — the timed-out executor's
+    // future is deliberately allowed to finish late, and its report arrives
+    // by notification without any completed outcome or fresh watermark.
+    final supersededByNewerEvidence =
+        failureAnchor != null &&
+        ((reportFreshAt != null && reportFreshAt.isAfter(failureAnchor)) ||
+            (report != null && report.createdAt.isAfter(failureAnchor)));
+    final updateFailure =
+        !reportRefreshInFlight &&
+            lastOutcome != null &&
+            lastOutcome.status != WakeRunStatus.completed &&
+            !supersededByNewerEvidence
+        ? lastOutcome
+        : null;
     final nextWakeAt = widget.agentState?.nextWakeAt;
     final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
       widget.identity,
@@ -1235,6 +1296,39 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                   // spends it — the same footer position as the task card's
                   // consumption pills.
                   GoalAgentLifetimePills(agentId: widget.agentId),
+                  if (updateFailure != null) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    Row(
+                      key: const ValueKey('goal-agent-update-failed'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size:
+                              tokens.typography.styles.body.bodySmall.fontSize,
+                          color: tokens.colors.alert.error.ink,
+                        ),
+                        SizedBox(width: tokens.spacing.step1),
+                        Expanded(
+                          child: Text(
+                            switch (_failureReason(updateFailure)) {
+                              '' => messages.goalDetailUpdateFailed,
+                              final reason =>
+                                messages.goalDetailUpdateFailedWithReason(
+                                  reason,
+                                ),
+                            },
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.alert.error.ink,
+                                ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   if (widget.canRefresh) ...[
                     SizedBox(height: tokens.spacing.step3),
                     // The same reload affordances as the task agent section:

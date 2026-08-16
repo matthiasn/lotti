@@ -157,12 +157,66 @@ class WakeRunCompletion {
   const WakeRunCompletion({
     required this.runKey,
     required this.status,
+    this.agentId,
+    this.reason,
+    this.triggerTokens = const {},
+    this.finishedAt,
+    this.startedAt,
+    this.reportUpdated,
     this.error,
   });
 
   /// Deterministic run key of the finished wake (matches the value returned
   /// by [WakeOrchestrator.enqueueManualWake]).
   final String runKey;
+
+  /// The agent the finished wake belonged to. Run keys are opaque hashes, so
+  /// agent-scoped listeners (e.g. a card surfacing the last update failure)
+  /// need the id carried on the event itself. Always set by the
+  /// orchestrator; nullable only for hand-built fixtures.
+  final String? agentId;
+
+  /// The wake's reason (see [WakeReason]) as enqueued. Always set by the
+  /// orchestrator; nullable only for hand-built fixtures.
+  final String? reason;
+
+  /// The job's trigger tokens, so listeners can scope outcomes to a wake
+  /// PURPOSE — a goal's report-refresh runs versus its chat runs — without
+  /// guessing from the reason string.
+  final Set<String> triggerTokens;
+
+  /// When the run reached its terminal status. Always set by the
+  /// orchestrator; nullable only for fixtures.
+  final DateTime? finishedAt;
+
+  /// When the executor actually started running, for terminal statuses that
+  /// had one. Freshness watermarks record a REFRESH START time
+  /// (`reportFreshAt` = the successful run's start), so a listener
+  /// reconciling an in-process failure against durable state that synced in
+  /// later must compare start-to-start — a remote success that began after
+  /// this run began supersedes it, even when its watermark predates this
+  /// run's finish.
+  final DateTime? startedAt;
+
+  /// Whether the wake actually advanced the agent's standing report, when
+  /// the executor said (goal wakes report it via `WakeExecutorResult`).
+  /// Null when unknown — treat as "assume yes" for compatibility. A
+  /// completed report wake that did NOT update the report (e.g. inference
+  /// finished without publishing) must not clear a surfaced failure whose
+  /// staleness is still true.
+  final bool? reportUpdated;
+
+  /// Whether this outcome is a decision an agent-scoped surface should act
+  /// on. Completed and failed runs decide; of the aborted runs only the
+  /// executor TIMEOUT does — a superseded or cancelled wake is bookkeeping
+  /// for a run that was replaced, and must neither surface as an error nor
+  /// clear one that is showing.
+  bool get isDecisive => switch (status) {
+    WakeRunStatus.completed || WakeRunStatus.failed => true,
+    _ =>
+      error is TimeoutException &&
+          (error! as TimeoutException).message == 'timeout',
+  };
 
   /// Terminal status: [WakeRunStatus.completed], [WakeRunStatus.failed], or
   /// [WakeRunStatus.aborted].
@@ -317,11 +371,19 @@ class WakeOrchestrator with AgentErrorLogging {
     WakeJob job,
     WakeRunStatus status, {
     Object? error,
+    DateTime? startedAt,
+    bool? reportUpdated,
   }) {
     if (_runCompletions.isClosed) return;
     _runCompletions.add(
       WakeRunCompletion(
         runKey: job.runKey,
+        agentId: job.agentId,
+        reason: job.reason,
+        triggerTokens: job.triggerTokens,
+        finishedAt: clock.now(),
+        startedAt: startedAt,
+        reportUpdated: reportUpdated,
         status: status,
         error: error,
       ),

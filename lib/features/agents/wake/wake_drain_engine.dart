@@ -784,10 +784,19 @@ extension WakeDrainEngine on WakeOrchestrator {
           WakeRunStatus.completed.name,
           completedAt: clock.now(),
         );
-        _emitRunCompletion(job, WakeRunStatus.completed);
-
         final reportUpdated =
             mutated is! WakeExecutorResult || mutated.reportUpdated;
+        _emitRunCompletion(
+          job,
+          WakeRunStatus.completed,
+          startedAt: startTime,
+          // Only goal wakes report the tri-state today; a plain map result
+          // stays null ("unknown") rather than claiming an update happened.
+          reportUpdated: mutated is WakeExecutorResult
+              ? mutated.reportUpdated
+              : null,
+        );
+
         if (reportUpdated) {
           await _markReportFresh(job.agentId, refreshStartedAt: startTime);
         }
@@ -850,7 +859,12 @@ extension WakeDrainEngine on WakeOrchestrator {
           WakeRunStatus.failed.name,
           errorMessage: 'Wake failed (${e.runtimeType})',
         );
-        _emitRunCompletion(job, WakeRunStatus.failed, error: e);
+        _emitRunCompletion(
+          job,
+          WakeRunStatus.failed,
+          error: e,
+          startedAt: startTime,
+        );
       } finally {
         timeoutTimer?.cancel();
       }

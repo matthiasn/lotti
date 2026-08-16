@@ -10743,6 +10743,18 @@ abstract class AppLocalizations {
   /// **'Interactions'**
   String get goalDetailTimelineTitle;
 
+  /// Error line on the goal read card when the last report update wake failed
+  ///
+  /// In en, this message translates to:
+  /// **'Last update failed'**
+  String get goalDetailUpdateFailed;
+
+  /// Error line on the goal read card quoting why the last report update wake failed; the reason is the provider error text
+  ///
+  /// In en, this message translates to:
+  /// **'Last update failed — {reason}'**
+  String goalDetailUpdateFailedWithReason(String reason);
+
   /// No description provided for @goalDetailWatchingSignals.
   ///
   /// In en, this message translates to:

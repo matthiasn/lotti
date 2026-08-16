@@ -2628,6 +2628,8 @@
   "goalDetailStatementLabel": "Tvůj cíl",
   "goalDetailThisWeekTitle": "Tento týden",
   "goalDetailTimelineTitle": "Interakce",
+  "goalDetailUpdateFailed": "Poslední aktualizace se nezdařila",
+  "goalDetailUpdateFailedWithReason": "Poslední aktualizace se nezdařila — {reason}",
   "goalDetailWatchingSignals": "Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.",
   "goalDimensionCategoryTimeSource": "Čas sledované kategorie",
   "goalDimensionHabitReading": "{currentCount} z {targetCount} tohoto okna",

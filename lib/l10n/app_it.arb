@@ -2878,6 +2878,8 @@
   "goalDetailStatementLabel": "Il tuo obiettivo",
   "goalDetailThisWeekTitle": "Questa settimana",
   "goalDetailTimelineTitle": "Interazioni",
+  "goalDetailUpdateFailed": "Ultimo aggiornamento non riuscito",
+  "goalDetailUpdateFailedWithReason": "Ultimo aggiornamento non riuscito — {reason}",
   "goalDetailWatchingSignals": "I segnali elencati sopra si aggiornano in pochi secondi. L’agente vede solo i segnali indicati qui.",
   "goalDimensionCategoryTimeSource": "Tempo di categoria monitorato",
   "goalDimensionHabitReading": "{currentCount} di {targetCount} questa finestra",
