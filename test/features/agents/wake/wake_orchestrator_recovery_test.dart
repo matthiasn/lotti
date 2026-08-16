@@ -55,6 +55,64 @@ void main() {
         },
       );
 
+      test('measures staleness from the latest sequential wake', () {
+        fakeAsync((async) {
+          final firstCompleter = Completer<Map<String, VectorClock>?>();
+          final secondCompleter = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              return switch (agentId) {
+                'first-agent' => firstCompleter.future,
+                'second-agent' => secondCompleter.future,
+                _ => Future.value(),
+              };
+            },
+          );
+
+          orchestrator.enqueueManualWake(
+            agentId: 'first-agent',
+            reason: 'manual',
+          );
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(minutes: 7))
+            ..flushMicrotasks();
+          orchestrator.enqueueManualWake(
+            agentId: 'second-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          firstCompleter.complete(null);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['first-agent', 'second-agent']));
+
+          // The drain is 13 minutes old, but its active wake only started six
+          // minutes ago and remains within the ten-minute execution cap.
+          async
+            ..elapse(const Duration(minutes: 6))
+            ..flushMicrotasks();
+          orchestrator.enqueueManualWake(
+            agentId: 'next-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+
+          secondCompleter.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['first-agent', 'second-agent', 'next-agent']),
+          );
+        });
+      });
+
       test('does not force-reset when drain is within timeout window', () {
         fakeAsync((async) {
           final stuckCompleter = Completer<Map<String, VectorClock>?>();
@@ -147,6 +205,7 @@ void main() {
             final abortedStatusGate = Completer<void>();
             final replacementDrainGate = Completer<Map<String, VectorClock>?>();
             final executedAgentIds = <String>[];
+            var stuckExecutionCount = 0;
 
             when(
               () => repo.insertWakeRun(entry: any(named: 'entry')),
@@ -181,9 +240,10 @@ void main() {
                   wakeExecutor: (agentId, runKey, triggers, threadId) {
                     executedAgentIds.add(agentId);
                     if (agentId == 'stuck-agent') {
-                      return Completer<Map<String, VectorClock>?>().future;
-                    }
-                    if (agentId == 'new-agent') {
+                      stuckExecutionCount++;
+                      if (stuckExecutionCount == 1) {
+                        return Completer<Map<String, VectorClock>?>().future;
+                      }
                       return replacementDrainGate.future;
                     }
                     return Future.value();
@@ -221,19 +281,22 @@ void main() {
               ),
             ).called(1);
 
-            // Advance well past the 12-minute stale-drain timeout (total since
-            // drain start is now > 16 minutes).
+            // Queue follow-up work before the drain becomes stale. The hung
+            // terminal status write cannot make progress, so the safety net
+            // must re-check and recover once the 12-minute threshold passes.
             async
-              ..elapse(const Duration(minutes: 6))
+              ..elapse(const Duration(minutes: 1))
+              ..flushMicrotasks();
+            stuck.enqueueManualWake(agentId: 'stuck-agent', reason: 'manual');
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['stuck-agent']));
+
+            async
+              ..elapse(const Duration(minutes: 2))
               ..flushMicrotasks();
 
-            // A new wake for a different agent triggers processNext, which now
-            // detects the stale lock and force-resets it (lines 854-862).
-            stuck.enqueueManualWake(agentId: 'new-agent', reason: 'manual');
-            async.flushMicrotasks();
-
-            // Observable: the force-reset log fired and the new drain actually
-            // executed the new agent's job (proving _isDraining was cleared).
+            // Observable: the safety net re-entered processNext and fired the
+            // stale-lock recovery without needing another enqueue.
             verify(
               () => logger.log(
                 LogDomain.agentRuntime,
@@ -242,7 +305,7 @@ void main() {
                 level: any(named: 'level'),
               ),
             ).called(1);
-            expect(executedAgentIds, contains('new-agent'));
+            expect(executedAgentIds, equals(['stuck-agent']));
 
             // Now release the hung aborted write so the old (superseded) drain
             // resumes, observes the bumped generation, and bails out (line 883).
@@ -258,10 +321,17 @@ void main() {
               ),
             ).called(1);
 
-            // The replacement drain is still waiting on new-agent and has one
+            // The next safety-net tick dispatches the queued same-agent wake
+            // after the old drain releases its runner lock.
+            async
+              ..elapse(WakeOrchestrator.safetyNetInterval)
+              ..flushMicrotasks();
+            expect(executedAgentIds, equals(['stuck-agent', 'stuck-agent']));
+
+            // The replacement drain is still waiting on stuck-agent and has one
             // free global slot. Releasing the old drain must not clear the
             // replacement drain's wake signal, otherwise this newly queued
-            // agent would wait for new-agent despite the available capacity.
+            // agent would wait despite the available capacity.
             stuck.enqueueManualWake(agentId: 'third-agent', reason: 'manual');
             async.flushMicrotasks();
             expect(executedAgentIds, contains('third-agent'));

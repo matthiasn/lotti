@@ -243,10 +243,13 @@ may continue in the background; its eventual result is ignored by the drain.
 Workflows must therefore continue to treat late writes as normal database
 mutations that can produce a later notification.
 
-The scheduler only treats the surrounding drain as stale after **12 minutes**.
-That threshold deliberately exceeds the wake cap, leaving room for the bounded
-pre-wake hook and terminal status persistence so a valid slow wake cannot be
-superseded before its queued follow-up is dispatched.
+The scheduler only treats a drain as stale after **12 minutes without
+progress**. Dispatching or completing a wake resets that clock, so a healthy
+drain can process several slow wakes without being judged by its total age. If
+work remains queued, the one-minute safety net re-enters stale detection even
+while a drain is active; this recovers terminal persistence stalls without
+waiting for another enqueue. The threshold deliberately exceeds the wake cap,
+leaving room for the bounded pre-wake hook and terminal status persistence.
 
 # Completion signalling
 

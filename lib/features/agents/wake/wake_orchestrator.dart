@@ -434,8 +434,10 @@ class WakeOrchestrator with AgentErrorLogging {
   /// immediately instead of waiting behind an unrelated long inference.
   Completer<void>? _drainWakeSignal;
 
-  /// Timestamp when the current drain started, for stale-drain detection.
-  DateTime? _drainStartedAt;
+  /// Timestamp of the latest scheduler progress, for stale-drain detection.
+  /// Updated whenever a wake is dispatched or completes so a healthy drain
+  /// processing several slow wakes is not judged by its total lifetime.
+  DateTime? _drainLastProgressAt;
 
   /// Generation counter for drain cancellation. Incremented when a stale
   /// drain is force-reset so the old drain's loop can detect it was
@@ -449,7 +451,7 @@ class WakeOrchestrator with AgentErrorLogging {
   static const _drainTimeout = Duration(minutes: 12);
 
   /// Safety-net periodic timer that catches any scenario where a deferred
-  /// drain timer fails to fire (macOS App Nap, race conditions, etc.).
+  /// drain timer fails to fire or an active drain stops making progress.
   Timer? _safetyNetTimer;
 
   static const _restoredPendingWakeSubscriptionId = 'restored_pending_wake';
@@ -766,15 +768,15 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Starts a periodic safety-net timer that ensures the queue is eventually
   /// drained even if a deferred drain timer fails to fire.
   ///
-  /// Only triggers [processNext] when the queue has pending jobs AND no
-  /// drain is currently in progress. We intentionally do NOT check
-  /// `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
-  /// entry lingering in the map would permanently disable the safety net —
-  /// exactly the failure mode this mechanism is meant to recover from.
+  /// Triggers [processNext] whenever the queue has pending jobs. Re-entering
+  /// an active drain is intentional: it either wakes the healthy scheduler or
+  /// force-resets one whose last progress exceeded [_drainTimeout]. We do not
+  /// check `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
+  /// entry lingering in the map would permanently disable the safety net.
   void _startSafetyNet() {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = Timer.periodic(safetyNetInterval, (_) {
-      if (!queue.isEmpty && !_isDraining) {
+      if (!queue.isEmpty) {
         _log('safety-net drain: queue=${queue.length}');
         unawaited(processNext());
       }

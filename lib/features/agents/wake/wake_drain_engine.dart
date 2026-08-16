@@ -20,17 +20,19 @@ extension WakeDrainEngine on WakeOrchestrator {
   /// When the queue becomes empty after processing, the seen-run-key history
   /// is cleared so that future notification batches can create new run keys.
   ///
-  /// Fix B: If a drain has been in progress for longer than [WakeOrchestrator._drainTimeout],
-  /// force-reset the guard to recover from a stuck drain.
+  /// Fix B: If a drain has made no progress for longer than
+  /// [WakeOrchestrator._drainTimeout], force-reset the guard to recover from
+  /// a stuck drain.
   Future<void> processNextImpl() async {
     if (_isDraining) {
       // Fix B: force-reset stale drain lock after timeout.
-      if (_drainStartedAt != null &&
-          clock.now().difference(_drainStartedAt!) >
+      if (_drainLastProgressAt != null &&
+          clock.now().difference(_drainLastProgressAt!) >
               WakeOrchestrator._drainTimeout) {
+        final stalledFor = clock.now().difference(_drainLastProgressAt!);
         _log(
           'force-resetting stale drain lock '
-          '(started ${clock.now().difference(_drainStartedAt!).inSeconds}s ago)',
+          '(last progress ${stalledFor.inSeconds}s ago)',
           subDomain: 'drain',
         );
         // Increment generation so the old drain's loop bails out.
@@ -40,7 +42,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           wakeSignal.complete();
         }
         _isDraining = false;
-        _drainStartedAt = null;
+        _drainLastProgressAt = null;
       } else {
         _drainRequested = true;
         final wakeSignal = _drainWakeSignal;
@@ -52,7 +54,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     }
 
     _isDraining = true;
-    _drainStartedAt = clock.now();
+    _drainLastProgressAt = clock.now();
     final myGeneration = _drainGeneration;
     _log(
       'drain started, queue.length=${queue.length}',
@@ -73,7 +75,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       // Only clear the guard if we are still the active drain generation.
       if (_drainGeneration == myGeneration) {
         _isDraining = false;
-        _drainStartedAt = null;
+        _drainLastProgressAt = null;
       }
     }
   }
@@ -211,6 +213,7 @@ extension WakeDrainEngine on WakeOrchestrator {
               return job.runKey;
             },
           );
+          _drainLastProgressAt = clock.now();
         }
 
         // Requeue skipped busy/throttled jobs before waiting. Active wakes use
@@ -241,7 +244,10 @@ extension WakeDrainEngine on WakeOrchestrator {
         final completedExecution = activeExecutions.remove(
           completedRunKey as String,
         );
-        if (completedExecution != null) await completedExecution;
+        if (completedExecution != null) {
+          await completedExecution;
+          _drainLastProgressAt = clock.now();
+        }
       }
     } finally {
       final wakeSignal = ownedWakeSignal;
