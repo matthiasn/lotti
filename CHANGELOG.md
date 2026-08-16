@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it; the "Your goal" label and the statement no longer repeat under a
   title that already names the goal; the chat button reads "Talk to agent"
   instead of echoing the goal's name; and the Goals list and detail columns
-  widened to the Habits page's measure — the 700px column read needlessly
-  narrow on desktop — while keeping their gutters on small screens.
+  widened to what the Habits page renders — the 700px column read
+  needlessly narrow on desktop — while keeping their gutters on small
+  screens.
 
 ## [1.0.10]
 ### Added

@@ -42,7 +42,7 @@
   <releases>
     <release version="1.0.11" date="2026-08-16">
       <description>
-        <p>Changed: the goal page opens with the agent's read, wider, without repeating itself. The AI summary sits first with the goal-days strip beneath it; the "Your goal" label and the statement no longer repeat under a title that already names the goal; the chat button reads "Talk to agent" instead of echoing the goal's name; and the Goals list and detail columns widened to the Habits page's measure while keeping their gutters on small screens.</p>
+        <p>Changed: the goal page opens with the agent's read, wider, without repeating itself. The AI summary sits first with the goal-days strip beneath it; the "Your goal" label and the statement no longer repeat under a title that already names the goal; the chat button reads "Talk to agent" instead of echoing the goal's name; and the Goals list and detail columns widened to what the Habits page renders while keeping their gutters on small screens.</p>
       </description>
     </release>
     <release version="1.0.10" date="2026-08-13">

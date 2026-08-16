@@ -590,8 +590,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // The mobile shell keeps the bottom navigation overlaid on goals
         // subroutes, so the final content must clear it.
         // The Habits dashboard's behavior: a step6 gutter that holds on
-        // small screens, with the centered 1100 cap binding on wide ones —
-        // the goals list and this page share both numbers with Habits.
+        // small screens, with the centered cap binding on wide ones — the
+        // goals list and this page share both numbers with Habits.
         padding: EdgeInsets.fromLTRB(
           tokens.spacing.step6,
           tokens.spacing.step5,

@@ -718,8 +718,9 @@ flowchart TD
   size, so the two surfaces draw the same instrument at the same scale (the
   strip's earlier 12px list default read as illegible dots). The detail page
   is the §4b dashboard: a centered column capped at the unified-Goals
-  measure (`kUnifiedGoalsContentMaxWidth`, 1100 — the Habits dashboard
-  band, shared by the goals list) whose hero stack leads with the
+  measure (`kUnifiedGoalsContentMaxWidth`, 900 — what the Habits dashboard
+  effectively renders beside the desktop sidebar, shared by the goals
+  list) whose hero stack leads with the
   timestamped Agent's-read card, the deterministic This-week card
   (`GoalThisWeekCard` — whole-goal strip, Reflect-on-today, yesterday
   tally) beneath it, both at the full content width on every viewport,
