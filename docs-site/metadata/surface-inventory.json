@@ -1250,18 +1250,18 @@
       "status": "verified"
     },
     {
-      "id": "goal-agents",
-      "title": "Goal agents tab (experimental)",
+      "id": "unified-goals",
+      "title": "Unified Goals tab (experimental)",
       "kind": "route-page",
-      "source": "lib/beamer/locations/agents_location.dart",
-      "sourcePattern": "'/agents'",
-      "locator": "/agents",
+      "source": "lib/beamer/locations/goals_location.dart",
+      "sourcePattern": "'/goals'",
+      "locator": "/goals",
       "routes": [
-        "/agents",
-        "/agents/create",
-        "/agents/details/:agentId",
-        "/agents/details/:agentId/edit",
-        "/agents/details/:agentId/chat"
+        "/goals",
+        "/goals/create",
+        "/goals/details/:agentId",
+        "/goals/details/:agentId/edit",
+        "/goals/details/:agentId/chat"
       ],
       "page": "ai-and-automation/goal-agents",
       "status": "planned"

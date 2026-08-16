@@ -171,6 +171,11 @@ class UnifiedGoalCard extends ConsumerWidget {
                       ),
                     if (health?.direction case final direction?)
                       GoalHealthDirectionChip(direction: direction),
+                    // A pending revision proposal is only approvable from
+                    // the detail page — without a list-level signal it stays
+                    // undiscovered until the user happens to open the goal.
+                    if ((health?.pendingProposals ?? 0) > 0)
+                      const _PendingProposalChip(),
                   ],
                 ),
                 if (summary != null) ...[
@@ -288,6 +293,36 @@ class _HabitWindowReading extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// "Proposal awaiting review" — the list-level surfacing of
+/// `health.pendingProposals`. The info-alert wash with its `ink` foreground
+/// mirrors the retired agents-list badge: the full hue as caption text fails
+/// the 4.5:1 floor over its own wash.
+class _PendingProposalChip extends StatelessWidget {
+  const _PendingProposalChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final info = tokens.colors.alert.info;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: info.defaultColor.withValues(alpha: SurfaceAlphas.washChip),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+      ),
+      child: Text(
+        context.messages.goalPendingProposalBadge,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: info.ink,
+        ),
+      ),
     );
   }
 }

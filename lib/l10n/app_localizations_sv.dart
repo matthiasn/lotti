@@ -12965,4 +12965,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get goalPendingProposalBadge => 'Förslag väntar';
 }

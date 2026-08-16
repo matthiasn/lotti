@@ -13132,4 +13132,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta in attesa';
 }

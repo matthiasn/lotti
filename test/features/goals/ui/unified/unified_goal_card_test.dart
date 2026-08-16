@@ -83,11 +83,12 @@ void main() {
     int? deficit,
     GoalHealthDirection? direction,
     bool withSpec = true,
+    int pendingProposals = 0,
   }) => (
     trackStatus: trackStatus,
     attainment: null,
     reportOneLiner: reportOneLiner,
-    pendingProposals: 0,
+    pendingProposals: pendingProposals,
     spec: withSpec ? spec(agentId) : null,
     direction: direction,
     deficit: deficit,
@@ -273,6 +274,32 @@ void main() {
     // vocabulary across every goal surface.
     expect(find.byType(GoalHealthDirectionChip), findsOneWidget);
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+  });
+
+  testWidgets('a pending revision proposal surfaces as a header chip — the '
+      'list-level signal that the goal needs approval', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+        pendingProposals: 1,
+      ),
+      progressView: progress(),
+    );
+    expect(find.text('Proposal awaiting review'), findsOneWidget);
+  });
+
+  testWidgets('no pending proposal, no chip', (tester) async {
+    await pump(
+      tester,
+      agentHealth: health(
+        agentId: 'goal-1',
+        trackStatus: GoalTrackStatus.onTrack,
+      ),
+      progressView: progress(),
+    );
+    expect(find.text('Proposal awaiting review'), findsNothing);
   });
 
   testWidgets('a narrow card stacks the strip below the identity block', (

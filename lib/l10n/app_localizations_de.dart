@@ -13045,4 +13045,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get goalPendingProposalBadge => 'Vorschlag wartet auf Prüfung';
 }

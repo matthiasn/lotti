@@ -13109,4 +13109,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
 }

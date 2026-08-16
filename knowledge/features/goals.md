@@ -686,8 +686,12 @@ flowchart TD
   strip's earlier 12px list default read as illegible dots). On desktop the
   detail page's middle column applies its reading measure to the content
   *inside* the scroll view, never to the scroll view itself — constraining
-  the `ListView` parked the scrollbar mid-pane instead of at the pane edge
-  beside the chat divider. The detail page expands the
+  the scroll view parked the scrollbar mid-pane instead of at the pane edge
+  beside the chat divider. The detail page builds **eagerly** — a `Column`
+  in a `SingleChildScrollView`, never a lazy list: its section count is
+  small and bounded, lazy mounting made scrolling janky, and a scrolled-away
+  lazy section could unmount the `ensureVisible` anchor the banner CTA
+  scrolls to. The detail page expands the
   same source into a habit grid or metric series using each leaf criterion's
   actual day/rolling/week/month range. Canonical weight data uses the shared
   time-series line treatment, while paired systolic and diastolic dimensions

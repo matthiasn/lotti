@@ -2724,6 +2724,7 @@
   "goalNudgeStatusSuperseded": "Remplacé",
   "goalPatternBusiestHour": "La plupart des sessions commencent vers {hour}:00. Ouvre Insights pour une analyse plus approfondie.",
   "goalPatternTitle": "Rythme horaire",
+  "goalPendingProposalBadge": "Proposition en attente",
   "goalProgressAgesOut": "sort ce soir",
   "goalProgressAtRate": "dans le rythme",
   "goalProgressCaption": "7 derniers jours · glisse à minuit",

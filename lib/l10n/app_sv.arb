@@ -2981,6 +2981,7 @@
   "goalNudgeStatusSuperseded": "Ersatt",
   "goalPatternBusiestHour": "De flesta sessioner börjar runt {hour}:00. Öppna insikter för djupare analys.",
   "goalPatternTitle": "Tidsmönster",
+  "goalPendingProposalBadge": "Förslag väntar",
   "goalProgressAgesOut": "faller bort i kväll",
   "goalProgressAtRate": "i takt",
   "goalProgressCaption": "senaste 7 dagarna · flyttas vid midnatt",

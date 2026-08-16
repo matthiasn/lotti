@@ -13146,4 +13146,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get goalPendingProposalBadge => 'Propuesta pendiente';
 }

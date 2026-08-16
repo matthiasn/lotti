@@ -52,7 +52,7 @@ sources:
 
 # One stack per tab
 
-Lotti does not have a single navigation stack. It has **ten**, one per
+Lotti does not have a single navigation stack. It has **nine**, one per
 top-level destination, each a `BeamerDelegate` with its own history:
 
 | Destination | Root path | Enabled |

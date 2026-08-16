@@ -21860,6 +21860,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// Chip on a goal card when a revision proposal is pending review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal awaiting review'**
+  String get goalPendingProposalBadge;
 }
 
 class _AppLocalizationsDelegate
