@@ -443,8 +443,10 @@ class WakeOrchestrator with AgentErrorLogging {
   int _drainGeneration = 0;
 
   /// Maximum duration for a drain before it is considered stale and the
-  /// guard is force-reset.
-  static const _drainTimeout = Duration(minutes: 5);
+  /// guard is force-reset. This must remain longer than
+  /// [wakeRunMaxDuration], with headroom for the bounded pre-wake hook and
+  /// terminal status persistence, so a valid slow wake is never superseded.
+  static const _drainTimeout = Duration(minutes: 12);
 
   /// Safety-net periodic timer that catches any scenario where a deferred
   /// drain timer fails to fire (macOS App Nap, race conditions, etc.).

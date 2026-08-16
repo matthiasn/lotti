@@ -243,6 +243,11 @@ may continue in the background; its eventual result is ignored by the drain.
 Workflows must therefore continue to treat late writes as normal database
 mutations that can produce a later notification.
 
+The scheduler only treats the surrounding drain as stale after **12 minutes**.
+That threshold deliberately exceeds the wake cap, leaving room for the bounded
+pre-wake hook and terminal status persistence so a valid slow wake cannot be
+superseded before its queued follow-up is dispatched.
+
 # Completion signalling
 
 `runCompletions` is a broadcast `Stream<WakeRunCompletion>` — one event per

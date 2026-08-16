@@ -6,72 +6,54 @@ void main() {
   // Owns stale-drain detection, force-reset recovery, and generation bail-out.
   group('WakeOrchestrator', () {
     group('stale drain recovery (Fix B)', () {
-      test('force-resets stale drain and new drain supersedes old one '
-          'via generation counter', () {
-        fakeAsync((async) {
-          final stuckCompleter = Completer<Map<String, VectorClock>?>();
-          final executedAgentIds = <String>[];
+      test(
+        'does not supersede a valid wake that outlives the old drain cap',
+        () {
+          fakeAsync((async) {
+            final slowCompleter = Completer<Map<String, VectorClock>?>();
+            final executedAgentIds = <String>[];
 
-          orchestrator
-            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
-              executedAgentIds.add(agentId);
-              // First call hangs; subsequent ones complete immediately.
-              if (agentId == 'stuck-agent') return stuckCompleter.future;
-              return Future.value();
-            }
-            ..addSubscription(
-              makeSub(
-                id: 'sub-stuck',
-                agentId: 'stuck-agent',
-                matchEntityIds: {'entity-stuck'},
-              ),
-            )
-            ..addSubscription(
-              makeSub(
-                id: 'sub-ok',
-                agentId: 'ok-agent',
-                matchEntityIds: {'entity-ok'},
-              ),
+            orchestrator = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              maxConcurrentWakes: () => 1,
+              wakeExecutor: (agentId, runKey, triggers, threadId) {
+                executedAgentIds.add(agentId);
+                if (agentId == 'slow-agent') return slowCompleter.future;
+                return Future.value();
+              },
             );
 
-          final controller = StreamController<Set<String>>.broadcast();
-          orchestrator.start(controller.stream);
+            orchestrator.enqueueManualWake(
+              agentId: 'slow-agent',
+              reason: 'manual',
+            );
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['slow-agent']));
 
-          // Trigger the stuck agent — deferred drain starts after throttle.
-          emitAndDrain(async, controller, {'entity-stuck'});
+            // The wake is still valid but has outlived the old five-minute
+            // stale-drain threshold.
+            async
+              ..elapse(const Duration(minutes: 6))
+              ..flushMicrotasks();
 
-          // The executor is now awaiting the stuckCompleter.
-          expect(executedAgentIds, contains('stuck-agent'));
+            orchestrator.enqueueManualWake(
+              agentId: 'next-agent',
+              reason: 'manual',
+            );
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['slow-agent']));
 
-          // Advance past the 5-minute drain timeout.
-          async
-            ..elapse(const Duration(minutes: 6))
-            ..flushMicrotasks();
-
-          // Now trigger ok-agent. processNext should detect the stale drain,
-          // force-reset it, and start a new drain for ok-agent.
-          emitAndDrain(async, controller, {'entity-ok'});
-
-          expect(executedAgentIds, contains('ok-agent'));
-
-          // Complete the stuck executor so the old drain can finish its
-          // finally block.
-          stuckCompleter.complete(null);
-          async.flushMicrotasks();
-
-          // The orchestrator should be in a clean state — not stuck.
-          // Verify by enqueuing another manual wake and seeing it execute.
-          executedAgentIds.clear();
-          orchestrator.enqueueManualWake(
-            agentId: 'ok-agent',
-            reason: 'test',
-          );
-          async.flushMicrotasks();
-          expect(executedAgentIds, contains('ok-agent'));
-
-          controller.close();
-        });
-      });
+            // Completing the valid wake must let its existing drain dispatch
+            // the queued follow-up immediately. A premature force-reset leaves
+            // next-agent queued until another scheduler trigger arrives.
+            slowCompleter.complete(null);
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['slow-agent', 'next-agent']));
+          });
+        },
+      );
 
       test('does not force-reset when drain is within timeout window', () {
         fakeAsync((async) {
@@ -99,7 +81,7 @@ void main() {
           emitAndDrain(async, controller, {'entity-stuck'});
           expect(executionCount, 1);
 
-          // Advance 60 seconds — well within both the 5-minute drain
+          // Advance 60 seconds — well within both the 12-minute drain
           // stale-lock window and the per-cycle wakeRunMaxDuration cap, so
           // the stuck executor is still in flight.
           async.elapse(const Duration(seconds: 60));
@@ -127,74 +109,12 @@ void main() {
   });
 
   group('_drain(generation) bail-out', () {
-    test('old drain bails out when generation changes during iteration', () {
-      fakeAsync((async) {
-        final stuckCompleter = Completer<Map<String, VectorClock>?>();
-        final executedAgentIds = <String>[];
-
-        orchestrator
-          ..wakeExecutor = (agentId, runKey, triggers, threadId) {
-            executedAgentIds.add(agentId);
-            if (agentId == 'slow-agent') return stuckCompleter.future;
-            return Future.value();
-          }
-          ..addSubscription(
-            makeSub(
-              id: 'sub-slow',
-              agentId: 'slow-agent',
-              matchEntityIds: {'entity-slow'},
-            ),
-          )
-          ..addSubscription(
-            makeSub(
-              id: 'sub-ok',
-              agentId: 'ok-agent',
-              matchEntityIds: {'entity-ok'},
-            ),
-          );
-
-        final controller = StreamController<Set<String>>.broadcast();
-        orchestrator.start(controller.stream);
-
-        // Trigger slow-agent — drain starts, executor blocks.
-        emitAndDrain(async, controller, {'entity-slow'});
-        expect(executedAgentIds, contains('slow-agent'));
-
-        // Advance past the 5-minute drain timeout.
-        async
-          ..elapse(const Duration(minutes: 6))
-          ..flushMicrotasks();
-
-        // Trigger ok-agent — force-resets stale drain (increments
-        // generation) and starts a new drain.
-        emitAndDrain(async, controller, {'entity-ok'});
-        expect(executedAgentIds, contains('ok-agent'));
-
-        // Complete the stuck executor — the old _drain resumes, loops
-        // back to while(true), checks generation, and bails out via
-        // `if (_drainGeneration != generation) return`.
-        stuckCompleter.complete(null);
-        async.flushMicrotasks();
-
-        // Verify the orchestrator is in a clean state.
-        executedAgentIds.clear();
-        orchestrator.enqueueManualWake(
-          agentId: 'ok-agent',
-          reason: 'test',
-        );
-        async.flushMicrotasks();
-        expect(executedAgentIds, contains('ok-agent'));
-
-        controller.close();
-      });
-    });
-
     group('processNext stale-lock force-reset', () {
       // These tests drive the force-reset branch that the existing
       // "stale drain recovery" tests never reach: with a normally-completing
-      // abort path the stuck drain finishes at the 2-minute hard cap, so
+      // abort path the stuck drain finishes at the 10-minute hard cap, so
       // _isDraining is already false by the time a later processNext runs.
-      // To keep _isDraining stuck past the 5-minute _drainTimeout we hang the
+      // To keep _isDraining stuck past the 12-minute _drainTimeout we hang the
       // *aborted* status write, freezing _executeJob (and thus the drain)
       // inside _safeUpdateStatus.
       test(
@@ -301,8 +221,8 @@ void main() {
               ),
             ).called(1);
 
-            // Advance well past the 5-minute stale-drain timeout (total since
-            // drain start is now > 15 minutes).
+            // Advance well past the 12-minute stale-drain timeout (total since
+            // drain start is now > 16 minutes).
             async
               ..elapse(const Duration(minutes: 6))
               ..flushMicrotasks();
