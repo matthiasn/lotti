@@ -96,6 +96,9 @@ Future<bool> showGoalBannerSnoozeSheet(
                       leadingIcon: Icons.snooze_rounded,
                       variant: DesignSystemButtonVariant.secondary,
                       size: DesignSystemButtonSize.dense,
+                      // Compact PILLS, full-size TARGETS: these are the
+                      // sheet's primary choices, not metadata controls.
+                      tapTargetSize: MaterialTapTargetSize.padded,
                       onPressed: () =>
                           Navigator.of(sheetContext).pop(option.$1),
                     ),

@@ -667,10 +667,17 @@ class _DockTenant extends ConsumerWidget {
                 // The same identity language as the full banner card: the
                 // persona chip and the goal's name, so the voice in the dock
                 // is never anonymous — a nudge only makes sense as SOME
-                // goal's nudge.
-                GoalBannerPersonaChip.forStyle(
-                  monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
-                  style: style,
+                // goal's nudge. Excluded from semantics: the enclosing node
+                // already announces the goal via goalBannerSemanticLabel,
+                // and merging these in would read the name (and monogram)
+                // twice before the headline.
+                ExcludeSemantics(
+                  child: GoalBannerPersonaChip.forStyle(
+                    monogram: GoalBannerPersonaChip.monogramFor(
+                      entry.goalTitle,
+                    ),
+                    style: style,
+                  ),
                 ),
                 SizedBox(width: tokens.spacing.step3),
                 Expanded(
@@ -678,12 +685,15 @@ class _DockTenant extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        entry.goalTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                      ExcludeSemantics(
+                        child: Text(
+                          entry.goalTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
                         ),
                       ),
                       GoalBannerAnimatedText(
