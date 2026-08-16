@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -2235,5 +2236,53 @@ void main() {
       seen,
       [refreshFailure, timedOut, deferredFailure, escalationSuccess],
     );
+  });
+
+  test('goalReportWakeInFlightProvider is true only while a report wake '
+      'runs — the refresh workspace or an escalation workspace, never a '
+      'chat run', () async {
+    final wakeRunner = WakeRunner();
+    addTearDown(wakeRunner.dispose);
+    final runnerContainer = ProviderContainer(
+      overrides: [wakeRunnerProvider.overrideWithValue(wakeRunner)],
+    );
+    addTearDown(runnerContainer.dispose);
+    final sub = runnerContainer.listen(
+      goalReportWakeInFlightProvider('goal-1'),
+      (_, _) {},
+    );
+    addTearDown(sub.close);
+    await pumpEventQueue();
+    bool inFlight() =>
+        runnerContainer.read(goalReportWakeInFlightProvider('goal-1')).value ??
+        false;
+    expect(inFlight(), isFalse);
+
+    // A chat run holds the agent lock in no report workspace: not a retry.
+    var lease = await wakeRunner.tryAcquireLease('goal-1');
+    await pumpEventQueue();
+    expect(inFlight(), isFalse);
+    wakeRunner.releaseLease(lease!);
+    await pumpEventQueue();
+
+    // The manual/automation refresh workspace IS a running report wake.
+    lease = await wakeRunner.tryAcquireLease(
+      'goal-1',
+      workspaceKey: goalReportRefreshTriggerToken,
+    );
+    await pumpEventQueue();
+    expect(inFlight(), isTrue);
+    wakeRunner.releaseLease(lease!);
+    await pumpEventQueue();
+    expect(inFlight(), isFalse);
+
+    // So is a re-armed escalation retry in its per-period workspace.
+    lease = await wakeRunner.tryAcquireLease(
+      'goal-1',
+      workspaceKey: goalEscalationWorkspaceKey('2026-08-09'),
+    );
+    await pumpEventQueue();
+    expect(inFlight(), isTrue);
+    wakeRunner.releaseLease(lease!);
   });
 }
