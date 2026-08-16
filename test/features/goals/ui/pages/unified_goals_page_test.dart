@@ -40,8 +40,10 @@ import '../../../habits/test_utils.dart';
 final _now = DateTime(2026, 8, 15, 14);
 
 /// Serves a fixed [HabitHeatmapData] so the page's heatmap card renders
-/// without the database-backed controller. Counts builds so the midnight
-/// test can assert the projection was invalidated.
+/// without the database-backed controller. Counts the preserve-state
+/// refreshes so the midnight test can assert the projection was asked to
+/// recompute WITHOUT being invalidated (no empty-grid flash).
+int _heatmapRefreshes = 0;
 int _heatmapBuilds = 0;
 
 class _FakeHeatmapController extends HabitHeatmapController {
@@ -49,6 +51,11 @@ class _FakeHeatmapController extends HabitHeatmapController {
   HabitHeatmapData build() {
     _heatmapBuilds++;
     return HabitHeatmapData.empty();
+  }
+
+  @override
+  Future<void> refreshNow() async {
+    _heatmapRefreshes++;
   }
 }
 
@@ -124,6 +131,7 @@ void main() {
 
   setUp(() {
     _heatmapBuilds = 0;
+    _heatmapRefreshes = 0;
     when(
       () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
     ).thenAnswer((_) => habitFlossing);
@@ -635,8 +643,11 @@ void main() {
     // And the CONTROLLER was asked to rebucket: `showFrom` bucketing and the
     // per-day maps are time-derived, so a bare rebuild would keep serving
     // yesterday's split. The heatmap projection has no clock of its own, so
-    // it must be rebuilt too (range cap, today-cell, streak baselines).
+    // it is asked to refresh too — PRESERVING its state: a provider
+    // invalidation would flash the populated grid to the empty placeholder
+    // (no-flash rule), so the controller must not have been rebuilt.
     expect(controller.refreshNowCalls, 1);
-    expect(_heatmapBuilds, greaterThanOrEqualTo(2));
+    expect(_heatmapRefreshes, 1);
+    expect(_heatmapBuilds, 1);
   });
 }

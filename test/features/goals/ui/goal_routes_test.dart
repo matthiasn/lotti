@@ -2,6 +2,10 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
+
+import '../../../mocks/mocks.dart';
 
 /// Minimal location echoing any path, so the helpers can be exercised
 /// against a real enclosing Beamer at arbitrary routes.
@@ -124,5 +128,31 @@ void main() {
       goalEditPath(agentsContext, 'goal-1'),
       '/agents/details/goal-1/edit',
     );
+  });
+
+  group('goalDetailPathFromShell', () {
+    tearDown(() async {
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+    });
+
+    test('keeps the legacy Agents target while that tab is enabled — and '
+        'as the fallback with no NavService at all', () {
+      expect(goalDetailPathFromShell('goal-1'), '/agents/details/goal-1');
+
+      final navService = MockNavService()
+        ..agentsPageEnabled = true
+        ..unifiedGoalsPageEnabled = true;
+      getIt.registerSingleton<NavService>(navService);
+      expect(goalDetailPathFromShell('goal-1'), '/agents/details/goal-1');
+    });
+
+    test('routes to the unified Goals surface when it is the only enabled '
+        'goal tab', () {
+      final navService = MockNavService()..unifiedGoalsPageEnabled = true;
+      getIt.registerSingleton<NavService>(navService);
+      expect(goalDetailPathFromShell('goal-1'), '/goals/details/goal-1');
+    });
   });
 }

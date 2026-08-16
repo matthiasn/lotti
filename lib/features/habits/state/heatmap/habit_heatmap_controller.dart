@@ -112,6 +112,14 @@ class HabitHeatmapController extends Notifier<HabitHeatmapData> {
   /// Fetches the wide completion range and recomputes, but only applies the
   /// result if no newer refresh started in the meantime — so concurrent
   /// definition/completion events can't regress the grid to stale data.
+  /// Day-boundary refresh that PRESERVES the established grid: refetches
+  /// (the range cap depends on the current instant) and recomputes in
+  /// place. The unified Goals page calls this from its midnight timer —
+  /// invalidating the provider instead would flash the populated grid to
+  /// the empty placeholder and zero every row's streak while the
+  /// multi-year query reruns (the no-flash refresh rule).
+  Future<void> refreshNow() => _refreshAndRecompute();
+
   Future<void> _refreshAndRecompute() async {
     final epoch = ++_refreshEpoch;
     final completions = await _repository.getHabitCompletionsInRange(

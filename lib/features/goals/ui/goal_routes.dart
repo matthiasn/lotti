@@ -1,5 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Route helpers for the goal surfaces during the flagged unified-Goals
 /// rollout.
@@ -49,3 +51,22 @@ String goalChatPath(BuildContext context, String agentId) =>
 /// The current surface's edit-wizard route for [agentId].
 String goalEditPath(BuildContext context, String agentId) =>
     '${goalDetailPath(context, agentId)}/edit';
+
+/// The goal detail route for [agentId] from a surface OUTSIDE both goal
+/// tabs — the shell banner dock on Tasks/DailyOS/Habits, where no goal
+/// Beamer encloses the tap. The legacy Agents tab keeps its pre-merge
+/// target while enabled; with only the unified Goals flag on, the route
+/// moves there so dock nudges stay actionable (a disabled tab's route is
+/// normalized to /tasks).
+String goalDetailPathFromShell(String agentId) {
+  final navService = getIt.isRegistered<NavService>()
+      ? getIt<NavService>()
+      : null;
+  final root =
+      navService != null &&
+          !navService.isAgentsPageEnabled &&
+          navService.isUnifiedGoalsPageEnabled
+      ? '/goals'
+      : '/agents';
+  return '$root/details/$agentId';
+}

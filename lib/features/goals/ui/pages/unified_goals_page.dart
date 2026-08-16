@@ -80,8 +80,12 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         // would re-gate against yesterday's split. The heatmap projection
         // has no clock of its own either: without this it keeps yesterday's
         // range cap, today-cell and streak baselines until a data event.
+        // Both refreshes preserve their established state — never an
+        // invalidate, which would flash the grid empty (no-flash rule).
         unawaited(ref.read(habitsControllerProvider.notifier).refreshNow());
-        ref.invalidate(habitHeatmapControllerProvider);
+        unawaited(
+          ref.read(habitHeatmapControllerProvider.notifier).refreshNow(),
+        );
         setState(() {});
         _scheduleMidnightRebuild();
       },
