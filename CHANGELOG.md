@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.10]
 ### Added
+- **Daily goals can track time by label.** A goal can now require time on
+  entries carrying a chosen label across categories, show partial daily
+  progress until the hour target is met, and give its agent the entries'
+  Markdown descriptions so coaching can reflect what the time was spent on.
 - **A unified Goals page, behind a flag.** Turning on "Enable unified Goals
   page" in Settings → Flags adds a Goals tab that merges Habits and Goal
   Agents into one surface: each goal is a card with its health pill (with the

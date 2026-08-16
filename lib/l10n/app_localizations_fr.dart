@@ -6404,6 +6404,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pas encore, mais la dernière mesure s\'est rapprochée de la cible.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Temps suivi par libellé';
+
+  @override
   String get goalDimensionMeasurableSource => 'Ta mesure';
 
   @override
@@ -6633,6 +6636,29 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Vers quoi veux-tu avancer ?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'heure',
+        'other': 'heures',
+      },
+    );
+    return '$labelName : $direction $target $_temp0 par jour';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Temps suivi avec ce libellé · heures par jour';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Heures par jour';
 
   @override
   String get goalFormMappingIntro =>

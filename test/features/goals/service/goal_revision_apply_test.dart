@@ -312,6 +312,35 @@ void main() {
     },
   );
 
+  test('label time takes target changes and binds by stable label id', () {
+    const labelTime = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      categoryId: 'work',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'creative-day',
+      criteria: [steps, labelTime],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {'metric': 'content', 'targetValue': 1.5},
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+    final time = revised.criteria.last as GoalCriterionLabelTime;
+
+    expect(time.targetHours, 1.5);
+    expect(time.categoryId, 'work');
+    expect(time.window, const GoalWindow.day());
+    expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
+  });
+
   test('a category-time sibling does not make habit cadence ambiguous', () {
     const categoryTime = GoalCriterion.categoryTime(
       criterionId: 'late-coding',

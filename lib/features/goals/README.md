@@ -20,7 +20,11 @@ today:
   Quantitative and user-defined measurable leaves share the existing journal
   ingestion paths; category-time leaves reuse Insights attribution, support
   minimum/maximum hours and optional local time bands, and give Phase B the
-  bounded raw session evidence needed to discuss timing patterns. Tracked-time
+  bounded raw session evidence needed to discuss timing patterns. Label-time
+  leaves select tracked entries by stable label id across categories by
+  default (with an optional category scope), aggregate their interval-unioned
+  hours per local day, and expose bounded entry markdown to Phase B so it can
+  reason about what the time contained rather than only its duration. Tracked-time
   mutations mark the standing report out of date without waking the agent for
   every timer edit; the daily cadence consumes accumulated evidence into the
   deterministic progress register, while only a report-producing transition

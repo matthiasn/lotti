@@ -1571,6 +1571,42 @@ void main() {
     expect(find.text('This dimension is currently on track.'), findsOneWidget);
   });
 
+  testWidgets('daily label time flips from in progress to fulfilled green', (
+    tester,
+  ) async {
+    Widget card(num hours) => makeTestableWidgetNoScroll(
+      GoalProgressCard(
+        progress: GoalProgressView(
+          today: today,
+          metric: GoalMetricProgressView(
+            criterionId: 'daily-content',
+            sourceId: 'content',
+            name: 'Content',
+            target: 1,
+            kind: GoalDimensionKind.labelTime,
+            aggregation: GoalAggregation.sum,
+            window: const GoalWindow.day(),
+            days: [day(0, hours)],
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(card(0.75));
+
+    expect(find.text('Tracked time by label'), findsOneWidget);
+    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('On track'), findsNothing);
+
+    await tester.pumpWidget(card(65 / 60));
+    await tester.pump();
+
+    final status = tester.widget<Text>(find.text('On track'));
+    final tokens = tester.element(find.text('On track')).designTokens;
+    expect(status.style?.color, tokens.colors.alert.success.ink);
+    expect(find.text('This dimension is currently on track.'), findsOneWidget);
+  });
+
   testWidgets('renders an observed-pattern card for every category dimension', (
     tester,
   ) async {

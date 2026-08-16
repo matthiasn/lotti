@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -54,6 +55,8 @@ void main() {
     String? categoryId,
     bool deleted = false,
     bool private = false,
+    String plainText = 'work',
+    String? markdown,
   }) {
     return JournalEntity.journalEntry(
       meta: Metadata(
@@ -66,7 +69,7 @@ void main() {
         deletedAt: deleted ? dateTo : null,
         private: private,
       ),
-      entryText: const EntryText(plainText: 'work'),
+      entryText: EntryText(plainText: plainText, markdown: markdown),
     );
   }
 
@@ -578,5 +581,79 @@ void main() {
       expect(rows.first.dateFrom, DateTime(2024, 3, 1, 9));
       expect(rows.last.dateFrom, DateTime(2024, 3, 2, 9));
     });
+  });
+
+  group('goalLabelTimeRows', () {
+    test(
+      'filters by stable label across categories and returns markdown',
+      () async {
+        final at = DateTime(2024, 3, 1, 9);
+        await db.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'content',
+            createdAt: at,
+            updatedAt: at,
+            name: 'Content',
+            color: '#30A46C',
+            vectorClock: null,
+          ),
+        );
+        await db.upsertLabelDefinition(
+          LabelDefinition(
+            id: 'admin',
+            createdAt: at,
+            updatedAt: at,
+            name: 'Admin',
+            color: '#AAAAAA',
+            vectorClock: null,
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTimeEntry(
+            id: 'content-a',
+            dateFrom: at,
+            dateTo: at.add(const Duration(minutes: 45)),
+            categoryId: 'writing',
+            plainText: 'Drafted three sections',
+            markdown: 'Drafted **three** sections',
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTimeEntry(
+            id: 'content-b',
+            dateFrom: at.add(const Duration(hours: 2)),
+            dateTo: at.add(const Duration(hours: 2, minutes: 20)),
+            categoryId: 'marketing',
+            plainText: 'Edited launch copy',
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTimeEntry(
+            id: 'admin-entry',
+            dateFrom: at.add(const Duration(hours: 3)),
+            dateTo: at.add(const Duration(hours: 4)),
+          ),
+        );
+        await db.insertLabel('content-a', 'content');
+        await db.insertLabel('content-b', 'content');
+        await db.insertLabel('admin-entry', 'admin');
+
+        final rows = await db.goalLabelTimeRows(
+          start: DateTime(2024, 3),
+          end: DateTime(2024, 3, 2),
+          labelIds: const {'content'},
+        );
+
+        expect(rows.map((row) => row.entryId), ['content-a', 'content-b']);
+        expect(rows.map((row) => row.categoryId), ['writing', 'marketing']);
+        expect(rows.first.markdown, 'Drafted **three** sections');
+        expect(
+          rows.last.markdown,
+          'Edited launch copy',
+          reason:
+              'older entries fall back to semantically available plain text',
+        );
+      },
+    );
   });
 }

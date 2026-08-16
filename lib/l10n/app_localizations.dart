@@ -10791,6 +10791,12 @@ abstract class AppLocalizations {
   /// **'Not there yet, but the last reading moved toward the target.'**
   String get goalDimensionImprovingNote;
 
+  /// No description provided for @goalDimensionLabelTimeSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked time by label'**
+  String get goalDimensionLabelTimeSource;
+
   /// No description provided for @goalDimensionMeasurableSource.
   ///
   /// In en, this message translates to:
@@ -11148,6 +11154,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What do you want to work toward?'**
   String get goalFormIntentionPrompt;
+
+  /// Confirmation summary for a daily label-filtered tracked-time criterion.
+  ///
+  /// In en, this message translates to:
+  /// **'{labelName}: {direction} {target} {target, select, 1{hour} other{hours}} per day'**
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  );
+
+  /// No description provided for @goalFormLabelTimeSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked time with this label · hours per day'**
+  String get goalFormLabelTimeSource;
+
+  /// No description provided for @goalFormLabelTimeTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours per day'**
+  String get goalFormLabelTimeTarget;
 
   /// No description provided for @goalFormMappingIntro.
   ///

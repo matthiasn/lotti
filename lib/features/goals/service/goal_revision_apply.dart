@@ -80,6 +80,7 @@ GoalRevisionResult applyGoalRevisionChanges({
           GoalCriterionMetric() => c.copyWith(target: targetValue),
           GoalCriterionMeasurable() => c.copyWith(target: targetValue),
           GoalCriterionCategoryTime() => c.copyWith(targetHours: targetValue),
+          GoalCriterionLabelTime() => c.copyWith(targetHours: targetValue),
           _ => c,
         },
       );
@@ -100,6 +101,7 @@ GoalRevisionResult applyGoalRevisionChanges({
           GoalCriterionMetric() => c.copyWith(window: window),
           GoalCriterionMeasurable() => c.copyWith(window: window),
           GoalCriterionCategoryTime() => c.copyWith(window: window),
+          GoalCriterionLabelTime() => c.copyWith(window: window),
           _ => c,
         },
       );
@@ -203,7 +205,8 @@ GoalCriterion? _resolveQuantitativeLeaf(GoalCriterion root, Object? metric) {
     switch (c) {
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
-          GoalCriterionCategoryTime():
+          GoalCriterionCategoryTime() ||
+          GoalCriterionLabelTime():
         leaves.add(c);
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria) ||
@@ -229,6 +232,9 @@ GoalCriterion? _resolveQuantitativeLeaf(GoalCriterion root, Object? metric) {
                 dataTypeId.toLowerCase() == needle,
               GoalCriterionCategoryTime(:final categoryId) =>
                 categoryId.toLowerCase() == needle,
+              GoalCriterionLabelTime(:final labelId, :final categoryId) =>
+                labelId.toLowerCase() == needle ||
+                    categoryId?.toLowerCase() == needle,
               _ => false,
             },
       )
@@ -240,6 +246,7 @@ num _leafTarget(GoalCriterion leaf) => switch (leaf) {
   GoalCriterionMetric(:final target) => target,
   GoalCriterionMeasurable(:final target) => target,
   GoalCriterionCategoryTime(:final targetHours) => targetHours,
+  GoalCriterionLabelTime(:final targetHours) => targetHours,
   _ => 0,
 };
 
@@ -255,7 +262,8 @@ List<GoalCriterionHabit> _habitLeaves(GoalCriterion root) {
         criteria.forEach(visit);
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
-          GoalCriterionCategoryTime():
+          GoalCriterionCategoryTime() ||
+          GoalCriterionLabelTime():
         break;
     }
   }

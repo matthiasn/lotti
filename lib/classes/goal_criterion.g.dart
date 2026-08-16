@@ -139,6 +139,42 @@ Map<String, dynamic> _$GoalCriterionCategoryTimeToJson(
   'runtimeType': instance.$type,
 };
 
+GoalCriterionLabelTime _$GoalCriterionLabelTimeFromJson(
+  Map<String, dynamic> json,
+) => GoalCriterionLabelTime(
+  criterionId: json['criterionId'] as String,
+  labelId: json['labelId'] as String,
+  window: GoalWindow.fromJson(json['window'] as Map<String, dynamic>),
+  aggregation: $enumDecode(_$GoalAggregationEnumMap, json['aggregation']),
+  targetHours: json['targetHours'] as num,
+  direction:
+      $enumDecodeNullable(_$GoalDirectionEnumMap, json['direction']) ??
+      GoalDirection.atLeast,
+  categoryId: json['categoryId'] as String?,
+  dailyTimeRange: json['dailyTimeRange'] == null
+      ? null
+      : GoalDailyTimeRange.fromJson(
+          json['dailyTimeRange'] as Map<String, dynamic>,
+        ),
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalCriterionLabelTimeToJson(
+  GoalCriterionLabelTime instance,
+) => <String, dynamic>{
+  'criterionId': instance.criterionId,
+  'labelId': instance.labelId,
+  'window': instance.window,
+  'aggregation': _$GoalAggregationEnumMap[instance.aggregation]!,
+  'targetHours': instance.targetHours,
+  'direction': _$GoalDirectionEnumMap[instance.direction]!,
+  'categoryId': instance.categoryId,
+  'dailyTimeRange': instance.dailyTimeRange,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
+
 GoalCriterionAllOf _$GoalCriterionAllOfFromJson(Map<String, dynamic> json) =>
     GoalCriterionAllOf(
       criterionId: json['criterionId'] as String,

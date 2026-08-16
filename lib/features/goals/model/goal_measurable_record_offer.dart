@@ -58,7 +58,8 @@ GoalMeasurableRecordOffer? parseGoalMeasurableRecordOffer({
         linkedIds.add(dataTypeId);
       case GoalCriterionMetric() ||
           GoalCriterionHabit() ||
-          GoalCriterionCategoryTime():
+          GoalCriterionCategoryTime() ||
+          GoalCriterionLabelTime():
         return;
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(collect);

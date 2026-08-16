@@ -1406,7 +1406,8 @@ class _MetricDimensionCard extends StatelessWidget {
             onTargetToday: summary.latestOnTargetToday,
           ),
           SizedBox(height: tokens.spacing.step4),
-          if (metric.kind == GoalDimensionKind.categoryTime &&
+          if ((metric.kind == GoalDimensionKind.categoryTime ||
+                  metric.kind == GoalDimensionKind.labelTime) &&
               metric.dailyTimeRange != null)
             _CategoryBandSeries(metric: metric)
           else if (GoalHealthDataTypes.supported.contains(metric.sourceId))
@@ -1466,12 +1467,14 @@ class _DimensionHeader extends StatelessWidget {
       ),
       GoalDimensionKind.categoryTime =>
         tokens.colors.alert.warning.defaultColor,
+      GoalDimensionKind.labelTime => tokens.colors.alert.warning.defaultColor,
     };
     final icon = switch (kind) {
       GoalDimensionKind.habit => Icons.check_circle_outline_rounded,
       GoalDimensionKind.health => Icons.favorite_outline_rounded,
       GoalDimensionKind.measurable => Icons.straighten_rounded,
       GoalDimensionKind.categoryTime => Icons.schedule_rounded,
+      GoalDimensionKind.labelTime => Icons.label_outline_rounded,
     };
     final glyph = DecoratedBox(
       decoration: BoxDecoration(
@@ -1617,6 +1620,8 @@ String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
         context.messages.goalDimensionMeasurableSource,
       GoalDimensionKind.categoryTime =>
         context.messages.goalDimensionCategoryTimeSource,
+      GoalDimensionKind.labelTime =>
+        context.messages.goalDimensionLabelTimeSource,
     };
 
 ({double width, double height}) _weekdayLabelMetrics(

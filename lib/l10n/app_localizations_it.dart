@@ -6384,6 +6384,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non ancora, ma l’ultima misurazione si è avvicinata all’obiettivo.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Tempo monitorato per etichetta';
+
+  @override
   String get goalDimensionMeasurableSource => 'Il tuo misurabile';
 
   @override
@@ -6613,6 +6616,29 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Verso cosa vuoi lavorare?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'ora',
+        'other': 'ore',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 al giorno';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Tempo registrato con questa etichetta · ore al giorno';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Ore al giorno';
 
   @override
   String get goalFormMappingIntro =>

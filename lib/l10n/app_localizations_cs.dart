@@ -6366,6 +6366,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ještě ne u cíle, ale poslední hodnota se k němu posunula.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Čas sledovaný podle štítku';
+
+  @override
   String get goalDimensionMeasurableSource => 'Tvoje měřitelná veličina';
 
   @override
@@ -6595,6 +6598,32 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'K čemu chceš směřovat?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hodinu',
+        '2': 'hodiny',
+        '3': 'hodiny',
+        '4': 'hodiny',
+        'other': 'hodin',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 denně';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Zaznamenaný čas s tímto štítkem · hodiny denně';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Hodiny denně';
 
   @override
   String get goalFormMappingIntro =>

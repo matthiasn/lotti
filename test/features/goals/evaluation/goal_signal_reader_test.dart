@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -605,6 +606,67 @@ void main() {
     },
   );
 
+  test(
+    'label time filters across categories and retains markdown evidence',
+    () async {
+      const criterion = GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      );
+      when(
+        () => journalDb.goalLabelTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          (
+            entryId: 'draft',
+            labelId: 'content',
+            dateFrom: DateTime(2026, 8, 8, 9),
+            dateTo: DateTime(2026, 8, 8, 9, 45),
+            categoryId: 'writing',
+            markdown: 'Drafted **three** sections.',
+          ),
+          (
+            entryId: 'edit',
+            labelId: 'content',
+            dateFrom: DateTime(2026, 8, 8, 11),
+            dateTo: DateTime(2026, 8, 8, 11, 20),
+            categoryId: 'marketing',
+            markdown: 'Edited launch copy.',
+          ),
+        ],
+      );
+
+      final window = await reader.read(
+        criteria: criterion,
+        reference: DateTime(2026, 8, 8, 12),
+      );
+
+      expect(window.labelTimeDailyHours['daily-content'], {
+        DateTime.utc(2026, 8, 8): closeTo(65 / 60, 1e-9),
+      });
+      final evidence = window.labelTimeEntriesByCriterion['daily-content']!;
+      expect(evidence.map((entry) => entry.categoryId), [
+        'writing',
+        'marketing',
+      ]);
+      expect(evidence.first.markdown, 'Drafted **three** sections.');
+      verify(
+        () => journalDb.goalLabelTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          labelIds: const {'content'},
+        ),
+      ).called(1);
+    },
+  );
+
   test('category time excludes entries after the evaluation instant', () async {
     const criterion = GoalCriterion.categoryTime(
       criterionId: 'coding-cap',
@@ -689,7 +751,7 @@ void main() {
     final window = await reader.read(
       criteria: criterion,
       reference: reference,
-      categoryTimeEndExclusive: endExclusive,
+      timeEntryEndExclusive: endExclusive,
     );
 
     final queryEnd = verify(
@@ -802,6 +864,72 @@ void main() {
     );
     expect(window.hasActiveCategoryTimer, isTrue);
   });
+
+  test(
+    'label time replaces a running prefix and exposes live markdown',
+    () async {
+      const criterion = GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      );
+      final startedAt = DateTime(2026, 8, 8, 22);
+      when(
+        () => journalDb.goalLabelTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          (
+            entryId: 'running',
+            labelId: 'content',
+            dateFrom: startedAt,
+            dateTo: DateTime(2026, 8, 8, 22, 15),
+            categoryId: 'writing',
+            markdown: 'Old persisted text',
+          ),
+        ],
+      );
+      when(timeService.getCurrent).thenReturn(
+        JournalEntity.journalEntry(
+          meta: Metadata(
+            id: 'running',
+            createdAt: startedAt,
+            updatedAt: startedAt,
+            dateFrom: startedAt,
+            dateTo: startedAt,
+            categoryId: 'writing',
+            labelIds: const ['content'],
+          ),
+          entryText: const EntryText(
+            plainText: 'Drafting the release notes',
+            markdown: 'Drafting the **release notes**',
+          ),
+        ),
+      );
+      when(
+        () => journalDb.insightsTimeCategoryForEntry('running'),
+      ).thenAnswer((_) async => 'writing');
+
+      final window = await reader.read(
+        criteria: criterion,
+        reference: DateTime(2026, 8, 8, 23),
+      );
+
+      expect(window.labelTimeDailyHours['daily-content'], {
+        DateTime.utc(2026, 8, 8): 1,
+      });
+      expect(
+        window.labelTimeEntriesByCriterion['daily-content']?.single.markdown,
+        'Drafting the **release notes**',
+      );
+      expect(window.hasActiveLabelTimer, isTrue);
+    },
+  );
 
   test('a hidden private active timer contributes no category time', () async {
     const criterion = GoalCriterion.categoryTime(
@@ -919,7 +1047,7 @@ void main() {
       final window = await reader.read(
         criteria: criterion,
         reference: reference,
-        categorySessionEvidenceStart: DateTime(2026, 8),
+        timeEntryEvidenceStart: DateTime(2026, 8),
       );
 
       final captured = verify(
@@ -1158,6 +1286,27 @@ void main() {
       expect(goalStaleSignalTriggerTokens(criterion), expected);
     },
   );
+
+  test('label time also invalidates on label assignment changes', () {
+    const criterion = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+
+    expect(goalImmediateSignalTriggerTokens(criterion), isEmpty);
+    expect(goalStaleSignalTriggerTokens(criterion), {
+      textEntryNotification,
+      linkNotification,
+      taskNotification,
+      categoriesNotification,
+      labelUsageNotification,
+      labelsNotification,
+      privateToggleNotification,
+    });
+  });
 
   test('bounded observations stay on the immediate trigger path', () {
     const criterion = GoalCriterion.allOf(

@@ -19,11 +19,11 @@ sources:
   - id: signal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — journal-backed daily aggregates
-    last_modified: 2026-08-13
+    last_modified: 2026-08-16
   - id: evaluator
     resource: ../../lib/features/goals/evaluation/goal_progress_evaluator.dart
     title: GoalProgressEvaluator — pure criteria-tree fold
-    last_modified: 2026-08-12
+    last_modified: 2026-08-16
   - id: policy
     resource: ../../lib/features/goals/evaluation/goal_track_policy.dart
     title: GoalTrackPolicy — status derivation rules
@@ -31,7 +31,7 @@ sources:
   - id: vocabulary
     resource: ../../lib/classes/goal_criterion.dart
     title: GoalCriterion tree (shared vocabulary in lib/classes)
-    last_modified: 2026-08-12
+    last_modified: 2026-08-16
   - id: trigger-tokens
     resource: ../../lib/classes/goal_trigger_tokens.dart
     title: Goal trigger tokens — cadence, escalation, baseline, report-refresh
@@ -59,7 +59,7 @@ sources:
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results
@@ -71,7 +71,7 @@ sources:
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
     title: Goal create/edit flow — three-step creation, two-step editing
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: unified-goals-page
     resource: ../../lib/features/goals/ui/pages/unified_goals_page.dart
     title: UnifiedGoalsPage — flag-gated Goals + Habits merge (phase 1)
@@ -125,7 +125,7 @@ visible behind the `enable_unified_goals` rollout flag.
 flowchart TD
     subgraph triggers [Triggers — every device]
         SIG[localUpdateStream signals\nleaf dataTypes, habitIds,\nmeasurable ids] --> ORCH[WakeOrchestrator\nsubscription match]
-        LOCALTIME[local category-time mutation] --> STALE[advance report-stale watermark\nno wake]
+        LOCALTIME[local tracked-time mutation] --> STALE[advance report-stale watermark\nno wake]
         SYNC[syncUpdateStream] --> DISP[GoalSignalSyncDispatcher]
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
@@ -141,9 +141,9 @@ flowchart TD
         MEASURE --> SIG
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
-    DISP --> SYNCROUTE{bounded signal or\ncategory-time mutation?}
+    DISP --> SYNCROUTE{bounded signal or\ntracked-time mutation?}
     SYNCROUTE -- bounded --> PA
-    SYNCROUTE -- category time --> STALE
+    SYNCROUTE -- tracked time --> STALE
     MGR --> PA
     PA --> HEAD[spec head → active version\nno head = clean no-op]
     HEAD --> REARM[re-arm cadence\nrecurrence by re-arm]
@@ -240,7 +240,8 @@ flowchart TD
   collection stops at the first missing day and at the first row computed
   under a superseded spec version.
 - **Every criterion leaf is an accountable dimension.** A composite goal can
-  combine any number of titled metric, measurable, habit, or category-time
+  combine any number of titled metric, measurable, habit, category-time, or
+  label-time
   leaves through `allOf`, `anyOf`, or `atLeastCount`. Stable `criterionId`
   values connect each leaf to its persisted `GoalCriterionProgress` result in
   every period register: actual, target, ratio, satisfaction, sample count,
@@ -261,6 +262,13 @@ flowchart TD
   task query as Insights and replaces its persisted prefix by entry id. Day
   keys re-stamp the local calendar date as midnight UTC. The goal agent must
   never disagree with the chart the user is looking at.
+  A label-time leaf instead selects normalized `labeled` rows by stable
+  `labelId`, across every category unless its optional `categoryId` narrows the
+  match. It uses the same privacy, linked-task category attribution, overlap
+  clipping, local-day splitting, optional daily time band, and interval-union
+  rules as category time. Its daily aggregate is keyed by `criterionId`, so
+  two criteria may watch the same label with different scopes or windows
+  without sharing results.
 - **Health FACTS preserve observations, not only aggregates.** Weight and
   systolic/diastolic blood-pressure criterion results keep `actual` as the
   deterministic rolling aggregate — quantized with the card's own display
@@ -318,6 +326,14 @@ flowchart TD
   current model message to grow forever. Those signals are evidence only: the
   model may discuss them but cannot replace the deterministic per-dimension
   result.
+  Label-time criteria add a parallel bounded evidence interface:
+  `GoalSignalWindow.labelTimeEntriesByCriterion` carries counted entry
+  segments with entry id, label id, resolved category, local start/end, and
+  `entryText.markdown` (falling back to plain text for legacy entries).
+  `GoalFactsRenderer` publishes the newest 200 segments with total/omitted
+  counts. Their markdown is model-facing semantic evidence, so content changes
+  participate in the facts digest even when the aggregate duration is
+  unchanged.
 - **Subjective assessment is a separate governance layer.** Deterministic
   `goalProgress` registers are recomputed from source and never carry a mutable
   opinion. `GoalAssessmentService` appends a durable action and payload for a
@@ -418,7 +434,8 @@ flowchart TD
 - **Report freshness follows the durable standing head.** Producing report
   material or writing a historical report row is insufficient: the shared
   drain clears the stale watermark only when this wake actually advances the
-  current report head. A report that includes a watched category timer's live
+  current report head. A report that includes a watched category or label
+  timer's live
   elapsed prefix also remains stale, because in-memory timer ticks continue
   changing evidence without journal notifications.
 - **The escalation carries its own baseline and period.** The wake record
@@ -529,7 +546,10 @@ flowchart TD
   at-least rolling-average steps metric, and rolling-average weight plus
   systolic/diastolic blood-pressure leaves with either target direction. It
   also creates and edits category-time sums with a rolling-seven-day hour
-  target and either direction;
+  target and either direction, plus label-time sums with a daily hour target
+  and either direction. The label-time category selector defaults to all
+  categories and can narrow the criterion to one category; an existing
+  optional category scope round-trips unchanged;
   `all`, `any`, and `atLeastCount` wrappers round-trip through an explicit
   composite-rule picker. Category-time leaves with a local time band, other
   health leaves, and opposite-direction step
@@ -544,7 +564,7 @@ flowchart TD
   the lifetime of the form: a re-map still offers them as unchecked
   suggestions but never re-seeds their targets, and re-selecting one clears
   the memory and restores its default target. The same rule already governs
-  category-time matches, so no back-edit of the statement can silently
+  category- and label-time matches, so no back-edit of the statement can silently
   resurrect a signal the user removed.
   Signals added through the picker likewise stay on the card as unchecked rows
   once unticked, until the step is re-entered and the row order is re-frozen —
@@ -975,21 +995,22 @@ flowchart TD
   Goal-list rows and banner semantics resolve the active spec title; the
   identity display name remains the conversational persona used by chat.
   The current form represents rolling habit quotas, linked measurable targets,
-  weight and blood-pressure targets, tracked category hours, composite rules,
-  and the supported steps metric. Category-time criteria with an optional
+  weight and blood-pressure targets, tracked category hours, daily tracked
+  label hours, composite rules, and the supported steps metric. Category-time criteria with an optional
   local time band and other quantitative health criteria remain read-only when
   already authored; they still render as typed dimension cards. Direct daily
   assessment is available on detail, while an
   agent-suggested assessment still needs its approval UI.
-- **Tracked time invalidates without churning wakes.** Category-time leaves
-  observe the journal, link, task, category and privacy notifications used by
-  Insights, but those mutations only advance the durable report-stale
+- **Tracked time invalidates without churning wakes.** Category- and
+  label-time leaves observe the journal, link, task, category and privacy
+  notifications used by Insights; label-time also observes label-definition
+  and label-assignment notifications. Those mutations only advance the durable report-stale
   watermark. They do not queue Phase A or inference for every timer edit. The
   existing 06:00 cadence evaluates accumulated changes automatically, while
   Update now remains the explicit immediate report path. A deterministic
   cadence pass may refresh progress registers but does not clear the stale
   badge unless a report-producing wake durably replaces the standing report.
-  Synced category-time journal facts re-advance the watermark on their receiving
+  Synced tracked-time journal facts re-advance the watermark on their receiving
   device, including when they arrive after an earlier Update now. Habit and
   measured-data signals stay immediate because each write is a bounded
   observation.

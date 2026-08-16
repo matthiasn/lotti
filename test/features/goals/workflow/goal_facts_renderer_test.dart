@@ -52,6 +52,9 @@ void main() {
     Map<String, List<GoalCategoryTimeSession>> categoryTimeSessions = const {},
     DateTime? categoryTimeEvidenceStart,
     DateTime? categoryTimeEvidenceEnd,
+    Map<String, List<GoalLabelTimeEntryEvidence>> labelTimeEntries = const {},
+    DateTime? labelTimeEvidenceStart,
+    DateTime? labelTimeEvidenceEnd,
   }) => GoalWakeFacts(
     trackStatus: status,
     previousStatus: previous,
@@ -80,6 +83,9 @@ void main() {
     categoryTimeSessionsByCategory: categoryTimeSessions,
     categoryTimeEvidenceStart: categoryTimeEvidenceStart,
     categoryTimeEvidenceEnd: categoryTimeEvidenceEnd,
+    labelTimeEntriesByCriterion: labelTimeEntries,
+    labelTimeEvidenceStart: labelTimeEvidenceStart,
+    labelTimeEvidenceEnd: labelTimeEvidenceEnd,
   );
 
   GoalNudgeEntity nudge({
@@ -1082,6 +1088,80 @@ void main() {
       });
     },
   );
+
+  test('label-time facts expose semantic markdown with counted duration', () {
+    final json = renderedJson(
+      criteria: const GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+      wakeFacts: facts(
+        labelTimeEntries: {
+          'daily-content': [
+            GoalLabelTimeEntryEvidence(
+              entryId: 'entry-1',
+              labelId: 'content',
+              categoryId: 'work',
+              dateFrom: DateTime(2026, 8, 9, 9),
+              dateTo: DateTime(2026, 8, 9, 9, 45),
+              markdown: 'Outlined **three** sections and revised the intro.',
+            ),
+          ],
+        },
+        labelTimeEvidenceStart: DateTime(2026, 8, 9),
+        labelTimeEvidenceEnd: DateTime(2026, 8, 10),
+      ),
+    );
+
+    final goal = json['goal'] as Map<String, dynamic>;
+    expect((goal['criteria'] as Map<String, dynamic>)['labelTime'], 'content');
+    final signals = json['signals'] as Map<String, dynamic>;
+    final entry =
+        (signals['labelTimeEntries'] as List).single as Map<String, dynamic>;
+    expect(entry['criterionId'], 'daily-content');
+    expect(entry['categoryId'], 'work');
+    expect(entry['countedMinutes'], 45);
+    expect(
+      entry['markdown'],
+      'Outlined **three** sections and revised the intro.',
+    );
+  });
+
+  test('label-time facts retain a bounded recent markdown sample', () {
+    final entries = [
+      for (var index = 0; index < 205; index++)
+        GoalLabelTimeEntryEvidence(
+          entryId: 'entry-$index',
+          labelId: 'content',
+          dateFrom: DateTime(2026).add(Duration(minutes: index)),
+          dateTo: DateTime(2026).add(Duration(minutes: index + 1)),
+          markdown: 'Entry $index',
+        ),
+    ];
+    final json = renderedJson(
+      criteria: const GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+      wakeFacts: facts(
+        labelTimeEntries: {'daily-content': entries},
+      ),
+    );
+
+    final signals = json['signals'] as Map<String, dynamic>;
+    expect(signals['labelTimeEntrySegmentCount'], 205);
+    expect(signals['labelTimeEntrySegmentsOmitted'], 5);
+    final recent = signals['labelTimeEntries'] as List;
+    expect(recent, hasLength(200));
+    expect((recent.first as Map<String, dynamic>)['entryId'], 'entry-5');
+    expect((recent.last as Map<String, dynamic>)['markdown'], 'Entry 204');
+  });
 
   test(
     'category session evidence exposes local timing without deciding success',

@@ -6306,6 +6306,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inte framme än, men det senaste värdet rörde sig mot målet.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Spårad tid per etikett';
+
+  @override
   String get goalDimensionMeasurableSource => 'Dina mätbara';
 
   @override
@@ -6533,6 +6536,29 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Vad vill du arbeta mot?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'timme',
+        'other': 'timmar',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 per dag';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Registrerad tid med den här etiketten · timmar per dag';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Timmar per dag';
 
   @override
   String get goalFormMappingIntro =>

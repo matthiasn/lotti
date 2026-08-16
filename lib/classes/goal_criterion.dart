@@ -98,6 +98,25 @@ sealed class GoalCriterion with _$GoalCriterion {
     String? title,
   }) = GoalCriterionCategoryTime;
 
+  /// A tracked-time dimension selected by [labelId], measured in hours.
+  ///
+  /// Labels are matched by their stable definition id. When [categoryId] is
+  /// null, matching entries are counted across every category; otherwise the
+  /// same linked-task category precedence as Insights scopes the evidence.
+  /// [dailyTimeRange] has the same local-time clipping semantics as
+  /// [GoalCriterion.categoryTime].
+  const factory GoalCriterion.labelTime({
+    required String criterionId,
+    required String labelId,
+    required GoalWindow window,
+    required GoalAggregation aggregation,
+    required num targetHours,
+    @Default(GoalDirection.atLeast) GoalDirection direction,
+    String? categoryId,
+    GoalDailyTimeRange? dailyTimeRange,
+    String? title,
+  }) = GoalCriterionLabelTime;
+
   /// All children must be satisfied; attainment is their mean.
   const factory GoalCriterion.allOf({
     required String criterionId,
@@ -290,5 +309,6 @@ Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
       },
       GoalCriterionMetric() ||
       GoalCriterionMeasurable() ||
-      GoalCriterionCategoryTime() => const {},
+      GoalCriterionCategoryTime() ||
+      GoalCriterionLabelTime() => const {},
     };

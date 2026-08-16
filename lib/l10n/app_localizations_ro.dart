@@ -6419,6 +6419,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încă nu, dar ultima măsurătoare s-a apropiat de țintă.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Timp urmărit după etichetă';
+
+  @override
   String get goalDimensionMeasurableSource => 'Măsurătoarea dvs.';
 
   @override
@@ -6649,6 +6652,29 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Spre ce doriți să lucrați?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'oră',
+        'other': 'ore',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 pe zi';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Timp urmărit cu această etichetă · ore pe zi';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Ore pe zi';
 
   @override
   String get goalFormMappingIntro =>

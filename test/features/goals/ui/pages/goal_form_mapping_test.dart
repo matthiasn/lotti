@@ -5,6 +5,76 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 
 void main() {
+  test('round-trips a daily label-time criterion with category scope', () {
+    const criteria = GoalCriterion.labelTime(
+      criterionId: 'daily-content-v2',
+      labelId: 'content',
+      categoryId: 'client-work',
+      title: 'Content work',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isTrue);
+    expect(draft.labelTimeTargets, {'content': 1});
+    expect(draft.labelTimeCategoryIds, {'content': 'client-work'});
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+        labelTimeTargets: const {'content': 1.5},
+        labelTimeTitles: const {'content': 'Renamed label'},
+      ),
+      const GoalCriterion.labelTime(
+        criterionId: 'daily-content-v2',
+        labelId: 'content',
+        categoryId: 'client-work',
+        title: 'Content work',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1.5,
+      ),
+    );
+  });
+
+  test('new label time defaults cross-category but can be scoped', () {
+    const draft = GoalFormMapping.empty();
+
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+        labelTimeTargets: const {'content': 1},
+      ),
+      const GoalCriterion.labelTime(
+        criterionId: 'label-time-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+    );
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+        labelTimeTargets: const {'content': 1},
+        labelTimeCategoryIds: const {'content': 'work'},
+      ),
+      const GoalCriterion.labelTime(
+        criterionId: 'label-time-content',
+        labelId: 'content',
+        categoryId: 'work',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+    );
+  });
+
   test(
     'round-trips a mixed observable goal without flattening habit targets',
     () {

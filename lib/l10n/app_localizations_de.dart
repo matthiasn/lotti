@@ -6345,6 +6345,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch nicht am Ziel, aber der letzte Wert ging in die richtige Richtung.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Nach Label erfasste Zeit';
+
+  @override
   String get goalDimensionMeasurableSource => 'Deine Messgröße';
 
   @override
@@ -6572,6 +6575,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Worauf möchtest du hinarbeiten?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'Stunde',
+        'other': 'Stunden',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 pro Tag';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Erfasste Zeit mit diesem Label · Stunden pro Tag';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Stunden pro Tag';
 
   @override
   String get goalFormMappingIntro =>

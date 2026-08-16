@@ -387,6 +387,31 @@ void main() {
     expect(view.metric?.name, 'vibe-coding');
   });
 
+  test('label time projects daily hours across its stable label id', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+      signals: GoalSignalWindow(
+        labelTimeDailyHours: {
+          'daily-content': {today: 0.75},
+        },
+      ),
+      reference: today,
+      labelNames: const {'content': 'Content'},
+    );
+
+    expect(view.metric?.kind, GoalDimensionKind.labelTime);
+    expect(view.metric?.name, 'Content');
+    expect(view.metric?.target, 1);
+    expect(view.metric?.days.single.value, 0.75);
+    expect(view.metric?.days.single.isObserved, isTrue);
+  });
+
   test('sum and count metrics compare the aggregated rolling period', () {
     GoalProgressView build(GoalAggregation aggregation) =>
         buildGoalProgressView(

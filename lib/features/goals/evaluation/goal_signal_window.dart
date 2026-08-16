@@ -35,6 +35,33 @@ class GoalCategoryTimeSession {
   Duration get duration => dateTo.difference(dateFrom);
 }
 
+/// One counted segment of a label-filtered time entry exposed to the goal
+/// agent as bounded evidence.
+///
+/// [markdown] preserves the entry's authored semantic structure. The segment
+/// times reflect the evidence-range and optional daily-time-band clipping.
+/// Evidence may extend before the current evaluation window for longitudinal
+/// coaching, but it never replaces the deterministic current-window verdict.
+class GoalLabelTimeEntryEvidence {
+  const GoalLabelTimeEntryEvidence({
+    required this.entryId,
+    required this.labelId,
+    required this.dateFrom,
+    required this.dateTo,
+    required this.markdown,
+    this.categoryId,
+  });
+
+  final String entryId;
+  final String labelId;
+  final String? categoryId;
+  final DateTime dateFrom;
+  final DateTime dateTo;
+  final String markdown;
+
+  Duration get duration => dateTo.difference(dateFrom);
+}
+
 /// The pre-fetched daily aggregates a goal evaluation runs over.
 ///
 /// This value object is the seam between the pure evaluator and whatever
@@ -56,9 +83,14 @@ class GoalSignalWindow {
     this.measurableEntryDaysById = const {},
     this.categoryTimeDailyHours = const {},
     this.categoryTimeSessionsByCategory = const {},
+    this.labelTimeDailyHours = const {},
+    this.labelTimeEntriesByCriterion = const {},
+    this.labelTimeEvidenceStart,
+    this.labelTimeEvidenceEnd,
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
     this.hasActiveCategoryTimer = false,
+    this.hasActiveLabelTimer = false,
   });
 
   /// Journal quantitative data: data type string → day key → sum of that
@@ -102,6 +134,17 @@ class GoalSignalWindow {
   final Map<String, List<GoalCategoryTimeSession>>
   categoryTimeSessionsByCategory;
 
+  /// Label-filtered tracked time: label-time criterion id → day key → hours.
+  final Map<String, Map<DateTime, num>> labelTimeDailyHours;
+
+  /// Counted label-time evidence, scoped by criterion because two leaves may
+  /// watch the same label with different category or time-band filters.
+  final Map<String, List<GoalLabelTimeEntryEvidence>>
+  labelTimeEntriesByCriterion;
+
+  final DateTime? labelTimeEvidenceStart;
+  final DateTime? labelTimeEvidenceEnd;
+
   /// Inclusive query start and exclusive query end for category session
   /// evidence. Null when the criteria tree watches no category time.
   final DateTime? categoryTimeEvidenceStart;
@@ -113,6 +156,12 @@ class GoalSignalWindow {
   /// in-memory timer ticks do not emit journal mutations, so the evidence can
   /// keep changing after the report is written.
   final bool hasActiveCategoryTimer;
+
+  /// Whether a currently running timer matches a label-time criterion.
+  final bool hasActiveLabelTimer;
+
+  bool get hasActiveTrackedTimer =>
+      hasActiveCategoryTimer || hasActiveLabelTimer;
 
   /// Daily sums for [dataType] restricted to [start]..[end] (inclusive).
   Map<DateTime, num> quantitativeInRange(
@@ -141,6 +190,13 @@ class GoalSignalWindow {
     DateTime start,
     DateTime end,
   ) => _inRange(categoryTimeDailyHours[criterionId], start, end);
+
+  /// Tracked hours for label-time [criterionId] in [start]..[end].
+  Map<DateTime, num> labelTimeInRange(
+    String criterionId,
+    DateTime start,
+    DateTime end,
+  ) => _inRange(labelTimeDailyHours[criterionId], start, end);
 
   static Map<DateTime, V> _inRange<V>(
     Map<DateTime, V>? series,

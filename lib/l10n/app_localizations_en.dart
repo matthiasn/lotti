@@ -6272,6 +6272,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not there yet, but the last reading moved toward the target.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Tracked time by label';
+
+  @override
   String get goalDimensionMeasurableSource => 'Your measurable';
 
   @override
@@ -6499,6 +6502,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'What do you want to work toward?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hour',
+        'other': 'hours',
+      },
+    );
+    return '$labelName: $direction $target $_temp0 per day';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Tracked time with this label · hours per day';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Hours per day';
 
   @override
   String get goalFormMappingIntro =>

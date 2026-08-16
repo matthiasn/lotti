@@ -76,6 +76,13 @@ class GoalFactsRenderer {
         : categorySessions.sublist(
             categorySessions.length - goalCategorySessionEvidenceLimit,
           );
+    final labelTimeEntryCount = facts.labelTimeEntriesByCriterion.values.fold(
+      0,
+      (total, entries) => total + entries.length,
+    );
+    final recentLabelTimeEntries = goalLabelTimeEvidenceForFacts(
+      facts.labelTimeEntriesByCriterion,
+    );
     final leafCriteria = _leafCriteriaById(version.criteria);
 
     return _factsBlock({
@@ -123,29 +130,57 @@ class GoalFactsRenderer {
         ),
         'priorPeriodAttainments': priorAttainments,
       },
-      if (facts.categoryTimeSessionsByCategory.isNotEmpty)
+      if (facts.categoryTimeSessionsByCategory.isNotEmpty ||
+          facts.labelTimeEntriesByCriterion.isNotEmpty)
         'signals': {
-          'categoryTimeEvidenceStart': facts.categoryTimeEvidenceStart
-              ?.toIso8601String(),
-          'categoryTimeEvidenceEnd': facts.categoryTimeEvidenceEnd
-              ?.toIso8601String(),
-          'categoryTimeSessionCount': categorySessions.length,
-          'categoryTimeSessionsOmitted':
-              categorySessions.length - recentCategorySessions.length,
-          'categoryTimeLifetimeSummary': _categoryTimeLifetimeSummary(
-            facts.categoryTimeSessionsByCategory,
-          ),
-          'categoryTimeSessions': [
-            for (final session in recentCategorySessions)
-              {
-                'categoryId': session.categoryId,
-                'startedAtLocal': session.dateFrom.toIso8601String(),
-                'endedAtLocal': session.dateTo.toIso8601String(),
-                'durationMinutes': _minutes(session.duration.inSeconds),
-              },
-          ],
+          if (facts.categoryTimeSessionsByCategory.isNotEmpty) ...{
+            'categoryTimeEvidenceStart': facts.categoryTimeEvidenceStart
+                ?.toIso8601String(),
+            'categoryTimeEvidenceEnd': facts.categoryTimeEvidenceEnd
+                ?.toIso8601String(),
+            'categoryTimeSessionCount': categorySessions.length,
+            'categoryTimeSessionsOmitted':
+                categorySessions.length - recentCategorySessions.length,
+            'categoryTimeLifetimeSummary': _categoryTimeLifetimeSummary(
+              facts.categoryTimeSessionsByCategory,
+            ),
+            'categoryTimeSessions': [
+              for (final session in recentCategorySessions)
+                {
+                  'categoryId': session.categoryId,
+                  'startedAtLocal': session.dateFrom.toIso8601String(),
+                  'endedAtLocal': session.dateTo.toIso8601String(),
+                  'durationMinutes': _minutes(session.duration.inSeconds),
+                },
+            ],
+          },
+          if (facts.labelTimeEntriesByCriterion.isNotEmpty) ...{
+            'labelTimeEvidenceStart': facts.labelTimeEvidenceStart
+                ?.toIso8601String(),
+            'labelTimeEvidenceEnd': facts.labelTimeEvidenceEnd
+                ?.toIso8601String(),
+            'labelTimeEntrySegmentCount': labelTimeEntryCount,
+            'labelTimeEntrySegmentsOmitted':
+                labelTimeEntryCount - recentLabelTimeEntries.length,
+            'labelTimeEntries': [
+              for (final entry in recentLabelTimeEntries)
+                {
+                  'criterionId': entry.criterionId,
+                  'entryId': entry.evidence.entryId,
+                  'labelId': entry.evidence.labelId,
+                  if (entry.evidence.categoryId != null)
+                    'categoryId': entry.evidence.categoryId,
+                  'countedFromLocal': entry.evidence.dateFrom.toIso8601String(),
+                  'countedToLocal': entry.evidence.dateTo.toIso8601String(),
+                  'countedMinutes': _minutes(
+                    entry.evidence.duration.inSeconds,
+                  ),
+                  'markdown': entry.evidence.markdown,
+                },
+            ],
+          },
           'interpretationPolicy':
-              'lifetime summaries and recent session evidence may inform '
+              'tracked-time summaries and recent entry evidence may inform '
               'coaching patterns; they do not override deterministic '
               'criterion results',
         },
@@ -289,7 +324,9 @@ class GoalFactsRenderer {
             GoalCriterionAnyOf(:final criteria) ||
             GoalCriterionAtLeastCount(:final criteria):
           criteria.forEach(visit);
-        case GoalCriterionMeasurable() || GoalCriterionCategoryTime():
+        case GoalCriterionMeasurable() ||
+            GoalCriterionCategoryTime() ||
+            GoalCriterionLabelTime():
       }
     }
 
@@ -681,6 +718,24 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
             'endMinute': range.endMinute,
           },
         'evidence': 'tracked Lotti time entries only',
+      },
+      GoalCriterionLabelTime() => {
+        'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
+        'labelTime': criterion.labelId,
+        if (criterion.categoryId != null) 'categoryId': criterion.categoryId,
+        'aggregation': criterion.aggregation.name,
+        'window': _windowLabel(criterion.window),
+        'targetHours': criterion.targetHours,
+        'direction': criterion.direction.name,
+        if (criterion.dailyTimeRange case final range?)
+          'dailyTimeRange': {
+            'startMinute': range.startMinute,
+            'endMinute': range.endMinute,
+          },
+        'evidence':
+            'tracked Lotti time entries carrying this label; '
+            'matching entry markdown is supplied in signals',
       },
       GoalCriterionAllOf() => {
         'criterionId': criterion.criterionId,

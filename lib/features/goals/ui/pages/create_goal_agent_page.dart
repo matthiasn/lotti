@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -28,6 +29,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -68,7 +70,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _healthDirections = <String, GoalDirection>{};
   final _categoryTimeTargets = <String, num?>{};
   final _categoryTimeDirections = <String, GoalDirection>{};
+  final _labelTimeTargets = <String, num?>{};
+  final _labelTimeDirections = <String, GoalDirection>{};
+  final _labelTimeCategoryIds = <String, String?>{};
   final _suppressedCategoryTimeIds = <String>{};
+  final _suppressedLabelTimeIds = <String>{};
 
   /// Health signals the user explicitly deselected: an intention re-map may
   /// still surface them as suggestions, but never re-seeds them selected.
@@ -76,6 +82,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   List<HabitDefinition> _knownHabits = const [];
   List<MeasurableDataType> _knownMeasurables = const [];
   List<CategoryDefinition> _knownCategories = const [];
+  List<LabelDefinition> _knownLabels = const [];
   var _watchesSteps = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
@@ -107,6 +114,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _derivedTitle;
   String? _derivedHabitsFingerprint;
   String? _derivedCategoriesFingerprint;
+  String? _derivedLabelsFingerprint;
   late String _baseVersionId;
   String? _validation;
 
@@ -158,6 +166,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _healthDirections.addAll(_mapping.healthDirections);
     _categoryTimeTargets.addAll(_mapping.categoryTimeTargets);
     _categoryTimeDirections.addAll(_mapping.categoryTimeDirections);
+    _labelTimeTargets.addAll(_mapping.labelTimeTargets);
+    _labelTimeDirections.addAll(_mapping.labelTimeDirections);
+    _labelTimeCategoryIds.addAll(_mapping.labelTimeCategoryIds);
     _compositeRule = _mapping.compositeRule;
     _requiredSuccesses = _mapping.requiredSuccesses;
     // Editing lands directly on the mapping page, so the signal-row order
@@ -268,6 +279,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           .map((category) => '${category.id}\u0000${category.name}')
           .join('\u0001');
 
+  String _labelsFingerprint(List<LabelDefinition> labels) =>
+      labels.map((label) => '${label.id}\u0000${label.name}').join('\u0001');
+
   /// Signals selected after the snapshot (via the picker) join the chosen
   /// group for the lifetime of the current mapping-step entry, so
   /// deselecting one leaves an unchecked row instead of deleting it.
@@ -348,6 +362,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final categoriesChanged =
         categoriesFingerprint != null &&
         categoriesFingerprint != _derivedCategoriesFingerprint;
+    final labelsAsync = ref.read(labelsStreamProvider);
+    final labelsFingerprint = labelsAsync.hasError || labelsAsync.value == null
+        ? null
+        : _labelsFingerprint(_knownLabels);
+    final labelsChanged =
+        labelsFingerprint != null &&
+        labelsFingerprint != _derivedLabelsFingerprint;
     final requiresFullRemap = _derivedFrom != statement || habitsChanged;
     if (!_editing && requiresFullRemap) {
       // ADDITIVE re-derive: a back-edit of the intention adds newly matched
@@ -411,6 +432,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           );
         }
       }
+      for (final label in _knownLabels) {
+        if (_matchesIntention(label.name) &&
+            !_suppressedLabelTimeIds.contains(label.id)) {
+          _labelTimeTargets.putIfAbsent(label.id, () => 1);
+          _labelTimeDirections.putIfAbsent(
+            label.id,
+            () => GoalDirection.atLeast,
+          );
+        }
+      }
       _deriveTitle(habits);
       _derivedFrom = statement;
       if (habitsFingerprint != null) {
@@ -419,7 +450,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       if (categoriesFingerprint != null) {
         _derivedCategoriesFingerprint = categoriesFingerprint;
       }
-    } else if (!_editing && categoriesChanged) {
+      if (labelsFingerprint != null) {
+        _derivedLabelsFingerprint = labelsFingerprint;
+      }
+    } else if (!_editing && (categoriesChanged || labelsChanged)) {
       final matchedCategories = [
         for (final category in _knownCategories)
           if (_matchesIntention(category.name) &&
@@ -433,7 +467,22 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           () => GoalDirection.atMost,
         );
       }
-      _derivedCategoriesFingerprint = categoriesFingerprint;
+      if (categoriesChanged) {
+        _derivedCategoriesFingerprint = categoriesFingerprint;
+      }
+      if (labelsChanged) {
+        for (final label in _knownLabels) {
+          if (_matchesIntention(label.name) &&
+              !_suppressedLabelTimeIds.contains(label.id)) {
+            _labelTimeTargets.putIfAbsent(label.id, () => 1);
+            _labelTimeDirections.putIfAbsent(
+              label.id,
+              () => GoalDirection.atLeast,
+            );
+          }
+        }
+        _derivedLabelsFingerprint = labelsFingerprint;
+      }
     }
 
     _snapshotSignalGroups();
@@ -506,7 +555,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         _habitTargets.isNotEmpty ||
         _measurableTargets.isNotEmpty ||
         _healthTargets.isNotEmpty ||
-        _categoryTimeTargets.isNotEmpty;
+        _categoryTimeTargets.isNotEmpty ||
+        _labelTimeTargets.isNotEmpty;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final invalidKeys = <String>{
       if (_watchesSteps && (stepsTarget == null || stepsTarget <= 0)) 'steps',
@@ -516,6 +566,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         if (entry.value == null || entry.value! <= 0) 'measurable:${entry.key}',
       for (final entry in _categoryTimeTargets.entries)
         if (entry.value == null || entry.value! <= 0) 'category:${entry.key}',
+      for (final entry in _labelTimeTargets.entries)
+        if (entry.value == null || entry.value! <= 0) 'label:${entry.key}',
     };
     if (!hasMapping || invalidKeys.isNotEmpty) {
       // Each missing target errors on its own card; the generic message is
@@ -550,6 +602,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       for (final dataType in _healthTargets.keys) 'health:$dataType',
       for (final id in _measurableTargets.keys) 'measurable:$id',
       for (final id in _categoryTimeTargets.keys) 'category:$id',
+      for (final id in _labelTimeTargets.keys) 'label:$id',
     ];
     String? first;
     for (final key in orderedKeys) {
@@ -644,6 +697,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final categoryNames = {
       for (final category in _knownCategories) category.id: category.name,
     };
+    final labelNames = {
+      for (final label in _knownLabels) label.id: label.name,
+    };
     final signals = <String>[
       if (_watchesSteps)
         context.messages.goalFormStepsCadence(
@@ -686,6 +742,20 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             _goalDirectionLabel(
               context,
               _categoryTimeDirections[entry.key] ?? GoalDirection.atMost,
+            ),
+            NumberFormat.decimalPattern(
+              context.messages.localeName,
+            ).format(target),
+          ),
+      for (final entry in _labelTimeTargets.entries)
+        if (entry.value case final target?)
+          context.messages.goalFormLabelTimeCadence(
+            labelNames[entry.key] ??
+                _mapping.labelTimeCriterionTitles[entry.key] ??
+                entry.key,
+            _goalDirectionLabel(
+              context,
+              _labelTimeDirections[entry.key] ?? GoalDirection.atLeast,
             ),
             NumberFormat.decimalPattern(
               context.messages.localeName,
@@ -786,6 +856,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
               for (final category in _knownCategories)
                 category.id: category.name,
             },
+            labelTimeTargets: {
+              for (final entry in _labelTimeTargets.entries)
+                entry.key: ?entry.value,
+            },
+            labelTimeDirections: _labelTimeDirections,
+            labelTimeTitles: {
+              for (final label in _knownLabels) label.id: label.name,
+            },
+            labelTimeCategoryIds: _labelTimeCategoryIds,
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
             compositeRule: _compositeRule,
@@ -913,6 +992,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final habitsAsync = ref.watch(_habitDefinitionsProvider);
     final measurablesAsync = ref.watch(measurableDataTypesStreamProvider);
     final categoriesAsync = ref.watch(categoriesStreamProvider);
+    final labelsAsync = ref.watch(labelsStreamProvider);
     if (habitsAsync.value case final loaded?) {
       _knownHabits = loaded;
     }
@@ -928,6 +1008,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       ];
     }
     final categories = _knownCategories;
+    if (labelsAsync.value case final loaded?) {
+      _knownLabels = [
+        for (final label in loaded)
+          if (label.deletedAt == null) label,
+      ];
+    }
+    final labels = _knownLabels;
     GoalSpecVersionEntity? editSpec;
 
     if (_editing) {
@@ -1067,11 +1154,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               mapping: _mapping,
                               measurables: measurables,
                               categories: categories,
+                              labels: labels,
                               measurableTargets: _measurableTargets,
                               healthTargets: _healthTargets,
                               healthDirections: _healthDirections,
                               categoryTimeTargets: _categoryTimeTargets,
                               categoryTimeDirections: _categoryTimeDirections,
+                              labelTimeTargets: _labelTimeTargets,
+                              labelTimeDirections: _labelTimeDirections,
+                              labelTimeCategoryIds: _labelTimeCategoryIds,
                               compositeRule: _compositeRule,
                               requiredSuccesses: _requiredSuccesses,
                               habitTargets: _habitTargets,
@@ -1223,6 +1314,46 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                   (categoryId, direction) => setState(() {
                                     _categoryTimeDirections[categoryId] =
                                         direction;
+                                    _validation = null;
+                                  }),
+                              onLabelTimeSelected: (labelId) => setState(() {
+                                _suppressedLabelTimeIds.remove(labelId);
+                                _labelTimeTargets.putIfAbsent(
+                                  labelId,
+                                  () => 1,
+                                );
+                                _labelTimeDirections.putIfAbsent(
+                                  labelId,
+                                  () => GoalDirection.atLeast,
+                                );
+                                _labelTimeCategoryIds.putIfAbsent(
+                                  labelId,
+                                  () => null,
+                                );
+                                _validation = null;
+                              }),
+                              onLabelTimeRemoved: (labelId) => setState(() {
+                                _suppressedLabelTimeIds.add(labelId);
+                                _labelTimeTargets.remove(labelId);
+                                _labelTimeDirections.remove(labelId);
+                                _labelTimeCategoryIds.remove(labelId);
+                                _validation = null;
+                                _targetErrors.remove('label:$labelId');
+                              }),
+                              onLabelTimeTargetChanged: (labelId, target) =>
+                                  setState(() {
+                                    _labelTimeTargets[labelId] = target;
+                                    _validation = null;
+                                    _targetErrors.remove('label:$labelId');
+                                  }),
+                              onLabelTimeDirectionChanged:
+                                  (labelId, direction) => setState(() {
+                                    _labelTimeDirections[labelId] = direction;
+                                    _validation = null;
+                                  }),
+                              onLabelTimeCategoryChanged:
+                                  (labelId, categoryId) => setState(() {
+                                    _labelTimeCategoryIds[labelId] = categoryId;
                                     _validation = null;
                                   }),
                               onCompositeRuleChanged: (rule, required) =>
@@ -1448,11 +1579,15 @@ class _MappingStep extends StatelessWidget {
     required this.mapping,
     required this.measurables,
     required this.categories,
+    required this.labels,
     required this.measurableTargets,
     required this.healthTargets,
     required this.healthDirections,
     required this.categoryTimeTargets,
     required this.categoryTimeDirections,
+    required this.labelTimeTargets,
+    required this.labelTimeDirections,
+    required this.labelTimeCategoryIds,
     required this.compositeRule,
     required this.requiredSuccesses,
     required this.habitTargets,
@@ -1481,6 +1616,11 @@ class _MappingStep extends StatelessWidget {
     required this.onCategoryTimeRemoved,
     required this.onCategoryTimeTargetChanged,
     required this.onCategoryTimeDirectionChanged,
+    required this.onLabelTimeSelected,
+    required this.onLabelTimeRemoved,
+    required this.onLabelTimeTargetChanged,
+    required this.onLabelTimeDirectionChanged,
+    required this.onLabelTimeCategoryChanged,
     required this.onCompositeRuleChanged,
     this.statement,
     this.statementError,
@@ -1493,11 +1633,15 @@ class _MappingStep extends StatelessWidget {
   final GoalFormMapping mapping;
   final List<MeasurableDataType> measurables;
   final List<CategoryDefinition> categories;
+  final List<LabelDefinition> labels;
   final Map<String, num?> measurableTargets;
   final Map<String, num?> healthTargets;
   final Map<String, GoalDirection> healthDirections;
   final Map<String, num?> categoryTimeTargets;
   final Map<String, GoalDirection> categoryTimeDirections;
+  final Map<String, num?> labelTimeTargets;
+  final Map<String, GoalDirection> labelTimeDirections;
+  final Map<String, String?> labelTimeCategoryIds;
   final GoalFormCompositeRule compositeRule;
   final int requiredSuccesses;
   final Map<String, int> habitTargets;
@@ -1545,6 +1689,13 @@ class _MappingStep extends StatelessWidget {
   onCategoryTimeTargetChanged;
   final void Function(String categoryId, GoalDirection direction)
   onCategoryTimeDirectionChanged;
+  final ValueChanged<String> onLabelTimeSelected;
+  final ValueChanged<String> onLabelTimeRemoved;
+  final void Function(String labelId, num? target) onLabelTimeTargetChanged;
+  final void Function(String labelId, GoalDirection direction)
+  onLabelTimeDirectionChanged;
+  final void Function(String labelId, String? categoryId)
+  onLabelTimeCategoryChanged;
   final void Function(GoalFormCompositeRule rule, int requiredSuccesses)
   onCompositeRuleChanged;
 
@@ -1855,7 +2006,8 @@ class _MappingStep extends StatelessWidget {
         selectedIds.isEmpty &&
         measurableTargets.isEmpty &&
         healthTargets.isEmpty &&
-        categoryTimeTargets.isEmpty;
+        categoryTimeTargets.isEmpty &&
+        labelTimeTargets.isEmpty;
     final selectedMeasurables = [
       for (final measurable in measurables)
         if (measurableTargets.containsKey(measurable.id)) measurable,
@@ -1873,11 +2025,24 @@ class _MappingStep extends StatelessWidget {
               categoryId,
         ),
     ];
+    final labelsById = {for (final label in labels) label.id: label};
+    final selectedLabels = [
+      for (final labelId in labelTimeTargets.keys)
+        (
+          id: labelId,
+          name:
+              labelsById[labelId]?.name ??
+              mapping.labelTimeCriterionTitles[labelId] ??
+              labelId,
+          categoryId: labelTimeCategoryIds[labelId],
+        ),
+    ];
     final dimensionCount =
         selectedIds.length +
         measurableTargets.length +
         healthTargets.length +
         categoryTimeTargets.length +
+        labelTimeTargets.length +
         (watchesSteps ? 1 : 0);
     // Rows render in the order frozen at step entry — a tapped row stays
     // put. Signals selected after the snapshot (via the picker) append to
@@ -2086,6 +2251,29 @@ class _MappingStep extends StatelessWidget {
               onRemove: () => onCategoryTimeRemoved(category.id),
             ),
           ],
+          for (final label in selectedLabels) ...[
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            _LabelTimeTargetCard(
+              key: ValueKey('goal-form-label-time-card-${label.id}'),
+              labelId: label.id,
+              labelName: label.name,
+              categories: categories,
+              categoryId: label.categoryId,
+              value: labelTimeTargets[label.id],
+              errorText: targetErrors.contains('label:${label.id}')
+                  ? messages.goalFormValidationTarget
+                  : null,
+              anchorKey: anchorFor('label:${label.id}'),
+              direction: labelTimeDirections[label.id] ?? GoalDirection.atLeast,
+              onTargetChanged: (target) =>
+                  onLabelTimeTargetChanged(label.id, target),
+              onDirectionChanged: (direction) =>
+                  onLabelTimeDirectionChanged(label.id, direction),
+              onCategoryChanged: (categoryId) =>
+                  onLabelTimeCategoryChanged(label.id, categoryId),
+              onRemove: () => onLabelTimeRemoved(label.id),
+            ),
+          ],
           if (validation != null) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(
@@ -2109,10 +2297,12 @@ class _MappingStep extends StatelessWidget {
                 habitsFailed: habitsFailed,
                 measurables: measurables,
                 categories: categories,
+                labels: labels,
                 selectedHabitIds: habitTargets.keys.toSet(),
                 selectedMeasurableIds: measurableTargets.keys.toSet(),
                 selectedHealthDataTypes: healthTargets.keys.toSet(),
                 selectedCategoryIds: categoryTimeTargets.keys.toSet(),
+                selectedLabelIds: labelTimeTargets.keys.toSet(),
                 watchesSteps: watchesSteps,
                 onStepsChanged: onStepsChanged,
                 onHabitChanged: onHabitChanged,
@@ -2121,6 +2311,8 @@ class _MappingStep extends StatelessWidget {
                 onHealthRemoved: onHealthRemoved,
                 onCategorySelected: onCategoryTimeSelected,
                 onCategoryRemoved: onCategoryTimeRemoved,
+                onLabelSelected: onLabelTimeSelected,
+                onLabelRemoved: onLabelTimeRemoved,
               ),
             ),
             leadingIcon: Icons.add_rounded,
@@ -2507,16 +2699,198 @@ class _CategoryTimeTargetInputState extends State<_CategoryTimeTargetInput> {
   );
 }
 
+class _LabelTimeTargetCard extends StatelessWidget {
+  const _LabelTimeTargetCard({
+    required this.labelId,
+    required this.labelName,
+    required this.categories,
+    required this.categoryId,
+    required this.value,
+    required this.direction,
+    required this.errorText,
+    required this.anchorKey,
+    required this.onTargetChanged,
+    required this.onDirectionChanged,
+    required this.onCategoryChanged,
+    required this.onRemove,
+    super.key,
+  });
+
+  final String labelId;
+  final String labelName;
+  final List<CategoryDefinition> categories;
+  final String? categoryId;
+  final num? value;
+  final GoalDirection direction;
+  final String? errorText;
+  final Key anchorKey;
+  final ValueChanged<num?> onTargetChanged;
+  final ValueChanged<GoalDirection> onDirectionChanged;
+  final ValueChanged<String?> onCategoryChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final selectedCategoryName = categories
+        .where((category) => category.id == categoryId)
+        .map((category) => category.name)
+        .firstOrNull;
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.label_outline_rounded,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      labelName,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    Text(
+                      messages.goalFormLabelTimeSource,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              DesignSystemIconAction(
+                icon: Icons.close_rounded,
+                tooltip: context.messages.aiCardProposalKindRemove,
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemDropdown(
+            key: ValueKey('goal-form-label-time-category-$labelId'),
+            label: messages.dailyOsNextBlockEditCategoryLabel,
+            inputLabel:
+                selectedCategoryName ??
+                categoryId ??
+                messages.dailyOsNextCategoryFilterAll,
+            items: [
+              DesignSystemDropdownItem(
+                id: '',
+                label: messages.dailyOsNextCategoryFilterAll,
+                selected: categoryId == null,
+              ),
+              for (final category in categories)
+                DesignSystemDropdownItem(
+                  id: category.id,
+                  label: category.name,
+                  selected: category.id == categoryId,
+                ),
+              if (categoryId != null && selectedCategoryName == null)
+                DesignSystemDropdownItem(
+                  id: categoryId!,
+                  label: categoryId!,
+                  selected: true,
+                ),
+            ],
+            onItemPressed: (item) =>
+                onCategoryChanged(item.id.isEmpty ? null : item.id),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DsSegmentedToggle<GoalDirection>(
+            key: ValueKey('goal-form-label-time-direction-$labelId'),
+            segments: [
+              DsSegment(
+                GoalDirection.atLeast,
+                context.messages.goalFormDirectionAtLeast,
+              ),
+              DsSegment(
+                GoalDirection.atMost,
+                context.messages.goalFormDirectionAtMost,
+              ),
+            ],
+            selected: direction,
+            onChanged: onDirectionChanged,
+            expand: true,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          _LabelTimeTargetInput(
+            labelId: labelId,
+            value: value,
+            errorText: errorText,
+            anchorKey: anchorKey,
+            onChanged: onTargetChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LabelTimeTargetInput extends StatefulWidget {
+  const _LabelTimeTargetInput({
+    required this.labelId,
+    required this.value,
+    required this.errorText,
+    required this.anchorKey,
+    required this.onChanged,
+  });
+
+  final String labelId;
+  final num? value;
+  final String? errorText;
+  final Key anchorKey;
+  final ValueChanged<num?> onChanged;
+
+  @override
+  State<_LabelTimeTargetInput> createState() => _LabelTimeTargetInputState();
+}
+
+class _LabelTimeTargetInputState extends State<_LabelTimeTargetInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => KeyedSubtree(
+    key: widget.anchorKey,
+    child: DesignSystemTextInput(
+      key: ValueKey('goal-form-label-time-target-${widget.labelId}'),
+      controller: _controller,
+      label: context.messages.goalFormLabelTimeTarget,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      errorText: widget.errorText,
+      onChanged: (raw) => widget.onChanged(
+        num.tryParse(raw.trim().replaceAll(',', '.')),
+      ),
+    ),
+  );
+}
+
 class _DimensionSourcePicker extends StatefulWidget {
   const _DimensionSourcePicker({
     required this.habits,
     required this.habitsFailed,
     required this.measurables,
     required this.categories,
+    required this.labels,
     required this.selectedHabitIds,
     required this.selectedMeasurableIds,
     required this.selectedHealthDataTypes,
     required this.selectedCategoryIds,
+    required this.selectedLabelIds,
     required this.watchesSteps,
     required this.onStepsChanged,
     required this.onHabitChanged,
@@ -2525,16 +2899,20 @@ class _DimensionSourcePicker extends StatefulWidget {
     required this.onHealthRemoved,
     required this.onCategorySelected,
     required this.onCategoryRemoved,
+    required this.onLabelSelected,
+    required this.onLabelRemoved,
   });
 
   final List<HabitDefinition> habits;
   final bool habitsFailed;
   final List<MeasurableDataType> measurables;
   final List<CategoryDefinition> categories;
+  final List<LabelDefinition> labels;
   final Set<String> selectedHabitIds;
   final Set<String> selectedMeasurableIds;
   final Set<String> selectedHealthDataTypes;
   final Set<String> selectedCategoryIds;
+  final Set<String> selectedLabelIds;
   final bool watchesSteps;
   final ValueChanged<bool> onStepsChanged;
   final void Function({required String habitId, required bool selected})
@@ -2545,6 +2923,8 @@ class _DimensionSourcePicker extends StatefulWidget {
   final ValueChanged<String> onHealthRemoved;
   final ValueChanged<String> onCategorySelected;
   final ValueChanged<String> onCategoryRemoved;
+  final ValueChanged<String> onLabelSelected;
+  final ValueChanged<String> onLabelRemoved;
 
   @override
   State<_DimensionSourcePicker> createState() => _DimensionSourcePickerState();
@@ -2565,6 +2945,7 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
   late final Set<String> _measurableIds = {...widget.selectedMeasurableIds};
   late final Set<String> _healthTypes = {...widget.selectedHealthDataTypes};
   late final Set<String> _categoryIds = {...widget.selectedCategoryIds};
+  late final Set<String> _labelIds = {...widget.selectedLabelIds};
   late bool _watchesSteps = widget.watchesSteps;
 
   @override
@@ -2588,6 +2969,9 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
     }).toList();
     final visibleCategories = widget.categories.where((category) {
       return query.isEmpty || category.name.toLowerCase().contains(query);
+    }).toList();
+    final visibleLabels = widget.labels.where((label) {
+      return query.isEmpty || label.name.toLowerCase().contains(query);
     }).toList();
     final stepsMatches =
         query.isEmpty ||
@@ -2793,6 +3177,37 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                             widget.onCategorySelected(category.id);
                           } else {
                             widget.onCategoryRemoved(category.id);
+                          }
+                        },
+                      ),
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
+                  if (visibleLabels.isNotEmpty) ...[
+                    Text(
+                      messages.goalDimensionLabelTimeSource,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                    for (final label in visibleLabels)
+                      DesignSystemSelectionRow(
+                        key: ValueKey(
+                          'goal-form-label-time-source-${label.id}',
+                        ),
+                        title: label.name,
+                        subtitle: messages.goalFormLabelTimeSource,
+                        selected: _labelIds.contains(label.id),
+                        type: DesignSystemSelectionRowType.multiSelect,
+                        onTap: () {
+                          final selected = !_labelIds.contains(label.id);
+                          setState(() {
+                            selected
+                                ? _labelIds.add(label.id)
+                                : _labelIds.remove(label.id);
+                          });
+                          if (selected) {
+                            widget.onLabelSelected(label.id);
+                          } else {
+                            widget.onLabelRemoved(label.id);
                           }
                         },
                       ),

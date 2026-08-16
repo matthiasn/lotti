@@ -15,7 +15,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
-enum GoalDimensionKind { habit, health, measurable, categoryTime }
+enum GoalDimensionKind { habit, health, measurable, categoryTime, labelTime }
 
 enum GoalCompositeRuleKind { all, any, atLeast }
 
@@ -429,7 +429,8 @@ bool _criterionCompletedOnDay(
     (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
   GoalCriterionMetric() ||
   GoalCriterionMeasurable() ||
-  GoalCriterionCategoryTime() =>
+  GoalCriterionCategoryTime() ||
+  GoalCriterionLabelTime() =>
     const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
   GoalCriterionAllOf(criteria: final children) => children.every(
     (child) => _criterionCompletedOnDay(child, signals, day),
@@ -458,6 +459,7 @@ GoalProgressView buildGoalProgressView({
   Map<String, String> habitNames = const {},
   Map<String, MeasurableDataType> measurableDefinitions = const {},
   Map<String, String> categoryNames = const {},
+  Map<String, String> labelNames = const {},
   Set<String> agentRecordedMeasurementIds = const {},
   Map<String, GoalRecordedMeasurementProvenance>
       recordedMeasurementProvenanceById =
@@ -473,6 +475,7 @@ GoalProgressView buildGoalProgressView({
   final metricLeaves = <GoalCriterionMetric>[];
   final measurableLeaves = <GoalCriterionMeasurable>[];
   final categoryTimeLeaves = <GoalCriterionCategoryTime>[];
+  final labelTimeLeaves = <GoalCriterionLabelTime>[];
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
@@ -484,6 +487,8 @@ GoalProgressView buildGoalProgressView({
         measurableLeaves.add(measurable);
       case final GoalCriterionCategoryTime categoryTime:
         categoryTimeLeaves.add(categoryTime);
+      case final GoalCriterionLabelTime labelTime:
+        labelTimeLeaves.add(labelTime);
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(visit);
       case GoalCriterionAnyOf(criteria: final children):
@@ -555,6 +560,17 @@ GoalProgressView buildGoalProgressView({
                 .results[categoryTime.criterionId]
                 ?.projectedDaysToTarget !=
             null,
+      ),
+    for (final labelTime in labelTimeLeaves)
+      _labelTimeProgressView(
+        labelTime: labelTime,
+        signals: signals,
+        reference: reference,
+        historyDays: historyDays,
+        labelName: labelNames[labelTime.labelId],
+        categoryName: labelTime.categoryId == null
+            ? null
+            : categoryNames[labelTime.categoryId],
       ),
   ];
   return GoalProgressView(
@@ -694,6 +710,33 @@ GoalMetricProgressView _categoryTimeProgressView({
   zeroIsObserved: true,
 );
 
+GoalMetricProgressView _labelTimeProgressView({
+  required GoalCriterionLabelTime labelTime,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+  String? labelName,
+  String? categoryName,
+  int? historyDays,
+}) => _numericProgressView(
+  historyDays: historyDays,
+  criterion: labelTime,
+  criterionId: labelTime.criterionId,
+  sourceId: labelTime.labelId,
+  kind: GoalDimensionKind.labelTime,
+  name: labelTime.title?.trim().isNotEmpty == true
+      ? labelTime.title!.trim()
+      : [labelName ?? labelTime.labelId, ?categoryName].join(' · '),
+  dailyTimeRange: labelTime.dailyTimeRange,
+  target: labelTime.targetHours,
+  window: labelTime.window,
+  direction: labelTime.direction,
+  aggregation: labelTime.aggregation,
+  dailyValues: signals.labelTimeDailyHours[labelTime.criterionId],
+  signals: signals,
+  reference: reference,
+  zeroIsObserved: true,
+);
+
 /// The first rendered day: the authored range start, or further back when
 /// the page's shared [historyDays] span (ending today) reaches earlier.
 DateTime _historyStart({
@@ -808,9 +851,14 @@ GoalSignalWindow _signalsThroughDay(GoalSignalWindow signals, DateTime day) {
     measurableEntryDaysById: signals.measurableEntryDaysById,
     categoryTimeDailyHours: clip(signals.categoryTimeDailyHours),
     categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
+    labelTimeDailyHours: clip(signals.labelTimeDailyHours),
+    labelTimeEntriesByCriterion: signals.labelTimeEntriesByCriterion,
+    labelTimeEvidenceStart: signals.labelTimeEvidenceStart,
+    labelTimeEvidenceEnd: signals.labelTimeEvidenceEnd,
     categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
     categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,
     hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
+    hasActiveLabelTimer: signals.hasActiveLabelTimer,
   );
 }
 
@@ -963,7 +1011,8 @@ Future<GoalProgressView?> _progressView(
         habitIds.add(habitId);
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
-          GoalCriterionCategoryTime():
+          GoalCriterionCategoryTime() ||
+          GoalCriterionLabelTime():
         return;
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(collect);
@@ -979,18 +1028,23 @@ Future<GoalProgressView?> _progressView(
   final names = <String, String>{};
   final measurableDefinitions = <String, MeasurableDataType>{};
   final categoryNames = <String, String>{};
+  final labelNames = <String, String>{};
   for (final habitId in habitIds) {
     final habit = await db.getHabitById(habitId);
     if (habit != null) names[habitId] = habit.name;
   }
   final measurableIds = <String>{};
   final categoryIds = <String>{};
+  final labelIds = <String>{};
   void collectDefinitions(GoalCriterion criterion) {
     switch (criterion) {
       case GoalCriterionMeasurable(:final dataTypeId):
         measurableIds.add(dataTypeId);
       case GoalCriterionCategoryTime(:final categoryId):
         categoryIds.add(categoryId);
+      case GoalCriterionLabelTime(:final labelId, :final categoryId):
+        labelIds.add(labelId);
+        if (categoryId != null) categoryIds.add(categoryId);
       case GoalCriterionMetric() || GoalCriterionHabit():
         return;
       case GoalCriterionAllOf(criteria: final children):
@@ -1012,6 +1066,10 @@ Future<GoalProgressView?> _progressView(
   for (final categoryId in categoryIds) {
     final definition = await db.getCategoryById(categoryId);
     if (definition != null) categoryNames[categoryId] = definition.name;
+  }
+  for (final labelId in labelIds) {
+    final definition = await db.getLabelDefinitionById(labelId);
+    if (definition != null) labelNames[labelId] = definition.name;
   }
   final captureDecisions = measurableIds.isEmpty
       ? const <String, GoalMeasurableCaptureDecision>{}
@@ -1041,6 +1099,7 @@ Future<GoalProgressView?> _progressView(
     habitNames: names,
     measurableDefinitions: measurableDefinitions,
     categoryNames: categoryNames,
+    labelNames: labelNames,
     agentRecordedMeasurementIds: agentRecordedMeasurementIds,
     recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
   );
