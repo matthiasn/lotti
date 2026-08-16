@@ -160,6 +160,9 @@ tasks participate because the service and repository guard read unfiltered
 denormalized `project_id` membership. The coordinator also makes an agent modal
 opened against an older category wait for the migration and then fail its
 pre/post-create scope check instead of provisioning stale permissions.
+Synced category moves enter the same invariant boundary through
+`ProjectActivityMonitor`, which re-scopes linked project agents without
+classifying the remote edit as local activity or scheduling a wake.
 
 # Two hot reads are shaped for bursts
 

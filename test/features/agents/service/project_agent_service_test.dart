@@ -257,6 +257,44 @@ void main() {
         },
       );
 
+      test(
+        'rejects a template whose synced category no longer matches',
+        () async {
+          final staleTemplate = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'old-category'},
+          );
+          when(
+            () => mockRepository.getLinksTo(
+              'project-with-new-category',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => staleTemplate);
+
+          await expectLater(
+            () => service.createProjectAgent(
+              projectId: 'project-with-new-category',
+              templateId: kTestTemplateId,
+              displayName: 'Fresh template check',
+              allowedCategoryIds: const {'new-category'},
+            ),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+
       glados.Glados(
         glados.any.projectAgentCreateScenario,
         glados.ExploreConfig(numRuns: 180),

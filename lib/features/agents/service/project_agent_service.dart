@@ -140,9 +140,11 @@ class ProjectAgentService {
       final templateEntity = await repository.getEntity(templateId);
       if (templateEntity is! AgentTemplateEntity ||
           templateEntity.deletedAt != null ||
-          templateEntity.kind != AgentTemplateKind.projectAgent) {
+          templateEntity.kind != AgentTemplateKind.projectAgent ||
+          !_templateAppliesToScope(templateEntity, allowedCategoryIds)) {
         throw StateError(
-          'Template $templateId is not an active project-agent template.',
+          'Template $templateId is not an active project-agent template for '
+          'the requested project scope.',
         );
       }
 
@@ -242,6 +244,15 @@ class ProjectAgentService {
 
     return identity;
   });
+
+  static bool _templateAppliesToScope(
+    AgentTemplateEntity template,
+    Set<String> allowedCategoryIds,
+  ) {
+    if (template.categoryIds.isEmpty) return true;
+    return allowedCategoryIds.length == 1 &&
+        template.categoryIds.contains(allowedCategoryIds.single);
+  }
 
   /// Find the Project Agent for [projectId], or `null` if none exists.
   ///

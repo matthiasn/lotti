@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -437,6 +438,7 @@ void main() {
       final mockNotifications = MockUpdateNotifications();
       final mockSyncService = MockAgentSyncService();
       final mockProjectRepository = MockProjectRepository();
+      final mockProjectAgentService = MockProjectAgentService();
       final logger = DomainLogger(loggingService: LoggingService());
       when(
         () => mockService.abortRunningWake('retired-project-agent'),
@@ -447,6 +449,12 @@ void main() {
       when(
         () => mockService.destroyAgent('retired-project-agent'),
       ).thenAnswer((_) async => true);
+      when(
+        () => mockProjectAgentService.updateProjectAgentScopes(
+          projectId: 'synced-project',
+          allowedCategoryIds: const {'synced-category'},
+        ),
+      ).thenAnswer((_) async => const {});
 
       final container = ProviderContainer(
         overrides: [
@@ -456,6 +464,9 @@ void main() {
           agentRepositoryProvider.overrideWithValue(mockRepository),
           projectRepositoryProvider.overrideWithValue(mockProjectRepository),
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
+          projectAgentServiceProvider.overrideWithValue(
+            mockProjectAgentService,
+          ),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       );
@@ -465,12 +476,23 @@ void main() {
 
       expect(monitor, isA<ProjectActivityMonitor>());
       expect(monitor.retireProjectAgent, isNotNull);
+      expect(monitor.updateProjectAgentScopes, isNotNull);
       await monitor.retireProjectAgent!('retired-project-agent');
       verifyInOrder([
         () => mockService.abortRunningWake('retired-project-agent'),
         () => mockService.cancelPendingWake('retired-project-agent'),
         () => mockService.destroyAgent('retired-project-agent'),
       ]);
+      await monitor.updateProjectAgentScopes!(
+        'synced-project',
+        const {'synced-category'},
+      );
+      verify(
+        () => mockProjectAgentService.updateProjectAgentScopes(
+          projectId: 'synced-project',
+          allowedCategoryIds: const {'synced-category'},
+        ),
+      ).called(1);
 
       // Dispose should exercise the provider cleanup hook without errors.
       container.dispose();

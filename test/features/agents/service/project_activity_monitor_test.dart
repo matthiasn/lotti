@@ -142,35 +142,105 @@ void main() {
       },
     );
 
-    test('keeps linked agents when the synced project still exists', () async {
-      final retiredAgentIds = <String>[];
-      final reconciliationMonitor = ProjectActivityMonitor(
-        notifications: notifications,
-        agentRepository: repository,
-        projectRepository: projectRepository,
-        syncService: syncService,
-        retireProjectAgent: (agentId) async {
-          retiredAgentIds.add(agentId);
-        },
-        clock: Clock.fixed(now),
-      );
-      addTearDown(reconciliationMonitor.stop);
-      when(
-        () => projectRepository.getProjectById('project-live'),
-      ).thenAnswer((_) async => projects.makeTestProject(id: 'project-live'));
+    test(
+      'continues retiring linked agents after one retirement fails',
+      () async {
+        final attemptedAgentIds = <String>[];
+        final tombstoneMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (agentId) async {
+            attemptedAgentIds.add(agentId);
+            if (agentId == 'agent-1') {
+              throw StateError('first retirement failed');
+            }
+          },
+          clock: Clock.fixed(now),
+        );
+        addTearDown(tombstoneMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-tombstoned'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getLinksTo(
+            'project-tombstoned',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: 'agent-1',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: 'agent-2',
+              toId: 'project-tombstoned',
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          ],
+        );
 
-      reconciliationMonitor.start();
-      syncUpdateController.add({'project-live', projectNotification});
-      await pumpEventQueue(times: 3);
+        tombstoneMonitor.start();
+        syncUpdateController.add({'project-tombstoned', projectNotification});
+        await pumpEventQueue(times: 3);
 
-      expect(retiredAgentIds, isEmpty);
-      verifyNever(
-        () => repository.getLinksTo(
-          'project-live',
-          type: AgentLinkTypes.agentProject,
-        ),
-      );
-    });
+        expect(attemptedAgentIds, ['agent-1', 'agent-2']);
+      },
+    );
+
+    test(
+      're-scopes linked agents when the synced project still exists',
+      () async {
+        final retiredAgentIds = <String>[];
+        final scopeUpdates = <(String, Set<String>)>[];
+        final reconciliationMonitor = ProjectActivityMonitor(
+          notifications: notifications,
+          agentRepository: repository,
+          projectRepository: projectRepository,
+          syncService: syncService,
+          retireProjectAgent: (agentId) async {
+            retiredAgentIds.add(agentId);
+          },
+          updateProjectAgentScopes: (projectId, categoryIds) async {
+            scopeUpdates.add((projectId, categoryIds));
+          },
+          clock: Clock.fixed(now),
+        );
+        addTearDown(reconciliationMonitor.stop);
+        when(
+          () => projectRepository.getProjectById('project-live'),
+        ).thenAnswer(
+          (_) async => projects.makeTestProject(
+            id: 'project-live',
+            categoryId: 'synced-category',
+          ),
+        );
+
+        reconciliationMonitor.start();
+        syncUpdateController.add({'project-live', projectNotification});
+        await pumpEventQueue(times: 3);
+
+        expect(retiredAgentIds, isEmpty);
+        expect(scopeUpdates, hasLength(1));
+        expect(scopeUpdates.single.$1, 'project-live');
+        expect(scopeUpdates.single.$2, {'synced-category'});
+        verifyNever(
+          () => repository.getLinksTo(
+            'project-live',
+            type: AgentLinkTypes.agentProject,
+          ),
+        );
+      },
+    );
 
     test(
       'failed cancellation restores eligibility for the older activity batch',

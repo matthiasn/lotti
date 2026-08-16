@@ -49,7 +49,8 @@ expensive and useless.
 1. Serializes with category edits and destructive mutation of the same project,
    then verifies the journal project still exists with the requested category.
 2. Enforces one project agent per project.
-3. Validates the template is a project-agent template.
+3. Re-reads the template and validates that it is an active project-agent
+   template whose category scope still applies to the requested project scope.
 4. Creates identity and state.
 5. Sets `slots.activeProjectId` and marks the explicit creation work pending.
 6. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
@@ -72,11 +73,13 @@ databases, so the coordinator provides the local cross-store exclusion that a
 database transaction cannot; the pre/post-create scope checks cover both stale
 category input and an independent tombstone or category change arriving through
 sync.
-Because a peer can still apply its tombstone after that final check,
+Because a peer can still apply its tombstone or category move after that final check,
 `ProjectActivityMonitor` also listens to `syncUpdateStream` for project rows.
 When the announced project is already absent, it cancels queued/running work
-and destroys every linked project agent. This is reconciliation only: synced
-edits never enter the local activity path and therefore never arm a new wake.
+and attempts to destroy every linked project agent even if one retirement
+fails. When the project survives, it re-scopes every linked project agent to
+the synced category. This is reconciliation only: synced edits never enter the
+local activity path and therefore never arm a new wake.
 
 ## Announcing a newly created agent
 

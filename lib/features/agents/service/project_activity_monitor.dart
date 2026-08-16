@@ -128,6 +128,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
     this.domainLogger,
     this._clock = const Clock(),
     this.retireProjectAgent,
+    this.updateProjectAgentScopes,
     ProjectActivityCancellationCoordinator? cancellationCoordinator,
   }) : _cancellationCoordinator =
            cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
@@ -138,6 +139,11 @@ class ProjectActivityMonitor with AgentErrorLogging {
   final AgentSyncService _syncService;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
   final Future<void> Function(String agentId)? retireProjectAgent;
+  final Future<void> Function(
+    String projectId,
+    Set<String> allowedCategoryIds,
+  )?
+  updateProjectAgentScopes;
   @override
   final DomainLogger? domainLogger;
 
@@ -165,9 +171,9 @@ class ProjectActivityMonitor with AgentErrorLogging {
       final observedSequence = _cancellationCoordinator.captureActivity();
       unawaited(_handleBatch(affectedIds, observedAt, observedSequence));
     });
-    if (retireProjectAgent != null) {
+    if (retireProjectAgent != null || updateProjectAgentScopes != null) {
       _syncSubscription = _notifications.syncUpdateStream.listen((affectedIds) {
-        unawaited(_reconcileSyncedProjectTombstones(affectedIds));
+        unawaited(_reconcileSyncedProjects(affectedIds));
       });
     }
   }
@@ -182,18 +188,21 @@ class ProjectActivityMonitor with AgentErrorLogging {
     _syncSubscription = null;
   }
 
-  /// Retires project agents after a project tombstone arrives through sync.
+  /// Reconciles project-agent lifecycle and scope after project sync updates.
   ///
   /// Provisioning necessarily spans the journal and agent databases. Even
   /// after its final existence check, a peer can commit a project tombstone
   /// before the new identity is announced and woken. The sync notification is
   /// the durable reconciliation point for that last race: a missing project
-  /// must not retain active agents or queued work.
-  Future<void> _reconcileSyncedProjectTombstones(
+  /// must not retain active agents or queued work, while a surviving project
+  /// must keep every linked agent scoped to its current category.
+  Future<void> _reconcileSyncedProjects(
     Set<String> affectedIds,
   ) async {
     final retireAgent = retireProjectAgent;
-    if (retireAgent == null || !affectedIds.contains(projectNotification)) {
+    final updateScopes = updateProjectAgentScopes;
+    if ((retireAgent == null && updateScopes == null) ||
+        !affectedIds.contains(projectNotification)) {
       return;
     }
 
@@ -203,9 +212,15 @@ class ProjectActivityMonitor with AgentErrorLogging {
     });
     for (final projectId in candidateProjectIds) {
       try {
-        if (await _projectRepository.getProjectById(projectId) != null) {
+        final project = await _projectRepository.getProjectById(projectId);
+        if (project != null) {
+          await updateScopes?.call(projectId, {
+            if (project.meta.categoryId case final String categoryId)
+              categoryId,
+          });
           continue;
         }
+        if (retireAgent == null) continue;
         final links = await _agentRepository.getLinksTo(
           projectId,
           type: AgentLinkTypes.agentProject,
@@ -213,12 +228,22 @@ class ProjectActivityMonitor with AgentErrorLogging {
         final retiredAgentIds = <String>{};
         for (final link in links) {
           if (retiredAgentIds.add(link.fromId)) {
-            await retireAgent(link.fromId);
+            try {
+              await retireAgent(link.fromId);
+            } catch (error, stackTrace) {
+              logError(
+                'failed to retire project agent '
+                '${DomainLogger.sanitizeId(link.fromId)} for project '
+                '${DomainLogger.sanitizeId(projectId)}',
+                error: error,
+                stackTrace: stackTrace,
+              );
+            }
           }
         }
       } catch (error, stackTrace) {
         logError(
-          'failed to reconcile project tombstone for '
+          'failed to reconcile synced project '
           '${DomainLogger.sanitizeId(projectId)}',
           error: error,
           stackTrace: stackTrace,
