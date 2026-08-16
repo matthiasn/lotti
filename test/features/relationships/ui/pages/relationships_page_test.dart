@@ -94,6 +94,23 @@ void main() {
     );
   });
 
+  testWidgets('shows the error text when the first load fails', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenThrow(Exception('db gone'));
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Error'), findsOneWidget);
+    expect(
+      find.text('Add the people you want to stay close to.'),
+      findsNothing,
+    );
+  });
+
   testWidgets(
     'shows progress on the first load, then swaps it for the list',
     (tester) async {

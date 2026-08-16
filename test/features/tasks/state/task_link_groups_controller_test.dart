@@ -341,6 +341,46 @@ void main() {
       expect(result.typed, isEmpty);
     });
 
+    test(
+      'errors when a RelationshipLink reaches the task-relationship query',
+      () async {
+        final otherTask = TestTaskFactory.create(id: 'other', title: 'Other');
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            {currentTaskId},
+            linkTypes: any(named: 'linkTypes'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.relationship(
+              id: 'rel-link',
+              fromId: currentTaskId,
+              toId: 'other',
+              createdAt: baseDate,
+              updatedAt: baseDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => journalRepository.getJournalEntitiesByIds(any()),
+        ).thenAnswer((_) async => [otherTask]);
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        // The controller's `.map(...)` switch throws a StateError for
+        // RelationshipLink — the task link query must never return one, but
+        // the exhaustive switch enforces it at runtime rather than silently
+        // mis-bucketing it.
+        expect(
+          () => container.read(
+            taskLinkGroupsControllerProvider(currentTaskId).future,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
     test('sorts entries by createdAt descending, newest first', () async {
       final taskA = TestTaskFactory.create(id: 'a', title: 'A');
       final taskB = TestTaskFactory.create(id: 'b', title: 'B');

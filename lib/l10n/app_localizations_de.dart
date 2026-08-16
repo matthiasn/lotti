@@ -3157,7 +3157,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInInteractionInPerson => 'Persönlich';
 
   @override
-  String get checkInInteractionLabel => 'Wie hattet ihr Kontakt?';
+  String get checkInInteractionLabel => 'Wie habt ihr gesprochen?';
 
   @override
   String get checkInInteractionMessage => 'Nachricht';
@@ -3172,7 +3172,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInNarrativeLabel => 'Worüber habt ihr gesprochen?';
 
   @override
-  String get checkInPayAttentionLabel => 'Nächstes Mal darauf achten';
+  String get checkInPayAttentionLabel => 'Nächstes Mal achten auf';
 
   @override
   String get checkInSentimentDelightful => 'Wunderbar';
@@ -6280,6 +6280,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Mit $agentName sprechen';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Mit dem Agenten sprechen';
 
   @override
@@ -6372,6 +6377,9 @@ class AppLocalizationsDe extends AppLocalizations {
   ) {
     return 'Gestern: $metCount von $dimensionCount Dimensionen · $requiredCount nötig.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Das ganze Ziel';
 
   @override
   String get goalCreateFailed =>
@@ -6468,7 +6476,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Das sagt dein Agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signale';
+
+  @override
+  String get goalDetailStatementLabel => 'Dein Ziel';
 
   @override
   String get goalDetailThisWeekTitle => 'Diese Woche';
@@ -6487,6 +6501,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Die oben aufgeführten Signale werden innerhalb von Sekunden aktualisiert. Dein Agent sieht nur die hier aufgeführten Signale.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Beobachtet';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Verfolgte Kategoriezeit';
@@ -6574,6 +6591,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-Tage-Durchschnitt';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName braucht Aufmerksamkeit';
   }
 
   @override
@@ -7109,6 +7131,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalStatusRecovering => 'Auf dem Weg zurück';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Updates von der verlinkten Quelle · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'Kalendermonat';
 
   @override
@@ -7261,7 +7288,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitsFilterPendingLater => 'später';
 
   @override
-  String get habitsGoalLineLabel => 'Zielwert';
+  String get habitsGoalLineLabel => 'Ziel';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7292,7 +7319,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points Pkt. bis zum Zielwert';
+    return '$points Pkt. bis zum Ziel';
   }
 
   @override
@@ -10334,7 +10361,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipImportantLabel => 'Wichtig';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Verknüpfte Aufgaben';
+  String get relationshipLinkedTasksLabel => 'Aufgaben';
 
   @override
   String get relationshipLinkTaskButton => 'Aufgabe verknüpfen';
