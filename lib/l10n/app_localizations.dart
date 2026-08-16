@@ -10667,11 +10667,11 @@ abstract class AppLocalizations {
   /// **'{agentName} is replying…'**
   String goalChatResponding(String agentName);
 
-  /// Button that opens a goal-agent conversation.
+  /// Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)
   ///
   /// In en, this message translates to:
-  /// **'Talk to {agentName}'**
-  String goalChatTalkTo(String agentName);
+  /// **'Talk to agent'**
+  String get goalChatTalkToAgent;
 
   /// Chat draft pre-filled by Ask why; {status} is the localized status pill label.
   ///
@@ -10880,12 +10880,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signals'**
   String get goalDetailSignalsTitle;
-
-  /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
-  ///
-  /// In en, this message translates to:
-  /// **'Your goal'**
-  String get goalDetailStatementLabel;
 
   /// Title of the goal detail hero card holding the whole-goal 7-day strip.
   ///

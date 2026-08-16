@@ -178,11 +178,13 @@ void main() {
     expect(find.text('Signals'), findsOneWidget);
     expect(find.text('Watching'), findsNothing);
     expect(find.text('Health data'), findsOneWidget);
+    // The statement no longer repeats in the header — the title carries the
+    // goal's identity, and the full definition lives behind Edit goal.
     expect(
       find.textContaining(
         'Average 10,000 steps per day over a rolling week.',
       ),
-      findsOneWidget,
+      findsNothing,
     );
     // The narrative hero card wears the task agent section's shared panel
     // (same title, same chrome) with the no-report fallback.
@@ -228,7 +230,7 @@ void main() {
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
     expect(find.text('Signals'), findsOneWidget);
-    await tester.tap(find.text('Talk to Move more'));
+    await tester.tap(find.text('Talk to agent'));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
   });
@@ -1598,10 +1600,11 @@ void main() {
 
     final weekCard = find.byType(GoalThisWeekCard);
     final readCard = find.byKey(const ValueKey('goal-agent-read-card'));
-    // Stacked, not paired: the read starts below the week card.
+    // Stacked, not paired — and the read LEADS: the agent's judgement
+    // opens the page, with the deterministic day strip beneath it.
     expect(
-      tester.getTopLeft(readCard).dy,
-      greaterThanOrEqualTo(tester.getBottomLeft(weekCard).dy),
+      tester.getTopLeft(weekCard).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(readCard).dy),
     );
     // Both span the SAME full content measure the evidence cards use — a
     // shared row would halve them.
@@ -2447,7 +2450,7 @@ void main() {
 
     // The drawer opens from the named app-bar doorway and closes from its
     // own × — non-modal, the dashboard stays interactive throughout.
-    await tester.tap(find.text('Talk to Move more'));
+    await tester.tap(find.text('Talk to agent'));
     await tester.pumpAndSettle();
     // Open drawer: the column glides to the center of what the drawer
     // leaves free instead of hiding under it.
@@ -2629,7 +2632,7 @@ void main() {
 
     expect(find.text('Move more'), findsNWidgets(3));
     expect(find.byType(GoalAgentChatPane), findsNothing);
-    expect(find.text('Talk to Move more'), findsNothing);
+    expect(find.text('Talk to agent'), findsNothing);
     expect(find.text('Update now'), findsNothing);
     expect(find.byType(PopupMenuButton<HabitCompletionType>), findsNothing);
     expect(find.byType(ChangeSetSummaryCard), findsNothing);
@@ -3096,7 +3099,7 @@ void main() {
 
       // Talk-to reopens; a click on the dashboard closes it (non-modal — the
       // same click still reaches the dashboard, there is no barrier).
-      await tester.tap(find.text('Talk to Move more'));
+      await tester.tap(find.text('Talk to agent'));
       await tester.pumpAndSettle();
       expect(drawerIgnoring(), isFalse);
       await tester.tapAt(const Offset(200, 500));

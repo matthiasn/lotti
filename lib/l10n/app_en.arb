@@ -3409,14 +3409,9 @@
       }
     }
   },
-  "goalChatTalkTo": "Talk to {agentName}",
-  "@goalChatTalkTo": {
-    "description": "Button that opens a goal-agent conversation.",
-    "placeholders": {
-      "agentName": {
-        "type": "String"
-      }
-    }
+  "goalChatTalkToAgent": "Talk to agent",
+  "@goalChatTalkToAgent": {
+    "description": "Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)"
   },
   "goalChatWhyPrefill": "Why is this goal {status} right now?",
   "@goalChatWhyPrefill": {
@@ -3571,10 +3566,6 @@
   "goalDetailSignalsTitle": "Signals",
   "@goalDetailSignalsTitle": {
     "description": "Section heading over the data-signal dimension cards on goal detail."
-  },
-  "goalDetailStatementLabel": "Your goal",
-  "@goalDetailStatementLabel": {
-    "description": "Caption above the goal statement on the detail page, marking it as the aspiration rather than current status."
   },
   "goalDetailThisWeekTitle": "This week",
   "@goalDetailThisWeekTitle": {

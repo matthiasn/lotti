@@ -368,7 +368,9 @@ void main() {
     await pump(
       tester,
       baseState(),
-      viewport: const Size(1200, 2600),
+      // Wider than the 1100 measure plus its gutters, so the cap binds and
+      // centering is observable.
+      viewport: const Size(1600, 2600),
     );
 
     // The column is capped at the unified reading measure and centered:

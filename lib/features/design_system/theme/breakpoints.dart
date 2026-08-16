@@ -34,15 +34,16 @@ const kDetailContentMaxWidth = 960.0;
 /// share one right edge.
 const kActionListContentMaxWidth = 520.0;
 
-/// The reading measure for the unified Goals list: one calm centered column
-/// of goal cards whose rows are short worded lines, not prose.
-///
-/// Deliberately narrower than [kDetailContentMaxWidth] (sized for body copy)
-/// and than the Habits page's dashboard band: stretched wider, a goal card's
-/// habit rows put their trailing complete button most of a window away from
-/// the habit name and the card stops reading as a group. Confirmed at 700 in
-/// the "Goals, Unified" design handover. Non-binding below this width.
-const kUnifiedGoalsContentMaxWidth = 700.0;
+/// The unified Goals surfaces' content measure — the goals list and the goal
+/// detail dashboard — matching the Habits dashboard band (1100), so the two
+/// habit-carrying surfaces read as one product width. Originally 700 per the
+/// "Goals, Unified" handover, which proved needlessly narrow in use: goal
+/// cards, day tracks and the completion chart all benefit from the wider
+/// band, and cross-surface consistency with Habits outweighs the tighter
+/// reading measure. Non-binding below this width — both surfaces keep their
+/// own gutters on small screens (the list pads `step6` inside the cap, the
+/// detail scroll view pads `step6`), so content never touches the edges.
+const kUnifiedGoalsContentMaxWidth = 1100.0;
 
 /// The width at which a page header folds its tools (filter tabs, search)
 /// from one row beside the title into a second line beneath it — the

@@ -6277,9 +6277,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String goalChatTalkTo(String agentName) {
-    return 'Promluvit si s agentem $agentName';
-  }
+  String get goalChatTalkToAgent => 'Mluvit s agentem';
 
   @override
   String goalChatWhyPrefill(String status) {
@@ -6409,9 +6407,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDetailSignalsTitle => 'Signály';
-
-  @override
-  String get goalDetailStatementLabel => 'Tvůj cíl';
 
   @override
   String get goalDetailThisWeekTitle => 'Tento týden';
