@@ -328,15 +328,73 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  List<WakeJob> _cancelDrainOwnedJobsWhere(
+    bool Function(WakeJob job) predicate, {
+    required String reason,
+  }) {
+    final cancelled = <WakeJob>[];
+    for (final job in _drainOwnedJobs.values) {
+      if (!predicate(job) ||
+          _cancelledDrainOwnedRunReasons.containsKey(job.runKey)) {
+        continue;
+      }
+      _cancelledDrainOwnedRunReasons[job.runKey] = reason;
+      cancelled.add(job);
+    }
+    return cancelled;
+  }
+
   void _emitRemovedRunCompletions(
     Iterable<WakeJob> jobs, {
     required String reason,
   }) {
     for (final job in jobs) {
+      if (_persistedWakeRunKeys.remove(job.runKey)) {
+        unawaited(
+          _safeUpdateStatus(
+            job.runKey,
+            WakeRunStatus.aborted.name,
+            completedAt: clock.now(),
+            errorMessage: reason,
+          ).then(
+            (_) => _emitRunCompletion(
+              job,
+              WakeRunStatus.aborted,
+              error: StateError(reason),
+            ),
+          ),
+        );
+        continue;
+      }
       _emitRunCompletion(
         job,
         WakeRunStatus.aborted,
         error: StateError(reason),
+      );
+    }
+  }
+
+  /// Update wake run status without letting persistence failures escape the
+  /// orchestrator's execution or cancellation paths.
+  Future<void> _safeUpdateStatus(
+    String runKey,
+    String status, {
+    DateTime? completedAt,
+    String? errorMessage,
+  }) async {
+    try {
+      await repository.updateWakeRunStatus(
+        runKey,
+        status,
+        completedAt: completedAt,
+        errorMessage: errorMessage,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to update wake run status '
+        'for ${DomainLogger.sanitizeId(runKey)} to $status',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
@@ -434,20 +492,48 @@ class WakeOrchestrator with AgentErrorLogging {
   /// immediately instead of waiting behind an unrelated long inference.
   Completer<void>? _drainWakeSignal;
 
-  /// Timestamp when the current drain started, for stale-drain detection.
-  DateTime? _drainStartedAt;
+  /// Timestamp of the latest scheduler progress, for stale-drain detection.
+  /// Updated whenever a wake is dispatched or completes so a healthy drain
+  /// processing several slow wakes is not judged by its total lifetime.
+  DateTime? _drainLastProgressAt;
 
   /// Generation counter for drain cancellation. Incremented when a stale
   /// drain is force-reset so the old drain's loop can detect it was
   /// superseded and bail out.
   int _drainGeneration = 0;
 
-  /// Maximum duration for a drain before it is considered stale and the
-  /// guard is force-reset.
-  static const _drainTimeout = Duration(minutes: 5);
+  /// Runner leases owned by each drain generation.
+  ///
+  /// Stale recovery releases only individually stale slots from the
+  /// superseded generation. Healthy slots retain ownership until completion,
+  /// and lease identity ensures late cleanup cannot release or abort a
+  /// replacement run for the same agent.
+  final _drainLeasesByGeneration = <int, Set<WakeRunnerLease>>{};
+
+  /// Latest meaningful progress for each active lease. Generation-wide
+  /// progress cannot let unrelated healthy wakes hide one stalled slot.
+  final _drainLeaseProgressAt = <WakeRunnerLease, DateTime>{};
+
+  /// Jobs temporarily owned by the drain while they are outside [queue] but
+  /// have not started executor work yet.
+  final _drainOwnedJobs = <String, WakeJob>{};
+
+  /// Cancellation reason for drain-owned jobs removed by a newer request or
+  /// explicit cancellation while an asynchronous pre-dispatch step was active.
+  final _cancelledDrainOwnedRunReasons = <String, String>{};
+
+  /// Run keys whose `wake_run_log` row already exists when stale recovery
+  /// returns their job to the queue.
+  final _persistedWakeRunKeys = <String>{};
+
+  /// Maximum interval without scheduler progress before a drain is considered
+  /// stale and the guard is force-reset. This must remain longer than
+  /// [wakeRunMaxDuration], with headroom for the bounded pre-wake hook and
+  /// terminal status persistence, so a valid slow wake is never superseded.
+  static const _drainTimeout = Duration(minutes: 12);
 
   /// Safety-net periodic timer that catches any scenario where a deferred
-  /// drain timer fails to fire (macOS App Nap, race conditions, etc.).
+  /// drain timer fails to fire or an active drain stops making progress.
   Timer? _safetyNetTimer;
 
   static const _restoredPendingWakeSubscriptionId = 'restored_pending_wake';
@@ -529,8 +615,13 @@ class WakeOrchestrator with AgentErrorLogging {
       agentId,
       (job) => job.initiator == WakeInitiator.automation,
     );
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) =>
+          job.agentId == agentId && job.initiator == WakeInitiator.automation,
+      reason: reason,
+    );
     _emitRemovedRunCompletions(
-      removed,
+      [...removed, ...owned],
       reason: reason,
     );
   }
@@ -764,15 +855,15 @@ class WakeOrchestrator with AgentErrorLogging {
   /// Starts a periodic safety-net timer that ensures the queue is eventually
   /// drained even if a deferred drain timer fails to fire.
   ///
-  /// Only triggers [processNext] when the queue has pending jobs AND no
-  /// drain is currently in progress. We intentionally do NOT check
-  /// `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
-  /// entry lingering in the map would permanently disable the safety net —
-  /// exactly the failure mode this mechanism is meant to recover from.
+  /// Triggers [processNext] whenever the queue has pending jobs. Re-entering
+  /// an active drain is intentional: it either wakes the healthy scheduler or
+  /// force-resets one whose last progress exceeded [_drainTimeout]. We do not
+  /// check `_deferredDrainTimers.isEmpty` because a stale or cancelled timer
+  /// entry lingering in the map would permanently disable the safety net.
   void _startSafetyNet() {
     _safetyNetTimer?.cancel();
     _safetyNetTimer = Timer.periodic(safetyNetInterval, (_) {
-      if (!queue.isEmpty && !_isDraining) {
+      if (!queue.isEmpty) {
         _log('safety-net drain: queue=${queue.length}');
         unawaited(processNext());
       }
@@ -813,13 +904,18 @@ class WakeOrchestrator with AgentErrorLogging {
     // per submission) opt out so a second submission in the same workspace
     // cannot drop the first's still-queued parse before it drains.
     if (supersede) {
+      const supersededReason = 'wake superseded by a newer manual request';
       final removed = queue.removeByAgent(
         agentId,
         workspaceKey: workspaceKey,
       );
+      final owned = _cancelDrainOwnedJobsWhere(
+        (job) => job.agentId == agentId && job.workspaceKey == workspaceKey,
+        reason: supersededReason,
+      );
       _emitRemovedRunCompletions(
-        removed,
-        reason: 'wake superseded by a newer manual request',
+        [...removed, ...owned],
+        reason: supersededReason,
       );
     }
 
@@ -857,16 +953,23 @@ class WakeOrchestrator with AgentErrorLogging {
     String? workspaceKey,
     bool allWorkspaces = false,
   }) {
+    const cancellationReason = 'wake cancelled before execution';
     final removed = queue.removeByAgent(
       agentId,
       workspaceKey: workspaceKey,
       allWorkspaces: allWorkspaces,
     );
-    _emitRemovedRunCompletions(
-      removed,
-      reason: 'wake cancelled before execution',
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) =>
+          job.agentId == agentId &&
+          (allWorkspaces || job.workspaceKey == workspaceKey),
+      reason: cancellationReason,
     );
-    return removed;
+    _emitRemovedRunCompletions(
+      [...removed, ...owned],
+      reason: cancellationReason,
+    );
+    return [...removed, ...owned];
   }
 
   /// Wake [agentId] for externally produced content (e.g. a completed audio

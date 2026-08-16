@@ -3,6 +3,27 @@ import 'dart:collection';
 
 import 'package:clock/clock.dart';
 
+/// Ownership token for one [WakeRunner] acquisition.
+///
+/// Lease-aware release and abort operations ignore tokens that no longer own
+/// the agent lock. This prevents a superseded wake from affecting a newer run
+/// for the same agent when its asynchronous cleanup resumes late.
+class WakeRunnerLease {
+  const WakeRunnerLease._({
+    required this.agentId,
+    required this._id,
+    required this.abortFuture,
+  });
+
+  /// Agent whose single-flight lock this lease owns.
+  final String agentId;
+
+  final int _id;
+
+  /// Completes when this specific run is aborted or released.
+  final Future<void> abortFuture;
+}
+
 /// Single-flight execution engine for agent wake runs.
 ///
 /// Ensures that at most one wake executes per agent at a time.  Each
@@ -13,6 +34,8 @@ class WakeRunner {
   final _activeStartedAt = <String, DateTime>{};
   final _activeWorkspaceKey = <String, String?>{};
   final _abortSignals = <String, Completer<void>>{};
+  final _activeLeaseIds = <String, int>{};
+  var _nextLeaseId = 0;
   late final UnmodifiableMapView<String, DateTime> _activeStartedAtView =
       UnmodifiableMapView(_activeStartedAt);
   final _runningController = StreamController<Set<String>>.broadcast();
@@ -33,13 +56,32 @@ class WakeRunner {
   /// [workspaceKeyFor] instead of treating any run of a shared agent as
   /// relevant to every workspace it might touch.
   Future<bool> tryAcquire(String agentId, {String? workspaceKey}) async {
-    if (_activeLocks.containsKey(agentId)) return false;
+    return (await tryAcquireLease(agentId, workspaceKey: workspaceKey)) != null;
+  }
+
+  /// Attempt to acquire [agentId] and return its ownership token.
+  ///
+  /// Unlike [tryAcquire], the returned lease lets asynchronous owners release
+  /// or abort only the run they acquired, even after stale recovery has
+  /// installed a replacement run for the same agent.
+  Future<WakeRunnerLease?> tryAcquireLease(
+    String agentId, {
+    String? workspaceKey,
+  }) async {
+    if (_activeLocks.containsKey(agentId)) return null;
     _activeLocks[agentId] = Completer<void>();
-    _abortSignals[agentId] = Completer<void>();
+    final abortSignal = Completer<void>();
+    _abortSignals[agentId] = abortSignal;
+    final leaseId = _nextLeaseId++;
+    _activeLeaseIds[agentId] = leaseId;
     _activeStartedAt[agentId] = clock.now();
     _activeWorkspaceKey[agentId] = workspaceKey;
     _runningController.add(activeAgentIds);
-    return true;
+    return WakeRunnerLease._(
+      agentId: agentId,
+      id: leaseId,
+      abortFuture: abortSignal.future,
+    );
   }
 
   /// Release the lock for [agentId] and complete any waiters.
@@ -53,9 +95,16 @@ class WakeRunner {
     lock.complete();
     _activeStartedAt.remove(agentId);
     _activeWorkspaceKey.remove(agentId);
+    _activeLeaseIds.remove(agentId);
     final abort = _abortSignals.remove(agentId);
     if (abort != null && !abort.isCompleted) abort.complete();
     _runningController.add(activeAgentIds);
+  }
+
+  /// Release [lease] only while it still owns its agent lock.
+  void releaseLease(WakeRunnerLease lease) {
+    if (_activeLeaseIds[lease.agentId] != lease._id) return;
+    release(lease.agentId);
   }
 
   /// Signal an abort for the in-flight run for [agentId].
@@ -69,6 +118,12 @@ class WakeRunner {
     if (abort == null || abort.isCompleted) return false;
     abort.complete();
     return true;
+  }
+
+  /// Abort [lease] only while it still owns its agent lock.
+  bool abortLease(WakeRunnerLease lease) {
+    if (_activeLeaseIds[lease.agentId] != lease._id) return false;
+    return abort(lease.agentId);
   }
 
   /// Future that completes when [agentId]'s in-flight run ends — either

@@ -53,6 +53,45 @@ void main() {
       });
     });
 
+    group('leases', () {
+      test('returns ownership only when the agent lock is available', () {
+        fakeAsync((async) {
+          late WakeRunnerLease? first;
+          late WakeRunnerLease? duplicate;
+          runner.tryAcquireLease('agent-1').then((value) => first = value);
+          async.flushMicrotasks();
+          runner.tryAcquireLease('agent-1').then((value) => duplicate = value);
+          async.flushMicrotasks();
+
+          expect(first, isNotNull);
+          expect(duplicate, isNull);
+          expect(first!.agentId, 'agent-1');
+        });
+      });
+
+      test('stale ownership cannot release or abort a replacement', () {
+        fakeAsync((async) {
+          late WakeRunnerLease first;
+          late WakeRunnerLease replacement;
+          runner.tryAcquireLease('agent-1').then((value) => first = value!);
+          async.flushMicrotasks();
+          runner.releaseLease(first);
+          runner
+              .tryAcquireLease('agent-1')
+              .then((value) => replacement = value!);
+          async.flushMicrotasks();
+
+          runner.releaseLease(first);
+          expect(runner.abortLease(first), isFalse);
+          expect(runner.isRunning('agent-1'), isTrue);
+
+          expect(runner.abortLease(replacement), isTrue);
+          runner.releaseLease(replacement);
+          expect(runner.isRunning('agent-1'), isFalse);
+        });
+      });
+    });
+
     group('release', () {
       test('removes lock so agent can be acquired again', () {
         fakeAsync((async) {

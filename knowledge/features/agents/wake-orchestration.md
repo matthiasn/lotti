@@ -219,6 +219,27 @@ Two independent limits apply:
 - **Per agent**: `WakeRunner` enforces single-flight, so two wakes for the same
   agent never overlap even when global capacity is free.
 
+Each acquisition carries an ownership lease. Stale-drain recovery releases
+only the superseded generation's individually stale leases before starting its
+replacement. Healthy concurrent leases retain their agent locks until their
+own executors settle, while late cleanup or timeout callbacks from a stale lease
+cannot release or abort the newer run that now owns the same agent lock. Each
+lease keeps its own progress time, so unrelated healthy wakes cannot hide a
+stalled slot by refreshing only the generation-wide clock. A healthy lease
+retained from a superseded generation is excluded from the replacement
+generation's stale calculation, but every later scheduler pass evaluates it
+independently and releases it if its own progress becomes stale. A dequeued job
+also rechecks its drain
+generation after every pre-dispatch await. Before run-log insertion, a
+superseded drain returns the job to the queue and wakes the active scheduler;
+after insertion, it returns a persisted continuation that resumes the same run
+key without inserting a duplicate row. Drain-owned jobs remain visible to
+manual supersession and cancellation while outside the queue, so an obsolete
+older request is discarded rather than resurrected by a late continuation.
+Run-key history remains intact until both the visible queue and the drain-owned
+handoff set are empty, preventing restoration from duplicating an in-flight
+logical wake.
+
 Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its
 `WakeRunner` agent lock. Workflows and conversation managers are created per
@@ -242,6 +263,20 @@ agent lock. Dart cannot cancel the executor's underlying future, so inference
 may continue in the background; its eventual result is ignored by the drain.
 Workflows must therefore continue to treat late writes as normal database
 mutations that can produce a later notification.
+
+The scheduler only treats a drain as stale after **12 minutes without
+progress**. Dispatching or completing a wake resets that clock, so a healthy
+drain can process several slow wakes without being judged by its total age. If
+work remains queued, the one-minute safety net re-enters stale detection even
+while a drain is active; this recovers terminal persistence stalls without
+waiting for another enqueue. Recovery releases each individually stale runner
+lease before replacement dispatch, so a terminal status write cannot consume a
+global slot indefinitely, but it preserves newer healthy leases from the same
+superseded generation. The threshold deliberately exceeds the wake cap, leaving
+room for the bounded pre-wake hook and terminal status persistence. Progress is
+refreshed again immediately before the executor timer is armed, so pre-execution
+persistence and policy latency never shorten the executor's own ten-minute
+window.
 
 # Completion signalling
 
