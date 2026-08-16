@@ -9833,7 +9833,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.322] - 2023-04-16
 ### Changed:
-- Fluttium screenshots are pushed to lotti-docs repository
+- Fluttium screenshots are pushed to legacy-media repository
 
 ## [0.8.321] - 2023-04-15
 ### Changed:

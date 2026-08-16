@@ -21,21 +21,21 @@ does not mean that no future refinement is possible.
 
 Baseline evidence:
 
-- [Fixed-height phone transcript](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/daily-os-ux-review/baseline/pro_05_captured_dark.png)
-- [Read-only phone timeline](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/daily-os-ux-review/baseline/day_pro_02_timeline_dark.png)
-- [Read-only desktop timeline](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/daily-os-ux-review/baseline/day_desktop_02_timeline_dark.png)
-- [Later drafting shader; the earlier matching pass had no equivalent state](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/daily-os-ux-review/baseline/daily_os_shader_runtime_phone.png)
+- [Fixed-height phone transcript](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/daily-os-ux-review/baseline/pro_05_captured_dark.png)
+- [Read-only phone timeline](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/daily-os-ux-review/baseline/day_pro_02_timeline_dark.png)
+- [Read-only desktop timeline](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/daily-os-ux-review/baseline/day_desktop_02_timeline_dark.png)
+- [Later drafting shader; the earlier matching pass had no equivalent state](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/daily-os-ux-review/baseline/daily_os_shader_runtime_phone.png)
 
 Final evidence:
 
-- [First-frame AI processing](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/daily_os_shader_runtime_phone_dark.png)
-- [Long transcript review](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/pro_05_captured_dark.png)
-- [Reconcile decisions](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/pro_07_reconcile_dark.png)
-- [Busy agenda](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_01_agenda_dark.png)
-- [Desktop Plan versus Actual](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_desktop_02_timeline_dark.png)
-- [Arrange mode](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_03_timeline_arrange_dark.png)
-- [Block overview editor](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_04_block_edit_overview_dark.png)
-- [Task-linked block editor](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/daily_os/0.9.1047/day_pro_06_block_edit_linked_dark.png)
+- [First-frame AI processing](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/daily_os_shader_runtime_phone_dark.png)
+- [Long transcript review](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/pro_05_captured_dark.png)
+- [Reconcile decisions](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/pro_07_reconcile_dark.png)
+- [Busy agenda](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/day_pro_01_agenda_dark.png)
+- [Desktop Plan versus Actual](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/day_desktop_02_timeline_dark.png)
+- [Arrange mode](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/day_pro_03_timeline_arrange_dark.png)
+- [Block overview editor](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/day_pro_04_block_edit_overview_dark.png)
+- [Task-linked block editor](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/daily_os/0.9.1047/day_pro_06_block_edit_linked_dark.png)
 
 ## Scorecard
 

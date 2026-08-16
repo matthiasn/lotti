@@ -5,7 +5,7 @@
 /// data follows the Project Waddle world used by the task and Daily OS manual
 /// so operational states remain recognizable across chapters.
 ///
-/// Generated PNGs are staging inputs for `lotti-docs` and are never committed
+/// Generated PNGs are staging inputs for `legacy-media` and are never committed
 /// to this repository.
 ///
 /// Opt in with:

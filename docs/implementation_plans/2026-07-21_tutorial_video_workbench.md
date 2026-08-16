@@ -112,7 +112,7 @@ and stay byte-identical.
 ### Composition: OpenMontage (pinned), driven headlessly
 
 Composition is delegated to **OpenMontage** (github.com/calesthio/OpenMontage, AGPLv3 —
-an external dev tool cloned outside the repo like `lotti-docs`, never linked into the
+an external dev tool cloned outside the repo like `legacy-media`, never linked into the
 app). It bundles Remotion, HyperFrames, and ffmpeg as selectable rendering backends and
 provides exactly the post-production we need: narration clips placed at the **actual**
 timestamps from `timeline.json`, multi-track mixing with ducking (optional virtual-mic

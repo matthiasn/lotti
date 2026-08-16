@@ -19,11 +19,11 @@ MACOS_ARCHIVE_PATH = ./build/macos/archive/Runner.xcarchive
 MACOS_EXPORT_PATH = ./build/macos/export
 LOTTI_VERSION := $(shell yq '.version' pubspec.yaml |  tr -d '"')
 THRESH ?= 1000
-LOTTI_DOCS_DIR ?= $(abspath ../lotti-docs)
+LEGACY_MANUAL_CAPTURE_DIR ?= $(abspath build/manual_legacy)
 MANUAL_VERSION ?= development
 MANUAL_LOCALES ?= en de fr it es cs nl ro pt da sv
 # Manual screenshots are staged and materialized locally (gitignored), then
-# published to the R2 bucket by CI — they no longer live in lotti-docs.
+# published to the R2 bucket by CI.
 MANUAL_CAPTURE_DIR ?= $(abspath build/manual_capture)/$(MANUAL_VERSION)
 MANUAL_MEDIA_DIR ?= $(abspath build/manual_media)
 
@@ -243,13 +243,13 @@ manual_screenshots_locale:
 
 .PHONY: manual_screenshots_macos
 manual_screenshots_macos:
-	mkdir -p "$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos"
-	LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos" fvm flutter drive -d macos --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/macos"
+	mkdir -p "$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/macos"
+	LOTTI_SCREENSHOT_DIR="$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/macos" fvm flutter drive -d macos --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/macos"
 
 .PHONY: manual_screenshots_linux
 manual_screenshots_linux:
-	mkdir -p "$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux"
-	LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux" fvm flutter drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LOTTI_DOCS_DIR)/manual/legacy/${LOTTI_VERSION}/linux"
+	mkdir -p "$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/linux"
+	LOTTI_SCREENSHOT_DIR="$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/linux" fvm flutter drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR="$(LEGACY_MANUAL_CAPTURE_DIR)/${LOTTI_VERSION}/linux"
 
 .PHONY: bundle
 bundle:

@@ -40,7 +40,7 @@ Rulați `npm --prefix docs-site run coverage:complete` pentru pragul de lansare.
 5. Generați și validați manifestul media.
 6. Referiți cazul prin `<ManualScreenshot caseId="…" alt="…" />` în fiecare pagină de limbă.
 
-Fiecare captură a aplicației într-o pagină creată trebuie să folosească `ManualScreenshot`. Legăturile directe către mediile capturilor de ecran — imagini vechi din `lotti-docs` sau chiar bucketul R2 — eșuează validarea manualului, fiindcă nu pot urma alegerea globală Mobil/Desktop sau tema luminoasă/întunecată a manualului.
+Fiecare captură a aplicației într-o pagină creată trebuie să folosească `ManualScreenshot`. Legăturile directe către mediile capturilor de ecran — imagini vechi din depozite sau chiar bucketul R2 — eșuează validarea manualului, fiindcă nu pot urma alegerea globală Mobil/Desktop sau tema luminoasă/întunecată a manualului.
 
 Fiecare caz automatizat trebuie să ofere variante mobil-luminos, mobil-întunecat, desktop-luminos și desktop-întunecat pentru fiecare limbă publicată. Componenta manualului alege limba și tema potrivite. Schimbarea Mobil/Desktop pentru orice imagine actualizează imediat toate capturile și persistă între pagini și file de manual deschise.
 

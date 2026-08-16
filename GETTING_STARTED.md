@@ -25,7 +25,7 @@ Gemini is the quickest path. Within a minute or two you'll have audio transcript
 
 > **Note:** Gemini's API has a free usage tier (limits apply); see Google AI Studio for current quotas.
 
-![Get API Key](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/gemini_api_key.png)
+![Get API Key](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/gemini_api_key.png)
 
 ### Step 2: Open AI Settings in Lotti
 
@@ -34,7 +34,7 @@ Gemini is the quickest path. Within a minute or two you'll have audio transcript
 
 The empty state shows a card explaining what AI Settings does and an **Add provider** button:
 
-![Empty State](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/ai_settings_empty.png)
+![Empty State](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/ai_settings_empty.png)
 
 ### Step 3: Pick a Provider
 
@@ -48,7 +48,7 @@ Tap **Add provider**. The pick-provider modal opens with one tile per supported 
 - **Ollama** (Desktop only)
 - **Voxtral** (Desktop only)
 
-![Pick Provider Modal](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/pick_provider_modal.png)
+![Pick Provider Modal](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/pick_provider_modal.png)
 
 Pick **Gemini**.
 
@@ -66,7 +66,7 @@ As soon as you stop typing in **API Key** or **Base URL**, Lotti checks the cred
 - green confirmation with the number of models the key can see + response time
 - warning row if the key is invalid / network failed / host unreachable (with a Retry button)
 
-![Connect Gemini](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/add_gemini_provider.png)
+![Connect Gemini](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/add_gemini_provider.png)
 
 Tap **Save** once the verifier is green.
 
@@ -82,13 +82,13 @@ On save, Lotti seeds Gemini's headline models so you don't have to add them by h
 
 Visible in the **Models** tab:
 
-![Gemini Models](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/gemini_models.png)
+![Gemini Models](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/gemini_models.png)
 
 ### Step 6: Start Using AI
 
 Saving the provider also seeds an inference profile and a starter category, and wires them to Lotti's built-in **skills**. The result modal summarizes what was created and offers a single **Start using AI** CTA:
 
-![Start Using AI](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/start_using_ai.png)
+![Start Using AI](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/start_using_ai.png)
 
 Skills are hardcoded in the app — you don't manage them as data, you pick which model each one runs on. The headline skills:
 
@@ -101,7 +101,7 @@ Skills are hardcoded in the app — you don't manage them as data, you pick whic
 
 More skills (image-prompt, design-prompt, research-prompt, task-context variants) are wired up to each inference profile. Review or rewire them under **AI Settings** → **Profiles**:
 
-![Profiles Tab](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/prompts_list.png)
+![Profiles Tab](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/prompts_list.png)
 
 **What you can now do:**
 
@@ -144,7 +144,7 @@ ollama serve
 
 Open **Settings** → **AI Settings** → **Add provider**, then pick the **Ollama** tile:
 
-![Ollama Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/ollama_tile.png)
+![Ollama Tile](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/ollama_tile.png)
 
 ### Step 4: Connect
 
@@ -154,7 +154,7 @@ The connect form opens with Ollama preselected, the default base URL prefilled, 
 - **Base URL:** `http://localhost:11434`
 - **API Key:** not required
 
-![Connect Ollama](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/add_ollama_provider.png)
+![Connect Ollama](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/add_ollama_provider.png)
 
 Tap **Save**.
 
@@ -185,19 +185,19 @@ After the result modal closes you're done. All inference happens on your device 
 
 On-device speech recognition on macOS Apple Silicon — no separate server to run. Picking the **MLX Audio** tile opens a first-run model picker; **Qwen3-ASR 1.7B 8-bit** is preselected because it's materially faster than Voxtral Realtime for post-recording transcription.
 
-![MLX Audio Setup](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/mlx_audio_first_run.png)
+![MLX Audio Setup](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/mlx_audio_first_run.png)
 
 ### Voxtral (Local Server)
 
 If you're running a Voxtral server locally, pick the **Voxtral** tile. The connect form prefills `http://localhost:11344` and skips the API key field.
 
-![Voxtral Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/voxtral_tile.png)
+![Voxtral Tile](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/voxtral_tile.png)
 
 ### Alibaba Cloud (Qwen)
 
 Qwen models — multimodal, long context. Pick the **Alibaba** tile and connect with your Alibaba Cloud key.
 
-![Alibaba Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/alibaba_tile.png)
+![Alibaba Tile](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/getting_started/0.9.1002/alibaba_tile.png)
 
 ---
 

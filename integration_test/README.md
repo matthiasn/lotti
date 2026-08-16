@@ -89,7 +89,7 @@ env var.
 The automated manual site catalog uses the faster opt-in widget harnesses
 registered in `docs-site/metadata/screenshot-cases.json`; run it with
 `make manual_screenshots`. Both paths write generated media to the sibling
-`lotti-docs` checkout. See `test/README.md` for the four-variant contract.
+`legacy-media` checkout. See `test/README.md` for the four-variant contract.
 
 ## Infrastructure
 

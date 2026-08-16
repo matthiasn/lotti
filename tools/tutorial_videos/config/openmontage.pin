@@ -1,7 +1,7 @@
 # OpenMontage pin for the tutorial-video workbench.
 #
 # OpenMontage is an external AGPLv3 dev tool, cloned as a SIBLING checkout
-# (like lotti-docs), never vendored into or linked against the app:
+# (like legacy-media), never vendored into or linked against the app:
 #
 #   git clone https://github.com/calesthio/OpenMontage.git ../OpenMontage
 #   git -C ../OpenMontage checkout "$(grep ^commit= openmontage.pin | cut -d= -f2)"

@@ -2303,7 +2303,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>A task with its cover art, status, labels, and the assistant's summary</caption>
-      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti-docs/89d8e81b93711e3c41685e903349cc93d6ab5239/images/0.9.998/task_details_screenshot_linux.png</image>
+      <image type="source" width="536" height="999">https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/0.9.998/task_details_screenshot_linux.png</image>
     </screenshot>
   </screenshots>
 </component>
