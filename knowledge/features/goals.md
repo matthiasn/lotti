@@ -705,9 +705,14 @@ flowchart TD
   escalation wakes only, so a failed chat run or a passing Phase A
   subscription tick can neither raise nor clear the line — and renders the
   last failure's reason in an error line above the automation row. The line
-  hides while a retry runs, clears on the next completed report wake, and
-  yields to a SYNCED success (another device's refresh) whose
-  `reportFreshAt` postdates the failure — fourteen silent 429s once read
+  hides while a report wake runs (`goalReportWakeInFlightProvider`: the
+  refresh workspace or any `goal-escalation:` workspace — never the
+  agent-wide flag, which every chat and subscription tick flips), clears on
+  the next completed report wake, and yields to durable evidence newer than
+  the failure's start: a `reportFreshAt` watermark (a successful refresh,
+  local or synced) or a displayed report published later — a timed-out
+  executor is allowed to finish late, and its report must not sit beside
+  its own stale timeout error. Fourteen silent 429s once read
   as a dead button. The page has ONE time
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared

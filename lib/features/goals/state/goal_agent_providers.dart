@@ -701,6 +701,31 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
       );
     }, name: 'goalAgentHealthProvider');
 
+/// Whether a REPORT-PRODUCING wake for the agent is executing right now.
+///
+/// Report wakes run in dedicated workspaces — the manual/automation refresh
+/// in [goalReportRefreshTriggerToken] and escalations in per-period
+/// `goal-escalation:<period>` workspaces — so this is the running-state the
+/// failure line yields to. The agent-wide running flag would blink the line
+/// away for every chat reply and Phase A subscription tick.
+final StreamProviderFamily<bool, String> goalReportWakeInFlightProvider =
+    StreamProvider.autoDispose.family<bool, String>(
+      goalReportWakeInFlight,
+      name: 'goalReportWakeInFlightProvider',
+    );
+Stream<bool> goalReportWakeInFlight(Ref ref, String agentId) async* {
+  final runner = ref.watch(wakeRunnerProvider);
+  bool matches() {
+    if (!runner.isRunning(agentId)) return false;
+    final workspaceKey = runner.workspaceKeyFor(agentId);
+    return workspaceKey == goalReportRefreshTriggerToken ||
+        isGoalEscalationWorkspace(workspaceKey);
+  }
+
+  yield matches();
+  yield* runner.runningAgentIds.map((_) => matches()).distinct();
+}
+
 /// The latest decisive outcome of this goal's REPORT-PRODUCING wakes.
 ///
 /// Filters the orchestrator's completion broadcast to this agent's decisive

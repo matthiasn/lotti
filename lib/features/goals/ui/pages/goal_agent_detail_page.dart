@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1204,26 +1203,25 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
         .watch(goalReportWakeOutcomeProvider(widget.agentId))
         .value;
     final reportRefreshInFlight =
-        ref
-            .watch(
-              agentIsRunningInWorkspaceProvider((
-                widget.agentId,
-                goalReportRefreshTriggerToken,
-              )),
-            )
-            .value ??
+        ref.watch(goalReportWakeInFlightProvider(widget.agentId)).value ??
         false;
     final reportFreshAt = widget.agentState?.reportFreshAt;
     final failureAnchor = lastOutcome?.startedAt ?? lastOutcome?.finishedAt;
-    final supersededBySyncedSuccess =
+    // Two ways durable evidence outranks the in-process failure: the
+    // freshness watermark advanced (a successful refresh, local or synced —
+    // start-to-start comparison, see above), or the DISPLAYED report itself
+    // was published after this failure began — the timed-out executor's
+    // future is deliberately allowed to finish late, and its report arrives
+    // by notification without any completed outcome or fresh watermark.
+    final supersededByNewerEvidence =
         failureAnchor != null &&
-        reportFreshAt != null &&
-        reportFreshAt.isAfter(failureAnchor);
+        ((reportFreshAt != null && reportFreshAt.isAfter(failureAnchor)) ||
+            (report != null && report.createdAt.isAfter(failureAnchor)));
     final updateFailure =
         !reportRefreshInFlight &&
             lastOutcome != null &&
             lastOutcome.status != WakeRunStatus.completed &&
-            !supersededBySyncedSuccess
+            !supersededByNewerEvidence
         ? lastOutcome
         : null;
     final nextWakeAt = widget.agentState?.nextWakeAt;

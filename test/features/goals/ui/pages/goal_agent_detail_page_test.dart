@@ -238,6 +238,8 @@ void main() {
       WidgetTester tester, {
       required WakeRunCompletion outcome,
       AgentStateEntity? agentState,
+      AgentReportEntity? report,
+      GoalSpecVersionEntity? spec,
     }) => tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -259,7 +261,7 @@ void main() {
               attainment: 1.0,
               reportOneLiner: 'Seven for seven.',
               pendingProposals: 0,
-              spec: null,
+              spec: spec,
               direction: null,
               deficit: null,
               buffer: null,
@@ -271,7 +273,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentReportProvider('goal-1').overrideWith((ref) async => report),
           agentStateProvider('goal-1').overrideWith((ref) async => agentState),
         ],
       ),
@@ -353,10 +355,9 @@ void main() {
             agentIsRunningProvider(
               'goal-1',
             ).overrideWith((ref) => running.stream),
-            agentIsRunningInWorkspaceProvider((
+            goalReportWakeInFlightProvider(
               'goal-1',
-              goalReportRefreshTriggerToken,
-            )).overrideWith((ref) => refreshRunning.stream),
+            ).overrideWith((ref) => refreshRunning.stream),
             goalAgentHealthProvider('goal-1').overrideWith(
               (ref) async => (
                 trackStatus: GoalTrackStatus.onTrack,
@@ -430,6 +431,65 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(failureLine, findsNothing);
+    });
+
+    testWidgets('a timed-out run that publishes LATE clears its own timeout '
+        'error — the displayed report outranks the aborted outcome', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-timeout',
+          agentId: 'goal-1',
+          status: WakeRunStatus.aborted,
+          triggerTokens: const {goalReportRefreshTriggerToken},
+          startedAt: DateTime(2026, 8, 16, 19),
+          finishedAt: DateTime(2026, 8, 16, 19, 10),
+          error: TimeoutException('timeout'),
+        ),
+        // The executor future was allowed to finish after the cap: its
+        // report lands by notification, with no completed outcome and no
+        // fresh watermark.
+        report:
+            AgentDomainEntity.agentReport(
+                  id: 'report-late',
+                  agentId: 'goal-1',
+                  scope: AgentReportScopes.current,
+                  createdAt: DateTime(2026, 8, 16, 19, 12),
+                  vectorClock: null,
+                  oneLiner: 'Late but landed.',
+                  tldr: 'Late but landed.',
+                  content: 'The slow run finished after the cap.',
+                  provenance: const {'specVersionId': 'goal-1:spec-v1'},
+                )
+                as AgentReportEntity,
+        spec:
+            AgentDomainEntity.goalSpecVersion(
+                  id: 'goal-1:spec-v1',
+                  agentId: 'goal-1',
+                  version: 1,
+                  status: GoalSpecVersionStatus.active,
+                  authoredBy: 'user',
+                  title: 'Move more',
+                  statement: 'Walk this week.',
+                  criteria: const GoalCriterion.habit(
+                    criterionId: 'walk',
+                    habitId: 'walk',
+                    window: GoalWindow.rollingDays(count: 7),
+                    targetCount: 3,
+                  ),
+                  createdAt: DateTime(2026, 8),
+                  vectorClock: null,
+                )
+                as GoalSpecVersionEntity,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Late but landed.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
     });
 
     testWidgets('a success synced from ANOTHER device outranks an older '
