@@ -48,6 +48,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onAddTask,
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
+    this.agentActions,
     this.hasProjectAgent = true,
     this.isRefreshingReport = false,
     this.isSaving = false,
@@ -67,6 +68,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final Future<void> Function()? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
+  final Widget? agentActions;
   final bool hasProjectAgent;
   final bool isRefreshingReport;
   final bool isSaving;
@@ -273,6 +275,8 @@ class _ProjectMobileDetailContentState
                               isRefreshing: widget.isRefreshingReport,
                             ),
                           ),
+                          if (widget.agentActions case final actions?)
+                            SliverToBoxAdapter(child: actions),
                           SliverToBoxAdapter(
                             child: SizedBox(height: tokens.spacing.step5),
                           ),

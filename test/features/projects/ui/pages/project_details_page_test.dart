@@ -11,8 +11,10 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -165,6 +168,12 @@ List<Override> _baseOverrides({
     projectAgentSubscriptionsRestorerProvider.overrideWithValue(
       restoreAgentSubscriptions ?? () async {},
     ),
+    projectRecommendationsProvider(
+      _projectId,
+    ).overrideWith((ref) async => []),
+    projectPendingChangeSetsProvider(
+      _projectId,
+    ).overrideWith((ref) async => []),
     projectAgentsForProjectResolverProvider.overrideWithValue(
       (_) async =>
           projectAgents ??
@@ -688,6 +697,12 @@ void main() {
                   (ref, agentId) => Stream.value(false),
                 ),
                 projectAgentServiceProvider.overrideWithValue(agentService),
+                projectRecommendationsProvider(
+                  _projectId,
+                ).overrideWith((ref) async => []),
+                projectPendingChangeSetsProvider(
+                  _projectId,
+                ).overrideWith((ref) async => []),
               ],
               child: makeTestableWidget2(
                 Theme(
@@ -705,6 +720,9 @@ void main() {
           );
           expect(content.onRefreshReport, isNotNull);
           expect(content.onCancelScheduledReportWake, isNotNull);
+          final actions = content.agentActions! as Column;
+          expect(actions.children.first, isA<ProjectRecommendationsPanel>());
+          expect(actions.children.last, isA<ChangeSetSummaryCard>());
 
           // Invoking the wired callbacks must dispatch to the project
           // agent service for the resolved agent ID, with the cancel path
@@ -1668,6 +1686,79 @@ void main() {
             ),
           ).called(1);
           expect(restoreCalls, 1);
+        },
+      );
+
+      testWidgets(
+        'restores retired agents when deletion cannot be verified',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = _makeMockAgentService();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          var restoreSubscriptionCalls = 0;
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenThrow(StateError('delete write failed'));
+          when(
+            () => mockRepository.getProjectById(_projectId),
+          ).thenThrow(StateError('verification read failed'));
+          when(
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => true);
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgent: identity,
+            restoreAgentSubscriptions: () async {
+              restoreSubscriptionCalls++;
+            },
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Failed to delete project. Please try again.'),
+            findsOneWidget,
+          );
+          verify(
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
+          ).called(1);
+          expect(restoreSubscriptionCalls, 1);
         },
       );
 

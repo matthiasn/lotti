@@ -224,8 +224,12 @@ blank task. If
 the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
-project and invalidates pending edits when sync reports that the project was
-deleted. The project lookup is applied before task rollups are loaded, so a
+project; title and description controllers synchronize independently, so a
+dirty description does not leave a clean, remotely updated title stale. Save
+locks Cancel, Back and system-back until persistence settles, preventing a
+discarded route from racing the still-running write. The controller invalidates
+pending edits when sync reports that the project was deleted. The project
+lookup is applied before task rollups are loaded, so a
 slow or failed task query cannot delay tombstone handling. Overlapping reloads
 are generation-guarded, so an older read that finishes after a newer deletion
 cannot repopulate the editor and resurrect the tombstoned project on save.
@@ -236,11 +240,13 @@ resolves every live linked project agent, aborts their running wakes and
 retires all of them before soft-deleting the project, so duplicate identities,
 runtime subscriptions and pending work cannot outlive the project. A
 retirement error aborts deletion instead of claiming success; when that error
-followed a committed lifecycle write, the deletion path re-reads the agent,
-resumes it and restores its subscriptions before returning. After a failed or
-throwing project write, the path verifies the tombstone before compensation:
-retired agents are restored only when the project is confirmed to remain, and
-a committed tombstone is treated as successful deletion. The detail keeps the
+followed a committed lifecycle write, the deletion path re-reads the agent and
+restores its exact prior lifecycle before returning; dormant agents remain
+dormant and do not regain subscriptions. After a failed or throwing project
+write, the path verifies the tombstone before compensation. A committed
+tombstone is treated as successful deletion; if deletion cannot be confirmed,
+the reversible agent retirement is compensated so a live project cannot lose
+its automation because the verification read also failed. The detail keeps the
 last resolved agent identity during provider reloads, and captures the
 subscription restorer before deletion awaits, so neither a sync refresh nor
 route disposal can bypass that lifecycle cleanup. Task creation and deletion
@@ -259,7 +265,11 @@ flowchart LR
 
 The detail pages pull project entity data, linked tasks, the latest project-agent
 report, parsed health metrics from it, scheduled wake state, active
-recommendations, derived presentation data, and the wake controls.
+recommendations, pending project change sets, derived presentation data, and
+the wake controls. The read-first surface renders recommendation
+resolve/dismiss actions and change-set confirm/reject actions after the shared
+AI report, so agent output remains actionable without duplicating the report in
+the editor.
 
 **There is no aggregator object** — each surface watches the providers it needs.
 

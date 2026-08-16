@@ -83,16 +83,20 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     super.dispose();
   }
 
-  void _syncControllersWithProject(ProjectEntry project) {
+  void _syncControllersWithProject(
+    ProjectEntry project, {
+    required bool syncTitle,
+    required bool syncDescription,
+  }) {
     final title = project.data.title;
-    if (_titleController.text != title) {
+    if (syncTitle && _titleController.text != title) {
       _titleController.value = TextEditingValue(
         text: title,
         selection: TextSelection.collapsed(offset: title.length),
       );
     }
     final description = project.entryText?.plainText ?? '';
-    if (_descriptionController.text != description) {
+    if (syncDescription && _descriptionController.text != description) {
       _descriptionController.value = TextEditingValue(
         text: description,
         selection: TextSelection.collapsed(offset: description.length),
@@ -132,10 +136,14 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     final state = ref.read(
       projectDetailControllerProvider(widget.projectId),
     );
-    if (state.hasChanges) controller.discardChanges();
+    if (!state.isSaving && state.hasChanges) controller.discardChanges();
   }
 
   void _handleBackNavigation({bool discardChanges = true}) {
+    final state = ref.read(
+      projectDetailControllerProvider(widget.projectId),
+    );
+    if (state.isSaving) return;
     if (discardChanges) _discardPendingChanges();
     final returnPath = widget.returnPath;
     if (returnPath != null && getIt.isRegistered<NavService>()) {
@@ -237,6 +245,9 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     );
     final messages = context.messages;
     final project = state.project;
+    final detailController = ref.read(
+      projectDetailControllerProvider(widget.projectId).notifier,
+    );
 
     if (project == null && !state.isLoading) {
       final isLoadFailure = state.error == ProjectDetailError.loadFailed;
@@ -252,13 +263,21 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
       );
     }
 
-    if (project != null && !state.hasChanges) {
-      _syncControllersWithProject(project);
+    if (project != null) {
+      _syncControllersWithProject(
+        project,
+        syncTitle: !detailController.isTitleDirty,
+        syncDescription: !detailController.isDescriptionDirty,
+      );
     }
 
     return PopScope(
-      canPop: widget.categoryId == null && widget.returnPath == null,
+      canPop:
+          !state.isSaving &&
+          widget.categoryId == null &&
+          widget.returnPath == null,
       onPopInvokedWithResult: (didPop, _) {
+        if (state.isSaving) return;
         if (didPop) {
           _discardPendingChanges();
         } else if (widget.categoryId != null || widget.returnPath != null) {
@@ -288,7 +307,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
                       ),
                       child: DesignSystemBackControl(
                         foregroundColor: ShowcasePalette.highText(context),
-                        onTap: _handleBackNavigation,
+                        onTap: state.isSaving ? null : _handleBackNavigation,
                       ),
                     ),
                   Expanded(
@@ -359,7 +378,7 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
           DesignSystemButton(
             label: messages.cancelButton,
             variant: DesignSystemButtonVariant.secondary,
-            onPressed: _handleBackNavigation,
+            onPressed: state.isSaving ? null : _handleBackNavigation,
           ),
           DesignSystemButton(
             label: messages.saveButton,

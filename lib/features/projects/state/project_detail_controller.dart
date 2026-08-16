@@ -72,6 +72,17 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectEntry? _originalProject;
   ProjectEntry? _pendingProject;
 
+  /// Whether the title differs from the latest persisted baseline.
+  bool get isTitleDirty =>
+      _pendingProject?.data.title != _originalProject?.data.title;
+
+  /// Whether the description differs from the latest persisted baseline.
+  bool get isDescriptionDirty =>
+      _pendingProject != null &&
+      _originalProject != null &&
+      _projectDescription(_pendingProject!) !=
+          _projectDescription(_originalProject!);
+
   @override
   ProjectDetailState build() {
     _repository = ref.watch(projectRepositoryProvider);
@@ -147,9 +158,8 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
 
   bool _hasChanges() {
     if (_pendingProject == null || _originalProject == null) return false;
-    return _pendingProject!.data.title != _originalProject!.data.title ||
-        _projectDescription(_pendingProject!) !=
-            _projectDescription(_originalProject!) ||
+    return isTitleDirty ||
+        isDescriptionDirty ||
         _pendingProject!.meta.categoryId != _originalProject!.meta.categoryId ||
         _pendingProject!.data.targetDate != _originalProject!.data.targetDate ||
         _pendingProject!.data.status != _originalProject!.data.status;

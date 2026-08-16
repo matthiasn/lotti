@@ -7,6 +7,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -42,6 +43,14 @@ class _TestProjectDetailController extends ProjectDetailController {
   ProjectStatus? lastUpdatedStatus;
   int saveChangesCalls = 0;
   int discardChangesCalls = 0;
+  late bool _titleDirty = _initialState.hasChanges;
+  bool _descriptionDirty = false;
+
+  @override
+  bool get isTitleDirty => _titleDirty;
+
+  @override
+  bool get isDescriptionDirty => _descriptionDirty;
 
   @override
   ProjectDetailState build() => _state = _initialState;
@@ -49,6 +58,7 @@ class _TestProjectDetailController extends ProjectDetailController {
   @override
   void updateTitle(String title) {
     lastUpdatedTitle = title;
+    _titleDirty = true;
     final project = _state.project;
     if (project == null) return;
     _setProject(project.copyWith(data: project.data.copyWith(title: title)));
@@ -57,6 +67,7 @@ class _TestProjectDetailController extends ProjectDetailController {
   @override
   void updateDescription(String description) {
     lastUpdatedDescription = description;
+    _descriptionDirty = true;
     final project = _state.project;
     if (project == null) return;
     _setProject(
@@ -99,6 +110,17 @@ class _TestProjectDetailController extends ProjectDetailController {
     state = _state;
   }
 
+  void publishRebasedProject(
+    ProjectEntry project, {
+    required bool titleDirty,
+    required bool descriptionDirty,
+  }) {
+    _titleDirty = titleDirty;
+    _descriptionDirty = descriptionDirty;
+    _state = _state.copyWith(project: project, hasChanges: true);
+    state = _state;
+  }
+
   @override
   Future<void> saveChanges() async {
     saveChangesCalls++;
@@ -107,6 +129,8 @@ class _TestProjectDetailController extends ProjectDetailController {
   @override
   void discardChanges() {
     discardChangesCalls++;
+    _titleDirty = false;
+    _descriptionDirty = false;
     _state = _initialState.copyWith(hasChanges: false);
     state = _state;
   }
@@ -305,6 +329,46 @@ void main() {
       expect(tester.widget<TextField>(field).controller?.text, isEmpty);
     });
 
+    testWidgets(
+      'refreshes a clean title while preserving a dirty description',
+      (
+        tester,
+      ) async {
+        final controller = await pumpPage(tester, state: loadedState());
+        final titleField = find.descendant(
+          of: find.byType(DesignSystemTextInput),
+          matching: find.byType(TextField),
+        );
+        final descriptionField = find.descendant(
+          of: find.byType(DesignSystemTextarea),
+          matching: find.byType(TextField),
+        );
+
+        await tester.enterText(descriptionField, 'Locally edited description.');
+        await tester.pump();
+        controller.publishRebasedProject(
+          testProject.copyWith(
+            data: testProject.data.copyWith(title: 'Title received from sync'),
+            entryText: const EntryText(
+              plainText: 'Locally edited description.',
+            ),
+          ),
+          titleDirty: false,
+          descriptionDirty: true,
+        );
+        await tester.pump();
+
+        expect(
+          tester.widget<TextField>(titleField).controller?.text,
+          'Title received from sync',
+        );
+        expect(
+          tester.widget<TextField>(descriptionField).controller?.text,
+          'Locally edited description.',
+        );
+      },
+    );
+
     testWidgets('opens the shared status picker and applies the selection', (
       tester,
     ) async {
@@ -351,9 +415,15 @@ void main() {
     });
 
     testWidgets('disables every editor control while saving', (tester) async {
+      final nav = MockNavService();
+      when(
+        () => nav.beamToNamed(any(), data: any(named: 'data')),
+      ).thenReturn(null);
+      getIt.registerSingleton<NavService>(nav);
       await pumpPage(
         tester,
         state: loadedState(isSaving: true, hasChanges: true),
+        returnPath: '/projects/$_projectId',
       );
 
       expect(
@@ -385,6 +455,33 @@ void main() {
             )
             .onPressed,
         isNull,
+      );
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.widgetWithText(DesignSystemButton, 'Cancel'),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<DesignSystemBackControl>(
+              find.byType(DesignSystemBackControl),
+            )
+            .onTap,
+        isNull,
+      );
+      final popScope = find.byWidgetPredicate((widget) => widget is PopScope);
+      expect(
+        tester.widget<PopScope<Object?>>(popScope).canPop,
+        isFalse,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      verifyNever(
+        () => nav.beamToNamed(any(), data: any(named: 'data')),
       );
     });
 

@@ -91,8 +91,13 @@ void main() {
       final state = container.read(
         projectDetailControllerProvider(projectId),
       );
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      );
       expect(state.hasChanges, isTrue);
       expect(state.project!.data.title, 'New Title');
+      expect(notifier.isTitleDirty, isTrue);
+      expect(notifier.isDescriptionDirty, isFalse);
     });
 
     test('updateDescription marks hasChanges true', () async {
@@ -103,8 +108,13 @@ void main() {
           .updateDescription('A clear project brief.');
 
       final state = container.read(projectDetailControllerProvider(projectId));
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      );
       expect(state.hasChanges, isTrue);
       expect(state.project?.entryText?.plainText, 'A clear project brief.');
+      expect(notifier.isTitleDirty, isFalse);
+      expect(notifier.isDescriptionDirty, isTrue);
     });
 
     test('updateTargetDate marks hasChanges true', () async {

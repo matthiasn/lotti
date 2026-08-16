@@ -61,6 +61,27 @@ void main() {
   }
 
   group('ProjectMobileDetailContent', () {
+    testWidgets('places injected agent actions between report and tasks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            agentActions: const Text('Agent decisions'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final reportTop = tester.getTopLeft(find.text('AI Report')).dy;
+      final actionsTop = tester.getTopLeft(find.text('Agent decisions')).dy;
+      final tasksTop = tester.getTopLeft(find.text('Project Tasks')).dy;
+      expect(actionsTop, greaterThan(reportTop));
+      expect(actionsTop, lessThan(tasksTop));
+    });
+
     testWidgets('uses a real overflow menu and forwards project actions', (
       tester,
     ) async {

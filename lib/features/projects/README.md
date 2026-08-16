@@ -31,6 +31,9 @@ project agent is attached — a summary and health read that the agent maintains
 - **Makes room to focus on one project.** On desktop, the project list can be
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.
+- **Keeps agent output actionable.** Recommended next steps can be resolved or
+  dismissed, and pending project changes can be confirmed or rejected directly
+  beneath the shared AI report.
 
 The whole visible experience is behind a feature flag; with it off there is no
 projects tab, no category projects section, and no project chip on tasks.

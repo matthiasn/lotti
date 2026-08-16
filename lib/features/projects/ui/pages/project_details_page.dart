@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -169,6 +171,14 @@ class ProjectDetailsPage extends ConsumerWidget {
                         identity.agentId,
                       );
                     },
+              agentActions: identity == null
+                  ? null
+                  : Column(
+                      children: [
+                        ProjectRecommendationsPanel(projectId: projectId),
+                        ChangeSetSummaryCard.project(projectId: projectId),
+                      ],
+                    ),
               hasProjectAgent: identity != null,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,
@@ -396,12 +406,9 @@ class ProjectDetailsPage extends ConsumerWidget {
         stackTrace: stackTrace,
       );
     }
-    var projectStillExists = false;
     if (!deleted) {
       try {
-        projectStillExists =
-            await repository.getProjectById(project.id) != null;
-        deleted = !projectStillExists;
+        deleted = await repository.getProjectById(project.id) == null;
       } catch (error, stackTrace) {
         developer.log(
           'Failed to verify project tombstone after deletion failed',
@@ -411,10 +418,10 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
       }
     }
-    if (!deleted &&
-        projectStillExists &&
-        agentService != null &&
-        restoreProjectAgentSubscriptions != null) {
+    // A delete that is neither committed nor verifiably committed must be
+    // compensated. Restoring is reversible; leaving a live project with every
+    // linked agent destroyed is not.
+    if (!deleted && agentService != null) {
       await _restoreRetiredProjectAgents(
         agentService: agentService,
         agentLifecycles: retiredAgentLifecycles,
