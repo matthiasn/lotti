@@ -22,6 +22,7 @@ import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 /// The handover's seven-cell picture used on each Agents-list row. It is
 /// intentionally unlabeled visually, but exposes one concise semantic summary.
@@ -33,6 +34,7 @@ class GoalCompactWindowStrip extends StatelessWidget {
     this.lastDay,
     this.onDaySelected,
     this.ratingsByDay = const {},
+    this.scrollGroup,
     super.key,
   }) : assert(
          onDaySelected == null || lastDay != null,
@@ -71,6 +73,10 @@ class GoalCompactWindowStrip extends StatelessWidget {
   /// missed would be contradicting them.
   final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
+  /// Joins the page's unison day-track scrolling when the strip renders a
+  /// span longer than a week.
+  final LinkedScrollGroup? scrollGroup;
+
   DateTime _dateAt(int index, int length) =>
       lastDay!.subtract(Duration(days: length - 1 - index));
 
@@ -83,7 +89,10 @@ class GoalCompactWindowStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final visible = days.take(7).toList(growable: false);
+    // The full span, not a seven-day cap: on the detail page the strip
+    // follows the page's shared range like every other day track (the list
+    // rows keep passing seven-day windows).
+    final visible = days;
     if (visible.isEmpty) return const SizedBox.shrink();
     final onDaySelected = this.onDaySelected;
     final locale = Localizations.localeOf(context).toLanguageTag();
@@ -241,7 +250,12 @@ class GoalCompactWindowStrip extends StatelessWidget {
       // dateless placeholder Row) size themselves to `pitch * days`, and on
       // a 320px phone a list row's column is a few pixels narrower than
       // seven full-size cells. Everywhere with room, the fit is identity.
-      child: onDaySelected == null
+      // A span wider than a week scrolls (in unison with the other tracks)
+      // instead of scale-down-fitting: thirty cells squeezed into a card
+      // width would be unreadable dots.
+      child: visible.length > 7
+          ? _LinkedDayTrackScroller(group: scrollGroup, child: labelled)
+          : onDaySelected == null
           ? ExcludeSemantics(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -547,15 +561,21 @@ class GoalProgressCard extends StatelessWidget {
     this.onHabitOutcomeSelected,
     this.alsoInGoalTitlesByHabitId = const {},
     this.habitsHeadingTrailing,
+    this.scrollGroup,
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
 
-  /// Trailing control on the Habits section heading — the detail page rides
-  /// its page-wide time-range picker there.
+  /// Trailing control on the FIRST evidence heading — Habits when the goal
+  /// has habit rows, otherwise Signals — where the detail page rides its
+  /// page-wide time-range picker. A signal-only goal still inherits the
+  /// shared span, so it must still get the control that names it.
   final Widget? habitsHeadingTrailing;
+
+  /// The page's unison day-track scroll group; every extended track joins.
+  final LinkedScrollGroup? scrollGroup;
 
   /// For each habit id, the OTHER goals sharing it, pre-joined for display
   /// ("Heart Health"). A habit is recorded once and reflected everywhere
@@ -609,20 +629,31 @@ class GoalProgressCard extends StatelessWidget {
             showLegend: index == progress.habits.length - 1,
             alsoInGoals:
                 alsoInGoalTitlesByHabitId[progress.habits[index].habitId],
+            scrollGroup: scrollGroup,
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
         if (hasSignalCards)
-          sectionHeading(context.messages.goalDetailSignalsTitle),
+          sectionHeading(
+            context.messages.goalDetailSignalsTitle,
+            // A signal-only goal has no Habits heading; the range picker
+            // lands on its first heading instead of vanishing.
+            trailing: progress.habits.isEmpty ? habitsHeadingTrailing : null,
+          ),
         for (final metric in progress.metrics)
           if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
             if (bloodPressure != null && metric == bloodPressure.systolic)
               _BloodPressureDimensionCard(
                 metrics: bloodPressure,
                 today: progress.today,
+                scrollGroup: scrollGroup,
               )
             else
-              _MetricDimensionCard(metric: metric, today: progress.today),
+              _MetricDimensionCard(
+                metric: metric,
+                today: progress.today,
+                scrollGroup: scrollGroup,
+              ),
             SizedBox(height: tokens.spacing.step3),
           ],
         for (final patternMetric in patternMetrics) ...[
@@ -652,8 +683,13 @@ class GoalThisWeekCard extends StatelessWidget {
     required this.progress,
     this.onReflectDay,
     this.ratingsByDay = const {},
+    this.scrollGroup,
     super.key,
   });
+
+  /// Joins the page's unison day-track scrolling when the goal strip spans
+  /// more than a week.
+  final LinkedScrollGroup? scrollGroup;
 
   /// Whether the card has anything to show for [progress].
   ///
@@ -700,7 +736,12 @@ class GoalThisWeekCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.goalDetailThisWeekTitle,
+            // Over the page's shared range the card is no longer a week —
+            // it is the goal's day-by-day record over the same span every
+            // other track shows.
+            progress.compactWindow.length > 7
+                ? context.messages.goalDetailGoalDaysTitle
+                : context.messages.goalDetailThisWeekTitle,
             style: tokens.typography.styles.subtitle.subtitle2,
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -708,7 +749,19 @@ class GoalThisWeekCard extends StatelessWidget {
           // one day. Naming the frame keeps the two from reading as one
           // contradictory statistic.
           Text(
-            context.messages.goalCompositeLastSevenDays,
+            progress.compactWindow.length > 7
+                ? _periodLabel(context, [
+                    for (
+                      var offset = progress.compactWindow.length - 1;
+                      offset >= 0;
+                      offset--
+                    )
+                      GoalProgressDay(
+                        day: progress.today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ])
+                : context.messages.goalCompositeLastSevenDays,
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.lowEmphasis,
             ),
@@ -719,6 +772,7 @@ class GoalThisWeekCard extends StatelessWidget {
             lastDay: progress.today,
             onDaySelected: onReflectDay,
             ratingsByDay: ratingsByDay,
+            scrollGroup: scrollGroup,
           ),
           // Directly under the week it closes off, and inside the same card.
           // Stranded at the very bottom of the page — after every habit card,
@@ -839,8 +893,10 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.onHabitOutcomeSelected,
     required this.showLegend,
     this.alsoInGoals,
+    this.scrollGroup,
   });
 
+  final LinkedScrollGroup? scrollGroup;
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
@@ -950,6 +1006,7 @@ class _HabitDimensionCard extends StatelessWidget {
             habit: habit,
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
+            scrollGroup: scrollGroup,
           ),
           // Inside the card, under the squares it keys. On the page background
           // between two cards it was equidistant from both and read as
@@ -1118,8 +1175,10 @@ class _BloodPressureDimensionCard extends StatelessWidget {
   const _BloodPressureDimensionCard({
     required this.metrics,
     required this.today,
+    this.scrollGroup,
   });
 
+  final LinkedScrollGroup? scrollGroup;
   final _BloodPressureMetrics metrics;
   final DateTime today;
 
@@ -1305,8 +1364,13 @@ List<Observation> _metricObservations(GoalMetricProgressView metric) {
 }
 
 class _MetricDimensionCard extends StatelessWidget {
-  const _MetricDimensionCard({required this.metric, required this.today});
+  const _MetricDimensionCard({
+    required this.metric,
+    required this.today,
+    this.scrollGroup,
+  });
 
+  final LinkedScrollGroup? scrollGroup;
   final GoalMetricProgressView metric;
   final DateTime today;
 
@@ -1348,7 +1412,7 @@ class _MetricDimensionCard extends StatelessWidget {
           else if (GoalHealthDataTypes.supported.contains(metric.sourceId))
             _MetricTrendSeries(metric: metric)
           else
-            _MetricProgressSeries(metric: metric),
+            _MetricProgressSeries(metric: metric, scrollGroup: scrollGroup),
           SizedBox(height: tokens.spacing.step3),
           Text(
             !summary.hasData
@@ -1609,6 +1673,58 @@ double _textWidth(BuildContext context, String text, TextStyle style) {
 }
 
 /// Keeps weekday labels and day cells on the compact handoff grid.
+/// One horizontal scroller per extended day track, all linked through the
+/// page's [LinkedScrollGroup] and anchored at the TRAILING edge
+/// (`reverse: true`): a span longer than the viewport opens with TODAY on
+/// screen, dragging any track moves every track, and because reversed
+/// offsets measure from the trailing edge, the same date stays vertically
+/// aligned across cards even where extents differ.
+class _LinkedDayTrackScroller extends StatefulWidget {
+  const _LinkedDayTrackScroller({required this.child, this.group});
+
+  final LinkedScrollGroup? group;
+  final Widget child;
+
+  @override
+  State<_LinkedDayTrackScroller> createState() =>
+      _LinkedDayTrackScrollerState();
+}
+
+class _LinkedDayTrackScrollerState extends State<_LinkedDayTrackScroller> {
+  ScrollController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.group?.attach();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LinkedDayTrackScroller oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.group, widget.group)) {
+      final old = _controller;
+      if (old != null) oldWidget.group?.detach(old);
+      _controller = widget.group?.attach();
+    }
+  }
+
+  @override
+  void dispose() {
+    final controller = _controller;
+    if (controller != null) widget.group?.detach(controller);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    reverse: true,
+    controller: _controller,
+    child: widget.child,
+  );
+}
+
 class _DayTrack extends StatelessWidget {
   const _DayTrack({
     required this.height,
@@ -1648,13 +1764,28 @@ class _DayTrack extends StatelessWidget {
   }
 }
 
+/// Index of the authored rolling window's first day inside [activeDays] —
+/// the cell the ages-out ring belongs to. Falls back to the list head for
+/// non-rolling windows or short lists.
+int _windowStartIndex(
+  GoalHabitProgressView habit,
+  List<GoalProgressDay> activeDays,
+) {
+  final window = habit.window;
+  if (window is! GoalWindowRollingDays) return 0;
+  if (activeDays.length < window.count) return 0;
+  return activeDays.length - window.count;
+}
+
 class _HabitProgressRow extends StatefulWidget {
   const _HabitProgressRow({
     required this.habit,
     required this.today,
     required this.onOutcomeSelected,
+    this.scrollGroup,
   });
 
+  final LinkedScrollGroup? scrollGroup;
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onOutcomeSelected;
@@ -1740,7 +1871,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 activeDays[index].day,
                 widget.today,
               ),
-              agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
+              // The ring marks the WINDOW's first day — with the page's
+              // shared span rendering extra history, the list head can be a
+              // blank day weeks before the window.
+              agingOut:
+                  index == _windowStartIndex(habit, activeDays) &&
+                  habit.oldestSuccessAgesOutTonight,
               saving: _savingDay == activeDays[index].day,
               enabled: !activeDays[index].day.isAfter(widget.today),
               onOutcomeSelected: widget.onOutcomeSelected == null
@@ -1789,9 +1925,19 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 style: cadenceStyle,
               ),
               SizedBox(height: tokens.spacing.step1),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: cells(),
+              _LinkedDayTrackScroller(
+                group: widget.scrollGroup,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _WeekdayTrack(
+                      days: activeDays,
+                      habitId: habit.habitId,
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    cells(),
+                  ],
+                ),
               ),
             ] else
               // Labels and squares scroll as one unit, keeping each weekday
@@ -2186,7 +2332,9 @@ class _MetricTrendSeries extends StatelessWidget {
 }
 
 class _MetricProgressSeries extends StatelessWidget {
-  const _MetricProgressSeries({required this.metric});
+  const _MetricProgressSeries({required this.metric, this.scrollGroup});
+
+  final LinkedScrollGroup? scrollGroup;
 
   final GoalMetricProgressView metric;
 
@@ -2246,8 +2394,8 @@ class _MetricProgressSeries extends StatelessWidget {
                         alignment: Alignment.bottomLeft,
                         child: _track(context, maxValue),
                       )
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                    : _LinkedDayTrackScroller(
+                        group: scrollGroup,
                         child: _track(context, maxValue),
                       ),
               ),

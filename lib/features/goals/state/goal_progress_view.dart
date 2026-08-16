@@ -228,7 +228,14 @@ class GoalProgressView {
     this.compositeRule,
     this.requiredSuccesses,
     this.rootOnTrack = false,
-  }) : metrics = metric == null ? metrics : [metric, ...metrics];
+    int? compactWindowDays,
+  }) : metrics = metric == null ? metrics : [metric, ...metrics],
+       compactWindowDays = compactWindowDays ?? 7;
+
+  /// How many days [compactWindow] covers — seven on list surfaces, the
+  /// page's shared history span on the detail page, so the whole-goal strip
+  /// renders the same days as every other track.
+  final int compactWindowDays;
 
   final DateTime today;
   final List<GoalHabitProgressView> habits;
@@ -250,7 +257,7 @@ class GoalProgressView {
   List<GoalCompactDayState> get compactWindow {
     if (compositeCompactWindow case final compact?) return compact;
     final activeDays = [
-      for (var offset = 6; offset >= 0; offset--)
+      for (var offset = compactWindowDays - 1; offset >= 0; offset--)
         GoalWindow.dayUtc(today.subtract(Duration(days: offset))),
     ];
     if (habits.isNotEmpty) {
@@ -266,9 +273,9 @@ class GoalProgressView {
     final periodDays = series.days
         .where((entry) => !entry.day.isAfter(today))
         .toList(growable: false);
-    final compactDays = periodDays.length <= 7
+    final compactDays = periodDays.length <= compactWindowDays
         ? periodDays
-        : periodDays.sublist(periodDays.length - 7);
+        : periodDays.sublist(periodDays.length - compactWindowDays);
     return [
       for (final day in compactDays)
         // The same per-day policy as the bars and the reflection sheet this
@@ -503,7 +510,7 @@ GoalProgressView buildGoalProgressView({
     GoalCriterionAllOf() ||
     GoalCriterionAnyOf() ||
     GoalCriterionAtLeastCount() => [
-      for (var offset = 6; offset >= 0; offset--)
+      for (var offset = (historyDays ?? 7) - 1; offset >= 0; offset--)
         _criterionDayState(
           criteria,
           signals,
@@ -552,6 +559,7 @@ GoalProgressView buildGoalProgressView({
   ];
   return GoalProgressView(
     today: today,
+    compactWindowDays: historyDays,
     rootOnTrack: evaluation.satisfied || evaluation.onTrackByTrend,
     habits: [
       for (final habit in habits)

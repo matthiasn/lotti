@@ -6250,12 +6250,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDeleteMenuItem => 'Doel verwijderen';
 
   @override
-  String get goalDetailAboutAgentTitle => 'Over deze agent';
-
-  @override
-  String get goalDetailAgentReadTitle => 'Inschatting van de agent';
-
-  @override
   String goalDetailAlsoInGoal(String goals) {
     return 'Ook in $goals';
   }
@@ -6265,6 +6259,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalDetailCompletionRateTitle => 'Afrondingspercentage · dit doel';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Doeldagen';
 
   @override
   String get goalDetailHealthUnavailable =>

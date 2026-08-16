@@ -19,6 +19,7 @@ import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -2918,5 +2919,91 @@ void main() {
       find.text('Yesterday: 1 of 1 dimensions · 1 required.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('extended day tracks scroll in unison — goal strip, habit '
+      'squares and signal bars — and open at the recent end', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final group = LinkedScrollGroup();
+    addTearDown(group.dispose);
+    final progress = GoalProgressView(
+      today: today,
+      compositeRule: GoalCompositeRuleKind.all,
+      compositeCompactWindow: [
+        for (var i = 0; i < 14; i++)
+          if (i.isEven) GoalCompactDayState.full else GoalCompactDayState.none,
+      ],
+      habits: [
+        GoalHabitProgressView(
+          habitId: 'gym',
+          name: 'Gym',
+          targetCount: 3,
+          days: [
+            for (var offset = 13; offset >= 0; offset--)
+              day(offset, offset.isEven ? 1 : 0),
+          ],
+          successfulWeeks: 0,
+        ),
+      ],
+      metric: GoalMetricProgressView(
+        name: 'Steps',
+        target: 10000,
+        days: [
+          for (var offset = 13; offset >= 0; offset--) day(offset, 8000),
+        ],
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              GoalThisWeekCard(
+                progress: progress,
+                onReflectDay: (_) {},
+                scrollGroup: group,
+              ),
+              GoalProgressCard(progress: progress, scrollGroup: group),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The strip renders the WHOLE span, no seven-day cap.
+    expect(
+      find.descendant(
+        of: find.byType(GoalCompactWindowStrip),
+        matching: find.byType(InkWell),
+      ),
+      findsNWidgets(14),
+    );
+
+    // Every extended track is a trailing-anchored scroller: offset 0 means
+    // today is on screen from the first frame.
+    final scrollers = find.byWidgetPredicate(
+      (widget) => widget is SingleChildScrollView && widget.reverse,
+    );
+    expect(scrollers, findsNWidgets(3));
+    List<ScrollController> controllers() => [
+      for (final element in scrollers.evaluate())
+        (element.widget as SingleChildScrollView).controller!,
+    ];
+    for (final controller in controllers()) {
+      expect(controller.offset, 0);
+    }
+
+    // Dragging ANY track moves every track — one gesture, one shared
+    // horizontal position for the same date down the page.
+    await tester.drag(scrollers.at(1), const Offset(120, 0));
+    await tester.pump();
+    final offsets = [for (final c in controllers()) c.offset];
+    expect(offsets.first, greaterThan(0));
+    for (final offset in offsets) {
+      expect(offset, moreOrLessEquals(offsets.first, epsilon: 0.5));
+    }
   });
 }

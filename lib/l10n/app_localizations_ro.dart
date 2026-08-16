@@ -6346,12 +6346,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDeleteMenuItem => 'Ștergeți obiectivul';
 
   @override
-  String get goalDetailAboutAgentTitle => 'Despre acest agent';
-
-  @override
-  String get goalDetailAgentReadTitle => 'Evaluarea agentului';
-
-  @override
   String goalDetailAlsoInGoal(String goals) {
     return 'Și în $goals';
   }
@@ -6362,6 +6356,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalDetailCompletionRateTitle =>
       'Rata de finalizare · acest obiectiv';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Zilele obiectivului';
 
   @override
   String get goalDetailHealthUnavailable =>

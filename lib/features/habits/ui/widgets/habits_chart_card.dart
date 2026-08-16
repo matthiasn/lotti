@@ -49,6 +49,17 @@ class HabitsChartCard extends ConsumerWidget {
     final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
+    // Scoped mode: the habits state only carries ACTIVE definitions and
+    // their completions. A goal whose referenced habits are all deactivated
+    // would chart a fabricated all-zero line — suppress the card instead.
+    // (A partially inactive set charts its active members honestly: the
+    // inactive ids are absent from the day maps' denominators.)
+    if (habitIds != null) {
+      final activeIds = {for (final habit in state.habitDefinitions) habit.id};
+      if (habitIds!.intersection(activeIds).isEmpty) {
+        return const SizedBox.shrink();
+      }
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(

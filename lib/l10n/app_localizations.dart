@@ -10671,18 +10671,6 @@ abstract class AppLocalizations {
   /// **'Delete goal'**
   String get goalDeleteMenuItem;
 
-  /// Collapsed expander row holding cost pills and the automatic-updates toggle.
-  ///
-  /// In en, this message translates to:
-  /// **'About this agent'**
-  String get goalDetailAboutAgentTitle;
-
-  /// Title of the goal detail hero card holding the agent's standing narrative.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent\'s read'**
-  String get goalDetailAgentReadTitle;
-
   /// Caption on a goal-detail habit card naming the OTHER goals sharing this habit.
   ///
   /// In en, this message translates to:
@@ -10700,6 +10688,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completion rate · this goal'**
   String get goalDetailCompletionRateTitle;
+
+  /// Title of the whole-goal day strip card when it renders the page's shared range instead of a single week.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal days'**
+  String get goalDetailGoalDaysTitle;
 
   /// No description provided for @goalDetailHealthUnavailable.
   ///

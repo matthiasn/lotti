@@ -6234,12 +6234,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDeleteMenuItem => 'Ta bort mål';
 
   @override
-  String get goalDetailAboutAgentTitle => 'Om den här agenten';
-
-  @override
-  String get goalDetailAgentReadTitle => 'Agentens bedömning';
-
-  @override
   String goalDetailAlsoInGoal(String goals) {
     return 'Även i $goals';
   }
@@ -6249,6 +6243,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDetailCompletionRateTitle => 'Slutförandegrad · det här målet';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Måldagar';
 
   @override
   String get goalDetailHealthUnavailable =>

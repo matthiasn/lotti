@@ -3495,14 +3495,6 @@
   "@goalDeleteMenuItem": {
     "description": "Overflow menu item on the goal detail page that starts deleting the goal agent."
   },
-  "goalDetailAboutAgentTitle": "About this agent",
-  "@goalDetailAboutAgentTitle": {
-    "description": "Collapsed expander row holding cost pills and the automatic-updates toggle."
-  },
-  "goalDetailAgentReadTitle": "Agent's read",
-  "@goalDetailAgentReadTitle": {
-    "description": "Title of the goal detail hero card holding the agent's standing narrative."
-  },
   "goalDetailAlsoInGoal": "Also in {goals}",
   "@goalDetailAlsoInGoal": {
     "description": "Caption on a goal-detail habit card naming the OTHER goals sharing this habit.",
@@ -3520,6 +3512,10 @@
   "goalDetailCompletionRateTitle": "Completion rate · this goal",
   "@goalDetailCompletionRateTitle": {
     "description": "Title of the goal-scoped completion-rate chart card on goal detail."
+  },
+  "goalDetailGoalDaysTitle": "Goal days",
+  "@goalDetailGoalDaysTitle": {
+    "description": "Title of the whole-goal day strip card when it renders the page's shared range instead of a single week."
   },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",

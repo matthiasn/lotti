@@ -20,7 +20,9 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -45,7 +47,9 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../ai_consumption/test_utils.dart';
 import '../../../habits/test_utils.dart';
 
 void main() {
@@ -156,8 +160,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // App bar + detail header both carry the goal name.
-    expect(find.text('Move more'), findsNWidgets(2));
+    // App bar + detail header + the read card's persona subtitle.
+    expect(find.text('Move more'), findsNWidgets(3));
     // The SAME four-pill vocabulary as the unified Goals list: runtime
     // atRisk reads "At risk" here exactly as it does on the list row — and
     // the detail surface never displays a percentage.
@@ -177,8 +181,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    // The narrative hero card: titled, with the no-report fallback.
-    expect(find.text("Agent's read"), findsOneWidget);
+    // The narrative hero card wears the task agent section's shared panel
+    // (same title, same chrome) with the no-report fallback.
+    expect(find.text('AI summary'), findsOneWidget);
     expect(
       find.text(
         'No report yet — the agent reports after its first meaningful '
@@ -188,20 +193,9 @@ void main() {
     );
     expect(find.text('Interactions'), findsNothing);
 
-    // The refresh plumbing lives behind the About-this-agent expander now
-    // (§4b) — collapsed by default, expanded on tap.
-    expect(find.text('About this agent'), findsOneWidget);
-    expect(
-      find.widgetWithText(DesignSystemButton, 'Update now'),
-      findsNothing,
-    );
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
-    );
-    await tester.tap(
-      find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
-    );
-    await tester.pumpAndSettle();
+    // The reload affordances ride the read card itself, exactly like the
+    // task agent section — no expander in between.
+    expect(find.text('About this agent'), findsNothing);
     await tester.ensureVisible(
       find.widgetWithText(DesignSystemButton, 'Update now'),
     );
@@ -242,6 +236,17 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentConsumptionTotalsProvider.overrideWith(
+            (ref, agentId) => Stream.value(
+              makeConsumptionTotals(
+                callCount: 3,
+                inputTokens: 1200,
+                outputTokens: 800,
+                totalTokens: 2000,
+                credits: 0.42,
+              ),
+            ),
+          ),
           habitsControllerProvider.overrideWith(
             () => FakeHabitsController(
               HabitsState.initial(now: DateTime(2026, 8, 11)),
@@ -287,8 +292,16 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Seven for seven. Keep coasting.'), findsOneWidget);
-    expect(find.text('Out of date'), findsOneWidget);
+    // Header slot + automation row, like the task agent section.
+    expect(find.text('Out of date'), findsNWidgets(2));
     expect(find.textContaining('No report yet'), findsNothing);
+    // The shared AI panel chrome: same header widget as the task agent
+    // section, with the goal's cumulative inference cost pills on the card.
+    expect(find.byType(TldrHeader), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-agent-lifetime-pills')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a sections payload with nothing in it falls back to the flat '
@@ -621,17 +634,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The read card self-demotes: its freshness slot carries the
-      // out-of-date notice while the report is stale (§4b contract).
-      expect(find.text('Out of date'), findsOneWidget);
-
-      // The countdown/skip/toggle plumbing sits behind the About-this-agent
-      // expander now; expanding reveals the shared automation row (whose
-      // status echoes the same out-of-date verdict).
-      await tester.tap(
-        find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
-      );
-      await tester.pumpAndSettle();
+      // The read card self-demotes — its header slot carries the
+      // out-of-date notice — and the automation row on the same card
+      // echoes the verdict, exactly like the task agent section.
       expect(find.text('Out of date'), findsNWidgets(2));
       expect(find.textContaining('1:30'), findsOneWidget);
       expect(find.text('Skip once'), findsOneWidget);
@@ -990,7 +995,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final readTop = tester.getTopLeft(find.text("Agent's read")).dy;
+    final readTop = tester.getTopLeft(find.text('AI summary')).dy;
     final progressTop = tester.getTopLeft(find.byType(GoalProgressCard)).dy;
     expect(
       readTop,
@@ -2018,7 +2023,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Move more'), findsNWidgets(2));
+    expect(find.text('Move more'), findsNWidgets(3));
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Update now'), findsNothing);
@@ -2609,26 +2614,19 @@ void main() {
     // automation row offers.
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Update now'));
+    // `.last`: the automation row on the read card shares the label with
+    // the overflow entry; the menu overlay renders last.
+    await tester.tap(find.text('Update now').last);
     await tester.pumpAndSettle();
     verify(() => completionService.requestReportRefresh('goal-1')).called(1);
 
-    // About this agent: expands the section and scrolls to it. `.last`
-    // because the section's own collapsed header carries the same title as
-    // the menu item.
-    expect(
-      find.widgetWithText(DesignSystemButton, 'Update now'),
-      findsNothing,
-      reason: 'the automation row stays folded until the section expands',
-    );
-    await tester.tap(find.byIcon(Icons.more_vert_rounded));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('About this agent').last);
-    await tester.pumpAndSettle();
+    // The reload affordances live on the read card itself now — no
+    // expander, matching the task agent section.
     expect(
       find.widgetWithText(DesignSystemButton, 'Update now'),
       findsOneWidget,
     );
+    expect(find.text('About this agent'), findsNothing);
   });
 
   testWidgets('a goal with habit dimensions renders the goal-scoped '
@@ -2661,7 +2659,11 @@ void main() {
             as GoalSpecVersionEntity;
     final today = DateTime.utc(2026, 8, 11);
     final habitsController = FakeHabitsController(
-      HabitsState.initial(now: DateTime(2026, 8, 11)),
+      HabitsState.initial(now: DateTime(2026, 8, 11)).copyWith(
+        // An ACTIVE definition for the goal's habit: the scoped chart
+        // suppresses itself when every referenced habit is deactivated.
+        habitDefinitions: [habitFlossing.copyWith(id: 'walk', name: 'Walk')],
+      ),
     );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -3129,18 +3131,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // The read card demotes to the notice (a report IS displayed) …
-      expect(find.text('Out of date'), findsOneWidget);
-
-      // … and the expanded automation row echoes it: a legacy report with
-      // content but no one-liner still counts as report content.
-      await tester.ensureVisible(
-        find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
-      );
-      await tester.pumpAndSettle();
+      // The read card demotes to the notice (a report IS displayed) and
+      // the automation row on the same card echoes it: a legacy report
+      // with content but no one-liner still counts as report content.
       expect(find.text('Out of date'), findsNWidgets(2));
     });
   });
@@ -3280,12 +3273,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final closedCenter = tester.getCenter(find.text("Agent's read")).dx;
+    final closedCenter = tester.getCenter(find.text('AI summary')).dx;
     await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(
-      tester.getCenter(find.text("Agent's read")).dx,
+      tester.getCenter(find.text('AI summary')).dx,
       moreOrLessEquals(closedCenter, epsilon: 1),
       reason:
           'below the fold width the drawer overlays instead of shifting '

@@ -6294,12 +6294,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDeleteMenuItem => 'Smazat cíl';
 
   @override
-  String get goalDetailAboutAgentTitle => 'O tomto agentovi';
-
-  @override
-  String get goalDetailAgentReadTitle => 'Hodnocení agenta';
-
-  @override
   String goalDetailAlsoInGoal(String goals) {
     return 'Také v $goals';
   }
@@ -6309,6 +6303,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDetailCompletionRateTitle => 'Míra plnění · tento cíl';
+
+  @override
+  String get goalDetailGoalDaysTitle => 'Dny cíle';
 
   @override
   String get goalDetailHealthUnavailable =>

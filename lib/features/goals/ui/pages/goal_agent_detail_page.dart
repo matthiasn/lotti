@@ -10,8 +10,10 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -42,6 +44,7 @@ import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/misc/linked_scroll_group.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -68,13 +71,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
   final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
   final GlobalKey _progressSectionKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
-  final GlobalKey<_AboutThisAgentSectionState> _aboutSectionKey =
-      GlobalKey<_AboutThisAgentSectionState>();
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
   /// either way (a slid-out overlay, not a conditional subtree), so the
   /// composer draft survives closing it.
   bool _chatOpen = false;
+
+  /// One scroll group for every extended day track — goal strip, habit
+  /// rows, signal bars — so a span longer than the viewport scrolls in
+  /// unison and the same date stays aligned down the page.
+  final LinkedScrollGroup _trackScrollGroup = LinkedScrollGroup();
 
   /// Focused when the drawer opens, so the Esc shortcut has a focus path
   /// even before the user clicks into the composer — CallbackShortcuts only
@@ -115,6 +121,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
       ..dispose();
     _appBarTitleVisible.dispose();
     _drawerFocusNode.dispose();
+    _trackScrollGroup.dispose();
     super.dispose();
   }
 
@@ -181,18 +188,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     } else {
       beamToNamed(goalChatPath(agentId));
     }
-  }
-
-  void _openAboutAgent() {
-    _aboutSectionKey.currentState?.expand();
-    final target = _aboutSectionKey.currentContext;
-    if (target == null) return;
-    Scrollable.ensureVisible(
-      target,
-      duration: MotionDurations.medium4,
-      curve: MotionCurves.emphasizedDecelerate,
-      alignment: 0.02,
-    );
   }
 
   @override
@@ -345,6 +340,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
               GoalThisWeekCard.shouldShow(progress, canReflect: canReflect)
           ? GoalThisWeekCard(
               progress: progress,
+              scrollGroup: _trackScrollGroup,
               // The user's own verdict outranks the measurement in the
               // strip: a day they filed as missed must not keep rendering as
               // the neutral grey of a day with no data.
@@ -385,6 +381,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           : null;
       final agentRead = _AgentReadCard(
         agentId: agentId,
+        identity: goalIdentity,
+        agentState: agentState is AgentStateEntity ? agentState : null,
+        canRefresh: isActive,
         healthAsync: healthAsync,
         report: latestReport,
         isStale:
@@ -490,8 +489,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
-              // The page-wide range picker rides the Habits heading — one
-              // control for every day track and the chart below.
+              scrollGroup: _trackScrollGroup,
+              // The page-wide range picker rides the first evidence
+              // heading — one control for every day track and the chart.
               habitsHeadingTrailing: TimeSpanSegmentedControl(
                 timeSpanDays: timeSpanDays,
                 onValueChanged: ref
@@ -548,15 +548,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             progress: progress,
           ),
         ],
-        SizedBox(height: tokens.spacing.cardItemSpacing),
-        _AboutThisAgentSection(
-          key: _aboutSectionKey,
-          agentId: agentId,
-          identity: goalIdentity,
-          agentState: agentState is AgentStateEntity ? agentState : null,
-          canRefresh: isActive,
-          hasReportContent: hasStandingAssessment,
-        ),
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
@@ -705,7 +696,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                         .read(goalHabitCompletionServiceProvider)
                         .requestReportRefresh(agentId)
                   : null,
-              onAboutAgent: _openAboutAgent,
             ),
           ],
         ),
@@ -1046,9 +1036,24 @@ class _GoalHeader extends StatelessWidget {
 /// when the runtime marks the report stale, the timestamp slot self-demotes
 /// to the out-of-date notice instead (the §4b freshness contract). Ask-why
 /// hands the verdict on screen to the conversation.
+/// The goal agent's read — the same "intelligence" panel as the task
+/// agent section on Task Details, wearing the shared [aiCardDecoration]
+/// chrome and [TldrHeader], with the same reload affordances
+/// ([AgentAutomationRow]) and the goal's cumulative inference cost pills
+/// in the footer. One panel language across agent surfaces: change the
+/// tokens or the wash once, both cards follow.
+///
+/// Deterministic numbers on this page are never stale by construction; the
+/// narrative IS allowed to age, so the header's trailing slot carries its
+/// generation age — and when the runtime marks the report stale it
+/// self-demotes to the out-of-date notice (the freshness contract). Ask-why
+/// hands the verdict on screen to the conversation.
 class _AgentReadCard extends ConsumerStatefulWidget {
   const _AgentReadCard({
     required this.agentId,
+    required this.identity,
+    required this.agentState,
+    required this.canRefresh,
     required this.healthAsync,
     required this.report,
     required this.isStale,
@@ -1056,6 +1061,9 @@ class _AgentReadCard extends ConsumerStatefulWidget {
   });
 
   final String agentId;
+  final AgentIdentityEntity identity;
+  final AgentStateEntity? agentState;
+  final bool canRefresh;
   final AsyncValue<GoalAgentHealth> healthAsync;
   final AgentReportEntity? report;
   final bool isStale;
@@ -1071,6 +1079,8 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
   /// hours. Armed at the next minute/hour/day boundary of the read's age —
   /// one wake per visible change, not a per-second tick.
   Timer? _ageTick;
+  bool _automationBusy = false;
+  bool _cancelledManually = false;
 
   @override
   void dispose() {
@@ -1078,26 +1088,56 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant _AgentReadCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldWake = oldWidget.agentState?.nextWakeAt;
+    final newWake = widget.agentState?.nextWakeAt;
+    if (newWake != oldWake && newWake?.isAfter(clock.now()) == true) {
+      _cancelledManually = false;
+    }
+  }
+
   void _armAgeTick(DateTime generatedAt) {
     _ageTick?.cancel();
     final age = clock.now().difference(generatedAt);
     final Duration untilNextBucket;
     if (age.inHours < 1) {
-      untilNextBucket = Duration(
-        seconds: 60 - (age.inSeconds % 60) + 1,
-      );
+      untilNextBucket = Duration(seconds: 60 - (age.inSeconds % 60) + 1);
     } else if (age.inDays < 1) {
-      untilNextBucket = Duration(
-        seconds: 3600 - (age.inSeconds % 3600) + 1,
-      );
+      untilNextBucket = Duration(seconds: 3600 - (age.inSeconds % 3600) + 1);
     } else {
-      untilNextBucket = Duration(
-        seconds: 86400 - (age.inSeconds % 86400) + 1,
-      );
+      untilNextBucket = Duration(seconds: 86400 - (age.inSeconds % 86400) + 1);
     }
     _ageTick = Timer(untilNextBucket, () {
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _updateAutomaticUpdates(bool enabled) async {
+    if (_automationBusy) return;
+    setState(() => _automationBusy = true);
+    try {
+      await ref
+          .read(goalAgentServiceProvider)
+          .updateAutomaticUpdates(
+            agentId: widget.agentId,
+            enabled: enabled,
+          );
+      _cancelledManually = false;
+    } finally {
+      if (mounted) setState(() => _automationBusy = false);
+    }
+  }
+
+  void _openInternals() {
+    Navigator.of(context).push(
+      AgentInternalsPanel.route(
+        context: context,
+        agentId: widget.agentId,
+        agentName: widget.identity.displayName,
+      ),
+    );
   }
 
   @override
@@ -1125,57 +1165,114 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
       );
       _armAgeTick(generatedAt);
     }
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  messages.goalDetailAgentReadTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
+
+    final isRefreshing =
+        ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
+    final nextWakeAt = widget.agentState?.nextWakeAt;
+    final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
+      widget.identity,
+    );
+    final showCountdown =
+        widget.canRefresh &&
+        automaticUpdatesEnabled &&
+        !isRefreshing &&
+        !_cancelledManually &&
+        nextWakeAt?.isAfter(clock.now()) == true;
+
+    return DecoratedBox(
+      decoration: aiCardDecoration(context),
+      child: ClipRRect(
+        borderRadius: aiCardRadius(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // The same header as the task agent section: sparkle badge, the
+            // shared card title, the persona underneath, tap → internals.
+            // The trailing slot carries the read's freshness instead of a
+            // playback control.
+            TldrHeader(
+              agentName: widget.identity.displayName,
+              onAgentTap: _openInternals,
+              playbackControl: freshness == null
+                  ? null
+                  : Text(
+                      freshness,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: widget.isStale && hasReadContent
+                            ? tokens.colors.alert.warning.ink
+                            : tokens.colors.aiCard.metaText,
+                      ),
+                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                0,
+                tokens.spacing.cardPadding,
+                tokens.spacing.step3,
               ),
-              if (freshness != null) ...[
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  freshness,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: widget.isStale
-                        ? tokens.colors.alert.warning.ink
-                        : tokens.colors.text.lowEmphasis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _GoalReportCard(
+                    report: report,
+                    fallback:
+                        oneLiner ??
+                        (widget.healthAsync.hasError
+                            ? messages.goalDetailHealthUnavailable
+                            : messages.goalDetailNoReport),
+                    fallbackMuted: oneLiner == null,
                   ),
-                ),
-              ],
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          _GoalReportCard(
-            report: report,
-            fallback:
-                oneLiner ??
-                (widget.healthAsync.hasError
-                    ? messages.goalDetailHealthUnavailable
-                    : messages.goalDetailNoReport),
-            fallbackMuted: oneLiner == null,
-          ),
-          if (widget.onAskWhy != null) ...[
-            SizedBox(height: tokens.spacing.step1),
-            DesignSystemButton(
-              key: const ValueKey('goal-detail-ask-why'),
-              label: messages.goalDetailAskWhy,
-              onPressed: widget.onAskWhy,
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.dense,
-              trailingIcon: Icons.arrow_forward_rounded,
-              alignsLabelToLeadingEdge: true,
+                  if (widget.onAskWhy != null) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    DesignSystemButton(
+                      key: const ValueKey('goal-detail-ask-why'),
+                      label: messages.goalDetailAskWhy,
+                      onPressed: widget.onAskWhy,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                      trailingIcon: Icons.arrow_forward_rounded,
+                      alignsLabelToLeadingEdge: true,
+                    ),
+                  ],
+                  // The goal's cumulative inference cost, in the panel that
+                  // spends it — the same footer position as the task card's
+                  // consumption pills.
+                  GoalAgentLifetimePills(agentId: widget.agentId),
+                  if (widget.canRefresh) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    // The same reload affordances as the task agent section:
+                    // freshness state, countdown, skip-once, Update now and
+                    // the automatic-updates switch.
+                    AgentAutomationRow(
+                      automaticUpdatesEnabled: automaticUpdatesEnabled,
+                      automationBusy: _automationBusy,
+                      inferenceAvailable: true,
+                      isRunning: isRefreshing,
+                      showCountdown: showCountdown,
+                      nextWakeAt: nextWakeAt,
+                      hasReportContent: hasReadContent,
+                      isStale: widget.agentState?.isReportStale ?? false,
+                      onAutomaticUpdatesChanged: (enabled) =>
+                          unawaited(_updateAutomaticUpdates(enabled)),
+                      onRunNow: () => ref
+                          .read(goalHabitCompletionServiceProvider)
+                          .requestReportRefresh(widget.agentId),
+                      onSkipScheduledUpdate: () {
+                        ref
+                            .read(goalAgentServiceProvider)
+                            .skipPendingReportRefresh(widget.agentId);
+                        setState(() => _cancelledManually = true);
+                      },
+                      onCountdownExpired: () =>
+                          ref.invalidate(agentStateProvider(widget.agentId)),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -1195,152 +1292,6 @@ String _relativeAgo(AppLocalizations messages, Duration age) {
 /// and the automatic-updates controls — folded behind one quiet row at the
 /// foot of the dashboard, so what the agent SAYS outranks how it is kept
 /// fresh everywhere above the fold.
-class _AboutThisAgentSection extends ConsumerStatefulWidget {
-  const _AboutThisAgentSection({
-    required this.agentId,
-    required this.identity,
-    required this.agentState,
-    required this.canRefresh,
-    required this.hasReportContent,
-    super.key,
-  });
-
-  final String agentId;
-  final AgentIdentityEntity identity;
-  final AgentStateEntity? agentState;
-  final bool canRefresh;
-
-  /// Whether the page is DISPLAYING a standing read (spec-matched report or
-  /// one-liner) — drives the automation row's up-to-date/out-of-date state.
-  /// Computed at page level so a legacy report with content but no
-  /// one-liner still counts.
-  final bool hasReportContent;
-
-  @override
-  ConsumerState<_AboutThisAgentSection> createState() =>
-      _AboutThisAgentSectionState();
-}
-
-class _AboutThisAgentSectionState
-    extends ConsumerState<_AboutThisAgentSection> {
-  bool _expanded = false;
-  bool _automationBusy = false;
-  bool _cancelledManually = false;
-
-  /// Opens the section (the overflow menu's About-this-agent entry lands
-  /// here) — expand only, never a blind toggle.
-  void expand() {
-    if (!_expanded) setState(() => _expanded = true);
-  }
-
-  @override
-  void didUpdateWidget(covariant _AboutThisAgentSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final oldWake = oldWidget.agentState?.nextWakeAt;
-    final newWake = widget.agentState?.nextWakeAt;
-    if (newWake != oldWake && newWake?.isAfter(clock.now()) == true) {
-      _cancelledManually = false;
-    }
-  }
-
-  Future<void> _updateAutomaticUpdates(bool enabled) async {
-    if (_automationBusy) return;
-    setState(() => _automationBusy = true);
-    try {
-      await ref
-          .read(goalAgentServiceProvider)
-          .updateAutomaticUpdates(
-            agentId: widget.agentId,
-            enabled: enabled,
-          );
-      _cancelledManually = false;
-    } finally {
-      if (mounted) setState(() => _automationBusy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final isRefreshing =
-        ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
-    final nextWakeAt = widget.agentState?.nextWakeAt;
-    final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
-      widget.identity,
-    );
-    final showCountdown =
-        widget.canRefresh &&
-        automaticUpdatesEnabled &&
-        !isRefreshing &&
-        !_cancelledManually &&
-        nextWakeAt?.isAfter(clock.now()) == true;
-    return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            key: const ValueKey('goal-detail-about-agent-toggle'),
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: TapTargets.minimum),
-              child: Row(
-                children: [
-                  AnimatedRotation(
-                    turns: _expanded ? 0.25 : 0,
-                    duration: MotionDurations.short3,
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Expanded(
-                    child: Text(
-                      context.messages.goalDetailAboutAgentTitle,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(color: tokens.colors.text.highEmphasis),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_expanded) ...[
-            GoalAgentLifetimePills(agentId: widget.agentId),
-            if (widget.canRefresh) ...[
-              SizedBox(height: tokens.spacing.step3),
-              AgentAutomationRow(
-                automaticUpdatesEnabled: automaticUpdatesEnabled,
-                automationBusy: _automationBusy,
-                inferenceAvailable: true,
-                isRunning: isRefreshing,
-                showCountdown: showCountdown,
-                nextWakeAt: nextWakeAt,
-                hasReportContent: widget.hasReportContent,
-                isStale: widget.agentState?.isReportStale ?? false,
-                onAutomaticUpdatesChanged: (enabled) =>
-                    unawaited(_updateAutomaticUpdates(enabled)),
-                onRunNow: () => ref
-                    .read(goalHabitCompletionServiceProvider)
-                    .requestReportRefresh(widget.agentId),
-                onSkipScheduledUpdate: () {
-                  ref
-                      .read(goalAgentServiceProvider)
-                      .skipPendingReportRefresh(widget.agentId);
-                  setState(() => _cancelledManually = true);
-                },
-                onCountdownExpired: () =>
-                    ref.invalidate(agentStateProvider(widget.agentId)),
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _GoalReportCard extends StatefulWidget {
   const _GoalReportCard({
     required this.report,
@@ -1579,7 +1530,7 @@ class _GoalHistorySectionState extends State<_GoalHistorySection> {
   }
 }
 
-enum _GoalDetailMenuAction { edit, updateRead, aboutAgent, internals, delete }
+enum _GoalDetailMenuAction { edit, updateRead, internals, delete }
 
 class _GoalActionsMenuButton extends ConsumerWidget {
   const _GoalActionsMenuButton({
@@ -1587,7 +1538,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
     required this.agentName,
     required this.canEdit,
     required this.onUpdateRead,
-    required this.onAboutAgent,
   });
 
   final String agentId;
@@ -1597,9 +1547,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   /// Requests a report refresh (§4b overflow: "Update read"); null while
   /// the goal is not active.
   final VoidCallback? onUpdateRead;
-
-  /// Expands and scrolls to the About-this-agent section.
-  final VoidCallback onAboutAgent;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1613,8 +1560,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             beamToNamed(goalEditPath(agentId));
           case _GoalDetailMenuAction.updateRead:
             onUpdateRead?.call();
-          case _GoalDetailMenuAction.aboutAgent:
-            onAboutAgent();
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1660,21 +1605,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
               ],
             ),
           ),
-        PopupMenuItem<_GoalDetailMenuAction>(
-          value: _GoalDetailMenuAction.aboutAgent,
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline_rounded),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  context.messages.goalDetailAboutAgentTitle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
         PopupMenuItem<_GoalDetailMenuAction>(
           value: _GoalDetailMenuAction.internals,
           child: Row(

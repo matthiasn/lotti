@@ -113,8 +113,9 @@ void main() {
       8000,
     );
 
-    // The hero strip stays the goal\'s authored evaluation week.
-    expect(view.compositeCompactWindow, hasLength(7));
+    // The whole-goal strip follows the shared span too, so the hero card
+    // renders the same days as every other track.
+    expect(view.compositeCompactWindow, hasLength(30));
   });
 
   test('habit projection separates the slipped day, active window, deficit and '
@@ -1060,7 +1061,18 @@ void main() {
         rangeStart: any(named: 'rangeStart'),
         rangeEnd: any(named: 'rangeEnd'),
       ),
-    ).thenAnswer((_) async => []);
+    ).thenAnswer(
+      (_) async => [
+        // The entry the recorded capture decision points at — the reader
+        // maps its id to a day, which is what turns a decision into
+        // agent-recorded provenance on that day's bar.
+        buildMeasurementEntry(
+          id: 'entry-1',
+          timestamp: DateTime(2026, 8, 10, 9),
+          value: 500,
+        ),
+      ],
+    );
     when(
       () => db.insightsTimeRows(
         start: any(named: 'start'),
@@ -1160,5 +1172,18 @@ void main() {
     expect(names, contains(categoryMindfulness.name));
     verify(() => db.getMeasurableDataTypeById(measurableWater.id)).called(1);
     verify(() => db.getCategoryById(categoryMindfulness.id)).called(1);
+
+    // The RECORDED decision's entry flows into agent-recorded provenance on
+    // its day; the unrecorded msg-2 contributes nothing — so exactly one
+    // day is marked, carrying the recording agent's name.
+    final water = view.metrics.singleWhere(
+      (metric) => metric.name == measurableWater.displayName,
+    );
+    final recordedDay = DateTime.utc(2026, 8, 10);
+    expect(water.agentRecordedDays, {recordedDay});
+    expect(
+      water.agentRecordedProvenanceByDay[recordedDay]?.agentName,
+      'Hydrate mindfully',
+    );
   });
 }
