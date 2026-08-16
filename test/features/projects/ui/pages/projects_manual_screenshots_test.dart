@@ -29,9 +29,12 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -48,7 +51,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/manual_demo_world.dart';
@@ -62,6 +64,24 @@ import '../../test_utils.dart';
 const _subdir = 'projects';
 const _projectWaddleId = 'project-waddle';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+final AiConfigModel _manualProjectAgentModel = manualDemoAiModels.firstWhere(
+  (model) => model.id == manualWaddleCommandModelId,
+);
+final AiConfigInferenceProvider _manualProjectAgentProvider =
+    manualDemoAiProviders.firstWhere(
+      (provider) => provider.id == manualMissionControlProviderId,
+    );
+final _manualProjectAgentSetup = ResolvedAgentSetup(
+  status: AgentSetupResolutionStatus.resolved,
+  profile: ResolvedProfile(
+    thinkingModelId: _manualProjectAgentModel.providerModelId,
+    thinkingProvider: _manualProjectAgentProvider,
+    thinkingModel: _manualProjectAgentModel,
+  ),
+  source: AgentSetupResolutionSource.baseProfile,
+  setupOrigin: AgentInferenceSetupOrigin.user,
+);
 
 AppLocalizations _messages(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(AppCommandHost)))!;
@@ -521,6 +541,9 @@ void main() {
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => const Stream<bool>.empty(),
     ),
+    taskAgentResolvedSetupProvider.overrideWith(
+      (ref, agentId) async => _manualProjectAgentSetup,
+    ),
   ];
 
   Future<void> pumpSurface(
@@ -603,18 +626,10 @@ void main() {
           selectedId: _projectWaddleId,
         );
         expect(find.text('Project Waddle'), findsWidgets);
-        expect(find.text(_t('On Track', 'Im Plan')), findsOneWidget);
         expect(
-          find.textContaining(
-            _t(
-              'Project Waddle is on track for the orbital habitat demo. Clear '
-                  'the fish-feeder blocker before the emperor penguin roll call.',
-              'Project Waddle liegt für die Demo des Orbital-Habitats im Plan. '
-                  'Löse den Futterautomaten-Blocker vor dem Zählappell der '
-                  'Kaiserpinguine.',
-            ),
-          ),
+          find.text(_messages(tester).projectShowcaseProjectTasksTab),
           findsOneWidget,
+          reason: 'The Task-style detail surface leads with project work.',
         );
         await captureScreenshot(
           tester,
@@ -649,20 +664,6 @@ void main() {
           tester.element(projectTasksHeader),
           alignment: 0.05,
         );
-        final scrollableState = tester.state<ScrollableState>(
-          detailScrollable.first,
-        );
-        final position = scrollableState.position;
-        final alignedOffset =
-            (position.maxScrollExtent -
-                    tester
-                            .element(find.byType(ProjectDetailsPage))
-                            .designTokens
-                            .spacing
-                            .step8 *
-                        2)
-                .clamp(position.minScrollExtent, position.maxScrollExtent);
-        position.jumpTo(alignedOffset);
         await settleFrames(tester, 4);
         expect(
           find.text(
@@ -694,6 +695,48 @@ void main() {
         await captureScreenshot(
           tester,
           'projects_tasks_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport project agent — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          mobile: const ProjectDetailsPage(projectId: _projectWaddleId),
+          desktop: const ProjectsTabPage(),
+          selectedId: _projectWaddleId,
+        );
+        final details = find.byType(ProjectMobileDetailContent);
+        final detailScrollable = find.descendant(
+          of: details,
+          matching: find.byType(Scrollable),
+        );
+        final reportSummary = find.textContaining(
+          _t(
+            'Project Waddle is on track for the orbital habitat demo. Clear '
+                'the fish-feeder blocker before the emperor penguin roll call.',
+            'Project Waddle liegt für die Demo des Orbital-Habitats im Plan. '
+                'Löse den Futterautomaten-Blocker vor dem Zählappell der '
+                'Kaiserpinguine.',
+          ),
+        );
+        await tester.scrollUntilVisible(
+          reportSummary,
+          320,
+          scrollable: detailScrollable.first,
+        );
+        await Scrollable.ensureVisible(
+          tester.element(reportSummary),
+          alignment: 0.15,
+        );
+        await settleFrames(tester, 4);
+        expect(find.text(_t('On Track', 'Im Plan')), findsOneWidget);
+        expect(find.text('Project Waddle Agent'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'projects_agent_${viewport}_$theme',
           subdir: _subdir,
         );
       });
@@ -747,7 +790,7 @@ void main() {
         expect(find.byType(ProjectCreateForm), findsOneWidget);
         await tester.enterText(
           find.descendant(
-            of: find.byType(LottiTextField),
+            of: find.byType(DesignSystemTextInput),
             matching: find.byType(TextField),
           ),
           _t(
