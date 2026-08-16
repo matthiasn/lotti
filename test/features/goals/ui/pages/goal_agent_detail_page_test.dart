@@ -222,10 +222,12 @@ void main() {
     navigated.clear();
 
     final scrollable = tester.state<ScrollableState>(
-      find.descendant(
-        of: find.byType(SingleChildScrollView).first,
-        matching: find.byType(Scrollable),
-      ),
+      find
+          .descendant(
+            of: find.byType(SingleChildScrollView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
