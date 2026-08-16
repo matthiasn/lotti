@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -142,6 +143,57 @@ void main() {
           projectRecommendationsProvider(
             projectId,
           ).overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DesignSystemSectionCard), findsNothing);
+    expect(find.text('Recommended next steps'), findsNothing);
+  });
+
+  testWidgets('separates multiple recommendations without duplicating header', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ProjectRecommendationsPanel(projectId: projectId),
+        overrides: [
+          projectRecommendationsProvider(projectId).overrideWith((ref) async {
+            return [
+              makeTestProjectRecommendation(
+                id: 'recommendation-1',
+                agentId: 'agent-1',
+                projectId: projectId,
+                title: 'Unblock launch QA',
+              ),
+              makeTestProjectRecommendation(
+                id: 'recommendation-2',
+                agentId: 'agent-1',
+                projectId: projectId,
+                title: 'Confirm the launch manifest',
+              ),
+            ];
+          }),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DesignSystemDivider), findsNWidgets(2));
+    expect(find.text('Recommended next steps'), findsOneWidget);
+    expect(find.text('Unblock launch QA'), findsOneWidget);
+    expect(find.text('Confirm the launch manifest'), findsOneWidget);
+  });
+
+  testWidgets('collapses when recommendation loading fails', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const ProjectRecommendationsPanel(projectId: projectId),
+        overrides: [
+          projectRecommendationsProvider(projectId).overrideWith((ref) async {
+            throw StateError('agent database unavailable');
+          }),
         ],
       ),
     );

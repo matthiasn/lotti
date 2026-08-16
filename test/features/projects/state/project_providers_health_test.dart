@@ -375,6 +375,43 @@ void main() {
     );
 
     test(
+      'project agent update lookup failures trigger a conservative refresh',
+      () async {
+        final agentUpdates = StreamController<Set<String>>.broadcast();
+        addTearDown(agentUpdates.close);
+        final notifications = MockUpdateNotifications();
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => agentUpdates.stream);
+        when(
+          () => mockAgentRepo.getEntitiesByIds({'agent-1'}),
+        ).thenThrow(StateError('agent database unavailable'));
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final subscription = scopedContainer.listen(
+          projectAgentOverviewUpdateStreamProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        final refresh = scopedContainer.read(
+          projectAgentOverviewUpdateStreamProvider.future,
+        );
+        await pumpEventQueue();
+        final ids = {'agent-1', agentNotification};
+        agentUpdates.add(ids);
+
+        expect(await refresh, ids);
+      },
+    );
+
+    test(
       'visibleProjectGroupsProvider reflects updated project status from the overview stream',
       () async {
         final controller = StreamController<ProjectsOverviewSnapshot>();

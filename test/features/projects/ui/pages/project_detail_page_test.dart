@@ -562,6 +562,20 @@ void main() {
       verify(() => nav.beamToNamed('/settings/categories/cat-123')).called(1);
     });
 
+    testWidgets('Cancel returns through settings navigation at its root', (
+      tester,
+    ) async {
+      final nav = MockNavService();
+      when(() => nav.currentPath).thenReturn('/settings/projects/project-1');
+      getIt.registerSingleton<NavService>(nav);
+      await pumpPage(tester, state: loadedState(hasChanges: true));
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+
+      verify(nav.beamBack).called(1);
+    });
+
     testWidgets('surfaces localized controller errors without replacing form', (
       tester,
     ) async {
