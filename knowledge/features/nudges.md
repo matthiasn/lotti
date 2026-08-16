@@ -79,10 +79,10 @@ Three properties of it are contract rather than detail:
 flowchart LR
   subgraph producers["producing features (never imported here)"]
     G["goals:<br/>activeGoalNudgesProvider"]
-    R["relationships:<br/>(a later phase)"]
+    R["relationships:<br/>activeRelationshipNudgesProvider"]
   end
   G --> REG
-  R -.-> REG
+  R --> REG
   REG["nudgeBannerSourcesProvider<br/>(overridden in app_bootstrap)"] --> MERGE
   MERGE["activeNudgeBannersProvider<br/>merged, newest-first"] --> VIS
   VIS{"visibleNudgeBannerEntries<br/>surface · stale · snoozed ·<br/>dismissed-for-day · local suppression"}
@@ -101,8 +101,8 @@ subject's title (a goal title, a person's name), its `NudgeBannerKind`, and the
 route a tap opens. Nothing downstream knows the kind's domain.
 
 The merge preserves a single source's order untouched and only re-sorts when
-more than one kind contributes — so today's fleet pays nothing for a
-generalization it does not yet use. Each source's retained value survives its
+more than one kind contributes — with goals and relationships both registered,
+the multi-kind re-sort is the live path. Each source's retained value survives its
 own background refresh (`.value` on a reloading `FutureProvider`), so the dock
 never flashes empty on sync.
 
@@ -250,7 +250,8 @@ diverge permanently under equal-clock sync.
 # Related
 
 - [Goal agents](goals.md) — the first producer, and the goal-owned banner card.
-- [Relationships](relationships.md) — the second subject kind; its producer
-  ships in a later phase.
+- [Relationships](relationships.md) — the second subject kind; its agent
+  workflow produces `relationshipNudge` rows and registers
+  `activeRelationshipNudgesProvider`.
 - [Agents](agents/) — the runtime that writes these rows and the sync layer
   that replicates them.

@@ -240,8 +240,8 @@ void main() {
     String content = '# Forced\nrecovered.',
     bool throwOnRetry = false,
   }) {
-    mockConversationRepository.maxDelegateCalls = 2;
-    mockConversationRepository.sendMessageDelegate =
+    mockConversationRepository..maxDelegateCalls = 2
+    ..sendMessageDelegate =
         ({
           required conversationId,
           required message,

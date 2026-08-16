@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -15,6 +20,8 @@ void main() {
 
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
+  late MockJournalRepository mockJournalRepository;
+  late MockEntitiesCacheService mockCacheService;
 
   RelationshipEntry createdEntry(RelationshipData data) => RelationshipEntry(
     meta: Metadata(
@@ -27,37 +34,32 @@ void main() {
     data: data,
   );
 
-  setUpAll(() {
-    final fallbackData = RelationshipData(
-      title: 'fallback',
-      status: RelationshipStatus.active(
-        id: 'fallback-status',
-        createdAt: testDate,
-        utcOffset: 0,
-      ),
-    );
-    registerFallbackValue(fallbackData);
-    registerFallbackValue(
-      RelationshipEntry(
-        meta: Metadata(
-          id: 'fallback',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: fallbackData,
-      ),
-    );
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockRelationshipRepository();
     mockAgentService = MockRelationshipAgentService();
+    mockJournalRepository = MockJournalRepository();
     when(
       () => mockAgentService.ensureAgentForRelationship(any()),
     ).thenAnswer((invocation) async => throw StateError('unstubbed identity'));
+    when(
+      () => mockJournalRepository.updateCategoryId(
+        any(),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => true);
+    // CategoryField (rendered by the form) reads the category name through
+    // `getIt<EntitiesCacheService>()`; default the lookup to "no category".
+    mockCacheService = MockEntitiesCacheService();
+    when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+    await setUpTestGetIt(
+      additionalSetup: () =>
+          getIt.registerSingleton<EntitiesCacheService>(mockCacheService),
+    );
   });
+
+  tearDown(tearDownTestGetIt);
 
   Widget buildForm({RelationshipEntry? initial}) =>
       makeTestableWidgetWithScaffold(
@@ -65,6 +67,7 @@ void main() {
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
           relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         ],
       );
 
@@ -81,7 +84,6 @@ void main() {
         data: any(named: 'data'),
         entryText: any(named: 'entryText'),
         categoryId: any(named: 'categoryId'),
-        trackingStartedAt: any(named: 'trackingStartedAt'),
       ),
     );
   });
@@ -92,6 +94,7 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -119,6 +122,7 @@ void main() {
           verify(
                 () => mockRepository.createRelationship(
                   data: captureAny(named: 'data'),
+                  categoryId: any(named: 'categoryId'),
                 ),
               ).captured.single
               as RelationshipData;
@@ -130,6 +134,78 @@ void main() {
     },
   );
 
+  testWidgets('a refused create reports it and keeps what was typed', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Could not save this person. Please try again.'),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(TextField, 'Anna'), findsOneWidget);
+  });
+
+  testWidgets('a create that throws reports the create-mode failure', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenThrow(Exception('db gone'));
+
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+
+    // The create-mode copy, not the edit-mode one.
+    expect(
+      find.text('Could not save this person. Please try again.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Could not save the changes. Please try again.'),
+      findsNothing,
+    );
+  });
+
+  testWidgets('Cancel closes without persisting anything', (tester) async {
+    await tester.pumpWidget(buildForm());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Anna');
+    await tester.ensureVisible(find.text('Cancel'));
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    verifyNever(
+      () => mockRepository.createRelationship(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    );
+  });
+
   testWidgets(
     'saving an IMPORTANT person lazily mints their agent — the consent '
     'switch is the trigger (ADR 0059 Decision 2)',
@@ -137,6 +213,7 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -175,6 +252,7 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -201,6 +279,7 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).thenAnswer(
         (invocation) async => createdEntry(
@@ -228,6 +307,7 @@ void main() {
     when(
       () => mockRepository.createRelationship(
         data: any(named: 'data'),
+        categoryId: any(named: 'categoryId'),
       ),
     ).thenAnswer(
       (invocation) async => createdEntry(
@@ -247,6 +327,7 @@ void main() {
         verify(
               () => mockRepository.createRelationship(
                 data: captureAny(named: 'data'),
+                categoryId: any(named: 'categoryId'),
               ),
             ).captured.single
             as RelationshipData;
@@ -351,6 +432,122 @@ void main() {
 
       verifyNever(() => mockRepository.updateRelationship(any()));
     });
+
+    testWidgets('archiving mints an archived status', (tester) async {
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Archived'));
+      await tester.tap(find.text('Archived'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(updated.data.status, isA<RelationshipArchived>());
+      expect(updated.data.statusHistory.single.id, 'status-1');
+    });
+
+    testWidgets(
+      "the picker opens on the person's current kind, so an untouched save "
+      'keeps it',
+      (tester) async {
+        final kinds = <String, RelationshipStatus>{
+          'status-dormant': RelationshipStatus.dormant(
+            id: 'status-dormant',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          'status-archived': RelationshipStatus.archived(
+            id: 'status-archived',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        };
+
+        for (final entry in kinds.entries) {
+          final base = existing();
+          await tester.pumpWidget(
+            buildForm(
+              initial: base.copyWith(
+                data: base.data.copyWith(status: entry.value),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text('Save'));
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+
+          final updated =
+              verify(
+                    () => mockRepository.updateRelationship(captureAny()),
+                  ).captured.single
+                  as RelationshipEntry;
+          // The kind round-tripped rather than resetting to active, so no
+          // new status was minted and nothing was pushed to history.
+          expect(updated.data.status.id, entry.key, reason: entry.key);
+          expect(updated.data.statusHistory, isEmpty, reason: entry.key);
+
+          // Pumping a fresh tree next round would hit the popped navigator.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+        }
+      },
+    );
+
+    testWidgets('a refused update reports it and keeps the edits', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextField, 'Anna Example'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an update that throws reports the edit-mode failure', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenThrow(Exception('db gone'));
+
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      // The edit-mode copy, not the create-mode one.
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Could not save this person. Please try again.'),
+        findsNothing,
+      );
+    });
   });
 
   group('error toasts', () {
@@ -358,6 +555,7 @@ void main() {
       when(
         () => mockRepository.createRelationship(
           data: any(named: 'data'),
+          categoryId: any(named: 'categoryId'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -469,78 +667,84 @@ void main() {
     });
   });
 
-  group('error toasts', () {
-    testWidgets('shows a toast when create returns null', (tester) async {
-      when(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
+  group('the category leg of an edit', () {
+    /// A person filed under `cat-1`, so the field renders its clear button.
+    RelationshipEntry categorized() {
+      when(() => mockCacheService.getCategoryById('cat-1')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-1',
+          name: 'Family',
+          private: false,
+          active: true,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
         ),
-      ).thenAnswer((_) async => null);
-
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Anna');
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save this person. Please try again.'),
-        findsOne,
       );
-    });
-
-    testWidgets('shows a toast when create throws', (tester) async {
-      when(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
+      return RelationshipEntry(
+        meta: Metadata(
+          id: 'rel-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          categoryId: 'cat-1',
         ),
-      ).thenThrow(Exception('db locked'));
-
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Anna');
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save this person. Please try again.'),
-        findsOne,
+        data: RelationshipData(
+          title: 'Anna',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
       );
-    });
+    }
 
-    testWidgets('shows a toast when update returns false', (tester) async {
+    /// Clears the category through the field's × affordance, then saves.
+    Future<void> clearCategoryAndSave(WidgetTester tester) async {
+      await tester.pumpWidget(buildForm(initial: categorized()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('routes the cleared category through the journal path — a '
+        'freezed copyWith cannot null the field', (tester) async {
       when(
         () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => true);
+
+      await clearCategoryAndSave(tester);
+
+      verify(
+        () => mockJournalRepository.updateCategoryId('rel-1', categoryId: null),
+      ).called(1);
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('a failed category write is reported instead of being '
+        'swallowed — the payload landed but the category did not, and '
+        'reporting success would leave nothing to retry', (tester) async {
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepository.updateCategoryId(
+          any(),
+          categoryId: any(named: 'categoryId'),
+        ),
       ).thenAnswer((_) async => false);
 
-      final initial = RelationshipEntry(
-        meta: Metadata(
-          id: 'rel-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: RelationshipData(
-          title: 'Anna',
-          status: RelationshipStatus.active(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
-
-      await tester.pumpWidget(buildForm(initial: initial));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await clearCategoryAndSave(tester);
 
       expect(
         find.text('Could not save the changes. Please try again.'),
@@ -548,40 +752,36 @@ void main() {
       );
     });
 
-    testWidgets('shows a toast when update throws', (tester) async {
+    testWidgets('the agent is still wired when only the category leg '
+        'failed — importance and cadence did persist', (tester) async {
       when(
         () => mockRepository.updateRelationship(any()),
-      ).thenThrow(Exception('db locked'));
-
-      final initial = RelationshipEntry(
-        meta: Metadata(
-          id: 'rel-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepository.updateCategoryId(
+          any(),
+          categoryId: any(named: 'categoryId'),
         ),
-        data: RelationshipData(
-          title: 'Anna',
-          status: RelationshipStatus.active(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockAgentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => throw StateError('unstubbed identity'));
 
-      await tester.pumpWidget(buildForm(initial: initial));
+      await tester.pumpWidget(buildForm(initial: categorized()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(SwitchListTile));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Could not save the changes. Please try again.'),
-        findsOne,
-      );
+      verify(
+        () => mockAgentService.ensureAgentForRelationship(any()),
+      ).called(1);
     });
   });
 }

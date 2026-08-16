@@ -10227,6 +10227,37 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Briefingen kører på $provider. Noter om denne person sendes dertil til behandling.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Fortsæt';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Send til $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Ingen briefing endnu — Opdater mig laver en ud fra dine check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing bestilt — den vises her om lidt.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Kunne ikke bestille briefingen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Opdater mig';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10254,6 +10285,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Ugentligt';
+
+  @override
+  String get relationshipChatTooltip => 'Chat om denne person';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Ingen agent endnu — markér først personen som vigtig.';
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
@@ -10293,11 +10331,28 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ændringerne kunne ikke gemmes. Prøv igen.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Kræver opmærksomhed';
+
+  @override
+  String get relationshipHealthSteady => 'Stabil';
+
+  @override
+  String get relationshipHealthStrained => 'Anstrengt';
+
+  @override
+  String get relationshipHealthThriving => 'Blomstrer';
+
+  @override
   String get relationshipImportantDescription =>
       'Mind mig om at holde kontakten';
 
   @override
   String get relationshipImportantLabel => 'Vigtig';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Seneste check-in $date';
+  }
 
   @override
   String get relationshipLinkedTasksLabel => 'Opgaver';
@@ -10345,6 +10400,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Fulgt siden $date';
+  }
 
   @override
   String get saveButton => 'Gem';

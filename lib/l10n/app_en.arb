@@ -5794,6 +5794,30 @@
       }
     }
   },
+  "relationshipBriefingDisclosureBody": "The briefing runs on {provider}. Notes about this person will be sent there for processing.",
+  "@relationshipBriefingDisclosureBody": {
+    "description": "Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingDisclosureConfirm": "Continue",
+  "relationshipBriefingDisclosureTitle": "Send to {provider}?",
+  "@relationshipBriefingDisclosureTitle": {
+    "description": "Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingEmpty": "No briefing yet — Brief me prepares one from your check-ins.",
+  "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
+  "relationshipBriefingRequestFailed": "Could not request the briefing.",
+  "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeButton": "Brief me",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -5808,6 +5832,8 @@
   "relationshipCadenceNone": "No cadence",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipChatTooltip": "Chat about this person",
+  "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contact channels",
   "relationshipCreateTitle": "Add person",
@@ -5825,8 +5851,20 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipHealthNeedsAttention": "Needs attention",
+  "relationshipHealthSteady": "Steady",
+  "relationshipHealthStrained": "Strained",
+  "relationshipHealthThriving": "Thriving",
   "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Important",
+  "relationshipLastCheckInLabel": "Last check-in {date}",
+  "@relationshipLastCheckInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
@@ -5842,6 +5880,14 @@
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipTrackingSinceLabel": "Tracking since {date}",
+  "@relationshipTrackingSinceLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveFailedRetry": "That didn't save — please try again.",

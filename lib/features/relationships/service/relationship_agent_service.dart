@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -92,7 +93,7 @@ class RelationshipAgentService {
     String agentId, {
     String? relationshipId,
   }) async {
-    final subjectId = relationshipId ?? await _watchedRelationshipId(agentId);
+    final subjectId = relationshipId ?? await watchedRelationshipId(agentId);
     if (subjectId == null) return;
     _orchestrator
       ..removeSubscriptions(agentId)
@@ -129,7 +130,24 @@ class RelationshipAgentService {
     return true;
   }
 
-  Future<String?> _watchedRelationshipId(String agentId) async {
+  /// The explicit "Brief me" trigger (plan v2 phase 5 item 5): ensures
+  /// the agent exists — Brief me on a not-yet-important person is the
+  /// plan's "explicit enable" — then routes one manual wake through the
+  /// LLM tier via the report-refresh token. Provider disclosure happens in
+  /// the UI BEFORE this is called (ADR 0037: name the provider first).
+  Future<void> requestBriefing(RelationshipEntry relationship) async {
+    final identity = await ensureAgentForRelationship(relationship);
+    _orchestrator.enqueueManualWake(
+      agentId: identity.agentId,
+      reason: 'brief me',
+      triggerTokens: const {relationshipReportRefreshTriggerToken},
+    );
+  }
+
+  /// The relationship this agent watches, via its `agentRelationship` link,
+  /// or null while the link has not been written yet (creation writes it
+  /// before the first wake, so a null here is a benign startup race).
+  Future<String?> watchedRelationshipId(String agentId) async {
     final links = await _repository.getLinksFrom(
       agentId,
       type: AgentLinkTypes.agentRelationship,

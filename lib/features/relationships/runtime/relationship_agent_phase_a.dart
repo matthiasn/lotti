@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -32,7 +33,9 @@ typedef RelationshipCadenceDerivation = ({
   DateTime referenceAt,
   DateTime? lastCheckInAt,
 
-  /// Local calendar day the cadence lapses, as a DST-safe UTC day key.
+  /// UTC calendar day the cadence lapses, as a midnight-UTC instant.
+  /// Zone-free by construction — it is the episode key every device must
+  /// agree on (see `deriveCadenceFacts`).
   DateTime dueDayUtc,
 
   /// The workspace-key day component (`2026-08-16`) of [dueDayUtc].
@@ -44,12 +47,12 @@ typedef RelationshipCadenceDerivation = ({
 /// runs on every tick, on every device.
 ///
 /// One execution: resolve the watched relationship via the agent link →
-/// re-arm the daily cadence tick → gate on eligibility (`important`,
-/// `active`, not deleted — the ADR 0039 consent rule) → derive the cadence
-/// facts → recompute the ONE `relationshipHealth` register row → arm the
-/// per-episode, lease-elected escalation when the cadence NEWLY lapsed.
-/// Every write is skipped when it would change nothing, so an uneventful
-/// tick is a true no-write no-op.
+/// stop for good when the person is gone → re-arm the daily cadence tick →
+/// gate on eligibility (`important`, `active` — the ADR 0039 consent rule) →
+/// derive the cadence facts → recompute the ONE `relationshipHealth`
+/// register row → arm the per-episode, lease-elected escalation when the
+/// cadence NEWLY lapsed. Every write is skipped when it would change
+/// nothing, so an uneventful tick is a true no-write no-op.
 class RelationshipAgentPhaseA {
   const RelationshipAgentPhaseA({
     required this._repository,
@@ -84,14 +87,21 @@ class RelationshipAgentPhaseA {
       return const WakeResult(success: true);
     }
 
+    // Unfiltered: a private person's agent must derive the same register on
+    // every device, whatever each one's private-entry display preference is.
+    final relationship = await _relationshipRepository
+        .getRelationshipByIdUnfiltered(relationshipId);
+    if (relationship == null || relationship.meta.deletedAt != null) {
+      // Terminal: the person is gone. Re-arming here would keep the orphaned
+      // agent waking forever when the teardown never ran — a delete through
+      // the generic journal path, or one whose best-effort agent leg failed.
+      // `RelationshipRuntimeMaintenance.beforeWakeScan` reaps the identity.
+      return const WakeResult(success: true);
+    }
+
     await _rearmCadence(agentId, now);
 
-    final relationship = await _relationshipRepository.getRelationshipById(
-      relationshipId,
-    );
-    if (relationship == null ||
-        relationship.meta.deletedAt != null ||
-        !relationship.data.important ||
+    if (!relationship.data.important ||
         relationship.data.status is! RelationshipActive) {
       // Not tracked: `important` is the single consent switch for
       // proactive behavior, and dormant/archived people are deliberately
@@ -106,21 +116,100 @@ class RelationshipAgentPhaseA {
       now: now,
     );
 
+    // The briefing is stale when evidence arrived after it was written —
+    // one of the escalation facts (ADR 0059 Decision 2: "check-in saved
+    // since last report"). Per-episode idempotence bounds this to one
+    // briefing per due day: each check-in moves the due day, minting a
+    // fresh episode.
+    final report = await _repository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
+    final reportStale =
+        derivation.lastCheckInAt != null &&
+        (report == null || derivation.lastCheckInAt!.isAfter(report.createdAt));
+
     await _syncService.runInTransaction(() async {
+      await _sweepNudges(agentId, derivation, now);
       await _upsertRegister(
         agentId: agentId,
         relationshipId: relationshipId,
         derivation: derivation,
         now: now,
       );
-      if (derivation.status == RelationshipCadenceStatus.due &&
-          derivation.previousStatus != RelationshipCadenceStatus.due) {
-        final armed = await _armEscalation(agentId, now, derivation);
+      final newlyDue =
+          derivation.status == RelationshipCadenceStatus.due &&
+          derivation.previousStatus != RelationshipCadenceStatus.due;
+      if (newlyDue) {
+        // Per-episode idempotence is the deliberate anti-nag ceiling
+        // (ADR 0039): one escalation — one briefing, at most one banner —
+        // per due day. An ignored banner expires and the agent stays quiet
+        // until a check-in moves the due day and mints a fresh episode.
+        final armed = await _armEscalation(
+          relationshipEscalationWake(agentId, derivation, updatedAt: now),
+        );
+        if (armed) _onEscalationArmed?.call();
+      } else if (reportStale) {
+        // A lapse escalation regenerates the briefing anyway, so the
+        // refresh episode arms only when no lapse is arming this tick. Its
+        // own episode key: consuming the lapse key early would let
+        // per-episode idempotence suppress the real lapse escalation.
+        final armed = await _armEscalation(
+          relationshipReportRefreshEscalationWake(
+            agentId,
+            derivation,
+            updatedAt: now,
+          ),
+        );
         if (armed) _onEscalationArmed?.call();
       }
     });
 
     return const WakeResult(success: true);
+  }
+
+  /// Deterministic banner maintenance (the goal Phase A sweep, ADR 0055):
+  /// an active banner past its staleAt is terminally EXPIRED (the
+  /// render-side filter already hides it, but the row must record the
+  /// clock's verdict or every later wake re-reads it as live), and when
+  /// the cadence is satisfied again — a check-in landed — the agent
+  /// RETIRES its still-active banners rather than letting an obsolete
+  /// "check in" chide run out its deadline. Idempotent; read and write in
+  /// the caller's transaction so a concurrent dismissal is never clobbered.
+  Future<void> _sweepNudges(
+    String agentId,
+    RelationshipCadenceDerivation derivation,
+    DateTime now,
+  ) async {
+    final nudges = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.relationshipNudge,
+    )).whereType<RelationshipNudgeEntity>();
+    for (final nudge in nudges) {
+      if (nudge.deletedAt != null || nudge.status != NudgeStatus.active) {
+        continue;
+      }
+      final staleAt = nudge.staleAt;
+      if (staleAt != null && !staleAt.isAfter(now)) {
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: NudgeStatus.expired,
+            // The deterministic deadline, not this device's wall clock —
+            // concurrent sweeps converge (terminal dominance does the rest).
+            expiredAt: staleAt.toUtc(),
+            updatedAt: now,
+          ),
+        );
+      } else if (derivation.status == RelationshipCadenceStatus.ok) {
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: NudgeStatus.retired,
+            retiredAt: now.toUtc(),
+            updatedAt: now,
+          ),
+        );
+      }
+    }
   }
 
   /// The relationship this agent watches, via its `agentRelationship` link.
@@ -138,6 +227,9 @@ class RelationshipAgentPhaseA {
   /// check-in still resets the cadence, both because hiding an entry is a
   /// display preference (not a request to be nagged) and because devices
   /// with different display settings must converge on the same register.
+  ///
+  /// Every derived day is a UTC calendar day for the same convergence
+  /// reason — see the comment on the due-day arithmetic below.
   Future<RelationshipCadenceDerivation> deriveCadenceFacts({
     required String agentId,
     required RelationshipEntry relationship,
@@ -159,16 +251,22 @@ class RelationshipAgentPhaseA {
     final cadenceDays =
         relationship.data.checkInCadenceDays ?? relationshipDefaultCadenceDays;
 
-    // Calendar-component arithmetic, never Duration math: a cadence
-    // crossing a DST transition must lapse on the intended local DAY.
-    final local = referenceAt.toLocal();
-    final dueDayLocal = DateTime(
-      local.year,
-      local.month,
-      local.day + cadenceDays,
+    // Calendar-component arithmetic in UTC — never Duration math (which
+    // would drift the lapse day across a DST transition) and never the
+    // device's local calendar. The due day IS the episode key: two devices
+    // in different timezones deriving it from their own calendars would
+    // disagree, and the disagreement is not cosmetic — `_upsertRegister`
+    // would see a changed `dueAt` on every sync and the two would rewrite
+    // the register forever, while `relationshipEscalationWake` would mint
+    // one episode per timezone and pay for the same lapse twice. UTC has no
+    // DST, so `day + cadenceDays` is exactly that many days later.
+    final referenceDayUtc = GoalWindow.dayUtc(referenceAt.toUtc());
+    final dueDayUtc = DateTime.utc(
+      referenceDayUtc.year,
+      referenceDayUtc.month,
+      referenceDayUtc.day + cadenceDays,
     );
-    final dueDayUtc = GoalWindow.dayUtc(dueDayLocal);
-    final status = GoalWindow.dayUtc(now.toLocal()).isBefore(dueDayUtc)
+    final status = GoalWindow.dayUtc(now.toUtc()).isBefore(dueDayUtc)
         ? RelationshipCadenceStatus.ok
         : RelationshipCadenceStatus.due;
 
@@ -182,7 +280,7 @@ class RelationshipAgentPhaseA {
       referenceAt: referenceAt,
       lastCheckInAt: lastCheckInAt,
       dueDayUtc: dueDayUtc,
-      dueDayKey: const GoalWindow.day().periodKey(dueDayLocal),
+      dueDayKey: const GoalWindow.day().periodKey(dueDayUtc),
     );
   }
 
@@ -243,22 +341,13 @@ class RelationshipAgentPhaseA {
     await _syncService.upsertEntity(next);
   }
 
-  /// Escalation is a scheduled wake due immediately: the manager's lease
+  /// An escalation is a scheduled wake due immediately: the manager's lease
   /// election guarantees exactly one device runs it, and an armer that
   /// dies is picked up remotely within the hourly poll (ADR 0054). The
   /// per-episode id makes arming idempotent — a consumed episode is never
-  /// re-armed by a later tick of the same due day. Returns whether a new
+  /// re-armed by a later tick of the same episode. Returns whether a new
   /// record was written.
-  Future<bool> _armEscalation(
-    String agentId,
-    DateTime now,
-    RelationshipCadenceDerivation derivation,
-  ) async {
-    final wake = relationshipEscalationWake(
-      agentId,
-      derivation,
-      updatedAt: now,
-    );
+  Future<bool> _armEscalation(AgentDomainEntity wake) async {
     if (await _repository.getEntity(wake.id) != null) return false;
     await _syncService.upsertEntity(wake);
     return true;
@@ -290,15 +379,18 @@ AgentDomainEntity relationshipCadenceWake(String agentId, DateTime now) {
   );
 }
 
-/// An escalation wake due immediately, scoped to its cadence episode.
+/// The cadence-lapse escalation wake, due immediately, scoped to its
+/// episode.
 ///
 /// The deadline is DERIVED FROM THE EPISODE (the due day's UTC key), not
 /// from the arming instant: every device arming the same logical
 /// `(agentId, dueDayKey)` escalation must write an identical deadline, or
 /// the scheduled-wake resolver would let a partitioned peer's later copy
 /// resurrect an escalation another device already consumed (the goal
-/// precedent). The due day is never in the future when this is armed, so
-/// the wake is immediately due.
+/// precedent). Armed only on the newly-due transition, so the due day is
+/// never in the future and the wake is immediately due — a stale briefing
+/// inside the cadence arms [relationshipReportRefreshEscalationWake]
+/// instead.
 AgentDomainEntity relationshipEscalationWake(
   String agentId,
   RelationshipCadenceDerivation derivation, {
@@ -326,3 +418,50 @@ AgentDomainEntity relationshipEscalationWake(
       relationshipEscalationBaselineToken(derivation.previousStatus!.name),
   ],
 );
+
+/// The report-refresh escalation wake — armed when a check-in landed after
+/// the current briefing was written (ADR 0059 Decision 2's "check-in saved
+/// since the last report" fact), due immediately.
+///
+/// The deadline is the newest check-in's own instant: synced journal
+/// truth, so every device arming for the same evidence writes an
+/// identical, already-past deadline (the same resolver argument as the
+/// lapse episode's due-day deadline). The episode key is scoped to that
+/// check-in's UTC day, bounding the spend to one refresh per day of new
+/// evidence; a same-day follow-up check-in re-derives into the consumed
+/// episode and waits for the next day or the next lapse.
+AgentDomainEntity relationshipReportRefreshEscalationWake(
+  String agentId,
+  RelationshipCadenceDerivation derivation, {
+  required DateTime updatedAt,
+}) {
+  final lastCheckInAt = derivation.lastCheckInAt!;
+  final workspaceKey = relationshipReportRefreshEscalationWorkspaceKey(
+    _utcDayKey(lastCheckInAt),
+  );
+  return AgentDomainEntity.scheduledWake(
+    id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
+    agentId: agentId,
+    scheduledAt: lastCheckInAt.toUtc(),
+    status: ScheduledWakeStatus.pending,
+    reason: WakeReason.scheduled.name,
+    updatedAt: updatedAt,
+    vectorClock: null,
+    workspaceKey: workspaceKey,
+    triggerTokens: [
+      workspaceKey,
+      if (derivation.previousStatus != null)
+        relationshipEscalationBaselineToken(derivation.previousStatus!.name),
+    ],
+  );
+}
+
+/// The UTC calendar day of [instant] as a `yyyy-MM-dd` key — deliberately
+/// UTC, never local: the key must be identical on devices in different
+/// timezones.
+String _utcDayKey(DateTime instant) {
+  final utc = instant.toUtc();
+  final month = utc.month.toString().padLeft(2, '0');
+  final day = utc.day.toString().padLeft(2, '0');
+  return '${utc.year}-$month-$day';
+}

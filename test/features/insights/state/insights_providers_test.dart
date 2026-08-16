@@ -420,8 +420,8 @@ void main() {
       // Switch to the (Monday-default) current week first; the default is now
       // month-to-date, but this exercises week stepping.
       // ignore: cascade_invocations
-      notifier.selectUnit(InsightsPeriodUnit.week);
-      notifier.step(-1);
+      notifier..selectUnit(InsightsPeriodUnit.week)
+      ..step(-1);
       expect(
         dayStart(
           container.read(insightsRangeControllerProvider).range.startDay,
