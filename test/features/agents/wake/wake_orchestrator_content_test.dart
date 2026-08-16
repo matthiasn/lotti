@@ -847,6 +847,11 @@ void main() {
         'wakeRunMaxDuration fires an automatic abort when the executor stalls',
         () {
           fakeAsync((async) {
+            expect(
+              WakeOrchestrator.wakeRunMaxDuration,
+              const Duration(minutes: 10),
+            );
+
             final gate = Completer<Map<String, VectorClock>?>();
             orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) =>
                 gate.future;

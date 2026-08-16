@@ -168,9 +168,13 @@ recovery-window fabrication against the committed regression check. The scenario
 catalog, objective classifier, and this run record are the reproducible source
 of truth committed to the repository.
 
-## Cost
+## Cost and latency
 
-Cost is a first-class output, captured per case from day one:
+Cost and wall-clock latency are first-class outputs, captured per case:
+
+- Each result records `latencyMs` across the full scenario, including every
+  follow-up turn. The merged leaderboard reports mean and p95 latency per model
+  so uniformly slow inference can be distinguished from a long tail.
 
 - The live test registers `AiInteractionCaptureTestBench`, and the runner
   attributes every turn to a per-case wake-run key, so Melious billing

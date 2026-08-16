@@ -396,7 +396,7 @@ class WakeOrchestrator with AgentErrorLogging {
   /// in the background (Dart cannot cancel arbitrary futures), but its
   /// result is ignored and its mutations are treated like any other DB
   /// write — i.e. they may surface as new notifications.
-  static const wakeRunMaxDuration = Duration(minutes: 2);
+  static const wakeRunMaxDuration = Duration(minutes: 10);
 
   /// Hard cap for the pre-wake [onWakeStart] hook (fork healing). The hook runs
   /// before the executor's [wakeRunMaxDuration] race is armed, so it gets its
