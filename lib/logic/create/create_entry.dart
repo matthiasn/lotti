@@ -63,9 +63,11 @@ Future<JournalEntity?> createChecklist({
 /// Category, labels, status, and [title] are part of the initial entity write.
 /// An explicit [projectId] is validated before that write, its category is
 /// authoritative, and the project is linked before this future completes.
-/// Invalid projects or failed explicit links return `null`. Without these
-/// optional values, the existing open, uncategorized, unlabeled, project-free
-/// defaults are kept.
+/// Invalid projects return `null` before task persistence. A failed explicit
+/// link soft-deletes the just-created task before returning `null`, so a
+/// project race cannot leave an orphaned blank task. Without these optional
+/// values, the existing open, uncategorized, unlabeled, project-free defaults
+/// are kept.
 ///
 /// [title] defaults to empty, which is what every caller that opens the new
 /// task for editing wants. Callers that already know the title — the link
@@ -168,7 +170,10 @@ Future<Task?> createTask({
       projectId: projectId,
       taskId: task.meta.id,
     );
-    if (!assigned) return null;
+    if (!assigned) {
+      await _softDeleteFailedProjectTask(task);
+      return null;
+    }
   } else if (task != null && (linkedId ?? inheritContextFrom) != null) {
     // Inherit project from the parent task when no explicit project was
     // requested by the creation context.
@@ -204,6 +209,17 @@ Future<Task?> createTask({
   }
 
   return task;
+}
+
+Future<void> _softDeleteFailedProjectTask(Task task) async {
+  final persistenceLogic = getIt<PersistenceLogic>();
+  final deletedMetadata = await persistenceLogic.updateMetadata(
+    task.meta,
+    deletedAt: DateTime.now(),
+  );
+  await persistenceLogic.updateDbEntity(
+    task.copyWith(meta: deletedMetadata),
+  );
 }
 
 /// Copies the project assignment from [linkedId] to [newTaskId] via

@@ -382,6 +382,7 @@ void main() {
         ];
 
         for (final scenario in scenarios) {
+          String? createdTaskId;
           final project = TestProjectFactory.create(
             id: scenario.projectId,
             categoryId: 'project-category',
@@ -393,11 +394,13 @@ void main() {
             projectId: scenario.projectId,
             taskId: any(named: 'taskId'),
           );
-          if (scenario.throws) {
-            when(linkCall).thenThrow(StateError('project assignment failed'));
-          } else {
-            when(linkCall).thenAnswer((_) async => false);
-          }
+          when(linkCall).thenAnswer((invocation) async {
+            createdTaskId = invocation.namedArguments[#taskId]! as String;
+            if (scenario.throws) {
+              throw StateError('project assignment failed');
+            }
+            return false;
+          });
 
           expect(
             await createTask(projectId: scenario.projectId),
@@ -410,6 +413,12 @@ void main() {
               taskId: any(named: 'taskId'),
             ),
           ).called(1);
+          expect(createdTaskId, isNotNull);
+          expect(
+            await journalDb.journalEntityById(createdTaskId!),
+            isNull,
+            reason: 'a failed explicit link must not leave an orphaned task',
+          );
         }
       },
     );

@@ -286,6 +286,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
         bottom: false,
         child: visibleGroupsAsync.when(
           skipLoadingOnReload: true,
+          skipError: true,
           data: (groups) => ValueListenableBuilder<String?>(
             valueListenable: isDesktopLayout(context)
                 ? getIt<NavService>().desktopSelectedProjectId

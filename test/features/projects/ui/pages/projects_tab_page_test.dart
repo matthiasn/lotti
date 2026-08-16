@@ -790,6 +790,37 @@ void main() {
     expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
   });
 
+  testWidgets('keeps established projects visible when a reload fails', (
+    tester,
+  ) async {
+    final groups = [buildWorkGroup()];
+    final failedReload =
+        AsyncError<List<ProjectCategoryGroup>>(
+          Exception('background refresh failed'),
+          StackTrace.empty,
+        ).copyWithPrevious(
+          AsyncData(groups),
+          isRefresh: false,
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const ProjectsTabPage(),
+        theme: withOverrides(ThemeData.dark(useMaterial3: true)),
+        overrides: [
+          projectsOverviewProvider.overrideWith(
+            (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
+          ),
+          visibleProjectGroupsProvider.overrideWith((ref) => failedReload),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Device Sync'), findsOneWidget);
+    expect(find.text('Error'), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+  });
+
   testWidgets('shows localized error message on failure', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(

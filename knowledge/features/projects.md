@@ -166,7 +166,9 @@ matches the same one-liner text that the list displays. Background enrichment
 reloads preserve the last rendered snapshot, category-filter metadata, and
 create affordance until the replacement is ready. If agent enrichment fails,
 the replacement snapshot retains the last resolved one-liner for each surviving
-project instead of dropping visible subtitles and their searchable text.
+project instead of dropping visible subtitles and their searchable text. If an
+upstream repository refresh fails after data was rendered, the tab keeps that
+previous list instead of replacing it with a full-page error.
 
 The default `Current` scope keeps open, active, monitoring and on-hold work in
 view; `All` restores completed and archived projects. Projects sort by
@@ -196,7 +198,9 @@ content.
 Project detail actions preserve workspace continuity. Edit carries an explicit
 return path back to the selected project, and Add task creates a project-linked
 task with the project's privacy, serializes concurrent taps and project saves,
-awaits the category's default task-agent assignment, then opens the task.
+awaits the category's default task-agent assignment, then opens the task. If
+the explicit project link loses a race with sync or otherwise fails, creation
+soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
 project and invalidates pending edits when sync reports that the project was
 deleted. Project deletion aborts any running wake and retires its project agent
