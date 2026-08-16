@@ -208,13 +208,14 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     };
 
     // The summary's done set mirrors each group's OWN semantics: goal-owned
-    // habits count success-only (their rows stay due after a skip), while
-    // ungrouped habits count the legacy handled set (their rows file a skip
-    // under Done) — otherwise a skipped orphan reads "1 to go" above a row
-    // that already shows as handled.
+    // habits count success-only (their rows stay due after a skip or fail),
+    // while ungrouped habits count the FULL legacy handled set —
+    // `completedToday`, which includes skips AND fails, exactly the records
+    // that file an orphan row under Done — otherwise a skipped or failed
+    // orphan reads "1 to go" above a row that already shows as handled.
     final summaryDoneIds = {
       ...successToday,
-      for (final id in state.successfulToday)
+      for (final id in state.completedToday)
         if (!claimedHabitIds.contains(id)) id,
     };
 

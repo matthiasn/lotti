@@ -548,15 +548,15 @@ void main() {
   });
 
   testWidgets("the summary's done set mirrors each group's semantics: a "
-      'skipped orphan counts as handled, a skipped goal habit stays to-go', (
-    tester,
-  ) async {
-    // Both habits skipped today (legacy handled, success-only empty).
-    // habitFlossing is goal-claimed; habitFlossingDueLater is ungrouped.
+      'skipped or FAILED orphan counts as handled, a skipped goal habit '
+      'stays to-go', (tester) async {
+    // habitFlossing (goal-claimed) was skipped; habitFlossingDueLater
+    // (ungrouped) was FAILED — in completedToday but not successfulToday.
     final state =
         baseState(
-          successfulToday: {habitFlossing.id, habitFlossingDueLater.id},
+          successfulToday: {habitFlossing.id},
         ).copyWith(
+          completedToday: {habitFlossing.id, habitFlossingDueLater.id},
           completedAll: [habitFlossing, habitFlossingDueLater],
         );
     await pump(tester, state);
@@ -564,7 +564,9 @@ void main() {
     final summaryCard = tester.widget<HabitsSummaryCard>(
       find.byType(HabitsSummaryCard),
     );
+    // The failed orphan is handled (its row files under Done)…
     expect(summaryCard.doneHabitIds, contains(habitFlossingDueLater.id));
+    // …while the skipped goal habit stays to-go (its row stays due).
     expect(
       summaryCard.doneHabitIds,
       isNot(contains(habitFlossing.id)),
