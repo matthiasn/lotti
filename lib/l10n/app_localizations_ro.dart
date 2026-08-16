@@ -13235,4 +13235,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get goalDetailUpdateFailed => 'Ultima actualizare a eșuat';
 }

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -52,6 +53,30 @@ Stream<bool> agentIsRunningInWorkspace(
       runner.workspaceKeyFor(agentId) == workspaceKey;
   yield matches();
   yield* runner.runningAgentIds.map((_) => matches()).distinct();
+}
+
+/// The latest decisive wake outcome for one agent: failed or completed.
+///
+/// Filters the orchestrator's [WakeOrchestrator.runCompletions] broadcast to
+/// this agent's runs, dropping aborted events — a superseded wake (pressing
+/// "Update now" twice) is not a failure and must not flash an error over an
+/// attempt that is still in flight. The last emitted value is therefore the
+/// truth a card needs for failure feedback: a `failed` event surfaces the
+/// error, and the next `completed` event clears it. In-process only, like
+/// the stream it wraps: outcomes from before an app restart are not
+/// replayed (the durable record is the `wake_run_log` row).
+final StreamProviderFamily<WakeRunCompletion, String> agentWakeOutcomeProvider =
+    StreamProvider.autoDispose.family<WakeRunCompletion, String>(
+      agentWakeOutcome,
+      name: 'agentWakeOutcomeProvider',
+    );
+Stream<WakeRunCompletion> agentWakeOutcome(Ref ref, String agentId) {
+  final orchestrator = ref.watch(wakeOrchestratorProvider);
+  return orchestrator.runCompletions.where(
+    (completion) =>
+        completion.agentId == agentId &&
+        completion.status != WakeRunStatus.aborted,
+  );
 }
 
 /// Stream that emits when a specific agent's data changes (from sync or local

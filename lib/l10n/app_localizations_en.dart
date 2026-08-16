@@ -12891,6 +12891,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get goalDetailUpdateFailed => 'Last update failed';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

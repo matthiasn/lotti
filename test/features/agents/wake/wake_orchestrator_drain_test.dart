@@ -1633,6 +1633,9 @@ void main() {
             expect(received, isNotNull);
             expect(received!.runKey, runKey);
             expect(received!.status, WakeRunStatus.completed);
+            // Run keys are opaque hashes, so agent-scoped listeners (the
+            // read card's failure line) depend on the event naming its agent.
+            expect(received!.agentId, 'agent-1');
             expect(received!.error, isNull);
           });
         },
@@ -1658,6 +1661,7 @@ void main() {
           async.flushMicrotasks();
 
           expect(received!.status, WakeRunStatus.failed);
+          expect(received!.agentId, 'agent-1');
           expect(received!.error, thrown);
         });
       });

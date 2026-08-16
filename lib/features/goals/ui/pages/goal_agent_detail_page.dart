@@ -14,6 +14,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -1135,6 +1137,23 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     );
   }
 
+  /// The failure's own words, minus executor wrapping. The provider error
+  /// ("Insufficient balance…", a timeout, an HTTP status) is the actionable
+  /// part — a bare "failed" would leave the user exactly as stranded as the
+  /// silence this line replaces.
+  static String _failureReason(WakeRunCompletion completion) {
+    final raw = completion.error?.toString().trim();
+    if (raw == null || raw.isEmpty) return '';
+    const wrappers = ['Bad state: ', 'StateError: ', 'Exception: '];
+    var reason = raw;
+    for (final wrapper in wrappers) {
+      if (reason.startsWith(wrapper)) {
+        reason = reason.substring(wrapper.length);
+      }
+    }
+    return reason;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -1163,6 +1182,18 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
 
     final isRefreshing =
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
+    // The last decisive wake outcome, so a refresh that DIED (provider out
+    // of credits, network down) tells the user instead of leaving a dead
+    // button under an eternal "Out of date". A later successful update
+    // emits a completed outcome and clears the line; while a retry is in
+    // flight the running state takes the stage instead.
+    final lastOutcome = ref
+        .watch(agentWakeOutcomeProvider(widget.agentId))
+        .value;
+    final updateFailure =
+        !isRefreshing && lastOutcome?.status == WakeRunStatus.failed
+        ? lastOutcome
+        : null;
     final nextWakeAt = widget.agentState?.nextWakeAt;
     final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
       widget.identity,
@@ -1235,6 +1266,38 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                   // spends it — the same footer position as the task card's
                   // consumption pills.
                   GoalAgentLifetimePills(agentId: widget.agentId),
+                  if (updateFailure != null) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    Row(
+                      key: const ValueKey('goal-agent-update-failed'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          size:
+                              tokens.typography.styles.body.bodySmall.fontSize,
+                          color: tokens.colors.alert.error.ink,
+                        ),
+                        SizedBox(width: tokens.spacing.step1),
+                        Expanded(
+                          child: Text(
+                            switch (_failureReason(updateFailure)) {
+                              '' => messages.goalDetailUpdateFailed,
+                              final reason =>
+                                '${messages.goalDetailUpdateFailed} — '
+                                    '$reason',
+                            },
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: tokens.colors.alert.error.ink,
+                                ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   if (widget.canRefresh) ...[
                     SizedBox(height: tokens.spacing.step3),
                     // The same reload affordances as the task agent section:

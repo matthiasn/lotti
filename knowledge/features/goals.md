@@ -699,7 +699,12 @@ flowchart TD
   shared `aiCardDecoration` chrome and `TldrHeader`, the shared
   `AgentAutomationRow` reload affordances, and the goal's cumulative
   inference cost pills (`GoalAgentLifetimePills`) in its footer — one
-  panel language, changed in one place for both. The page has ONE time
+  panel language, changed in one place for both. A refresh that DIES
+  (provider out of credits, network down) says so on the card: the card
+  watches `agentWakeOutcomeProvider` and renders the last failed outcome's
+  reason in an error line above the automation row, cleared by the next
+  completed wake and hidden while a retry is in flight — fourteen silent
+  429s once read as a dead button. The page has ONE time
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which

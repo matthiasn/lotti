@@ -2877,6 +2877,7 @@
   "goalDetailStatementLabel": "Jouw doel",
   "goalDetailThisWeekTitle": "Deze week",
   "goalDetailTimelineTitle": "Interacties",
+  "goalDetailUpdateFailed": "Laatste update mislukt",
   "goalDetailWatchingSignals": "De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.",
   "goalDimensionCategoryTimeSource": "Bijgehouden categorietijd",
   "goalDimensionHabitReading": "{currentCount} van {targetCount} in dit venster",

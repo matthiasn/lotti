@@ -22,6 +22,8 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -228,6 +230,95 @@ void main() {
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
+  });
+
+  group('update-failure feedback on the read card', () {
+    Future<void> pump(
+      WidgetTester tester, {
+      required WakeRunCompletion outcome,
+    }) => tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          agentWakeOutcomeProvider(
+            'goal-1',
+          ).overrideWith((ref) => Stream.value(outcome)),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+
+    testWidgets('a failed update surfaces its reason on the read card', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        outcome: WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          error: StateError(
+            'MeliousInferenceException (HTTP 429): Insufficient balance '
+            'for request. Required: 74, Available: 0',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Fourteen silent failures cost a debugging session: the card must
+      // SAY the update died, and say why in the provider's own words (the
+      // "Bad state: " executor wrapping stripped).
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Last update failed'), findsOneWidget);
+      expect(find.textContaining('Insufficient balance'), findsOneWidget);
+      expect(find.textContaining('Bad state'), findsNothing);
+    });
+
+    testWidgets('a successful update surfaces nothing — completed outcomes '
+        'clear the failure line', (tester) async {
+      await pump(
+        tester,
+        outcome: const WakeRunCompletion(
+          runKey: 'run-ok',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('goal-agent-update-failed')),
+        findsNothing,
+      );
+    });
   });
 
   testWidgets('a standing report renders its one-liner instead of the '

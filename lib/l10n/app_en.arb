@@ -3549,6 +3549,10 @@
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
+  "goalDetailUpdateFailed": "Last update failed",
+  "@goalDetailUpdateFailed": {
+    "description": "Error line on the goal read card when the last report update wake failed"
+  },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",

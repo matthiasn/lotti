@@ -9,6 +9,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
+    show WakeRunCompletion;
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -422,6 +424,76 @@ void main() {
       addTearDown(container.dispose);
       return container;
     }
+
+    group('agentWakeOutcomeProvider', () {
+      test("surfaces only THIS agent's decisive outcomes — other agents are "
+          'invisible and aborted (superseded) runs never overwrite a '
+          'surfaced failure', () async {
+        final completions = StreamController<WakeRunCompletion>.broadcast();
+        addTearDown(completions.close);
+        final orchestrator = MockWakeOrchestrator();
+        when(
+          () => orchestrator.runCompletions,
+        ).thenAnswer((_) => completions.stream);
+        final container = ProviderContainer(
+          overrides: [
+            wakeOrchestratorProvider.overrideWithValue(orchestrator),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final seen = <WakeRunCompletion>[];
+        container.listen(
+          agentWakeOutcomeProvider('goal-1'),
+          (_, next) {
+            if (next.value case final value?) seen.add(value);
+          },
+          fireImmediately: true,
+        );
+        // A broadcast stream drops events sent before the provider's
+        // subscription lands, so give the event loop a real turn.
+        await pumpEventQueue();
+
+        final failure = WakeRunCompletion(
+          runKey: 'run-fail',
+          agentId: 'goal-1',
+          status: WakeRunStatus.failed,
+          error: StateError('Insufficient balance for request'),
+        );
+        completions
+          // Another agent's outcome: filtered out.
+          ..add(
+            const WakeRunCompletion(
+              runKey: 'run-other',
+              agentId: 'goal-2',
+              status: WakeRunStatus.completed,
+            ),
+          )
+          // This agent fails: surfaces.
+          ..add(failure)
+          // Pressing Update again supersedes the queued retry: aborted is
+          // not a decision, so the failure must stay the latest outcome.
+          ..add(
+            const WakeRunCompletion(
+              runKey: 'run-superseded',
+              agentId: 'goal-1',
+              status: WakeRunStatus.aborted,
+            ),
+          );
+        await pumpEventQueue();
+        expect(seen, [failure]);
+
+        // The retry lands: completed replaces the failure, clearing it.
+        const success = WakeRunCompletion(
+          runKey: 'run-ok',
+          agentId: 'goal-1',
+          status: WakeRunStatus.completed,
+        );
+        completions.add(success);
+        await pumpEventQueue();
+        expect(seen, [failure, success]);
+      });
+    });
 
     group('agentRecentMessagesProvider', () {
       test('returns messages in DB order (newest-first)', () async {

@@ -13128,4 +13128,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get goalDetailUpdateFailed => 'Poslední aktualizace se nezdařila';
 }

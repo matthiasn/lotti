@@ -157,12 +157,19 @@ class WakeRunCompletion {
   const WakeRunCompletion({
     required this.runKey,
     required this.status,
+    this.agentId,
     this.error,
   });
 
   /// Deterministic run key of the finished wake (matches the value returned
   /// by [WakeOrchestrator.enqueueManualWake]).
   final String runKey;
+
+  /// The agent the finished wake belonged to. Run keys are opaque hashes, so
+  /// agent-scoped listeners (e.g. a card surfacing the last update failure)
+  /// need the id carried on the event itself. Always set by the
+  /// orchestrator; nullable only for hand-built fixtures.
+  final String? agentId;
 
   /// Terminal status: [WakeRunStatus.completed], [WakeRunStatus.failed], or
   /// [WakeRunStatus.aborted].
@@ -322,6 +329,7 @@ class WakeOrchestrator with AgentErrorLogging {
     _runCompletions.add(
       WakeRunCompletion(
         runKey: job.runKey,
+        agentId: job.agentId,
         status: status,
         error: error,
       ),

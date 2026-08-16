@@ -2621,6 +2621,7 @@
   "goalDetailStatementLabel": "Obiectivul dvs.",
   "goalDetailThisWeekTitle": "Săptămâna aceasta",
   "goalDetailTimelineTitle": "Interacțiuni",
+  "goalDetailUpdateFailed": "Ultima actualizare a eșuat",
   "goalDetailWatchingSignals": "Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.",
   "goalDimensionCategoryTimeSource": "Timp de categorie urmărit",
   "goalDimensionHabitReading": "{currentCount} din {targetCount} această fereastră",

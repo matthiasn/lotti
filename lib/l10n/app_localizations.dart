@@ -21890,6 +21890,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// Error line on the goal read card when the last report update wake failed
+  ///
+  /// In en, this message translates to:
+  /// **'Last update failed'**
+  String get goalDetailUpdateFailed;
 }
 
 class _AppLocalizationsDelegate

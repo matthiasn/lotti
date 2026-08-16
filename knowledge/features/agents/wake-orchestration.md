@@ -282,12 +282,18 @@ window.
 
 `runCompletions` is a broadcast `Stream<WakeRunCompletion>` — one event per
 finished wake (`completed` / `failed` / `aborted`, carrying the error object for
-failures), keyed by the run key `enqueueManualWake` returns.
+failures), keyed by the run key `enqueueManualWake` returns and naming the
+`agentId` the run belonged to (run keys are opaque hashes, so agent-scoped
+listeners cannot recover it from the key).
 
 It is **in-process only, never persisted**. Callers that enqueued a wake and
 need its precise outcome without polling — the Daily OS durable
 `draftPlan`/`refinePlan` job executor (ADR 0032 phase 1) — subscribe *before*
-enqueueing and filter on the returned run key. The durable record of the same
+enqueueing and filter on the returned run key. Agent-scoped consumers use
+`agentWakeOutcomeProvider` instead, which filters the stream to one agent's
+decisive outcomes (`failed` / `completed`, dropping `aborted` so a superseded
+retry never overwrites a surfaced failure) — the goal read card's
+update-failure line is its first consumer. The durable record of the same
 outcome remains the `wake_run_log` row.
 
 # Deferred deadlines are device-local

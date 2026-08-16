@@ -13064,4 +13064,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get goalDetailUpdateFailed => 'Letzte Aktualisierung fehlgeschlagen';
 }

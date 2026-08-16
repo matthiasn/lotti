@@ -2877,6 +2877,7 @@
   "goalDetailStatementLabel": "Sua meta",
   "goalDetailThisWeekTitle": "Esta semana",
   "goalDetailTimelineTitle": "Interações",
+  "goalDetailUpdateFailed": "A última atualização falhou",
   "goalDetailWatchingSignals": "Os sinais acima são atualizados em segundos. O teu agente vê apenas os sinais indicados aqui.",
   "goalDimensionCategoryTimeSource": "Tempo da categoria rastreada",
   "goalDimensionHabitReading": "{currentCount} de {targetCount} nesta janela",

@@ -13099,4 +13099,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get goalDetailUpdateFailed => 'A última atualização falhou';
 }

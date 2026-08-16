@@ -2621,6 +2621,7 @@
   "goalDetailStatementLabel": "Dein Ziel",
   "goalDetailThisWeekTitle": "Diese Woche",
   "goalDetailTimelineTitle": "Interaktionen",
+  "goalDetailUpdateFailed": "Letzte Aktualisierung fehlgeschlagen",
   "goalDetailWatchingSignals": "Die oben aufgeführten Signale werden innerhalb von Sekunden aktualisiert. Dein Agent sieht nur die hier aufgeführten Signale.",
   "goalDimensionCategoryTimeSource": "Verfolgte Kategoriezeit",
   "goalDimensionHabitReading": "{currentCount} von {targetCount} in diesem Zeitraum",

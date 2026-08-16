@@ -2878,6 +2878,7 @@
   "goalDetailStatementLabel": "Dit mål",
   "goalDetailThisWeekTitle": "Denne uge",
   "goalDetailTimelineTitle": "Interaktioner",
+  "goalDetailUpdateFailed": "Seneste opdatering mislykkedes",
   "goalDetailWatchingSignals": "Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.",
   "goalDimensionCategoryTimeSource": "Sporet kategoritid",
   "goalDimensionHabitReading": "{currentCount} af {targetCount} dette vindue",

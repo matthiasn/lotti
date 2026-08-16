@@ -13152,4 +13152,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get goalDetailUpdateFailed => 'Ultimo aggiornamento non riuscito';
 }
