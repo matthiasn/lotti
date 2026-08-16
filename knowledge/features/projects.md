@@ -228,7 +228,9 @@ project; title and description controllers synchronize independently, so a
 dirty description does not leave a clean, remotely updated title stale. Save
 locks Cancel, Back and system-back until persistence settles, preventing a
 discarded route from racing the still-running write. The controller invalidates
-pending edits when sync reports that the project was deleted. The project
+pending edits when sync reports that the project was deleted. Description edits
+replace only `EntryText.plainText`, preserving any markdown, rich-text and
+geolocation payload attached to the project. The project
 lookup is applied before task rollups are loaded, so a
 slow or failed task query cannot delay tombstone handling. Overlapping reloads
 are generation-guarded, so an older read that finishes after a newer deletion

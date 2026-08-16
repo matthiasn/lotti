@@ -213,8 +213,11 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   /// Updates the user-authored project description.
   void updateDescription(String description) {
     if (_pendingProject == null) return;
+    final existingText = _pendingProject!.entryText;
     _pendingProject = _pendingProject!.copyWith(
-      entryText: EntryText(plainText: description),
+      entryText:
+          existingText?.copyWith(plainText: description) ??
+          EntryText(plainText: description),
     );
     state = state.copyWith(
       project: _pendingProject,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -115,6 +116,40 @@ void main() {
       expect(state.project?.entryText?.plainText, 'A clear project brief.');
       expect(notifier.isTitleDirty, isFalse);
       expect(notifier.isDescriptionDirty, isTrue);
+    });
+
+    test('updateDescription preserves ancillary entry text', () async {
+      final geolocation = Geolocation(
+        createdAt: DateTime(2026, 8, 16),
+        latitude: 52.52,
+        longitude: 13.405,
+        geohashString: 'u33d',
+      );
+      final project = makeTestProject(id: projectId).copyWith(
+        entryText: EntryText(
+          plainText: 'Old description',
+          markdown: '**Old description**',
+          quill: '[{"insert":"Old description"}]',
+          geolocation: geolocation,
+        ),
+      );
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => project);
+      final container = await createLoadedContainer();
+
+      container
+          .read(projectDetailControllerProvider(projectId).notifier)
+          .updateDescription('Updated description');
+
+      final entryText = container
+          .read(projectDetailControllerProvider(projectId))
+          .project
+          ?.entryText;
+      expect(entryText?.plainText, 'Updated description');
+      expect(entryText?.markdown, '**Old description**');
+      expect(entryText?.quill, '[{"insert":"Old description"}]');
+      expect(entryText?.geolocation, geolocation);
     });
 
     test('updateTargetDate marks hasChanges true', () async {
