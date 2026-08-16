@@ -7,23 +7,33 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Modal content for selecting a project within a category.
+/// Modal content for selecting a privacy-compatible project within a category.
 class ProjectSelectionModalContent extends ConsumerWidget {
   const ProjectSelectionModalContent({
     required this.categoryId,
+    required this.taskIsPrivate,
     required this.onProjectSelected,
     this.currentProjectId,
     super.key,
   });
 
   final String categoryId;
+  final bool taskIsPrivate;
   final Future<void> Function(ProjectEntry? project) onProjectSelected;
   final String? currentProjectId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ProjectSelectionModalBody(
-      projectsAsync: ref.watch(projectsForCategoryProvider(categoryId)),
+      projectsAsync: ref
+          .watch(projectsForCategoryProvider(categoryId))
+          .whenData(
+            (projects) => projects
+                .where(
+                  (project) => (project.meta.private ?? false) == taskIsPrivate,
+                )
+                .toList(),
+          ),
       onProjectSelected: onProjectSelected,
       currentProjectId: currentProjectId,
     );

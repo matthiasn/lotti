@@ -76,7 +76,10 @@ between resolving a project for task creation and persisting its link: if sync
 changes project privacy in between, the link is rejected and the creation path
 soft-deletes the new task. Nullable privacy is normalized with `?? false`, so
 legacy `null` and explicit `false` are both public and remain link-compatible.
-A category can still move after linking, and that
+The task header filters its project picker to the same normalized privacy, so
+it does not offer a choice the repository must reject. Project-agent
+`create_task` calls pass the project's privacy into task creation before
+linking. A category can still move after linking, and that
 write is nowhere near the link, so the category rule has to be re-checked there
 too.
 

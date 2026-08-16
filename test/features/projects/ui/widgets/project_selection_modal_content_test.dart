@@ -30,6 +30,7 @@ void main() {
             builder: (_) => Scaffold(
               body: ProjectSelectionModalContent(
                 categoryId: categoryId,
+                taskIsPrivate: false,
                 onProjectSelected: onProjectSelected,
                 currentProjectId: currentProjectId,
               ),
