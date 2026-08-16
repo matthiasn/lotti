@@ -515,6 +515,7 @@ void main() {
           final finalPolicyGate = Completer<AgentDomainEntity?>();
           final replacementExecutionGate =
               Completer<Map<String, VectorClock>?>();
+          final cancellationStatusGate = Completer<void>();
           final executedAgentIds = <String>[];
           final completions = <WakeRunCompletion>[];
           var handoffPolicyReads = 0;
@@ -547,6 +548,14 @@ void main() {
             agentId: 'persisted-handoff-agent',
             reason: 'manual',
           );
+          when(
+            () => mockRepository.updateWakeRunStatus(
+              oldRunKey,
+              WakeRunStatus.aborted.name,
+              completedAt: any(named: 'completedAt'),
+              errorMessage: 'wake cancelled before execution',
+            ),
+          ).thenAnswer((_) => cancellationStatusGate.future);
           async.flushMicrotasks();
           expect(handoffPolicyReads, 2);
           expect(executedAgentIds, isEmpty);
@@ -571,14 +580,14 @@ void main() {
           expect(removed.map((job) => job.runKey), equals([oldRunKey]));
           expect(
             completions,
-            contains(
-              isA<WakeRunCompletion>()
-                  .having((item) => item.runKey, 'runKey', oldRunKey)
-                  .having(
-                    (item) => item.status,
-                    'status',
-                    WakeRunStatus.aborted,
-                  ),
+            isNot(
+              contains(
+                isA<WakeRunCompletion>().having(
+                  (item) => item.runKey,
+                  'runKey',
+                  oldRunKey,
+                ),
+              ),
             ),
           );
           verify(
@@ -589,6 +598,21 @@ void main() {
               errorMessage: 'wake cancelled before execution',
             ),
           ).called(1);
+
+          cancellationStatusGate.complete();
+          async.flushMicrotasks();
+          expect(
+            completions,
+            contains(
+              isA<WakeRunCompletion>()
+                  .having((item) => item.runKey, 'runKey', oldRunKey)
+                  .having(
+                    (item) => item.status,
+                    'status',
+                    WakeRunStatus.aborted,
+                  ),
+            ),
+          );
           verify(
             () => mockRepository.insertWakeRun(
               entry: any(
@@ -1506,9 +1530,11 @@ void main() {
       test('healthy concurrent wakes do not hide a stalled lease', () {
         fakeAsync((async) {
           final abortedStatusGate = Completer<void>();
+          final retainedStatusGate = Completer<void>();
           final healthyExecutionGate = Completer<Map<String, VectorClock>?>();
           final executedAgentIds = <String>[];
           String? firstStuckRunKey;
+          String? firstHealthyRunKey;
           var stuckExecutionCount = 0;
           var healthyExecutionCount = 0;
           when(
@@ -1524,6 +1550,10 @@ void main() {
             if (runKey == firstStuckRunKey &&
                 status == WakeRunStatus.aborted.name) {
               await abortedStatusGate.future;
+            }
+            if (runKey == firstHealthyRunKey &&
+                status == WakeRunStatus.aborted.name) {
+              await retainedStatusGate.future;
             }
           });
           orchestrator = WakeOrchestrator(
@@ -1553,7 +1583,7 @@ void main() {
           async
             ..elapse(WakeOrchestrator.wakeRunMaxDuration)
             ..flushMicrotasks();
-          orchestrator.enqueueManualWake(
+          firstHealthyRunKey = orchestrator.enqueueManualWake(
             agentId: 'healthy-agent',
             reason: 'manual',
           );
@@ -1589,8 +1619,20 @@ void main() {
             equals(['stuck-agent', 'healthy-agent', 'replacement-agent']),
           );
 
-          healthyExecutionGate.complete(null);
-          async.flushMicrotasks();
+          // The retained execution later times out and stalls in terminal
+          // persistence. A later scheduler pass must still release its old-
+          // generation lease and dispatch the queued same-agent follow-up.
+          async.elapse(
+            const Duration(minutes: 10, milliseconds: 1),
+          );
+          verify(
+            () => mockRepository.updateWakeRunStatus(
+              firstHealthyRunKey!,
+              WakeRunStatus.aborted.name,
+              completedAt: any(named: 'completedAt'),
+              errorMessage: 'timeout',
+            ),
+          ).called(1);
           unawaited(orchestrator.processNext());
           async.flushMicrotasks();
           expect(
@@ -1603,6 +1645,8 @@ void main() {
             ]),
           );
 
+          retainedStatusGate.complete();
+          healthyExecutionGate.complete(null);
           abortedStatusGate.complete();
           async.flushMicrotasks();
         });

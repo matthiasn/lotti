@@ -24,8 +24,9 @@ extension WakeDrainEngine on WakeOrchestrator {
   /// [WakeOrchestrator._drainTimeout], force-reset the guard to recover from
   /// a stuck drain while preserving healthy concurrent runner leases.
   Future<void> processNextImpl() async {
+    final now = clock.now();
+    _releaseStaleSupersededDrainLeases(now);
     if (_isDraining) {
-      final now = clock.now();
       var oldestProgressAt = _drainLastProgressAt;
       final activeGenerationLeases =
           _drainLeasesByGeneration[_drainGeneration] ?? const {};
@@ -121,6 +122,15 @@ extension WakeDrainEngine on WakeOrchestrator {
         .toList(growable: false);
     for (final lease in staleLeases) {
       _releaseDrainLease(generation, lease);
+    }
+  }
+
+  void _releaseStaleSupersededDrainLeases(DateTime now) {
+    final supersededGenerations = _drainLeasesByGeneration.keys
+        .where((generation) => generation != _drainGeneration)
+        .toList(growable: false);
+    for (final generation in supersededGenerations) {
+      _releaseStaleDrainLeases(generation, now);
     }
   }
 

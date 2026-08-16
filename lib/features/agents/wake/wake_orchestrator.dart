@@ -356,8 +356,15 @@ class WakeOrchestrator with AgentErrorLogging {
             WakeRunStatus.aborted.name,
             completedAt: clock.now(),
             errorMessage: reason,
+          ).then(
+            (_) => _emitRunCompletion(
+              job,
+              WakeRunStatus.aborted,
+              error: StateError(reason),
+            ),
           ),
         );
+        continue;
       }
       _emitRunCompletion(
         job,

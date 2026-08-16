@@ -227,7 +227,9 @@ cannot release or abort the newer run that now owns the same agent lock. Each
 lease keeps its own progress time, so unrelated healthy wakes cannot hide a
 stalled slot by refreshing only the generation-wide clock. A healthy lease
 retained from a superseded generation is excluded from the replacement
-generation's stale calculation. A dequeued job also rechecks its drain
+generation's stale calculation, but every later scheduler pass evaluates it
+independently and releases it if its own progress becomes stale. A dequeued job
+also rechecks its drain
 generation after every pre-dispatch await. Before run-log insertion, a
 superseded drain returns the job to the queue and wakes the active scheduler;
 after insertion, it returns a persisted continuation that resumes the same run
