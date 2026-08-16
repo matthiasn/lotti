@@ -428,6 +428,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           health: health,
           healthAvailable: healthAsync.hasValue,
           spec: spec,
+          // An ACTIVE goal's header stays tidy — the title names the goal
+          // and the full definition lives behind Edit goal. A dormant goal
+          // has no Edit doorway, so the header is the statement's only
+          // remaining surface and must keep showing it.
+          showStatement: !isActive,
           // Whatever the page is ACTUALLY showing as an assessment — the
           // spec-matched report when there is one, otherwise the one-liner
           // the card falls back to. Keying only off the report let the chip
@@ -940,6 +945,7 @@ class _GoalHeader extends StatelessWidget {
     required this.healthAvailable,
     required this.spec,
     required this.hasStandingAssessment,
+    required this.showStatement,
     super.key,
   });
 
@@ -947,6 +953,11 @@ class _GoalHeader extends StatelessWidget {
   final GoalAgentHealth? health;
   final bool healthAvailable;
   final GoalSpecVersionEntity? spec;
+
+  /// Whether the header renders the goal statement. False on an active
+  /// goal (the definition lives behind Edit goal); true on a dormant one,
+  /// where no Edit doorway exists and this is the statement's only surface.
+  final bool showStatement;
 
   /// Whether the agent has already published an assessment of this goal.
   /// Suppresses the "No data" pill, which would otherwise sit directly
@@ -1023,6 +1034,16 @@ class _GoalHeader extends StatelessWidget {
             ),
           ],
         ),
+        if (showStatement)
+          if (spec?.statement case final statement?) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              statement,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
       ],
     );
   }

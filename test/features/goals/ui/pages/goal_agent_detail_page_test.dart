@@ -2587,7 +2587,25 @@ void main() {
               attainment: 1.0,
               reportOneLiner: null,
               pendingProposals: 0,
-              spec: null,
+              spec:
+                  AgentDomainEntity.goalSpecVersion(
+                        id: 'goal-1:spec-v1',
+                        agentId: 'goal-1',
+                        version: 1,
+                        status: GoalSpecVersionStatus.active,
+                        authoredBy: 'user',
+                        title: 'Move more',
+                        statement: 'Walk three times a week.',
+                        criteria: const GoalCriterion.habit(
+                          criterionId: 'walk',
+                          habitId: 'walk',
+                          window: GoalWindow.rollingDays(count: 7),
+                          targetCount: 3,
+                        ),
+                        createdAt: DateTime(2026, 8),
+                        vectorClock: null,
+                      )
+                      as GoalSpecVersionEntity,
               direction: null,
               deficit: null,
               buffer: null,
@@ -2631,6 +2649,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Move more'), findsNWidgets(3));
+    // No Edit doorway on a dormant goal, so the header keeps the statement
+    // visible — otherwise the goal's definition has no surface at all.
+    expect(find.text('Walk three times a week.'), findsOneWidget);
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to agent'), findsNothing);
     expect(find.text('Update now'), findsNothing);

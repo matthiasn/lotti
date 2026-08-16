@@ -879,7 +879,9 @@ flowchart TD
   flat text happens to equal its TLDR would otherwise lose the toggle and
   make its sections unreachable. The header carries the title, pill and
   trend only — the goal statement does not repeat there (the title already
-  identifies the goal; the full definition lives behind Edit goal). The
+  identifies the goal; the full definition lives behind Edit goal) EXCEPT
+  on a dormant goal, where no Edit doorway exists and the header is the
+  statement's only remaining surface. The
   persona chip
   anchors to the title's first line, the app bar reveals the goal name only
   after the header scrolls away (no doubled title in one viewport), and
