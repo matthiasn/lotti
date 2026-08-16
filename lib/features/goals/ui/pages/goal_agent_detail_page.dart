@@ -376,9 +376,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           _GoalHistorySection(history: history),
         ],
       ];
-      return ListView(
+      // Eager, not lazy: the section count is small and bounded, and the
+      // lazily mounted ListView made scrolling janky — heavy cards laid out
+      // mid-fling — while also letting scrolled-away sections unmount (which
+      // could null out the ensureVisible anchor). A single Column builds the
+      // whole page once and scrolls smoothly.
+      return SingleChildScrollView(
         controller: _scrollController,
-        // The mobile shell keeps the bottom navigation overlaid on agents
+        // The mobile shell keeps the bottom navigation overlaid on goals
         // subroutes, so the final content must clear it.
         padding: EdgeInsets.fromLTRB(
           tokens.spacing.step5,
@@ -387,23 +392,27 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           tokens.spacing.step5 +
               DesignSystemBottomNavigationBar.occupiedHeight(context),
         ),
-        children: [
-          for (final section in sections)
-            if (contentMaxWidth == null)
-              section
-            else
-              // The reading measure belongs to the CONTENT, not the scroll
-              // view. Constraining the ListView itself parked the desktop
-              // scrollbar at the measure's right edge — floating mid-pane —
-              // instead of at the pane's own edge beside the chat divider.
-              Align(
-                alignment: AlignmentDirectional.topStart,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                  child: section,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final section in sections)
+              if (contentMaxWidth == null)
+                section
+              else
+                // The reading measure belongs to the CONTENT, not the scroll
+                // view. Constraining the scroll view itself parked the
+                // desktop scrollbar at the measure's right edge — floating
+                // mid-pane — instead of at the pane's own edge beside the
+                // chat divider.
+                Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                    child: section,
+                  ),
                 ),
-              ),
-        ],
+          ],
+        ),
       );
     }
 

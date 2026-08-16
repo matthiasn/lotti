@@ -80,6 +80,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The habit card lost its empty row.** The weekly streak sits on the section
   heading line rather than alone under the day squares.
 - **"3m AI time" is now "3m thinking"**, with a clearer explanation on hover.
+- **The goal detail page scrolls smoothly.** The page now builds all of its
+  cards up front instead of mounting them lazily mid-scroll, which removes
+  the stutter while flinging through a goal's progress, watching and history
+  sections.
 
 ### Removed
 - **The experimental "Enable Agents Page?" flag and its tab.** The unified

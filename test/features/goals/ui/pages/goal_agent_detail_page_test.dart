@@ -148,9 +148,11 @@ void main() {
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     expect(find.text('At risk'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
-    // The metric card; the Watching copy is asserted after the scroll —
-    // the labelled statement pushed it below the lazy-list build window.
-    expect(find.text('Daily steps'), findsOneWidget);
+    // The metric card AND the eagerly built Watching row both carry the
+    // dimension name — the whole page mounts up front, nothing waits for a
+    // lazy build window.
+    expect(find.text('Daily steps'), findsNWidgets(2));
+    expect(find.text('Watching'), findsOneWidget);
     expect(find.text('Health data'), findsOneWidget);
     expect(
       find.textContaining(
@@ -185,7 +187,7 @@ void main() {
 
     final scrollable = tester.state<ScrollableState>(
       find.descendant(
-        of: find.byType(ListView).first,
+        of: find.byType(SingleChildScrollView).first,
         matching: find.byType(Scrollable),
       ),
     );
@@ -1034,7 +1036,10 @@ void main() {
     expect(find.byType(GoalLogTodaySheet), findsNothing);
 
     // Scrolled away from the header, the app bar reveals the name.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -400),
+    );
     await tester.pumpAndSettle();
     expect(appBarTitle().opacity, 1);
 
@@ -1145,7 +1150,7 @@ void main() {
     final scrollable = tester.state<ScrollableState>(
       find
           .descendant(
-            of: find.byType(ListView).first,
+            of: find.byType(SingleChildScrollView).first,
             matching: find.byType(Scrollable),
           )
           .first,
@@ -1163,7 +1168,7 @@ void main() {
       200,
       scrollable: find
           .descendant(
-            of: find.byType(ListView).first,
+            of: find.byType(SingleChildScrollView).first,
             matching: find.byType(Scrollable),
           )
           .first,
@@ -1556,13 +1561,13 @@ void main() {
     expect(find.text('Talk to Move more'), findsNothing);
 
     // The middle column's scroll view spans its whole pane, so the desktop
-    // scrollbar hugs the divider beside the chat. Constraining the ListView
-    // itself parked the scrollbar at the reading measure's right edge,
+    // scrollbar hugs the divider beside the chat. Constraining the scroll
+    // view itself parked the scrollbar at the reading measure's right edge,
     // floating mid-pane. The measure still applies — to the content inside.
     final detailListFinder = find
         .ancestor(
           of: find.text('Two walks landed this week.'),
-          matching: find.byType(ListView),
+          matching: find.byType(SingleChildScrollView),
         )
         .first;
     final dividerLeft = tester.getTopLeft(find.byType(VerticalDivider)).dx;
@@ -1626,7 +1631,15 @@ void main() {
     ).called(1);
     expect(progressReads, 2);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    // The page builds EAGERLY (a Column in a SingleChildScrollView, not a
+    // lazy list): the below-the-fold history section is already in the tree
+    // before any scroll. A lazily built list would not have mounted it yet.
+    expect(find.textContaining('Shoes by the door.'), findsOneWidget);
+
+    await tester.drag(
+      find.byType(SingleChildScrollView).first,
+      const Offset(0, -600),
+    );
     await tester.pumpAndSettle();
     expect(find.textContaining('Shoes by the door.'), findsOneWidget);
     expect(find.textContaining('One lap still counts.'), findsOneWidget);
