@@ -170,6 +170,86 @@ void main() {
     expect(visible.map((entry) => entry.nudge.id), ['visible']);
   });
 
+  test('goalBannerShellHiddenUntil reports the LATEST active quiet deadline '
+      '— snooze, rest-of-day dismissal or the local echo — and null once '
+      'every interval has passed', () {
+    final now = DateTime(2026, 8, 11, 12);
+
+    // Visible: no quiet interval at all.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(id: 'plain', headline: 'Visible'),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      isNull,
+    );
+
+    // A durable snooze reports its own deadline.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'snoozed',
+          headline: 'Snoozed',
+          snoozedUntil: now.add(const Duration(hours: 3)),
+        ),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      now.add(const Duration(hours: 3)).toUtc(),
+    );
+
+    // A rest-of-day dismissal hides until the next local midnight.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(id: 'dismissed', headline: 'Dismissed', dismissedForDayAt: now),
+        locallySnoozedDeadlines: const {},
+        now: now,
+      ),
+      DateTime(2026, 8, 12),
+    );
+
+    // The optimistic local echo counts for ITS activation — and the latest
+    // of several active deadlines wins.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'echoed',
+          headline: 'Echoed',
+          snoozedUntil: now.add(const Duration(hours: 1)),
+        ),
+        locallySnoozedDeadlines: {
+          'echoed': (
+            activation: 1,
+            until: now.add(const Duration(hours: 6)),
+          ),
+        },
+        now: now,
+      ),
+      now.add(const Duration(hours: 6)),
+    );
+
+    // A stale-activation echo and an expired snooze decide nothing.
+    expect(
+      goalBannerShellHiddenUntil(
+        entry(
+          id: 'expired',
+          headline: 'Expired',
+          activationCount: 2,
+          snoozedUntil: now.subtract(const Duration(minutes: 1)),
+        ),
+        locallySnoozedDeadlines: {
+          'expired': (
+            activation: 1,
+            until: now.add(const Duration(hours: 6)),
+          ),
+        },
+        now: now,
+      ),
+      isNull,
+    );
+  });
+
   test('local suppression never hides a newer activation of the same row', () {
     final now = DateTime.utc(2026, 8, 11, 12);
     final visible = visibleGoalBannerEntries(
