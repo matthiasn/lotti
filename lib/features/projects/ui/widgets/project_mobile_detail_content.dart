@@ -302,8 +302,9 @@ class _ProjectMobileDetailContentState
                               isRefreshing: widget.isRefreshingReport,
                             ),
                           ),
-                          if (widget.agentActions case final actions?)
-                            SliverToBoxAdapter(child: actions),
+                          if (!isMutating)
+                            if (widget.agentActions case final actions?)
+                              SliverToBoxAdapter(child: actions),
                           SliverToBoxAdapter(
                             child: SizedBox(height: tokens.spacing.step5),
                           ),

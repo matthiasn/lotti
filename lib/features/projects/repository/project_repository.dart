@@ -302,17 +302,42 @@ class ProjectRepository {
 
   /// Saves an updated project entity.
   ///
-  /// Bumps vector clock and enqueues sync via [PersistenceLogic].
+  /// Bumps vector clock and enqueues sync via [PersistenceLogic]. A project
+  /// with linked tasks cannot change category because membership is scoped to
+  /// matching categories; callers must unlink those tasks first.
+  ///
+  /// [PersistenceLogic.updateDbEntity] can report failure after the journal
+  /// row committed (for example when a later search-index update fails), so a
+  /// negative result is verified against the stored project before this method
+  /// reports failure.
   Future<bool> updateProject(ProjectEntry project) async {
+    final persistedBeforeUpdate = await getProjectById(project.id);
+    if (persistedBeforeUpdate == null) return false;
+    if (persistedBeforeUpdate.meta.categoryId != project.meta.categoryId &&
+        (await getTasksForProject(project.id)).isNotEmpty) {
+      return false;
+    }
+
     final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
     final updated = project.copyWith(meta: updatedMeta);
     final result = await _persistenceLogic.updateDbEntity(updated);
-    if (result ?? false) {
+    final committed =
+        (result ?? false) ||
+        _projectContentMatches(await getProjectById(project.id), updated);
+    if (committed) {
       _updateNotifications.notify({
         projectEntityUpdateNotification(updated.id),
       });
     }
-    return result ?? false;
+    return committed;
+  }
+
+  bool _projectContentMatches(ProjectEntry? persisted, ProjectEntry requested) {
+    return persisted != null &&
+        persisted.data == requested.data &&
+        persisted.entryText == requested.entryText &&
+        persisted.meta.categoryId == requested.meta.categoryId &&
+        persisted.meta.private == requested.meta.private;
   }
 
   /// Soft-deletes [project] and emits the same scoped notification as an

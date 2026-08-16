@@ -93,9 +93,9 @@ stateDiagram-v2
   Unlinked --> Linked: linkTaskToProject (same category and privacy)
   Linked --> Linked: task category re-picked unchanged
   Linked --> Unlinked: task category changed or cleared
-  Linked --> Mismatched: project moved to another category
-  note right of Mismatched
-    Not reconciled — see below
+  Linked --> Linked: project category edit rejected while tasks remain
+  note right of Linked
+    Unlink member tasks before moving the project
   end note
 ```
 
@@ -129,12 +129,12 @@ Only the task detail header changes a task's category
 (`CategorySelectionIconButton` excludes tasks and events explicitly), so the
 controller is the single funnel this rule has to sit in.
 
-**The project side is not reconciled.** `ProjectDetailController.updateCategoryId`
-persists a project's new category through `ProjectRepository.updateProject`
-without touching its member tasks, so moving a *project* between categories
-leaves every linked task behind in the old one and reproduces exactly the
-mismatch the task side now prevents. Nothing repairs pre-existing mismatches
-either — only a subsequent task-side category change clears one.
+**The project side refuses to create a mismatch.**
+`ProjectRepository.updateProject` compares the stored and requested category
+before writing. When they differ, any linked task makes the update fail; the
+tasks must be unlinked before the project can move. Keeping that guard in the
+repository covers both the inline picker and the full editor instead of relying
+on either UI to remember the invariant.
 
 # Two hot reads are shaped for bursts
 

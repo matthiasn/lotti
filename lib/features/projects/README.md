@@ -44,6 +44,8 @@ projects tab, no category projects section, and no project chip on tasks.
 Project persistence and editing; task-to-project linking; the top-level projects
 tab; both project detail pages; project health assembled from project-agent
 reports; and the filters and grouped list models the tab uses.
+Project membership is category-scoped: repository writes reject moving a
+project to another category until its linked tasks are removed.
 
 ## Where the code lives
 

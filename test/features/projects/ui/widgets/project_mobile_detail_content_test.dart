@@ -182,6 +182,31 @@ void main() {
       expect(addRequests, 0);
     });
 
+    testWidgets('hides agent proposal actions while a mutation runs', (
+      tester,
+    ) async {
+      Widget subject({required bool isSaving}) => ProjectMobileDetailContent(
+        record: makeTestProjectRecord(),
+        currentTime: DateTime(2026, 3, 28, 1, 18),
+        agentActions: const Text('Agent decisions'),
+        isSaving: isSaving,
+      );
+
+      await tester.pumpWidget(
+        wrap(subject(isSaving: true), size: const Size(430, 1200)),
+      );
+      await tester.pump();
+
+      expect(find.text('Agent decisions'), findsNothing);
+
+      await tester.pumpWidget(
+        wrap(subject(isSaving: false), size: const Size(430, 1200)),
+      );
+      await tester.pump();
+
+      expect(find.text('Agent decisions'), findsOneWidget);
+    });
+
     testWidgets('rejects a stale Add task callback after saving starts', (
       tester,
     ) async {

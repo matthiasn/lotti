@@ -777,6 +777,9 @@ void main() {
     });
 
     test('returns false when persistence fails', () async {
+      final changedProject = projectEntry.copyWith(
+        data: projectEntry.data.copyWith(title: 'Changed title'),
+      );
       final updatedMeta = projectMeta.copyWith(
         updatedAt: DateTime(2024, 3, 16),
         vectorClock: const VectorClock({'device-1': 2}),
@@ -787,11 +790,11 @@ void main() {
       ).thenAnswer((_) async => updatedMeta);
       when(
         () => mockPersistence.updateDbEntity(
-          projectEntry.copyWith(meta: updatedMeta),
+          changedProject.copyWith(meta: updatedMeta),
         ),
       ).thenAnswer((_) async => false);
 
-      final result = await repository.updateProject(projectEntry);
+      final result = await repository.updateProject(changedProject);
 
       expect(result, isFalse);
       verifyNever(() => mockNotifications.notify(any()));
@@ -800,6 +803,9 @@ void main() {
     test('returns false when persistence returns null', () async {
       // Exercises the `result ?? false` coalescing branch: a null result
       // must be treated as failure — no notification is emitted.
+      final changedProject = projectEntry.copyWith(
+        data: projectEntry.data.copyWith(title: 'Changed title'),
+      );
       final updatedMeta = projectMeta.copyWith(
         updatedAt: DateTime(2024, 3, 16),
         vectorClock: const VectorClock({'device-1': 2}),
@@ -810,13 +816,64 @@ void main() {
       ).thenAnswer((_) async => updatedMeta);
       when(
         () => mockPersistence.updateDbEntity(
-          projectEntry.copyWith(meta: updatedMeta),
+          changedProject.copyWith(meta: updatedMeta),
         ),
       ).thenAnswer((_) async => null);
 
-      final result = await repository.updateProject(projectEntry);
+      final result = await repository.updateProject(changedProject);
 
       expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
+    });
+
+    test(
+      'accepts a matching row when persistence reports late failure',
+      () async {
+        final changedProject = projectEntry.copyWith(
+          data: projectEntry.data.copyWith(title: 'Committed title'),
+        );
+        final updatedMeta = projectMeta.copyWith(
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: const VectorClock({'device-1': 2}),
+        );
+        final committedProject = changedProject.copyWith(meta: updatedMeta);
+        var readCount = 0;
+        when(
+          () => mockDb.journalEntityById(projectEntry.id),
+        ).thenAnswer(
+          (_) async => readCount++ == 0 ? projectEntry : committedProject,
+        );
+        when(
+          () => mockPersistence.updateMetadata(projectMeta),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(committedProject),
+        ).thenAnswer((_) async => false);
+
+        final result = await repository.updateProject(changedProject);
+
+        expect(result, isTrue);
+        verify(
+          () => mockNotifications.notify({
+            projectEntityUpdateNotification(projectEntry.id),
+          }),
+        ).called(1);
+      },
+    );
+
+    test('rejects category changes while tasks remain linked', () async {
+      final movedProject = projectEntry.copyWith(
+        meta: projectMeta.copyWith(categoryId: 'cat-2'),
+      );
+      when(
+        () => mockDb.getTasksForProject(projectEntry.id),
+      ).thenAnswer((_) async => [taskEntry]);
+
+      final result = await repository.updateProject(movedProject);
+
+      expect(result, isFalse);
+      verifyNever(() => mockPersistence.updateMetadata(any()));
+      verifyNever(() => mockPersistence.updateDbEntity(any()));
       verifyNever(() => mockNotifications.notify(any()));
     });
   });

@@ -161,6 +161,7 @@ List<Override> _baseOverrides({
   Override? projectAgentOverride,
   List<AgentIdentityEntity>? projectAgents,
   ProjectAgentsForProjectResolver? resolveProjectAgents,
+  ProjectByIdResolver? resolveProjectById,
   ProjectAgentSubscriptionsRestorer? restoreAgentSubscriptions,
   List<Override> extraOverrides = const [],
 }) {
@@ -196,6 +197,9 @@ List<Override> _baseOverrides({
                   identity,
               ],
     ),
+    projectByIdResolverProvider.overrideWithValue(
+      resolveProjectById ?? (_) async => controllerState.project,
+    ),
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => Stream.value(false),
     ),
@@ -230,6 +234,7 @@ void main() {
     Override? projectAgentOverride,
     List<AgentIdentityEntity>? projectAgents,
     ProjectAgentsForProjectResolver? resolveProjectAgents,
+    ProjectByIdResolver? resolveProjectById,
     ProjectAgentSubscriptionsRestorer? restoreAgentSubscriptions,
     List<Override> extraOverrides = const [],
   }) async {
@@ -241,6 +246,7 @@ void main() {
       projectAgentOverride: projectAgentOverride,
       projectAgents: projectAgents,
       resolveProjectAgents: resolveProjectAgents,
+      resolveProjectById: resolveProjectById,
       restoreAgentSubscriptions: restoreAgentSubscriptions,
       extraOverrides: extraOverrides,
     );
@@ -772,6 +778,119 @@ void main() {
             find.text('No templates available. Create one in Settings first.'),
             findsOneWidget,
           );
+          verifyNever(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'offers only global and matching-category project templates',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          final categorizedProject = makeTestProject(
+            id: _projectId,
+            categoryId: 'cat-1',
+          );
+          final globalTemplate = makeTestTemplate(
+            id: 'global-project-template',
+            displayName: 'Global project guide',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final matchingTemplate = makeTestTemplate(
+            id: 'matching-project-template',
+            displayName: 'Matching project guide',
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'cat-1'},
+          );
+          final foreignTemplate = makeTestTemplate(
+            id: 'foreign-project-template',
+            displayName: 'Foreign project guide',
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'cat-2'},
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: categorizedProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: makeTestProjectRecord(project: categorizedProject),
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [
+                  globalTemplate,
+                  matchingTemplate,
+                  foreignTemplate,
+                ],
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.text('Global project guide'), findsOneWidget);
+          expect(find.text('Matching project guide'), findsOneWidget);
+          expect(find.text('Foreign project guide'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not provision an agent after the project was deleted',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          final template = makeTestTemplate(
+            id: 'project-template',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final profile = AiTestDataFactory.createTestProfile(
+            id: 'project-profile',
+            name: 'Project profile',
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            resolveProjectById: (_) async => null,
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [template],
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _TestInferenceProfileController([profile]),
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await tester.tap(find.text('Project profile'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.text('Project not found'), findsOneWidget);
           verifyNever(
             () => agentService.createProjectAgent(
               projectId: any(named: 'projectId'),

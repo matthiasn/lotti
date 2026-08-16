@@ -36,6 +36,7 @@ typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);
 typedef ProjectAgentSubscriptionsRestorer = Future<void> Function();
 typedef ProjectAgentsForProjectResolver =
     Future<List<AgentIdentityEntity>> Function(String projectId);
+typedef ProjectByIdResolver = Future<ProjectEntry?> Function(String projectId);
 
 /// Injectable task-creation seam used by the project detail action.
 final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
@@ -69,6 +70,13 @@ final projectAgentsForProjectResolverProvider =
           ref.watch(projectAgentServiceProvider).getProjectAgentsForProject,
       name: 'projectAgentsForProjectResolverProvider',
     );
+
+/// Re-reads a project immediately before a delayed UI flow creates durable
+/// state for it, preventing provisioning against a project deleted by sync.
+final projectByIdResolverProvider = Provider<ProjectByIdResolver>(
+  (ref) => ref.watch(projectRepositoryProvider).getProjectById,
+  name: 'projectByIdResolverProvider',
+);
 
 /// Read-first project detail surface rendered in the desktop right pane and as
 /// the mobile `/projects/<id>` route.
@@ -224,10 +232,13 @@ class ProjectDetailsPage extends ConsumerWidget {
     WidgetRef ref,
     ProjectEntry project,
   ) async {
+    final resolveProject = ref.read(projectByIdResolverProvider);
+    final agentService = ref.read(projectAgentServiceProvider);
     try {
       final templates = (await ref.read(agentTemplatesProvider.future))
           .whereType<AgentTemplateEntity>()
           .where((template) => template.kind == AgentTemplateKind.projectAgent)
+          .where((template) => _templateAppliesToProject(template, project))
           .toList(growable: false);
       if (!context.mounted) return;
       if (templates.isEmpty) {
@@ -244,19 +255,38 @@ class ProjectDetailsPage extends ConsumerWidget {
       );
       if (result == null || !context.mounted) return;
 
-      await ref
-          .read(projectAgentServiceProvider)
-          .createProjectAgent(
-            projectId: project.meta.id,
-            templateId: result.templateId,
-            displayName: project.data.title,
-            allowedCategoryIds: {
-              if (project.meta.categoryId case final String categoryId)
-                categoryId,
-            },
-            profileId: result.profileId,
-          );
-      ref.invalidate(projectAgentProvider(project.meta.id));
+      final currentProject = await resolveProject(project.meta.id);
+      if (!context.mounted) return;
+      if (currentProject == null) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectNotFound,
+        );
+        return;
+      }
+      final selectedTemplate = templates
+          .where((template) => template.id == result.templateId)
+          .firstOrNull;
+      if (selectedTemplate == null ||
+          !_templateAppliesToProject(selectedTemplate, currentProject)) {
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
+        );
+        return;
+      }
+
+      await agentService.createProjectAgent(
+        projectId: currentProject.meta.id,
+        templateId: result.templateId,
+        displayName: currentProject.data.title,
+        allowedCategoryIds: {
+          if (currentProject.meta.categoryId case final String categoryId)
+            categoryId,
+        },
+        profileId: result.profileId,
+      );
+      ref.invalidate(projectAgentProvider(currentProject.meta.id));
     } catch (error, stackTrace) {
       developer.log(
         'Failed to assign project agent',
@@ -270,6 +300,16 @@ class ProjectDetailsPage extends ConsumerWidget {
         title: context.messages.taskAgentCreateError(error.toString()),
       );
     }
+  }
+
+  bool _templateAppliesToProject(
+    AgentTemplateEntity template,
+    ProjectEntry project,
+  ) {
+    final categoryIds = template.categoryIds;
+    if (categoryIds.isEmpty) return true;
+    final categoryId = project.meta.categoryId;
+    return categoryId != null && categoryIds.contains(categoryId);
   }
 
   Future<void> _pickCategory(
