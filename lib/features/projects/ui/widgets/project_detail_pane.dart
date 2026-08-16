@@ -97,11 +97,13 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
                           ? context.messages.agentReportNone
                           : widget.record.aiSummary,
                       fullContent: widget.record.reportContent,
-                      trailingLabel: showcaseUpdatedLabel(
-                        context,
-                        updatedAt: widget.record.reportUpdatedAt,
-                        currentTime: widget.currentTime,
-                      ),
+                      trailingLabel: widget.record.reportUpdatedAt == null
+                          ? null
+                          : showcaseUpdatedLabel(
+                              context,
+                              updatedAt: widget.record.reportUpdatedAt!,
+                              currentTime: widget.currentTime,
+                            ),
                     ),
                     SizedBox(height: tokens.spacing.step5),
                     ProjectTasksPanel(record: widget.record),

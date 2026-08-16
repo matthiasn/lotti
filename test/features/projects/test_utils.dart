@@ -111,6 +111,7 @@ ProjectRecord makeTestProjectRecord({
   String aiSummary = 'Test AI summary.',
   String? reportContent,
   DateTime? reportUpdatedAt,
+  bool hasReportTimestamp = true,
   List<TaskSummary> highlightedTaskSummaries = const [],
   Duration highlightedTasksTotalDuration = Duration.zero,
 }) {
@@ -136,7 +137,9 @@ ProjectRecord makeTestProjectRecord({
     blockedTaskCount: blockedTaskCount,
     aiSummary: aiSummary,
     reportContent: reportContent ?? aiSummary,
-    reportUpdatedAt: reportUpdatedAt ?? DateTime(2026, 4, 2, 7, 30),
+    reportUpdatedAt: hasReportTimestamp
+        ? reportUpdatedAt ?? DateTime(2026, 4, 2, 7, 30)
+        : null,
     highlightedTaskSummaries: highlightedTaskSummaries,
     highlightedTasksTotalDuration: highlightedTasksTotalDuration,
   );

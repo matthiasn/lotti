@@ -1410,6 +1410,48 @@ void main() {
         expect(capturedPaths, ['/tasks/created-task']);
       });
 
+      testWidgets(
+        'assigns the category agent when the page unmounts during creation',
+        (tester) async {
+          final task = makeTestTask(id: 'created-task', title: 'Created task');
+          final creation = Completer<Task?>();
+          Task? assignedTask;
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectTaskCreatorProvider.overrideWithValue(
+                (_) => creation.future,
+              ),
+              projectTaskAgentAssignerProvider.overrideWithValue((task) async {
+                assignedTask = task;
+              }),
+            ],
+          );
+
+          final addFuture = tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onAddTask!();
+          await tester.pump();
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          creation.complete(task);
+          await addFuture;
+          await tester.pump();
+
+          expect(assignedTask?.meta.id, 'created-task');
+        },
+      );
+
       testWidgets('agent assignment failure keeps the created task closed', (
         tester,
       ) async {

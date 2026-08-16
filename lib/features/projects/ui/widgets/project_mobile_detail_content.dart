@@ -109,24 +109,25 @@ class _ProjectMobileDetailContentState
         .where((summary) => summary.task.data.status is TaskBlocked)
         .toList(growable: false);
     final firstBlockedTask = blockedTasks.isEmpty ? null : blockedTasks.first;
+    final isMutating = widget.isSaving || _isAddingTask;
     final menuItems = <DesignSystemContextMenuItem>[
       if (widget.onEdit != null)
         DesignSystemContextMenuItem(
           label: context.messages.projectActionEdit,
           icon: Icons.edit_outlined,
-          onTap: widget.isSaving ? null : widget.onEdit,
+          onTap: isMutating ? null : widget.onEdit,
         ),
       if (widget.onArchive != null)
         DesignSystemContextMenuItem(
           label: context.messages.projectActionArchive,
           icon: Icons.archive_outlined,
-          onTap: widget.isSaving ? null : widget.onArchive,
+          onTap: isMutating ? null : widget.onArchive,
         ),
       if (widget.onDelete != null)
         DesignSystemContextMenuItem(
           label: context.messages.projectActionDelete,
           icon: Icons.delete_outline,
-          onTap: widget.isSaving ? null : widget.onDelete,
+          onTap: isMutating ? null : widget.onDelete,
           isDestructive: true,
         ),
     ];
@@ -229,11 +230,14 @@ class _ProjectMobileDetailContentState
                                   ? context.messages.agentReportNone
                                   : widget.record.aiSummary,
                               fullContent: widget.record.reportContent,
-                              trailingLabel: showcaseUpdatedLabel(
-                                context,
-                                updatedAt: widget.record.reportUpdatedAt,
-                                currentTime: widget.currentTime,
-                              ),
+                              trailingLabel:
+                                  widget.record.reportUpdatedAt == null
+                                  ? null
+                                  : showcaseUpdatedLabel(
+                                      context,
+                                      updatedAt: widget.record.reportUpdatedAt!,
+                                      currentTime: widget.currentTime,
+                                    ),
                               nextWakeAt: widget.record.reportNextWakeAt,
                               onRefresh: widget.onRefreshReport,
                               onCancelScheduledWake:

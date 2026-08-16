@@ -340,6 +340,16 @@ void main() {
           find.byKey(const ValueKey('project-group-divider-slot-0')),
           findsOneWidget,
         );
+        expect(
+          tester
+              .getSize(
+                find.byKey(
+                  const ValueKey('project-group-divider-slot-0'),
+                ),
+              )
+              .height,
+          BorderWidths.hairline,
+        );
         expect(tester.getSize(sectionFinder).height, initialHeight);
       },
     );

@@ -334,6 +334,40 @@ void main() {
       );
     });
 
+    testWidgets('disables project actions while Add task is pending', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onEdit: () {},
+            onArchive: () {},
+            onDelete: () {},
+            onAddTask: () => pending.future,
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+
+      await tester.tap(addButton);
+      await tester.pump();
+
+      final menu = tester.widget<DesignSystemContextMenuButton>(
+        find.byType(DesignSystemContextMenuButton),
+      );
+      expect(menu.items, hasLength(3));
+      expect(menu.items.every((item) => item.onTap == null), isTrue);
+
+      pending.complete();
+      await tester.pump();
+    });
+
     testWidgets('opens the first blocked task from the health action', (
       tester,
     ) async {
@@ -728,6 +762,29 @@ void main() {
         expect(find.textContaining('No report available yet.'), findsOneWidget);
       },
     );
+
+    testWidgets('omits report freshness when no report exists', (tester) async {
+      final record = makeTestProjectRecord(
+        aiSummary: '',
+        reportContent: '',
+        hasReportTimestamp: false,
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final report = tester.widget<ExpandableReportSection>(
+        find.byType(ExpandableReportSection),
+      );
+      expect(report.trailingLabel, isNull);
+    });
 
     testWidgets(
       'renders the tappable category placeholder when the project has no '

@@ -173,8 +173,8 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                           ),
                           child: Divider(
                             key: ValueKey('project-group-divider-$index'),
-                            height: 1,
-                            thickness: 1,
+                            height: BorderWidths.hairline,
+                            thickness: BorderWidths.hairline,
                             color: ShowcasePalette.border(context),
                           ),
                         )
@@ -183,7 +183,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                           key: ValueKey(
                             'project-group-divider-slot-$index',
                           ),
-                          height: tokens.spacing.step1,
+                          height: BorderWidths.hairline,
                         ),
                       SizedBox(height: cardPadding),
                     ],

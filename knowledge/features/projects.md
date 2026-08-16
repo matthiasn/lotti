@@ -231,7 +231,8 @@ instruction.
 
 The user-authored project description and the agent report are distinct fields
 in the detail read model. A missing report renders the neutral report-empty
-state; it never repeats the project description under an AI-authored heading.
+state; it never repeats the project description under an AI-authored heading
+or presents the project's own modification time as report freshness.
 
 # When the project agent actually wakes
 

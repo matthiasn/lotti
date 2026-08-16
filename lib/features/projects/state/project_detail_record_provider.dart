@@ -76,7 +76,7 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
         blockedTaskCount: blockedTaskCount,
         aiSummary: aiSummary,
         reportContent: report?.content.trim() ?? '',
-        reportUpdatedAt: report?.createdAt ?? project.meta.updatedAt,
+        reportUpdatedAt: report?.createdAt,
         highlightedTaskSummaries: linkedTasks
             .map(
               (task) => TaskSummary(

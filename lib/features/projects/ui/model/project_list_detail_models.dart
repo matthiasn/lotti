@@ -30,7 +30,9 @@ class ProjectRecord {
   final int blockedTaskCount;
   final String aiSummary;
   final String reportContent;
-  final DateTime reportUpdatedAt;
+
+  /// Creation time of the persisted agent report, or `null` before one exists.
+  final DateTime? reportUpdatedAt;
   final List<TaskSummary> highlightedTaskSummaries;
   final Duration highlightedTasksTotalDuration;
 

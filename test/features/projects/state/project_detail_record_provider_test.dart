@@ -239,7 +239,7 @@ void main() {
       expect(result.totalTaskCount, 2);
       expect(result.completedTaskCount, 1);
       expect(result.blockedTaskCount, 0);
-      expect(result.reportUpdatedAt, project.meta.updatedAt);
+      expect(result.reportUpdatedAt, isNull);
     });
 
     group('completed and blocked task counting', () {
@@ -527,7 +527,7 @@ void main() {
         },
       );
 
-      test('uses project updatedAt when no report exists', () async {
+      test('omits report freshness when no report exists', () async {
         final createdAt = DateTime(2024, 6, 10, 8);
         final project = makeTestProject(
           id: projectId,
@@ -545,7 +545,7 @@ void main() {
           projectDetailRecordProvider(projectId).future,
         );
 
-        expect(result!.reportUpdatedAt, createdAt);
+        expect(result!.reportUpdatedAt, isNull);
       });
     });
 

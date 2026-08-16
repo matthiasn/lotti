@@ -385,8 +385,8 @@ class ProjectDetailsPage extends ConsumerWidget {
     final createProjectTask = ref.read(projectTaskCreatorProvider);
     final assignTaskAgent = ref.read(projectTaskAgentAssignerProvider);
     final task = await createProjectTask(projectId);
-    if (!context.mounted) return;
     if (task == null) {
+      if (!context.mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.commonError,
