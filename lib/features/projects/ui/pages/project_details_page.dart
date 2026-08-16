@@ -363,6 +363,9 @@ class ProjectDetailsPage extends ConsumerWidget {
     ProjectEntry project,
   ) async {
     final repository = ref.read(projectRepositoryProvider);
+    final resolveProjectAgents = ref.read(
+      projectAgentsForProjectResolverProvider,
+    );
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.projectDeleteConfirmTitle,
@@ -373,9 +376,7 @@ class ProjectDetailsPage extends ConsumerWidget {
 
     late final List<AgentIdentityEntity> projectAgents;
     try {
-      projectAgents = await ref.read(
-        projectAgentsForProjectResolverProvider,
-      )(project.id);
+      projectAgents = await resolveProjectAgents(project.id);
     } catch (error, stackTrace) {
       developer.log(
         'Failed to resolve project agents before deleting their project',
@@ -390,6 +391,7 @@ class ProjectDetailsPage extends ConsumerWidget {
       );
       return;
     }
+    if (!context.mounted) return;
 
     final agentService = projectAgents.isEmpty
         ? null
@@ -535,7 +537,19 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
       }
     }
-    if (restoredAnyActiveAgent) await restoreSubscriptions();
+    if (restoredAnyActiveAgent) {
+      try {
+        await restoreSubscriptions();
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to restore project agent subscriptions after project '
+          'deletion failed',
+          name: 'ProjectDetailsPage',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
   }
 
   Future<bool> _restoreRetiredProjectAgent({
@@ -565,7 +579,17 @@ class ProjectDetailsPage extends ConsumerWidget {
   Future<void> _addTask(BuildContext context, WidgetRef ref) async {
     final createProjectTask = ref.read(projectTaskCreatorProvider);
     final assignTaskAgent = ref.read(projectTaskAgentAssignerProvider);
-    final task = await createProjectTask(projectId);
+    Task? task;
+    try {
+      task = await createProjectTask(projectId);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to create project task',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     if (task == null) {
       if (!context.mounted) return;
       context.showToast(
