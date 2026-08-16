@@ -336,7 +336,7 @@ void main() {
           repository: repository,
           orchestrator: orchestrator,
           syncService: syncService,
-          projectExists: (_) async => true,
+          projectScopeIsCurrent: (_, _) async => true,
           mutationCoordinator: ProjectAgentMutationCoordinator(),
           cancellationCoordinator: coordinator,
         );

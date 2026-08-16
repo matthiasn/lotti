@@ -1576,7 +1576,7 @@ void main() {
             repository: mockAgentRepository,
             orchestrator: orchestrator,
             syncService: statefulSync,
-            projectExists: (_) async => true,
+            projectScopeIsCurrent: (_, _) async => true,
             mutationCoordinator: ProjectAgentMutationCoordinator(),
           );
 

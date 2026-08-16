@@ -25,8 +25,15 @@ ProjectAgentService projectAgentService(Ref ref) {
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    projectExists: (projectId) async =>
-        await projectRepository.getProjectById(projectId) != null,
+    projectScopeIsCurrent: (projectId, allowedCategoryIds) async {
+      final project = await projectRepository.getProjectById(projectId);
+      if (project == null) return false;
+      final currentCategoryIds = {
+        if (project.meta.categoryId case final String categoryId) categoryId,
+      };
+      return currentCategoryIds.length == allowedCategoryIds.length &&
+          currentCategoryIds.containsAll(allowedCategoryIds);
+    },
     mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     cancellationCoordinator: ref.watch(

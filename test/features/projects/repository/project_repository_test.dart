@@ -10,6 +10,10 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -26,6 +30,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/entity_factories.dart';
+import '../../agents/test_data/link_factories.dart';
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 
@@ -231,6 +237,68 @@ void main() {
   tearDown(() async {
     await updateStreamController.close();
     await tearDownTestGetIt();
+  });
+
+  group('projectHasActiveAgent', () {
+    test('returns false when the agent store is unavailable', () async {
+      if (getIt.isRegistered<AgentDatabase>()) {
+        await getIt.unregister<AgentDatabase>();
+      }
+
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+    });
+
+    test('recognizes only live project-agent identities', () async {
+      if (getIt.isRegistered<AgentDatabase>()) {
+        await getIt.unregister<AgentDatabase>();
+      }
+      final agentDatabase = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+      getIt.registerSingleton<AgentDatabase>(agentDatabase);
+      addTearDown(() async {
+        if (getIt.isRegistered<AgentDatabase>()) {
+          await getIt.unregister<AgentDatabase>();
+        }
+        await agentDatabase.close();
+      });
+      final agentRepository = AgentRepository(agentDatabase);
+      await agentRepository.upsertLink(
+        makeTestAgentProjectLink(
+          fromId: 'candidate-agent',
+        ),
+      );
+
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+          kind: AgentKinds.projectAgent,
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isTrue);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+          kind: AgentKinds.projectAgent,
+          lifecycle: AgentLifecycle.destroyed,
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+    });
   });
 
   group('getProjectById', () {

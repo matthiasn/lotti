@@ -27,6 +27,7 @@ import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_recommendations_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -1485,6 +1486,64 @@ void main() {
             deletedAt: any(named: 'deletedAt'),
           ),
         ).called(1);
+      });
+
+      testWidgets('deletes the project version re-read after confirmation', (
+        tester,
+      ) async {
+        beamToNamedOverride = (_) {};
+        addTearDown(() => beamToNamedOverride = null);
+        final mockRepository = MockProjectRepository();
+        final freshProject = testProject.copyWith(
+          meta: testProject.meta.copyWith(
+            updatedAt: DateTime(2026, 8, 16, 12),
+            vectorClock: const VectorClock({'peer': 9}),
+          ),
+        );
+        when(
+          () => mockRepository.deleteProject(
+            freshProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => true);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          resolveProjectAgents: (_) async => [],
+          resolveProjectById: (_) async => freshProject,
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockRepository.deleteProject(
+            freshProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockRepository.deleteProject(
+            testProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        );
       });
 
       testWidgets('agent resolution failure aborts project deletion', (

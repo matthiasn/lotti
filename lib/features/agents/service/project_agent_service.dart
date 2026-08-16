@@ -56,7 +56,7 @@ class ProjectAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
-    required this.projectExists,
+    required this.projectScopeIsCurrent,
     required this.mutationCoordinator,
     this.domainLogger,
     this.onPersistedStateChanged,
@@ -67,7 +67,11 @@ class ProjectAgentService {
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
-  final Future<bool> Function(String projectId) projectExists;
+  final Future<bool> Function(
+    String projectId,
+    Set<String> allowedCategoryIds,
+  )
+  projectScopeIsCurrent;
   final ProjectAgentMutationCoordinator mutationCoordinator;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
 
@@ -96,8 +100,9 @@ class ProjectAgentService {
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
-  /// Throws [StateError] if the project no longer exists or a Project Agent
-  /// already exists for [projectId].
+  /// Throws [StateError] if the project no longer exists, its current category
+  /// differs from [allowedCategoryIds], or a Project Agent already exists for
+  /// [projectId].
   Future<AgentIdentityEntity> createProjectAgent({
     required String projectId,
     required String templateId,
@@ -105,8 +110,8 @@ class ProjectAgentService {
     required Set<String> allowedCategoryIds,
     String? profileId,
   }) => mutationCoordinator.run(projectId, () async {
-    if (!await projectExists(projectId)) {
-      throw StateError('Project $projectId no longer exists.');
+    if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) {
+      throw StateError('Project $projectId no longer has the requested scope.');
     }
 
     final identity = await syncService.runInTransaction(() async {
@@ -198,9 +203,9 @@ class ProjectAgentService {
     // Sync can tombstone the journal project while the independent agent-store
     // transaction is committing. Compensate before announcing, subscribing, or
     // waking the new identity so no orphan project agent escapes this method.
-    if (!await projectExists(projectId)) {
+    if (!await projectScopeIsCurrent(projectId, allowedCategoryIds)) {
       await agentService.deleteAgent(identity.agentId);
-      throw StateError('Project $projectId no longer exists.');
+      throw StateError('Project $projectId no longer has the requested scope.');
     }
 
     onPersistedStateChanged

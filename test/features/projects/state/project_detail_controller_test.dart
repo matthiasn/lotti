@@ -6,6 +6,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -43,10 +45,16 @@ void main() {
   });
 
   /// Creates a container and waits for the controller to finish loading.
-  Future<ProviderContainer> createLoadedContainer() async {
+  Future<ProviderContainer> createLoadedContainer({
+    ProjectAgentMutationCoordinator? mutationCoordinator,
+  }) async {
     final container = ProviderContainer(
       overrides: [
         projectRepositoryProvider.overrideWithValue(mockRepo),
+        if (mutationCoordinator != null)
+          projectAgentMutationCoordinatorProvider.overrideWithValue(
+            mutationCoordinator,
+          ),
       ],
     );
     addTearDown(container.dispose);
@@ -339,6 +347,34 @@ void main() {
         expect(persisted!.meta.categoryId, 'new-category-id');
       },
     );
+
+    test('category save waits for project agent provisioning', () async {
+      final coordinator = ProjectAgentMutationCoordinator();
+      final provisioningStarted = Completer<void>();
+      final releaseProvisioning = Completer<void>();
+      final provisioning = coordinator.run(projectId, () async {
+        provisioningStarted.complete();
+        await releaseProvisioning.future;
+      });
+      await provisioningStarted.future;
+      when(() => mockRepo.updateProject(any())).thenAnswer((_) async => true);
+      final container = await createLoadedContainer(
+        mutationCoordinator: coordinator,
+      );
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      )..updateCategoryId('new-category-id');
+
+      final save = notifier.saveChanges();
+      await Future<void>.value();
+      verifyNever(() => mockRepo.updateProject(any()));
+
+      releaseProvisioning.complete();
+      await provisioning;
+      await save;
+
+      verify(() => mockRepo.updateProject(any())).called(1);
+    });
 
     test(
       'saveChanges sets updateFailed when repository returns false',

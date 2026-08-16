@@ -213,7 +213,7 @@ void main() {
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
-      projectExists: (_) async => true,
+      projectScopeIsCurrent: (_, _) async => true,
       mutationCoordinator: ProjectAgentMutationCoordinator(),
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
@@ -223,6 +223,40 @@ void main() {
 
   group('ProjectAgentService', () {
     group('createProjectAgent', () {
+      test(
+        'rejects a stale project category before creating an agent',
+        () async {
+          final scopedService = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+            projectScopeIsCurrent: (_, categoryIds) async =>
+                categoryIds.contains('current-category'),
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
+          );
+
+          await expectLater(
+            () => scopedService.createProjectAgent(
+              projectId: 'project-with-new-category',
+              templateId: kTestTemplateId,
+              displayName: 'Stale scope',
+              allowedCategoryIds: const {'old-category'},
+            ),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+
       glados.Glados(
         glados.any.projectAgentCreateScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -237,7 +271,7 @@ void main() {
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
           syncService: generatedSyncService,
-          projectExists: (_) async => true,
+          projectScopeIsCurrent: (_, _) async => true,
           mutationCoordinator: ProjectAgentMutationCoordinator(),
           onPersistedStateChanged: generatedNotifiedAgentIds.add,
         );
@@ -576,7 +610,7 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: mockSyncService,
-            projectExists: (_) async => existenceChecks++ == 0,
+            projectScopeIsCurrent: (_, _) async => existenceChecks++ == 0,
             mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
           );
@@ -1210,7 +1244,7 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
-            projectExists: (_) async => true,
+            projectScopeIsCurrent: (_, _) async => true,
             mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
             cancellationCoordinator: cancellationCoordinator,
@@ -1278,7 +1312,7 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
-            projectExists: (_) async => true,
+            projectScopeIsCurrent: (_, _) async => true,
             mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
           );
@@ -2057,7 +2091,7 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: mockSyncService,
-            projectExists: (_) async => true,
+            projectScopeIsCurrent: (_, _) async => true,
             mutationCoordinator: ProjectAgentMutationCoordinator(),
           );
 

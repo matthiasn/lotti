@@ -406,6 +406,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     final resolveProjectAgents = ref.read(
       projectAgentsForProjectResolverProvider,
     );
+    final resolveProject = ref.read(projectByIdResolverProvider);
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.projectDeleteConfirmTitle,
@@ -499,10 +500,13 @@ class ProjectDetailsPage extends ConsumerWidget {
 
       var deleted = false;
       try {
-        deleted = await repository.deleteProject(
-          project,
-          deletedAt: clock.now(),
-        );
+        final currentProject = await resolveProject(project.id);
+        deleted =
+            currentProject == null ||
+            await repository.deleteProject(
+              currentProject,
+              deletedAt: clock.now(),
+            );
       } catch (error, stackTrace) {
         developer.log(
           'Failed to soft-delete project',

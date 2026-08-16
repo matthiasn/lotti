@@ -46,25 +46,28 @@ expensive and useless.
 
 `ProjectAgentService.createProjectAgent()`:
 
-1. Serializes with destructive mutation of the same project and verifies the
-   journal project still exists.
+1. Serializes with category edits and destructive mutation of the same project,
+   then verifies the journal project still exists with the requested category.
 2. Enforces one project agent per project.
 3. Validates the template is a project-agent template.
 4. Creates identity and state.
 5. Sets `slots.activeProjectId` and marks the explicit creation work pending.
 6. Persists a one-shot next-06:00 fallback for the in-memory creation wake.
 7. Creates `agent_project` and `template_assignment` links.
-8. Rechecks the journal project; a sync tombstone compensates by deleting the
-   just-created agent before it can be announced, subscribed, or woken.
+8. Rechecks the journal project and category; a sync tombstone or scope change
+   compensates by deleting the just-created agent before it can be announced,
+   subscribed, or woken.
 9. Announces itself (see below).
 10. Registers the project subscription.
 11. Enqueues the explicit creation wake.
 
-The project delete flow holds the same per-project coordinator while it resolves
-and retires every linked agent and writes the project tombstone. Agent and
-journal data use separate databases, so the coordinator provides the local
-cross-store exclusion that a database transaction cannot; the post-create
-existence check covers an independent tombstone arriving through sync.
+Project category saves and the delete flow hold the same per-project coordinator
+as provisioning. Deletion resolves and retires every linked agent, re-reads the
+current project after the confirmation delay, and writes that version's
+tombstone. Agent and journal data use separate databases, so the coordinator
+provides the local cross-store exclusion that a database transaction cannot;
+the pre/post-create scope checks cover both stale category input and an
+independent tombstone or category change arriving through sync.
 Because a peer can still apply its tombstone after that final check,
 `ProjectActivityMonitor` also listens to `syncUpdateStream` for project rows.
 When the announced project is already absent, it cancels queued/running work

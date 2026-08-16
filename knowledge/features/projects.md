@@ -148,7 +148,10 @@ and template context scoped to its former category. `linkTaskToProject` uses the
 same database transaction domain, so a new membership cannot land between the
 task guard and the category write. Keeping the guards in the repository covers
 both the inline picker and the full editor instead of relying on either UI to
-remember the invariant.
+remember the invariant. Category saves also hold the same per-project mutation
+coordinator as agent provisioning. The service then re-reads the category under
+that coordinator before and after creation, so an agent modal opened against an
+older category cannot provision stale permissions after waiting for a save.
 
 # Two hot reads are shaped for bursts
 
@@ -256,9 +259,12 @@ cannot repopulate the editor and resurrect the tombstoned project on save.
 Cancel and system-back exits discard the shared
 editor draft before returning to the still-mounted desktop detail, so canceled
 values cannot appear there or leak into a later inline save. Project deletion
-resolves every live linked project agent, aborts their running wakes and
-retires all of them before soft-deleting the project, so duplicate identities,
-runtime subscriptions and pending work cannot outlive the project. A
+resolves every live linked project agent, aborts their running wakes and retires
+all of them before soft-deleting the project. Immediately before that tombstone
+write it re-reads the project inside the shared mutation coordinator, so the
+vector clock cannot come from the stale entity captured before the confirmation
+modal. Duplicate identities, runtime subscriptions and pending work cannot
+outlive the project. A
 retirement error aborts deletion instead of claiming success; when that error
 followed a committed lifecycle write, the deletion path re-reads the agent and
 restores its exact prior lifecycle before returning; dormant agents remain
