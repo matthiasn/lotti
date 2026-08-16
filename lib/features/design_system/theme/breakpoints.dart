@@ -49,6 +49,18 @@ const kUnifiedGoalsContentMaxWidth = 700.0;
 /// habits-header breakpoint, shared by the unified Goals header.
 const kPageHeaderFoldWidth = 520.0;
 
+/// The goal detail chat drawer's width (design handover §4b: "~400px right
+/// overlay") — a non-modal peer surface, not a column the dashboard reflows
+/// around.
+const kGoalChatDrawerWidth = 400.0;
+
+/// The narrowest content width at which the goal detail hero pair — the
+/// This-week card and the Agent's-read card — sits side by side; below it
+/// the pair stacks. Each card needs roughly the action-list measure's half
+/// plus its padding to keep the 7-day strip and two lines of narrative
+/// legible.
+const kGoalHeroPairMinWidth = 560.0;
+
 /// The narrowest row width that can host an inline trailing control (a
 /// stepper, say) beside the row's title without starving the title's measure.
 /// Below this, the control drops to the row's secondary line.

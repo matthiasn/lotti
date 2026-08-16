@@ -6198,6 +6198,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalChatWhyPrefill(String status) {
+    return 'Proč je tento cíl teď $status?';
+  }
+
+  @override
   String get goalChatYou => 'Ty';
 
   @override
@@ -6223,9 +6228,6 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return 'Včera: $metCount z $dimensionCount dimenzí · potřeba: $requiredCount.';
   }
-
-  @override
-  String get goalCompositeProgressTitle => 'Celý cíl';
 
   @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
@@ -6292,6 +6294,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDeleteMenuItem => 'Smazat cíl';
 
   @override
+  String get goalDetailAboutAgentTitle => 'O tomto agentovi';
+
+  @override
+  String get goalDetailAgentReadTitle => 'Hodnocení agenta';
+
+  @override
+  String get goalDetailAskWhy => 'Proč?';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Zdraví tohoto cíle se teď nepodařilo načíst.';
 
@@ -6303,10 +6314,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailNotFound => 'Tento agent cíle už neexistuje.';
 
   @override
-  String get goalDetailSayingTitle => 'Co říká tvůj agent';
+  String goalDetailReadAsOf(String ago) {
+    return 'aktualizováno $ago';
+  }
+
+  @override
+  String get goalDetailSignalsTitle => 'Signály';
 
   @override
   String get goalDetailStatementLabel => 'Tvůj cíl';
+
+  @override
+  String get goalDetailThisWeekTitle => 'Tento týden';
 
   @override
   String get goalDetailTimelineTitle => 'Interakce';
@@ -6314,9 +6333,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
-
-  @override
-  String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
@@ -6746,6 +6762,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalPatternTitle => 'Vzorek časování';
 
   @override
+  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
+
+  @override
   String get goalProgressAgesOut => 'dnes vypadne';
 
   @override
@@ -6912,11 +6931,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'Zotavuje se';
-
-  @override
-  String goalWatchingMetric(String windowLabel) {
-    return 'Aktualizace z propojeného zdroje · $windowLabel';
-  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendářní měsíc';
@@ -13109,7 +13123,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
 }

@@ -683,11 +683,16 @@ flowchart TD
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
   adds a seven-cell compact strip to the list — at the detail page's day-cell
   size, so the two surfaces draw the same instrument at the same scale (the
-  strip's earlier 12px list default read as illegible dots). On desktop the
-  detail page's middle column applies its reading measure to the content
-  *inside* the scroll view, never to the scroll view itself — constraining
-  the scroll view parked the scrollbar mid-pane instead of at the pane edge
-  beside the chat divider. The detail page builds **eagerly** — a `Column`
+  strip's earlier 12px list default read as illegible dots). The detail page
+  is the §4b dashboard: a left-aligned column capped at the unified-Goals
+  measure (`kUnifiedGoalsContentMaxWidth`) whose hero pair puts the
+  deterministic This-week card (`GoalThisWeekCard` — whole-goal strip,
+  Reflect-on-today, yesterday tally) beside the timestamped Agent's-read
+  card, side by side above `kGoalHeroPairMinWidth` and stacked below it,
+  with the Habits and Signals sections beneath and the cost/automation
+  plumbing folded into an About-this-agent expander at the foot. The
+  reading measure applies to the content *inside* the scroll view, never to
+  the scroll view itself. The detail page builds **eagerly** — a `Column`
   in a `SingleChildScrollView`, never a lazy list: its section count is
   small and bounded, lazy mounting made scrolling janky, and a scrolled-away
   lazy section could unmount the `ensureVisible` anchor the banner CTA
@@ -761,8 +766,10 @@ flowchart TD
   completion service; category-time dimensions never trigger the suggestion
   because their days are observed by definition.
   The provider invalidates itself at the next local midnight so Today,
-  ages-out and window boundaries cannot remain stuck on yesterday. The detail
-  view also carries an explicit Watching section. A reliability tail is shown
+  ages-out and window boundaries cannot remain stuck on yesterday. The data
+  dimensions render under a Signals heading whose footnote states the
+  deterministic freshness contract (live within seconds, bounded to what is
+  listed). A reliability tail is shown
   only for an authored rolling-seven-day habit; other windows do not reinterpret
   their period as weekly reliability. Every
   habit day in that grid — including previous days — opens success/missed
@@ -807,8 +814,17 @@ flowchart TD
   to the evidence for goals without habit dimensions. The chat pane's
   subtitle is the coarse-health label, current state rather than the
   aspiration statement. Mobile opens durable conversation
-  at `/goals/details/:agentId/chat`; desktop renders the same
-  `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
+  at `/goals/details/:agentId/chat`; desktop hosts the same
+  `GoalAgentChatPane` in a ~400px **non-modal overlay drawer**
+  (`kGoalChatDrawerWidth`): it slides over the dashboard without reflow,
+  stays mounted while closed so the draft survives, closes on Esc, ×, or an
+  outside tap (a shared `TapRegion` group keeps the Talk-to and Ask-why
+  openers from counting as outside), and its header carries the same
+  `UnifiedGoalStatusPill` as the page so the two can never disagree. The
+  Agent's-read card's Ask-why link opens that conversation pre-filled with
+  the computed status (never clobbering an existing draft); the card also
+  carries the read's "as of" age, self-demoting to the out-of-date notice
+  when the runtime marks the report stale. The mobile route mounts the composer only
   for an active goal identity, shows the coarse-health label (current state,
   never the aspiration statement) in its compact
   chat header, and persists the detail

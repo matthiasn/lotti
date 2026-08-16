@@ -10517,6 +10517,12 @@ abstract class AppLocalizations {
   /// **'Talk to {agentName}'**
   String goalChatTalkTo(String agentName);
 
+  /// Chat draft pre-filled by Ask why; {status} is the localized status pill label.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is this goal {status} right now?'**
+  String goalChatWhyPrefill(String status);
+
   /// No description provided for @goalChatYou.
   ///
   /// In en, this message translates to:
@@ -10562,12 +10568,6 @@ abstract class AppLocalizations {
     int dimensionCount,
     int requiredCount,
   );
-
-  /// No description provided for @goalCompositeProgressTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'The whole goal'**
-  String get goalCompositeProgressTitle;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///
@@ -10671,6 +10671,24 @@ abstract class AppLocalizations {
   /// **'Delete goal'**
   String get goalDeleteMenuItem;
 
+  /// Collapsed expander row holding cost pills and the automatic-updates toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'About this agent'**
+  String get goalDetailAboutAgentTitle;
+
+  /// Title of the goal detail hero card holding the agent's standing narrative.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent\'s read'**
+  String get goalDetailAgentReadTitle;
+
+  /// Link on the agent's-read card that opens chat pre-filled with a why question.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask why'**
+  String get goalDetailAskWhy;
+
   /// No description provided for @goalDetailHealthUnavailable.
   ///
   /// In en, this message translates to:
@@ -10689,17 +10707,29 @@ abstract class AppLocalizations {
   /// **'This goal agent no longer exists.'**
   String get goalDetailNotFound;
 
-  /// No description provided for @goalDetailSayingTitle.
+  /// Freshness timestamp on the agent's-read card.
   ///
   /// In en, this message translates to:
-  /// **'What your agent is saying'**
-  String get goalDetailSayingTitle;
+  /// **'as of {ago}'**
+  String goalDetailReadAsOf(String ago);
+
+  /// Section heading over the data-signal dimension cards on goal detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals'**
+  String get goalDetailSignalsTitle;
 
   /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
   ///
   /// In en, this message translates to:
   /// **'Your goal'**
   String get goalDetailStatementLabel;
+
+  /// Title of the goal detail hero card holding the whole-goal 7-day strip.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get goalDetailThisWeekTitle;
 
   /// Section title of the agent detail interaction timeline.
   ///
@@ -10712,12 +10742,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
-
-  /// No description provided for @goalDetailWatchingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Watching'**
-  String get goalDetailWatchingTitle;
 
   /// No description provided for @goalDimensionCategoryTimeSource.
   ///
@@ -11382,6 +11406,12 @@ abstract class AppLocalizations {
   /// **'Timing pattern'**
   String get goalPatternTitle;
 
+  /// Chip on a goal card when a revision proposal is pending review.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal awaiting review'**
+  String get goalPendingProposalBadge;
+
   /// No description provided for @goalProgressAgesOut.
   ///
   /// In en, this message translates to:
@@ -11615,12 +11645,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recovering'**
   String get goalStatusRecovering;
-
-  /// No description provided for @goalWatchingMetric.
-  ///
-  /// In en, this message translates to:
-  /// **'Updates from its linked source · {windowLabel}'**
-  String goalWatchingMetric(String windowLabel);
 
   /// No description provided for @goalWindowCalendarMonth.
   ///
@@ -21860,12 +21884,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Chip on a goal card when a revision proposal is pending review.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposal awaiting review'**
-  String get goalPendingProposalBadge;
 }
 
 class _AppLocalizationsDelegate

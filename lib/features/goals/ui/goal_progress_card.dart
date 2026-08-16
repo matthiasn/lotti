@@ -545,18 +545,11 @@ class GoalProgressCard extends StatelessWidget {
   const GoalProgressCard({
     required this.progress,
     this.onHabitOutcomeSelected,
-    this.onReflectDay,
-    this.ratingsByDay = const {},
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
-  final ValueChanged<DateTime>? onReflectDay;
-
-  /// Day verdicts the user has recorded, keyed by UTC day. They decide the
-  /// whole-goal strip's colours, outranking what the app measured.
-  final Map<DateTime, GoalAssessmentRating> ratingsByDay;
 
   @override
   Widget build(BuildContext context) {
@@ -567,28 +560,25 @@ class GoalProgressCard extends StatelessWidget {
           metric.categoryTimeSessions.isNotEmpty,
     );
     final bloodPressure = _bloodPressureMetrics(progress.metrics);
+    final hasSignalCards =
+        progress.metrics.isNotEmpty || patternMetrics.isNotEmpty;
+    Widget sectionHeading(String title) => Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+      child: Text(
+        title,
+        style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+          color: tokens.colors.text.highEmphasis,
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // A composite goal always gets this card: the strip is the only place
-        // its dimensions are summed into one week.
-        //
-        // A leaf goal gets it only where the days are actionable. Gating it on
-        // the composite rule alone left single-habit and single-metric goals
-        // unable to reflect on a past day at all and showing none of the
-        // verdict colours — the feature is about goal days, and a leaf goal
-        // has those too. Adding the card unconditionally would instead put a
-        // second, near-identical week above the one its single dimension
-        // already draws.
-        if (progress.compositeRule != null ||
-            (onReflectDay != null && progress.compactWindow.isNotEmpty)) ...[
-          _CompositeProgressCard(
-            progress: progress,
-            onReflectDay: onReflectDay,
-            ratingsByDay: ratingsByDay,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-        ],
+        // The whole-goal week lives in [GoalThisWeekCard], placed by the page
+        // in its hero pair (design handover §4b) — this widget owns only the
+        // evidence sections beneath it: Habits, then the data Signals.
+        if (progress.habits.isNotEmpty)
+          sectionHeading(context.messages.navTabTitleHabits),
         for (var index = 0; index < progress.habits.length; index++) ...[
           _HabitDimensionCard(
             habit: progress.habits[index],
@@ -598,7 +588,8 @@ class GoalProgressCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
-
+        if (hasSignalCards)
+          sectionHeading(context.messages.goalDetailSignalsTitle),
         for (final metric in progress.metrics)
           if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
             if (bloodPressure != null && metric == bloodPressure.systolic)
@@ -614,17 +605,45 @@ class GoalProgressCard extends StatelessWidget {
           _CategoryPatternCard(metric: patternMetric),
           SizedBox(height: tokens.spacing.step3),
         ],
+        if (hasSignalCards)
+          // The freshness contract for the deterministic layer, stated once
+          // under the signals it covers (§4b): live numbers, bounded scope.
+          Text(
+            context.messages.goalDetailWatchingSignals,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
       ],
     );
   }
 }
 
-class _CompositeProgressCard extends StatelessWidget {
-  const _CompositeProgressCard({
+/// The whole-goal "This week" hero card (design handover §4b): the one place
+/// a goal's dimensions are summed into a single week — the large 7-day strip
+/// with the user's verdict colours, the Reflect-on-today row, and (for
+/// composite goals) the yesterday dimension tally.
+class GoalThisWeekCard extends StatelessWidget {
+  const GoalThisWeekCard({
     required this.progress,
     this.onReflectDay,
     this.ratingsByDay = const {},
+    super.key,
   });
+
+  /// Whether the card has anything to show for [progress].
+  ///
+  /// A composite goal always gets it: the strip is the only place its
+  /// dimensions are summed into one week. A leaf goal gets it only where the
+  /// days are actionable ([canReflect]) — the feature is about goal days,
+  /// and a leaf goal has those too, but without reflection the card would
+  /// just duplicate the week its single dimension already draws.
+  static bool shouldShow(
+    GoalProgressView progress, {
+    required bool canReflect,
+  }) =>
+      progress.compositeRule != null ||
+      (canReflect && progress.compactWindow.isNotEmpty);
 
   final GoalProgressView progress;
 
@@ -657,7 +676,7 @@ class _CompositeProgressCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.goalCompositeProgressTitle,
+            context.messages.goalDetailThisWeekTitle,
             style: tokens.typography.styles.subtitle.subtitle2,
           ),
           SizedBox(height: tokens.spacing.step3),

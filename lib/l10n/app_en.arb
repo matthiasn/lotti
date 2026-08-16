@@ -3383,6 +3383,16 @@
       }
     }
   },
+  "goalChatWhyPrefill": "Why is this goal {status} right now?",
+  "@goalChatWhyPrefill": {
+    "description": "Chat draft pre-filled by Ask why; {status} is the localized status pill label.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Behind"
+      }
+    }
+  },
   "goalChatYou": "You",
   "goalCoarseHealthBehind": "Behind",
   "@goalCoarseHealthBehind": {
@@ -3418,7 +3428,6 @@
       }
     }
   },
-  "goalCompositeProgressTitle": "The whole goal",
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
@@ -3486,23 +3495,51 @@
   "@goalDeleteMenuItem": {
     "description": "Overflow menu item on the goal detail page that starts deleting the goal agent."
   },
+  "goalDetailAboutAgentTitle": "About this agent",
+  "@goalDetailAboutAgentTitle": {
+    "description": "Collapsed expander row holding cost pills and the automatic-updates toggle."
+  },
+  "goalDetailAgentReadTitle": "Agent's read",
+  "@goalDetailAgentReadTitle": {
+    "description": "Title of the goal detail hero card holding the agent's standing narrative."
+  },
+  "goalDetailAskWhy": "Ask why",
+  "@goalDetailAskWhy": {
+    "description": "Link on the agent's-read card that opens chat pre-filled with a why question."
+  },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "@goalDetailNoReport": {
     "description": "Placeholder when a goal agent has not written a report yet."
   },
   "goalDetailNotFound": "This goal agent no longer exists.",
-  "goalDetailSayingTitle": "What your agent is saying",
+  "goalDetailReadAsOf": "as of {ago}",
+  "@goalDetailReadAsOf": {
+    "description": "Freshness timestamp on the agent's-read card.",
+    "placeholders": {
+      "ago": {
+        "type": "String",
+        "example": "2 h ago"
+      }
+    }
+  },
+  "goalDetailSignalsTitle": "Signals",
+  "@goalDetailSignalsTitle": {
+    "description": "Section heading over the data-signal dimension cards on goal detail."
+  },
   "goalDetailStatementLabel": "Your goal",
   "@goalDetailStatementLabel": {
     "description": "Caption above the goal statement on the detail page, marking it as the aspiration rather than current status."
+  },
+  "goalDetailThisWeekTitle": "This week",
+  "@goalDetailThisWeekTitle": {
+    "description": "Title of the goal detail hero card holding the whole-goal 7-day strip."
   },
   "goalDetailTimelineTitle": "Interactions",
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
-  "goalDetailWatchingTitle": "Watching",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",
   "@goalDimensionHabitReading": {
@@ -4002,14 +4039,6 @@
   "goalStatusRecovering": "Recovering",
   "@goalStatusRecovering": {
     "description": "Goal track status chip: climbing back after being behind."
-  },
-  "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
-  "@goalWatchingMetric": {
-    "placeholders": {
-      "windowLabel": {
-        "type": "String"
-      }
-    }
   },
   "goalWindowCalendarMonth": "calendar month",
   "goalWindowCalendarWeek": "calendar week",
