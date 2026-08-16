@@ -9843,7 +9843,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Lance l’agent du projet pour créer une évaluation à partir de l’activité récente du projet et de ses tâches.';
 
   @override
-  String get projectHealthEmptyTitle => 'Aucun rapport de santé pour le moment';
+  String get projectHealthEmptyTitle =>
+      'Aucune évaluation de l’état pour le moment';
 
   @override
   String get projectHealthRunNow => 'Générer le rapport';
@@ -9902,6 +9903,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Aucun projet';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Impossible de modifier le projet de la tâche. Vérifie la catégorie et la confidentialité, puis réessaie.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Ignorer';

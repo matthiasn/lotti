@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -15,6 +14,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -36,6 +37,8 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
+import '../../../agents/test_data/template_factories.dart';
+import '../../../ai/test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
@@ -62,6 +65,15 @@ class _TestProjectDetailController extends ProjectDetailController {
 
   @override
   Future<void> saveChanges() async {}
+}
+
+class _TestInferenceProfileController extends InferenceProfileController {
+  _TestInferenceProfileController(this.profiles);
+
+  final List<AiConfig> profiles;
+
+  @override
+  Stream<List<AiConfig>> build() => Stream.value(profiles);
 }
 
 /// A tracking variant that records calls to [updateCategoryId],
@@ -615,6 +627,216 @@ void main() {
           expect(content.isRefreshingReport, isFalse);
         },
       );
+
+      testWidgets('does not offer assignment while agent lookup is pending', (
+        tester,
+      ) async {
+        final pendingAgent = Completer<AgentDomainEntity?>();
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          projectAgentOverride: projectAgentProvider(
+            _projectId,
+          ).overrideWith((ref) => pendingAgent.future),
+        );
+
+        final content = tester.widget<ProjectMobileDetailContent>(
+          find.byType(ProjectMobileDetailContent),
+        );
+        expect(content.onAssignAgent, isNull);
+        expect(content.hasProjectAgent, isTrue);
+        expect(find.text('Assign an agent'), findsNothing);
+
+        pendingAgent.complete();
+      });
+
+      testWidgets(
+        'assigns a project agent from the unprovisioned health state',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          ({
+            String projectId,
+            String templateId,
+            String displayName,
+            Set<String> allowedCategoryIds,
+            String? profileId,
+          })?
+          creation;
+          final template = makeTestTemplate(
+            id: 'project-template',
+            displayName: 'Project guide',
+            kind: AgentTemplateKind.projectAgent,
+          );
+          final profile = AiTestDataFactory.createTestProfile(
+            id: 'project-profile',
+            name: 'Project profile',
+          );
+          when(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          ).thenAnswer(
+            (invocation) async {
+              creation = (
+                projectId: invocation.namedArguments[#projectId]! as String,
+                templateId: invocation.namedArguments[#templateId]! as String,
+                displayName: invocation.namedArguments[#displayName]! as String,
+                allowedCategoryIds:
+                    invocation.namedArguments[#allowedCategoryIds]!
+                        as Set<String>,
+                profileId: invocation.namedArguments[#profileId] as String?,
+              );
+              return makeTestIdentity(
+                agentId: 'assigned-project-agent',
+                kind: 'project_agent',
+              );
+            },
+          );
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [template],
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _TestInferenceProfileController([profile]),
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          expect(find.text('Project profile'), findsOneWidget);
+
+          await tester.tap(find.text('Project profile'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(creation?.projectId, _projectId);
+          expect(creation?.templateId, 'project-template');
+          expect(creation?.displayName, testProject.data.title);
+          expect(creation?.allowedCategoryIds, isEmpty);
+          expect(creation?.profileId, 'project-profile');
+        },
+      );
+
+      testWidgets(
+        'explains when no project-agent template can be assigned',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            extraOverrides: [
+              projectAgentServiceProvider.overrideWithValue(agentService),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => [makeTestTemplate()],
+              ),
+            ],
+          );
+
+          await tester.tap(find.text('Assign an agent'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(
+            find.text('No templates available. Create one in Settings first.'),
+            findsOneWidget,
+          );
+          verifyNever(
+            () => agentService.createProjectAgent(
+              projectId: any(named: 'projectId'),
+              templateId: any(named: 'templateId'),
+              displayName: any(named: 'displayName'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              profileId: any(named: 'profileId'),
+            ),
+          );
+        },
+      );
+
+      testWidgets('reports project-agent assignment failures', (tester) async {
+        final agentService = MockProjectAgentService();
+        final template = makeTestTemplate(
+          id: 'failing-project-template',
+          kind: AgentTemplateKind.projectAgent,
+        );
+        final profile = AiTestDataFactory.createTestProfile(
+          id: 'failing-project-profile',
+          name: 'Failing project profile',
+        );
+        when(
+          () => agentService.createProjectAgent(
+            projectId: any(named: 'projectId'),
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            profileId: any(named: 'profileId'),
+          ),
+        ).thenThrow(StateError('create failed'));
+
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          extraOverrides: [
+            projectAgentServiceProvider.overrideWithValue(agentService),
+            agentTemplatesProvider.overrideWith(
+              (ref) async => [template],
+            ),
+            inferenceProfileControllerProvider.overrideWith(
+              () => _TestInferenceProfileController([profile]),
+            ),
+          ],
+        );
+
+        await tester.tap(find.text('Assign an agent'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.tap(find.text('Failing project profile'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(
+          find.textContaining('Failed to create agent:'),
+          findsOneWidget,
+        );
+      });
 
       testWidgets(
         'preserves the project agent while its provider reloads',

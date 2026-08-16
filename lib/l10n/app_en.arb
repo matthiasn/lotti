@@ -5431,7 +5431,7 @@
     }
   },
   "projectHealthEmptyBody": "Run the project agent to create an assessment from the latest project and task activity.",
-  "projectHealthEmptyTitle": "No health report yet",
+  "projectHealthEmptyTitle": "No health assessment yet",
   "projectHealthRunNow": "Run report",
   "projectHealthSectionTitle": "Project health",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
@@ -5461,6 +5461,10 @@
   "projectNotFound": "Project not found",
   "projectPickerLabel": "Project",
   "projectPickerUnassigned": "No project",
+  "projectPickerUpdateFailed": "Could not change this task's project. Check its category and privacy, then try again.",
+  "@projectPickerUpdateFailed": {
+    "description": "Error shown when a task-project assignment is rejected after the picker was opened."
+  },
   "projectRecommendationDismissTooltip": "Dismiss",
   "projectRecommendationResolveTooltip": "Mark resolved",
   "projectRecommendationsTitle": "Recommended next steps",

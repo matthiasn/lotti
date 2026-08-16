@@ -186,19 +186,24 @@ class HealthPanel extends StatelessWidget {
 
 /// Neutral placeholder shown until a project agent produces a health payload.
 ///
-/// When [hasAgent] is false, the copy explains that provisioning is missing
-/// instead of instructing the user to run an unavailable agent.
+/// When [hasAgent] is false, the copy explains that provisioning is missing and
+/// [onAssignAgent] can restore the assignment path instead of showing an
+/// unavailable report action.
 class ProjectHealthEmptyState extends StatelessWidget {
   const ProjectHealthEmptyState({
     this.onRunReport,
+    this.onAssignAgent,
     this.hasAgent = true,
     this.isRunningReport = false,
+    this.isAssigningAgent = false,
     super.key,
   });
 
   final VoidCallback? onRunReport;
+  final VoidCallback? onAssignAgent;
   final bool hasAgent;
   final bool isRunningReport;
+  final bool isAssigningAgent;
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +251,17 @@ class ProjectHealthEmptyState extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: onRunReport,
                     isLoading: isRunningReport,
+                  ),
+                ] else if (!hasAgent && onAssignAgent != null) ...[
+                  SizedBox(height: tokens.spacing.step4),
+                  DesignSystemButton(
+                    label: context.messages.taskFirstRunAssignAgent,
+                    leadingIcon: Icons.smart_toy_outlined,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.dense,
+                    tapTargetSize: MaterialTapTargetSize.padded,
+                    onPressed: onAssignAgent,
+                    isLoading: isAssigningAgent,
                   ),
                 ],
               ],

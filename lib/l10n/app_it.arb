@@ -4239,6 +4239,7 @@
   "projectNotFound": "Progetto non trovato",
   "projectPickerLabel": "Progetto",
   "projectPickerUnassigned": "Nessun progetto",
+  "projectPickerUpdateFailed": "Impossibile modificare il progetto dell'attività. Controlla categoria e privacy e riprova.",
   "projectRecommendationDismissTooltip": "Discorso",
   "projectRecommendationResolveTooltip": "Mark risolto",
   "projectRecommendationsTitle": "Prossimi passi consigliati",

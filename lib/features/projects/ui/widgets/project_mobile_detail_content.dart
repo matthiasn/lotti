@@ -33,7 +33,8 @@ import 'package:lotti/utils/color.dart';
 /// X ago" label. On wide windows, the header and scrollable body use the shared
 /// detail reading measure instead of stretching report text and cards edge to
 /// edge. [hasProjectAgent] distinguishes an unassessed agent from a project
-/// that cannot produce a report yet.
+/// that cannot produce a report yet; [onAssignAgent] lets that empty state
+/// provision an existing project without leaving the workspace.
 class ProjectMobileDetailContent extends StatefulWidget {
   const ProjectMobileDetailContent({
     required this.record,
@@ -48,6 +49,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onAddTask,
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
+    this.onAssignAgent,
     this.agentActions,
     this.hasProjectAgent = true,
     this.isRefreshingReport = false,
@@ -68,6 +70,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final Future<void> Function()? onAddTask;
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
+  final Future<void> Function()? onAssignAgent;
   final Widget? agentActions;
   final bool hasProjectAgent;
   final bool isRefreshingReport;
@@ -84,6 +87,7 @@ class _ProjectMobileDetailContentState
   late final ScrollController _scrollController = ScrollController();
   bool _isAddingTask = false;
   bool _isDeleting = false;
+  bool _isAssigningAgent = false;
 
   Future<void> _handleAddTask() async {
     final onAddTask = widget.onAddTask;
@@ -113,6 +117,24 @@ class _ProjectMobileDetailContentState
     }
   }
 
+  Future<void> _handleAssignAgent() async {
+    final onAssignAgent = widget.onAssignAgent;
+    if (onAssignAgent == null ||
+        widget.isSaving ||
+        _isAddingTask ||
+        _isDeleting ||
+        _isAssigningAgent) {
+      return;
+    }
+
+    setState(() => _isAssigningAgent = true);
+    try {
+      await onAssignAgent();
+    } finally {
+      if (mounted) setState(() => _isAssigningAgent = false);
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -128,7 +150,8 @@ class _ProjectMobileDetailContentState
         .where((summary) => summary.task.data.status is TaskBlocked)
         .toList(growable: false);
     final firstBlockedTask = blockedTasks.isEmpty ? null : blockedTasks.first;
-    final isMutating = widget.isSaving || _isAddingTask || _isDeleting;
+    final isMutating =
+        widget.isSaving || _isAddingTask || _isDeleting || _isAssigningAgent;
     final menuItems = <DesignSystemContextMenuItem>[
       if (widget.onEdit != null)
         DesignSystemContextMenuItem(
@@ -221,6 +244,10 @@ class _ProjectMobileDetailContentState
                                         : widget.onRefreshReport,
                                     hasAgent: widget.hasProjectAgent,
                                     isRunningReport: widget.isRefreshingReport,
+                                    onAssignAgent: widget.onAssignAgent == null
+                                        ? null
+                                        : _handleAssignAgent,
+                                    isAssigningAgent: _isAssigningAgent,
                                   )
                                 : HealthPanel(
                                     record: widget.record,

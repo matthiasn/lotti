@@ -225,7 +225,9 @@ the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
 project; title and description controllers synchronize independently, so a
-dirty description does not leave a clean, remotely updated title stale. Save
+dirty description does not leave a clean, remotely updated title stale. The
+description rebase carries only the local plain text onto the synced
+`EntryText`, preserving newer markdown, rich-text and geolocation payloads. Save
 locks Cancel, Back and system-back until persistence settles, preventing a
 discarded route from racing the still-running write. The controller invalidates
 pending edits when sync reports that the project was deleted. Description edits
@@ -283,7 +285,8 @@ it never converts a categorical assessment into a fabricated numeric score.
 That timestamp makes the assessment's snapshot provenance explicit beside live
 task counts. Blocker navigation appears only when blocked tasks exist and opens
 the first actionable blocker. A project with no agent gets distinct
-provisioning guidance rather than an unavailable Run report instruction.
+provisioning guidance and an assignment action rather than an unavailable Run
+report instruction.
 
 The user-authored project description and the agent report are distinct fields
 in the detail read model. A missing report renders the neutral report-empty

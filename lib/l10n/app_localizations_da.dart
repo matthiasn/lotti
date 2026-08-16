@@ -9669,7 +9669,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kør projektagenten for at oprette en vurdering ud fra den seneste projekt- og opgaveaktivitet.';
 
   @override
-  String get projectHealthEmptyTitle => 'Ingen sundhedsrapport endnu';
+  String get projectHealthEmptyTitle => 'Ingen helbredsvurdering endnu';
 
   @override
   String get projectHealthRunNow => 'Kør rapport';
@@ -9728,6 +9728,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Intet projekt';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Opgavens projekt kunne ikke ændres. Kontrollér kategori og privatliv, og prøv igen.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Afvist';

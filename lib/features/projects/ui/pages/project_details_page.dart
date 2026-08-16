@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
@@ -100,6 +101,7 @@ class ProjectDetailsPage extends ConsumerWidget {
     final agentAsync = ref.watch(projectAgentProvider(projectId));
     final agent = agentAsync.value;
     final identity = agent?.mapOrNull(agent: (value) => value);
+    final canAssignProjectAgent = agentAsync.hasValue && identity == null;
     final isRefreshingReport =
         identity != null &&
         (ref.watch(agentIsRunningProvider(identity.agentId)).value ?? false);
@@ -171,6 +173,9 @@ class ProjectDetailsPage extends ConsumerWidget {
                         identity.agentId,
                       );
                     },
+              onAssignAgent: canAssignProjectAgent
+                  ? () => _assignProjectAgent(context, ref, record.project)
+                  : null,
               agentActions: identity == null
                   ? null
                   : Column(
@@ -179,7 +184,7 @@ class ProjectDetailsPage extends ConsumerWidget {
                         ChangeSetSummaryCard.project(projectId: projectId),
                       ],
                     ),
-              hasProjectAgent: identity != null,
+              hasProjectAgent: identity != null || agentAsync.isLoading,
               isRefreshingReport: isRefreshingReport,
               isSaving: detailState.isSaving,
               onTaskTap: (summary) => beamToNamed(
@@ -210,6 +215,59 @@ class ProjectDetailsPage extends ConsumerWidget {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.commonError,
+      );
+    }
+  }
+
+  Future<void> _assignProjectAgent(
+    BuildContext context,
+    WidgetRef ref,
+    ProjectEntry project,
+  ) async {
+    try {
+      final templates = (await ref.read(agentTemplatesProvider.future))
+          .whereType<AgentTemplateEntity>()
+          .where((template) => template.kind == AgentTemplateKind.projectAgent)
+          .toList(growable: false);
+      if (!context.mounted) return;
+      if (templates.isEmpty) {
+        context.showToast(
+          tone: DesignSystemToastTone.warning,
+          title: context.messages.agentTemplateNoTemplates,
+        );
+        return;
+      }
+
+      final result = await AgentCreationModal.show(
+        context: context,
+        templates: templates,
+      );
+      if (result == null || !context.mounted) return;
+
+      await ref
+          .read(projectAgentServiceProvider)
+          .createProjectAgent(
+            projectId: project.meta.id,
+            templateId: result.templateId,
+            displayName: project.data.title,
+            allowedCategoryIds: {
+              if (project.meta.categoryId case final String categoryId)
+                categoryId,
+            },
+            profileId: result.profileId,
+          );
+      ref.invalidate(projectAgentProvider(project.meta.id));
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to assign project agent',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.taskAgentCreateError(error.toString()),
       );
     }
   }

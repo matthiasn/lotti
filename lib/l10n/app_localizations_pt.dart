@@ -9763,7 +9763,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Executa o agente do projeto para criar uma avaliação a partir da atividade mais recente do projeto e das tarefas.';
 
   @override
-  String get projectHealthEmptyTitle => 'Ainda não há relatório de estado';
+  String get projectHealthEmptyTitle => 'Ainda não há avaliação do estado';
 
   @override
   String get projectHealthRunNow => 'Gerar relatório';
@@ -9822,6 +9822,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Nenhum projeto';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Não foi possível alterar o projeto da tarefa. Verifica a categoria e a privacidade e tenta novamente.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Dispensar';

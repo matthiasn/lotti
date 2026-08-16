@@ -177,7 +177,12 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
       );
     }
     if (_projectDescription(pending) != _projectDescription(original)) {
-      rebased = rebased.copyWith(entryText: pending.entryText);
+      final plainText = pending.entryText?.plainText ?? '';
+      rebased = rebased.copyWith(
+        entryText:
+            persisted.entryText?.copyWith(plainText: plainText) ??
+            EntryText(plainText: plainText),
+      );
     }
     if (pending.meta.categoryId != original.meta.categoryId) {
       rebased = rebased.copyWith(

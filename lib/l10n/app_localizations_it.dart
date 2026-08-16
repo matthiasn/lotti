@@ -9864,6 +9864,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectPickerUnassigned => 'Nessun progetto';
 
   @override
+  String get projectPickerUpdateFailed =>
+      'Impossibile modificare il progetto dell\'attività. Controlla categoria e privacy e riprova.';
+
+  @override
   String get projectRecommendationDismissTooltip => 'Discorso';
 
   @override

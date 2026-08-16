@@ -9795,7 +9795,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Spusť agenta projektu, aby vytvořil hodnocení z nejnovější aktivity projektu a úkolů.';
 
   @override
-  String get projectHealthEmptyTitle => 'Zatím žádná zpráva o stavu';
+  String get projectHealthEmptyTitle => 'Zatím žádné hodnocení stavu';
 
   @override
   String get projectHealthRunNow => 'Spustit zprávu';
@@ -9857,6 +9857,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Žádný projekt';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Projekt úkolu se nepodařilo změnit. Zkontroluj kategorii a soukromí a zkus to znovu.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Zahodit';

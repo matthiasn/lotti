@@ -62,7 +62,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('No health report yet'), findsOneWidget);
+      expect(find.text('No health assessment yet'), findsOneWidget);
       expect(find.text('Health Score'), findsNothing);
     });
 

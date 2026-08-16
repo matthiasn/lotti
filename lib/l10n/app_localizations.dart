@@ -16444,7 +16444,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectHealthEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No health report yet'**
+  /// **'No health assessment yet'**
   String get projectHealthEmptyTitle;
 
   /// No description provided for @projectHealthRunNow.
@@ -16518,6 +16518,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No project'**
   String get projectPickerUnassigned;
+
+  /// Error shown when a task-project assignment is rejected after the picker was opened.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change this task\'s project. Check its category and privacy, then try again.'**
+  String get projectPickerUpdateFailed;
 
   /// No description provided for @projectRecommendationDismissTooltip.
   ///

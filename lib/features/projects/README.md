@@ -21,8 +21,9 @@ project agent is attached — a summary and health read that the agent maintains
   read. Relevant project and linked-task activity schedules one coalesced
   refresh; an idle project has no recurring wake.
 - **Is honest when it does not know.** If the agent has not produced a usable
-  health payload, the detail says that no report exists yet — nothing is
-  invented locally. Agent health stays categorical and explains its rationale.
+  health payload, the detail says that no health assessment exists yet —
+  nothing is invented locally. Agent health stays categorical and explains its
+  rationale. A project without an agent offers assignment in place.
 - **Groups the overview by area.** The projects tab groups projects under their
   category with task counts and filters. It opens on current work, keeps
   completed/archived projects behind All, prioritizes actionable work, and lets

@@ -9815,7 +9815,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ejecuta el agente del proyecto para crear una evaluación a partir de la actividad más reciente del proyecto y sus tareas.';
 
   @override
-  String get projectHealthEmptyTitle => 'Aún no hay informe de salud';
+  String get projectHealthEmptyTitle => 'Aún no hay evaluación de estado';
 
   @override
   String get projectHealthRunNow => 'Generar informe';
@@ -9874,6 +9874,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Sin proyecto';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'No se pudo cambiar el proyecto de la tarea. Comprueba la categoría y la privacidad e inténtalo de nuevo.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Descartar';

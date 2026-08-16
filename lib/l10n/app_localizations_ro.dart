@@ -9865,7 +9865,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulați agentul proiectului pentru a crea o evaluare din cea mai recentă activitate a proiectului și a sarcinilor.';
 
   @override
-  String get projectHealthEmptyTitle => 'Încă nu există un raport de stare';
+  String get projectHealthEmptyTitle => 'Încă nu există o evaluare a stării';
 
   @override
   String get projectHealthRunNow => 'Rulați raportul';
@@ -9927,6 +9927,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Fără proiect';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Proiectul sarcinii nu a putut fi schimbat. Verificați categoria și confidențialitatea, apoi încercați din nou.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Respinge';

@@ -287,13 +287,12 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
         currentProjectId: current?.meta.id,
         onProjectSelected: (selected) async {
           if (selected == null) {
-            await repository.unlinkTaskFromProject(taskId);
-          } else {
-            await repository.linkTaskToProject(
-              projectId: selected.meta.id,
-              taskId: taskId,
-            );
+            return repository.unlinkTaskFromProject(taskId);
           }
+          return repository.linkTaskToProject(
+            projectId: selected.meta.id,
+            taskId: taskId,
+          );
         },
       ),
     );

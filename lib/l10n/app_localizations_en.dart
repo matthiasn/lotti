@@ -9621,7 +9621,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Run the project agent to create an assessment from the latest project and task activity.';
 
   @override
-  String get projectHealthEmptyTitle => 'No health report yet';
+  String get projectHealthEmptyTitle => 'No health assessment yet';
 
   @override
   String get projectHealthRunNow => 'Run report';
@@ -9680,6 +9680,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'No project';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Could not change this task\'s project. Check its category and privacy, then try again.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Dismiss';

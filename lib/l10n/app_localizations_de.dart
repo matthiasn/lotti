@@ -9735,7 +9735,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Starte den Projektagenten, um aus den neuesten Projekt- und Aufgabenaktivitäten eine Einschätzung zu erstellen.';
 
   @override
-  String get projectHealthEmptyTitle => 'Noch kein Statusbericht';
+  String get projectHealthEmptyTitle => 'Noch keine Zustandsbewertung';
 
   @override
   String get projectHealthRunNow => 'Bericht erstellen';
@@ -9794,6 +9794,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Kein Projekt';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Das Projekt der Aufgabe konnte nicht geändert werden. Prüfe Kategorie und Datenschutz und versuche es erneut.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Ausblenden';

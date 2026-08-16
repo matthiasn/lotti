@@ -9684,7 +9684,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Voer de projectagent uit om een beoordeling te maken op basis van de nieuwste project- en taakactiviteit.';
 
   @override
-  String get projectHealthEmptyTitle => 'Nog geen gezondheidsrapport';
+  String get projectHealthEmptyTitle => 'Nog geen gezondheidsbeoordeling';
 
   @override
   String get projectHealthRunNow => 'Rapport uitvoeren';
@@ -9743,6 +9743,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Geen project';
+
+  @override
+  String get projectPickerUpdateFailed =>
+      'Het project van de taak kon niet worden gewijzigd. Controleer de categorie en privacy en probeer het opnieuw.';
 
   @override
   String get projectRecommendationDismissTooltip => 'Ingerukt';

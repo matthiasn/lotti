@@ -237,6 +237,51 @@ void main() {
       },
     );
 
+    testWidgets('serializes assignment from the unprovisioned health state', (
+      tester,
+    ) async {
+      final assignment = Completer<void>();
+      var assignmentRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            hasProjectAgent: false,
+            onAssignAgent: () {
+              assignmentRequests++;
+              return assignment.future;
+            },
+          ),
+        ),
+      );
+
+      final assignButton = find.widgetWithText(
+        DesignSystemButton,
+        'Assign an agent',
+      );
+      await tester.tap(assignButton);
+      await tester.pump();
+      await tester.tap(assignButton);
+
+      final emptyState = tester.widget<ProjectHealthEmptyState>(
+        find.byType(ProjectHealthEmptyState),
+      );
+      expect(assignmentRequests, 1);
+      expect(emptyState.isAssigningAgent, isTrue);
+
+      assignment.complete();
+      await tester.pump();
+      expect(
+        tester
+            .widget<ProjectHealthEmptyState>(
+              find.byType(ProjectHealthEmptyState),
+            )
+            .isAssigningAgent,
+        isFalse,
+      );
+    });
+
     testWidgets('keeps interactive metadata usable at 200% text scale', (
       tester,
     ) async {
@@ -279,7 +324,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HealthPanel), findsNothing);
-      expect(find.text('No health report yet'), findsOneWidget);
+      expect(find.text('No health assessment yet'), findsOneWidget);
       expect(find.text('Health Score'), findsNothing);
     });
 

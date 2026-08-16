@@ -532,9 +532,20 @@ void main() {
         ..updateCategoryId('local-category')
         ..updateStatus(locallyEditedStatus);
       final secondSyncedAt = DateTime(2026, 8, 18);
+      final syncedGeolocation = Geolocation(
+        createdAt: secondSyncedAt,
+        latitude: 59.3293,
+        longitude: 18.0686,
+        geohashString: 'u6sce',
+      );
       final secondSyncedProject = persisted!.copyWith(
         meta: persisted!.meta.copyWith(updatedAt: secondSyncedAt),
-        entryText: const EntryText(plainText: 'Body received from sync'),
+        entryText: EntryText(
+          plainText: 'Body received from sync',
+          markdown: '**Synced body**',
+          quill: '[{"insert":"Synced body"}]',
+          geolocation: syncedGeolocation,
+        ),
       );
       final secondSyncedTask = makeTestTask(id: 'second-rebased-sync-task');
       when(
@@ -572,6 +583,21 @@ void main() {
         fullyRebased.project!.entryText?.plainText,
         'Locally edited description',
       );
+      expect(fullyRebased.project!.entryText?.markdown, '**Synced body**');
+      expect(
+        fullyRebased.project!.entryText?.quill,
+        '[{"insert":"Synced body"}]',
+      );
+      expect(
+        fullyRebased.project!.entryText?.geolocation,
+        syncedGeolocation,
+      );
+
+      await notifier.saveChanges();
+      expect(persisted!.entryText?.plainText, 'Locally edited description');
+      expect(persisted!.entryText?.markdown, '**Synced body**');
+      expect(persisted!.entryText?.quill, '[{"insert":"Synced body"}]');
+      expect(persisted!.entryText?.geolocation, syncedGeolocation);
     });
 
     test('clears pending edits when a synced deletion is observed', () async {

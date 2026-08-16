@@ -198,6 +198,27 @@ void main() {
       expect(find.text('Run report'), findsNothing);
     });
 
+    testWidgets('offers agent assignment when provisioning is missing', (
+      tester,
+    ) async {
+      var assignmentRequests = 0;
+      await tester.pumpWidget(
+        wrap(
+          ProjectHealthEmptyState(
+            hasAgent: false,
+            onAssignAgent: () => assignmentRequests++,
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.widgetWithText(DesignSystemButton, 'Assign an agent'),
+      );
+
+      expect(assignmentRequests, 1);
+      expect(find.text('Run report'), findsNothing);
+    });
+
     testWidgets(
       'keeps the report action visible but non-interactive while busy',
       (
