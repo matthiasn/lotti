@@ -49,8 +49,9 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// One goal — the §4b dashboard: header (name · unified status pill ·
-/// trend), the hero pair (the deterministic This-week card beside the
-/// timestamped Agent's-read card), active banners and pending proposals,
+/// trend), the hero stack (the deterministic This-week card above the
+/// timestamped Agent's-read card, each at the full content width), active
+/// banners and pending proposals,
 /// then the Habits and Signals evidence sections, the reflection history,
 /// the About-this-agent expander (cost pills + automation), and the
 /// bounded banner timeline. Desktop hosts the durable conversation as a
@@ -417,35 +418,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           hasStandingAssessment: hasStandingAssessment,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
-        // The §4b hero pair: the deterministic week beside the agent's
-        // narrative — the two answers to "how is this going" — side by side
-        // where the measure allows, stacked below it.
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final sideBySide =
-                thisWeek != null &&
-                constraints.maxWidth >= kGoalHeroPairMinWidth;
-            if (!sideBySide) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (thisWeek != null) ...[
-                    thisWeek,
-                    SizedBox(height: tokens.spacing.cardItemSpacing),
-                  ],
-                  agentRead,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: thisWeek),
-                SizedBox(width: tokens.spacing.cardItemSpacing),
-                Expanded(child: agentRead),
-              ],
-            );
-          },
+        // The hero stack: the deterministic week above the agent's
+        // narrative — the two answers to "how is this going" — each at the
+        // full content width, so the day strip and the read never trade
+        // legibility for a shared row. The stretching Column matters: on
+        // desktop every section sits under an Align whose loose constraints
+        // would otherwise let the cards shrink-wrap.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (thisWeek != null) ...[
+              thisWeek,
+              SizedBox(height: tokens.spacing.cardItemSpacing),
+            ],
+            agentRead,
+          ],
         ),
         // Every active banner remains reachable here, uncapped. The shell
         // rotates one slot; this goal-owned surface does not. Banners are an
@@ -1029,7 +1016,7 @@ class _GoalHeader extends StatelessWidget {
   }
 }
 
-/// The §4b "Agent's read" hero card: the narrative half of the hero pair.
+/// The §4b "Agent's read" hero card: the narrative half of the hero stack.
 ///
 /// Deterministic numbers on this page are never stale by construction; the
 /// narrative IS allowed to age, so it carries its generation timestamp — and
@@ -1180,6 +1167,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
         nextWakeAt?.isAfter(clock.now()) == true;
 
     return DecoratedBox(
+      key: const ValueKey('goal-agent-read-card'),
       decoration: aiCardDecoration(context),
       child: ClipRRect(
         borderRadius: aiCardRadius(context),

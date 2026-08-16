@@ -1001,9 +1001,111 @@ void main() {
       readTop,
       lessThan(progressTop),
       reason:
-          'the hero pair (this week + the read) belongs directly under the '
+          'the hero stack (this week + the read) belongs directly under the '
           'goal definition, with the habit and chart evidence below it',
     );
+  });
+
+  testWidgets('on desktop the hero cards stack at the FULL content width — '
+      'the week strip and the read never share a row', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two walks landed.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final weekCard = find.byType(GoalThisWeekCard);
+    final readCard = find.byKey(const ValueKey('goal-agent-read-card'));
+    // Stacked, not paired: the read starts below the week card.
+    expect(
+      tester.getTopLeft(readCard).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(weekCard).dy),
+    );
+    // Both span the SAME full content measure the evidence cards use — a
+    // shared row would halve them.
+    final measure = tester.getSize(find.byType(GoalProgressCard)).width;
+    expect(tester.getSize(weekCard).width, moreOrLessEquals(measure));
+    expect(tester.getSize(readCard).width, moreOrLessEquals(measure));
   });
 
   testWidgets('the app-bar chat action opens the conversation, the banner '
@@ -2742,6 +2844,9 @@ void main() {
     // track and the chart — the chart card's own picker is hidden here, so
     // the page never renders two controls fighting over one shared span.
     expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+    // The full-width hero stack pushes the evidence sections below the fold
+    // on the default test surface.
+    await tester.ensureVisible(find.text('30d').first);
     await tester.tap(find.text('30d').first);
     await tester.pump();
     expect(habitsController.lastTimeSpan, 30);
