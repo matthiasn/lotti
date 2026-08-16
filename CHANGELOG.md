@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and a check-in capture sheet that is editable and deletable afterward.
   Cascade deletion, sync, categories, and the private flag all apply. Contact
   channels never enter AI context.
+- **Groundwork: relationship agents track check-in cadence.** Marking a
+  person important now quietly creates their dedicated agent (plan v2
+  phase 4, ADR 0059). It runs entirely on the free deterministic tier: a
+  daily tick recomputes whether the desired check-in interval has lapsed —
+  a private check-in still counts — and records a lease-elected wake for
+  the moment the reminder machinery (banners, briefings) ships in a later
+  increment. Nothing is visible yet; no AI runs. Deleting a person also
+  retires their agent.
 
 ### Changed
 - **Goal signal charts now show the trend behind the number.** Daily steps use

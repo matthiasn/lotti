@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -246,6 +248,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         }
         final updated = initial.copyWith(data: data);
         final success = await repository.updateRelationship(updated);
+        if (success) _ensureAgentIfImportant(updated);
         if (!mounted) return;
         if (success) {
           Navigator.of(context).pop(updated);
@@ -266,6 +269,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             status: _mintStatus(_StatusKind.active),
           ),
         );
+        if (created != null) _ensureAgentIfImportant(created);
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -296,6 +300,29 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  /// The lazy-create trigger (ADR 0059 Decision 2): marking a person
+  /// important is what mints their agent; an existing agent makes this an
+  /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
+  /// takes effect immediately). Fire-and-forget with contained failure —
+  /// agent wiring must never fail the save the user just watched succeed.
+  void _ensureAgentIfImportant(RelationshipEntry relationship) {
+    if (!relationship.data.important) return;
+    unawaited(() async {
+      try {
+        await ref
+            .read(relationshipAgentServiceProvider)
+            .ensureAgentForRelationship(relationship);
+      } catch (e, s) {
+        developer.log(
+          'Failed to ensure relationship agent',
+          name: 'RelationshipForm',
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }());
   }
 
   @override

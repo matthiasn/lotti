@@ -5,6 +5,7 @@ import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1680,6 +1681,37 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('RelationshipHealthEntity (ADR 0059 Decision 2)', () {
+    final entity = AgentDomainEntity.relationshipHealth(
+      id: 'relationship_health:relationship_agent:person-1',
+      agentId: 'relationship_agent:person-1',
+      relationshipId: 'person-1',
+      status: RelationshipCadenceStatus.due,
+      cadenceDays: 7,
+      referenceAt: DateTime.utc(2026, 8, 1, 18),
+      dueAt: DateTime.utc(2026, 8, 8),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      vectorClock: vectorClock,
+      lastCheckInAt: DateTime.utc(2026, 8, 1, 18),
+    );
+
+    test('roundtrips the recomputed register with its own discriminator', () {
+      expect(roundtrip(entity), entity);
+      expect(entity.toJson()['runtimeType'], 'relationshipHealth');
+    });
+
+    test('a no-check-in register roundtrips its null baseline marker', () {
+      final fresh = (entity as RelationshipHealthEntity).copyWith(
+        status: RelationshipCadenceStatus.ok,
+        lastCheckInAt: null,
+      );
+      final decoded = roundtrip(fresh) as RelationshipHealthEntity;
+      expect(decoded.lastCheckInAt, isNull);
+      expect(decoded.status, RelationshipCadenceStatus.ok);
     });
   });
 

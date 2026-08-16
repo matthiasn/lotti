@@ -114,7 +114,13 @@ void wireWakeExecutor(
         extraTokens: triggers,
       );
 
-      return identity.kind == AgentKinds.goalAgent
+      // Kinds whose workflows manage their own report freshness propagate
+      // the verdict (the goal-only condition, generalized for the
+      // relationship kind — ADR 0059 Decision 2). The day agent stays on
+      // the bare-list return: its workflows never set `reportUpdated`, and
+      // the drain engine reads a bare list as "report fresh".
+      return identity.kind == AgentKinds.goalAgent ||
+              identity.kind == AgentKinds.relationshipAgent
           ? WakeExecutorResult(
               result.mutatedEntries,
               reportUpdated: result.reportUpdated,
