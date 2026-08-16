@@ -9,6 +9,7 @@ abstract final class AgentKinds {
   static const dayAgent = 'day_agent';
   static const eventAgent = 'event_agent';
   static const goalAgent = 'goal_agent';
+  static const relationshipAgent = 'relationship_agent';
 }
 
 /// Tool-call names that carry user-visible conversation output.
@@ -46,6 +47,7 @@ abstract final class AgentLinkTypes {
   static const agentEvent = 'agent_event';
   static const agentGoal = 'agent_goal';
   static const soulAssignment = 'soul_assignment';
+  static const agentRelationship = 'agent_relationship';
 }
 
 /// `entityType` discriminators on the agent domain's append-only entity rows.
@@ -86,6 +88,7 @@ abstract final class AgentEntityTypes {
   static const goalProgress = 'goalProgress';
   static const goalNudge = 'goalNudge';
   static const relationshipNudge = 'relationshipNudge';
+  static const relationshipHealth = 'relationshipHealth';
 }
 
 /// `scope` values for `AgentReport` rows. `current` marks the live report a
@@ -192,3 +195,21 @@ bool isOwnerAuthoredGoalSpecVersionId(String versionId) =>
 /// and LWW-converge instead of duplicating.
 String goalProgressId(String agentId, String periodKey) =>
     'goal_progress:$agentId:$periodKey';
+
+/// Deterministic id for a relationship agent's cadence-health register —
+/// ONE row per agent, recomputed on every deterministic tick (ADR 0059
+/// Decision 2). Unlike `goalProgressId` there is no period component: the
+/// register is current cadence state, not history; check-ins ARE the
+/// history.
+String relationshipHealthId(String agentId) => 'relationship_health:$agentId';
+
+/// Deterministic agent id for the relationship agent watching
+/// [relationshipId] (ADR 0059 Decision 2): two devices marking the same
+/// person important converge on ONE agent via LWW instead of minting
+/// duplicates (the deterministic-id contract of `createAgent`).
+String relationshipAgentIdFor(String relationshipId) =>
+    'relationship_agent:$relationshipId';
+
+/// Deterministic id of the agent→relationship link — one per agent, so
+/// concurrent creates write the same row.
+String relationshipAgentLinkId(String agentId) => 'agent_relationship:$agentId';

@@ -489,6 +489,20 @@ void main() {
     );
   });
 
+  group('getAllCheckInsForRelationship', () {
+    test("delegates to the unfiltered query — the agent's cadence must not "
+        'depend on the private-display preference', () async {
+      when(
+        () => mockDb.getAllCheckInsForRelationship('rel-001'),
+      ).thenAnswer((_) async => [checkInEntry('check-1')]);
+      final checkIns = await repository.getAllCheckInsForRelationship(
+        'rel-001',
+      );
+      expect(checkIns.single.meta.id, 'check-1');
+      verifyNever(() => mockDb.getCheckInsForRelationship(any()));
+    });
+  });
+
   group('getRelationshipById', () {
     test('returns the relationship when the id resolves to one', () async {
       when(

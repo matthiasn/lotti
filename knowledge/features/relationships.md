@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Relationships
-description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, and what the delete cascade does and does not reach.
+description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, and how the deterministic agent tier tracks cadence at zero inference cost.
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
@@ -24,6 +24,14 @@ sources:
     resource: ../../docs/adr/0038-relationship-domain-model.md
     title: ADR 0038 — Relationship domain model
     last_modified: 2026-08-13
+  - id: runtime
+    resource: ../../lib/features/relationships/runtime/relationship_agent_phase_a.dart
+    title: RelationshipAgentPhaseA — the deterministic tier
+    last_modified: 2026-08-16
+  - id: adr-0059
+    resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
+    title: ADR 0059 — Relationship agents on the shared runtime
+    last_modified: 2026-08-16
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -168,9 +176,15 @@ deletion — the page would navigate away from a person who is still there.
 - **The `RelationshipLink` rows.** The app's generic delete model leaves link
   rows to consumers, which already filter on the endpoint's `deletedAt`. A
   future link-only consumer would have to handle these tombstones itself.
-- **Anything from later phases.** When the relationship agent lands (plan v2
-  phases 4–5) the cascade must grow to cover the agent identity, its reports and
-  nudges, and any pending reminder rows.
+- ~~Anything from later phases.~~ Since plan v2 phase 4 the cascade HAS an
+  agent leg: the delete handler fires
+  `RelationshipAgentService.handleRelationshipDeleted`, which destroys the
+  agent identity through the shared `destroyAgent` lifecycle, cancels its
+  pending and running wakes, and drops its subscriptions. The agent's own
+  rows (registers, later reports and nudges) remain under the destroyed
+  identity for audit, like every destroyed agent. The leg is fire-and-forget
+  and contained — a failed teardown never fails the delete the user watched
+  succeed, and runtime maintenance repairs the rest.
 
 # Notifications: no private channel
 
@@ -196,6 +210,56 @@ write.
 It is not routed through `JournalRepository.removeTypedLink`, which notifies
 unconditionally per call: the two-direction removal here would emit two
 notifications even for a no-op unlink.
+
+# The deterministic agent tier (plan v2 phase 4)
+
+Marking a person `important` is the consent switch AND the creation trigger:
+the form's save path lazily mints one durable `relationship_agent` per person
+with a **deterministic id** (`relationship_agent:<relationshipId>`), so two
+devices marking the same person converge on one agent instead of duplicates.
+Identity, `agentRelationship` link and the first cadence wake land in one
+transaction; the agent leaves creation subscribed and with one immediate €0
+evaluation queued.
+
+```mermaid
+flowchart TD
+  T[hourly tick / check-in saved / manual wake] --> A[RelationshipAgentPhaseA]
+  A --> L{agent link?}
+  L -->|none| OK1[no-op]
+  L --> R[re-arm daily cadence wake<br/>skip if unchanged]
+  R --> E{important AND active<br/>AND not deleted?}
+  E -->|no| OK2[done — the tick keeps checking]
+  E --> D["derive: newest check-in (unfiltered)<br/>?? tracking start, + cadenceDays<br/>(default 30) → ok | due"]
+  D --> REG["recompute relationshipHealth register<br/>ONE row per agent, skip-if-identical"]
+  REG --> N{newly due?}
+  N -->|no| OK3[€0 no-write no-op]
+  N --> ESC["arm relationship-escalation:&lt;dueDayKey&gt;<br/>lease-elected, idempotent per episode,<br/>baseline token = pre-transition status"]
+```
+
+Three decisions keep multi-device runs convergent (ADR 0059 Decision 2):
+
+- **The check-in read ignores the private-display filter**
+  (`getAllCheckInsForRelationship`): hiding an entry is a display
+  preference, and devices with different settings must derive the same
+  register.
+- **The register is recomputed wholesale, never accumulated**, carries the
+  vector clock of the row it read, and is skipped entirely when identical —
+  so the uneventful daily tick is a true no-write no-op.
+- **Escalations are per-episode** (`relationship-escalation:<dueDayKey>`,
+  lease-elected via the shared `requiresLease` predicate): devices arming
+  the same lapse write identical records, a consumed episode is never
+  re-armed, and a check-in landing mid-episode moves the due day into a NEW
+  episode. The baseline trigger token preserves "newly due" vs. "still
+  due" — unreconstructable from storage once Phase A's own register write
+  lands in the same transaction.
+
+The agent's subscription is a single token: check-ins carry a denormalized
+`relationshipId` that `affectedIds` emits (the table above), so one
+`matchEntityIds = {relationshipId}` covers the person and every check-in,
+draining immediately because the tier is free. The wake router currently
+sends **every** wake — including a fired escalation — through Phase A; the
+LLM tier (briefing, banner, chat) takes over the escalation route in plan v2
+phase 5.
 
 # Privacy
 

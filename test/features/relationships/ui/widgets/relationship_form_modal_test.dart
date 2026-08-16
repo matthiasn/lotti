@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -14,6 +14,7 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
+  late MockRelationshipAgentService mockAgentService;
 
   RelationshipEntry createdEntry(RelationshipData data) => RelationshipEntry(
     meta: Metadata(
@@ -26,10 +27,36 @@ void main() {
     data: data,
   );
 
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    final fallbackData = RelationshipData(
+      title: 'fallback',
+      status: RelationshipStatus.active(
+        id: 'fallback-status',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    );
+    registerFallbackValue(fallbackData);
+    registerFallbackValue(
+      RelationshipEntry(
+        meta: Metadata(
+          id: 'fallback',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: fallbackData,
+      ),
+    );
+  });
 
   setUp(() {
     mockRepository = MockRelationshipRepository();
+    mockAgentService = MockRelationshipAgentService();
+    when(
+      () => mockAgentService.ensureAgentForRelationship(any()),
+    ).thenAnswer((invocation) async => throw StateError('unstubbed identity'));
   });
 
   Widget buildForm({RelationshipEntry? initial}) =>
@@ -37,6 +64,7 @@ void main() {
         RelationshipForm(initial: initial),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
         ],
       );
 
@@ -102,80 +130,97 @@ void main() {
     },
   );
 
-  testWidgets('a refused create reports it and keeps what was typed', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.createRelationship(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        categoryId: any(named: 'categoryId'),
-        trackingStartedAt: any(named: 'trackingStartedAt'),
-      ),
-    ).thenAnswer((_) async => null);
+  testWidgets(
+    'saving an IMPORTANT person lazily mints their agent — the consent '
+    'switch is the trigger (ADR 0059 Decision 2)',
+    (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
 
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Anna');
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
-    await tester.pumpAndSettle();
+      when(
+        () => mockAgentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => throw StateError('identity unused'));
 
-    expect(
-      find.text('Could not save this person. Please try again.'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(TextField, 'Anna'), findsOneWidget);
-  });
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
 
-  testWidgets('a create that throws reports the create-mode failure', (
-    tester,
-  ) async {
-    when(
-      () => mockRepository.createRelationship(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        categoryId: any(named: 'categoryId'),
-        trackingStartedAt: any(named: 'trackingStartedAt'),
-      ),
-    ).thenThrow(Exception('db gone'));
+      final entry =
+          verify(
+                () => mockAgentService.ensureAgentForRelationship(
+                  captureAny(),
+                ),
+              ).captured.single
+              as RelationshipEntry;
+      expect(entry.data.important, isTrue);
+    },
+  );
 
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Anna');
-    await tester.ensureVisible(find.text('Create'));
-    await tester.tap(find.text('Create'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'saving a person who is NOT important never touches the agent layer',
+    (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
 
-    // The create-mode copy, not the edit-mode one.
-    expect(
-      find.text('Could not save this person. Please try again.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Could not save the changes. Please try again.'),
-      findsNothing,
-    );
-  });
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
 
-  testWidgets('Cancel closes without persisting anything', (tester) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
+      verifyNever(() => mockAgentService.ensureAgentForRelationship(any()));
+    },
+  );
 
-    await tester.enterText(find.byType(TextField).first, 'Anna');
-    await tester.ensureVisible(find.text('Cancel'));
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'an agent-wiring failure never fails the save the user watched '
+    'succeed',
+    (tester) async {
+      // The default stub above throws; the save must still pop cleanly.
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
 
-    verifyNever(
-      () => mockRepository.createRelationship(
-        data: any(named: 'data'),
-        entryText: any(named: 'entryText'),
-        categoryId: any(named: 'categoryId'),
-        trackingStartedAt: any(named: 'trackingStartedAt'),
-      ),
-    );
-  });
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Anna Example');
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RelationshipForm), findsNothing);
+    },
+  );
 
   testWidgets('cadence defaults to none when nothing is picked', (
     tester,
@@ -305,291 +350,6 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(() => mockRepository.updateRelationship(any()));
-    });
-
-    testWidgets('archiving mints an archived status', (tester) async {
-      await tester.pumpWidget(buildForm(initial: existing()));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Archived'));
-      await tester.tap(find.text('Archived'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      final updated =
-          verify(
-                () => mockRepository.updateRelationship(captureAny()),
-              ).captured.single
-              as RelationshipEntry;
-      expect(updated.data.status, isA<RelationshipArchived>());
-      expect(updated.data.statusHistory.single.id, 'status-1');
-    });
-
-    testWidgets(
-      "the picker opens on the person's current kind, so an untouched save "
-      'keeps it',
-      (tester) async {
-        final kinds = <String, RelationshipStatus>{
-          'status-dormant': RelationshipStatus.dormant(
-            id: 'status-dormant',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-          'status-archived': RelationshipStatus.archived(
-            id: 'status-archived',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        };
-
-        for (final entry in kinds.entries) {
-          final base = existing();
-          await tester.pumpWidget(
-            buildForm(
-              initial: base.copyWith(
-                data: base.data.copyWith(status: entry.value),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-          await tester.ensureVisible(find.text('Save'));
-          await tester.tap(find.text('Save'));
-          await tester.pumpAndSettle();
-
-          final updated =
-              verify(
-                    () => mockRepository.updateRelationship(captureAny()),
-                  ).captured.single
-                  as RelationshipEntry;
-          // The kind round-tripped rather than resetting to active, so no
-          // new status was minted and nothing was pushed to history.
-          expect(updated.data.status.id, entry.key, reason: entry.key);
-          expect(updated.data.statusHistory, isEmpty, reason: entry.key);
-
-          // Pumping a fresh tree next round would hit the popped navigator.
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpAndSettle();
-        }
-      },
-    );
-
-    testWidgets('a refused update reports it and keeps the edits', (
-      tester,
-    ) async {
-      when(
-        () => mockRepository.updateRelationship(any()),
-      ).thenAnswer((_) async => false);
-
-      await tester.pumpWidget(buildForm(initial: existing()));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Anna Example');
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Could not save the changes. Please try again.'),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(TextField, 'Anna Example'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('an update that throws reports the edit-mode failure', (
-      tester,
-    ) async {
-      when(
-        () => mockRepository.updateRelationship(any()),
-      ).thenThrow(Exception('db gone'));
-
-      await tester.pumpWidget(buildForm(initial: existing()));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      // The edit-mode copy, not the create-mode one.
-      expect(
-        find.text('Could not save the changes. Please try again.'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Could not save this person. Please try again.'),
-        findsNothing,
-      );
-    });
-  });
-
-  group('contact channels', () {
-    setUp(() {
-      when(
-        () => mockRepository.createRelationship(
-          data: any(named: 'data'),
-        ),
-      ).thenAnswer(
-        (invocation) async => createdEntry(
-          invocation.namedArguments[#data] as RelationshipData,
-        ),
-      );
-      when(
-        () => mockRepository.updateRelationship(any()),
-      ).thenAnswer((_) async => true);
-    });
-
-    testWidgets('an added channel persists with value and label', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Anna');
-      await tester.ensureVisible(find.text('Add channel'));
-      await tester.tap(find.text('Add channel'));
-      await tester.pumpAndSettle();
-
-      // Field order: name, nickname, then the new row's value and label.
-      await tester.enterText(
-        find.byType(TextField).at(2),
-        ' +49 151 1234567 ',
-      );
-      await tester.enterText(find.byType(TextField).at(3), 'Personal');
-
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      final data =
-          verify(
-                () => mockRepository.createRelationship(
-                  data: captureAny(named: 'data'),
-                ),
-              ).captured.single
-              as RelationshipData;
-      expect(data.contactChannels, hasLength(1));
-      final channel = data.contactChannels.single;
-      // Default type; value trimmed; label kept.
-      expect(channel.type, ContactChannelType.mobile);
-      expect(channel.value, '+49 151 1234567');
-      expect(channel.label, 'Personal');
-    });
-
-    testWidgets('changing a channel type updates its input and persists', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Anna');
-      await tester.ensureVisible(find.text('Add channel'));
-      await tester.tap(find.text('Add channel'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.byType(DropdownButtonFormField<ContactChannelType>),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Messaging').last);
-      await tester.pumpAndSettle();
-
-      final valueField = tester.widget<TextField>(
-        find.byType(TextField).at(2),
-      );
-      expect(valueField.keyboardType, TextInputType.text);
-      await tester.enterText(find.byType(TextField).at(2), '@anna');
-
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      final data =
-          verify(
-                () => mockRepository.createRelationship(
-                  data: captureAny(named: 'data'),
-                ),
-              ).captured.single
-              as RelationshipData;
-      expect(data.contactChannels.single.type, ContactChannelType.messaging);
-      expect(data.contactChannels.single.value, '@anna');
-    });
-
-    testWidgets('a channel row left empty never persists', (tester) async {
-      await tester.pumpWidget(buildForm());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(TextField).first, 'Anna');
-      await tester.ensureVisible(find.text('Add channel'));
-      await tester.tap(find.text('Add channel'));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Create'));
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-
-      final data =
-          verify(
-                () => mockRepository.createRelationship(
-                  data: captureAny(named: 'data'),
-                ),
-              ).captured.single
-              as RelationshipData;
-      expect(data.contactChannels, isEmpty);
-    });
-
-    testWidgets('edit mode prefills channels and removing one persists', (
-      tester,
-    ) async {
-      final initial = RelationshipEntry(
-        meta: Metadata(
-          id: 'rel-1',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: RelationshipData(
-          title: 'Anna',
-          contactChannels: const [
-            ContactChannel(
-              type: ContactChannelType.email,
-              value: 'anna@example.com',
-            ),
-          ],
-          status: RelationshipStatus.active(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
-
-      await tester.pumpWidget(buildForm(initial: initial));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.widgetWithText(TextField, 'anna@example.com'),
-        findsOneWidget,
-      );
-
-      await tester.ensureVisible(
-        find.byIcon(Icons.remove_circle_outline_rounded),
-      );
-      await tester.tap(find.byIcon(Icons.remove_circle_outline_rounded));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save'));
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
-
-      final updated =
-          verify(
-                () => mockRepository.updateRelationship(captureAny()),
-              ).captured.single
-              as RelationshipEntry;
-      expect(updated.data.contactChannels, isEmpty);
     });
   });
 

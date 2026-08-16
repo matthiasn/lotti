@@ -10,6 +10,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -2311,6 +2312,52 @@ void main() {
       expect(
         decoded.triggerRegisterId,
         'relationship_health:relationship-agent-1',
+      );
+    });
+
+    test('relationshipHealth: the cadence verdict is the subtype and the '
+        'register roundtrips (ADR 0059 Decision 2)', () {
+      final entity = AgentDomainEntity.relationshipHealth(
+        id: 'relationship_health:relationship_agent:person-1',
+        agentId: 'relationship_agent:person-1',
+        relationshipId: 'person-1',
+        status: RelationshipCadenceStatus.due,
+        cadenceDays: 14,
+        referenceAt: DateTime.utc(2026, 8, 1, 18),
+        dueAt: DateTime.utc(2026, 8, 15),
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+        lastCheckInAt: DateTime.utc(2026, 8, 1, 18),
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.relationshipHealth));
+      expect(companion.subtype, const Value<String?>('due'));
+      final decoded =
+          AgentDbConversions.fromSerialized(companion.serialized.value)
+              as RelationshipHealthEntity;
+      expect(decoded, entity);
+      expect(decoded.cadenceDays, 14);
+    });
+
+    test('agentRelationship links fold to their locked type tag and '
+        'roundtrip through the companion', () {
+      final link = model.AgentLink.agentRelationship(
+        id: 'agent_relationship:relationship_agent:person-1',
+        fromId: 'relationship_agent:person-1',
+        toId: 'person-1',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+      expect(companion.type, const Value(AgentLinkTypes.agentRelationship));
+      expect(companion.deletedAt, const Value<DateTime?>(null));
+      expect(
+        model.AgentLink.fromJson(
+          jsonDecode(companion.serialized.value) as Map<String, dynamic>,
+        ),
+        link,
       );
     });
 
