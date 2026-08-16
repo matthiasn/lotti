@@ -2868,6 +2868,7 @@
   "goalDeleteMenuItem": "Elimina obiettivo",
   "goalDetailAboutAgentTitle": "Informazioni su questo agente",
   "goalDetailAgentReadTitle": "Valutazione dell'agente",
+  "goalDetailAlsoInGoal": "Anche in {goals}",
   "goalDetailAskWhy": "Perché?",
   "goalDetailCompletionRateTitle": "Tasso di compensazione · questo obiettivo",
   "goalDetailHealthUnavailable": "Impossibile caricare lo stato di questo obiettivo al momento.",

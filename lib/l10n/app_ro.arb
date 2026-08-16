@@ -2611,6 +2611,7 @@
   "goalDeleteMenuItem": "Ștergeți obiectivul",
   "goalDetailAboutAgentTitle": "Despre acest agent",
   "goalDetailAgentReadTitle": "Evaluarea agentului",
+  "goalDetailAlsoInGoal": "Și în {goals}",
   "goalDetailAskWhy": "De ce?",
   "goalDetailCompletionRateTitle": "Rata de finalizare · acest obiectiv",
   "goalDetailHealthUnavailable": "Starea acestui obiectiv nu a putut fi încărcată momentan.",

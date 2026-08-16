@@ -2867,6 +2867,7 @@
   "goalDeleteMenuItem": "Doel verwijderen",
   "goalDetailAboutAgentTitle": "Over deze agent",
   "goalDetailAgentReadTitle": "Inschatting van de agent",
+  "goalDetailAlsoInGoal": "Ook in {goals}",
   "goalDetailAskWhy": "Waarom?",
   "goalDetailCompletionRateTitle": "Afrondingspercentage · dit doel",
   "goalDetailHealthUnavailable": "De gezondheid van dit doel kon nu niet worden geladen.",

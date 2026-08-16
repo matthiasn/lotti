@@ -2540,12 +2540,28 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalHabitMembershipsProvider.overrideWith(
+            (ref) async => {
+              'walk': [
+                (agentId: 'goal-1', title: 'Move more'),
+                (agentId: 'goal-2', title: 'Heart Health'),
+              ],
+            },
+          ),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    // The §4b goal-scoped chart card: same shell as the habits page, its
+    // A habit shared with another goal names it — one recording, reflected
+    // everywhere — while the owning goal itself is never listed in the
+    // suffix (the page header is where its own name belongs).
+    final alsoIn = tester.widget<Text>(
+      find.byKey(const ValueKey('goal-habit-also-in-walk')),
+    );
+    expect(alsoIn.data, 'Also in Heart Health');
+
+    // The goal-scoped chart card: same shell as the habits page, its
     // own title, the chart scoped to this goal's criterion habit ids.
     expect(find.text('Completion rate · this goal'), findsOneWidget);
     expect(

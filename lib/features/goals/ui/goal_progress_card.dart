@@ -545,11 +545,18 @@ class GoalProgressCard extends StatelessWidget {
   const GoalProgressCard({
     required this.progress,
     this.onHabitOutcomeSelected,
+    this.alsoInGoalTitlesByHabitId = const {},
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  /// For each habit id, the OTHER goals sharing it, pre-joined for display
+  /// ("Heart Health"). A habit is recorded once and reflected everywhere
+  /// (design handover §5) — the suffix says where else that one recording
+  /// lands. Empty means: render no suffix.
+  final Map<String, String> alsoInGoalTitlesByHabitId;
 
   @override
   Widget build(BuildContext context) {
@@ -585,6 +592,8 @@ class GoalProgressCard extends StatelessWidget {
             today: progress.today,
             onHabitOutcomeSelected: onHabitOutcomeSelected,
             showLegend: index == progress.habits.length - 1,
+            alsoInGoals:
+                alsoInGoalTitlesByHabitId[progress.habits[index].habitId],
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -814,11 +823,15 @@ class _HabitDimensionCard extends StatelessWidget {
     required this.today,
     required this.onHabitOutcomeSelected,
     required this.showLegend,
+    this.alsoInGoals,
   });
 
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  /// The other goals sharing this habit, pre-joined; null renders nothing.
+  final String? alsoInGoals;
 
   /// Whether this card carries the shared day-cell key. Set on the last habit
   /// card only — one legend per goal, not one per habit.
@@ -846,6 +859,16 @@ class _HabitDimensionCard extends StatelessWidget {
             met: habit.deficit == 0,
             hasData: true,
           ),
+          if (alsoInGoals case final alsoIn?) ...[
+            SizedBox(height: tokens.spacing.step1),
+            Text(
+              context.messages.goalDetailAlsoInGoal(alsoIn),
+              key: ValueKey('goal-habit-also-in-${habit.habitId}'),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
           SizedBox(height: tokens.spacing.step4),
           if (habit.window == const GoalWindow.rollingDays(count: 7)) ...[
             LayoutBuilder(

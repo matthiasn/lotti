@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -283,6 +284,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??
         const <GoalNudgeEntity>[];
+    // The OTHER goals sharing each of this goal's habits, pre-joined for the
+    // habit cards' "also in {goal}" suffix (§5: one recording, reflected
+    // everywhere).
+    final memberships =
+        ref.watch(goalHabitMembershipsProvider).value ??
+        const <String, List<GoalHabitMembership>>{};
+    final alsoInGoalTitlesByHabitId = <String, String>{
+      for (final entry in memberships.entries)
+        if ([
+              for (final m in entry.value)
+                if (m.agentId != agentId) m.title,
+            ]
+            case final others when others.isNotEmpty)
+          entry.key: others.join(', '),
+    };
     final report = ref.watch(agentReportProvider(agentId)).value;
     AgentReportEntity? latestReport;
     if (report is AgentReportEntity &&
@@ -460,6 +476,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
+              alsoInGoalTitlesByHabitId: alsoInGoalTitlesByHabitId,
               onHabitOutcomeSelected: !isActive
                   ? null
                   : ({

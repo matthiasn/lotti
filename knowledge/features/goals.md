@@ -689,8 +689,9 @@ flowchart TD
   deterministic This-week card (`GoalThisWeekCard` — whole-goal strip,
   Reflect-on-today, yesterday tally) beside the timestamped Agent's-read
   card, side by side above `kGoalHeroPairMinWidth` and stacked below it,
-  with the Habits and Signals sections beneath, a goal-scoped
-  completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
+  with the Habits and Signals sections beneath (habit cards name the other
+  goals sharing them via `goalHabitMembershipsProvider` — one recording,
+  reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
   `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
   plumbing folded into an About-this-agent expander at the foot. The

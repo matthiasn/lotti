@@ -10683,6 +10683,12 @@ abstract class AppLocalizations {
   /// **'Agent\'s read'**
   String get goalDetailAgentReadTitle;
 
+  /// Caption on a goal-detail habit card naming the OTHER goals sharing this habit.
+  ///
+  /// In en, this message translates to:
+  /// **'Also in {goals}'**
+  String goalDetailAlsoInGoal(String goals);
+
   /// Link on the agent's-read card that opens chat pre-filled with a why question.
   ///
   /// In en, this message translates to:

@@ -2611,6 +2611,7 @@
   "goalDeleteMenuItem": "Eliminar objetivo",
   "goalDetailAboutAgentTitle": "Acerca de este agente",
   "goalDetailAgentReadTitle": "Valoración del agente",
+  "goalDetailAlsoInGoal": "También en {goals}",
   "goalDetailAskWhy": "¿Por qué?",
   "goalDetailCompletionRateTitle": "Tasa de cumplimiento · este objetivo",
   "goalDetailHealthUnavailable": "No se pudo cargar el estado de este objetivo ahora mismo.",

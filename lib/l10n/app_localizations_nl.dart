@@ -6256,6 +6256,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Inschatting van de agent';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Ook in $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Waarom?';
 
   @override

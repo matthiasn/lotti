@@ -6240,6 +6240,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Agentens bedömning';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Även i $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Varför?';
 
   @override

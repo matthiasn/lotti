@@ -2868,6 +2868,7 @@
   "goalDeleteMenuItem": "Slet mål",
   "goalDetailAboutAgentTitle": "Om denne agent",
   "goalDetailAgentReadTitle": "Agentens vurdering",
+  "goalDetailAlsoInGoal": "Også i {goals}",
   "goalDetailAskWhy": "Hvorfor?",
   "goalDetailCompletionRateTitle": "Gennemførelsesrate · dette mål",
   "goalDetailHealthUnavailable": "Kunne ikke indlæse dette måls tilstand lige nu.",

@@ -6299,6 +6299,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Avaliação do agente';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Também em $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Porquê?';
 
   @override

@@ -2867,6 +2867,7 @@
   "goalDeleteMenuItem": "Eliminar objetivo",
   "goalDetailAboutAgentTitle": "Sobre este agente",
   "goalDetailAgentReadTitle": "Avaliação do agente",
+  "goalDetailAlsoInGoal": "Também em {goals}",
   "goalDetailAskWhy": "Porquê?",
   "goalDetailCompletionRateTitle": "Taxa de conclusão · esta meta",
   "goalDetailHealthUnavailable": "Não foi possível carregar a saúde desta meta agora.",

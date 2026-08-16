@@ -2868,6 +2868,7 @@
   "goalDeleteMenuItem": "Ta bort mål",
   "goalDetailAboutAgentTitle": "Om den här agenten",
   "goalDetailAgentReadTitle": "Agentens bedömning",
+  "goalDetailAlsoInGoal": "Även i {goals}",
   "goalDetailAskWhy": "Varför?",
   "goalDetailCompletionRateTitle": "Slutförandegrad · det här målet",
   "goalDetailHealthUnavailable": "Det gick inte att läsa in målets hälsa just nu.",

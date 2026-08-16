@@ -2611,6 +2611,7 @@
   "goalDeleteMenuItem": "Ziel löschen",
   "goalDetailAboutAgentTitle": "Über diesen Agenten",
   "goalDetailAgentReadTitle": "Einschätzung des Agenten",
+  "goalDetailAlsoInGoal": "Auch in {goals}",
   "goalDetailAskWhy": "Warum?",
   "goalDetailCompletionRateTitle": "Erfolgsquote · dieses Ziel",
   "goalDetailHealthUnavailable": "Der Zustand dieses Ziels konnte gerade nicht geladen werden.",

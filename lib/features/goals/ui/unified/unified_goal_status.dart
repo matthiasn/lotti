@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -46,22 +45,6 @@ Color unifiedGoalStatusColor(UnifiedGoalStatus status, DsColors colors) =>
       UnifiedGoalStatus.atRisk ||
       UnifiedGoalStatus.behind => colors.alert.warning.defaultColor,
       UnifiedGoalStatus.noData => colors.text.lowEmphasis,
-    };
-
-/// Every habit id referenced anywhere in [criterion]'s tree — the join used
-/// to decide which habits a goal claims (and, by complement, which habits are
-/// "not in a goal" on the unified list).
-Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
-    switch (criterion) {
-      GoalCriterionHabit(:final habitId) => {habitId},
-      GoalCriterionAllOf(:final criteria) ||
-      GoalCriterionAnyOf(:final criteria) ||
-      GoalCriterionAtLeastCount(:final criteria) => {
-        for (final child in criteria) ...goalCriterionHabitIds(child),
-      },
-      GoalCriterionMetric() ||
-      GoalCriterionMeasurable() ||
-      GoalCriterionCategoryTime() => const {},
     };
 
 /// The goal card's one-line summary — TEMPLATED from live deterministic state,

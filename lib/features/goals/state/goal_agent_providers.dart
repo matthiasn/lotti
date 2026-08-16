@@ -390,6 +390,40 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
       return entries;
     }, name: 'activeGoalNudgesProvider');
 
+/// One goal's claim on a habit: the agent and its display title.
+typedef GoalHabitMembership = ({String agentId, String title});
+
+/// Goal titles per habit id across every ACTIVE goal agent — the source of
+/// the detail page's "also in {goal}" suffix (design handover §5: a habit
+/// appears under every goal it belongs to; recorded once, reflected
+/// everywhere — so each card names the other goals sharing its habit).
+final FutureProvider<Map<String, List<GoalHabitMembership>>>
+goalHabitMembershipsProvider = FutureProvider.autoDispose((ref) async {
+  // Spec revisions arrive as agent-entity writes; the shared notification
+  // token refreshes the join when any goal's criteria change.
+  ref.watch(agentUpdateStreamProvider(agentNotification));
+  final agents = await ref.watch(activeGoalAgentsProvider.future);
+  final repository = ref.watch(agentRepositoryProvider);
+  final memberships = <String, List<GoalHabitMembership>>{};
+  for (final identity in agents) {
+    final head = await repository.getEntity(goalSpecHeadId(identity.agentId));
+    final specEntity = head is GoalSpecHeadEntity
+        ? await repository.getEntity(head.versionId)
+        : null;
+    if (specEntity is! GoalSpecVersionEntity) continue;
+    final title = specEntity.title.trim().isNotEmpty
+        ? specEntity.title
+        : identity.displayName;
+    for (final habitId in goalCriterionHabitIds(specEntity.criteria)) {
+      memberships.putIfAbsent(habitId, () => []).add((
+        agentId: identity.agentId,
+        title: title,
+      ));
+    }
+  }
+  return memberships;
+}, name: 'goalHabitMembershipsProvider');
+
 /// The active goal agents, for the settings list and approval surface.
 final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
     FutureProvider.autoDispose<List<AgentIdentityEntity>>((ref) async {

@@ -6206,6 +6206,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Agent\'s read';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Also in $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Ask why';
 
   @override

@@ -6234,6 +6234,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Agentens vurdering';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Også i $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Hvorfor?';
 
   @override

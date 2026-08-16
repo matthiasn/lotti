@@ -6300,6 +6300,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailAgentReadTitle => 'Hodnocení agenta';
 
   @override
+  String goalDetailAlsoInGoal(String goals) {
+    return 'Také v $goals';
+  }
+
+  @override
   String get goalDetailAskWhy => 'Proč?';
 
   @override

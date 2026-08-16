@@ -3503,6 +3503,16 @@
   "@goalDetailAgentReadTitle": {
     "description": "Title of the goal detail hero card holding the agent's standing narrative."
   },
+  "goalDetailAlsoInGoal": "Also in {goals}",
+  "@goalDetailAlsoInGoal": {
+    "description": "Caption on a goal-detail habit card naming the OTHER goals sharing this habit.",
+    "placeholders": {
+      "goals": {
+        "type": "String",
+        "example": "Heart Health"
+      }
+    }
+  },
   "goalDetailAskWhy": "Ask why",
   "@goalDetailAskWhy": {
     "description": "Link on the agent's-read card that opens chat pre-filled with a why question."
