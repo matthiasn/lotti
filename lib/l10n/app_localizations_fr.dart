@@ -3118,6 +3118,76 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'enregistrement a bien été capté, mais la transcription a échoué. Réessaie.';
 
   @override
+  String get checkInAvoidLabel => 'À éviter';
+
+  @override
+  String get checkInDateLabel => 'Quand ?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Supprimer cet échange ? Cette action est irréversible.';
+
+  @override
+  String get checkInEditTitle => 'Modifier l\'échange';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Impossible d\'enregistrer l\'échange. Réessaie.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Impossible de supprimer l\'échange. Réessaie.';
+
+  @override
+  String get checkInInteractionCall => 'Appel';
+
+  @override
+  String get checkInInteractionInPerson => 'En personne';
+
+  @override
+  String get checkInInteractionLabel => 'Comment avez-vous échangé ?';
+
+  @override
+  String get checkInInteractionMessage => 'Message';
+
+  @override
+  String get checkInInteractionOther => 'Autre';
+
+  @override
+  String get checkInInteractionVideoCall => 'Visio';
+
+  @override
+  String get checkInNarrativeLabel => 'De quoi avez-vous parlé ?';
+
+  @override
+  String get checkInPayAttentionLabel => 'La prochaine fois, fais attention à';
+
+  @override
+  String get checkInSentimentDelightful => 'Merveilleux';
+
+  @override
+  String get checkInSentimentDifficult => 'Difficile';
+
+  @override
+  String get checkInSentimentGood => 'Bien';
+
+  @override
+  String get checkInSentimentLabel => 'C\'était comment ?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutre';
+
+  @override
+  String get checkInSentimentStrained => 'Tendu';
+
+  @override
+  String get checkInTopicsHint =>
+      'Séparés par des virgules, p. ex. travail, voyages';
+
+  @override
+  String get checkInTopicsLabel => 'Sujets';
+
+  @override
   String get checklistAddItem => 'Ajouter un nouvel élément';
 
   @override
@@ -3332,6 +3402,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Afficher les fonctions de gestion de projets pour organiser les tâches en projets.';
+
+  @override
+  String get configFlagEnableRelationships => 'Activer la page Proches';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Affiche l\'onglet Proches pour cultiver tes relations personnelles.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -5864,6 +5941,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get entryTypeLabelAiResponse => 'Réponse IA';
+
+  @override
+  String get entryTypeLabelCheckIn => 'Échange';
 
   @override
   String get entryTypeLabelChecklist => 'Liste de contrôle';
@@ -9073,6 +9153,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navTabTitleMore => 'Plus';
 
   @override
+  String get navTabTitlePeople => 'Proches';
+
+  @override
   String get navTabTitleProjects => 'Projets';
 
   @override
@@ -10186,6 +10269,108 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Passer';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Tous les $days jours',
+      one: 'Chaque jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Toutes les deux semaines';
+
+  @override
+  String get relationshipCadenceLabel => 'Rythme de contact';
+
+  @override
+  String get relationshipCadenceMonthly => 'Chaque mois';
+
+  @override
+  String get relationshipCadenceNone => 'Aucun rythme';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Chaque trimestre';
+
+  @override
+  String get relationshipCadenceWeekly => 'Chaque semaine';
+
+  @override
+  String get relationshipCreateTitle => 'Ajouter une personne';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Tous ses échanges seront aussi supprimés. Cette action est irréversible.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return 'Supprimer $name ?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Modifier la personne';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Impossible d\'enregistrer la personne. Réessaie.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Impossible de supprimer la personne. Réessaie.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Impossible d\'enregistrer les modifications. Réessaie.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Rappelle-moi de garder le contact';
+
+  @override
+  String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipLogCheckIn => 'Noter un échange';
+
+  @override
+  String get relationshipNameLabel => 'Nom';
+
+  @override
+  String get relationshipNameRequired => 'Le nom est obligatoire';
+
+  @override
+  String get relationshipNicknameLabel => 'Surnom';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Aucun échange noté — ajoute le premier après votre prochaine conversation.';
+
+  @override
+  String get relationshipNotFound =>
+      'Cette personne n\'est plus dans ta liste.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Ajoute les personnes dont tu veux rester proche.';
+
+  @override
+  String get relationshipsPageTitle => 'Proches';
+
+  @override
+  String get relationshipStatusActive => 'Active';
+
+  @override
+  String get relationshipStatusArchived => 'Archivée';
+
+  @override
+  String get relationshipStatusDormant => 'En veille';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Statut';
 
   @override
   String get saveButton => 'Enregistrer';

@@ -113,6 +113,8 @@ const aiResponseNotification = 'AI_RESPONSE';
 const dayPlanNotification = 'DAY_PLAN';
 const ratingNotification = 'RATING';
 const projectNotification = 'PROJECT';
+const relationshipNotification = 'RELATIONSHIP';
+const checkInNotification = 'CHECK_IN';
 const categoriesNotification = 'CATEGORIES_CHANGED';
 const habitsNotification = 'HABITS_CHANGED';
 const dashboardsNotification = 'DASHBOARDS_CHANGED';
@@ -152,6 +154,12 @@ const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
 
 String projectEntityUpdateNotification(String projectId) {
   return '$projectEntityUpdatePrefix$projectId';
+}
+
+const relationshipEntityUpdatePrefix = 'RELATIONSHIP_ENTITY_UPDATE:';
+
+String relationshipEntityUpdateNotification(String relationshipId) {
+  return '$relationshipEntityUpdatePrefix$relationshipId';
 }
 
 /// Prefix marking a notification token that did not originate from a

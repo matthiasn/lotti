@@ -3081,6 +3081,75 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
 
   @override
+  String get checkInAvoidLabel => 'Bäst att undvika';
+
+  @override
+  String get checkInDateLabel => 'När?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Ta bort den här avstämningen? Det går inte att ångra.';
+
+  @override
+  String get checkInEditTitle => 'Redigera avstämning';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Avstämningen kunde inte sparas. Försök igen.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Avstämningen kunde inte tas bort. Försök igen.';
+
+  @override
+  String get checkInInteractionCall => 'Samtal';
+
+  @override
+  String get checkInInteractionInPerson => 'Personligen';
+
+  @override
+  String get checkInInteractionLabel => 'Hur hade ni kontakt?';
+
+  @override
+  String get checkInInteractionMessage => 'Meddelande';
+
+  @override
+  String get checkInInteractionOther => 'Annat';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videosamtal';
+
+  @override
+  String get checkInNarrativeLabel => 'Vad pratade ni om?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Nästa gång: var uppmärksam på';
+
+  @override
+  String get checkInSentimentDelightful => 'Underbart';
+
+  @override
+  String get checkInSentimentDifficult => 'Svårt';
+
+  @override
+  String get checkInSentimentGood => 'Bra';
+
+  @override
+  String get checkInSentimentLabel => 'Hur kändes det?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutralt';
+
+  @override
+  String get checkInSentimentStrained => 'Ansträngt';
+
+  @override
+  String get checkInTopicsHint => 'Kommaseparerade, t.ex. jobb, resor';
+
+  @override
+  String get checkInTopicsLabel => 'Ämnen';
+
+  @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
 
   @override
@@ -3291,6 +3360,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Visa projektledningsfunktioner för att organisera uppgifter i projekt.';
+
+  @override
+  String get configFlagEnableRelationships => 'Aktivera sidan Personer';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Visa fliken Personer för att vårda dina personliga relationer.';
 
   @override
   String get configFlagEnableSessionRatings => 'Aktivera sessionsbetyg';
@@ -5775,6 +5851,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get entryTypeLabelAiResponse => 'AI-respons';
+
+  @override
+  String get entryTypeLabelCheckIn => 'Avstämning';
 
   @override
   String get entryTypeLabelChecklist => 'Checklista';
@@ -8914,6 +8993,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navTabTitleMore => 'Mer';
 
   @override
+  String get navTabTitlePeople => 'Personer';
+
+  @override
   String get navTabTitleProjects => 'Projekt';
 
   @override
@@ -10006,6 +10088,107 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Hoppa över';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Var $days:e dag',
+      one: 'Varje dag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Varannan vecka';
+
+  @override
+  String get relationshipCadenceLabel => 'Kontaktrytm';
+
+  @override
+  String get relationshipCadenceMonthly => 'Varje månad';
+
+  @override
+  String get relationshipCadenceNone => 'Ingen rytm';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Varje kvartal';
+
+  @override
+  String get relationshipCadenceWeekly => 'Varje vecka';
+
+  @override
+  String get relationshipCreateTitle => 'Lägg till person';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Alla avstämningar tas också bort. Det går inte att ångra.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return 'Ta bort $name?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Redigera person';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Personen kunde inte sparas. Försök igen.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Personen kunde inte tas bort. Försök igen.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Ändringarna kunde inte sparas. Försök igen.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Påminn mig om att hålla kontakten';
+
+  @override
+  String get relationshipImportantLabel => 'Viktig';
+
+  @override
+  String get relationshipLogCheckIn => 'Logga avstämning';
+
+  @override
+  String get relationshipNameLabel => 'Namn';
+
+  @override
+  String get relationshipNameRequired => 'Namn krävs';
+
+  @override
+  String get relationshipNicknameLabel => 'Smeknamn';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Inga avstämningar än — logga en efter ert nästa samtal.';
+
+  @override
+  String get relationshipNotFound => 'Den här personen följs inte längre.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Lägg till människorna du vill hålla kontakten med.';
+
+  @override
+  String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get relationshipStatusActive => 'Aktiv';
+
+  @override
+  String get relationshipStatusArchived => 'Arkiverad';
+
+  @override
+  String get relationshipStatusDormant => 'Vilande';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Status';
 
   @override
   String get saveButton => 'Spara';

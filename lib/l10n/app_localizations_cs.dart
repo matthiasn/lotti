@@ -3113,6 +3113,75 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
 
   @override
+  String get checkInAvoidLabel => 'Raději se vyhnout';
+
+  @override
+  String get checkInDateLabel => 'Kdy?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Smazat tento záznam? Tohle nelze vrátit zpět.';
+
+  @override
+  String get checkInEditTitle => 'Upravit záznam';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Záznam se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Záznam se nepodařilo smazat. Zkus to prosím znovu.';
+
+  @override
+  String get checkInInteractionCall => 'Hovor';
+
+  @override
+  String get checkInInteractionInPerson => 'Osobně';
+
+  @override
+  String get checkInInteractionLabel => 'Jak jste se spojili?';
+
+  @override
+  String get checkInInteractionMessage => 'Zpráva';
+
+  @override
+  String get checkInInteractionOther => 'Jinak';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videohovor';
+
+  @override
+  String get checkInNarrativeLabel => 'O čem jste mluvili?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Příště se zaměřit na';
+
+  @override
+  String get checkInSentimentDelightful => 'Skvělé';
+
+  @override
+  String get checkInSentimentDifficult => 'Těžké';
+
+  @override
+  String get checkInSentimentGood => 'Dobré';
+
+  @override
+  String get checkInSentimentLabel => 'Jaké to bylo?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutrální';
+
+  @override
+  String get checkInSentimentStrained => 'Napjaté';
+
+  @override
+  String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
+
+  @override
+  String get checkInTopicsLabel => 'Témata';
+
+  @override
   String get checklistAddItem => 'Přidat novou položku';
 
   @override
@@ -3324,6 +3393,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
+
+  @override
+  String get configFlagEnableRelationships => 'Zapnout stránku Lidé';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Zobrazit záložku Lidé pro péči o tvoje osobní vztahy.';
 
   @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
@@ -5832,6 +5908,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get entryTypeLabelAiResponse => 'Odpověď AI';
+
+  @override
+  String get entryTypeLabelCheckIn => 'Kontakt';
 
   @override
   String get entryTypeLabelChecklist => 'Kontrolní seznam';
@@ -9026,6 +9105,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navTabTitleMore => 'Více';
 
   @override
+  String get navTabTitlePeople => 'Lidé';
+
+  @override
   String get navTabTitleProjects => 'Projekty';
 
   @override
@@ -10141,6 +10223,107 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Přeskočit';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Každých $days dní',
+      few: 'Každé $days dny',
+      one: 'Každý den',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Každé dva týdny';
+
+  @override
+  String get relationshipCadenceLabel => 'Frekvence kontaktu';
+
+  @override
+  String get relationshipCadenceMonthly => 'Každý měsíc';
+
+  @override
+  String get relationshipCadenceNone => 'Bez frekvence';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Každé čtvrtletí';
+
+  @override
+  String get relationshipCadenceWeekly => 'Každý týden';
+
+  @override
+  String get relationshipCreateTitle => 'Přidat osobu';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return 'Smazat $name?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Upravit osobu';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Osobu se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Osobu se nepodařilo smazat. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Změny se nepodařilo uložit. Zkus to prosím znovu.';
+
+  @override
+  String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
+
+  @override
+  String get relationshipImportantLabel => 'Důležité';
+
+  @override
+  String get relationshipLogCheckIn => 'Zaznamenat kontakt';
+
+  @override
+  String get relationshipNameLabel => 'Jméno';
+
+  @override
+  String get relationshipNameRequired => 'Jméno je povinné';
+
+  @override
+  String get relationshipNicknameLabel => 'Přezdívka';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Zatím žádné záznamy — přidej první po dalším rozhovoru.';
+
+  @override
+  String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Přidej lidi, se kterými chceš zůstat v kontaktu.';
+
+  @override
+  String get relationshipsPageTitle => 'Lidé';
+
+  @override
+  String get relationshipStatusActive => 'Aktivní';
+
+  @override
+  String get relationshipStatusArchived => 'Archivované';
+
+  @override
+  String get relationshipStatusDormant => 'Spící';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Stav';
 
   @override
   String get saveButton => 'Uložit';

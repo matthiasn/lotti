@@ -114,3 +114,4 @@ The journal core gives us everything needed:
 - [ADR 0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md)
 - [ADR 0041: Relationship Contact Linking and Communication Actions](./0041-relationship-contact-linking.md)
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
+  (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))

@@ -43,6 +43,7 @@ export 'package:lotti/features/tasks/model/directed_relation.dart';
     case EntryLinkType.basic:
     case EntryLinkType.rating:
     case EntryLinkType.project:
+    case EntryLinkType.relationship:
       return null;
   }
 }

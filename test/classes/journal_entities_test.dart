@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:research_package/model.dart';
@@ -351,5 +353,41 @@ void main() {
         <String>{'entity-1', projectNotification},
       );
     });
+
+    test('relationship includes relationshipNotification', () {
+      final entity = JournalEntity.relationship(
+        meta: meta,
+        data: RelationshipData(
+          title: 'Anna Example',
+          status: RelationshipStatus.active(
+            id: 'rel-status-1',
+            createdAt: fixedDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+      expect(
+        entity.affectedIds,
+        <String>{'entity-1', relationshipNotification},
+      );
+    });
+
+    test(
+      'checkIn includes its relationshipId as a wake token '
+      'plus checkInNotification',
+      () {
+        final entity = JournalEntity.checkIn(
+          meta: meta,
+          data: const CheckInData(
+            relationshipId: 'rel-001',
+            interactionType: CheckInInteractionType.call,
+          ),
+        );
+        expect(
+          entity.affectedIds,
+          <String>{'entity-1', 'rel-001', checkInNotification},
+        );
+      },
+    );
   });
 }

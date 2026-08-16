@@ -184,6 +184,7 @@ class _NavFlagBench {
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
         enableUnifiedGoalsFlag => unifiedGoals.stream,
+        enableRelationshipsFlag => relationships.stream,
         _ => Stream<bool>.value(false),
       };
     });
@@ -200,11 +201,13 @@ class _NavFlagBench {
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
   final unifiedGoals = StreamController<bool>.broadcast(sync: true);
+  final relationships = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
-  /// Emits the base optional-tab flags at once; the Events and
-  /// unified-Goals flags stay off so existing tab indices/delegates are
-  /// unaffected (toggle their controllers directly to exercise those
+  /// Emits all optional-tab flags at once. Only [dailyOs], [projects],
+  /// [habits] and [dashboards] take `enabled`; [events], [unifiedGoals] and
+  /// [relationships] stay off so existing tab indices/delegates are
+  /// unaffected (toggle those three directly to exercise their
   /// destinations).
   void emitAll({required bool enabled}) {
     dailyOs.add(enabled);
@@ -213,6 +216,7 @@ class _NavFlagBench {
     dashboards.add(enabled);
     events.add(false);
     unifiedGoals.add(false);
+    relationships.add(false);
   }
 
   Future<void> dispose() async {
@@ -224,6 +228,7 @@ class _NavFlagBench {
       dashboards.close(),
       events.close(),
       unifiedGoals.close(),
+      relationships.close(),
     ]);
   }
 }
@@ -394,6 +399,7 @@ void main() {
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
+        bench.relationships.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -566,6 +572,16 @@ void main() {
       expect(creationContextIdForRoute(null), isNull);
     });
 
+    test('People routes yield no global creation context because BasicLink '
+        'does not represent relationship ownership', () {
+      expect(
+        creationContextIdForRoute(
+          '/people/123e4567-e89b-12d3-a456-426614174000',
+        ),
+        isNull,
+      );
+    });
+
     group('desktop selected entry id', () {
       test('starts unselected and notifies logbook listeners on change', () {
         final navService = getIt<NavService>();
@@ -723,6 +739,7 @@ void main() {
         bench.dashboards.add(false);
         bench.events.add(true);
         bench.unifiedGoals.add(false);
+        bench.relationships.add(false);
         await pumpEventQueue();
 
         expect(bench.navService.isEventsPageEnabled, isTrue);
@@ -901,6 +918,37 @@ void main() {
       });
     });
 
+    group('relationships tab flag', () {
+      test('enable_relationships shows the People tab right before journal, '
+          'and disabling it falls back to tasks', () async {
+        final bench = _NavFlagBench();
+        final navService = bench.navService;
+        bench.emitAll(enabled: true);
+        bench.relationships.add(true);
+
+        expect(navService.isRelationshipsPageEnabled, isTrue);
+        expect(
+          navService.beamerDelegates.indexOf(
+            navService.relationshipsDelegate,
+          ),
+          navService.beamerDelegates.indexOf(navService.journalDelegate) - 1,
+        );
+
+        navService.setPath('/people/rel-1');
+        expect(navService.currentPath, '/people/rel-1');
+
+        bench.relationships.add(false);
+        expect(navService.isRelationshipsPageEnabled, isFalse);
+        expect(
+          navService.beamerDelegates.contains(
+            navService.relationshipsDelegate,
+          ),
+          isFalse,
+        );
+        expect(navService.currentPath, '/tasks');
+      });
+    });
+
     group('_handleNavigationFlagsUpdated fallback', () {
       test(
         'falls back to tasks when current path becomes unreachable after '
@@ -922,6 +970,9 @@ void main() {
           final unifiedGoalsController = StreamController<bool>.broadcast(
             sync: true,
           );
+          final relationshipsController = StreamController<bool>.broadcast(
+            sync: true,
+          );
 
           when(
             () => localJournalDb.watchConfigFlag(any()),
@@ -934,6 +985,7 @@ void main() {
               enableDailyOsPageFlag => dailyOsController.stream,
               enableEventsFlag => eventsController.stream,
               enableUnifiedGoalsFlag => unifiedGoalsController.stream,
+              enableRelationshipsFlag => relationshipsController.stream,
               _ => Stream<bool>.value(false),
             };
           });
@@ -951,6 +1003,7 @@ void main() {
               dailyOsController.close(),
               eventsController.close(),
               unifiedGoalsController.close(),
+              relationshipsController.close(),
             ]);
           });
 
@@ -961,6 +1014,7 @@ void main() {
           dailyOsController.add(true);
           eventsController.add(false);
           unifiedGoalsController.add(false);
+          relationshipsController.add(false);
 
           navService.beamToNamed('/habits');
           expect(navService.currentPath, '/habits');

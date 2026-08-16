@@ -512,6 +512,27 @@ void main() {
             dbType: 'SupersedesLink',
             linkType: EntryLinkType.supersedes,
           ),
+          (
+            label: 'relationship',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.relationship(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'RelationshipLink',
+            linkType: EntryLinkType.relationship,
+          ),
         ];
 
     for (final variant in variants) {
@@ -672,6 +693,7 @@ void main() {
         EntryLinkType.duplicates: 'DuplicatesLink',
         EntryLinkType.fixes: 'FixesLink',
         EntryLinkType.supersedes: 'SupersedesLink',
+        EntryLinkType.relationship: 'RelationshipLink',
       };
       expect(expected.keys, containsAll(EntryLinkType.values));
       for (final entry in expected.entries) {

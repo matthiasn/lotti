@@ -1,7 +1,9 @@
 # Relationship Management — Implementation Plan
 
 - Date: 2026-07-22
-- Status: Plan (nothing implemented)
+- Status: Superseded by
+  [2026-08-13_relationship_management_v2.md](2026-08-13_relationship_management_v2.md)
+  (rebased onto the goal-agent runtime, ADRs 0053–0058)
 - ADRs: [0037](../adr/0037-relationship-on-device-storage-and-privacy.md),
   [0038](../adr/0038-relationship-domain-model.md),
   [0039](../adr/0039-relationship-check-in-reminders.md),

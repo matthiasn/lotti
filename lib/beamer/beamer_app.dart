@@ -255,6 +255,7 @@ enum _AppNavigationDestinationKind {
   goals,
   habits,
   dashboards,
+  people,
   journal,
   events,
   settings,
@@ -289,6 +290,7 @@ class _AppNavigationDestination {
     _AppNavigationDestinationKind.goals ||
     _AppNavigationDestinationKind.habits ||
     _AppNavigationDestinationKind.dashboards ||
+    _AppNavigationDestinationKind.people ||
     _AppNavigationDestinationKind.events ||
     _AppNavigationDestinationKind.settings => false,
   };
@@ -584,6 +586,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
         final isEventsPageEnabled = navService.isEventsPageEnabled;
         final isUnifiedGoalsPageEnabled = navService.isUnifiedGoalsPageEnabled;
+        final isRelationshipsPageEnabled =
+            navService.isRelationshipsPageEnabled;
 
         final destinations = _buildNavigationDestinations(
           context: context,
@@ -593,6 +597,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           isHabitsPageEnabled: isHabitsPageEnabled,
           isDashboardsPageEnabled: isDashboardsPageEnabled,
           isEventsPageEnabled: isEventsPageEnabled,
+          isRelationshipsPageEnabled: isRelationshipsPageEnabled,
         );
         final itemCount = destinations.length;
 
@@ -618,6 +623,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             Beamer(routerDelegate: navService.habitsDelegate),
           if (isDashboardsPageEnabled)
             Beamer(routerDelegate: navService.dashboardsDelegate),
+          if (isRelationshipsPageEnabled)
+            Beamer(routerDelegate: navService.relationshipsDelegate),
           Beamer(routerDelegate: navService.journalDelegate),
           if (isEventsPageEnabled)
             Beamer(routerDelegate: navService.eventsDelegate),
@@ -1086,6 +1093,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required bool isHabitsPageEnabled,
     required bool isDashboardsPageEnabled,
     required bool isEventsPageEnabled,
+    required bool isRelationshipsPageEnabled,
   }) {
     final allDestinations = <_AppNavigationDestination>[
       _AppNavigationDestination(
@@ -1136,6 +1144,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         expandedChildBuilder: () => const ImpactSidebarEntry(),
       ),
       _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.people,
+        label: context.messages.navTabTitlePeople,
+        iconBuilder: ({required active}) =>
+            Icon(active ? Icons.people_rounded : Icons.people_outlined),
+      ),
+      _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,
         label: context.messages.navTabTitleJournal,
         iconBuilder: ({required active}) => Icon(
@@ -1164,6 +1178,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isHabitsPageEnabled: isHabitsPageEnabled,
       isDashboardsPageEnabled: isDashboardsPageEnabled,
       isEventsPageEnabled: isEventsPageEnabled,
+      isRelationshipsPageEnabled: isRelationshipsPageEnabled,
     );
     final result = allDestinations
         .where((destination) => enabledKinds.contains(destination.kind))
@@ -1196,6 +1211,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isHabitsPageEnabled: navService.isHabitsPageEnabled,
       isDashboardsPageEnabled: navService.isDashboardsPageEnabled,
       isEventsPageEnabled: navService.isEventsPageEnabled,
+      isRelationshipsPageEnabled: navService.isRelationshipsPageEnabled,
     ).indexOf(kind);
     return index == -1 ? null : index;
   }
@@ -1360,6 +1376,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isHabitsPageEnabled,
   required bool isDashboardsPageEnabled,
   required bool isEventsPageEnabled,
+  required bool isRelationshipsPageEnabled,
 }) {
   return [
     _AppNavigationDestinationKind.tasks,
@@ -1368,6 +1385,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
     if (isUnifiedGoalsPageEnabled) _AppNavigationDestinationKind.goals,
     if (isHabitsPageEnabled) _AppNavigationDestinationKind.habits,
     if (isDashboardsPageEnabled) _AppNavigationDestinationKind.dashboards,
+    if (isRelationshipsPageEnabled) _AppNavigationDestinationKind.people,
     _AppNavigationDestinationKind.journal,
     if (isEventsPageEnabled) _AppNavigationDestinationKind.events,
     _AppNavigationDestinationKind.settings,

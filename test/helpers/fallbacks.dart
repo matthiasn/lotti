@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 
 import 'package:drift/drift.dart' as drift;
 import 'package:genui/genui.dart' show CreateSurface;
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -103,6 +105,47 @@ final ProjectEntry fallbackProjectEntry =
           ),
         )
         as ProjectEntry;
+
+const CheckInData fallbackCheckInData = CheckInData(
+  relationshipId: 'fallback-relationship-id',
+  interactionType: CheckInInteractionType.other,
+);
+
+final CheckInEntry fallbackCheckInEntry =
+    JournalEntity.checkIn(
+          meta: Metadata(
+            id: 'fallback-check-in-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+            dateTo: DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+          data: fallbackCheckInData,
+        )
+        as CheckInEntry;
+
+final RelationshipEntry fallbackRelationshipEntry =
+    JournalEntity.relationship(
+          meta: Metadata(
+            id: 'fallback-relationship-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+            dateTo: DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+          data: RelationshipData(
+            title: 'Fallback Person',
+            status: RelationshipStatus.active(
+              id: 'fallback-status-id',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              utcOffset: 0,
+            ),
+          ),
+        )
+        as RelationshipEntry;
+
+final RelationshipData fallbackRelationshipData =
+    fallbackRelationshipEntry.data;
 
 const SyncMessage fallbackSyncMessage = SyncJournalEntity(
   id: 'fallback-id',
@@ -197,6 +240,10 @@ void registerAllFallbackValues() {
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);
+  registerFallbackValue(fallbackRelationshipEntry);
+  registerFallbackValue(fallbackRelationshipData);
+  registerFallbackValue(fallbackCheckInEntry);
+  registerFallbackValue(fallbackCheckInData);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
   registerFallbackValue(fallbackSavedTaskFilter);

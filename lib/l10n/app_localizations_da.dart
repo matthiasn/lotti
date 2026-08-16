@@ -3072,6 +3072,75 @@ class AppLocalizationsDa extends AppLocalizations {
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
 
   @override
+  String get checkInAvoidLabel => 'Bedst at undgå';
+
+  @override
+  String get checkInDateLabel => 'Hvornår?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Slet dette check-in? Det kan ikke fortrydes.';
+
+  @override
+  String get checkInEditTitle => 'Redigér check-in';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Check-in kunne ikke gemmes. Prøv igen.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Check-in kunne ikke slettes. Prøv igen.';
+
+  @override
+  String get checkInInteractionCall => 'Opkald';
+
+  @override
+  String get checkInInteractionInPerson => 'Personligt';
+
+  @override
+  String get checkInInteractionLabel => 'Hvordan havde I kontakt?';
+
+  @override
+  String get checkInInteractionMessage => 'Besked';
+
+  @override
+  String get checkInInteractionOther => 'Andet';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videoopkald';
+
+  @override
+  String get checkInNarrativeLabel => 'Hvad talte I om?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
+
+  @override
+  String get checkInSentimentDelightful => 'Skønt';
+
+  @override
+  String get checkInSentimentDifficult => 'Svært';
+
+  @override
+  String get checkInSentimentGood => 'Godt';
+
+  @override
+  String get checkInSentimentLabel => 'Hvordan føltes det?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutralt';
+
+  @override
+  String get checkInSentimentStrained => 'Anstrengt';
+
+  @override
+  String get checkInTopicsHint => 'Kommasepareret, f.eks. arbejde, rejser';
+
+  @override
+  String get checkInTopicsLabel => 'Emner';
+
+  @override
   String get checklistAddItem => 'Tilføj en ny genstand';
 
   @override
@@ -3282,6 +3351,13 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Vis projektstyringsfunktioner til at organisere opgaver i projekter.';
+
+  @override
+  String get configFlagEnableRelationships => 'Aktivér Personer-siden';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Vis Personer-fanen til at pleje dine personlige relationer.';
 
   @override
   String get configFlagEnableSessionRatings => 'Aktiver sessionsvurderinger';
@@ -5769,6 +5845,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get entryTypeLabelAiResponse => 'AI-respons';
+
+  @override
+  String get entryTypeLabelCheckIn => 'Check-in';
 
   @override
   String get entryTypeLabelChecklist => 'Tjekliste';
@@ -8907,6 +8986,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get navTabTitleMore => 'Mere';
 
   @override
+  String get navTabTitlePeople => 'Personer';
+
+  @override
   String get navTabTitleProjects => 'Projekter';
 
   @override
@@ -9998,6 +10080,107 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Spring over';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Hver $days. dag',
+      one: 'Hver dag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Hver anden uge';
+
+  @override
+  String get relationshipCadenceLabel => 'Kontaktrytme';
+
+  @override
+  String get relationshipCadenceMonthly => 'Månedligt';
+
+  @override
+  String get relationshipCadenceNone => 'Ingen rytme';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Hvert kvartal';
+
+  @override
+  String get relationshipCadenceWeekly => 'Ugentligt';
+
+  @override
+  String get relationshipCreateTitle => 'Tilføj person';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Deres check-ins slettes også. Det kan ikke fortrydes.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return 'Slet $name?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Redigér person';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Personen kunne ikke gemmes. Prøv igen.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Personen kunne ikke slettes. Prøv igen.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Ændringerne kunne ikke gemmes. Prøv igen.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Mind mig om at holde kontakten';
+
+  @override
+  String get relationshipImportantLabel => 'Vigtig';
+
+  @override
+  String get relationshipLogCheckIn => 'Registrér check-in';
+
+  @override
+  String get relationshipNameLabel => 'Navn';
+
+  @override
+  String get relationshipNameRequired => 'Navn er påkrævet';
+
+  @override
+  String get relationshipNicknameLabel => 'Kaldenavn';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Ingen check-ins endnu — registrér et efter jeres næste snak.';
+
+  @override
+  String get relationshipNotFound => 'Denne person følges ikke længere.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Tilføj de mennesker, du vil holde kontakten med.';
+
+  @override
+  String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get relationshipStatusActive => 'Aktiv';
+
+  @override
+  String get relationshipStatusArchived => 'Arkiveret';
+
+  @override
+  String get relationshipStatusDormant => 'Hvilende';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Status';
 
   @override
   String get saveButton => 'Gem';

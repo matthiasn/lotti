@@ -5202,6 +5202,138 @@ abstract class AppLocalizations {
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
 
+  /// No description provided for @checkInAvoidLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Better to avoid'**
+  String get checkInAvoidLabel;
+
+  /// No description provided for @checkInDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When?'**
+  String get checkInDateLabel;
+
+  /// No description provided for @checkInDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this check-in? This cannot be undone.'**
+  String get checkInDeleteConfirmMessage;
+
+  /// No description provided for @checkInEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit check-in'**
+  String get checkInEditTitle;
+
+  /// No description provided for @checkInErrorCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the check-in. Please try again.'**
+  String get checkInErrorCreateFailed;
+
+  /// No description provided for @checkInErrorDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete the check-in. Please try again.'**
+  String get checkInErrorDeleteFailed;
+
+  /// No description provided for @checkInInteractionCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get checkInInteractionCall;
+
+  /// No description provided for @checkInInteractionInPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'In person'**
+  String get checkInInteractionInPerson;
+
+  /// No description provided for @checkInInteractionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How did you connect?'**
+  String get checkInInteractionLabel;
+
+  /// No description provided for @checkInInteractionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get checkInInteractionMessage;
+
+  /// No description provided for @checkInInteractionOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get checkInInteractionOther;
+
+  /// No description provided for @checkInInteractionVideoCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call'**
+  String get checkInInteractionVideoCall;
+
+  /// No description provided for @checkInNarrativeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you talk about?'**
+  String get checkInNarrativeLabel;
+
+  /// No description provided for @checkInPayAttentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next time, pay attention to'**
+  String get checkInPayAttentionLabel;
+
+  /// No description provided for @checkInSentimentDelightful.
+  ///
+  /// In en, this message translates to:
+  /// **'Delightful'**
+  String get checkInSentimentDelightful;
+
+  /// No description provided for @checkInSentimentDifficult.
+  ///
+  /// In en, this message translates to:
+  /// **'Difficult'**
+  String get checkInSentimentDifficult;
+
+  /// No description provided for @checkInSentimentGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get checkInSentimentGood;
+
+  /// No description provided for @checkInSentimentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How did it feel?'**
+  String get checkInSentimentLabel;
+
+  /// No description provided for @checkInSentimentNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get checkInSentimentNeutral;
+
+  /// No description provided for @checkInSentimentStrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Strained'**
+  String get checkInSentimentStrained;
+
+  /// No description provided for @checkInTopicsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Comma-separated, e.g. work, travel'**
+  String get checkInTopicsHint;
+
+  /// No description provided for @checkInTopicsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get checkInTopicsLabel;
+
   /// No description provided for @checklistAddItem.
   ///
   /// In en, this message translates to:
@@ -5585,6 +5717,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show project management features for organizing tasks into projects.'**
   String get configFlagEnableProjectsDescription;
+
+  /// No description provided for @configFlagEnableRelationships.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable People page'**
+  String get configFlagEnableRelationships;
+
+  /// No description provided for @configFlagEnableRelationshipsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the People tab for nurturing your personal relationships.'**
+  String get configFlagEnableRelationshipsDescription;
 
   /// No description provided for @configFlagEnableSessionRatings.
   ///
@@ -9898,6 +10042,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Response'**
   String get entryTypeLabelAiResponse;
+
+  /// No description provided for @entryTypeLabelCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in'**
+  String get entryTypeLabelCheckIn;
 
   /// No description provided for @entryTypeLabelChecklist.
   ///
@@ -15151,6 +15301,12 @@ abstract class AppLocalizations {
   /// **'More'**
   String get navTabTitleMore;
 
+  /// No description provided for @navTabTitlePeople.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get navTabTitlePeople;
+
   /// No description provided for @navTabTitleProjects.
   ///
   /// In en, this message translates to:
@@ -16830,6 +16986,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get referenceImageSkip;
+
+  /// No description provided for @relationshipCadenceEveryNDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Every day} other{Every {days} days}}'**
+  String relationshipCadenceEveryNDays(int days);
+
+  /// No description provided for @relationshipCadenceFortnightly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every two weeks'**
+  String get relationshipCadenceFortnightly;
+
+  /// No description provided for @relationshipCadenceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in cadence'**
+  String get relationshipCadenceLabel;
+
+  /// No description provided for @relationshipCadenceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get relationshipCadenceMonthly;
+
+  /// No description provided for @relationshipCadenceNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No cadence'**
+  String get relationshipCadenceNone;
+
+  /// No description provided for @relationshipCadenceQuarterly.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarterly'**
+  String get relationshipCadenceQuarterly;
+
+  /// No description provided for @relationshipCadenceWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get relationshipCadenceWeekly;
+
+  /// No description provided for @relationshipCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add person'**
+  String get relationshipCreateTitle;
+
+  /// No description provided for @relationshipDeleteConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Their check-ins are deleted too. This cannot be undone.'**
+  String get relationshipDeleteConfirmMessage;
+
+  /// No description provided for @relationshipDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String relationshipDeleteConfirmTitle(String name);
+
+  /// No description provided for @relationshipEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit person'**
+  String get relationshipEditTitle;
+
+  /// No description provided for @relationshipErrorCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this person. Please try again.'**
+  String get relationshipErrorCreateFailed;
+
+  /// No description provided for @relationshipErrorDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete this person. Please try again.'**
+  String get relationshipErrorDeleteFailed;
+
+  /// No description provided for @relationshipErrorUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the changes. Please try again.'**
+  String get relationshipErrorUpdateFailed;
+
+  /// No description provided for @relationshipImportantDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudge me to stay in touch'**
+  String get relationshipImportantDescription;
+
+  /// No description provided for @relationshipImportantLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Important'**
+  String get relationshipImportantLabel;
+
+  /// No description provided for @relationshipLogCheckIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log check-in'**
+  String get relationshipLogCheckIn;
+
+  /// No description provided for @relationshipNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get relationshipNameLabel;
+
+  /// No description provided for @relationshipNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required'**
+  String get relationshipNameRequired;
+
+  /// No description provided for @relationshipNicknameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get relationshipNicknameLabel;
+
+  /// No description provided for @relationshipNoCheckIns.
+  ///
+  /// In en, this message translates to:
+  /// **'No check-ins yet — log one after you next talk.'**
+  String get relationshipNoCheckIns;
+
+  /// No description provided for @relationshipNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This person is no longer tracked.'**
+  String get relationshipNotFound;
+
+  /// No description provided for @relationshipsEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'Add the people you want to stay close to.'**
+  String get relationshipsEmptyState;
+
+  /// No description provided for @relationshipsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get relationshipsPageTitle;
+
+  /// No description provided for @relationshipStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get relationshipStatusActive;
+
+  /// No description provided for @relationshipStatusArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get relationshipStatusArchived;
+
+  /// No description provided for @relationshipStatusDormant.
+  ///
+  /// In en, this message translates to:
+  /// **'Dormant'**
+  String get relationshipStatusDormant;
+
+  /// No description provided for @relationshipStatusFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get relationshipStatusFieldLabel;
 
   /// No description provided for @saveButton.
   ///

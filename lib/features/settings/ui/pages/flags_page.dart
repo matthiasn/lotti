@@ -109,6 +109,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableUnifiedGoalsFlag,
     enableDailyOsPageFlag,
     enableEventsFlag,
+    enableRelationshipsFlag,
     enableSessionRatingsFlag,
     enableProjectsFlag,
     enableEmbeddingsFlag,
@@ -175,6 +176,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.today_outlined;
       case enableEventsFlag:
         return Icons.event_rounded;
+      case enableRelationshipsFlag:
+        return Icons.people_outline_rounded;
       case enableSessionRatingsFlag:
         return Icons.star_rate_rounded;
       case enableProjectsFlag:
@@ -224,6 +227,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableDailyOsDescription;
       case enableEventsFlag:
         return context.messages.configFlagEnableEventsDescription;
+      case enableRelationshipsFlag:
+        return context.messages.configFlagEnableRelationshipsDescription;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatingsDescription;
       case enableProjectsFlag:
@@ -273,6 +278,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableDailyOs;
       case enableEventsFlag:
         return context.messages.configFlagEnableEvents;
+      case enableRelationshipsFlag:
+        return context.messages.configFlagEnableRelationships;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatings;
       case enableProjectsFlag:

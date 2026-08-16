@@ -128,6 +128,7 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
@@ -702,6 +703,12 @@ class MockNavService extends Mock implements NavService {
 
   @override
   bool get isUnifiedGoalsPageEnabled => unifiedGoalsPageEnabled;
+
+  /// Same pattern for the People tab (`enable_relationships`).
+  bool relationshipsPageEnabled = false;
+
+  @override
+  bool get isRelationshipsPageEnabled => relationshipsPageEnabled;
 }
 
 class MockWindowService extends Mock implements WindowService {}
@@ -1222,6 +1229,9 @@ class MockGoalHabitCompletionService extends Mock
 class MockRatingRepository extends Mock implements RatingRepository {}
 
 class MockProjectRepository extends Mock implements ProjectRepository {}
+
+class MockRelationshipRepository extends Mock
+    implements RelationshipRepository {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

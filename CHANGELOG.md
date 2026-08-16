@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pre-selects the verdict the day's own evidence points at, and says so, rather
   than always starting on "Met". You can change it; a day with nothing recorded
   suggests nothing at all.
+- **Relationships (People tab).** A personal CRM for a deliberately
+  curated set of people. One relationship entity per person, plus structured
+  check-ins (interaction type, sentiment, topics, narrative) linked to it.
+  Includes a flag-gated People tab (`enable_relationships`): the
+  recency-ordered list, the per-person detail page with status, cadence and
+  nickname, the add/edit person modal, and a check-in capture sheet that is
+  editable and deletable afterward. Cascade deletion (removing a
+  relationship removes its check-ins), sync, categories, and the private
+  flag all apply.
 
 ### Changed
 - **Slow local agents get more time to finish.** An agent wake can now run for

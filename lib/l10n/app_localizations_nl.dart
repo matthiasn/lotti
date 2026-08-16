@@ -3082,6 +3082,75 @@ class AppLocalizationsNl extends AppLocalizations {
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
 
   @override
+  String get checkInAvoidLabel => 'Beter vermijden';
+
+  @override
+  String get checkInDateLabel => 'Wanneer?';
+
+  @override
+  String get checkInDeleteConfirmMessage =>
+      'Deze check-in verwijderen? Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get checkInEditTitle => 'Check-in bewerken';
+
+  @override
+  String get checkInErrorCreateFailed =>
+      'Kon de check-in niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get checkInErrorDeleteFailed =>
+      'Kon de check-in niet verwijderen. Probeer het opnieuw.';
+
+  @override
+  String get checkInInteractionCall => 'Telefoontje';
+
+  @override
+  String get checkInInteractionInPerson => 'In persoon';
+
+  @override
+  String get checkInInteractionLabel => 'Hoe hadden jullie contact?';
+
+  @override
+  String get checkInInteractionMessage => 'Bericht';
+
+  @override
+  String get checkInInteractionOther => 'Anders';
+
+  @override
+  String get checkInInteractionVideoCall => 'Videogesprek';
+
+  @override
+  String get checkInNarrativeLabel => 'Waar hebben jullie het over gehad?';
+
+  @override
+  String get checkInPayAttentionLabel => 'Let de volgende keer op';
+
+  @override
+  String get checkInSentimentDelightful => 'Heerlijk';
+
+  @override
+  String get checkInSentimentDifficult => 'Moeilijk';
+
+  @override
+  String get checkInSentimentGood => 'Goed';
+
+  @override
+  String get checkInSentimentLabel => 'Hoe voelde het?';
+
+  @override
+  String get checkInSentimentNeutral => 'Neutraal';
+
+  @override
+  String get checkInSentimentStrained => 'Gespannen';
+
+  @override
+  String get checkInTopicsHint => 'Kommagescheiden, bijv. werk, reizen';
+
+  @override
+  String get checkInTopicsLabel => 'Onderwerpen';
+
+  @override
   String get checklistAddItem => 'Een nieuw item toevoegen';
 
   @override
@@ -3294,6 +3363,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get configFlagEnableProjectsDescription =>
       'Functies voor projectbeheer tonen voor het organiseren van taken in projecten.';
+
+  @override
+  String get configFlagEnableRelationships => 'Mensen-pagina inschakelen';
+
+  @override
+  String get configFlagEnableRelationshipsDescription =>
+      'Toon het tabblad Mensen om je persoonlijke relaties te onderhouden.';
 
   @override
   String get configFlagEnableSessionRatings =>
@@ -5789,6 +5865,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get entryTypeLabelAiResponse => 'AI-respons';
+
+  @override
+  String get entryTypeLabelCheckIn => 'Check-in';
 
   @override
   String get entryTypeLabelChecklist => 'Checklist';
@@ -8923,6 +9002,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navTabTitleMore => 'Meer';
 
   @override
+  String get navTabTitlePeople => 'Mensen';
+
+  @override
   String get navTabTitleProjects => 'Projecten';
 
   @override
@@ -10014,6 +10096,108 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get referenceImageSkip => 'Overslaan';
+
+  @override
+  String relationshipCadenceEveryNDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Elke $days dagen',
+      one: 'Elke dag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCadenceFortnightly => 'Om de twee weken';
+
+  @override
+  String get relationshipCadenceLabel => 'Contactritme';
+
+  @override
+  String get relationshipCadenceMonthly => 'Maandelijks';
+
+  @override
+  String get relationshipCadenceNone => 'Geen ritme';
+
+  @override
+  String get relationshipCadenceQuarterly => 'Elk kwartaal';
+
+  @override
+  String get relationshipCadenceWeekly => 'Wekelijks';
+
+  @override
+  String get relationshipCreateTitle => 'Persoon toevoegen';
+
+  @override
+  String get relationshipDeleteConfirmMessage =>
+      'Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String relationshipDeleteConfirmTitle(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get relationshipEditTitle => 'Persoon bewerken';
+
+  @override
+  String get relationshipErrorCreateFailed =>
+      'Kon de persoon niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get relationshipErrorDeleteFailed =>
+      'Kon de persoon niet verwijderen. Probeer het opnieuw.';
+
+  @override
+  String get relationshipErrorUpdateFailed =>
+      'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
+
+  @override
+  String get relationshipImportantDescription =>
+      'Herinner me eraan contact te houden';
+
+  @override
+  String get relationshipImportantLabel => 'Belangrijk';
+
+  @override
+  String get relationshipLogCheckIn => 'Check-in vastleggen';
+
+  @override
+  String get relationshipNameLabel => 'Naam';
+
+  @override
+  String get relationshipNameRequired => 'Een naam is verplicht';
+
+  @override
+  String get relationshipNicknameLabel => 'Bijnaam';
+
+  @override
+  String get relationshipNoCheckIns =>
+      'Nog geen check-ins — leg er een vast na jullie volgende gesprek.';
+
+  @override
+  String get relationshipNotFound =>
+      'Deze persoon staat niet meer in je lijst.';
+
+  @override
+  String get relationshipsEmptyState =>
+      'Voeg de mensen toe met wie je dichtbij wilt blijven.';
+
+  @override
+  String get relationshipsPageTitle => 'Mensen';
+
+  @override
+  String get relationshipStatusActive => 'Actief';
+
+  @override
+  String get relationshipStatusArchived => 'Gearchiveerd';
+
+  @override
+  String get relationshipStatusDormant => 'Sluimerend';
+
+  @override
+  String get relationshipStatusFieldLabel => 'Status';
 
   @override
   String get saveButton => 'Opslaan';

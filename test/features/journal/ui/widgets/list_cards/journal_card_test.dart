@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -1045,6 +1047,96 @@ void main() {
 
         expect(find.text('Device Synchronization'), findsOneWidget);
         expect(find.byIcon(Icons.folder_rounded), findsOneWidget);
+      });
+
+      testWidgets('renders relationship entry with name, note and person '
+          'glyph', (tester) async {
+        final cardDate = DateTime(2026, 8, 13);
+        final relationship = RelationshipEntry(
+          meta: Metadata(
+            id: 'test-relationship-id',
+            createdAt: cardDate,
+            updatedAt: cardDate,
+            dateFrom: cardDate,
+            dateTo: cardDate,
+            categoryId: 'test-category-id',
+          ),
+          data: RelationshipData(
+            title: 'Anna Example',
+            status: RelationshipStatus.active(
+              id: 'rs-1',
+              createdAt: cardDate,
+              utcOffset: 60,
+            ),
+          ),
+          entryText: const EntryText(plainText: 'Met at university.'),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(ModernJournalCard(item: relationship)),
+        );
+
+        // The person's name is the title, never the note.
+        expect(find.text('Anna Example'), findsOneWidget);
+        expect(find.text('Met at university.'), findsOneWidget);
+        expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+      });
+
+      testWidgets('renders check-in entry with its narrative as the title', (
+        tester,
+      ) async {
+        final cardDate = DateTime(2026, 8, 13);
+        CheckInEntry checkIn(
+          CheckInInteractionType type, {
+          EntryText? entryText,
+        }) => CheckInEntry(
+          meta: Metadata(
+            id: 'test-check-in-id',
+            createdAt: cardDate,
+            updatedAt: cardDate,
+            dateFrom: cardDate,
+            dateTo: cardDate,
+            categoryId: 'test-category-id',
+          ),
+          data: CheckInData(relationshipId: 'rel-1', interactionType: type),
+          entryText: entryText,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(
+              item: checkIn(
+                CheckInInteractionType.call,
+                entryText: const EntryText(plainText: 'Caught up on the move.'),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Caught up on the move.'), findsOneWidget);
+        expect(find.byIcon(Icons.call_rounded), findsOneWidget);
+
+        // Every interaction type gets its own glyph, and a narrative-free
+        // check-in falls back to the localized entry-type label.
+        const glyphs = {
+          CheckInInteractionType.inPerson: Icons.people_rounded,
+          CheckInInteractionType.videoCall: Icons.videocam_rounded,
+          CheckInInteractionType.message: Icons.chat_rounded,
+          CheckInInteractionType.other: Icons.forum_rounded,
+        };
+        for (final entry in glyphs.entries) {
+          await tester.pumpWidget(
+            makeTestableWidget(ModernJournalCard(item: checkIn(entry.key))),
+          );
+          await tester.pump();
+
+          expect(
+            find.byIcon(entry.value),
+            findsOneWidget,
+            reason: '${entry.key}',
+          );
+          expect(find.text('Check-in'), findsOneWidget, reason: '${entry.key}');
+        }
       });
 
       testWidgets('renders rating entry with label and insights glyph', (

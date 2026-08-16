@@ -29,7 +29,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 11;
+const _displayedFlagCount = 12;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -109,6 +109,11 @@ void main() {
             description: 'Enable agent fork healing?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableRelationshipsFlag,
+            description: 'Enable People Page?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -170,6 +175,28 @@ void main() {
         find.text(context.messages.configFlagPrivateDescription),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows correct title and description for relationships flag', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final context = tester.element(find.byType(FlagsPage));
+      // The raw DB description ('Enable People Page?') must never reach the
+      // user — the row is titled and explained from the localized catalog.
+      expect(
+        find.text(context.messages.configFlagEnableRelationships),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.configFlagEnableRelationshipsDescription),
+        findsOneWidget,
+      );
+      expect(find.text('Enable People Page?'), findsNothing);
     });
 
     testWidgets('shows correct switch state for enabled flag', (tester) async {

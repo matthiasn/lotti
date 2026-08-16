@@ -80,3 +80,4 @@ device. `url_launcher` (already a dependency) covers `tel:`, `sms:`, and
 - [ADR 0038: Relationship Domain Model](./0038-relationship-domain-model.md)
 - [ADR 0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md)
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
+  (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))

@@ -239,6 +239,49 @@ void main() {
       },
     );
 
+    test(
+      'throws on a link type the task-relationship query cannot produce',
+      () async {
+        final relatedTask = TestTaskFactory.create(
+          id: 'related',
+          title: 'Just related',
+        );
+        // Relationship/project/rating links are never returned by
+        // getTypedLinksForTaskIds. If one ever is, the mapping must fail
+        // loudly rather than silently bucket a person as a linked task.
+        when(
+          () => journalRepository.getTypedLinksForTaskIds(
+            {currentTaskId},
+            linkTypes: any(named: 'linkTypes'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.relationship(
+              id: 'link-relationship',
+              fromId: currentTaskId,
+              toId: 'related',
+              createdAt: baseDate,
+              updatedAt: baseDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => journalRepository.getJournalEntitiesByIds(any()),
+        ).thenAnswer((_) async => [relatedTask]);
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        await expectLater(
+          container.read(
+            taskLinkGroupsControllerProvider(currentTaskId).future,
+          ),
+          throwsStateError,
+        );
+      },
+    );
+
     test('drops a link whose other id does not resolve to a Task', () async {
       when(
         () => journalRepository.getTypedLinksForTaskIds(
