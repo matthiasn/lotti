@@ -317,13 +317,32 @@ void main() {
         successfulByDay: {
           '2024-03-14': {'walk'},
         },
-      ).copyWith(timeSpanDays: 30, zeroBased: true);
+      ).copyWith(timeSpanDays: 30);
 
       final scoped = scopeHabitsStateToHabits(state, {'walk'});
 
       expect(scoped.days, state.days);
       expect(scoped.timeSpanDays, 30);
+    });
+
+    test('the scoped chart is always zero-based — the goal card has no '
+        'baseline control to undo an inherited dynamic floor', () {
+      final state = stateWith(
+        days: ['2024-03-14', '2024-03-15'],
+        allByDay: {
+          '2024-03-14': {'walk'},
+          '2024-03-15': {'walk'},
+        },
+        successfulByDay: {
+          '2024-03-14': {'walk'},
+          '2024-03-15': {'walk'},
+        },
+      ).copyWith(zeroBased: false, minY: 60);
+
+      final scoped = scopeHabitsStateToHabits(state, {'walk'});
+
       expect(scoped.zeroBased, isTrue);
+      expect(scoped.minY, 0);
     });
   });
 }

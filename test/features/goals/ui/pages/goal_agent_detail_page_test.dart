@@ -1716,6 +1716,21 @@ void main() {
       isTrue,
       reason: 'a closed drawer must not swallow clicks along the right edge',
     );
+    // Off-screen means out of the semantics tree too: a screen reader must
+    // not traverse the slid-away drawer's composer and close button.
+    expect(
+      tester
+          .widget<ExcludeSemantics>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(ExcludeSemantics),
+                )
+                .first,
+          )
+          .excluding,
+      isTrue,
+    );
     expect(
       tester.getSize(find.byType(GoalProgressCard)).width,
       lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
@@ -1737,6 +1752,20 @@ void main() {
           )
           .ignoring,
       isFalse,
+    );
+    expect(
+      tester
+          .widget<ExcludeSemantics>(
+            find
+                .ancestor(
+                  of: find.byType(GoalAgentChatPane),
+                  matching: find.byType(ExcludeSemantics),
+                )
+                .first,
+          )
+          .excluding,
+      isFalse,
+      reason: 'the open drawer is part of the accessible page',
     );
     // The drawer header carries the same computed pill as the page: the
     // same widget fed the same status, twice on screen, never disagreeing.
@@ -2688,13 +2717,14 @@ void main() {
           ),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
-              trackStatus: GoalTrackStatus.onTrack,
-              attainment: 1.0,
-              reportOneLiner: null,
+              trackStatus: GoalTrackStatus.atRisk,
+              attainment: 0.8,
+              reportOneLiner: 'Close, not there.',
               pendingProposals: 0,
               spec: null,
               direction: null,
-              deficit: null,
+              // A deficit folds the recovery hint into the drawer pill too.
+              deficit: 2,
               buffer: null,
             ),
           ),
@@ -2722,5 +2752,252 @@ void main() {
         .spacing
         .step13;
     expect(button.width, lessThanOrEqualTo(measure));
+
+    // The drawer header carries the same unbounded name over an Expanded
+    // chat pane — capped at two lines, it cannot overflow the drawer's
+    // column either.
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    // And it folds the recovery hint into its pill, like the page header.
+    expect(find.text('At risk · 2 days to recover'), findsNWidgets(2));
+  });
+
+  testWidgets('a stale flag with NO displayed read renders no out-of-date '
+      'notice — there is nothing whose freshness could be judged', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 8, 13, 12);
+    final agentState =
+        AgentDomainEntity.agentState(
+              id: 'goal-1:state',
+              agentId: 'goal-1',
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+              reportStaleAt: now,
+            )
+            as AgentStateEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: null,
+                attainment: null,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            agentStateProvider(
+              'goal-1',
+            ).overrideWith((ref) async => agentState),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('No report yet'), findsOneWidget);
+      expect(find.text('Out of date'), findsNothing);
+    });
+  });
+
+  testWidgets('a legacy report with content but no one-liner still counts as '
+      "report content for the About section's freshness state", (
+    tester,
+  ) async {
+    final now = DateTime(2026, 8, 13, 12);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final agentState =
+        AgentDomainEntity.agentState(
+              id: 'goal-1:state',
+              agentId: 'goal-1',
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+              reportStaleAt: now,
+            )
+            as AgentStateEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 13)),
+              ),
+            ),
+            agentIdentityProvider('goal-1').overrideWith(
+              (ref) async => goalIdentity.copyWith(
+                config: const AgentConfig(automaticUpdatesEnabled: true),
+              ),
+            ),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            goalAgentProgressViewProvider('goal-1').overrideWith(
+              (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
+            ),
+            agentStateProvider(
+              'goal-1',
+            ).overrideWith((ref) async => agentState),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async =>
+                  AgentDomainEntity.agentReport(
+                        id: 'report-1',
+                        agentId: 'goal-1',
+                        scope: AgentReportScopes.current,
+                        createdAt: now.subtract(const Duration(hours: 3)),
+                        vectorClock: null,
+                        oneLiner: null,
+                        tldr: null,
+                        content: 'Two walks landed this week.',
+                        provenance: const {
+                          'specVersionId': 'goal-1:spec-v1',
+                        },
+                      )
+                      as AgentReportEntity,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The read card demotes to the notice (a report IS displayed) …
+      expect(find.text('Out of date'), findsOneWidget);
+
+      // … and the expanded automation row echoes it: a legacy report with
+      // content but no one-liner still counts as report content.
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('goal-detail-about-agent-toggle')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Out of date'), findsNWidgets(2));
+    });
+  });
+
+  testWidgets('a pending revision proposal mounts the shared change-set card '
+      'on the dashboard', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 1,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+  });
+
+  testWidgets('desktop still offers the drawer while health is erroring — '
+      'the header pill is simply absent', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // A verdictless page keeps the conversation reachable; neither the page
+    // header nor the drawer wears a pill it cannot back.
+    await tester.tap(find.byKey(const ValueKey('goal-detail-talk-to')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalAgentChatPane), findsOneWidget);
+    expect(find.byType(UnifiedGoalStatusPill), findsNothing);
   });
 }

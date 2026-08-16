@@ -507,6 +507,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           identity: goalIdentity,
           agentState: agentState is AgentStateEntity ? agentState : null,
           canRefresh: isActive,
+          hasReportContent: hasStandingAssessment,
         ),
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -697,25 +698,32 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                             curve: MotionCurves.emphasizedDecelerate,
                             child: IgnorePointer(
                               ignoring: !_chatOpen,
-                              child: ExcludeFocus(
+                              // Off-screen means out of the semantics tree
+                              // too: without this a screen reader traverses
+                              // the slid-away drawer's composer and close
+                              // button.
+                              child: ExcludeSemantics(
                                 excluding: !_chatOpen,
-                                child: Focus(
-                                  focusNode: _drawerFocusNode,
-                                  child: _GoalChatDrawer(
-                                    agentId: agentId,
-                                    identity: goalIdentity,
-                                    status: unifiedStatus,
-                                    hasStandingAssessment:
-                                        hasStandingAssessment,
-                                    recoveryHint: switch (health?.deficit) {
-                                      final int deficit when deficit > 0 =>
-                                        context.messages.goalDaysToRecover(
-                                          deficit,
-                                        ),
-                                      _ => null,
-                                    },
-                                    onClose: () =>
-                                        setState(() => _chatOpen = false),
+                                child: ExcludeFocus(
+                                  excluding: !_chatOpen,
+                                  child: Focus(
+                                    focusNode: _drawerFocusNode,
+                                    child: _GoalChatDrawer(
+                                      agentId: agentId,
+                                      identity: goalIdentity,
+                                      status: unifiedStatus,
+                                      hasStandingAssessment:
+                                          hasStandingAssessment,
+                                      recoveryHint: switch (health?.deficit) {
+                                        final int deficit when deficit > 0 =>
+                                          context.messages.goalDaysToRecover(
+                                            deficit,
+                                          ),
+                                        _ => null,
+                                      },
+                                      onClose: () =>
+                                          setState(() => _chatOpen = false),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -802,6 +810,12 @@ class _GoalChatDrawer extends StatelessWidget {
                           children: [
                             Text(
                               identity.displayName,
+                              // User-authored and unbounded; above an
+                              // Expanded chat pane a many-line name would
+                              // overflow the drawer's column, so two lines
+                              // is the ceiling (the page app bar's rule).
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: tokens.typography.styles.subtitle.subtitle2
                                   .copyWith(
                                     color: tokens.colors.text.highEmphasis,
@@ -1020,8 +1034,13 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     final report = widget.report;
     final oneLiner = widget.healthAsync.value?.reportOneLiner;
     final generatedAt = report?.createdAt;
+    // Staleness is a judgement OF a displayed read: with no report and no
+    // one-liner there is nothing whose freshness could be out of date, and
+    // "Out of date" directly above "No report yet" reads as a contradiction.
+    final hasReadContent =
+        report != null || (oneLiner?.trim().isNotEmpty ?? false);
     final String? freshness;
-    if (widget.isStale) {
+    if (widget.isStale && hasReadContent) {
       freshness = messages.taskAgentStatusOutOfDate;
       _ageTick?.cancel();
     } else if (generatedAt == null) {
@@ -1109,6 +1128,7 @@ class _AboutThisAgentSection extends ConsumerStatefulWidget {
     required this.identity,
     required this.agentState,
     required this.canRefresh,
+    required this.hasReportContent,
     super.key,
   });
 
@@ -1116,6 +1136,12 @@ class _AboutThisAgentSection extends ConsumerStatefulWidget {
   final AgentIdentityEntity identity;
   final AgentStateEntity? agentState;
   final bool canRefresh;
+
+  /// Whether the page is DISPLAYING a standing read (spec-matched report or
+  /// one-liner) — drives the automation row's up-to-date/out-of-date state.
+  /// Computed at page level so a legacy report with content but no
+  /// one-liner still counts.
+  final bool hasReportContent;
 
   @override
   ConsumerState<_AboutThisAgentSection> createState() =>
@@ -1165,10 +1191,6 @@ class _AboutThisAgentSectionState
     final tokens = context.designTokens;
     final isRefreshing =
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
-    final oneLiner = ref
-        .watch(goalAgentHealthProvider(widget.agentId))
-        .value
-        ?.reportOneLiner;
     final nextWakeAt = widget.agentState?.nextWakeAt;
     final automaticUpdatesEnabled = GoalAgentService.automaticUpdatesEnabled(
       widget.identity,
@@ -1222,7 +1244,7 @@ class _AboutThisAgentSectionState
                 isRunning: isRefreshing,
                 showCountdown: showCountdown,
                 nextWakeAt: nextWakeAt,
-                hasReportContent: oneLiner?.trim().isNotEmpty ?? false,
+                hasReportContent: widget.hasReportContent,
                 isStale: widget.agentState?.isReportStale ?? false,
                 onAutomaticUpdatesChanged: (enabled) =>
                     unawaited(_updateAutomaticUpdates(enabled)),
