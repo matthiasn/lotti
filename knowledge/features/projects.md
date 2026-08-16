@@ -16,6 +16,10 @@ sources:
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
     last_modified: 2026-06-08
+  - id: category-migration
+    resource: ../../lib/features/projects/service/project_category_migration_service.dart
+    title: Coordinated project category migration
+    last_modified: 2026-08-16
 ---
 
 Projects group related tasks, power the projects tab, and integrate with the
@@ -93,9 +97,11 @@ stateDiagram-v2
   Unlinked --> Linked: linkTaskToProject (same category and privacy)
   Linked --> Linked: task category re-picked unchanged
   Linked --> Unlinked: task category changed or cleared
-  Linked --> Linked: project category edit rejected while tasks remain
+  Linked --> Migrating: project category changed
+  Migrating --> Linked: project, members and agent scopes moved
+  Migrating --> Linked: failure compensates to original category
   note right of Linked
-    Unlink member tasks before moving the project
+    Membership always resolves to one category
   end note
 ```
 
@@ -135,23 +141,25 @@ Only the task detail header changes a task's category
 (`CategorySelectionIconButton` excludes tasks and events explicitly), so the
 controller is the single funnel this rule has to sit in.
 
-**The project side refuses to create a mismatch.**
-`ProjectRepository.updateProject` compares the stored and requested category
-inside the same journal transaction that writes the project. When they differ,
-any linked task or non-destroyed project agent makes the update fail; the tasks
-must be unlinked and the category-scoped agent retired before the project can
-move. The task guard reads the unfiltered denormalized `project_id` membership
-rather than the visible task list, so hidden private tasks still protect the
-invariant. The agent guard resolves active `agent_project` links from the
-independent agent store, preventing a moved project from retaining permissions
-and template context scoped to its former category. `linkTaskToProject` uses the
-same database transaction domain, so a new membership cannot land between the
-task guard and the category write. Keeping the guards in the repository covers
-both the inline picker and the full editor instead of relying on either UI to
-remember the invariant. Category saves also hold the same per-project mutation
-coordinator as agent provisioning. The service then re-reads the category under
-that coordinator before and after creation, so an agent modal opened against an
-older category cannot provision stale permissions after waiting for a save.
+**The project side migrates the whole scoped unit.**
+Both the inline picker and full editor persist through
+`ProjectCategoryMigrationService`. Under the same per-project mutation
+coordinator used by agent provisioning and deletion, it loads the unfiltered
+member tasks, captures each task and directly linked entry category, removes
+the project links, updates every project-agent permission scope, moves the
+project, migrates the captured journal entries, and restores membership. The
+repository still refuses a category write while a task remains linked or an
+agent retains the old scope: those guards are the invariant boundary, while the
+migration service is the user-facing operation that satisfies them.
+
+Journal and agent data live in separate stores, so this is a compensating
+operation rather than one cross-database transaction. Any failed unlink, scope
+write, entity update, or relink triggers restoration of the original entry
+categories, agent scopes, project category, and memberships. Hidden private
+tasks participate because the service and repository guard read unfiltered
+denormalized `project_id` membership. The coordinator also makes an agent modal
+opened against an older category wait for the migration and then fail its
+pre/post-create scope check instead of provisioning stale permissions.
 
 # Two hot reads are shaped for bursts
 
@@ -286,16 +294,18 @@ flowchart LR
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
   Metrics --> HealthProv["projectHealthMetricsProvider"]
   Recos["projectRecommendationsProvider"] --> UI
-  HealthProv --> UI["Health panel / neutral unassessed state"]
+  HealthProv --> UI["Unified project-agent summary card"]
 ```
 
 The detail pages pull project entity data, linked tasks, the latest project-agent
 report, parsed health metrics from it, scheduled wake state, active
 recommendations, pending project change sets, derived presentation data, and
-the wake controls. The read-first surface renders recommendation
-resolve/dismiss actions and change-set confirm/reject actions after the shared
-AI report, so agent output remains actionable without duplicating the report in
-the editor.
+the wake controls. The read-first surface uses the same intelligence-card
+chrome, identity route, report expansion, automation toggle, countdown,
+run-now action and setup route as Task Details. Project health and durable
+recommendation/change-set actions remain project-owned content inside that one
+surface instead of becoming competing cards or duplicating the report in the
+editor.
 
 **There is no aggregator object** — each surface watches the providers it needs.
 

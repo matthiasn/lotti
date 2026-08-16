@@ -81,6 +81,23 @@ class _TransactionTrackingJournalDb extends MockJournalDb {
   }
 }
 
+class _RollbackTrackingJournalDb extends MockJournalDb {
+  bool rolledBack = false;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) async {
+    try {
+      return await action();
+    } catch (_) {
+      rolledBack = true;
+      rethrow;
+    }
+  }
+}
+
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
 
@@ -1500,8 +1517,9 @@ void main() {
     );
 
     test(
-      'returns false when insert fails after soft-delete in transaction',
+      'rolls back the soft-delete when relink insertion fails',
       () async {
+        final rollbackDb = _RollbackTrackingJournalDb();
         final oldLink = EntryLink.project(
           id: 'link-old',
           fromId: 'project-old',
@@ -1511,12 +1529,18 @@ void main() {
           vectorClock: null,
         );
 
+        when(() => rollbackDb.entityById('project-001')).thenAnswer(
+          (_) async => toDbEntity(projectEntry),
+        );
+        when(() => rollbackDb.entityById('task-001')).thenAnswer(
+          (_) async => toDbEntity(taskEntry),
+        );
         when(
-          () => mockDb.getProjectLinkForTask('task-001'),
+          () => rollbackDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         // First call (soft-delete) succeeds, second call (insert) fails
         var callCount = 0;
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async {
+        when(() => rollbackDb.upsertEntryLink(any())).thenAnswer((_) async {
           callCount++;
           return callCount == 1 ? 1 : 0;
         });
@@ -1524,14 +1548,22 @@ void main() {
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
-        final result = await repository.linkTaskToProject(
+        final rollbackRepository = ProjectRepository(
+          journalDb: rollbackDb,
+          entitiesCacheService: mockEntitiesCacheService,
+          persistenceLogic: mockPersistence,
+          updateNotifications: mockNotifications,
+          vectorClockService: mockVectorClockService,
+        );
+
+        final result = await rollbackRepository.linkTaskToProject(
           projectId: 'project-001',
           taskId: 'task-001',
         );
 
         expect(result, isFalse);
-        // Both writes were attempted inside transaction
-        verify(() => mockDb.upsertEntryLink(any())).called(2);
+        expect(rollbackDb.rolledBack, isTrue);
+        verify(() => rollbackDb.upsertEntryLink(any())).called(2);
         // No side effects — transaction failed
         verifyNever(() => mockNotifications.notify(any()));
         verifyNever(() => mockOutboxService.enqueueMessage(any()));

@@ -59,9 +59,9 @@ class ProjectRow extends StatelessWidget {
       backgroundBottomInset: backgroundBottomInset,
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step4,
-        tokens.spacing.step2,
         tokens.spacing.step4,
-        tokens.spacing.step2,
+        tokens.spacing.step4,
+        tokens.spacing.step4,
       ),
       onHoverChanged: onHoverChanged,
       onTap: onTap,

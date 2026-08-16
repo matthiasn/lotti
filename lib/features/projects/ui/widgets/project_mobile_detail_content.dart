@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
@@ -13,28 +14,29 @@ import 'package:lotti/features/design_system/components/scrollbars/design_system
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
-import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
 /// The scrollable body of the read-first project detail surface (used on
 /// mobile and in the desktop right pane).
 ///
-/// Lays out, top to bottom: a header (title + status pill + category/target-date
-/// meta tags that double as edit affordances when their `on*Tap` callbacks are
-/// supplied), the [HealthPanel], the agent [ExpandableReportSection] (with
-/// refresh / cancel-scheduled-wake controls and a live countdown), and the
-/// [ProjectTasksSliverPanel]. The optional `on*Tap` callbacks let the host page
+/// Lays out, top to bottom: a Task-style header (quiet category breadcrumb,
+/// title, and shared metadata pills that double as edit affordances when their
+/// `on*Tap` callbacks are supplied), the description,
+/// [ProjectTasksSliverPanel], and the shared-style
+/// [ProjectAgentSummaryCard]. The optional `on*Tap` callbacks let the host page
 /// open pickers and trigger immediate saves; with them omitted it renders as a
-/// pure read-only showcase. [currentTime] feeds the report's relative "updated
-/// X ago" label. On wide windows, the header and scrollable body use the shared
-/// detail reading measure instead of stretching report text and cards edge to
-/// edge. [hasProjectAgent] distinguishes an unassessed agent from a project
-/// that cannot produce a report yet; [onAssignAgent] lets that empty state
-/// provision an existing project without leaving the workspace.
+/// pure read-only showcase. On wide windows, the header and scrollable body use
+/// the shared detail reading measure instead of stretching report text and cards edge to
+/// edge. [hasProjectAgent] distinguishes a resolving agent from a project that
+/// has none; [onAssignAgent] lets that empty state provision an existing
+/// project without leaving the workspace.
 class ProjectMobileDetailContent extends StatefulWidget {
   const ProjectMobileDetailContent({
     required this.record,
@@ -50,6 +52,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onRefreshReport,
     this.onCancelScheduledReportWake,
     this.onAssignAgent,
+    this.agentIdentity,
     this.agentActions,
     this.hasProjectAgent = true,
     this.isRefreshingReport = false,
@@ -71,6 +74,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onRefreshReport;
   final VoidCallback? onCancelScheduledReportWake;
   final Future<void> Function()? onAssignAgent;
+  final AgentIdentityEntity? agentIdentity;
   final Widget? agentActions;
   final bool hasProjectAgent;
   final bool isRefreshingReport;
@@ -242,37 +246,6 @@ class _ProjectMobileDetailContentState
                             SliverToBoxAdapter(
                               child: SizedBox(height: tokens.spacing.step4),
                             ),
-                            SliverToBoxAdapter(
-                              child: widget.record.healthMetrics == null
-                                  ? ProjectHealthEmptyState(
-                                      onRunReport: isMutating
-                                          ? null
-                                          : widget.onRefreshReport,
-                                      hasAgent: widget.hasProjectAgent,
-                                      isRunningReport:
-                                          widget.isRefreshingReport,
-                                      onAssignAgent:
-                                          widget.onAssignAgent == null
-                                          ? null
-                                          : _handleAssignAgent,
-                                      isAssigningAgent: _isAssigningAgent,
-                                    )
-                                  : HealthPanel(
-                                      record: widget.record,
-                                      currentTime: widget.currentTime,
-                                      onViewBlockerPressed:
-                                          isMutating ||
-                                              firstBlockedTask == null ||
-                                              widget.onTaskTap == null
-                                          ? null
-                                          : () => widget.onTaskTap!(
-                                              firstBlockedTask,
-                                            ),
-                                    ),
-                            ),
-                            SliverToBoxAdapter(
-                              child: SizedBox(height: tokens.spacing.step5),
-                            ),
                             if (description.isNotEmpty) ...[
                               SliverToBoxAdapter(
                                 child: _ProjectDescription(
@@ -283,42 +256,6 @@ class _ProjectMobileDetailContentState
                                 child: SizedBox(height: tokens.spacing.step6),
                               ),
                             ],
-                            SliverToBoxAdapter(
-                              child: ExpandableReportSection(
-                                title: context
-                                    .messages
-                                    .projectShowcaseAiReportTitle,
-                                body:
-                                    widget.record.aiSummary.isEmpty &&
-                                        widget.record.reportContent.isEmpty
-                                    ? context.messages.agentReportNone
-                                    : widget.record.aiSummary,
-                                fullContent: widget.record.reportContent,
-                                trailingLabel:
-                                    widget.record.reportUpdatedAt == null
-                                    ? null
-                                    : showcaseUpdatedLabel(
-                                        context,
-                                        updatedAt:
-                                            widget.record.reportUpdatedAt!,
-                                        currentTime: widget.currentTime,
-                                      ),
-                                nextWakeAt: widget.record.reportNextWakeAt,
-                                onRefresh: isMutating
-                                    ? null
-                                    : widget.onRefreshReport,
-                                onCancelScheduledWake: isMutating
-                                    ? null
-                                    : widget.onCancelScheduledReportWake,
-                                isRefreshing: widget.isRefreshingReport,
-                              ),
-                            ),
-                            if (!isMutating)
-                              if (widget.agentActions case final actions?)
-                                SliverToBoxAdapter(child: actions),
-                            SliverToBoxAdapter(
-                              child: SizedBox(height: tokens.spacing.step5),
-                            ),
                             ProjectTasksSliverPanel(
                               record: widget.record,
                               onTaskTap: isMutating ? null : widget.onTaskTap,
@@ -327,6 +264,32 @@ class _ProjectMobileDetailContentState
                                   : _handleAddTask,
                               isAddTaskEnabled: !isMutating,
                               isAddingTask: _isAddingTask,
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step5),
+                            ),
+                            SliverToBoxAdapter(
+                              child: ProjectAgentSummaryCard(
+                                projectId: widget.record.project.meta.id,
+                                record: widget.record,
+                                identity: widget.agentIdentity,
+                                hasProjectAgent: widget.hasProjectAgent,
+                                isMutating: isMutating,
+                                onAssignAgent: widget.onAssignAgent == null
+                                    ? null
+                                    : _handleAssignAgent,
+                                onRefresh: widget.onRefreshReport,
+                                onCancelScheduledWake:
+                                    widget.onCancelScheduledReportWake,
+                                onViewBlocker:
+                                    isMutating ||
+                                        firstBlockedTask == null ||
+                                        widget.onTaskTap == null
+                                    ? null
+                                    : () => widget.onTaskTap!(firstBlockedTask),
+                                actions: widget.agentActions,
+                                isRefreshing: widget.isRefreshingReport,
+                              ),
                             ),
                           ],
                         ),
@@ -399,12 +362,28 @@ class _ProjectMobileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = record.category;
-    final titleStyle = tokens.typography.styles.heading.heading3.copyWith(
+    final titleStyle = tokens.typography.styles.heading.heading2.copyWith(
       color: ShowcasePalette.highText(context),
+      height: 1.15,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (category != null) ...[
+          TaskHierarchyCrumb(
+            category: DesktopTaskHeaderCategory(
+              label: category.name,
+              color: colorFromCssHex(
+                category.color ?? defaultCategoryColorHex,
+              ),
+            ),
+            project: null,
+            onCategoryTap: isInteractive ? onCategoryTap : null,
+            onProjectTap: null,
+            showProjectSegment: false,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+        ],
         Stack(
           clipBehavior: Clip.none,
           children: [
@@ -440,36 +419,41 @@ class _ProjectMobileHeader extends StatelessWidget {
               status: record.project.data.status,
               onTap: isInteractive ? onStatusTap : null,
             ),
-            if (category != null)
-              CategoryTag(
-                label: category.name,
-                icon: category.icon?.iconData ?? Icons.label_outline,
-                color: colorFromCssHex(
-                  category.color ?? defaultCategoryColorHex,
-                ),
-                onTap: isInteractive ? onCategoryTap : null,
-              )
-            else if (onCategoryTap != null)
-              OutlinedMetaTag(
-                icon: Icons.label_outline,
+            if (category == null && onCategoryTap != null)
+              DsPill(
+                variant: DsPillVariant.muted,
                 label: context.messages.habitCategoryLabel,
                 onTap: isInteractive ? onCategoryTap : null,
-                isPlaceholder: true,
+                leading: Icon(
+                  Icons.category_outlined,
+                  size: kTaskChipGlyphSize,
+                  color: ShowcasePalette.mediumText(context),
+                ),
               ),
             if (record.project.data.targetDate case final targetDate?)
-              OutlinedMetaTag(
-                icon: Icons.watch_later_outlined,
+              DsPill(
+                variant: DsPillVariant.filled,
+                bordered: true,
                 label: DateFormat.yMMMd(
                   Localizations.localeOf(context).toString(),
                 ).format(targetDate),
                 onTap: isInteractive ? onTargetDateTap : null,
+                leading: Icon(
+                  Icons.calendar_today_outlined,
+                  size: kTaskChipGlyphSize,
+                  color: ShowcasePalette.mediumText(context),
+                ),
               )
             else if (onTargetDateTap != null)
-              OutlinedMetaTag(
-                icon: Icons.watch_later_outlined,
+              DsPill(
+                variant: DsPillVariant.muted,
                 label: context.messages.projectTargetDateLabel,
                 onTap: isInteractive ? onTargetDateTap : null,
-                isPlaceholder: true,
+                leading: Icon(
+                  Icons.calendar_today_outlined,
+                  size: kTaskChipGlyphSize,
+                  color: ShowcasePalette.mediumText(context),
+                ),
               ),
           ],
         ),

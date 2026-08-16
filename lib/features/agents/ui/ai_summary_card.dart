@@ -634,39 +634,30 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             settling: _exitingFingerprints.isNotEmpty,
           );
 
-    final cardRadius = aiCardRadius(context);
-    return DecoratedBox(
-      // The chrome both AI panels share — see [aiCardDecoration].
-      decoration: aiCardDecoration(context),
-      child: ClipRRect(
-        borderRadius: cardRadius,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TldrHeader(
-              agentName: subtitle,
-              onAgentTap: () => _openInternals(agentName: subtitle),
-              playbackControl: playbackControl,
-            ),
-            // Reading order: the summary first, then the update CTA for the
-            // summary just read, then the proposals. Quiet links already own
-            // their compact row height, so the section needs only step3 below.
-            if (hasReportContent)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  0,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.step3,
-                ),
-                child: reportBody,
-              ),
-            // Hidden until the first value to avoid flashing the empty state.
-            ?proposalsSection,
-            controlsFooter,
-          ],
+    return AgentSummaryCardSurface(
+      children: [
+        TldrHeader(
+          agentName: subtitle,
+          onAgentTap: () => _openInternals(agentName: subtitle),
+          playbackControl: playbackControl,
         ),
-      ),
+        // Reading order: the summary first, then the update CTA for the
+        // summary just read, then the proposals. Quiet links already own
+        // their compact row height, so the section needs only step3 below.
+        if (hasReportContent)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              0,
+              tokens.spacing.cardPadding,
+              tokens.spacing.step3,
+            ),
+            child: reportBody,
+          ),
+        // Hidden until the first value to avoid flashing the empty state.
+        ?proposalsSection,
+        controlsFooter,
+      ],
     );
   }
 

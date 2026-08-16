@@ -6,14 +6,12 @@ import 'package:lotti/features/design_system/components/lists/grouped_card_row_i
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 
 export 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
 
-/// Shared category header row showing the category tag and project count.
+/// Shared category header row using the same quiet section grammar as Tasks.
 class ProjectGroupHeader extends StatelessWidget {
   const ProjectGroupHeader({
     required this.group,
@@ -26,16 +24,25 @@ class ProjectGroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = group.category;
-    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
+    final label =
+        category?.name ?? context.messages.taskCategoryUnassignedLabel;
 
     return Row(
       children: [
-        Flexible(
-          child: CategoryTag(
-            label:
-                category?.name ?? context.messages.taskCategoryUnassignedLabel,
-            icon: category?.icon?.iconData ?? Icons.folder_outlined,
-            color: color,
+        Icon(
+          category?.icon?.iconData ?? Icons.folder_outlined,
+          size: IconSizes.s,
+          color: ShowcasePalette.mediumText(context),
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ShowcasePalette.highText(context),
+            ),
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
@@ -74,7 +81,6 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final cardPadding = tokens.spacing.step2;
     final priorities = widget.group.projects
         .map(
           (project) => _interactionPriority(
@@ -134,7 +140,6 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: cardPadding),
                   for (
                     var index = 0;
                     index < widget.group.projects.length;
@@ -147,8 +152,6 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                           widget.selectedProjectId,
                       topOverlap: interactions[index].topOverlap,
                       bottomOverlap: interactions[index].bottomOverlap,
-                      backgroundTopInset: cardPadding,
-                      backgroundBottomInset: cardPadding,
                       onHoverChanged: (hovered) {
                         final projectId =
                             widget.group.projects[index].project.meta.id;
@@ -164,31 +167,20 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                         widget.group.projects[index],
                       ),
                     ),
-                    if (index < widget.group.projects.length - 1) ...[
-                      SizedBox(height: cardPadding),
+                    if (index < widget.group.projects.length - 1)
                       if (interactions[index].showDividerBelow)
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spacing.step4,
-                          ),
-                          child: Divider(
-                            key: ValueKey('project-group-divider-$index'),
-                            height: BorderWidths.hairline,
-                            thickness: BorderWidths.hairline,
-                            color: ShowcasePalette.border(context),
-                          ),
+                        Divider(
+                          key: ValueKey('project-group-divider-$index'),
+                          height: BorderWidths.hairline,
+                          thickness: BorderWidths.hairline,
+                          color: ShowcasePalette.border(context),
                         )
                       else
                         SizedBox(
-                          key: ValueKey(
-                            'project-group-divider-slot-$index',
-                          ),
+                          key: ValueKey('project-group-divider-slot-$index'),
                           height: BorderWidths.hairline,
                         ),
-                      SizedBox(height: cardPadding),
-                    ],
                   ],
-                  SizedBox(height: cardPadding),
                 ],
               ),
             ),

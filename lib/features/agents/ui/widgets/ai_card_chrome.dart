@@ -36,3 +36,31 @@ BoxDecoration aiCardDecoration(BuildContext context) {
 /// The corner radius both AI panels share (clip children with it too).
 BorderRadius aiCardRadius(BuildContext context) =>
     BorderRadius.circular(context.designTokens.radii.l);
+
+/// Shared outer structure for agent summaries across task and project detail.
+///
+/// Feature-specific cards supply their report, proposal, and footer regions,
+/// while this widget keeps the AI surface, clipping, and vertical composition
+/// identical. This prevents each domain from inventing its own agent card.
+class AgentSummaryCardSurface extends StatelessWidget {
+  const AgentSummaryCardSurface({
+    required this.children,
+    super.key,
+  });
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: aiCardDecoration(context),
+      child: ClipRRect(
+        borderRadius: aiCardRadius(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      ),
+    );
+  }
+}

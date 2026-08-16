@@ -56,15 +56,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   likely to be aborted before they return.
 - **Projects now read like an intentional workspace.** Current work opens first,
   completed and archived projects sit behind All, actionable projects sort to
-  the top, category groups collapse for focus, long names keep two lines, and
-  empty projects say "No tasks" instead of looking unhealthy. Project details
-  now show the description and Add task action, use real edit/archive/delete
-  controls, and present only agent-authored health with a clear unassessed state
-  when no report exists. Visible agent summaries now arrive with the list and
-  participate in project search instead of shifting into rows one at a time.
-  The editor keeps title, description, category, status, and target date in one
-  form with its actions close by, while health identifies the source report's
-  freshness beside live task progress.
+  the top, category groups collapse for focus, and the list uses the same
+  connected-row rhythm as Tasks instead of a stack of separate capsules. Project
+  details reuse Task Details' quiet category breadcrumb, metadata pills, and one
+  unified agent card — including report expansion, Run now, countdown, automatic
+  updates, model setup, and agent internals — rather than inventing a second
+  interaction model. They also show the description and Add task action, use
+  real edit/archive/delete controls, and present only agent-authored health with
+  a clear unassessed state when no report exists. The create and edit flows use
+  the same adaptive pickers and action bars as Tasks; changing category moves
+  the project, linked work, and project-agent permissions together, restoring
+  the original state if any part cannot be moved. Visible agent summaries arrive
+  with the list and participate in project search instead of shifting into rows
+  one at a time.
 - **Editing a goal is two steps, not three.** The separate "What do you want
   to work toward?" page is gone from the edit flow: the statement is a
   single-line field at the top of the edit page, with the suggestion chips

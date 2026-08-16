@@ -7,8 +7,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_category_migration_service.dart';
 import 'package:lotti/services/db_notification.dart';
 
 part 'project_detail_controller.freezed.dart';
@@ -325,9 +325,7 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
           _originalProject != null &&
           toSave.meta.categoryId != _originalProject!.meta.categoryId;
       final success = categoryChanged
-          ? await ref
-                .read(projectAgentMutationCoordinatorProvider)
-                .run(_projectId, () => _repository.updateProject(toSave))
+          ? await ref.read(projectCategoryMigrationServiceProvider).save(toSave)
           : await _repository.updateProject(toSave);
       if (!ref.mounted) return;
       if (success) {

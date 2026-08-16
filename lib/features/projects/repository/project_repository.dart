@@ -35,6 +35,7 @@ class ProjectRepository {
     required this._updateNotifications,
     required this._vectorClockService,
     this.projectHasActiveAgent,
+    this.projectAgentScopeMatches,
     this.projectsOverviewRefetchDebounce = const Duration(milliseconds: 300),
   });
 
@@ -44,6 +45,11 @@ class ProjectRepository {
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
   final Future<bool> Function(String projectId)? projectHasActiveAgent;
+  final Future<bool> Function(
+    String projectId,
+    Set<String> allowedCategoryIds,
+  )?
+  projectAgentScopeMatches;
 
   /// Debounce window applied to notification-driven `watchProjectsOverview`
   /// refetches. Each refetch reruns the project rollup aggregate, so a burst
@@ -99,6 +105,21 @@ class ProjectRepository {
   /// Returns all non-deleted tasks linked to a project.
   Future<List<Task>> getTasksForProject(String projectId) {
     return _journalDb.getTasksForProject(projectId);
+  }
+
+  /// Returns linked tasks without applying the private-entry visibility gate.
+  ///
+  /// Category migration is integrity work: hidden private tasks must move with
+  /// their project just as visible tasks do.
+  Future<List<Task>> getTasksForProjectUnfiltered(String projectId) async {
+    final ids = (await _journalDb.getTaskIdsForProjects({projectId})).toList()
+      ..sort();
+    final tasks = <Task>[];
+    for (final id in ids) {
+      final entity = await _journalDb.journalEntityById(id);
+      if (entity is Task) tasks.add(entity);
+    }
+    return tasks;
   }
 
   /// Returns the project a task belongs to, or null if unlinked.
@@ -332,7 +353,15 @@ class ProjectRepository {
         }
         final hasActiveAgent = projectHasActiveAgent;
         if (hasActiveAgent != null && await hasActiveAgent(project.id)) {
-          return false;
+          final categoryId = project.meta.categoryId;
+          final requestedScope = categoryId == null
+              ? <String>{}
+              : <String>{categoryId};
+          final scopeMatches = projectAgentScopeMatches;
+          if (scopeMatches == null ||
+              !await scopeMatches(project.id, requestedScope)) {
+            return false;
+          }
         }
       }
 
@@ -619,20 +648,29 @@ class ProjectRepository {
         // The final invariant reads and both writes share one transaction. If
         // sync changed either entity or the old link after the shape-selection
         // snapshot, reject instead of committing stale validation.
-        final success = await _journalDb.transaction(() async {
-          if (!await _projectLinkInputsAreValid(
-            projectId: projectId,
-            taskId: taskId,
-          )) {
-            return false;
-          }
-          final currentLink = await _journalDb.getProjectLinkForTask(taskId);
-          if (currentLink != oldLink) return false;
-          final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
-          if (deleteRes == 0) return false;
-          final insertRes = await _journalDb.upsertEntryLink(newLink);
-          return insertRes != 0;
-        });
+        var success = false;
+        try {
+          success = await _journalDb.transaction(() async {
+            if (!await _projectLinkInputsAreValid(
+              projectId: projectId,
+              taskId: taskId,
+            )) {
+              return false;
+            }
+            final currentLink = await _journalDb.getProjectLinkForTask(taskId);
+            if (currentLink != oldLink) return false;
+            final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
+            if (deleteRes == 0) return false;
+            final insertRes = await _journalDb.upsertEntryLink(newLink);
+            if (insertRes == 0) throw const _RelinkInsertFailed();
+            return true;
+          });
+        } on _RelinkInsertFailed {
+          // Throwing from the Drift transaction is what rolls the already-
+          // written tombstone back. Translate the private sentinel only after
+          // the transaction has restored the old link.
+          success = false;
+        }
 
         if (!success) return false;
         await _recordLinkSequence(
@@ -741,6 +779,10 @@ class ProjectRepository {
   }
 }
 
+class _RelinkInsertFailed implements Exception {
+  const _RelinkInsertFailed();
+}
+
 const Set<String> _overviewNotificationTokens = {
   projectNotification,
   taskNotification,
@@ -763,6 +805,7 @@ ProjectRepository projectRepository(Ref ref) {
     updateNotifications: getIt<UpdateNotifications>(),
     vectorClockService: getIt<VectorClockService>(),
     projectHasActiveAgent: projectHasActiveAgent,
+    projectAgentScopeMatches: projectAgentScopeMatches,
   );
 }
 
@@ -787,5 +830,32 @@ Future<bool> projectHasActiveAgent(String projectId) async {
         entity is AgentIdentityEntity &&
         entity.kind == AgentKinds.projectAgent &&
         entity.lifecycle != AgentLifecycle.destroyed,
+  );
+}
+
+/// Returns whether every live project agent already carries [requestedScope].
+Future<bool> projectAgentScopeMatches(
+  String projectId,
+  Set<String> requestedScope,
+) async {
+  if (!getIt.isRegistered<AgentDatabase>()) return true;
+  final repository = AgentRepository(getIt<AgentDatabase>());
+  final links = await repository.getLinksTo(
+    projectId,
+    type: AgentLinkTypes.agentProject,
+  );
+  if (links.isEmpty) return true;
+  final entities = await repository.getEntitiesByIds(
+    links.map((link) => link.fromId).toSet(),
+  );
+  final identities = entities.values.whereType<AgentIdentityEntity>().where(
+    (entity) =>
+        entity.kind == AgentKinds.projectAgent &&
+        entity.lifecycle != AgentLifecycle.destroyed,
+  );
+  return identities.every(
+    (identity) =>
+        identity.allowedCategoryIds.length == requestedScope.length &&
+        identity.allowedCategoryIds.containsAll(requestedScope),
   );
 }

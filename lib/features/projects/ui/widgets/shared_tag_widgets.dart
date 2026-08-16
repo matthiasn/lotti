@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
@@ -97,15 +98,40 @@ class ProjectStatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final statusColor = showcaseProjectStatusColor(context, status);
+    if (!large) {
+      final accent = switch (status) {
+        ProjectOpen() || ProjectArchived() => null,
+        _ => statusColor,
+      };
+      return DsPill(
+        variant: accent == null ? DsPillVariant.filled : DsPillVariant.tinted,
+        bordered: accent == null,
+        color: accent,
+        label: showcaseProjectStatusLabel(context, status),
+        leading: _ProjectStatusIcon(
+          status: status,
+          size: tokens.typography.lineHeight.caption,
+          color: statusColor,
+        ),
+        trailing: onTap == null
+            ? null
+            : Icon(
+                Icons.expand_more_rounded,
+                size: tokens.typography.lineHeight.caption,
+                color: ShowcasePalette.mediumText(context),
+              ),
+        onTap: onTap,
+      );
+    }
+
     final child = Container(
       constraints: BoxConstraints(
-        minHeight: large
-            ? tokens.typography.lineHeight.subtitle2 + tokens.spacing.step2
-            : tokens.spacing.step5 + tokens.spacing.step1,
+        minHeight:
+            tokens.typography.lineHeight.subtitle2 + tokens.spacing.step2,
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: large ? tokens.spacing.step3 : tokens.spacing.step2,
-        vertical: large ? tokens.spacing.step2 : tokens.spacing.step1,
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step2,
       ),
       decoration: BoxDecoration(
         color: ShowcasePalette.subtleFill(context),
@@ -116,9 +142,7 @@ class ProjectStatusPill extends StatelessWidget {
         children: [
           _ProjectStatusIcon(
             status: status,
-            size: large
-                ? tokens.typography.lineHeight.caption
-                : tokens.typography.size.caption,
+            size: tokens.typography.lineHeight.caption,
             color: statusColor,
           ),
           SizedBox(width: tokens.spacing.step1),
@@ -127,23 +151,17 @@ class ProjectStatusPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             softWrap: false,
-            style:
-                (large
-                        ? tokens.typography.styles.subtitle.subtitle2
-                        : tokens.typography.styles.others.caption)
-                    .copyWith(
-                      color: ShowcasePalette.highText(context),
-                      height: 1,
-                    ),
-          ),
-          if (large) ...[
-            SizedBox(width: tokens.spacing.step1),
-            Icon(
-              Icons.unfold_more_rounded,
-              size: tokens.typography.lineHeight.caption,
-              color: ShowcasePalette.mediumText(context),
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: ShowcasePalette.highText(context),
+              height: 1,
             ),
-          ],
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Icon(
+            Icons.unfold_more_rounded,
+            size: tokens.typography.lineHeight.caption,
+            color: ShowcasePalette.mediumText(context),
+          ),
         ],
       ),
     );

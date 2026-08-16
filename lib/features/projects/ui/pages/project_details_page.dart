@@ -123,6 +123,7 @@ class ProjectDetailsPage extends ConsumerWidget {
 
     return recordAsync.when(
       skipLoadingOnReload: true,
+      skipError: true,
       loading: () => Scaffold(
         backgroundColor: ShowcasePalette.page(context),
         body: const Center(child: CircularProgressIndicator.adaptive()),
@@ -184,6 +185,7 @@ class ProjectDetailsPage extends ConsumerWidget {
               onAssignAgent: canAssignProjectAgent
                   ? () => _assignProjectAgent(context, ref, record.project)
                   : null,
+              agentIdentity: identity,
               agentActions: identity == null
                   ? null
                   : Column(

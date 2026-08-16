@@ -11,7 +11,6 @@ import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -113,9 +112,9 @@ void main() {
         ),
       );
 
-      final tagRect = tester.getRect(find.byType(CategoryTag));
+      final labelRect = tester.getRect(find.text(category.name));
       final countRect = tester.getRect(find.text('1 project'));
-      expect(tagRect.right, lessThan(countRect.left));
+      expect(labelRect.right, lessThan(countRect.left));
       expect(tester.takeException(), isNull);
     });
   });
@@ -192,9 +191,9 @@ void main() {
       );
 
       final headerRect = tester.getRect(find.byType(InkWell).first);
-      final tagRect = tester.getRect(find.byType(CategoryTag));
+      final labelRect = tester.getRect(find.text('Work'));
       expect(headerRect.height, greaterThanOrEqualTo(TapTargets.minimum));
-      expect(tagRect.center.dy, closeTo(headerRect.center.dy, 0.1));
+      expect(labelRect.center.dy, closeTo(headerRect.center.dy, 0.1));
     });
 
     testWidgets('renders the grouped card with the Figma border treatment', (
@@ -296,26 +295,11 @@ void main() {
 
         expect(backgroundRect.left, cardRect.left);
         expect(backgroundRect.right, cardRect.right);
-        expect(
-          backgroundRect.top,
-          lessThan(
-            tester
-                .getTopLeft(
-                  find.byKey(const ValueKey('project-overview-row-p1')),
-                )
-                .dy,
-          ),
+        final rowRect = tester.getRect(
+          find.byKey(const ValueKey('project-overview-row-p1')),
         );
-        expect(
-          backgroundRect.bottom,
-          greaterThan(
-            tester
-                .getBottomLeft(
-                  find.byKey(const ValueKey('project-overview-row-p1')),
-                )
-                .dy,
-          ),
-        );
+        expect(backgroundRect.top, rowRect.top);
+        expect(backgroundRect.bottom, greaterThanOrEqualTo(rowRect.bottom));
       },
     );
 

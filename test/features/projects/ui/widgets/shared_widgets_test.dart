@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -308,36 +309,26 @@ void main() {
       expect(find.byIcon(Icons.unfold_more_rounded), findsNothing);
     });
 
-    testWidgets('matches the category tag height in compact mode', (
+    testWidgets('uses the shared task metadata pill height in compact mode', (
       tester,
     ) async {
       await tester.pumpWidget(
         wrap(
-          Row(
-            children: [
-              const CategoryTag(
-                label: 'Work',
-                icon: Icons.work,
-                color: Colors.blue,
-              ),
-              const SizedBox(width: 12),
-              ProjectStatusPill(
-                status: ProjectStatus.active(
-                  id: 'a',
-                  createdAt: DateTime(2026),
-                  utcOffset: 0,
-                ),
-              ),
-            ],
+          ProjectStatusPill(
+            status: ProjectStatus.active(
+              id: 'a',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
           ),
         ),
       );
       await tester.pump();
 
-      final categorySize = tester.getSize(find.byType(CategoryTag));
       final statusSize = tester.getSize(find.byType(ProjectStatusPill));
 
-      expect(statusSize.height, categorySize.height);
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(statusSize.height, DsPill.height);
     });
   });
 

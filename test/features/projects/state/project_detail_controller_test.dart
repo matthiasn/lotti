@@ -6,9 +6,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/features/agents/service/project_agent_service.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_category_migration_service.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
@@ -19,6 +18,7 @@ import '../test_utils.dart';
 
 void main() {
   late MockProjectRepository mockRepo;
+  late MockProjectCategoryMigrationService mockCategoryMigrationService;
   late StreamController<Set<String>> updateStreamController;
 
   final projectId = uuid.v1();
@@ -27,6 +27,7 @@ void main() {
 
   setUp(() {
     mockRepo = MockProjectRepository();
+    mockCategoryMigrationService = MockProjectCategoryMigrationService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     when(
@@ -38,6 +39,13 @@ void main() {
     when(
       () => mockRepo.getTasksForProject(projectId),
     ).thenAnswer((_) async => []);
+    when(
+      () => mockCategoryMigrationService.save(any()),
+    ).thenAnswer((invocation) {
+      return mockRepo.updateProject(
+        invocation.positionalArguments.single as ProjectEntry,
+      );
+    });
   });
 
   tearDown(() async {
@@ -45,16 +53,13 @@ void main() {
   });
 
   /// Creates a container and waits for the controller to finish loading.
-  Future<ProviderContainer> createLoadedContainer({
-    ProjectAgentMutationCoordinator? mutationCoordinator,
-  }) async {
+  Future<ProviderContainer> createLoadedContainer() async {
     final container = ProviderContainer(
       overrides: [
         projectRepositoryProvider.overrideWithValue(mockRepo),
-        if (mutationCoordinator != null)
-          projectAgentMutationCoordinatorProvider.overrideWithValue(
-            mutationCoordinator,
-          ),
+        projectCategoryMigrationServiceProvider.overrideWithValue(
+          mockCategoryMigrationService,
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -340,41 +345,13 @@ void main() {
         expect(state.hasChanges, isFalse);
         expect(state.project!.meta.categoryId, 'new-category-id');
 
-        // The repository receives the entity with the new category, proving the
-        // pending edit was propagated through saveChanges.
-        verify(() => mockRepo.updateProject(any())).called(1);
+        // Category changes go through the migration service so linked work and
+        // agent scope move with the project.
+        verify(() => mockCategoryMigrationService.save(any())).called(1);
         expect(persisted, isNotNull);
         expect(persisted!.meta.categoryId, 'new-category-id');
       },
     );
-
-    test('category save waits for project agent provisioning', () async {
-      final coordinator = ProjectAgentMutationCoordinator();
-      final provisioningStarted = Completer<void>();
-      final releaseProvisioning = Completer<void>();
-      final provisioning = coordinator.run(projectId, () async {
-        provisioningStarted.complete();
-        await releaseProvisioning.future;
-      });
-      await provisioningStarted.future;
-      when(() => mockRepo.updateProject(any())).thenAnswer((_) async => true);
-      final container = await createLoadedContainer(
-        mutationCoordinator: coordinator,
-      );
-      final notifier = container.read(
-        projectDetailControllerProvider(projectId).notifier,
-      )..updateCategoryId('new-category-id');
-
-      final save = notifier.saveChanges();
-      await Future<void>.value();
-      verifyNever(() => mockRepo.updateProject(any()));
-
-      releaseProvisioning.complete();
-      await provisioning;
-      await save;
-
-      verify(() => mockRepo.updateProject(any())).called(1);
-    });
 
     test(
       'saveChanges sets updateFailed when repository returns false',

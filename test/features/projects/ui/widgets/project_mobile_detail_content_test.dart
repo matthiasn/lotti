@@ -1,13 +1,16 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_showcase_mobile_detail_header.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -16,10 +19,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
-import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
+import 'package:lotti/features/projects/ui/widgets/project_agent_summary_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -62,7 +66,7 @@ void main() {
   }
 
   group('ProjectMobileDetailContent', () {
-    testWidgets('places injected agent actions between report and tasks', (
+    testWidgets('composes project work with one unified agent surface', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -72,15 +76,17 @@ void main() {
             currentTime: DateTime(2026, 3, 28, 1, 18),
             agentActions: const Text('Agent decisions'),
           ),
+          size: const Size(430, 1400),
         ),
       );
       await tester.pump();
 
-      final reportTop = tester.getTopLeft(find.text('AI Report')).dy;
-      final actionsTop = tester.getTopLeft(find.text('Agent decisions')).dy;
-      final tasksTop = tester.getTopLeft(find.text('Project Tasks')).dy;
-      expect(actionsTop, greaterThan(reportTop));
-      expect(actionsTop, lessThan(tasksTop));
+      expect(find.byType(ProjectTasksSliverPanel), findsOneWidget);
+      final card = tester.widget<ProjectAgentSummaryCard>(
+        find.byType(ProjectAgentSummaryCard),
+      );
+      expect(card.actions, isA<Text>());
+      expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
     });
 
     testWidgets('uses a real overflow menu and forwards project actions', (
@@ -96,6 +102,7 @@ void main() {
             onArchive: () {},
             onDelete: () {},
           ),
+          size: const Size(430, 1400),
         ),
       );
 
@@ -121,6 +128,7 @@ void main() {
             currentTime: DateTime(2026, 3, 28, 1, 18),
             onEdit: () {},
           ),
+          size: const Size(430, 1400),
         ),
       );
       await tester.pump();
@@ -147,6 +155,7 @@ void main() {
             onDelete: () {},
             isSaving: true,
           ),
+          size: const Size(430, 1400),
         ),
       );
 
@@ -236,28 +245,23 @@ void main() {
       expect(addRequests, 0);
     });
 
-    testWidgets(
-      'marks the empty-health report action busy while the agent runs',
-      (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          wrap(
-            ProjectMobileDetailContent(
-              record: makeTestProjectRecord(),
-              currentTime: DateTime(2026, 3, 28, 1, 18),
-              onRefreshReport: () {},
-              isRefreshingReport: true,
-            ),
+    testWidgets('uses the task AI card for an empty assessment', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
           ),
-        );
+          size: const Size(430, 1400),
+        ),
+      );
 
-        final emptyState = tester.widget<ProjectHealthEmptyState>(
-          find.byType(ProjectHealthEmptyState),
-        );
-        expect(emptyState.isRunningReport, isTrue);
-      },
-    );
+      expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
+      expect(find.byType(TldrHeader), findsOneWidget);
+      expect(find.text('No health assessment yet'), findsOneWidget);
+    });
 
     testWidgets('serializes assignment from the unprovisioned health state', (
       tester,
@@ -275,44 +279,36 @@ void main() {
               return assignment.future;
             },
           ),
+          size: const Size(430, 1400),
         ),
       );
 
-      final assignButton = find.widgetWithText(
-        DesignSystemButton,
+      final assignRow = find.widgetWithText(
+        DesignSystemListItem,
         'Assign an agent',
       );
-      await tester.tap(assignButton);
+      await tester.tap(assignRow);
       await tester.pump();
-      await tester.tap(assignButton);
+      await tester.tap(assignRow);
 
-      final emptyState = tester.widget<ProjectHealthEmptyState>(
-        find.byType(ProjectHealthEmptyState),
-      );
       expect(assignmentRequests, 1);
-      expect(emptyState.isAssigningAgent, isTrue);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       assignment.complete();
       await tester.pump();
-      expect(
-        tester
-            .widget<ProjectHealthEmptyState>(
-              find.byType(ProjectHealthEmptyState),
-            )
-            .isAssigningAgent,
-        isFalse,
-      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('keeps interactive metadata usable at 200% text scale', (
+    testWidgets('reuses the tappable task breadcrumb at 200% text scale', (
       tester,
     ) async {
+      var categoryTaps = 0;
       await tester.pumpWidget(
         wrap(
           ProjectMobileDetailContent(
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
-            onCategoryTap: () {},
+            onCategoryTap: () => categoryTaps++,
             onStatusTap: () {},
           ),
           size: const Size(320, 900),
@@ -323,14 +319,9 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Test Project'), findsOneWidget);
-      final categoryTarget = find.ancestor(
-        of: find.text('Work'),
-        matching: find.byType(InkWell),
-      );
-      expect(
-        tester.getSize(categoryTarget.first).height,
-        greaterThanOrEqualTo(48),
-      );
+      expect(find.byType(TaskHierarchyCrumb), findsOneWidget);
+      await tester.tap(find.text('Work'));
+      expect(categoryTaps, 1);
     });
     testWidgets('shows an honest empty health state without agent metrics', (
       tester,
@@ -341,11 +332,12 @@ void main() {
             record: makeTestProjectRecord(),
             currentTime: DateTime(2026, 3, 28, 1, 18),
           ),
+          size: const Size(430, 1400),
         ),
       );
       await tester.pump();
 
-      expect(find.byType(HealthPanel), findsNothing);
+      expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
       expect(find.text('No health assessment yet'), findsOneWidget);
       expect(find.text('Health Score'), findsNothing);
     });
@@ -360,6 +352,7 @@ void main() {
             currentTime: DateTime(2026, 3, 28, 1, 18),
             hasProjectAgent: false,
           ),
+          size: const Size(430, 1400),
         ),
       );
       await tester.pump();
@@ -370,10 +363,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        find.widgetWithText(DesignSystemButton, 'Run report'),
-        findsNothing,
-      );
+      expect(find.byType(AgentSummaryCardSurface), findsNothing);
     });
 
     testWidgets('renders the user-authored project description', (
@@ -475,7 +465,9 @@ void main() {
 
       expect(find.byType(DesignSystemContextMenuButton), findsNothing);
       expect(
-        tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
+        tester
+            .widget<TaskHierarchyCrumb>(find.byType(TaskHierarchyCrumb))
+            .onCategoryTap,
         isNull,
       );
       expect(
@@ -483,7 +475,7 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<OutlinedMetaTag>(find.byType(OutlinedMetaTag)).onTap,
+        tester.widget<DsPill>(find.widgetWithText(DsPill, 'Target Date')).onTap,
         isNull,
       );
 
@@ -608,7 +600,9 @@ void main() {
 
       expect(find.byType(DesignSystemContextMenuButton), findsNothing);
       expect(
-        tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
+        tester
+            .widget<TaskHierarchyCrumb>(find.byType(TaskHierarchyCrumb))
+            .onCategoryTap,
         isNull,
       );
       expect(
@@ -616,14 +610,14 @@ void main() {
         isNull,
       );
       expect(
-        tester.widget<OutlinedMetaTag>(find.byType(OutlinedMetaTag)).onTap,
+        tester.widget<DsPill>(find.widgetWithText(DsPill, 'Target Date')).onTap,
         isNull,
       );
-      final report = tester.widget<ExpandableReportSection>(
-        find.byType(ExpandableReportSection),
+      final agentCard = tester.widget<ProjectAgentSummaryCard>(
+        find.byType(ProjectAgentSummaryCard),
       );
-      expect(report.onRefresh, isNull);
-      expect(report.onCancelScheduledWake, isNull);
+      expect(agentCard.isMutating, isTrue);
+      expect(find.text('Agent decisions'), findsNothing);
       final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
       await tester.ensureVisible(addButton);
       expect(tester.widget<DesignSystemButton>(addButton).onPressed, isNull);
@@ -675,7 +669,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('View blocker'));
+      await tester.tap(find.text('1 task blocked'));
       await tester.pump();
 
       expect(opened?.task.meta.id, 'blocked-task');
@@ -773,7 +767,7 @@ void main() {
         kDetailContentMaxWidth - tokens.spacing.step5 * 2,
       );
       expect(
-        tester.getSize(find.byType(ProjectHealthEmptyState)).width,
+        tester.getSize(find.byType(ProjectAgentSummaryCard)).width,
         tester.getSize(find.byType(CustomScrollView)).width,
       );
     });
@@ -813,7 +807,7 @@ void main() {
       expect(find.text('Task 49'), findsOneWidget);
     });
 
-    testWidgets('shows health once in its assessment panel below metadata', (
+    testWidgets('shows health once inside the AI card after project work', (
       tester,
     ) async {
       final record = makeTestProjectRecord(
@@ -854,15 +848,17 @@ void main() {
       final statusTop = tester.getTopLeft(find.text('Active'));
       final categoryTop = tester.getTopLeft(find.text('Work'));
       final riskTop = tester.getTopLeft(find.text('At Risk'));
+      final tasksTop = tester.getTopLeft(find.text('Project Tasks'));
 
       expect(statusTop.dy, greaterThan(titleTop.dy));
-      expect((statusTop.dy - categoryTop.dy).abs(), lessThan(8));
+      expect(categoryTop.dy, lessThan(titleTop.dy));
       expect(riskTop.dy, greaterThan(titleTop.dy));
       expect(riskTop.dy, greaterThan(categoryTop.dy));
-      expect(statusTop.dx, lessThan(categoryTop.dx));
+      expect(riskTop.dy, greaterThan(tasksTop.dy));
+      expect(statusTop.dy, greaterThan(titleTop.dy));
     });
 
-    testWidgets('uses the heading 3 title size from Figma', (tester) async {
+    testWidgets('uses the same heading tier as Task Details', (tester) async {
       final record = makeTestProjectRecord(
         project: makeTestProject(
           id: 'project-1',
@@ -882,10 +878,17 @@ void main() {
       await tester.pump();
 
       final title = tester.widget<Text>(find.text('Design system'));
+      final tokens = tester.element(find.text('Design system')).designTokens;
 
-      expect(title.style?.fontSize, 20);
-      expect(title.style?.fontWeight, FontWeight.w700);
-      expect(title.style?.height, closeTo(1.4, 0.0001));
+      expect(
+        title.style?.fontSize,
+        tokens.typography.styles.heading.heading2.fontSize,
+      );
+      expect(
+        title.style?.fontWeight,
+        tokens.typography.styles.heading.heading2.fontWeight,
+      );
+      expect(title.style?.height, closeTo(1.15, 0.0001));
     });
 
     testWidgets(
@@ -928,108 +931,57 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows one refresh icon and a countdown pill in the report header',
-      (
-        tester,
-      ) async {
-        final now = DateTime(2026, 3, 28, 1, 18);
-        await withClock(Clock.fixed(now), () async {
-          final record = makeTestProjectRecord(
-            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-            reportNextWakeAt: now.add(const Duration(seconds: 90)),
-          );
+    testWidgets('uses the same summary body and disclosure as task agents', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        aiSummary: 'Short project read.',
+        reportContent: 'Short project read.\n\nMore detail.',
+      );
 
-          await tester.pumpWidget(
-            wrap(
-              ProjectMobileDetailContent(
-                record: record,
-                currentTime: now,
-                onRefreshReport: () {},
-              ),
-            ),
-          );
-          await tester.pump();
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+          ),
+        ),
+      );
+      await tester.pump();
 
-          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-          expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
-          expect(find.textContaining('Updated 1m ago'), findsOneWidget);
-          expect(find.textContaining('↻'), findsNothing);
-        });
-      },
-    );
+      expect(find.byType(AgentSummaryCardSurface), findsOneWidget);
+      expect(find.byType(TldrHeader), findsOneWidget);
+      expect(find.byType(TldrBody), findsOneWidget);
+      expect(find.text('Short project read.'), findsOneWidget);
+      expect(find.text('Read more'), findsOneWidget);
+    });
 
-    testWidgets(
-      'forwards onCancelScheduledReportWake through to the underlying '
-      'ExpandableReportSection so a tap on the report cancel × routes to '
-      'the same callback the project details page wires up',
-      (tester) async {
-        var cancelCount = 0;
-        final now = DateTime(2026, 3, 28, 1, 18);
-        await withClock(Clock.fixed(now), () async {
-          final record = makeTestProjectRecord(
-            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-            reportNextWakeAt: now.add(const Duration(seconds: 90)),
-          );
+    testWidgets('forwards report controls to the unified agent card', (
+      tester,
+    ) async {
+      void refresh() {}
+      void cancel() {}
 
-          await tester.pumpWidget(
-            wrap(
-              ProjectMobileDetailContent(
-                record: record,
-                currentTime: now,
-                onRefreshReport: () {},
-                onCancelScheduledReportWake: () => cancelCount++,
-              ),
-            ),
-          );
-          await tester.pump();
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onRefreshReport: refresh,
+            onCancelScheduledReportWake: cancel,
+            isRefreshingReport: true,
+          ),
+        ),
+      );
+      await tester.pump();
 
-          // Verify the prop reached the inner widget (catches a wiring bug
-          // earlier than tapping would).
-          final report = tester.widget<ExpandableReportSection>(
-            find.byType(ExpandableReportSection),
-          );
-          expect(report.onCancelScheduledWake, isNotNull);
-
-          // Then prove the callback is the same one we passed by invoking
-          // it via the inner widget — `find.byIcon(Icons.close_rounded)`
-          // would also match the X on individual recommendation tiles, so
-          // we drive the report-section callback directly.
-          report.onCancelScheduledWake!();
-          expect(cancelCount, 1);
-        });
-      },
-    );
-
-    testWidgets(
-      'leaves the ExpandableReportSection cancel callback null when the '
-      'page does not pass onCancelScheduledReportWake (no agent identity)',
-      (tester) async {
-        final now = DateTime(2026, 3, 28, 1, 18);
-        await withClock(Clock.fixed(now), () async {
-          final record = makeTestProjectRecord(
-            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-            reportNextWakeAt: now.add(const Duration(seconds: 90)),
-          );
-
-          await tester.pumpWidget(
-            wrap(
-              ProjectMobileDetailContent(
-                record: record,
-                currentTime: now,
-                onRefreshReport: () {},
-              ),
-            ),
-          );
-          await tester.pump();
-
-          final report = tester.widget<ExpandableReportSection>(
-            find.byType(ExpandableReportSection),
-          );
-          expect(report.onCancelScheduledWake, isNull);
-        });
-      },
-    );
+      final card = tester.widget<ProjectAgentSummaryCard>(
+        find.byType(ProjectAgentSummaryCard),
+      );
+      expect(card.onRefresh, same(refresh));
+      expect(card.onCancelScheduledWake, same(cancel));
+      expect(card.isRefreshing, isTrue);
+    });
 
     testWidgets(
       'shows the empty-report placeholder when both the AI summary and the '
@@ -1050,13 +1002,8 @@ void main() {
         );
         await tester.pump();
 
-        // The empty-summary branch feeds `agentReportNone` into the report
-        // section body, which the section renders as its TLDR.
-        final report = tester.widget<ExpandableReportSection>(
-          find.byType(ExpandableReportSection),
-        );
-        expect(report.body, 'No report available yet.');
-        expect(find.textContaining('No report available yet.'), findsOneWidget);
+        expect(find.text('No health assessment yet'), findsOneWidget);
+        expect(find.byType(TldrBody), findsNothing);
       },
     );
 
@@ -1077,10 +1024,7 @@ void main() {
       );
       await tester.pump();
 
-      final report = tester.widget<ExpandableReportSection>(
-        find.byType(ExpandableReportSection),
-      );
-      expect(report.trailingLabel, isNull);
+      expect(find.textContaining('Updated'), findsNothing);
     });
 
     testWidgets(
@@ -1101,13 +1045,13 @@ void main() {
         );
         await tester.pump();
 
-        // No real category tag is shown; the placeholder tag carries the
-        // "Category:" label and is marked as a placeholder.
+        // No real category crumb is shown; the Task-style muted metadata pill
+        // remains the explicit affordance for assigning one.
         expect(find.byType(CategoryTag), findsNothing);
-        final placeholder = tester.widget<OutlinedMetaTag>(
-          find.widgetWithText(OutlinedMetaTag, 'Category'),
+        final placeholder = tester.widget<DsPill>(
+          find.widgetWithText(DsPill, 'Category'),
         );
-        expect(placeholder.isPlaceholder, isTrue);
+        expect(placeholder.variant, DsPillVariant.muted);
 
         await tester.tap(find.text('Category'));
         await tester.pump();

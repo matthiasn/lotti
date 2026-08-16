@@ -1143,6 +1143,132 @@ void main() {
       });
     });
 
+    group('project category scopes', () {
+      test(
+        'updates every live project-agent scope and returns prior scopes',
+        () async {
+          final first = makeIdentity().copyWith(
+            allowedCategoryIds: const {'old-1'},
+          );
+          final second = makeIdentity(agentId: 'agent-2').copyWith(
+            allowedCategoryIds: const {'old-2'},
+          );
+          final links = [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: first.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: second.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ];
+          when(
+            () => mockRepository.getLinksTo(
+              'project-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => links);
+          when(
+            () => mockRepository.getEntitiesByIds(any()),
+          ).thenAnswer(
+            (_) async => {first.agentId: first, second.agentId: second},
+          );
+
+          final previous = await service.updateProjectAgentScopes(
+            projectId: 'project-1',
+            allowedCategoryIds: const {'new-category'},
+          );
+
+          expect(previous, {
+            first.agentId: {'old-1'},
+            second.agentId: {'old-2'},
+          });
+          final writes = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentIdentityEntity>().toList();
+          expect(writes, hasLength(2));
+          expect(
+            writes.map((identity) => identity.allowedCategoryIds),
+            everyElement(const {'new-category'}),
+          );
+          expect(notifiedAgentIds.first, 'project-1');
+          expect(notifiedAgentIds.skip(1).toSet(), {
+            first.agentId,
+            second.agentId,
+          });
+        },
+      );
+
+      test('restores the captured scope for each surviving identity', () async {
+        final first = makeIdentity().copyWith(
+          allowedCategoryIds: const {'new-category'},
+        );
+        final second = makeIdentity(agentId: 'agent-2').copyWith(
+          allowedCategoryIds: const {'new-category'},
+        );
+        when(
+          () => mockRepository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: first.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: second.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getEntitiesByIds(any()),
+        ).thenAnswer(
+          (_) async => {first.agentId: first, second.agentId: second},
+        );
+
+        await service.restoreProjectAgentScopes(
+          projectId: 'project-1',
+          scopesByAgentId: {
+            first.agentId: const {'old-1'},
+            second.agentId: const {'old-2'},
+          },
+        );
+
+        final writes = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentIdentityEntity>().toList();
+        expect(writes, hasLength(2));
+        final scopesByAgentId = {
+          for (final identity in writes)
+            identity.agentId: identity.allowedCategoryIds,
+        };
+        expect(scopesByAgentId, {
+          first.agentId: {'old-1'},
+          second.agentId: {'old-2'},
+        });
+      });
+    });
+
     group('triggerReanalysis', () {
       test('enqueues a manual wake with reason reanalysis', () {
         when(

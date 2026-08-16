@@ -496,6 +496,55 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'keeps rendered detail content after a transient reload error',
+        (tester) async {
+          final reloadTriggerProvider = StateProvider<int>((ref) => 0);
+          final container = ProviderContainer(
+            overrides: _baseOverrides(
+              controllerState: ProjectDetailState(
+                project: testProject,
+                linkedTasks: const [],
+                isLoading: false,
+                isSaving: false,
+                hasChanges: false,
+              ),
+              recordOverride: (ref) {
+                final reload = ref.watch(reloadTriggerProvider);
+                if (reload == 0) return testRecord;
+                throw StateError('transient agent report failure');
+              },
+            ),
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidget2(
+                Theme(
+                  data: DesignSystemTheme.dark(),
+                  child: const ProjectDetailsPage(projectId: _projectId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Test Project'), findsOneWidget);
+
+          container.read(reloadTriggerProvider.notifier).state = 1;
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(ProjectMobileDetailContent), findsOneWidget);
+          expect(find.text('Test Project'), findsOneWidget);
+          expect(find.byType(ErrorStateWidget), findsNothing);
+        },
+      );
     });
 
     group('error state', () {
@@ -1814,6 +1863,9 @@ void main() {
               agentServiceProvider.overrideWithValue(mockAgentService),
             ],
           );
+          // Ignore reads performed while the visible agent summary resolves
+          // its model identity; this assertion owns only the delete flow.
+          lifecycleEvents.clear();
 
           tester
               .widget<ProjectMobileDetailContent>(
@@ -1896,6 +1948,10 @@ void main() {
               agentServiceProvider.overrideWithValue(mockAgentService),
             ],
           );
+          // Isolate the destructive action from model-identity reads made by
+          // the visible agent summary during initial page composition.
+          lifecycleEvents.clear();
+          agentReadCount = 0;
 
           tester
               .widget<ProjectMobileDetailContent>(

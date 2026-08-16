@@ -27,16 +27,23 @@ import 'package:uuid/uuid.dart';
 /// local create/delete race; a post-create check still compensates project
 /// tombstones arriving independently through sync.
 class ProjectAgentMutationCoordinator {
+  static final Object _activeProjectZoneKey = Object();
   final Map<String, Future<void>> _tails = {};
 
   Future<T> run<T>(String projectId, Future<T> Function() action) async {
+    if (Zone.current[_activeProjectZoneKey] == projectId) {
+      return action();
+    }
     final previous = _tails[projectId] ?? Future<void>.value();
     final completed = Completer<void>();
     final tail = completed.future;
     _tails[projectId] = tail;
     await previous;
     try {
-      return await action();
+      return await runZoned(
+        action,
+        zoneValues: {_activeProjectZoneKey: projectId},
+      );
     } finally {
       completed.complete();
       if (identical(_tails[projectId], tail)) {
@@ -281,6 +288,70 @@ class ProjectAgentService {
             identity,
     ];
   }
+
+  /// Re-scopes every live project agent to [allowedCategoryIds].
+  ///
+  /// Category migration spans the journal and agent stores, so this mutation
+  /// shares the per-project coordinator used by provisioning and deletion.
+  /// The returned map is the exact prior scope per identity and can be handed
+  /// to [restoreProjectAgentScopes] if a later journal-domain step fails.
+  Future<Map<String, Set<String>>> updateProjectAgentScopes({
+    required String projectId,
+    required Set<String> allowedCategoryIds,
+  }) => mutationCoordinator.run(projectId, () async {
+    final identities = await getProjectAgentsForProject(projectId);
+    if (identities.isEmpty) return const <String, Set<String>>{};
+
+    final previousScopes = <String, Set<String>>{
+      for (final identity in identities)
+        identity.agentId: Set<String>.unmodifiable(
+          identity.allowedCategoryIds,
+        ),
+    };
+    final updatedAt = clock.now();
+    await syncService.runInTransaction(() async {
+      for (final identity in identities) {
+        await syncService.upsertEntity(
+          identity.copyWith(
+            allowedCategoryIds: Set<String>.unmodifiable(allowedCategoryIds),
+            updatedAt: updatedAt,
+          ),
+        );
+      }
+    });
+    onPersistedStateChanged?.call(projectId);
+    for (final identity in identities) {
+      onPersistedStateChanged?.call(identity.agentId);
+    }
+    return previousScopes;
+  });
+
+  /// Restores scopes captured by [updateProjectAgentScopes].
+  Future<void> restoreProjectAgentScopes({
+    required String projectId,
+    required Map<String, Set<String>> scopesByAgentId,
+  }) => mutationCoordinator.run(projectId, () async {
+    if (scopesByAgentId.isEmpty) return;
+    final identities = await getProjectAgentsForProject(projectId);
+    final updatedAt = clock.now();
+    await syncService.runInTransaction(() async {
+      for (final identity in identities) {
+        final previousScope = scopesByAgentId[identity.agentId];
+        if (previousScope == null) continue;
+        await syncService.upsertEntity(
+          identity.copyWith(
+            allowedCategoryIds: Set<String>.unmodifiable(previousScope),
+            updatedAt: updatedAt,
+          ),
+        );
+      }
+    });
+    onPersistedStateChanged?.call(projectId);
+    final notifyPersistedStateChanged = onPersistedStateChanged;
+    if (notifyPersistedStateChanged != null) {
+      scopesByAgentId.keys.forEach(notifyPersistedStateChanged);
+    }
+  });
 
   /// Trigger a manual re-analysis wake for [agentId].
   void triggerReanalysis(String agentId) {
