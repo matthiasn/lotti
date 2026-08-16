@@ -24,6 +24,76 @@ void main() {
     today.subtract(Duration(days: offset)),
   );
 
+  test('a shared history span extends every day track backwards without '
+      'touching the window maths — and the ages-out ring stays anchored at '
+      'the WINDOW, not the list head', () {
+    final successes = <DateTime, int>{
+      // Exactly at target inside the rolling week, with the oldest
+      // in-window success sitting on the window\'s first day.
+      day(6): 1,
+      day(2): 1,
+      // History beyond the window, visible only through the span.
+      day(20): 1,
+    };
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: 'gym-id',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 10000,
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {'gym-id': successes},
+        quantitativeDailySums: {
+          'cumulative_step_count': {day(0): 12000, day(25): 8000},
+        },
+      ),
+      reference: today,
+      habitNames: const {'gym-id': 'Gym'},
+      historyDays: 30,
+    );
+
+    final habit = view.habits.single;
+    // 30 rendered days ending today, oldest first.
+    expect(habit.days, hasLength(30));
+    expect(habit.days.first.day, day(29));
+    expect(habit.days.last.day, day(0));
+    // The 20-days-ago success renders in the history…
+    expect(
+      habit.days.firstWhere((entry) => entry.day == day(20)).value,
+      1,
+    );
+    // …but the WINDOW maths are untouched: two in-window successes, no
+    // deficit, and the ages-out ring anchors at the window\'s first day
+    // (day 6), not at the 30-day list head.
+    expect(habit.successesInWindow, 2);
+    expect(habit.deficit, 0);
+    expect(habit.oldestSuccessAgesOutTonight, isTrue);
+
+    final metric = view.metrics.single;
+    expect(metric.days, hasLength(30));
+    expect(metric.days.first.day, day(29));
+    expect(
+      metric.days.firstWhere((entry) => entry.day == day(25)).value,
+      8000,
+    );
+
+    // The hero strip stays the goal\'s authored evaluation week.
+    expect(view.compositeCompactWindow, hasLength(7));
+  });
+
   test('habit projection separates the slipped day, active window, deficit and '
       'six-week reliability on the evaluator signal source', () {
     final successes = <DateTime, int>{

@@ -546,11 +546,16 @@ class GoalProgressCard extends StatelessWidget {
     required this.progress,
     this.onHabitOutcomeSelected,
     this.alsoInGoalTitlesByHabitId = const {},
+    this.habitsHeadingTrailing,
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  /// Trailing control on the Habits section heading — the detail page rides
+  /// its page-wide time-range picker there.
+  final Widget? habitsHeadingTrailing;
 
   /// For each habit id, the OTHER goals sharing it, pre-joined for display
   /// ("Heart Health"). A habit is recorded once and reflected everywhere
@@ -569,13 +574,20 @@ class GoalProgressCard extends StatelessWidget {
     final bloodPressure = _bloodPressureMetrics(progress.metrics);
     final hasSignalCards =
         progress.metrics.isNotEmpty || patternMetrics.isNotEmpty;
-    Widget sectionHeading(String title) => Padding(
+    Widget sectionHeading(String title, {Widget? trailing}) => Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-      child: Text(
-        title,
-        style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-          color: tokens.colors.text.highEmphasis,
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+          ),
+          ?trailing,
+        ],
       ),
     );
     return Column(
@@ -585,7 +597,10 @@ class GoalProgressCard extends StatelessWidget {
         // in its hero pair (design handover §4b) — this widget owns only the
         // evidence sections beneath it: Habits, then the data Signals.
         if (progress.habits.isNotEmpty)
-          sectionHeading(context.messages.navTabTitleHabits),
+          sectionHeading(
+            context.messages.navTabTitleHabits,
+            trailing: habitsHeadingTrailing,
+          ),
         for (var index = 0; index < progress.habits.length; index++) ...[
           _HabitDimensionCard(
             habit: progress.habits[index],

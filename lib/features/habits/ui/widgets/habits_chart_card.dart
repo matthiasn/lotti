@@ -18,7 +18,17 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 /// selector, and the optional zero-baseline toggle (only meaningful once the
 /// lowest day clears the 20% floor).
 class HabitsChartCard extends ConsumerWidget {
-  const HabitsChartCard({this.habitIds, this.title, super.key});
+  const HabitsChartCard({
+    this.habitIds,
+    this.title,
+    this.showTimeSpanPicker = true,
+    super.key,
+  });
+
+  /// Hidden when a hosting page provides its own page-wide range control
+  /// (the goal detail dashboard) — two pickers for one shared span would
+  /// fight over the same state.
+  final bool showTimeSpanPicker;
 
   /// When non-null, the card renders the §4b goal-scoped chart variant for
   /// these habits. The zero-baseline toggle hides in that mode — its gate
@@ -86,12 +96,14 @@ class HabitsChartCard extends ConsumerWidget {
                       ),
                     ),
                   ),
-                SizedBox(width: tokens.spacing.step2),
-                TimeSpanSegmentedControl(
-                  timeSpanDays: state.timeSpanDays,
-                  onValueChanged: controller.setTimeSpan,
-                  segments: timeSpans,
-                ),
+                if (showTimeSpanPicker) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  TimeSpanSegmentedControl(
+                    timeSpanDays: state.timeSpanDays,
+                    onValueChanged: controller.setTimeSpan,
+                    segments: timeSpans,
+                  ),
+                ],
               ],
             ),
             SizedBox(height: tokens.spacing.step4),

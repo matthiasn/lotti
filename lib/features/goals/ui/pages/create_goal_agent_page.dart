@@ -628,6 +628,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       ..invalidate(agentIdentityProvider(agentId))
       ..invalidate(goalAgentHealthProvider(agentId))
       ..invalidate(goalAgentProgressViewProvider(agentId))
+      ..invalidate(goalAgentProgressViewForSpanProvider)
       ..invalidate(selfTargetedPendingChangeSetsProvider(agentId))
       ..invalidate(activeGoalAgentsProvider)
       ..invalidate(activeGoalNudgesProvider)

@@ -694,7 +694,16 @@ flowchart TD
   reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
   computed on the goal's slice of the habits day maps via
   `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
-  plumbing folded into an About-this-agent expander at the foot. The
+  plumbing folded into an About-this-agent expander at the foot. The page
+  has ONE time range: a picker on the Habits heading (backed by the habits
+  controller's shared `timeSpanDays`) keys
+  `goalAgentProgressViewForSpanProvider`, which renders every habit and
+  signal day track over the same span ending today (the This-week hero
+  stays the goal's authored evaluation week — a semantic unit, not a view
+  range), so any date lines up vertically down the page, chart included.
+  Aggregates never fold the rendered list — the evaluator's numbers win —
+  so a longer rendering cannot change a verdict, and the ages-out ring
+  anchors at the window's own first day rather than the list head. The
   reading measure applies to the content *inside* the scroll view, never to
   the scroll view itself. The detail page builds **eagerly** — a `Column`
   in a `SingleChildScrollView`, never a lazy list: its section count is

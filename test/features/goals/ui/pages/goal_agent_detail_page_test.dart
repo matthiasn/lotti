@@ -41,6 +41,7 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -101,6 +102,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -116,7 +122,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: DateTime.utc(2026, 8, 11),
               metric: GoalMetricProgressView(
@@ -233,6 +242,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -302,6 +316,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -380,6 +399,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -469,6 +493,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -550,6 +579,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider('goal-1').overrideWith(
               (ref) async => goalIdentity.copyWith(
                 config: const AgentConfig(automaticUpdatesEnabled: true),
@@ -655,6 +689,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) => never.future),
@@ -672,6 +711,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => throw StateError('db gone')),
@@ -765,6 +809,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -905,7 +954,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -1019,7 +1071,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -1146,6 +1201,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1161,7 +1221,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               metric: GoalMetricProgressView(
@@ -1251,6 +1314,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1267,7 +1335,10 @@ void main() {
             ),
           ),
           // Progress never resolves: the first load is still in flight.
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) => Completer<GoalProgressView?>().future,
           ),
           activeGoalNudgesProvider.overrideWith(
@@ -1324,6 +1395,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider(
               'goal-1',
             ).overrideWith((ref) async => goalIdentity),
@@ -1381,6 +1457,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1431,6 +1512,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1488,6 +1574,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1631,7 +1722,10 @@ void main() {
               buffer: 1,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async {
               progressReads++;
               return GoalProgressView(
@@ -1865,6 +1959,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider('goal-1').overrideWith(
             (ref) async => goalIdentity.copyWith(
               lifecycle: AgentLifecycle.dormant,
@@ -1883,7 +1982,10 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -1931,6 +2033,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1969,6 +2076,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const SizedBox.shrink(),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2026,6 +2138,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2079,6 +2196,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           goalAgentServiceProvider.overrideWithValue(service),
           agentIdentityProvider(
             'goal-1',
@@ -2153,6 +2275,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2200,6 +2327,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'task-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider('task-1').overrideWith((ref) async => null),
           goalAgentHealthProvider('task-1').overrideWith(
             (ref) async => (
@@ -2255,6 +2387,11 @@ void main() {
           const GoalAgentDetailPage(agentId: 'goal-1'),
           mediaQueryData: const MediaQueryData(size: desktopSize),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider(
               'goal-1',
             ).overrideWith((ref) async => goalIdentity),
@@ -2270,7 +2407,10 @@ void main() {
                 buffer: 1,
               ),
             ),
-            goalAgentProgressViewProvider('goal-1').overrideWith(
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
               (ref) async => GoalProgressView(
                 today: DateTime.utc(2026, 8, 13),
               ),
@@ -2372,6 +2512,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2425,6 +2570,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2526,7 +2676,10 @@ void main() {
               buffer: null,
             ),
           ),
-          goalAgentProgressViewProvider('goal-1').overrideWith(
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
             (ref) async => GoalProgressView(
               today: today,
               habits: [
@@ -2576,6 +2729,14 @@ void main() {
     );
     expect(alsoIn.data, 'Also in Heart Health');
 
+    // ONE page-level range picker on the Habits heading governs every day
+    // track and the chart — the chart card's own picker is hidden here, so
+    // the page never renders two controls fighting over one shared span.
+    expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+    await tester.tap(find.text('30d').first);
+    await tester.pump();
+    expect(habitsController.lastTimeSpan, 30);
+
     // The goal-scoped chart card: same shell as the habits page, its
     // own title, the chart scoped to this goal's criterion habit ids.
     expect(find.text('Completion rate · this goal'), findsOneWidget);
@@ -2619,6 +2780,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider(
               'goal-1',
             ).overrideWith((ref) async => goalIdentity),
@@ -2634,15 +2800,11 @@ void main() {
                 buffer: null,
               ),
             ),
-            goalAgentProgressViewProvider(
-              'goal-1',
-            ).overrideWith(
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
               (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
-            ),
-            habitsControllerProvider.overrideWith(
-              () => FakeHabitsController(
-                HabitsState.initial(now: DateTime(2026, 8, 13)),
-              ),
             ),
             selfTargetedPendingChangeSetsProvider(
               'goal-1',
@@ -2692,6 +2854,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2739,6 +2906,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider('goal-1').overrideWith(
             (ref) async => goalIdentity.copyWith(
               displayName:
@@ -2814,6 +2986,11 @@ void main() {
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
           overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
             agentIdentityProvider(
               'goal-1',
             ).overrideWith((ref) async => goalIdentity),
@@ -2909,7 +3086,10 @@ void main() {
                 buffer: null,
               ),
             ),
-            goalAgentProgressViewProvider('goal-1').overrideWith(
+            goalAgentProgressViewForSpanProvider((
+              agentId: 'goal-1',
+              historyDays: 14,
+            )).overrideWith(
               (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 13)),
             ),
             agentStateProvider(
@@ -2964,6 +3144,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -3002,6 +3187,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),

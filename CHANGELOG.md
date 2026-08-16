@@ -93,7 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Ask why" link, which arrives pre-filled with the exact status on screen.
   Cost pills and the automatic-updates toggle now fold behind an "About
   this agent" row, and the page wears the same status pill as the Goals
-  list, so a goal never reads two different ways one tap apart.
+  list, so a goal never reads two different ways one tap apart. The whole
+  page shares one time range: a single 14/30/90-day picker on the Habits
+  heading drives every habit and signal day track and the chart together,
+  so the same date lines up down the page.
+- **Habit cards say where else a habit counts.** A habit shared by several
+  goals shows "Also in {goal}" on each goal's detail card — recorded once,
+  reflected everywhere.
 
 ### Removed
 - **The experimental "Enable Agents Page?" flag and its tab.** The unified

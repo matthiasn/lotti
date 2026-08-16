@@ -38,10 +38,12 @@ import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// One goal — the §4b dashboard: header (name · unified status pill ·
@@ -265,9 +267,22 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
+    // The page's ONE time range: the same shared span the completion chart
+    // reads, applied to every day track so any date lines up vertically
+    // down the page.
+    final timeSpanDays = ref.watch(
+      habitsControllerProvider.select((state) => state.timeSpanDays),
+    );
     final progress = spec == null
         ? null
-        : ref.watch(goalAgentProgressViewProvider(agentId)).value;
+        : ref
+              .watch(
+                goalAgentProgressViewForSpanProvider((
+                  agentId: agentId,
+                  historyDays: timeSpanDays,
+                )),
+              )
+              .value;
     final assessments =
         ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
     // Same render-time staleness contract as the strip: retained data
@@ -476,6 +491,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
             key: _progressSectionKey,
             child: GoalProgressCard(
               progress: progress,
+              // The page-wide range picker rides the Habits heading — one
+              // control for every day track and the chart below.
+              habitsHeadingTrailing: TimeSpanSegmentedControl(
+                timeSpanDays: timeSpanDays,
+                onValueChanged: ref
+                    .read(habitsControllerProvider.notifier)
+                    .setTimeSpan,
+                segments: HabitsChartCard.timeSpans,
+              ),
               alsoInGoalTitlesByHabitId: alsoInGoalTitlesByHabitId,
               onHabitOutcomeSelected: !isActive
                   ? null
@@ -493,7 +517,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                             outcome: outcome,
                           );
                       if (saved) {
-                        ref.invalidate(goalAgentProgressViewProvider(agentId));
+                        ref
+                          ..invalidate(goalAgentProgressViewProvider(agentId))
+                          ..invalidate(goalAgentProgressViewForSpanProvider);
                       }
                       return saved;
                     },
@@ -508,6 +534,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           HabitsChartCard(
             habitIds: goalCriterionHabitIds(spec.criteria),
             title: context.messages.goalDetailCompletionRateTitle,
+            // The page-level picker on the Habits heading governs the range.
+            showTimeSpanPicker: false,
           ),
         ],
         if (progress != null && assessments.isNotEmpty) ...[

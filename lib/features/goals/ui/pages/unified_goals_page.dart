@@ -128,7 +128,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         return;
       }
       for (final identity in identities) {
-        ref.invalidate(goalAgentProgressViewProvider(identity.agentId));
+        ref
+          ..invalidate(goalAgentProgressViewProvider(identity.agentId))
+          ..invalidate(goalAgentProgressViewForSpanProvider);
       }
     });
 
