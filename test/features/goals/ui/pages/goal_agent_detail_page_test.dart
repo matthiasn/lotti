@@ -712,6 +712,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(countdown, findsOneWidget);
+      expect(find.textContaining('1:00:00'), findsOneWidget);
+
+      // Extending the snooze while the caption is VISIBLE updates the same
+      // element in place — the displayed remaining time jumps to the new
+      // deadline, proving the resync rather than a remount.
+      entriesNotifier.value = [
+        snoozedEntry(current.add(const Duration(hours: 2))),
+      ];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('2:00:00'), findsOneWidget);
     });
   });
 
