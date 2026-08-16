@@ -25,6 +25,7 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -251,12 +252,14 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       (ref) => {
         ...ref.watch(dayAgentWakeRunnersProvider),
         ...ref.watch(goalAgentWakeRunnersProvider),
+        ...ref.watch(relationshipAgentWakeRunnersProvider),
       },
     ),
     agentRuntimeMaintenanceProvider.overrideWith(
       (ref) => [
         ...ref.watch(dailyOsRuntimeMaintenanceProvider),
         ref.watch(goalRuntimeMaintenanceProvider),
+        ref.watch(relationshipRuntimeMaintenanceProvider),
       ],
     ),
     // The banner dock renders every kind through one substrate; each kind

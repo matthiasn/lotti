@@ -227,6 +227,18 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentDayLink;
 
+  /// Links a relationship agent to the relationship it watches (ADR 0059
+  /// Decision 2; the `agentTask`/`agentProject` precedent).
+  const factory AgentLink.agentRelationship({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentRelationshipLink;
+
   /// Links a template to its assigned soul document.
   /// [fromId] = template ID, [toId] = soul document ID.
   const factory AgentLink.soulAssignment({
@@ -300,6 +312,7 @@ extension AgentLinkSoftDelete on AgentLink {
     agentEvent: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentGoal: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentDay: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentRelationship: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     soulAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
   );
 }

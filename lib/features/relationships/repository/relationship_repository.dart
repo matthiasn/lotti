@@ -70,6 +70,16 @@ class RelationshipRepository {
     return _journalDb.getCheckInsForRelationship(relationshipId);
   }
 
+  /// Every non-deleted check-in, private ones included — the agent's view
+  /// (cadence must not depend on the private-display preference, or devices
+  /// with different settings would derive different registers) and the
+  /// delete cascade's view.
+  Future<List<CheckInEntry>> getAllCheckInsForRelationship(
+    String relationshipId,
+  ) {
+    return _journalDb.getAllCheckInsForRelationship(relationshipId);
+  }
+
   /// Tasks linked to the relationship in either direction (ADR 0038 §3 —
   /// "RelationshipLink both ways"): the relationship → task links this
   /// repository writes plus any task → relationship link created from the

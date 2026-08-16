@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
@@ -48,6 +51,20 @@ class RelationshipDetailsPage extends ConsumerWidget {
       final deleted = await ref
           .read(relationshipRepositoryProvider)
           .deleteRelationship(relationship.id);
+      if (deleted) {
+        // The cascade's agent leg (ADR 0059 Decision 7): contained —
+        // the person is gone either way, and a failed agent teardown is
+        // repaired by runtime maintenance, not by failing this delete.
+        unawaited(() async {
+          try {
+            await ref
+                .read(relationshipAgentServiceProvider)
+                .handleRelationshipDeleted(relationship.id);
+          } catch (_) {
+            // Logged by the service layer where possible; never surfaced.
+          }
+        }());
+      }
       if (!context.mounted) return;
       if (deleted) {
         beamToNamed('/people');

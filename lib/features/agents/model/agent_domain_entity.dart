@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -1117,6 +1118,44 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(<String, String>{}) Map<String, String> provenance,
     DateTime? deletedAt,
   }) = RelationshipNudgeEntity;
+
+  /// Deterministic cadence-health register for one relationship agent
+  /// (ADR 0059 Decision 2) — ONE row per agent, recomputed wholesale on
+  /// every Phase A tick so N devices converge on identical content (the
+  /// `goalProgress` recompute-never-accumulate pattern, without the
+  /// period key: check-ins are the history; this row is only the current
+  /// verdict). [status] is mirrored into the row's `subtype` column for
+  /// indexed scans.
+  const factory AgentDomainEntity.relationshipHealth({
+    required String id,
+    required String agentId,
+
+    /// The watched relationship (denormalized beside the agent link so a
+    /// register read never needs a link walk).
+    required String relationshipId,
+    required RelationshipCadenceStatus status,
+
+    /// The interval the verdict was computed against — the relationship's
+    /// `checkInCadenceDays`, defaulted at the evaluation site (ADR 0039).
+    required int cadenceDays,
+
+    /// The instant the cadence counts from: the newest check-in, or the
+    /// relationship's own start when none exists yet (ADR 0039 — marking
+    /// someone important is itself the request to be nudged).
+    required DateTime referenceAt,
+
+    /// The local calendar day the cadence lapses (component arithmetic:
+    /// `referenceAt`'s day + `cadenceDays`).
+    required DateTime dueAt,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+
+    /// Null while the relationship has no check-ins (`referenceAt` then
+    /// carries the tracking-start baseline).
+    DateTime? lastCheckInAt,
+    DateTime? deletedAt,
+  }) = RelationshipHealthEntity;
 
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({

@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -25,6 +26,7 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
+  late MockRelationshipAgentService mockAgentService;
   late MockUpdateNotifications mockNotifications;
 
   Metadata meta(String id) => Metadata(
@@ -96,6 +98,10 @@ void main() {
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
     ).thenAnswer((_) async => []);
+    mockAgentService = MockRelationshipAgentService();
+    when(
+      () => mockAgentService.handleRelationshipDeleted(any()),
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(() async {
@@ -105,6 +111,7 @@ void main() {
   Widget buildPage() => ProviderScope(
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
+      relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
     ],
     child: MaterialApp(
       theme: resolveTestTheme(),
@@ -261,6 +268,42 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockRepository.deleteRelationship('rel-1')).called(1);
+      // The cascade's agent leg fires exactly once (ADR 0059 Decision 7).
+      verify(
+        () => mockAgentService.handleRelationshipDeleted('rel-1'),
+      ).called(1);
+      expect(beamedTo, ['/people']);
+    },
+  );
+
+  testWidgets(
+    'a failed agent teardown never fails the delete the user watched '
+    'succeed',
+    (tester) async {
+      when(
+        () => mockRepository.getRelationshipById('rel-1'),
+      ).thenAnswer((_) async => relationship());
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockAgentService.handleRelationshipDeleted(any()),
+      ).thenAnswer((_) async => throw StateError('agent db closed'));
+
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
       expect(beamedTo, ['/people']);
     },
   );

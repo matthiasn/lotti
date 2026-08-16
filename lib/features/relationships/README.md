@@ -35,9 +35,21 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,
   narrative, next-time guidance; editable and deletable afterwards).
 
-Not yet built: the banner-channel generalization (phase 3), the relationship
-agent (phases 4–5), voice check-ins (phase 6), OS contact import/linking and
-call/message quick actions (phase 7), OS reminders (phase 8). Relationships
+- `runtime/` + `service/` + `state/` — the **relationship agent's
+  deterministic tier** (plan v2 phase 4, ADR 0059): marking a person
+  important lazily mints a durable agent (deterministic id, so devices
+  converge), linked via `AgentLink.agentRelationship` and subscribed to the
+  person's wake token. `RelationshipAgentPhaseA` runs on every tick at €0 —
+  re-arms the daily cadence wake, recomputes the one `relationshipHealth`
+  register row (skip-if-unchanged, so an uneventful tick writes nothing),
+  and arms a per-episode, lease-elected escalation when the cadence newly
+  lapses. The wake router sends everything to this tier until the LLM tier
+  ships. Deleting a person destroys their agent (the cascade's agent leg).
+
+Not yet built: the agent's LLM tier — briefings, banners, chat (phase 5) —
+voice check-ins (phase 6), OS contact import/linking and call/message quick
+actions (phase 7), OS reminders (phase 8). The banner channel itself is
+ready and kind-agnostic (`lib/features/nudges/`, phase 3). Relationships
 and check-ins deliberately do not appear in the main journal timeline; the
 People tab is their home.
 
