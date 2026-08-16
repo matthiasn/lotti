@@ -2564,7 +2564,7 @@
   "goalAttainmentLabel": "{percent} % de l’objectif",
   "goalBannerActionFailed": "Ça n'a pas été enregistré — réessaie, s'il te plaît.",
   "goalBannerDismissForDay": "Masquer pour aujourd’hui",
-  "goalBannerHiddenFromBar": "Masqué de la barre de bannières · de retour dans {countdown}",
+  "goalBannerHiddenFromBar": "Masquée de la barre de bannières · de retour dans {countdown}",
   "goalBannerRateTooltip": "Noter cette bannière",
   "goalBannerRatingSkip": "Passer",
   "goalBannerRatingTitle": "Tu as trouvé cette bannière comment ?",
