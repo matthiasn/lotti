@@ -384,6 +384,230 @@ void main() {
         });
       });
 
+      test('cancels drain-owned automation before policy lookup completes', () {
+        fakeAsync((async) {
+          final policyLookupGate = Completer<AgentDomainEntity?>();
+          final executedRunKeys = <String>[];
+          final completions = <WakeRunCompletion>[];
+          when(() => mockRepository.getEntity('automation-agent')).thenAnswer(
+            (_) => policyLookupGate.future,
+          );
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedRunKeys.add(runKey);
+              return Future.value();
+            },
+          );
+          final completionSub = orchestrator.runCompletions.listen(
+            completions.add,
+          );
+          final job = WakeJob(
+            runKey: 'owned-automation-run',
+            agentId: 'automation-agent',
+            reason: WakeReason.subscription.name,
+            initiator: WakeInitiator.automation,
+            triggerTokens: const {'project-1'},
+            createdAt: DateTime(2024, 3, 15),
+          );
+
+          queue.enqueue(job);
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+
+          orchestrator.cancelPendingAutomaticWakes(job.agentId);
+          async.flushMicrotasks();
+          expect(
+            completions,
+            contains(
+              isA<WakeRunCompletion>()
+                  .having((item) => item.runKey, 'runKey', job.runKey)
+                  .having(
+                    (item) => item.status,
+                    'status',
+                    WakeRunStatus.aborted,
+                  ),
+            ),
+          );
+
+          policyLookupGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+          verifyNever(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          );
+
+          completionSub.cancel();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('cancels only the matching drain-owned workspace', () {
+        fakeAsync((async) {
+          final policyLookupGate = Completer<AgentDomainEntity?>();
+          final executedRunKeys = <String>[];
+          final completions = <WakeRunCompletion>[];
+          when(() => mockRepository.getEntity('workspace-agent')).thenAnswer(
+            (_) => policyLookupGate.future,
+          );
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedRunKeys.add(runKey);
+              return Future.value();
+            },
+          );
+          final completionSub = orchestrator.runCompletions.listen(
+            completions.add,
+          );
+          final job = WakeJob(
+            runKey: 'owned-workspace-run',
+            agentId: 'workspace-agent',
+            workspaceKey: 'workspace-a',
+            reason: WakeReason.reanalysis.name,
+            initiator: WakeInitiator.user,
+            triggerTokens: const {},
+            createdAt: DateTime(2024, 3, 15),
+          );
+
+          queue.enqueue(job);
+          unawaited(orchestrator.processNext());
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+
+          final removed = orchestrator.cancelPendingWakes(
+            job.agentId,
+            workspaceKey: job.workspaceKey,
+          );
+          async.flushMicrotasks();
+          expect(removed.map((item) => item.runKey), equals([job.runKey]));
+          expect(
+            completions,
+            contains(
+              isA<WakeRunCompletion>()
+                  .having((item) => item.runKey, 'runKey', job.runKey)
+                  .having(
+                    (item) => item.status,
+                    'status',
+                    WakeRunStatus.aborted,
+                  ),
+            ),
+          );
+
+          policyLookupGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+
+          completionSub.cancel();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('aborts a persisted handoff cancelled while queued', () {
+        fakeAsync((async) {
+          final finalPolicyGate = Completer<AgentDomainEntity?>();
+          final replacementExecutionGate =
+              Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          final completions = <WakeRunCompletion>[];
+          var handoffPolicyReads = 0;
+          when(() => mockRepository.getEntity(any())).thenAnswer((call) {
+            final agentId = call.positionalArguments.first as String;
+            if (agentId == 'persisted-handoff-agent' &&
+                ++handoffPolicyReads == 2) {
+              return finalPolicyGate.future;
+            }
+            return Future.value();
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              if (agentId == 'replacement-agent') {
+                return replacementExecutionGate.future;
+              }
+              return Future.value();
+            },
+          );
+          final completionSub = orchestrator.runCompletions.listen(
+            completions.add,
+          );
+
+          final oldRunKey = orchestrator.enqueueManualWake(
+            agentId: 'persisted-handoff-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(handoffPolicyReads, 2);
+          expect(executedAgentIds, isEmpty);
+
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          finalPolicyGate.complete(null);
+          async.flushMicrotasks();
+          expect(queue.hasQueuedJobFor('persisted-handoff-agent'), isTrue);
+
+          final removed = orchestrator.cancelPendingWakes(
+            'persisted-handoff-agent',
+            allWorkspaces: true,
+          );
+          async.flushMicrotasks();
+          expect(removed.map((job) => job.runKey), equals([oldRunKey]));
+          expect(
+            completions,
+            contains(
+              isA<WakeRunCompletion>()
+                  .having((item) => item.runKey, 'runKey', oldRunKey)
+                  .having(
+                    (item) => item.status,
+                    'status',
+                    WakeRunStatus.aborted,
+                  ),
+            ),
+          );
+          verify(
+            () => mockRepository.updateWakeRunStatus(
+              oldRunKey,
+              WakeRunStatus.aborted.name,
+              completedAt: any(named: 'completedAt'),
+              errorMessage: 'wake cancelled before execution',
+            ),
+          ).called(1);
+          verify(
+            () => mockRepository.insertWakeRun(
+              entry: any(
+                named: 'entry',
+                that: isA<WakeRunLogData>().having(
+                  (entry) => entry.runKey,
+                  'runKey',
+                  oldRunKey,
+                ),
+              ),
+            ),
+          ).called(1);
+
+          replacementExecutionGate.complete(null);
+          completionSub.cancel();
+          async.flushMicrotasks();
+        });
+      });
+
       test('discards a superseded wake after stale acquisition', () {
         fakeAsync((async) {
           final acquisitionGate = Completer<void>();
