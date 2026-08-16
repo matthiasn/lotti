@@ -11,7 +11,7 @@ release behavior can change in one pull request:
 
 - `lotti` owns the Docusaurus site, Markdown/MDX source, screenshot case
   definitions, validation, tests, and CI orchestration.
-- `lotti-docs/main` owns generated manual screenshots and their manifests.
+- `legacy-media/main` owns generated manual screenshots and their manifests.
 - GitHub Actions publishes generated static output to GitHub Pages; generated
   output is never committed, and Pages never runs Flutter or recreates media.
 - the default manual version is the latest published App Store version;
@@ -39,7 +39,7 @@ deferred until that English manual is complete and verified.
    lockstep in the `lotti` repository.
 3. Generate deterministic mobile/desktop and light/dark screenshots from
    synthetic data.
-4. Store generated media in `lotti-docs/main`, organized by app version.
+4. Store generated media in `legacy-media/main`, organized by app version.
 5. Give every published app version a permanent manual URL.
 6. Default the manual root to the latest version actually available in the App
    Store, not merely the newest commit or TestFlight build.
@@ -56,7 +56,7 @@ deferred until that English manual is complete and verified.
 
 - Multilingual routes, translated prose, language selection, and browser
   language detection. These follow only after full English coverage.
-- Replacing the existing `lotti-docs/whats-new` feed.
+- Replacing the existing `legacy-media/whats-new` feed.
 - Running a CMS, database, search server, or JavaScript application server in
   production.
 - Capturing every platform's operating-system chrome.
@@ -80,7 +80,7 @@ The repository already contains most of the hard screenshot plumbing:
 - opt-in screenshot suites already cover Daily OS, Settings, Categories,
   Dashboards, Insights, and other useful surfaces.
 - the Makefile already has macOS and Linux manual screenshot targets.
-- `/home/parallels/github/lotti-docs` is an existing sibling checkout whose
+- `/home/parallels/github/legacy-media` is an existing sibling checkout whose
   `main` branch already stores versioned screenshots and What's New assets.
 
 The implementation should consolidate and orchestrate these capabilities, not
@@ -134,7 +134,7 @@ flowchart LR
   Manual["MD/MDX source in lotti"]
   Cases["Screenshot case registry in lotti"]
   Capture["Flutter screenshot capture"]
-  DocsRepo["lotti-docs/main\nversioned media + manifests"]
+  DocsRepo["legacy-media/main\nversioned media + manifests"]
   Build["Docusaurus static build"]
   Verify["Coverage, links, component tests"]
   Site["Versioned Pages snapshot"]
@@ -164,7 +164,7 @@ Checked into `lotti`:
 - site tests;
 - CI workflows and deployment/synchronization scripts.
 
-Checked into `lotti-docs/main`:
+Checked into `legacy-media/main`:
 
 - optimized generated screenshots;
 - one manifest per development/release screenshot set;
@@ -219,7 +219,7 @@ lotti/
 │   └── cases/
 └── .github/workflows/manual.yml
 
-lotti-docs/
+legacy-media/
 └── manual/screenshots/
     ├── development/
     │   ├── manifest.json
@@ -491,7 +491,7 @@ MVP cases, in priority order:
 Task creation, sync import/status, and onboarding follow immediately when their
 fixtures are stable enough for the complete matrix. Legacy one-off app images
 must be upgraded to registered cases or removed; the validator rejects direct
-`lotti-docs` media links in authored pages.
+`legacy-media` media links in authored pages.
 
 ---
 
@@ -527,9 +527,9 @@ independently built version directories.
 3. The release workflow checks out the exact app release tag; that Git snapshot
    already contains the matching manual source.
 4. CI generates the complete screenshot
-   set into a clean `lotti-docs` worktree.
+   set into a clean `legacy-media` worktree.
 5. After validation, CI commits the versioned media and manifest to
-   `lotti-docs/main`.
+   `legacy-media/main`.
 6. The tagged manual is built with `MANUAL_VERSION=<marketing-version>` against
    that exact media commit and deployed to an immutable version directory.
 7. A scheduled App Store Connect check promotes that version to the manual root
@@ -562,7 +562,7 @@ PR jobs:
 
 1. install locked Node and Flutter dependencies;
 2. validate page metadata and navigation;
-3. validate screenshot references against the current `lotti-docs` manifest;
+3. validate screenshot references against the current `legacy-media` manifest;
 4. run changed/targeted screenshot cases when capture code changed;
 5. build Docusaurus with broken links treated as errors;
 6. run site component tests;
@@ -571,12 +571,12 @@ PR jobs:
 
 ### Main/nightly build
 
-1. check out `lotti/main` and `lotti-docs/main` as siblings;
+1. check out `lotti/main` and `legacy-media/main` as siblings;
 2. capture the development screenshot catalog into a clean staging directory;
 3. generate optimized media and manifest;
 4. run all manual validation;
-5. update `lotti-docs/manual/screenshots/development` only after validation;
-6. commit and push generated development media to `lotti-docs/main` when it
+5. update `legacy-media/manual/screenshots/development` only after validation;
+6. commit and push generated development media to `legacy-media/main` when it
    changed;
 7. build the manual against the resulting docs commit;
 8. deploy the static artifact;
@@ -593,7 +593,7 @@ CI requires:
 
 - read access to `lotti`;
 - a narrowly scoped token or deploy key with write access only to
-  `lotti-docs`;
+  `legacy-media`;
 - GitHub's built-in Pages token and OIDC identity for the static site artifact;
 - App Store Connect read credentials for stable-version promotion.
 
@@ -659,7 +659,7 @@ Exit criteria:
 - local development server starts;
 - production build succeeds;
 - all migrated pages are navigable and searchable;
-- no authored page embeds a legacy one-off `lotti-docs` screenshot.
+- no authored page embeds a legacy one-off `legacy-media` screenshot.
 
 ### Phase 2 — Media contract and deterministic matrix
 
@@ -669,9 +669,9 @@ Exit criteria:
 - Generalize capture inputs so every MVP case supports both canonical viewports
   and themes.
 - Add manifest generation, dimension/checksum validation, and clean output into
-  `../lotti-docs/manual/screenshots/<version>`.
+  `../legacy-media/manual/screenshots/<version>`.
 - Generate the development catalog without touching unrelated untracked media
-  already present in `lotti-docs`.
+  already present in `legacy-media`.
 
 Exit criteria:
 
@@ -695,7 +695,7 @@ Exit criteria:
   overwrite;
 - GitHub Pages serves the versioned static snapshot without committed build
   output;
-- screenshot media remains independently versioned in `lotti-docs/main`.
+- screenshot media remains independently versioned in `legacy-media/main`.
 
 ### Phase 4 — V1 content completeness
 
@@ -776,7 +776,7 @@ This workflow remains inactive until Phase 4 is complete.
 2. Use fixed dates, fixed locale, synthetic content, production fonts, and
    explicit readiness assertions.
 3. Run the case with `LOTTI_SCREENSHOT_DIR` pointing into a staging directory in
-   `../lotti-docs`.
+   `../legacy-media`.
 4. Validate the four variants and generated manifest.
 5. Reference the stable case ID from MDX.
 6. Let main/nightly CI update committed development media after merge.
@@ -786,7 +786,7 @@ This workflow remains inactive until Phase 4 is complete.
 1. Ensure current manual validation is green.
 2. Freeze the marketing version.
 3. Capture screenshots from the exact release ref.
-4. Commit immutable media to `lotti-docs/main`.
+4. Commit immutable media to `legacy-media/main`.
 5. Deploy the versioned manual as a Pages preview artifact.
 6. Promote it to stable when App Store Connect reports public distribution.
 
@@ -797,7 +797,7 @@ This workflow remains inactive until Phase 4 is complete.
 ### Two repositories can drift
 
 Mitigation: every media manifest records the app commit and marketing version;
-the site build rejects mismatches. CI builds against the `lotti-docs` commit it
+the site build rejects mismatches. CI builds against the `legacy-media` commit it
 just created, not an eventually consistent branch checkout.
 
 ### Nightly automation could publish a broken screen
@@ -847,7 +847,7 @@ The MVP is complete when:
   pretending its empty sections are complete;
 - every app image uses `ManualScreenshot`, switches theme automatically, and
   follows one persisted global mobile/desktop choice;
-- the media manifest format and `lotti-docs` directory contract are implemented
+- the media manifest format and `legacy-media` directory contract are implemented
   and tested;
 - a focused set of deterministic capture cases produces external media without
   adding images to `lotti`;

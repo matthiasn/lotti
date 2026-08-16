@@ -63,7 +63,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
       expect(
         container
             .read(projectListDetailShowcaseControllerProvider)

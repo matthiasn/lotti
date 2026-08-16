@@ -3,6 +3,14 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
+
+/// Shared per-project serialization for provisioning and project deletion.
+final projectAgentMutationCoordinatorProvider =
+    Provider<ProjectAgentMutationCoordinator>(
+      (_) => ProjectAgentMutationCoordinator(),
+      name: 'projectAgentMutationCoordinatorProvider',
+    );
 
 /// The project-agent-specific service.
 final projectAgentServiceProvider = Provider<ProjectAgentService>(
@@ -11,11 +19,22 @@ final projectAgentServiceProvider = Provider<ProjectAgentService>(
 );
 ProjectAgentService projectAgentService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
+  final projectRepository = ref.watch(projectRepositoryProvider);
   return ProjectAgentService(
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    projectScopeIsCurrent: (projectId, allowedCategoryIds) async {
+      final project = await projectRepository.getProjectById(projectId);
+      if (project == null) return false;
+      final currentCategoryIds = {
+        if (project.meta.categoryId case final String categoryId) categoryId,
+      };
+      return currentCategoryIds.length == allowedCategoryIds.length &&
+          currentCategoryIds.containsAll(allowedCategoryIds);
+    },
+    mutationCoordinator: ref.watch(projectAgentMutationCoordinatorProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     cancellationCoordinator: ref.watch(
       projectActivityCancellationCoordinatorProvider,

@@ -146,10 +146,10 @@ export function findUnmanagedScreenshotReferences(source) {
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`[^`\n]+`/g, '');
   // Screenshots resolve through the ManualScreenshot component; a hard-coded
-  // URL — whether the legacy lotti-docs raw path or the R2 bucket itself —
+  // URL — whether a raw repository path or the R2 bucket itself —
   // bypasses versioning, locale, and theme resolution.
   const unmanagedMediaUrl =
-    /https:\/\/(?:raw\.githubusercontent\.com\/matthiasn\/lotti-docs|pub-[a-z0-9]+\.r2\.dev\/manual\/screenshots)\/[^\s)'">]+/g;
+    /https:\/\/(?:raw\.githubusercontent\.com\/[^/]+\/[^/]+|pub-[a-z0-9]+\.r2\.dev\/manual\/screenshots)\/[^\s)'">]+/g;
   return [...new Set(authoringMarkup.match(unmanagedMediaUrl) ?? [])];
 }
 

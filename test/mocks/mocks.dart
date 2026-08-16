@@ -127,6 +127,7 @@ import 'package:lotti/features/onboarding/services/onboarding_task_structuring_s
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_category_migration_service.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -1232,6 +1233,9 @@ class MockProjectRepository extends Mock implements ProjectRepository {}
 
 class MockRelationshipRepository extends Mock
     implements RelationshipRepository {}
+
+class MockProjectCategoryMigrationService extends Mock
+    implements ProjectCategoryMigrationService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

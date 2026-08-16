@@ -20,17 +20,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
@@ -43,7 +51,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/manual_demo_world.dart';
@@ -57,6 +64,24 @@ import '../../test_utils.dart';
 const _subdir = 'projects';
 const _projectWaddleId = 'project-waddle';
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
+
+final AiConfigModel _manualProjectAgentModel = manualDemoAiModels.firstWhere(
+  (model) => model.id == manualWaddleCommandModelId,
+);
+final AiConfigInferenceProvider _manualProjectAgentProvider =
+    manualDemoAiProviders.firstWhere(
+      (provider) => provider.id == manualMissionControlProviderId,
+    );
+final _manualProjectAgentSetup = ResolvedAgentSetup(
+  status: AgentSetupResolutionStatus.resolved,
+  profile: ResolvedProfile(
+    thinkingModelId: _manualProjectAgentModel.providerModelId,
+    thinkingProvider: _manualProjectAgentProvider,
+    thinkingModel: _manualProjectAgentModel,
+  ),
+  source: AgentSetupResolutionSource.baseProfile,
+  setupOrigin: AgentInferenceSetupOrigin.user,
+);
 
 AppLocalizations _messages(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(AppCommandHost)))!;
@@ -79,6 +104,9 @@ class _ManualProjectDetailController extends ProjectDetailController {
 
   @override
   void updateTitle(String title) {}
+
+  @override
+  void updateDescription(String description) {}
 
   @override
   void updateTargetDate(DateTime? targetDate) {}
@@ -122,7 +150,10 @@ Widget _app({
           home: AppCommandHost(
             handlers: const {},
             platform: platform,
-            child: home,
+            child: Material(
+              type: MaterialType.transparency,
+              child: home,
+            ),
           ),
         ),
       ),
@@ -187,17 +218,74 @@ void main() {
       createdAt: DateTime(2026, 7),
     );
 
-    final projectWaddle = project(
-      id: _projectWaddleId,
-      title: 'Project Waddle',
-      status: ProjectStatus.active(
-        id: 'project-waddle-active',
-        createdAt: DateTime(2026, 7, 2),
-        utcOffset: 120,
+    final projectWaddle =
+        project(
+          id: _projectWaddleId,
+          title: 'Project Waddle',
+          status: ProjectStatus.active(
+            id: 'project-waddle-active',
+            createdAt: DateTime(2026, 7, 2),
+            utcOffset: 120,
+          ),
+          category: world.category,
+          targetDate: DateTime(2026, 8),
+        ).copyWith(
+          entryText: EntryText(
+            plainText: _t(
+              'Prepare the orbital habitat demo and keep every penguin-safe '
+                  'launch dependency visible.',
+              'Bereite die Demo des Orbital-Habitats vor und halte alle '
+                  'pinguinsicheren Startabhängigkeiten sichtbar.',
+            ),
+          ),
+        );
+    Task completedTask(String id, String title, int daysAgo) {
+      final task = makeTestTask(
+        id: id,
+        title: title,
+        createdAt: manualDemoNow.subtract(Duration(days: daysAgo + 2)),
+      );
+      return task.copyWith(
+        data: task.data.copyWith(
+          status: TaskStatus.done(
+            id: '$id-done',
+            createdAt: manualDemoNow.subtract(Duration(days: daysAgo)),
+            utcOffset: 120,
+          ),
+        ),
+      );
+    }
+
+    final completedTasks = [
+      completedTask(
+        'habitat-pressure-seals',
+        _t('Pressure-test habitat seals', 'Habitatdichtungen druckprüfen'),
+        6,
       ),
-      category: world.category,
-      targetDate: DateTime(2026, 8),
-    );
+      completedTask(
+        'penguin-passenger-count',
+        _t(
+          'Confirm penguin passenger count',
+          'Pinguin-Passagierzahl bestätigen',
+        ),
+        5,
+      ),
+      completedTask(
+        'cargo-routing-check',
+        _t('Verify orbital cargo routing', 'Orbitale Frachtrouten prüfen'),
+        4,
+      ),
+      completedTask(
+        'mission-control-briefing',
+        _t('Brief Mission Control', 'Missionskontrolle einweisen'),
+        3,
+      ),
+      completedTask(
+        'emergency-fish-reserves',
+        _t('Load emergency fish reserves', 'Notfall-Fischvorräte laden'),
+        2,
+      ),
+    ];
     final coldChain = project(
       id: 'europa-sardine-cold-chain',
       title: _t('Europa sardine cold chain', 'Europa-Sardinenkühlkette'),
@@ -239,7 +327,6 @@ void main() {
       makeTestProjectRecord(
         project: projectWaddle,
         category: world.category,
-        healthScore: 82,
         healthMetrics: makeTestProjectHealthMetrics(
           rationale: _t(
             'Habitat telemetry is stable; the zero-gravity feeder remains '
@@ -275,7 +362,21 @@ void main() {
             ),
           ),
           makeTestTaskSummary(
-            task: world.fishFeederTask,
+            task: world.fishFeederTask.copyWith(
+              data: world.fishFeederTask.data.copyWith(
+                status: TaskStatus.blocked(
+                  id: 'fish-feeder-blocked',
+                  createdAt: manualDemoNow.subtract(
+                    const Duration(hours: 3),
+                  ),
+                  utcOffset: 120,
+                  reason: _t(
+                    'Calibration sends food toward Mission Control.',
+                    'Die Kalibrierung schickt Futter zur Missionskontrolle.',
+                  ),
+                ),
+              ),
+            ),
             estimatedDuration: const Duration(hours: 1, minutes: 30),
             oneLiner: _t(
               'The feeder still launches lunch toward Mission Control',
@@ -290,13 +391,17 @@ void main() {
               'Europa-Kühlkettenmanifest bereit zum Abgleich',
             ),
           ),
+          for (final task in completedTasks)
+            makeTestTaskSummary(
+              task: task,
+              estimatedDuration: const Duration(minutes: 30),
+            ),
         ],
-        highlightedTasksTotalDuration: const Duration(hours: 4, minutes: 15),
+        highlightedTasksTotalDuration: const Duration(hours: 6, minutes: 45),
       ),
       makeTestProjectRecord(
         project: coldChain,
         category: missionControl,
-        healthScore: 74,
         totalTaskCount: 6,
         blockedTaskCount: 0,
         aiSummary: _t(
@@ -307,7 +412,6 @@ void main() {
       makeTestProjectRecord(
         project: passengerTreaty,
         category: fishDiplomacy,
-        healthScore: 61,
         completedTaskCount: 1,
         totalTaskCount: 4,
         aiSummary: _t(
@@ -319,7 +423,6 @@ void main() {
       makeTestProjectRecord(
         project: iceGarden,
         category: humanMaintenance,
-        healthScore: 100,
         completedTaskCount: 5,
         blockedTaskCount: 0,
         aiSummary: _t(
@@ -328,11 +431,43 @@ void main() {
         ),
       ),
     ];
-    groups = ProjectListData(
+    final rawGroups = ProjectListData(
       categories: categories,
       projects: records,
       currentTime: manualDemoNow,
     ).overviewSnapshot.groups;
+    String oneLinerFor(String projectId) => switch (projectId) {
+      _projectWaddleId => _t(
+        'Orbital launch readiness and habitat safety',
+        'Orbitale Startbereitschaft und Habitatsicherheit',
+      ),
+      'europa-sardine-cold-chain' => _t(
+        'Keep every cargo pod below the emergency fish ceiling',
+        'Jede Frachtkapsel unter der Fisch-Notfallgrenze halten',
+      ),
+      'penguin-passenger-treaty' => _t(
+        'Settle the passenger-versus-cargo question before launch',
+        'Passagier-oder-Fracht-Frage vor dem Start klären',
+      ),
+      _ => _t(
+        'One quiet lap around the orbital ice garden',
+        'Eine stille Runde durch den orbitalen Eisgarten',
+      ),
+    };
+    groups = [
+      for (final group in rawGroups)
+        group.copyWith(
+          projects: [
+            for (final item in group.projects)
+              ProjectListItemData(
+                project: item.project,
+                category: item.category,
+                taskRollup: item.taskRollup,
+                oneLiner: oneLinerFor(item.project.meta.id),
+              ),
+          ],
+        ),
+    ];
 
     selectedProjectId = ValueNotifier<String?>(null);
     final navService = MockNavService();
@@ -375,9 +510,6 @@ void main() {
     projectsOverviewProvider.overrideWith(
       (ref) => Stream.value(ProjectsOverviewSnapshot(groups: groups)),
     ),
-    visibleProjectGroupsProvider.overrideWith(
-      (ref) => AsyncValue.data(groups),
-    ),
     for (final record in records) ...[
       projectDetailControllerProvider(record.project.meta.id).overrideWith(
         () => _ManualProjectDetailController(record),
@@ -389,32 +521,28 @@ void main() {
         (ref) async => record,
       ),
       projectAgentProvider(record.project.meta.id).overrideWith(
-        (ref) async => null,
-      ),
-      projectOneLinerProvider(record.project.meta.id).overrideWith(
-        (ref) async => switch (record.project.meta.id) {
-          _projectWaddleId => _t(
-            'Orbital launch readiness and habitat safety',
-            'Orbitale Startbereitschaft und Habitatsicherheit',
-          ),
-          'europa-sardine-cold-chain' => _t(
-            'Keep every cargo pod below the emergency fish ceiling',
-            'Jede Frachtkapsel unter der Fisch-Notfallgrenze halten',
-          ),
-          'penguin-passenger-treaty' => _t(
-            'Settle the passenger-versus-cargo question before launch',
-            'Passagier-oder-Fracht-Frage vor dem Start klären',
-          ),
-          _ => _t(
-            'One quiet lap around the orbital ice garden',
-            'Eine stille Runde durch den orbitalen Eisgarten',
-          ),
-        },
+        (ref) async => AgentDomainEntity.agent(
+          id: 'manual-agent-${record.project.meta.id}',
+          agentId: 'manual-agent-${record.project.meta.id}',
+          kind: 'project_agent',
+          displayName: '${record.project.data.title} Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'manual-state-${record.project.meta.id}',
+          config: const AgentConfig(),
+          createdAt: manualDemoNow.subtract(const Duration(days: 30)),
+          updatedAt: manualDemoNow.subtract(const Duration(hours: 2)),
+          vectorClock: null,
+        ),
       ),
     ],
     projectDetailNowProvider.overrideWithValue(() => manualDemoNow),
     agentIsRunningProvider.overrideWith(
       (ref, agentId) => const Stream<bool>.empty(),
+    ),
+    taskAgentResolvedSetupProvider.overrideWith(
+      (ref, agentId) async => _manualProjectAgentSetup,
     ),
   ];
 
@@ -471,6 +599,16 @@ void main() {
           find.text(_t('Penguin Operations', 'Pinguinbetrieb')),
           findsWidgets,
         );
+        expect(
+          find.text(
+            _t(
+              'Orbital ice-garden wellness program',
+              'Wellnessprogramm im orbitalen Eisgarten',
+            ),
+          ),
+          findsNothing,
+          reason: 'The production Current filter excludes completed projects.',
+        );
         await captureScreenshot(
           tester,
           'projects_list_${viewport}_$theme',
@@ -488,18 +626,10 @@ void main() {
           selectedId: _projectWaddleId,
         );
         expect(find.text('Project Waddle'), findsWidgets);
-        expect(find.text('82'), findsOneWidget);
         expect(
-          find.textContaining(
-            _t(
-              'Project Waddle is on track for the orbital habitat demo. Clear '
-                  'the fish-feeder blocker before the emperor penguin roll call.',
-              'Project Waddle liegt für die Demo des Orbital-Habitats im Plan. '
-                  'Löse den Futterautomaten-Blocker vor dem Zählappell der '
-                  'Kaiserpinguine.',
-            ),
-          ),
+          find.text(_messages(tester).projectShowcaseProjectTasksTab),
           findsOneWidget,
+          reason: 'The Task-style detail surface leads with project work.',
         );
         await captureScreenshot(
           tester,
@@ -522,15 +652,17 @@ void main() {
           of: details,
           matching: find.byType(Scrollable),
         );
+        final projectTasksHeader = find.text(
+          _messages(tester).projectShowcaseProjectTasksTab,
+        );
         await tester.scrollUntilVisible(
-          find.text(
-            _t(
-              'Inspect orbital penguin habitat',
-              'Pinguin-Habitat im Orbit inspizieren',
-            ),
-          ),
+          projectTasksHeader,
           320,
           scrollable: detailScrollable.first,
+        );
+        await Scrollable.ensureVisible(
+          tester.element(projectTasksHeader),
+          alignment: 0.05,
         );
         await settleFrames(tester, 4);
         expect(
@@ -563,6 +695,48 @@ void main() {
         await captureScreenshot(
           tester,
           'projects_tasks_${viewport}_$theme',
+          subdir: _subdir,
+        );
+      });
+
+      testWidgets('$viewport project agent — $theme', (tester) async {
+        await pumpSurface(
+          tester,
+          device: device,
+          brightness: brightness,
+          mobile: const ProjectDetailsPage(projectId: _projectWaddleId),
+          desktop: const ProjectsTabPage(),
+          selectedId: _projectWaddleId,
+        );
+        final details = find.byType(ProjectMobileDetailContent);
+        final detailScrollable = find.descendant(
+          of: details,
+          matching: find.byType(Scrollable),
+        );
+        final reportSummary = find.textContaining(
+          _t(
+            'Project Waddle is on track for the orbital habitat demo. Clear '
+                'the fish-feeder blocker before the emperor penguin roll call.',
+            'Project Waddle liegt für die Demo des Orbital-Habitats im Plan. '
+                'Löse den Futterautomaten-Blocker vor dem Zählappell der '
+                'Kaiserpinguine.',
+          ),
+        );
+        await tester.scrollUntilVisible(
+          reportSummary,
+          320,
+          scrollable: detailScrollable.first,
+        );
+        await Scrollable.ensureVisible(
+          tester.element(reportSummary),
+          alignment: 0.15,
+        );
+        await settleFrames(tester, 4);
+        expect(find.text(_t('On Track', 'Im Plan')), findsOneWidget);
+        expect(find.text('Project Waddle Agent'), findsOneWidget);
+        await captureScreenshot(
+          tester,
+          'projects_agent_${viewport}_$theme',
           subdir: _subdir,
         );
       });
@@ -616,7 +790,7 @@ void main() {
         expect(find.byType(ProjectCreateForm), findsOneWidget);
         await tester.enterText(
           find.descendant(
-            of: find.byType(LottiTextField),
+            of: find.byType(DesignSystemTextInput),
             matching: find.byType(TextField),
           ),
           _t(
@@ -652,8 +826,14 @@ void main() {
           tester,
           device: device,
           brightness: brightness,
-          mobile: const ProjectDetailPage(projectId: _projectWaddleId),
-          desktop: const ProjectDetailPage(projectId: _projectWaddleId),
+          mobile: const ProjectDetailPage(
+            projectId: _projectWaddleId,
+            returnPath: '/projects/$_projectWaddleId',
+          ),
+          desktop: const ProjectDetailPage(
+            projectId: _projectWaddleId,
+            returnPath: '/projects/$_projectWaddleId',
+          ),
         );
         final messages = _messages(tester);
         expect(find.text(messages.projectDetailTitle), findsOneWidget);
@@ -661,9 +841,14 @@ void main() {
         expect(find.text('Project Waddle'), findsOneWidget);
         expect(find.text(messages.projectTargetDateLabel), findsOneWidget);
         expect(
-          find.text(messages.projectHealthSectionTitle),
+          find.text(messages.projectShowcaseDescriptionTitle),
           findsOneWidget,
         );
+        expect(find.text(messages.habitCategoryLabel), findsOneWidget);
+        expect(find.text(messages.designSystemBackLabel), findsOneWidget);
+        expect(find.text(messages.projectHealthSectionTitle), findsNothing);
+        expect(find.text(messages.cancelButton), findsOneWidget);
+        expect(find.text(messages.saveButton), findsOneWidget);
         await captureScreenshot(
           tester,
           'projects_editor_${viewport}_$theme',

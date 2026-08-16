@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/get_it.dart';
@@ -41,6 +42,7 @@ void main() {
 
       expect(location.pathPatterns, [
         '/projects',
+        '/projects/:projectId/edit',
         '/projects/:projectId',
       ]);
     });
@@ -100,6 +102,31 @@ void main() {
         expect(pages.first.child, isA<ProjectsTabPage>());
       },
     );
+
+    test('in desktop mode, the edit route pushes the project editor', () {
+      final desktopSelectedProjectId = ValueNotifier<String?>(null);
+      when(() => mockNavService.isDesktopMode).thenReturn(true);
+      when(
+        () => mockNavService.desktopSelectedProjectId,
+      ).thenReturn(desktopSelectedProjectId);
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/projects/project-123/edit'),
+      );
+      final location = ProjectsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(
+        routeInformation,
+      ).copyWith(pathParameters: {'projectId': 'project-123'});
+
+      final pages = location.buildPages(mockBuildContext, beamState);
+
+      expect(pages, hasLength(2));
+      expect(pages.first.child, isA<ProjectsTabPage>());
+      expect(pages.last.child, isA<ProjectDetailPage>());
+      final editor = pages.last.child as ProjectDetailPage;
+      expect(editor.projectId, 'project-123');
+      expect(editor.returnPath, '/projects/project-123');
+      expect(desktopSelectedProjectId.value, 'project-123');
+    });
 
     test(
       'a stale /projects/create deep link degrades to the list, never a '

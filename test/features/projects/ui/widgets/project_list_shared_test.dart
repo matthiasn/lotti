@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -17,17 +17,25 @@ import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
-  Widget wrap(Widget child, {List<Override> overrides = const []}) {
+  Widget wrap(
+    Widget child, {
+    List<Override> overrides = const [],
+    double width = 402,
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     return ProviderScope(
       overrides: overrides,
       child: makeTestableWidget2(
         Theme(
           data: DesignSystemTheme.dark(),
           child: Scaffold(
-            body: SizedBox(width: 402, height: 900, child: child),
+            body: SizedBox(width: width, height: 900, child: child),
           ),
         ),
-        mediaQueryData: const MediaQueryData(size: Size(500, 1000)),
+        mediaQueryData: MediaQueryData(
+          size: Size(width, 1000),
+          textScaler: textScaler,
+        ),
       ),
     );
   }
@@ -77,6 +85,38 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('1 project'), findsOneWidget);
     });
+
+    testWidgets('constrains a long category before the count at 200% text', (
+      tester,
+    ) async {
+      final data = makeTestProjectListData();
+      final category = data.categories.first.copyWith(
+        name: 'Interplanetary Penguin Habitat Safety Operations',
+      );
+      final group = ProjectCategoryGroup(
+        categoryId: category.id,
+        category: category,
+        projects: [
+          makeTestProjectListItemData(
+            project: makeTestProject(categoryId: category.id),
+            category: category,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupHeader(group: group),
+          width: 280,
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+
+      final labelRect = tester.getRect(find.text(category.name));
+      final countRect = tester.getRect(find.text('1 project'));
+      expect(labelRect.right, lessThan(countRect.left));
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('ProjectGroupSection', () {
@@ -99,7 +139,6 @@ void main() {
             selectedProjectId: 'p1',
             onProjectSelected: (_) {},
           ),
-          overrides: noOneLinerOverrides(['p1']),
         ),
       );
       await tester.pump();
@@ -109,6 +148,52 @@ void main() {
         find.byKey(const ValueKey('project-overview-row-p1')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('collapses and restores a category without losing its header', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Work'));
+      await tester.pump();
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Project Alpha'), findsNothing);
+      expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+
+      await tester.tap(find.text('Work'));
+      await tester.pump();
+      expect(find.text('Project Alpha'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less_rounded), findsOneWidget);
+    });
+
+    testWidgets('centers the visible group header inside its 48dp tap target', (
+      tester,
+    ) async {
+      final group = makeGroupedProjectsSection();
+      await tester.pumpWidget(
+        wrap(
+          ProjectGroupSection(
+            group: group,
+            selectedProjectId: null,
+            onProjectSelected: (_) {},
+          ),
+        ),
+      );
+
+      final headerRect = tester.getRect(find.byType(InkWell).first);
+      final labelRect = tester.getRect(find.text('Work'));
+      expect(headerRect.height, greaterThanOrEqualTo(TapTargets.minimum));
+      expect(labelRect.center.dy, closeTo(headerRect.center.dy, 0.1));
     });
 
     testWidgets('renders the grouped card with the Figma border treatment', (
@@ -123,7 +208,6 @@ void main() {
             selectedProjectId: null,
             onProjectSelected: (_) {},
           ),
-          overrides: noOneLinerOverrides(['p1', 'p2']),
         ),
       );
       await tester.pump();
@@ -155,7 +239,6 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
-            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -168,7 +251,8 @@ void main() {
         final titleTopLeft = tester.getTopLeft(titleFinder);
 
         expect(rowTopLeft.dx, cardTopLeft.dx);
-        expect(titleTopLeft.dx - rowTopLeft.dx, 16);
+        final tokens = tester.element(rowFinder).designTokens;
+        expect(titleTopLeft.dx - rowTopLeft.dx, tokens.spacing.step4);
       },
     );
 
@@ -186,7 +270,6 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
-            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -212,26 +295,11 @@ void main() {
 
         expect(backgroundRect.left, cardRect.left);
         expect(backgroundRect.right, cardRect.right);
-        expect(
-          backgroundRect.top,
-          lessThan(
-            tester
-                .getTopLeft(
-                  find.byKey(const ValueKey('project-overview-row-p1')),
-                )
-                .dy,
-          ),
+        final rowRect = tester.getRect(
+          find.byKey(const ValueKey('project-overview-row-p1')),
         );
-        expect(
-          backgroundRect.bottom,
-          greaterThan(
-            tester
-                .getBottomLeft(
-                  find.byKey(const ValueKey('project-overview-row-p1')),
-                )
-                .dy,
-          ),
-        );
+        expect(backgroundRect.top, rowRect.top);
+        expect(backgroundRect.bottom, greaterThanOrEqualTo(rowRect.bottom));
       },
     );
 
@@ -247,11 +315,11 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
-            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
 
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
 
@@ -285,7 +353,6 @@ void main() {
               selectedProjectId: null,
               onProjectSelected: (_) {},
             ),
-            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -318,6 +385,16 @@ void main() {
           find.byKey(const ValueKey('project-group-divider-slot-0')),
           findsOneWidget,
         );
+        expect(
+          tester
+              .getSize(
+                find.byKey(
+                  const ValueKey('project-group-divider-slot-0'),
+                ),
+              )
+              .height,
+          BorderWidths.hairline,
+        );
         expect(tester.getSize(sectionFinder).height, initialHeight);
       },
     );
@@ -334,7 +411,6 @@ void main() {
               selectedProjectId: 'p1',
               onProjectSelected: (_) {},
             ),
-            overrides: noOneLinerOverrides(['p1', 'p2']),
           ),
         );
         await tester.pump();
@@ -394,7 +470,6 @@ void main() {
               ),
             ),
           ),
-          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
@@ -422,7 +497,6 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
-          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
@@ -438,8 +512,8 @@ void main() {
     });
 
     testWidgets('displays one-liner when available', (tester) async {
-      final item = makeTestProjectListItemData();
       const oneLiner = 'Steady progress; next milestone is API v2.';
+      final item = makeTestProjectListItemData(oneLiner: oneLiner);
 
       await tester.pumpWidget(
         wrap(
@@ -451,17 +525,48 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
-          overrides: [
-            projectOneLinerProvider(
-              item.project.meta.id,
-            ).overrideWith((ref) async => oneLiner),
-          ],
         ),
       );
       await tester.pump();
 
       expect(find.text(oneLiner), findsOneWidget);
       expect(find.text('Test Project'), findsOneWidget);
+      expect(tester.widget<Text>(find.text('Test Project')).maxLines, 2);
+      expect(tester.widget<Text>(find.text(oneLiner)).maxLines, 2);
+    });
+
+    testWidgets('labels an empty project without a warning-colored 0% ring', (
+      tester,
+    ) async {
+      final item = makeTestProjectListItemData(
+        totalTaskCount: 0,
+        completedTaskCount: 0,
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectRow(
+            item: item,
+            selected: false,
+            topOverlap: 0,
+            bottomOverlap: 0,
+            onHoverChanged: (_) {},
+            onTap: () {},
+          ),
+        ),
+      );
+
+      expect(
+        find.text('No tasks · Ongoing', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('0%'), findsNothing);
+      expect(
+        find.byKey(
+          ValueKey('project-row-progress-ring-${item.project.meta.id}'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('hides one-liner when null', (tester) async {
@@ -477,7 +582,6 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () {},
           ),
-          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();
@@ -486,7 +590,10 @@ void main() {
       // Only title and metadata row — no extra Text widget for one-liner.
       final textWidgets = tester.widgetList<Text>(find.byType(Text)).toList();
       final oneLinerTexts = textWidgets.where(
-        (t) => t.maxLines == 3 && t.overflow == TextOverflow.ellipsis,
+        (t) =>
+            t.maxLines == 2 &&
+            t.overflow == TextOverflow.ellipsis &&
+            t.style?.fontSize == 12,
       );
       expect(oneLinerTexts, isEmpty);
     });
@@ -505,7 +612,6 @@ void main() {
             onHoverChanged: (_) {},
             onTap: () => tapped = true,
           ),
-          overrides: noOneLinerOverrides([item.project.meta.id]),
         ),
       );
       await tester.pump();

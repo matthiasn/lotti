@@ -13,13 +13,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
-    required this.onAgentTap,
+    this.onAgentTap,
     this.playbackControl,
     super.key,
   });
 
   final String? agentName;
-  final VoidCallback onAgentTap;
+  final VoidCallback? onAgentTap;
 
   /// Riverpod-aware playback control injected by the parent card.
   final Widget? playbackControl;
@@ -49,7 +49,7 @@ class TldrHeader extends StatelessWidget {
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Semantics(
-                button: true,
+                button: onAgentTap != null,
                 label: hasName
                     ? '${messages.aiCardTitle}. $displayName'
                     : messages.aiCardTitle,
@@ -192,7 +192,7 @@ class TldrBody extends StatelessWidget {
     required this.expanded,
     required this.additionalReport,
     required this.onToggle,
-    required this.onOpenInternals,
+    this.onOpenInternals,
     super.key,
   });
 
@@ -200,7 +200,7 @@ class TldrBody extends StatelessWidget {
   final bool expanded;
   final String? additionalReport;
   final VoidCallback onToggle;
-  final VoidCallback onOpenInternals;
+  final VoidCallback? onOpenInternals;
 
   /// Reading-measure cap for the report prose. The card itself stays
   /// full-width, but body lines must not — unbounded desktop widths produce
@@ -265,11 +265,11 @@ class TldrBody extends StatelessWidget {
                   expanded: expanded,
                   onPressed: onToggle,
                 ),
-              if (expanded)
+              if (expanded && onOpenInternals != null)
                 _QuietDisclosureLink(
                   label: messages.aiCardOpenAgentInternals,
                   icon: Icons.tune_rounded,
-                  onPressed: onOpenInternals,
+                  onPressed: onOpenInternals!,
                 ),
             ],
           ),

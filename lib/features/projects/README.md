@@ -21,12 +21,20 @@ project agent is attached — a summary and health read that the agent maintains
   read. Relevant project and linked-task activity schedules one coalesced
   refresh; an idle project has no recurring wake.
 - **Is honest when it does not know.** If the agent has not produced a usable
-  health payload, no health is shown — nothing is invented locally.
+  health payload, the detail says that no health assessment exists yet —
+  nothing is invented locally. Agent health stays categorical and explains its
+  rationale. A project without an agent offers assignment in place.
 - **Groups the overview by area.** The projects tab groups projects under their
-  category with task counts and filters.
+  category with task counts and filters. It opens on current work, keeps
+  completed/archived projects behind All, prioritizes actionable work, and lets
+  each category collapse for focus. Agent one-liners load in one overview batch
+  and participate in search instead of shifting into rows one by one.
 - **Makes room to focus on one project.** On desktop, the project list can be
   hidden after a project is selected and restored without losing its filters,
   search or scroll position. The embedded detail has no misleading Back action.
+- **Keeps agent output actionable.** Recommended next steps can be resolved or
+  dismissed, and pending project changes can be confirmed or rejected directly
+  beneath the shared AI report.
 
 The whole visible experience is behind a feature flag; with it off there is no
 projects tab, no category projects section, and no project chip on tasks.
@@ -36,6 +44,8 @@ projects tab, no category projects section, and no project chip on tasks.
 Project persistence and editing; task-to-project linking; the top-level projects
 tab; both project detail pages; project health assembled from project-agent
 reports; and the filters and grouped list models the tab uses.
+Project membership is category-scoped: repository writes reject moving a
+project to another category until its linked tasks are removed.
 
 ## Where the code lives
 

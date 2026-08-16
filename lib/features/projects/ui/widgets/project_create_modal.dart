@@ -10,9 +10,14 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -20,12 +25,12 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
-import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Upper bound on the form's height as a fraction of the viewport.
@@ -205,6 +210,16 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
     setState(() => _targetDate = result.cleared ? null : result.date);
   }
 
+  Future<void> _pickCategory() async {
+    final result = await showCategoryPicker(
+      context: context,
+      title: context.messages.habitCategoryLabel,
+      currentCategoryId: _categoryId,
+    );
+    if (!mounted || result == null) return;
+    setState(() => _categoryId = result.categoryOrNull?.id);
+  }
+
   /// Finds the first available projectAgent template and provisions an agent.
   ///
   /// Accepts pre-captured service references so that provisioning succeeds
@@ -270,6 +285,13 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
+    final category = getIt<EntitiesCacheService>().getCategoryById(_categoryId);
+    final categoryColor = colorFromCssHex(
+      category?.color ?? defaultCategoryColorHex,
+    );
+    final targetDateLabel = _targetDate == null
+        ? messages.projectTargetDateLabel
+        : MaterialLocalizations.of(context).formatMediumDate(_targetDate!);
 
     return AppCommandScope(
       handlers: {
@@ -291,43 +313,60 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    LottiTextField(
+                    DesignSystemTextInput(
                       controller: _titleController,
-                      labelText: messages.projectTitleLabel,
+                      label: messages.projectTitleLabel,
+                      leadingIcon: Icons.folder_outlined,
                       autofocus: true,
                       textCapitalization: TextCapitalization.sentences,
+                      enabled: !_isSaving,
                     ),
-                    SizedBox(height: tokens.spacing.step5),
-                    CategoryField(
-                      categoryId: _categoryId,
-                      onSave: (category) =>
-                          setState(() => _categoryId = category?.id),
+                    SizedBox(height: tokens.spacing.step4),
+                    const DesignSystemDivider(),
+                    DesignSystemSelectionRow(
+                      title: messages.habitCategoryLabel,
+                      subtitle:
+                          category?.name ??
+                          messages.taskCategoryUnassignedLabel,
+                      type: DesignSystemSelectionRowType.navigation,
+                      leading: Icon(
+                        category?.icon?.iconData ?? Icons.folder_outlined,
+                        color: categoryColor,
+                      ),
+                      onTap: _isSaving ? null : _pickCategory,
                     ),
-                    SizedBox(height: tokens.spacing.step5),
-                    ProjectTargetDateField(
-                      targetDate: _targetDate,
-                      onDatePicked: _pickTargetDate,
-                      onCleared: () => setState(() => _targetDate = null),
+                    const DesignSystemDivider(),
+                    DesignSystemSelectionRow(
+                      title: messages.projectTargetDateLabel,
+                      subtitle: targetDateLabel,
+                      type: DesignSystemSelectionRowType.navigation,
+                      leading: Icon(
+                        Icons.calendar_today_outlined,
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                      onTap: _isSaving ? null : _pickTargetDate,
                     ),
                   ],
                 ),
               ),
             ),
             SizedBox(height: tokens.spacing.step6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+            DesignSystemModalActionBar(
+              layout: DesignSystemModalActionBarLayout.compactPrimary,
+              secondary: [
                 DesignSystemButton(
                   label: messages.cancelButton,
                   variant: DesignSystemButtonVariant.secondary,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                DesignSystemButton(
-                  label: messages.createButton,
-                  onPressed: _isSaving ? null : _handleCreate,
+                  onPressed: _isSaving
+                      ? null
+                      : () => Navigator.of(context).pop(),
                 ),
               ],
+              primary: DesignSystemButton(
+                label: messages.createButton,
+                fullWidth: true,
+                onPressed: _isSaving ? null : _handleCreate,
+              ),
             ),
           ],
         ),

@@ -87,7 +87,6 @@ void main() {
         ),
       ],
       onProjectTap: (_) {},
-      overrides: noOneLinerOverrides(['p1']),
     );
 
     expect(find.text('Apollo'), findsOneWidget);
@@ -112,7 +111,6 @@ void main() {
         ),
       ],
       onProjectTap: (i) => tapped = i,
-      overrides: noOneLinerOverrides(['p-tap']),
     );
 
     await tester.tap(find.text('Tap Me'));

@@ -104,7 +104,14 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // tappable-looking target that does nothing.
       onProjectTap: categoryId == null
           ? null
-          : () => _showProjectPicker(context, ref, taskId, project, categoryId),
+          : () => _showProjectPicker(
+              context,
+              ref,
+              taskId,
+              project,
+              categoryId,
+              task.meta.private ?? false,
+            ),
       onCategoryTap: () => _showCategoryPicker(context, ref, task),
       onDueDateTap: () => _showDueDatePicker(context, ref, task),
       onLabelTap: (_) => _openLabelSelector(context, ref, task),
@@ -267,6 +274,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     String taskId,
     ProjectEntry? current,
     String categoryId,
+    bool taskIsPrivate,
   ) async {
     final repository = ref.read(projectRepositoryProvider);
     await ModalUtils.showSinglePageModal<void>(
@@ -275,16 +283,16 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       padding: EdgeInsets.zero,
       builder: (_) => ProjectSelectionModalContent(
         categoryId: categoryId,
+        taskIsPrivate: taskIsPrivate,
         currentProjectId: current?.meta.id,
         onProjectSelected: (selected) async {
           if (selected == null) {
-            await repository.unlinkTaskFromProject(taskId);
-          } else {
-            await repository.linkTaskToProject(
-              projectId: selected.meta.id,
-              taskId: taskId,
-            );
+            return repository.unlinkTaskFromProject(taskId);
           }
+          return repository.linkTaskToProject(
+            projectId: selected.meta.id,
+            taskId: taskId,
+          );
         },
       ),
     );

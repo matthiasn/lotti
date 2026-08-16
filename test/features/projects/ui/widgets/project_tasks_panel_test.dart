@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
@@ -73,6 +74,68 @@ void main() {
 
       expect(find.text('Project Tasks'), findsOneWidget);
       expect(find.text('0'), findsOneWidget); // count badge
+    });
+
+    testWidgets('exposes Add task only when the action is wired', (
+      tester,
+    ) async {
+      var addRequests = 0;
+      final record = makeTestProjectRecord();
+
+      await tester.pumpWidget(wrap(ProjectTasksPanel(record: record)));
+      expect(find.text('Add task'), findsNothing);
+
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: record,
+            onAddTask: () => addRequests++,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Add task'));
+
+      expect(addRequests, 1);
+    });
+
+    testWidgets('keeps Add task visible but disabled while adding', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: makeTestProjectRecord(),
+            onAddTask: () {},
+            isAddingTask: true,
+          ),
+        ),
+      );
+
+      final button = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Add task'),
+      );
+      expect(button.isLoading, isTrue);
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('keeps Add task visible but disabled by its host', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectTasksPanel(
+            record: makeTestProjectRecord(),
+            onAddTask: () {},
+            isAddTaskEnabled: false,
+          ),
+        ),
+      );
+
+      final button = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Add task'),
+      );
+      expect(button.isLoading, isFalse);
+      expect(button.onPressed, isNull);
     });
   });
 

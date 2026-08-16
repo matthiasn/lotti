@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   widened to what the Habits page renders — the 700px column was
   needlessly narrow on desktop — while keeping their gutters on small
   screens.
+- **Projects now read like an intentional workspace.** Current work opens first,
+  completed and archived projects sit behind All, actionable projects sort to
+  the top, category groups collapse for focus, and the list uses the same
+  connected-row rhythm as Tasks instead of a stack of separate capsules. Project
+  details reuse Task Details' quiet category breadcrumb, metadata pills, and one
+  unified agent card — including report expansion, Run now, countdown, automatic
+  updates, model setup, and agent internals — rather than inventing a second
+  interaction model. They also show the description and Add task action, use
+  real edit/archive/delete controls, and present only agent-authored health with
+  a clear unassessed state when no report exists. The create and edit flows use
+  the same adaptive pickers and action bars as Tasks; changing category moves
+  the project, linked work, and project-agent permissions together, restoring
+  the original state if any part cannot be moved. Visible agent summaries arrive
+  with the list and participate in project search instead of shifting into rows
+  one at a time.
 
 ## [1.0.10]
 ### Added
@@ -9825,7 +9840,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.322] - 2023-04-16
 ### Changed:
-- Fluttium screenshots are pushed to lotti-docs repository
+- Fluttium screenshots are pushed to legacy-media repository
 
 ## [0.8.321] - 2023-04-15
 ### Changed:

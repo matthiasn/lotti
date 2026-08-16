@@ -20,7 +20,7 @@ void main() {
   Future<void> pumpModalContentWithLoader(
     WidgetTester tester, {
     required Future<List<ProjectEntry>> Function() loadProjects,
-    required Future<void> Function(ProjectEntry? project) onProjectSelected,
+    required Future<bool> Function(ProjectEntry? project) onProjectSelected,
     String? currentProjectId,
   }) async {
     await tester.pumpWidget(
@@ -30,6 +30,7 @@ void main() {
             builder: (_) => Scaffold(
               body: ProjectSelectionModalContent(
                 categoryId: categoryId,
+                taskIsPrivate: false,
                 onProjectSelected: onProjectSelected,
                 currentProjectId: currentProjectId,
               ),
@@ -50,7 +51,7 @@ void main() {
   Future<void> pumpModalContent(
     WidgetTester tester, {
     required List<ProjectEntry> projects,
-    required Future<void> Function(ProjectEntry? project) onProjectSelected,
+    required Future<bool> Function(ProjectEntry? project) onProjectSelected,
     String? currentProjectId,
   }) => pumpModalContentWithLoader(
     tester,
@@ -70,7 +71,7 @@ void main() {
             builder: (_) => Scaffold(
               body: ProjectSelectionModalBody(
                 projectsAsync: projectsAsync,
-                onProjectSelected: (_) async {},
+                onProjectSelected: (_) async => true,
               ),
             ),
           ),
@@ -85,7 +86,7 @@ void main() {
       await pumpModalContent(
         tester,
         projects: [],
-        onProjectSelected: (_) async {},
+        onProjectSelected: (_) async => true,
       );
 
       expect(find.text('No project'), findsOneWidget);
@@ -115,7 +116,7 @@ void main() {
       await pumpModalContent(
         tester,
         projects: projects,
-        onProjectSelected: (_) async {},
+        onProjectSelected: (_) async => true,
       );
 
       expect(find.text('Project Alpha'), findsOneWidget);
@@ -142,7 +143,7 @@ void main() {
         tester,
         projects: [project],
         currentProjectId: project.meta.id,
-        onProjectSelected: (_) async {},
+        onProjectSelected: (_) async => true,
       );
 
       final noneRow = tester.widget<DesignSystemSelectionRow>(
@@ -161,7 +162,7 @@ void main() {
       await pumpModalContentWithLoader(
         tester,
         loadProjects: () => pending.future,
-        onProjectSelected: (_) async {},
+        onProjectSelected: (_) async => true,
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
@@ -194,9 +195,11 @@ void main() {
               categoryId: categoryId,
             ),
           ],
+          currentProjectId: 'p-1',
           onProjectSelected: (project) async {
             callbackCalled = true;
             selectedProject = project;
+            return true;
           },
         );
 
@@ -207,6 +210,33 @@ void main() {
         expect(selectedProject, isNull);
       },
     );
+
+    testWidgets('skips mutation when the selection is unchanged', (
+      tester,
+    ) async {
+      var callbackCalls = 0;
+      await pumpModalContent(
+        tester,
+        projects: [],
+        onProjectSelected: (_) async {
+          callbackCalls++;
+          return true;
+        },
+      );
+
+      await tester.tap(find.text('No project'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(callbackCalls, 0);
+      expect(
+        find.text(
+          "Could not change this task's project. Check its category and "
+          'privacy, then try again.',
+        ),
+        findsNothing,
+      );
+    });
 
     testWidgets(
       'calls onProjectSelected with project when project tapped',
@@ -225,6 +255,7 @@ void main() {
           onProjectSelected: (p) async {
             callbackCalled = true;
             selectedProject = p;
+            return true;
           },
         );
 
@@ -241,7 +272,7 @@ void main() {
     testWidgets('does not pop after the content is unmounted mid-selection', (
       tester,
     ) async {
-      final callback = Completer<void>();
+      final callback = Completer<bool>();
       await pumpModalContent(
         tester,
         projects: [],
@@ -250,10 +281,66 @@ void main() {
 
       await tester.tap(find.text('No project'));
       await tester.pumpWidget(const SizedBox.shrink());
-      callback.complete();
+      callback.complete(true);
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps the picker open and explains a rejected selection', (
+      tester,
+    ) async {
+      final project = makeTestProject(
+        id: 'p-rejected',
+        title: 'Rejected project',
+        categoryId: categoryId,
+      );
+
+      await pumpModalContent(
+        tester,
+        projects: [project],
+        onProjectSelected: (_) async => false,
+      );
+
+      await tester.tap(find.text('Rejected project'));
+      await tester.pump();
+
+      expect(find.text('Rejected project'), findsOneWidget);
+      expect(
+        find.text(
+          "Could not change this task's project. Check its category and "
+          'privacy, then try again.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('surfaces callback failures without dismissing the picker', (
+      tester,
+    ) async {
+      final project = makeTestProject(
+        id: 'p-throws',
+        title: 'Throwing project',
+        categoryId: categoryId,
+      );
+
+      await pumpModalContent(
+        tester,
+        projects: [project],
+        onProjectSelected: (_) => throw StateError('sync changed'),
+      );
+
+      await tester.tap(find.text('Throwing project'));
+      await tester.pump();
+
+      expect(find.text('Throwing project'), findsOneWidget);
+      expect(
+        find.text(
+          "Could not change this task's project. Check its category and "
+          'privacy, then try again.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

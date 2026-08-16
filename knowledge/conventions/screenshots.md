@@ -47,7 +47,7 @@ The enforcement is thin, so know it: `.gitignore` ignores any directory named
 lands somewhere ignored by default — but an image saved anywhere else **will**
 be committed if you `git add` it.
 
-# Three destinations, three lifecycles
+# Two destinations, two lifecycles
 
 Which home an image belongs in follows from who regenerates it:
 
@@ -55,7 +55,6 @@ Which home an image belongs in follows from who regenerates it:
 |-------------|----------|-----------|
 | R2 bucket, `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` and published by the `manual.yml` CI lane; never hand-edited or renamed. `development/` is refreshed with deletion (retired cases disappear), numbered release prefixes are immutable — publishing refuses to overwrite an existing manifest. The app `README.md` embeds from this catalog too, so its screenshots age with the app rather than with whoever last remembered to retake them |
 | R2 bucket, `pr-screenshots/<topic-slug>/<app-commit>/` | **Review evidence** for a pull request | Published from an external capture directory by `make pr_screenshots_publish`. Objects are immutable: an identical retry is a no-op, while changed pixels require a new filename or commit prefix |
-| `lotti-docs`: `images/<app-version>/` | Existing hand-picked release imagery and historical review captures | Legacy archive only; new PR evidence does not require a branch, commit, or pull request in this repository |
 
 `make manual_screenshots` stages captures and the materialized catalog under
 the gitignored `build/manual_capture/` and `build/manual_media/` directories;
@@ -137,18 +136,6 @@ Link the printed public URLs from the pull-request body. A contributor without
 R2 credentials should attach images through GitHub's own upload instead. What
 is not acceptable is committing generated screenshots to this repository,
 overwriting a published review object, or omitting the before state.
-
-# Honest state of the existing tree
-
-The historical `lotti-docs/pr-screenshots/` tree holds about 1,100 files across
-roughly 37 topics, and it is **not** uniform: 24 topics have an `after/` while
-only 14 have a `before/`, some put files directly in the topic directory, and
-one-off subdirectory names (`baseline/`, `current/`, `reference/`, `variants/`)
-appear where a pair was not the shape of the question.
-
-Read that as the convention arriving after the practice rather than as licence.
-The `before/` + `after/` pair above is what new work should produce; the older
-shapes are history, not the R2 contract for new work.
 
 # Related
 

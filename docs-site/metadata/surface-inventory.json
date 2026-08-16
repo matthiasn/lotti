@@ -123,6 +123,19 @@
       "status": "verified"
     },
     {
+      "id": "project-editor",
+      "title": "Project editor",
+      "kind": "route-page",
+      "source": "lib/beamer/locations/projects_location.dart",
+      "sourcePattern": "'/projects/:projectId/edit'",
+      "locator": "/projects/:projectId/edit",
+      "routes": [
+        "/projects/:projectId/edit"
+      ],
+      "page": "organize-and-reflect/projects",
+      "status": "verified"
+    },
+    {
       "id": "events-list",
       "title": "Events overview",
       "kind": "route-page",

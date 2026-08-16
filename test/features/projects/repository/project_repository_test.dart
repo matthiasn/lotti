@@ -8,7 +8,12 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -25,8 +30,73 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/entity_factories.dart';
+import '../../agents/test_data/link_factories.dart';
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
+
+class _TransactionTrackingJournalDb extends MockJournalDb {
+  _TransactionTrackingJournalDb({
+    required this.rows,
+    this.onTransactionStart,
+  });
+
+  final Map<String, JournalDbEntity> rows;
+  final void Function()? onTransactionStart;
+  bool entityReadInsideTransaction = false;
+  bool taskReadInsideTransaction = false;
+  bool _insideTransaction = false;
+  bool get insideTransaction => _insideTransaction;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) async {
+    onTransactionStart?.call();
+    _insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      _insideTransaction = false;
+    }
+  }
+
+  @override
+  Future<JournalDbEntity?> entityById(String id) async {
+    entityReadInsideTransaction |= _insideTransaction;
+    return rows[id];
+  }
+
+  @override
+  Future<JournalEntity?> journalEntityById(String id) async {
+    final row = rows[id];
+    return row == null ? null : fromDbEntity(row);
+  }
+
+  @override
+  Future<Set<String>> getTaskIdsForProjects(Set<String> projectIds) async {
+    taskReadInsideTransaction |= _insideTransaction;
+    return const {};
+  }
+}
+
+class _RollbackTrackingJournalDb extends MockJournalDb {
+  bool rolledBack = false;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) async {
+    try {
+      return await action();
+    } catch (_) {
+      rolledBack = true;
+      rethrow;
+    }
+  }
+}
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -39,6 +109,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late StreamController<Set<String>> updateStreamController;
   late ProjectRepository repository;
+  late bool hasActiveProjectAgent;
 
   final projectMeta = Metadata(
     id: 'project-001',
@@ -115,6 +186,7 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockOutboxService = MockOutboxService();
     updateStreamController = StreamController<Set<String>>.broadcast();
+    hasActiveProjectAgent = false;
 
     // Register OutboxService via the central helper (used by
     // _enqueueLinkSync); setUpTestGetIt owns reset + base registrations.
@@ -135,11 +207,23 @@ void main() {
     when(() => mockNotifications.notify(any())).thenReturn(null);
     when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
     when(
+      () => mockDb.getProjectLinkForTask(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      mockVectorClockService.getNextVectorClock,
+    ).thenAnswer((_) async => const VectorClock({'d': 1}));
+    when(
       () => mockDb.journalEntityById('project-001'),
     ).thenAnswer((_) async => projectEntry);
     when(
       () => mockDb.journalEntityById('task-001'),
     ).thenAnswer((_) async => taskEntry);
+    when(
+      () => mockDb.entityById('project-001'),
+    ).thenAnswer((_) async => toDbEntity(projectEntry));
+    when(
+      () => mockDb.entityById('task-001'),
+    ).thenAnswer((_) async => toDbEntity(taskEntry));
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
@@ -159,6 +243,7 @@ void main() {
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
       vectorClockService: mockVectorClockService,
+      projectHasActiveAgent: (_) async => hasActiveProjectAgent,
       // Collapse the refetch debounce so the stream-matcher tests below see
       // notification-driven refetches without waiting on a real timer. The
       // debounce timing itself is covered by a dedicated fakeAsync test.
@@ -169,6 +254,68 @@ void main() {
   tearDown(() async {
     await updateStreamController.close();
     await tearDownTestGetIt();
+  });
+
+  group('projectHasActiveAgent', () {
+    test('returns false when the agent store is unavailable', () async {
+      if (getIt.isRegistered<AgentDatabase>()) {
+        await getIt.unregister<AgentDatabase>();
+      }
+
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+    });
+
+    test('recognizes only live project-agent identities', () async {
+      if (getIt.isRegistered<AgentDatabase>()) {
+        await getIt.unregister<AgentDatabase>();
+      }
+      final agentDatabase = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+      getIt.registerSingleton<AgentDatabase>(agentDatabase);
+      addTearDown(() async {
+        if (getIt.isRegistered<AgentDatabase>()) {
+          await getIt.unregister<AgentDatabase>();
+        }
+        await agentDatabase.close();
+      });
+      final agentRepository = AgentRepository(agentDatabase);
+      await agentRepository.upsertLink(
+        makeTestAgentProjectLink(
+          fromId: 'candidate-agent',
+        ),
+      );
+
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+          kind: AgentKinds.projectAgent,
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isTrue);
+
+      await agentRepository.upsertEntity(
+        makeTestIdentity(
+          id: 'candidate-agent',
+          agentId: 'candidate-agent',
+          kind: AgentKinds.projectAgent,
+          lifecycle: AgentLifecycle.destroyed,
+        ),
+      );
+      expect(await projectHasActiveAgent('project-001'), isFalse);
+    });
   });
 
   group('getProjectById', () {
@@ -732,6 +879,9 @@ void main() {
     });
 
     test('returns false when persistence fails', () async {
+      final changedProject = projectEntry.copyWith(
+        data: projectEntry.data.copyWith(title: 'Changed title'),
+      );
       final updatedMeta = projectMeta.copyWith(
         updatedAt: DateTime(2024, 3, 16),
         vectorClock: const VectorClock({'device-1': 2}),
@@ -742,11 +892,11 @@ void main() {
       ).thenAnswer((_) async => updatedMeta);
       when(
         () => mockPersistence.updateDbEntity(
-          projectEntry.copyWith(meta: updatedMeta),
+          changedProject.copyWith(meta: updatedMeta),
         ),
       ).thenAnswer((_) async => false);
 
-      final result = await repository.updateProject(projectEntry);
+      final result = await repository.updateProject(changedProject);
 
       expect(result, isFalse);
       verifyNever(() => mockNotifications.notify(any()));
@@ -755,6 +905,9 @@ void main() {
     test('returns false when persistence returns null', () async {
       // Exercises the `result ?? false` coalescing branch: a null result
       // must be treated as failure — no notification is emitted.
+      final changedProject = projectEntry.copyWith(
+        data: projectEntry.data.copyWith(title: 'Changed title'),
+      );
       final updatedMeta = projectMeta.copyWith(
         updatedAt: DateTime(2024, 3, 16),
         vectorClock: const VectorClock({'device-1': 2}),
@@ -765,15 +918,272 @@ void main() {
       ).thenAnswer((_) async => updatedMeta);
       when(
         () => mockPersistence.updateDbEntity(
-          projectEntry.copyWith(meta: updatedMeta),
+          changedProject.copyWith(meta: updatedMeta),
         ),
       ).thenAnswer((_) async => null);
 
-      final result = await repository.updateProject(projectEntry);
+      final result = await repository.updateProject(changedProject);
 
       expect(result, isFalse);
       verifyNever(() => mockNotifications.notify(any()));
     });
+
+    test(
+      'accepts a matching row when persistence reports late failure',
+      () async {
+        final changedProject = projectEntry.copyWith(
+          data: projectEntry.data.copyWith(title: 'Committed title'),
+        );
+        final updatedMeta = projectMeta.copyWith(
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: const VectorClock({'device-1': 2}),
+        );
+        final committedProject = changedProject.copyWith(meta: updatedMeta);
+        var readCount = 0;
+        when(
+          () => mockDb.entityById(projectEntry.id),
+        ).thenAnswer(
+          (_) async => toDbEntity(
+            readCount++ == 0 ? projectEntry : committedProject,
+          ),
+        );
+        when(
+          () => mockPersistence.updateMetadata(projectMeta),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(committedProject),
+        ).thenAnswer((_) async => false);
+
+        final result = await repository.updateProject(changedProject);
+
+        expect(result, isTrue);
+        verify(
+          () => mockNotifications.notify({
+            projectEntityUpdateNotification(projectEntry.id),
+          }),
+        ).called(1);
+      },
+    );
+
+    test('rejects category changes while tasks remain linked', () async {
+      final movedProject = projectEntry.copyWith(
+        meta: projectMeta.copyWith(categoryId: 'cat-2'),
+      );
+      when(
+        () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+      ).thenAnswer((_) async => {taskEntry.id});
+
+      final result = await repository.updateProject(movedProject);
+
+      expect(result, isFalse);
+      verifyNever(() => mockPersistence.updateMetadata(any()));
+      verifyNever(() => mockPersistence.updateDbEntity(any()));
+      verifyNever(() => mockNotifications.notify(any()));
+    });
+
+    test(
+      'rejects category changes while a project agent remains active',
+      () async {
+        hasActiveProjectAgent = true;
+        final movedProject = projectEntry.copyWith(
+          meta: projectMeta.copyWith(categoryId: 'cat-2'),
+        );
+        when(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).thenAnswer((_) async => const {});
+
+        final result = await repository.updateProject(movedProject);
+
+        expect(result, isFalse);
+        verifyNever(() => mockPersistence.updateMetadata(any()));
+        verifyNever(() => mockPersistence.updateDbEntity(any()));
+        verifyNever(() => mockNotifications.notify(any()));
+      },
+    );
+
+    test(
+      'rejects category changes when private linked tasks are hidden',
+      () async {
+        final privateProject = projectEntry.copyWith(
+          meta: projectMeta.copyWith(private: true),
+        );
+        final movedProject = privateProject.copyWith(
+          meta: privateProject.meta.copyWith(categoryId: 'cat-2'),
+        );
+        when(
+          () => mockDb.entityById(projectEntry.id),
+        ).thenAnswer((_) async => toDbEntity(privateProject));
+        when(
+          () => mockDb.getTasksForProject(projectEntry.id),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).thenAnswer((_) async => {taskEntry.id});
+
+        final result = await repository.updateProject(movedProject);
+
+        expect(result, isFalse);
+        verify(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).called(1);
+        verifyNever(() => mockDb.getTasksForProject(any()));
+        verifyNever(() => mockPersistence.updateMetadata(any()));
+        verifyNever(() => mockPersistence.updateDbEntity(any()));
+        verifyNever(() => mockNotifications.notify(any()));
+      },
+    );
+
+    test('checks category membership and writes in one transaction', () async {
+      final trackingDb = _TransactionTrackingJournalDb(
+        rows: {projectEntry.id: toDbEntity(projectEntry)},
+      );
+      final movedProject = projectEntry.copyWith(
+        meta: projectMeta.copyWith(categoryId: 'cat-2'),
+      );
+      final updatedMeta = movedProject.meta.copyWith(
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: const VectorClock({'device-1': 2}),
+      );
+      var writeInsideTransaction = false;
+      when(
+        () => mockPersistence.updateMetadata(movedProject.meta),
+      ).thenAnswer((_) async => updatedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          movedProject.copyWith(meta: updatedMeta),
+        ),
+      ).thenAnswer((_) async {
+        writeInsideTransaction = trackingDb.insideTransaction;
+        return true;
+      });
+      final trackingRepository = ProjectRepository(
+        journalDb: trackingDb,
+        entitiesCacheService: mockEntitiesCacheService,
+        persistenceLogic: mockPersistence,
+        updateNotifications: mockNotifications,
+        vectorClockService: mockVectorClockService,
+      );
+
+      final result = await trackingRepository.updateProject(movedProject);
+
+      expect(result, isTrue);
+      expect(trackingDb.entityReadInsideTransaction, isTrue);
+      expect(trackingDb.taskReadInsideTransaction, isTrue);
+      expect(writeInsideTransaction, isTrue);
+    });
+  });
+
+  group('deleteProject', () {
+    test('soft-deletes, persists, and notifies the project scope', () async {
+      final deletedMeta = projectMeta.copyWith(
+        updatedAt: testDate.add(const Duration(minutes: 1)),
+        deletedAt: testDate,
+      );
+      when(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).thenAnswer((_) async => deletedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.deleteProject(
+        projectEntry,
+        deletedAt: testDate,
+      );
+
+      expect(result, isTrue);
+      verify(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).called(1);
+      verify(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).called(1);
+      verify(
+        () => mockNotifications.notify({
+          projectEntityUpdateNotification(projectEntry.id),
+        }),
+      ).called(1);
+    });
+
+    test('does not notify when persistence rejects the delete', () async {
+      final deletedMeta = projectMeta.copyWith(deletedAt: testDate);
+      when(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).thenAnswer((_) async => deletedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockDb.journalEntityById(projectEntry.id),
+      ).thenAnswer((_) async => projectEntry);
+
+      final result = await repository.deleteProject(
+        projectEntry,
+        deletedAt: testDate,
+      );
+
+      expect(result, isFalse);
+      verify(
+        () => mockPersistence.updateMetadata(
+          projectMeta,
+          deletedAt: testDate,
+        ),
+      ).called(1);
+      verify(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: deletedMeta),
+        ),
+      ).called(1);
+      verifyNever(() => mockNotifications.notify(any()));
+    });
+
+    test(
+      'accepts a false result when the project tombstone committed',
+      () async {
+        final deletedMeta = projectMeta.copyWith(deletedAt: testDate);
+        when(
+          () => mockPersistence.updateMetadata(
+            projectMeta,
+            deletedAt: testDate,
+          ),
+        ).thenAnswer((_) async => deletedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(
+            projectEntry.copyWith(meta: deletedMeta),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDb.journalEntityById(projectEntry.id),
+        ).thenAnswer((_) async => null);
+
+        final result = await repository.deleteProject(
+          projectEntry,
+          deletedAt: testDate,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockNotifications.notify({
+            projectEntityUpdateNotification(projectEntry.id),
+          }),
+        ).called(1);
+      },
+    );
   });
 
   group('linkTaskToProject', () {
@@ -828,8 +1238,8 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('task-cross'),
-      ).thenAnswer((_) async => crossCategoryTask);
+        () => mockDb.entityById('task-cross'),
+      ).thenAnswer((_) async => toDbEntity(crossCategoryTask));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-001',
@@ -837,6 +1247,53 @@ void main() {
       );
 
       expect(result, isFalse);
+    });
+
+    test('rejects linking when project and task privacy differ', () async {
+      final privateProject = projectEntry.copyWith(
+        meta: projectEntry.meta.copyWith(private: true),
+      );
+      when(
+        () => mockDb.entityById('project-private'),
+      ).thenAnswer((_) async => toDbEntity(privateProject));
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-private',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      verify(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).called(1);
+      verifyNever(() => mockDb.upsertEntryLink(any()));
+    });
+
+    test('treats null and false privacy as the same public value', () async {
+      final explicitlyPublicTask = Task(
+        meta: taskMeta.copyWith(private: false),
+        data: taskEntry.data,
+      );
+      when(
+        () => mockDb.entityById('task-explicitly-public'),
+      ).thenAnswer((_) async => toDbEntity(explicitlyPublicTask));
+      when(
+        () => mockDb.getProjectLinkForTask('task-explicitly-public'),
+      ).thenAnswer((_) async => null);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-explicitly-public',
+      );
+
+      expect(result, isTrue);
+      final link =
+          verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+              as EntryLink;
+      expect(link.toId, 'task-explicitly-public');
     });
 
     test('rejects non-Task entity', () async {
@@ -847,8 +1304,8 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => noteEntry);
+        () => mockDb.entityById('task-001'),
+      ).thenAnswer((_) async => toDbEntity(noteEntry));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-001',
@@ -861,7 +1318,7 @@ void main() {
 
     test('returns false when project does not exist', () async {
       when(
-        () => mockDb.journalEntityById('missing'),
+        () => mockDb.entityById('missing'),
       ).thenAnswer((_) async => null);
 
       final result = await repository.linkTaskToProject(
@@ -874,7 +1331,7 @@ void main() {
 
     test('returns false when task does not exist', () async {
       when(
-        () => mockDb.journalEntityById('missing'),
+        () => mockDb.entityById('missing'),
       ).thenAnswer((_) async => null);
 
       final result = await repository.linkTaskToProject(
@@ -903,6 +1360,50 @@ void main() {
       verifyNever(() => mockNotifications.notify(any()));
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
+
+    test(
+      'revalidates privacy in the same transaction as a new link write',
+      () async {
+        final rows = <String, JournalDbEntity>{
+          projectEntry.id: toDbEntity(projectEntry),
+          taskEntry.id: toDbEntity(taskEntry),
+        };
+        final trackingDb = _TransactionTrackingJournalDb(
+          rows: rows,
+          onTransactionStart: () {
+            final privateProject = projectEntry.copyWith(
+              meta: projectEntry.meta.copyWith(private: true),
+            );
+            rows[projectEntry.id] = toDbEntity(privateProject);
+          },
+        );
+        when(
+          () => trackingDb.getProjectLinkForTask(taskEntry.id),
+        ).thenAnswer((_) async => null);
+        when(
+          () => trackingDb.upsertEntryLink(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+        final trackingRepository = ProjectRepository(
+          journalDb: trackingDb,
+          entitiesCacheService: mockEntitiesCacheService,
+          persistenceLogic: mockPersistence,
+          updateNotifications: mockNotifications,
+          vectorClockService: mockVectorClockService,
+        );
+
+        final result = await trackingRepository.linkTaskToProject(
+          projectId: projectEntry.id,
+          taskId: taskEntry.id,
+        );
+
+        expect(result, isFalse);
+        expect(trackingDb.entityReadInsideTransaction, isTrue);
+        verifyNever(() => trackingDb.upsertEntryLink(any()));
+      },
+    );
 
     test('returns true if task is already linked to same project', () async {
       final existingLink = EntryLink.project(
@@ -1016,8 +1517,9 @@ void main() {
     );
 
     test(
-      'returns false when insert fails after soft-delete in transaction',
+      'rolls back the soft-delete when relink insertion fails',
       () async {
+        final rollbackDb = _RollbackTrackingJournalDb();
         final oldLink = EntryLink.project(
           id: 'link-old',
           fromId: 'project-old',
@@ -1027,12 +1529,18 @@ void main() {
           vectorClock: null,
         );
 
+        when(() => rollbackDb.entityById('project-001')).thenAnswer(
+          (_) async => toDbEntity(projectEntry),
+        );
+        when(() => rollbackDb.entityById('task-001')).thenAnswer(
+          (_) async => toDbEntity(taskEntry),
+        );
         when(
-          () => mockDb.getProjectLinkForTask('task-001'),
+          () => rollbackDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         // First call (soft-delete) succeeds, second call (insert) fails
         var callCount = 0;
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async {
+        when(() => rollbackDb.upsertEntryLink(any())).thenAnswer((_) async {
           callCount++;
           return callCount == 1 ? 1 : 0;
         });
@@ -1040,14 +1548,22 @@ void main() {
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
 
-        final result = await repository.linkTaskToProject(
+        final rollbackRepository = ProjectRepository(
+          journalDb: rollbackDb,
+          entitiesCacheService: mockEntitiesCacheService,
+          persistenceLogic: mockPersistence,
+          updateNotifications: mockNotifications,
+          vectorClockService: mockVectorClockService,
+        );
+
+        final result = await rollbackRepository.linkTaskToProject(
           projectId: 'project-001',
           taskId: 'task-001',
         );
 
         expect(result, isFalse);
-        // Both writes were attempted inside transaction
-        verify(() => mockDb.upsertEntryLink(any())).called(2);
+        expect(rollbackDb.rolledBack, isTrue);
+        verify(() => rollbackDb.upsertEntryLink(any())).called(2);
         // No side effects — transaction failed
         verifyNever(() => mockNotifications.notify(any()));
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
@@ -1664,7 +2180,7 @@ void main() {
       );
 
       expect(result, isFalse);
-      verifyNever(() => mockDb.journalEntityById(any()));
+      verifyNever(() => mockDb.entityById(any()));
     });
 
     test('links new task to the source task project when found', () async {
@@ -1678,8 +2194,8 @@ void main() {
         data: taskEntry.data,
       );
       when(
-        () => mockDb.journalEntityById('new-task'),
-      ).thenAnswer((_) async => newTaskEntry);
+        () => mockDb.entityById('new-task'),
+      ).thenAnswer((_) async => toDbEntity(newTaskEntry));
       when(
         () => mockDb.getProjectLinkForTask('new-task'),
       ).thenAnswer((_) async => null);

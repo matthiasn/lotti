@@ -83,7 +83,7 @@
   nothing constrains its transitions, and which nine of `lib/widgets/`'s sixteen
   groups the shared-widgets concept omits.
 * **Creation**: Added [screenshots](conventions/screenshots.md) — where captured
-  images live (the sibling `lotti-docs` repo, never here), its three destinations
+  images live (the sibling `legacy-media` repo, never here), its three destinations
   and their lifecycles, and the before/after pair a UI pull request carries. The
   practice held ~1,100 files across 37 topics and was documented nowhere.
 * **Update**: Gave [the root index](index.md) a reading order, an authority

@@ -38,9 +38,9 @@ test('the screenshot contract requires the complete viewport and theme matrix', 
   assert.deepEqual(errors, ['settings/home is missing desktop-dark.']);
 });
 
-test('unmanaged lotti-docs images are rejected outside code examples', () => {
+test('unmanaged repository images are rejected outside code examples', () => {
   const legacyUrl =
-    'https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/old.png';
+    'https://raw.githubusercontent.com/example/media/main/images/old.png';
   const source = [
     `![Old screenshot](${legacyUrl})`,
     `\`![Example only](${legacyUrl})\``,

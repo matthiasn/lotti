@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -211,6 +213,8 @@ void main() {
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
+      projectScopeIsCurrent: (_, _) async => true,
+      mutationCoordinator: ProjectAgentMutationCoordinator(),
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
       onPersistedStateChanged: notifiedAgentIds.add,
@@ -219,6 +223,78 @@ void main() {
 
   group('ProjectAgentService', () {
     group('createProjectAgent', () {
+      test(
+        'rejects a stale project category before creating an agent',
+        () async {
+          final scopedService = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+            projectScopeIsCurrent: (_, categoryIds) async =>
+                categoryIds.contains('current-category'),
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
+          );
+
+          await expectLater(
+            () => scopedService.createProjectAgent(
+              projectId: 'project-with-new-category',
+              templateId: kTestTemplateId,
+              displayName: 'Stale scope',
+              allowedCategoryIds: const {'old-category'},
+            ),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rejects a template whose synced category no longer matches',
+        () async {
+          final staleTemplate = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+            categoryIds: const {'old-category'},
+          );
+          when(
+            () => mockRepository.getLinksTo(
+              'project-with-new-category',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => staleTemplate);
+
+          await expectLater(
+            () => service.createProjectAgent(
+              projectId: 'project-with-new-category',
+              templateId: kTestTemplateId,
+              displayName: 'Fresh template check',
+              allowedCategoryIds: const {'new-category'},
+            ),
+            throwsA(isA<StateError>()),
+          );
+
+          verifyNever(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          );
+        },
+      );
+
       glados.Glados(
         glados.any.projectAgentCreateScenario,
         glados.ExploreConfig(numRuns: 180),
@@ -233,6 +309,8 @@ void main() {
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
           syncService: generatedSyncService,
+          projectScopeIsCurrent: (_, _) async => true,
+          mutationCoordinator: ProjectAgentMutationCoordinator(),
           onPersistedStateChanged: generatedNotifiedAgentIds.add,
         );
         const projectId = 'generated-project';
@@ -558,6 +636,79 @@ void main() {
       });
 
       test(
+        'deletes a newly created agent when the project is tombstoned',
+        () async {
+          final identity = makeIdentity();
+          final template = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+          );
+          var existenceChecks = 0;
+          final compensatingService = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+            projectScopeIsCurrent: (_, _) async => existenceChecks++ == 0,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
+            onPersistedStateChanged: notifiedAgentIds.add,
+          );
+          when(
+            () => mockRepository.getLinksTo(
+              'project-deleted-by-sync',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => makeState());
+          when(
+            () => mockAgentService.deleteAgent(identity.agentId),
+          ).thenAnswer((_) async {});
+
+          await expectLater(
+            () => compensatingService.createProjectAgent(
+              projectId: 'project-deleted-by-sync',
+              templateId: kTestTemplateId,
+              displayName: 'Orphan prevention',
+              allowedCategoryIds: const {},
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                contains('project-deleted-by-sync'),
+              ),
+            ),
+          );
+
+          expect(existenceChecks, 2);
+          verify(
+            () => mockAgentService.deleteAgent(identity.agentId),
+          ).called(1);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+          expect(notifiedAgentIds, isEmpty);
+        },
+      );
+
+      test(
         'persists a one-shot fallback for the explicit creation wake',
         () async {
           final identity = makeIdentity();
@@ -858,6 +1009,35 @@ void main() {
       );
     });
 
+    test(
+      'serializes same-project mutations without blocking other projects',
+      () async {
+        final coordinator = ProjectAgentMutationCoordinator();
+        final firstStarted = Completer<void>();
+        final releaseFirst = Completer<void>();
+        final order = <String>[];
+
+        final first = coordinator.run('project-1', () async {
+          order.add('first-start');
+          firstStarted.complete();
+          await releaseFirst.future;
+          order.add('first-end');
+        });
+        await firstStarted.future;
+        final second = coordinator.run('project-1', () async {
+          order.add('second');
+        });
+        await coordinator.run('project-2', () async {
+          order.add('other-project');
+        });
+
+        expect(order, ['first-start', 'other-project']);
+        releaseFirst.complete();
+        await Future.wait([first, second]);
+        expect(order, ['first-start', 'other-project', 'first-end', 'second']);
+      },
+    );
+
     group('getProjectAgentForProject', () {
       test('returns identity via link lookup', () async {
         final link = AgentLink.agentProject(
@@ -923,6 +1103,207 @@ void main() {
         final result = await service.getProjectAgentForProject('project-1');
 
         expect(result, isNull);
+      });
+    });
+
+    group('getProjectAgentsForProject', () {
+      test('returns every unique live linked project agent', () async {
+        final olderDate = kAgentTestDate.subtract(const Duration(days: 1));
+        final links = [
+          AgentLink.agentProject(
+            id: 'link-new',
+            fromId: 'agent-new',
+            toId: 'project-1',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-old',
+            fromId: 'agent-old',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-old-duplicate',
+            fromId: 'agent-old',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-destroyed',
+            fromId: 'agent-destroyed',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+        ];
+        final newer = makeIdentity(agentId: 'agent-new');
+        final older = makeIdentity(
+          agentId: 'agent-old',
+          lifecycle: AgentLifecycle.dormant,
+        );
+        final destroyed = makeIdentity(
+          agentId: 'agent-destroyed',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => links);
+        when(
+          () => mockRepository.getEntitiesByIds([
+            'agent-new',
+            'agent-old',
+            'agent-destroyed',
+          ]),
+        ).thenAnswer(
+          (_) async => {
+            newer.id: newer,
+            older.id: older,
+            destroyed.id: destroyed,
+          },
+        );
+
+        final result = await service.getProjectAgentsForProject('project-1');
+
+        expect(result.map((identity) => identity.agentId), [
+          'agent-new',
+          'agent-old',
+        ]);
+      });
+    });
+
+    group('project category scopes', () {
+      test(
+        'updates every live project-agent scope and returns prior scopes',
+        () async {
+          final first = makeIdentity().copyWith(
+            allowedCategoryIds: const {'old-1'},
+          );
+          final second = makeIdentity(agentId: 'agent-2').copyWith(
+            allowedCategoryIds: const {'old-2'},
+          );
+          final links = [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: first.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: second.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ];
+          when(
+            () => mockRepository.getLinksTo(
+              'project-1',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => links);
+          when(
+            () => mockRepository.getEntitiesByIds(any()),
+          ).thenAnswer(
+            (_) async => {first.agentId: first, second.agentId: second},
+          );
+
+          final previous = await service.updateProjectAgentScopes(
+            projectId: 'project-1',
+            allowedCategoryIds: const {'new-category'},
+          );
+
+          expect(previous, {
+            first.agentId: {'old-1'},
+            second.agentId: {'old-2'},
+          });
+          final writes = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.whereType<AgentIdentityEntity>().toList();
+          expect(writes, hasLength(2));
+          expect(
+            writes.map((identity) => identity.allowedCategoryIds),
+            everyElement(const {'new-category'}),
+          );
+          expect(notifiedAgentIds.first, 'project-1');
+          expect(notifiedAgentIds.skip(1).toSet(), {
+            first.agentId,
+            second.agentId,
+          });
+        },
+      );
+
+      test('restores the captured scope for each surviving identity', () async {
+        final first = makeIdentity().copyWith(
+          allowedCategoryIds: const {'new-category'},
+        );
+        final second = makeIdentity(agentId: 'agent-2').copyWith(
+          allowedCategoryIds: const {'new-category'},
+        );
+        when(
+          () => mockRepository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentLink.agentProject(
+              id: 'link-1',
+              fromId: first.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+            AgentLink.agentProject(
+              id: 'link-2',
+              fromId: second.agentId,
+              toId: 'project-1',
+              createdAt: kAgentTestDate,
+              updatedAt: kAgentTestDate,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getEntitiesByIds(any()),
+        ).thenAnswer(
+          (_) async => {first.agentId: first, second.agentId: second},
+        );
+
+        await service.restoreProjectAgentScopes(
+          projectId: 'project-1',
+          scopesByAgentId: {
+            first.agentId: const {'old-1'},
+            second.agentId: const {'old-2'},
+          },
+        );
+
+        final writes = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.whereType<AgentIdentityEntity>().toList();
+        expect(writes, hasLength(2));
+        final scopesByAgentId = {
+          for (final identity in writes)
+            identity.agentId: identity.allowedCategoryIds,
+        };
+        expect(scopesByAgentId, {
+          first.agentId: {'old-1'},
+          second.agentId: {'old-2'},
+        });
       });
     });
 
@@ -1027,6 +1408,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
+            projectScopeIsCurrent: (_, _) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
             cancellationCoordinator: cancellationCoordinator,
           );
@@ -1093,6 +1476,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
+            projectScopeIsCurrent: (_, _) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
           );
           final state = makeState().copyWith(
@@ -1870,6 +2255,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: mockSyncService,
+            projectScopeIsCurrent: (_, _) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
           );
 
           final failingAgent = makeIdentity(agentId: 'pa-fail');

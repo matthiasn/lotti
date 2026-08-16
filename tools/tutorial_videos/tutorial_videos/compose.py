@@ -1,7 +1,7 @@
 """Composition stage: capture + TTS clips + timeline -> final MP4.
 
 Thin host-side wrapper around the pinned OpenMontage checkout (an external
-AGPLv3 dev tool, sibling directory like `lotti-docs`). This module:
+AGPLv3 dev tool, sibling directory like `legacy-media`). This module:
 
 1. plans and applies the TIME WARP (see `timewarp.py`): pure-wait footage
    (cloud transcription / agent roundtrips) fast-forwards while the on-screen

@@ -11,6 +11,12 @@ abstract final class AgentKinds {
   static const goalAgent = 'goal_agent';
 }
 
+/// Notification scopes that carry meaning beyond a single agent entity ID.
+abstract final class AgentNotificationScopes {
+  /// Forces the Projects overview to refresh agent-authored one-liners.
+  static const projectOverview = 'PROJECT_AGENT_OVERVIEW_CHANGED';
+}
+
 /// Tool-call names that carry user-visible conversation output.
 ///
 /// A reply remains an action in the durable log rather than introducing a

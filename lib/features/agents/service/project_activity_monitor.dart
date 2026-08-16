@@ -127,6 +127,8 @@ class ProjectActivityMonitor with AgentErrorLogging {
     required this._syncService,
     this.domainLogger,
     this._clock = const Clock(),
+    this.retireProjectAgent,
+    this.updateProjectAgentScopes,
     ProjectActivityCancellationCoordinator? cancellationCoordinator,
   }) : _cancellationCoordinator =
            cancellationCoordinator ?? ProjectActivityCancellationCoordinator();
@@ -136,6 +138,12 @@ class ProjectActivityMonitor with AgentErrorLogging {
   final ProjectRepository _projectRepository;
   final AgentSyncService _syncService;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
+  final Future<void> Function(String agentId)? retireProjectAgent;
+  final Future<void> Function(
+    String projectId,
+    Set<String> allowedCategoryIds,
+  )?
+  updateProjectAgentScopes;
   @override
   final DomainLogger? domainLogger;
 
@@ -144,6 +152,7 @@ class ProjectActivityMonitor with AgentErrorLogging {
   final Clock _clock;
 
   StreamSubscription<Set<String>>? _subscription;
+  StreamSubscription<Set<String>>? _syncSubscription;
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
@@ -156,17 +165,91 @@ class ProjectActivityMonitor with AgentErrorLogging {
   /// Start tracking local project activity.
   void start() {
     _subscription?.cancel();
+    _syncSubscription?.cancel();
     _subscription = _notifications.localUpdateStream.listen((affectedIds) {
       final observedAt = _clock.now();
       final observedSequence = _cancellationCoordinator.captureActivity();
       unawaited(_handleBatch(affectedIds, observedAt, observedSequence));
     });
+    if (retireProjectAgent != null || updateProjectAgentScopes != null) {
+      _syncSubscription = _notifications.syncUpdateStream.listen((affectedIds) {
+        unawaited(_reconcileSyncedProjects(affectedIds));
+      });
+    }
   }
 
   /// Stop tracking project activity.
   Future<void> stop() async {
-    await _subscription?.cancel();
+    await Future.wait([
+      if (_subscription != null) _subscription!.cancel(),
+      if (_syncSubscription != null) _syncSubscription!.cancel(),
+    ]);
     _subscription = null;
+    _syncSubscription = null;
+  }
+
+  /// Reconciles project-agent lifecycle and scope after project sync updates.
+  ///
+  /// Provisioning necessarily spans the journal and agent databases. Even
+  /// after its final existence check, a peer can commit a project tombstone
+  /// before the new identity is announced and woken. The sync notification is
+  /// the durable reconciliation point for that last race: a missing project
+  /// must not retain active agents or queued work, while a surviving project
+  /// must keep every linked agent scoped to its current category.
+  Future<void> _reconcileSyncedProjects(
+    Set<String> affectedIds,
+  ) async {
+    final retireAgent = retireProjectAgent;
+    final updateScopes = updateProjectAgentScopes;
+    if ((retireAgent == null && updateScopes == null) ||
+        !affectedIds.contains(projectNotification)) {
+      return;
+    }
+
+    final candidateProjectIds = affectedIds.difference({
+      projectNotification,
+      labelUsageNotification,
+    });
+    for (final projectId in candidateProjectIds) {
+      try {
+        final project = await _projectRepository.getProjectById(projectId);
+        if (project != null) {
+          await updateScopes?.call(projectId, {
+            if (project.meta.categoryId case final String categoryId)
+              categoryId,
+          });
+          continue;
+        }
+        if (retireAgent == null) continue;
+        final links = await _agentRepository.getLinksTo(
+          projectId,
+          type: AgentLinkTypes.agentProject,
+        );
+        final retiredAgentIds = <String>{};
+        for (final link in links) {
+          if (retiredAgentIds.add(link.fromId)) {
+            try {
+              await retireAgent(link.fromId);
+            } catch (error, stackTrace) {
+              logError(
+                'failed to retire project agent '
+                '${DomainLogger.sanitizeId(link.fromId)} for project '
+                '${DomainLogger.sanitizeId(projectId)}',
+                error: error,
+                stackTrace: stackTrace,
+              );
+            }
+          }
+        }
+      } catch (error, stackTrace) {
+        logError(
+          'failed to reconcile synced project '
+          '${DomainLogger.sanitizeId(projectId)}',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
   }
 
   Future<void> _handleBatch(

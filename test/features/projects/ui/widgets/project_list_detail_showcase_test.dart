@@ -69,7 +69,8 @@ void main() {
 
       // "Device Sync" appears in both the list row and the detail header.
       expect(find.text('Device Sync'), findsAtLeastNWidgets(2));
-      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
     });
 
     testWidgets('updates the detail pane when a list project is selected', (

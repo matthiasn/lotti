@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart';
 import 'package:lotti/features/projects/ui/widgets/project_detail_pane.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -51,16 +52,18 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
     });
 
-    testWidgets('renders health panel with score', (tester) async {
-      final record = makeTestProjectRecord(healthScore: 85);
+    testWidgets('renders an honest empty health state without metrics', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord();
 
       await tester.pumpWidget(
         wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
       );
       await tester.pump();
 
-      expect(find.text('Health Score'), findsOneWidget);
-      expect(find.text('85'), findsOneWidget);
+      expect(find.text('No health assessment yet'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
     });
 
     testWidgets('renders AI summary section', (tester) async {
@@ -75,6 +78,24 @@ void main() {
 
       expect(find.text('AI Report'), findsOneWidget);
       expect(find.text('Project is on track.'), findsOneWidget);
+    });
+
+    testWidgets('omits report freshness when no report exists', (tester) async {
+      final record = makeTestProjectRecord(
+        aiSummary: '',
+        reportContent: '',
+        hasReportTimestamp: false,
+      );
+
+      await tester.pumpWidget(
+        wrap(ProjectDetailPane(record: record, currentTime: testCurrentTime)),
+      );
+      await tester.pump();
+
+      final report = tester.widget<ExpandableReportSection>(
+        find.byType(ExpandableReportSection),
+      );
+      expect(report.trailingLabel, isNull);
     });
 
     testWidgets('renders project tasks panel', (tester) async {

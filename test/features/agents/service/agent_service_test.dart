@@ -970,6 +970,62 @@ void main() {
       });
     });
 
+    group('restoreAgentLifecycle', () {
+      test('restores the exact prior non-active lifecycle', () async {
+        final destroyed = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => destroyed);
+        when(
+          () => mockOrchestrator.removeSubscriptions('agent-1'),
+        ).thenReturn(null);
+
+        final result = await service.restoreAgentLifecycle(
+          'agent-1',
+          AgentLifecycle.dormant,
+        );
+
+        expect(result, isTrue);
+        final restored =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(restored.lifecycle, AgentLifecycle.dormant);
+        expect(restored.destroyedAt, isNull);
+        verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
+      });
+
+      test('leaves active subscription restoration to the caller', () async {
+        final destroyed = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => destroyed);
+
+        final result = await service.restoreAgentLifecycle(
+          'agent-1',
+          AgentLifecycle.active,
+        );
+
+        expect(result, isTrue);
+        final restored =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(restored.lifecycle, AgentLifecycle.active);
+        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+      });
+    });
+
     group('destroyAgent', () {
       test('sets lifecycle to destroyed, sets destroyedAt, '
           'and unregisters subscriptions', () async {
@@ -1017,6 +1073,56 @@ void main() {
     }
 
     group('deleteAgent', () {
+      test(
+        'refreshes linked project surfaces after hard-deleting a project agent',
+        () async {
+          final identity = makeTestIdentity(
+            id: 'project-agent-1',
+            agentId: 'project-agent-1',
+            kind: AgentKinds.projectAgent,
+            lifecycle: AgentLifecycle.destroyed,
+          );
+          final projectLink = AgentLink.agentProject(
+            id: 'project-link-1',
+            fromId: identity.agentId,
+            toId: 'project-1',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
+          when(
+            () => mockRepository.getEntity(identity.agentId),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getLinksFrom(
+              identity.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => [projectLink]);
+          when(
+            () => mockOrchestrator.removeSubscriptions(identity.agentId),
+          ).thenReturn(null);
+          when(
+            () => mockRepository.hardDeleteAgent(identity.agentId),
+          ).thenAnswer(
+            (_) async => (entityIds: <String>[], linkIds: <String>[]),
+          );
+
+          await service.deleteAgent(identity.agentId);
+
+          expect(notifiedAgentIds, [
+            AgentNotificationScopes.projectOverview,
+            'project-1',
+          ]);
+          verify(
+            () => mockRepository.getLinksFrom(
+              identity.agentId,
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).called(1);
+        },
+      );
+
       test('reclaims the sidecars of everything it deleted', () async {
         // The database rows are only half of what a synced agent leaves
         // behind: its JSON sidecars stay readable on disk otherwise,

@@ -4,9 +4,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/projects/service/project_category_migration_service.dart';
 import 'package:lotti/services/db_notification.dart';
 
 part 'project_detail_controller.freezed.dart';
@@ -55,18 +57,32 @@ final projectDetailControllerProvider = NotifierProvider.autoDispose
 /// changed), then promotes it to the new baseline.
 ///
 /// It subscribes to the repository update stream and reloads on changes to this
-/// project, but a reload preserves unsaved edits: the baseline refreshes only
-/// when there are no pending changes, so a concurrent sync never clobbers what
-/// the user is typing.
+/// project. A reload rebases only locally changed fields onto the newest
+/// persisted entity, so concurrent sync updates to other fields are retained.
+/// If the project was deleted remotely, the pending editor is invalidated so a
+/// later save cannot recreate it. Reload completions are generation-guarded,
+/// preventing an older in-flight read from overwriting a newer sync result.
 class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectDetailController(this._projectId);
 
   final String _projectId;
   late final ProjectRepository _repository;
   StreamSubscription<Set<String>>? _subscription;
+  int _reloadGeneration = 0;
 
   ProjectEntry? _originalProject;
   ProjectEntry? _pendingProject;
+
+  /// Whether the title differs from the latest persisted baseline.
+  bool get isTitleDirty =>
+      _pendingProject?.data.title != _originalProject?.data.title;
+
+  /// Whether the description differs from the latest persisted baseline.
+  bool get isDescriptionDirty =>
+      _pendingProject != null &&
+      _originalProject != null &&
+      _projectDescription(_pendingProject!) !=
+          _projectDescription(_originalProject!);
 
   @override
   ProjectDetailState build() {
@@ -90,31 +106,49 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   }
 
   Future<void> _reload() async {
+    final reloadGeneration = ++_reloadGeneration;
     try {
-      final (project, tasks) = await (
-        _repository.getProjectById(_projectId),
-        _repository.getTasksForProject(_projectId),
-      ).wait;
+      final project = await _repository.getProjectById(_projectId);
+      if (!ref.mounted || reloadGeneration != _reloadGeneration) return;
 
-      if (project != null) {
-        if (_originalProject == null || !_hasChanges()) {
-          // First load or clean reload: update both baseline and pending
-          _originalProject = project;
-          _pendingProject = project;
-        }
-      }
-
-      if (ref.mounted) {
+      if (project == null) {
+        _originalProject = null;
+        _pendingProject = null;
         state = state.copyWith(
-          project: _hasChanges() ? _pendingProject : project,
-          linkedTasks: tasks,
+          project: null,
+          linkedTasks: const [],
           isLoading: false,
-          hasChanges: _hasChanges(),
+          hasChanges: false,
           error: null,
         );
+        return;
       }
+
+      final tasks = await _repository.getTasksForProject(_projectId);
+      if (!ref.mounted || reloadGeneration != _reloadGeneration) return;
+
+      if (_originalProject == null || !_hasChanges()) {
+        // First load or clean reload: update both baseline and pending.
+        _originalProject = project;
+        _pendingProject = project;
+      } else {
+        _pendingProject = _rebasePendingProject(
+          persisted: project,
+          original: _originalProject!,
+          pending: _pendingProject!,
+        );
+        _originalProject = project;
+      }
+
+      state = state.copyWith(
+        project: _hasChanges() ? _pendingProject : project,
+        linkedTasks: tasks,
+        isLoading: false,
+        hasChanges: _hasChanges(),
+        error: null,
+      );
     } catch (e) {
-      if (ref.mounted) {
+      if (ref.mounted && reloadGeneration == _reloadGeneration) {
         state = state.copyWith(
           isLoading: false,
           error: ProjectDetailError.loadFailed,
@@ -125,10 +159,48 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
 
   bool _hasChanges() {
     if (_pendingProject == null || _originalProject == null) return false;
-    return _pendingProject!.data.title != _originalProject!.data.title ||
+    return isTitleDirty ||
+        isDescriptionDirty ||
         _pendingProject!.meta.categoryId != _originalProject!.meta.categoryId ||
         _pendingProject!.data.targetDate != _originalProject!.data.targetDate ||
         _pendingProject!.data.status != _originalProject!.data.status;
+  }
+
+  ProjectEntry _rebasePendingProject({
+    required ProjectEntry persisted,
+    required ProjectEntry original,
+    required ProjectEntry pending,
+  }) {
+    var rebased = persisted;
+    if (pending.data.title != original.data.title) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(title: pending.data.title),
+      );
+    }
+    if (_projectDescription(pending) != _projectDescription(original)) {
+      final plainText = pending.entryText?.plainText ?? '';
+      rebased = rebased.copyWith(
+        entryText:
+            persisted.entryText?.copyWith(plainText: plainText) ??
+            EntryText(plainText: plainText),
+      );
+    }
+    if (pending.meta.categoryId != original.meta.categoryId) {
+      rebased = rebased.copyWith(
+        meta: rebased.meta.copyWith(categoryId: pending.meta.categoryId),
+      );
+    }
+    if (pending.data.targetDate != original.data.targetDate) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(targetDate: pending.data.targetDate),
+      );
+    }
+    if (pending.data.status != original.data.status) {
+      rebased = rebased.copyWith(
+        data: rebased.data.copyWith(status: pending.data.status),
+      );
+    }
+    return rebased;
   }
 
   /// Updates the pending project title.
@@ -136,6 +208,22 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     if (_pendingProject == null) return;
     _pendingProject = _pendingProject!.copyWith(
       data: _pendingProject!.data.copyWith(title: title),
+    );
+    state = state.copyWith(
+      project: _pendingProject,
+      hasChanges: _hasChanges(),
+      error: null,
+    );
+  }
+
+  /// Updates the user-authored project description.
+  void updateDescription(String description) {
+    if (_pendingProject == null) return;
+    final existingText = _pendingProject!.entryText;
+    _pendingProject = _pendingProject!.copyWith(
+      entryText:
+          existingText?.copyWith(plainText: description) ??
+          EntryText(plainText: description),
     );
     state = state.copyWith(
       project: _pendingProject,
@@ -186,6 +274,20 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     );
   }
 
+  /// Restores the last persisted project after an optimistic inline edit
+  /// could not be saved.
+  void discardChanges() {
+    final original = _originalProject;
+    if (original == null) return;
+    _pendingProject = original;
+    state = state.copyWith(
+      project: original,
+      hasChanges: false,
+      isSaving: false,
+      error: null,
+    );
+  }
+
   /// Persists pending changes.
   ///
   /// If the status was changed, the previous status is appended to the
@@ -219,7 +321,12 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
         );
       }
 
-      final success = await _repository.updateProject(toSave);
+      final categoryChanged =
+          _originalProject != null &&
+          toSave.meta.categoryId != _originalProject!.meta.categoryId;
+      final success = categoryChanged
+          ? await ref.read(projectCategoryMigrationServiceProvider).save(toSave)
+          : await _repository.updateProject(toSave);
       if (!ref.mounted) return;
       if (success) {
         _originalProject = toSave;
@@ -244,3 +351,6 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
     }
   }
 }
+
+String _projectDescription(ProjectEntry project) =>
+    project.entryText?.plainText ?? '';

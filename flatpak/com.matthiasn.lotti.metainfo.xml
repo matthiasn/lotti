@@ -43,6 +43,7 @@
     <release version="1.0.11" date="2026-08-16">
       <description>
         <p>Changed: the goal page opens with the agent's read, wider, without repeating itself. The AI summary sits first with the goal-days strip beneath it; the "Your goal" label and the statement no longer repeat under a title that already names the goal; the chat button reads "Talk to agent" instead of echoing the goal's name; and the Goals list and detail columns widened to what the Habits page renders while keeping their gutters on small screens.</p>
+        <p>Changed: Projects now read like an intentional workspace. Current work opens first, completed and archived projects sit behind All, actionable projects sort to the top, category groups collapse for focus, and the list uses the same connected-row rhythm as Tasks instead of separate capsules. Project details reuse Task Details' quiet category breadcrumb, metadata pills, and one unified agent card - including report expansion, Run now, countdown, automatic updates, model setup, and agent internals - rather than inventing a second interaction model. They also show the description and Add task action, use real edit/archive/delete controls, and present only agent-authored health with a clear unassessed state when no report exists. The create and edit flows use the same adaptive pickers and action bars as Tasks; changing category moves the project, linked work, and project-agent permissions together, restoring the original state if any part cannot be moved. Visible agent summaries arrive with the list and participate in project search instead of shifting into rows one at a time.</p>
       </description>
     </release>
     <release version="1.0.10" date="2026-08-13">
@@ -2302,7 +2303,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>A task with its cover art, status, labels, and the assistant's summary</caption>
-      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti-docs/89d8e81b93711e3c41685e903349cc93d6ab5239/images/0.9.998/task_details_screenshot_linux.png</image>
+      <image type="source" width="536" height="999">https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/images/0.9.998/task_details_screenshot_linux.png</image>
     </screenshot>
   </screenshots>
 </component>

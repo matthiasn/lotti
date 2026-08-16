@@ -77,10 +77,12 @@ class _DesignSystemContextMenuButtonState
                 iconColor: item.iconColor,
                 isDestructive: item.isDestructive,
                 isSelected: item.isSelected,
-                onTap: () {
-                  _controller.close();
-                  item.onTap?.call();
-                },
+                onTap: item.onTap == null
+                    ? null
+                    : () {
+                        _controller.close();
+                        item.onTap!();
+                      },
               ),
           ],
         ),

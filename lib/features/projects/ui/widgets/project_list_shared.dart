@@ -6,18 +6,12 @@ import 'package:lotti/features/design_system/components/lists/grouped_card_row_i
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 
 export 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
 
-const _kProjectGroupCardRadius = 16.0;
-const _kProjectGroupCardPadding = 8.0;
-const _kProjectRowOverlap = 1.0;
-
-/// Shared category header row showing the category tag and project count.
+/// Shared category header row using the same quiet section grammar as Tasks.
 class ProjectGroupHeader extends StatelessWidget {
   const ProjectGroupHeader({
     required this.group,
@@ -30,16 +24,28 @@ class ProjectGroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = group.category;
-    final color = colorFromCssHex(category?.color ?? defaultCategoryColorHex);
+    final label =
+        category?.name ?? context.messages.taskCategoryUnassignedLabel;
 
     return Row(
       children: [
-        CategoryTag(
-          label: category?.name ?? context.messages.taskCategoryUnassignedLabel,
-          icon: category?.icon?.iconData ?? Icons.folder_outlined,
-          color: color,
+        Icon(
+          category?.icon?.iconData ?? Icons.folder_outlined,
+          size: IconSizes.s,
+          color: ShowcasePalette.mediumText(context),
         ),
-        const Spacer(),
+        SizedBox(width: tokens.spacing.step2),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: ShowcasePalette.highText(context),
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step2),
         Text(
           context.messages.projectCountSummary(group.projectCount),
           style: tokens.typography.styles.others.caption.copyWith(
@@ -70,9 +76,11 @@ class ProjectGroupSection extends StatefulWidget {
 
 class _ProjectGroupSectionState extends State<ProjectGroupSection> {
   String? _hoveredProjectId;
+  var _expanded = true;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final priorities = widget.group.projects
         .map(
           (project) => _interactionPriority(
@@ -93,84 +101,91 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: ProjectGroupHeader(group: widget.group),
-        ),
-        const SizedBox(height: 8),
-        DecoratedBox(
-          key: ValueKey(
-            'project-group-card-${widget.group.categoryId ?? 'unassigned'}',
-          ),
-          decoration: BoxDecoration(
-            color: _projectGroupBackgroundColor(context),
-            borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),
-            border: Border.all(color: ShowcasePalette.border(context)),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_kProjectGroupCardRadius),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: _kProjectGroupCardPadding),
-                for (
-                  var index = 0;
-                  index < widget.group.projects.length;
-                  index++
-                ) ...[
-                  ProjectRow(
-                    item: widget.group.projects[index],
-                    selected:
-                        widget.group.projects[index].project.meta.id ==
-                        widget.selectedProjectId,
-                    topOverlap: interactions[index].topOverlap,
-                    bottomOverlap: interactions[index].bottomOverlap,
-                    backgroundTopInset: _kProjectGroupCardPadding,
-                    backgroundBottomInset: _kProjectGroupCardPadding,
-                    onHoverChanged: (hovered) {
-                      final projectId =
-                          widget.group.projects[index].project.meta.id;
-                      setState(() {
-                        if (hovered) {
-                          _hoveredProjectId = projectId;
-                        } else if (_hoveredProjectId == projectId) {
-                          _hoveredProjectId = null;
-                        }
-                      });
-                    },
-                    onTap: () => widget.onProjectSelected(
-                      widget.group.projects[index],
-                    ),
+        Semantics(
+          header: true,
+          button: true,
+          expanded: _expanded,
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: TapTargets.minimum),
+              child: Row(
+                children: [
+                  Expanded(child: ProjectGroupHeader(group: widget.group)),
+                  SizedBox(width: tokens.spacing.step2),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: ShowcasePalette.mediumText(context),
                   ),
-                  if (index < widget.group.projects.length - 1) ...[
-                    const SizedBox(height: _kProjectGroupCardPadding),
-                    if (interactions[index].showDividerBelow)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: kProjectRowHorizontalPadding,
-                        ),
-                        child: Divider(
-                          key: ValueKey('project-group-divider-$index'),
-                          height: 1,
-                          thickness: 1,
-                          color: ShowcasePalette.border(context),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        key: ValueKey(
-                          'project-group-divider-slot-$index',
-                        ),
-                        height: _kProjectRowOverlap,
-                      ),
-                    const SizedBox(height: _kProjectGroupCardPadding),
-                  ],
                 ],
-                const SizedBox(height: _kProjectGroupCardPadding),
-              ],
+              ),
             ),
           ),
         ),
+        if (_expanded) ...[
+          SizedBox(height: tokens.spacing.step2),
+          DecoratedBox(
+            key: ValueKey(
+              'project-group-card-${widget.group.categoryId ?? 'unassigned'}',
+            ),
+            decoration: BoxDecoration(
+              color: _projectGroupBackgroundColor(context),
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+              border: Border.all(color: ShowcasePalette.border(context)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (
+                    var index = 0;
+                    index < widget.group.projects.length;
+                    index++
+                  ) ...[
+                    ProjectRow(
+                      item: widget.group.projects[index],
+                      selected:
+                          widget.group.projects[index].project.meta.id ==
+                          widget.selectedProjectId,
+                      topOverlap: interactions[index].topOverlap,
+                      bottomOverlap: interactions[index].bottomOverlap,
+                      onHoverChanged: (hovered) {
+                        final projectId =
+                            widget.group.projects[index].project.meta.id;
+                        setState(() {
+                          if (hovered) {
+                            _hoveredProjectId = projectId;
+                          } else if (_hoveredProjectId == projectId) {
+                            _hoveredProjectId = null;
+                          }
+                        });
+                      },
+                      onTap: () => widget.onProjectSelected(
+                        widget.group.projects[index],
+                      ),
+                    ),
+                    if (index < widget.group.projects.length - 1)
+                      if (interactions[index].showDividerBelow)
+                        Divider(
+                          key: ValueKey('project-group-divider-$index'),
+                          height: BorderWidths.hairline,
+                          thickness: BorderWidths.hairline,
+                          color: ShowcasePalette.border(context),
+                        )
+                      else
+                        SizedBox(
+                          key: ValueKey('project-group-divider-slot-$index'),
+                          height: BorderWidths.hairline,
+                        ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

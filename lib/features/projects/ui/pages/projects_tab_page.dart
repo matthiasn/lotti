@@ -1,8 +1,12 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
@@ -232,8 +236,17 @@ class _ProjectsListScaffold extends ConsumerWidget {
         splitController?.listPaneVisible == true &&
         splitController?.canHideListPane == true;
     final overviewAsync = ref.watch(projectsOverviewProvider);
+    final overview = overviewAsync.value;
     final visibleGroupsAsync = ref.watch(visibleProjectGroupsProvider);
     final filter = ref.watch(projectsFilterControllerProvider);
+    final filtersActive =
+        filter.selectedCategoryIds.isNotEmpty ||
+        (filter.selectedStatusIds.isNotEmpty &&
+            !const SetEquality<String>().equals(
+              filter.selectedStatusIds,
+              currentProjectStatusFilterIds,
+            )) ||
+        filter.sortMode != ProjectsSortMode.actionable;
     // Reserve room so the floating create button never lands on top of the
     // last project card. The FAB is lifted above the bottom nav by
     // `occupiedHeight`, so the scroll content must clear that plus the FAB's
@@ -241,17 +254,24 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final listBottomPadding =
         DesignSystemBottomNavigationBar.occupiedHeight(context) +
         tokens.spacing.step12;
-    final categories = overviewAsync.maybeWhen(
-      data: (overview) => _filterCategoriesFromOverview(overview.groups),
-      orElse: () => const <CategoryDefinition>[],
-    );
-    final floatingActionButton = visibleGroupsAsync.maybeWhen(
-      data: (_) => DesignSystemFloatingActionButton(
-        semanticLabel: context.messages.projectCreateButton,
-        onPressed: () => showProjectCreateModal(context: context),
-      ),
-      orElse: () => null,
-    );
+    final categories = overview == null
+        ? const <CategoryDefinition>[]
+        : _filterCategoriesFromOverview(overview.groups);
+    final rawHasProjects =
+        overview?.groups.any((group) => group.projects.isNotEmpty) ?? false;
+    final isUnfilteredCurrentScope =
+        const SetEquality<String>().equals(
+          filter.selectedStatusIds,
+          currentProjectStatusFilterIds,
+        ) &&
+        filter.selectedCategoryIds.isEmpty &&
+        filter.textQuery.trim().isEmpty;
+    final floatingActionButton = visibleGroupsAsync.value == null
+        ? null
+        : DesignSystemFloatingActionButton(
+            semanticLabel: context.messages.projectCreateButton,
+            onPressed: () => showProjectCreateModal(context: context),
+          );
 
     return Scaffold(
       backgroundColor: ShowcasePalette.page(context),
@@ -264,74 +284,108 @@ class _ProjectsListScaffold extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: visibleGroupsAsync.when(
+          skipLoadingOnReload: true,
+          skipError: true,
           data: (groups) => ValueListenableBuilder<String?>(
             valueListenable: isDesktopLayout(context)
                 ? getIt<NavService>().desktopSelectedProjectId
                 : _noProjectSelectionNotifier,
-            builder: (context, activeProjectId, _) => Column(
-              children: [
-                TabSectionHeader(
-                  searchFocusNode: searchFocusNode,
-                  title: context.messages.navTabTitleProjects,
-                  query: filter.textQuery,
-                  searchHint: context.messages.projectShowcaseSearchHint,
-                  filterTooltip: context.messages.projectsFilterTooltip,
-                  titleLeading: canHideListPane
-                      ? TabHeaderIconButton(
-                          key: const ValueKey(
-                            'projects-hide-list-pane',
-                          ),
-                          icon: Icons.view_sidebar_rounded,
-                          tooltip: context.messages.listPaneHideTooltip,
-                          onPressed: splitController!.hideListPane,
-                        )
-                      : null,
-                  onSearchChanged: (value) {
-                    ref
-                        .read(projectsFilterControllerProvider.notifier)
-                        .setTextQuery(value);
-                  },
-                  onSearchCleared: () {
-                    ref
-                        .read(projectsFilterControllerProvider.notifier)
-                        .setTextQuery('');
-                  },
-                  onSearchPressed: (value) {
-                    ref
-                        .read(projectsFilterControllerProvider.notifier)
-                        .setTextQuery(value);
-                  },
-                  onFilterPressed: () => showProjectsFilterModal(
-                    context: context,
-                    initialFilter: ref
-                        .read(projectsFilterControllerProvider.notifier)
-                        .filter,
-                    categories: categories,
-                    onApplied: (nextFilter) {
-                      ref
-                              .read(projectsFilterControllerProvider.notifier)
-                              .filter =
-                          nextFilter;
-                    },
-                  ),
-                ),
-                _ProjectsTabActiveFilters(categories: categories),
-                Expanded(
-                  child: ProjectsOverviewContent(
+            builder: (context, activeProjectId, _) {
+              return Column(
+                children: [
+                  TabSectionHeader(
+                    searchFocusNode: searchFocusNode,
                     title: context.messages.navTabTitleProjects,
-                    renderHeader: false,
-                    groups: groups,
                     query: filter.textQuery,
-                    selectedProjectId: activeProjectId,
-                    scrollController: scrollController,
-                    listBottomPadding: listBottomPadding,
-                    onProjectTap: (project) {
-                      beamToNamed('/projects/${project.project.meta.id}');
+                    searchHint: context.messages.projectShowcaseSearchHint,
+                    filterTooltip: context.messages.projectsFilterTooltip,
+                    filtersActive: filtersActive,
+                    titleLeading: canHideListPane
+                        ? TabHeaderIconButton(
+                            key: const ValueKey(
+                              'projects-hide-list-pane',
+                            ),
+                            icon: Icons.view_sidebar_rounded,
+                            tooltip: context.messages.listPaneHideTooltip,
+                            onPressed: splitController!.hideListPane,
+                          )
+                        : null,
+                    onSearchChanged: (value) {
+                      ref
+                          .read(projectsFilterControllerProvider.notifier)
+                          .setTextQuery(value);
                     },
+                    onSearchCleared: () {
+                      ref
+                          .read(projectsFilterControllerProvider.notifier)
+                          .setTextQuery('');
+                    },
+                    onSearchPressed: (value) {
+                      ref
+                          .read(projectsFilterControllerProvider.notifier)
+                          .setTextQuery(value);
+                    },
+                    onFilterPressed: () => showProjectsFilterModal(
+                      context: context,
+                      initialFilter: ref
+                          .read(projectsFilterControllerProvider.notifier)
+                          .filter,
+                      categories: categories,
+                      onApplied: (nextFilter) {
+                        ref
+                                .read(projectsFilterControllerProvider.notifier)
+                                .filter =
+                            nextFilter;
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const _ProjectsViewControls(),
+                  _ProjectsTabActiveFilters(categories: categories),
+                  Expanded(
+                    child: ProjectsOverviewContent(
+                      title: context.messages.navTabTitleProjects,
+                      renderHeader: false,
+                      groups: groups,
+                      query: filter.textQuery,
+                      selectedProjectId: activeProjectId,
+                      scrollController: scrollController,
+                      listBottomPadding: listBottomPadding,
+                      emptyTitle: !rawHasProjects
+                          ? context.messages.projectsEmptyTitle
+                          : isUnfilteredCurrentScope
+                          ? context.messages.projectsEmptyCurrentTitle
+                          : context.messages.projectsEmptyFilteredTitle,
+                      emptyBody: !rawHasProjects
+                          ? context.messages.projectsEmptyBody
+                          : isUnfilteredCurrentScope
+                          ? context.messages.projectsEmptyCurrentBody
+                          : context.messages.projectsEmptyFilteredBody,
+                      emptyActionLabel: !rawHasProjects
+                          ? context.messages.projectCreateButton
+                          : isUnfilteredCurrentScope
+                          ? context.messages.projectsScopeAll
+                          : context.messages.projectsClearFilters,
+                      onEmptyAction: !rawHasProjects
+                          ? () => showProjectCreateModal(context: context)
+                          : isUnfilteredCurrentScope
+                          ? () => ref
+                                .read(
+                                  projectsFilterControllerProvider.notifier,
+                                )
+                                .setSelectedStatusIds(const {})
+                          : () => ref
+                                .read(
+                                  projectsFilterControllerProvider.notifier,
+                                )
+                                .resetToCurrent(),
+                      onProjectTap: (project) {
+                        beamToNamed('/projects/${project.project.meta.id}');
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           loading: () => const Center(
             child: CircularProgressIndicator.adaptive(),
@@ -344,6 +398,68 @@ class _ProjectsListScaffold extends ConsumerWidget {
     );
   }
 }
+
+class _ProjectsViewControls extends ConsumerWidget {
+  const _ProjectsViewControls();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final filter = ref.watch(projectsFilterControllerProvider);
+    final controller = ref.read(projectsFilterControllerProvider.notifier);
+    final isCurrent = const SetEquality<String>().equals(
+      filter.selectedStatusIds,
+      currentProjectStatusFilterIds,
+    );
+    final isAll = filter.selectedStatusIds.isEmpty;
+
+    return DetailContentWidth(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+        child: Row(
+          children: [
+            DesignSystemChip(
+              label: context.messages.projectsScopeCurrent,
+              selected: isCurrent,
+              size: DesignSystemChipSize.compactPill,
+              onPressed: () => controller.setSelectedStatusIds(
+                currentProjectStatusFilterIds,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            DesignSystemChip(
+              label: context.messages.projectsScopeAll,
+              selected: isAll,
+              size: DesignSystemChipSize.compactPill,
+              onPressed: () => controller.setSelectedStatusIds(const {}),
+            ),
+            const Spacer(),
+            DesignSystemContextMenuButton(
+              icon: Icons.swap_vert_rounded,
+              tooltip: context.messages.projectsSortTooltip,
+              items: [
+                for (final mode in ProjectsSortMode.values)
+                  DesignSystemContextMenuItem(
+                    label: _sortModeLabel(context, mode),
+                    icon: filter.sortMode == mode ? Icons.check_rounded : null,
+                    onTap: () => controller.setSortMode(mode),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _sortModeLabel(BuildContext context, ProjectsSortMode mode) =>
+    switch (mode) {
+      ProjectsSortMode.actionable => context.messages.projectsSortActionable,
+      ProjectsSortMode.targetDate => context.messages.projectsSortTargetDate,
+      ProjectsSortMode.recent => context.messages.projectsSortRecent,
+      ProjectsSortMode.name => context.messages.projectsSortName,
+    };
 
 /// Renders a chip row reflecting the currently active Projects-tab filters
 /// (status + category). Each chip removes its filter when tapped or when
@@ -361,6 +477,10 @@ class _ProjectsTabActiveFilters extends ConsumerWidget {
     final accent = tokens.colors.interactive.enabled;
 
     final statusIds = filter.selectedStatusIds;
+    final showStatusChips = !const SetEquality<String>().equals(
+      statusIds,
+      currentProjectStatusFilterIds,
+    );
     final categoryIds = filter.selectedCategoryIds;
     if (statusIds.isEmpty && categoryIds.isEmpty) {
       return const SizedBox.shrink();
@@ -368,7 +488,7 @@ class _ProjectsTabActiveFilters extends ConsumerWidget {
 
     final chips = <Widget>[];
 
-    for (final id in statusIds) {
+    for (final id in showStatusChips ? statusIds : const <String>{}) {
       final kind = projectStatusKindFromFilterId(id);
       final status = buildProjectStatus(kind, DateTime(2000));
       final (label, color, icon) = projectStatusAttributes(context, status);
@@ -387,10 +507,9 @@ class _ProjectsTabActiveFilters extends ConsumerWidget {
     final categoriesById = {for (final c in categories) c.id: c};
     for (final id in categoryIds) {
       final category = categoriesById[id];
-      if (category == null) continue;
       chips.add(
         ActiveFilterChip(
-          label: category.name,
+          label: category?.name ?? context.messages.projectsUnavailableCategory,
           accentColor: accent,
           onRemove: () => controller.setSelectedCategoryIds(
             categoryIds.difference({id}),

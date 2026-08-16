@@ -59,7 +59,8 @@ void main() {
       expect(find.text('Device Sync'), findsAtLeastNWidgets(2));
       expect(find.text('API Migration'), findsOneWidget);
       expect(find.text('3 projects'), findsOneWidget);
-      expect(find.text('Health Score'), findsOneWidget);
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
       expect(find.text('Project Tasks'), findsOneWidget);
       expect(
         find.text(expectedTotalTime),
@@ -94,6 +95,8 @@ void main() {
         ),
       );
       await tester.pump();
+      expect(find.text('Project health'), findsOneWidget);
+      expect(find.text('Health Score'), findsNothing);
 
       final detailScrollView = find.descendant(
         of: find.byType(ProjectMobileDetailContent),
@@ -109,7 +112,6 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Projects'), findsAtLeastNWidgets(2));
-      expect(find.text('Health Score'), findsOneWidget);
       expect(find.text('Project Tasks'), findsOneWidget);
     });
 

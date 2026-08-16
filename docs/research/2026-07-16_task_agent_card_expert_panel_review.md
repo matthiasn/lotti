@@ -18,17 +18,17 @@ trustworthy, efficient, and visually refined across the complete matrix.
 
 Baseline evidence:
 
-- [Desktop scheduled, dark](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/before/desktop_scheduled_dark.png)
-- [Desktop manual, light](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/before/desktop_manual_light.png)
-- [Phone scheduled, light](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/before/pro_scheduled_light.png)
-- [Phone manual, dark](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/before/pro_manual_dark.png)
+- [Desktop scheduled, dark](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/before/desktop_scheduled_dark.png)
+- [Desktop manual, light](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/before/desktop_manual_light.png)
+- [Phone scheduled, light](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/before/pro_scheduled_light.png)
+- [Phone manual, dark](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/before/pro_manual_dark.png)
 
 Final evidence:
 
-- [Desktop scheduled, dark](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/after/desktop_scheduled_dark.png)
-- [Desktop manual, light](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/after/desktop_manual_light.png)
-- [Phone scheduled, light](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/after/pro_scheduled_light.png)
-- [Phone manual, dark](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/pr-screenshots/task-agent-card-auto-wake/after/pro_manual_dark.png)
+- [Desktop scheduled, dark](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/after/desktop_scheduled_dark.png)
+- [Desktop manual, light](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/after/desktop_manual_light.png)
+- [Phone scheduled, light](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/after/pro_scheduled_light.png)
+- [Phone manual, dark](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/documentation-assets-migration/763299257de2b4387b7419e55887deb866c50b12/after/pr-screenshots/task-agent-card-auto-wake/after/pro_manual_dark.png)
 
 ## Scorecard
 

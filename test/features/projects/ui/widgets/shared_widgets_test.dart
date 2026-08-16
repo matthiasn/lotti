@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -201,6 +204,39 @@ void main() {
       await tester.tap(find.byType(OutlinedMetaTag));
       expect(taps, 1);
     });
+
+    testWidgets('interactive tags stay shrink-wrapped inside a Wrap', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          Wrap(
+            children: [
+              OutlinedMetaTag(
+                icon: Icons.folder_outlined,
+                label: 'Category',
+                onTap: () {},
+              ),
+              OutlinedMetaTag(
+                icon: Icons.calendar_today_outlined,
+                label: 'Target date',
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.getCenter(find.text('Category')).dy,
+        tester.getCenter(find.text('Target date')).dy,
+      );
+      expect(
+        tester.getSize(find.byType(OutlinedMetaTag).first).width,
+        lessThan(200),
+      );
+    });
   });
 
   group('ProjectHealthBandTag', () {
@@ -273,36 +309,26 @@ void main() {
       expect(find.byIcon(Icons.unfold_more_rounded), findsNothing);
     });
 
-    testWidgets('matches the category tag height in compact mode', (
+    testWidgets('uses the shared task metadata pill height in compact mode', (
       tester,
     ) async {
       await tester.pumpWidget(
         wrap(
-          Row(
-            children: [
-              const CategoryTag(
-                label: 'Work',
-                icon: Icons.work,
-                color: Colors.blue,
-              ),
-              const SizedBox(width: 12),
-              ProjectStatusPill(
-                status: ProjectStatus.active(
-                  id: 'a',
-                  createdAt: DateTime(2026),
-                  utcOffset: 0,
-                ),
-              ),
-            ],
+          ProjectStatusPill(
+            status: ProjectStatus.active(
+              id: 'a',
+              createdAt: DateTime(2026),
+              utcOffset: 0,
+            ),
           ),
         ),
       );
       await tester.pump();
 
-      final categorySize = tester.getSize(find.byType(CategoryTag));
       final statusSize = tester.getSize(find.byType(ProjectStatusPill));
 
-      expect(statusSize.height, categorySize.height);
+      expect(find.byType(DsPill), findsOneWidget);
+      expect(statusSize.height, DsPill.height);
     });
   });
 
@@ -536,6 +562,38 @@ void main() {
   });
 
   group('ExpandableReportSection', () {
+    testWidgets('uses the exported AI card fill without an ad hoc gradient', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const ExpandableReportSection(
+            title: 'AI Report',
+            body: 'A concise assessment.',
+            fullContent: 'A concise assessment.',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final section = find.byType(ExpandableReportSection);
+      final decoration =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: section,
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      final tokens = tester.element(section).designTokens;
+      expect(decoration.color, tokens.colors.aiCard.background);
+      expect(decoration.gradient, isNull);
+    });
+
     testWidgets(
       'starts collapsed on the TLDR and expands to the full report body without repeating the TLDR section',
       (tester) async {
@@ -696,6 +754,50 @@ Longer report content.
 
         expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      });
+    });
+
+    testWidgets('full report controls fit a narrow view at 200% text scale', (
+      tester,
+    ) async {
+      final start = DateTime(2024, 3, 15, 12);
+      var refreshCount = 0;
+      var cancelCount = 0;
+
+      await withClock(Clock.fixed(start), () async {
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: Scaffold(
+                body: ExpandableReportSection(
+                  title: 'AI Report',
+                  body: 'A concise assessment.',
+                  fullContent: 'A concise assessment.',
+                  nextWakeAt: start.add(const Duration(seconds: 90)),
+                  onCancelScheduledWake: () => cancelCount++,
+                  onRefresh: () => refreshCount++,
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: Size(320, 800),
+              textScaler: TextScaler.linear(2),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.refresh_rounded));
+        await tester.pump();
+        expect(cancelCount, 1);
+        expect(refreshCount, 1);
       });
     });
 
@@ -1338,7 +1440,7 @@ Longer report content.
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
       // refresh icon should not be present while refreshing
       expect(find.byIcon(Icons.refresh_rounded), findsNothing);
     });
@@ -1365,7 +1467,7 @@ Longer report content.
 
       // Countdown should be hidden while refreshing
       expect(find.byType(ShowcaseCountdownPill), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
     });
   });
 

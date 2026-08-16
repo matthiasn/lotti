@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_list_pane.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../helpers/test_finders.dart';
@@ -23,7 +24,7 @@ void main() {
     );
 
     return ProviderScope(
-      overrides: overrides ?? noOneLinerOverrides(['p1', 'p2']),
+      overrides: overrides ?? const [],
       child: makeTestableWidget2(
         Builder(
           builder: (context) => locale == null
@@ -72,6 +73,15 @@ void main() {
       expect(find.text('Project Beta'), findsOneWidget);
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('Study'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<ProjectGroupSection>(find.byType(ProjectGroupSection))
+            .map((section) => section.key),
+        const [
+          ValueKey('project-group-work'),
+          ValueKey('project-group-study'),
+        ],
+      );
     });
 
     testWidgets('shows no-results pane when search filters everything', (
