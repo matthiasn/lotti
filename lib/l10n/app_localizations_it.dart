@@ -6319,6 +6319,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalDetailAskWhy => 'Perché?';
 
   @override
+  String get goalDetailCompletionRateTitle =>
+      'Tasso di compensazione · questo obiettivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Impossibile caricare lo stato di questo obiettivo al momento.';
 

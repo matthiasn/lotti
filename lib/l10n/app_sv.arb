@@ -2869,6 +2869,7 @@
   "goalDetailAboutAgentTitle": "Om den här agenten",
   "goalDetailAgentReadTitle": "Agentens bedömning",
   "goalDetailAskWhy": "Varför?",
+  "goalDetailCompletionRateTitle": "Slutförandegrad · det här målet",
   "goalDetailHealthUnavailable": "Det gick inte att läsa in målets hälsa just nu.",
   "goalDetailNoReport": "Ingen rapport ännu — agenten rapporterar efter den första relevanta förändringen.",
   "goalDetailNotFound": "Den här målagenten finns inte längre.",

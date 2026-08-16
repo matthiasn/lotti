@@ -2868,6 +2868,7 @@
   "goalDetailAboutAgentTitle": "Sobre este agente",
   "goalDetailAgentReadTitle": "Avaliação do agente",
   "goalDetailAskWhy": "Porquê?",
+  "goalDetailCompletionRateTitle": "Taxa de conclusão · esta meta",
   "goalDetailHealthUnavailable": "Não foi possível carregar a saúde desta meta agora.",
   "goalDetailNoReport": "Ainda sem relatório — o agente reporta após a primeira mudança relevante.",
   "goalDetailNotFound": "Este agente de meta não existe mais.",

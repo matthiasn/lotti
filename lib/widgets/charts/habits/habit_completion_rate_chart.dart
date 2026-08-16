@@ -22,7 +22,12 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// headline for that day's success/skip/fail split (tap again to clear).
 class HabitCompletionRateChart extends ConsumerWidget
     implements PreferredSizeWidget {
-  const HabitCompletionRateChart({super.key});
+  const HabitCompletionRateChart({this.habitIds, super.key});
+
+  /// When non-null, the chart sees only these habits (the §4b goal-scoped
+  /// variant): rates, laggard, tap-a-day breakdown and the dynamic baseline
+  /// are all computed on the scoped maps. Null renders the whole roster.
+  final Set<String>? habitIds;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -31,7 +36,10 @@ class HabitCompletionRateChart extends ConsumerWidget
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final state = ref.watch(habitsControllerProvider);
+    final rawState = ref.watch(habitsControllerProvider);
+    final state = habitIds == null
+        ? rawState
+        : scopeHabitsStateToHabits(rawState, habitIds!);
     final controller = ref.read(habitsControllerProvider.notifier);
     final stats = habitChartStats(state);
 

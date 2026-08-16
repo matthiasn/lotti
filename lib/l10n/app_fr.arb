@@ -2612,6 +2612,7 @@
   "goalDetailAboutAgentTitle": "À propos de cet agent",
   "goalDetailAgentReadTitle": "L'avis de l'agent",
   "goalDetailAskWhy": "Pourquoi ?",
+  "goalDetailCompletionRateTitle": "Taux de réussite · cet objectif",
   "goalDetailHealthUnavailable": "Impossible de charger l'état de cet objectif pour le moment.",
   "goalDetailNoReport": "Pas encore de rapport — l’agent en publiera un au premier changement notable.",
   "goalDetailNotFound": "Cet agent d'objectif n'existe plus.",

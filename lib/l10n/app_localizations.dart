@@ -10689,6 +10689,12 @@ abstract class AppLocalizations {
   /// **'Ask why'**
   String get goalDetailAskWhy;
 
+  /// Title of the goal-scoped completion-rate chart card on goal detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate · this goal'**
+  String get goalDetailCompletionRateTitle;
+
   /// No description provided for @goalDetailHealthUnavailable.
   ///
   /// In en, this message translates to:

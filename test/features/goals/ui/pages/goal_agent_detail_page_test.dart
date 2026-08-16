@@ -36,11 +36,15 @@ import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../habits/test_utils.dart';
 
 void main() {
   final goalIdentity =
@@ -880,6 +884,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -989,6 +998,11 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -1596,6 +1610,11 @@ void main() {
         const GoalAgentDetailPage(agentId: 'goal-1'),
         mediaQueryData: const MediaQueryData(size: desktopSize),
         overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
           agentIdentityProvider(
             'goal-1',
           ).overrideWith((ref) async => goalIdentity),
@@ -2414,6 +2433,98 @@ void main() {
     expect(
       find.widgetWithText(DesignSystemButton, 'Update now'),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('a goal with habit dimensions renders the goal-scoped '
+      'completion-rate card', (tester) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    final habitsController = FakeHabitsController(
+      HabitsState.initial(now: DateTime(2026, 8, 11)),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(() => habitsController),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two walks landed.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The §4b goal-scoped chart card: same shell as the habits page, its
+    // own title, the chart scoped to this goal's criterion habit ids.
+    expect(find.text('Completion rate · this goal'), findsOneWidget);
+    expect(
+      tester
+          .widget<HabitCompletionRateChart>(
+            find.byType(HabitCompletionRateChart),
+          )
+          .habitIds,
+      {'walk'},
     );
   });
 }

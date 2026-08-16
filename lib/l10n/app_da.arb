@@ -2869,6 +2869,7 @@
   "goalDetailAboutAgentTitle": "Om denne agent",
   "goalDetailAgentReadTitle": "Agentens vurdering",
   "goalDetailAskWhy": "Hvorfor?",
+  "goalDetailCompletionRateTitle": "Gennemførelsesrate · dette mål",
   "goalDetailHealthUnavailable": "Kunne ikke indlæse dette måls tilstand lige nu.",
   "goalDetailNoReport": "Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.",
   "goalDetailNotFound": "Denne målagent findes ikke længere.",

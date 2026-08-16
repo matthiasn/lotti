@@ -6302,6 +6302,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailAskWhy => 'Porquê?';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Taxa de conclusão · esta meta';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Não foi possível carregar a saúde desta meta agora.';
 

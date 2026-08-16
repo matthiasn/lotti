@@ -6259,6 +6259,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailAskWhy => 'Waarom?';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Afrondingspercentage · dit doel';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'De gezondheid van dit doel kon nu niet worden geladen.';
 

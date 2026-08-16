@@ -6209,6 +6209,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailAskWhy => 'Ask why';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Completion rate · this goal';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Couldn\'t load this goal\'s health right now.';
 

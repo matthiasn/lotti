@@ -6324,6 +6324,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalDetailAskWhy => '¿Por qué?';
 
   @override
+  String get goalDetailCompletionRateTitle =>
+      'Tasa de cumplimiento · este objetivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'No se pudo cargar el estado de este objetivo ahora mismo.';
 

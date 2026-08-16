@@ -6237,6 +6237,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailAskWhy => 'Hvorfor?';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Gennemførelsesrate · dette mål';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Kunne ikke indlæse dette måls tilstand lige nu.';
 

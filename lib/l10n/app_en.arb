@@ -3507,6 +3507,10 @@
   "@goalDetailAskWhy": {
     "description": "Link on the agent's-read card that opens chat pre-filled with a why question."
   },
+  "goalDetailCompletionRateTitle": "Completion rate · this goal",
+  "@goalDetailCompletionRateTitle": {
+    "description": "Title of the goal-scoped completion-rate chart card on goal detail."
+  },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "@goalDetailNoReport": {

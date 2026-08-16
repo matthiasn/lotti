@@ -2619,6 +2619,7 @@
   "goalDetailAboutAgentTitle": "O tomto agentovi",
   "goalDetailAgentReadTitle": "Hodnocení agenta",
   "goalDetailAskWhy": "Proč?",
+  "goalDetailCompletionRateTitle": "Míra plnění · tento cíl",
   "goalDetailHealthUnavailable": "Zdraví tohoto cíle se teď nepodařilo načíst.",
   "goalDetailNoReport": "Zatím žádná zpráva — agent se ozve po první podstatné změně.",
   "goalDetailNotFound": "Tento agent cíle už neexistuje.",

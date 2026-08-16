@@ -78,8 +78,8 @@ with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
 pushed phone page or a non-modal desktop overlay drawer (the §4b detail
 dashboard: hero pair of This-week + timestamped Agent's read, Habits and
-Signals sections, an About-this-agent expander holding the cost pills and
-automation controls). Agent replies retain their Markdown
+Signals sections, a goal-scoped completion-rate chart, and an
+About-this-agent expander holding the cost pills and automation controls). Agent replies retain their Markdown
 structure, while long replies start compact and can be expanded in place.
 The detail grid follows each habit's authored day, rolling, week, or month
 window and can record success or a miss on any day inside the habit's active

@@ -37,6 +37,7 @@ import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -474,6 +475,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                       return saved;
                     },
             ),
+          ),
+        ],
+        // §4b item 5: the completion-rate chart scoped to THIS goal's
+        // habits — same card shell and range tabs as the habits page, the
+        // line computed on the goal's slice of the shared day maps.
+        if (progress != null && progress.habits.isNotEmpty && spec != null) ...[
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          HabitsChartCard(
+            habitIds: goalCriterionHabitIds(spec.criteria),
+            title: context.messages.goalDetailCompletionRateTitle,
           ),
         ],
         if (progress != null && assessments.isNotEmpty) ...[

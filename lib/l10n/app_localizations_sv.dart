@@ -6243,6 +6243,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailAskWhy => 'Varför?';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Slutförandegrad · det här målet';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Det gick inte att läsa in målets hälsa just nu.';
 

@@ -2869,6 +2869,7 @@
   "goalDetailAboutAgentTitle": "Informazioni su questo agente",
   "goalDetailAgentReadTitle": "Valutazione dell'agente",
   "goalDetailAskWhy": "Perché?",
+  "goalDetailCompletionRateTitle": "Tasso di compensazione · questo obiettivo",
   "goalDetailHealthUnavailable": "Impossibile caricare lo stato di questo obiettivo al momento.",
   "goalDetailNoReport": "Ancora nessun report: l’agente riferirà al primo cambiamento rilevante.",
   "goalDetailNotFound": "Questo agente dell'obiettivo non esiste più.",

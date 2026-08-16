@@ -689,7 +689,10 @@ flowchart TD
   deterministic This-week card (`GoalThisWeekCard` — whole-goal strip,
   Reflect-on-today, yesterday tally) beside the timestamped Agent's-read
   card, side by side above `kGoalHeroPairMinWidth` and stacked below it,
-  with the Habits and Signals sections beneath and the cost/automation
+  with the Habits and Signals sections beneath, a goal-scoped
+  completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
+  computed on the goal's slice of the habits day maps via
+  `scopeHabitsStateToHabits`, same range tabs), and the cost/automation
   plumbing folded into an About-this-agent expander at the foot. The
   reading measure applies to the content *inside* the scroll view, never to
   the scroll view itself. The detail page builds **eagerly** — a `Column`

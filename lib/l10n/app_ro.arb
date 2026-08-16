@@ -2612,6 +2612,7 @@
   "goalDetailAboutAgentTitle": "Despre acest agent",
   "goalDetailAgentReadTitle": "Evaluarea agentului",
   "goalDetailAskWhy": "De ce?",
+  "goalDetailCompletionRateTitle": "Rata de finalizare · acest obiectiv",
   "goalDetailHealthUnavailable": "Starea acestui obiectiv nu a putut fi încărcată momentan.",
   "goalDetailNoReport": "Încă nu există raport — agentul va raporta după prima schimbare relevantă.",
   "goalDetailNotFound": "Acest agent de obiectiv nu mai există.",

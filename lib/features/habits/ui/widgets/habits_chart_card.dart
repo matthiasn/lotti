@@ -18,7 +18,15 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 /// selector, and the optional zero-baseline toggle (only meaningful once the
 /// lowest day clears the 20% floor).
 class HabitsChartCard extends ConsumerWidget {
-  const HabitsChartCard({super.key});
+  const HabitsChartCard({this.habitIds, this.title, super.key});
+
+  /// When non-null, the card renders the §4b goal-scoped chart variant for
+  /// these habits. The zero-baseline toggle hides in that mode — its gate
+  /// reads the roster-wide floor, which says nothing about the scoped line.
+  final Set<String>? habitIds;
+
+  /// Card title override; defaults to the habits page's own.
+  final String? title;
 
   /// Time spans offered for the habits chart and the per-row history strips —
   /// fortnight-to-quarter, habit-scale windows. (7 days was dropped: it's too
@@ -47,13 +55,13 @@ class HabitsChartCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    messages.habitsCompletionRateTitle,
+                    title ?? messages.habitsCompletionRateTitle,
                     style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                       color: tokens.colors.text.highEmphasis,
                     ),
                   ),
                 ),
-                if (state.minY > 20)
+                if (habitIds == null && state.minY > 20)
                   Semantics(
                     label: state.zeroBased
                         ? messages.habitsChartUseDynamicBaseline
@@ -87,7 +95,7 @@ class HabitsChartCard extends ConsumerWidget {
               ],
             ),
             SizedBox(height: tokens.spacing.step4),
-            const HabitCompletionRateChart(),
+            HabitCompletionRateChart(habitIds: habitIds),
           ],
         ),
       ),

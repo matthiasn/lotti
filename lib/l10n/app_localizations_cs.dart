@@ -6303,6 +6303,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailAskWhy => 'Proč?';
 
   @override
+  String get goalDetailCompletionRateTitle => 'Míra plnění · tento cíl';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Zdraví tohoto cíle se teď nepodařilo načíst.';
 

@@ -6355,6 +6355,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailAskWhy => 'De ce?';
 
   @override
+  String get goalDetailCompletionRateTitle =>
+      'Rata de finalizare · acest obiectiv';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Starea acestui obiectiv nu a putut fi încărcată momentan.';
 
