@@ -274,6 +274,23 @@ void main() {
       expect(issues, anyElement(contains('water: dataTypeId')));
     });
 
+    test('label time requires stable ids and a non-negative hour target', () {
+      const criterion = GoalCriterion.labelTime(
+        criterionId: 'content-time',
+        labelId: '  ',
+        categoryId: '',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: -1,
+      );
+
+      final issues = GoalSpecValidator.criterionIssues(criterion);
+
+      expect(issues, anyElement(contains('labelId')));
+      expect(issues, anyElement(contains('categoryId')));
+      expect(issues, anyElement(contains('targetHours')));
+    });
+
     test('duplicate criterion ids are rejected before they can shadow '
         'results', () {
       const duped = GoalCriterion.allOf(

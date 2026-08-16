@@ -44,18 +44,18 @@ class GoalSignalReader {
 
   /// Loads every signal series the [criteria] tree needs to be evaluated
   /// at [reference], covering the widest leaf window plus the short-term
-  /// trend lookback. When [categorySessionEvidenceStart] is supplied, raw
-  /// watched-category sessions extend back to that instant without widening
+  /// trend lookback. When [timeEntryEvidenceStart] is supplied, raw
+  /// watched time-entry evidence extends back to that instant without widening
   /// the deterministic criterion's authored evaluation window. A completed
-  /// historical period may supply [categoryTimeEndExclusive] as the following
+  /// historical period may supply [timeEntryEndExclusive] as the following
   /// local midnight; live periods default to clipping at [reference].
   Future<GoalSignalWindow> read({
     required GoalCriterion criteria,
     required DateTime reference,
     int shortTermDays = 3,
-    bool includeCategoryTimeSessions = true,
-    DateTime? categorySessionEvidenceStart,
-    DateTime? categoryTimeEndExclusive,
+    bool includeTimeEntryEvidence = true,
+    DateTime? timeEntryEvidenceStart,
+    DateTime? timeEntryEndExclusive,
   }) async {
     final needs = _SignalNeeds()..collect(criteria);
     final rangeStart = _rangeStart(criteria, reference, shortTermDays);
@@ -67,7 +67,7 @@ class GoalSignalReader {
       reference.month,
       reference.day + 1,
     );
-    final requestedCategoryTimeEnd = categoryTimeEndExclusive ?? reference;
+    final requestedCategoryTimeEnd = timeEntryEndExclusive ?? reference;
     final categoryTimeEnd = requestedCategoryTimeEnd.isBefore(rangeEnd)
         ? requestedCategoryTimeEnd
         : rangeEnd;
@@ -155,15 +155,15 @@ class GoalSignalReader {
     DateTime? categoryTimeEvidenceStart;
     var hasActiveCategoryTimer = false;
     if (needs.categoryTimeCriteria.isNotEmpty) {
-      final requestedEvidenceStart = categorySessionEvidenceStart ?? rangeStart;
+      final requestedEvidenceStart = timeEntryEvidenceStart ?? rangeStart;
       final evidenceStart = requestedEvidenceStart.isAfter(rangeEnd)
           ? rangeEnd
           : requestedEvidenceStart;
-      if (includeCategoryTimeSessions) {
+      if (includeTimeEntryEvidence) {
         categoryTimeEvidenceStart = evidenceStart;
       }
       final queryStart =
-          includeCategoryTimeSessions && evidenceStart.isBefore(rangeStart)
+          includeTimeEntryEvidence && evidenceStart.isBefore(rangeStart)
           ? evidenceStart
           : rangeStart;
       final rows = await _journalDb.insightsTimeRows(
@@ -193,7 +193,7 @@ class GoalSignalReader {
       hasActiveCategoryTimer =
           activeTimerRow != null &&
           watchedCategoryIds.contains(activeTimerRow.categoryId);
-      if (includeCategoryTimeSessions) {
+      if (includeTimeEntryEvidence) {
         for (final row in rows) {
           final categoryId = row.categoryId;
           final dateFrom = row.dateFrom.isBefore(evidenceStart)
@@ -231,6 +231,77 @@ class GoalSignalReader {
       }
     }
 
+    final labelTime = <String, Map<DateTime, num>>{};
+    final labelTimeEntries = <String, List<GoalLabelTimeEntryEvidence>>{};
+    DateTime? labelTimeEvidenceStart;
+    var hasActiveLabelTimer = false;
+    if (needs.labelTimeCriteria.isNotEmpty) {
+      final requestedEvidenceStart = timeEntryEvidenceStart ?? rangeStart;
+      final evidenceStart = requestedEvidenceStart.isAfter(rangeEnd)
+          ? rangeEnd
+          : requestedEvidenceStart;
+      if (includeTimeEntryEvidence) {
+        labelTimeEvidenceStart = evidenceStart;
+      }
+      final queryStart =
+          includeTimeEntryEvidence && evidenceStart.isBefore(rangeStart)
+          ? evidenceStart
+          : rangeStart;
+      final watchedLabelIds = {
+        for (final criterion in needs.labelTimeCriteria) criterion.labelId,
+      };
+      final rows = await _journalDb.goalLabelTimeRows(
+        start: queryStart,
+        end: categoryTimeEnd,
+        labelIds: watchedLabelIds,
+      );
+      final activeRows = await _activeLabelTimeRows(
+        reference,
+        watchedLabelIds,
+      );
+      for (final activeRow in activeRows) {
+        if (!activeRow.dateTo.isAfter(queryStart) ||
+            !activeRow.dateFrom.isBefore(categoryTimeEnd)) {
+          continue;
+        }
+        rows
+          ..removeWhere(
+            (row) =>
+                row.entryId == activeRow.entryId &&
+                row.labelId == activeRow.labelId,
+          )
+          ..add(activeRow);
+      }
+      rows.sort((a, b) {
+        final byStart = a.dateFrom.compareTo(b.dateFrom);
+        if (byStart != 0) return byStart;
+        final byEntry = a.entryId.compareTo(b.entryId);
+        return byEntry != 0 ? byEntry : a.labelId.compareTo(b.labelId);
+      });
+      hasActiveLabelTimer = activeRows.any(
+        (row) => needs.labelTimeCriteria.any(
+          (criterion) =>
+              criterion.labelId == row.labelId &&
+              (criterion.categoryId == null ||
+                  criterion.categoryId == row.categoryId),
+        ),
+      );
+      for (final criterion in needs.labelTimeCriteria) {
+        final projection = _bucketLabelTime(
+          rows: rows,
+          criterion: criterion,
+          aggregateStart: rangeStart,
+          evidenceStart: evidenceStart,
+          rangeEnd: categoryTimeEnd,
+          includeEvidence: includeTimeEntryEvidence,
+        );
+        labelTime[criterion.criterionId] = projection.hoursByDay;
+        if (projection.evidence.isNotEmpty) {
+          labelTimeEntries[criterion.criterionId] = projection.evidence;
+        }
+      }
+    }
+
     return GoalSignalWindow(
       quantitativeDailySums: quantitative,
       quantitativeObservationsByType: quantitativeObservations,
@@ -240,12 +311,20 @@ class GoalSignalReader {
       measurableEntryDaysById: measurableEntryDaysById,
       categoryTimeDailyHours: categoryTime,
       categoryTimeSessionsByCategory: categoryTimeSessions,
+      labelTimeDailyHours: labelTime,
+      labelTimeEntriesByCriterion: labelTimeEntries,
+      labelTimeEvidenceStart: labelTimeEvidenceStart,
+      labelTimeEvidenceEnd:
+          needs.labelTimeCriteria.isEmpty || !includeTimeEntryEvidence
+          ? null
+          : categoryTimeEnd,
       categoryTimeEvidenceStart: categoryTimeEvidenceStart,
       categoryTimeEvidenceEnd:
-          needs.categoryTimeCriteria.isEmpty || !includeCategoryTimeSessions
+          needs.categoryTimeCriteria.isEmpty || !includeTimeEntryEvidence
           ? null
           : categoryTimeEnd,
       hasActiveCategoryTimer: hasActiveCategoryTimer,
+      hasActiveLabelTimer: hasActiveLabelTimer,
     );
   }
 
@@ -275,6 +354,49 @@ class GoalSignalReader {
       dateTo: dateTo,
       categoryId: categoryId,
     );
+  }
+
+  Future<List<GoalLabelTimeRowRecord>> _activeLabelTimeRows(
+    DateTime reference,
+    Set<String> watchedLabelIds,
+  ) async {
+    final current = _timeService?.getCurrent();
+    if (current is! JournalEntry) return const [];
+    final matchingLabelIds =
+        (current.meta.labelIds ?? const <String>[])
+            .where(watchedLabelIds.contains)
+            .toList()
+          ..sort();
+    if (matchingLabelIds.isEmpty) return const [];
+
+    final needsPrivateFlag = current.meta.private == true;
+    final showPrivate =
+        !needsPrivateFlag || await _journalDb.getConfigFlag('private');
+    if (current.meta.private == true && !showPrivate) return const [];
+
+    final resolvedCategory = await _journalDb.insightsTimeCategoryForEntry(
+      current.meta.id,
+    );
+    final categoryId = resolvedCategory?.trim().isNotEmpty == true
+        ? resolvedCategory
+        : current.meta.categoryId;
+    final persistedEnd = current.meta.dateTo;
+    final dateTo = persistedEnd.isAfter(reference) ? persistedEnd : reference;
+    final entryText = current.entryText;
+    final markdown = entryText?.markdown?.trim().isNotEmpty == true
+        ? entryText!.markdown!.trim()
+        : entryText?.plainText.trim();
+    return [
+      for (final labelId in matchingLabelIds)
+        (
+          entryId: current.meta.id,
+          labelId: labelId,
+          dateFrom: current.meta.dateFrom,
+          dateTo: dateTo,
+          categoryId: categoryId,
+          markdown: markdown,
+        ),
+    ];
   }
 
   Map<DateTime, num> _bucketCategoryTime({
@@ -312,6 +434,77 @@ class GoalSignalReader {
       }
     }
     return hoursByDay;
+  }
+
+  ({
+    Map<DateTime, num> hoursByDay,
+    List<GoalLabelTimeEntryEvidence> evidence,
+  })
+  _bucketLabelTime({
+    required List<GoalLabelTimeRowRecord> rows,
+    required GoalCriterionLabelTime criterion,
+    required DateTime aggregateStart,
+    required DateTime evidenceStart,
+    required DateTime rangeEnd,
+    required bool includeEvidence,
+  }) {
+    final intervalsByDay = <DateTime, List<TimeInterval>>{};
+    final evidence = <GoalLabelTimeEntryEvidence>[];
+    for (final row in rows) {
+      if (row.labelId != criterion.labelId ||
+          (criterion.categoryId != null &&
+              row.categoryId != criterion.categoryId)) {
+        continue;
+      }
+      final evidenceRowStart = row.dateFrom.isBefore(evidenceStart)
+          ? evidenceStart
+          : row.dateFrom;
+      final evidenceRowEnd = row.dateTo.isAfter(rangeEnd)
+          ? rangeEnd
+          : row.dateTo;
+      if (!evidenceRowEnd.isAfter(evidenceRowStart)) continue;
+
+      for (final segment in splitByLocalDay(evidenceRowStart, evidenceRowEnd)) {
+        for (final clipped in _clipToDailyTimeRange(
+          segment,
+          criterion.dailyTimeRange,
+        )) {
+          if (includeEvidence) {
+            evidence.add(
+              GoalLabelTimeEntryEvidence(
+                entryId: row.entryId,
+                labelId: row.labelId,
+                categoryId: row.categoryId,
+                dateFrom: clipped.start,
+                dateTo: clipped.end,
+                markdown: row.markdown?.trim() ?? '',
+              ),
+            );
+          }
+          final aggregateSegmentStart = clipped.start.isBefore(aggregateStart)
+              ? aggregateStart
+              : clipped.start;
+          if (!clipped.end.isAfter(aggregateSegmentStart)) continue;
+          final day = GoalWindow.dayUtc(aggregateSegmentStart);
+          intervalsByDay
+              .putIfAbsent(day, () => [])
+              .add(TimeInterval(aggregateSegmentStart, clipped.end));
+        }
+      }
+    }
+    evidence.sort((a, b) {
+      final byStart = a.dateFrom.compareTo(b.dateFrom);
+      if (byStart != 0) return byStart;
+      return a.entryId.compareTo(b.entryId);
+    });
+    final hoursByDay = <DateTime, num>{};
+    for (final entry in intervalsByDay.entries) {
+      final seconds = intervalSeconds(mergeIntervals(entry.value));
+      if (seconds > 0) {
+        hoursByDay[entry.key] = seconds / Duration.secondsPerHour;
+      }
+    }
+    return (hoursByDay: hoursByDay, evidence: evidence);
   }
 
   List<TimeInterval> _clipToDailyTimeRange(
@@ -478,7 +671,8 @@ class GoalSignalReader {
         case GoalCriterionMetric(:final window) ||
             GoalCriterionMeasurable(:final window) ||
             GoalCriterionHabit(:final window) ||
-            GoalCriterionCategoryTime(:final window):
+            GoalCriterionCategoryTime(:final window) ||
+            GoalCriterionLabelTime(:final window):
           // One extra period back so the policy's prior-attainment grace
           // check can be computed from the same window.
           final start = window.periodRange(reference).start;
@@ -529,6 +723,15 @@ Set<String> goalStaleSignalTriggerTokens(GoalCriterion criteria) {
       categoriesNotification,
       privateToggleNotification,
     },
+    if (needs.labelTimeCriteria.isNotEmpty) ...const {
+      textEntryNotification,
+      linkNotification,
+      taskNotification,
+      categoriesNotification,
+      labelUsageNotification,
+      labelsNotification,
+      privateToggleNotification,
+    },
   };
 }
 
@@ -537,6 +740,7 @@ class _SignalNeeds {
   final habitIds = <String>{};
   final measurableTypeIds = <String>{};
   final categoryTimeCriteria = <GoalCriterionCategoryTime>[];
+  final labelTimeCriteria = <GoalCriterionLabelTime>[];
 
   void collect(GoalCriterion criterion) {
     switch (criterion) {
@@ -548,6 +752,8 @@ class _SignalNeeds {
         measurableTypeIds.add(dataTypeId);
       case final GoalCriterionCategoryTime categoryTime:
         categoryTimeCriteria.add(categoryTime);
+      case final GoalCriterionLabelTime labelTime:
+        labelTimeCriteria.add(labelTime);
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria) ||
           GoalCriterionAtLeastCount(:final criteria):

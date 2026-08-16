@@ -13,6 +13,7 @@ typedef _LeafOrderEntry = ({
   String? healthDataType,
   String? measurableId,
   String? categoryId,
+  String? labelId,
   bool isSteps,
 });
 
@@ -42,6 +43,11 @@ class GoalFormMapping {
     required this.categoryTimeDirections,
     required this.categoryTimeCriterionIds,
     required this.categoryTimeCriterionTitles,
+    required this.labelTimeTargets,
+    required this.labelTimeDirections,
+    required this.labelTimeCategoryIds,
+    required this.labelTimeCriterionIds,
+    required this.labelTimeCriterionTitles,
     required this.stepsCriterionId,
     required this.stepsCriterionTitle,
     required this.compositeCriterionId,
@@ -70,6 +76,11 @@ class GoalFormMapping {
       categoryTimeDirections = const {},
       categoryTimeCriterionIds = const {},
       categoryTimeCriterionTitles = const {},
+      labelTimeTargets = const {},
+      labelTimeDirections = const {},
+      labelTimeCategoryIds = const {},
+      labelTimeCriterionIds = const {},
+      labelTimeCriterionTitles = const {},
       stepsCriterionId = 'steps',
       stepsCriterionTitle = null,
       compositeCriterionId = 'routine',
@@ -105,6 +116,11 @@ class GoalFormMapping {
     final categoryTimeDirections = <String, GoalDirection>{};
     final categoryTimeCriterionIds = <String, String>{};
     final categoryTimeCriterionTitles = <String, String?>{};
+    final labelTimeTargets = <String, num>{};
+    final labelTimeDirections = <String, GoalDirection>{};
+    final labelTimeCategoryIds = <String, String?>{};
+    final labelTimeCriterionIds = <String, String>{};
+    final labelTimeCriterionTitles = <String, String?>{};
     final leafOrder = <_LeafOrderEntry>[];
 
     for (final leaf in leaves) {
@@ -133,6 +149,7 @@ class GoalFormMapping {
             healthDataType: null,
             measurableId: null,
             categoryId: null,
+            labelId: null,
             isSteps: true,
           ));
         case GoalCriterionMetric(
@@ -158,6 +175,7 @@ class GoalFormMapping {
             healthDataType: dataType,
             measurableId: null,
             categoryId: null,
+            labelId: null,
             isSteps: false,
           ));
         case GoalCriterionHabit(
@@ -179,6 +197,7 @@ class GoalFormMapping {
             healthDataType: null,
             measurableId: null,
             categoryId: null,
+            labelId: null,
             isSteps: false,
           ));
         case GoalCriterionMeasurable(
@@ -203,6 +222,7 @@ class GoalFormMapping {
             healthDataType: null,
             measurableId: dataTypeId,
             categoryId: null,
+            labelId: null,
             isSteps: false,
           ));
         case GoalCriterionCategoryTime(
@@ -229,6 +249,36 @@ class GoalFormMapping {
             healthDataType: null,
             measurableId: null,
             categoryId: categoryId,
+            labelId: null,
+            isSteps: false,
+          ));
+        case GoalCriterionLabelTime(
+              :final criterionId,
+              :final labelId,
+              :final categoryId,
+              :final window,
+              :final aggregation,
+              :final targetHours,
+              :final direction,
+              :final dailyTimeRange,
+              :final title,
+            )
+            when window == const GoalWindow.day() &&
+                aggregation == GoalAggregation.sum &&
+                dailyTimeRange == null &&
+                targetHours > 0 &&
+                !labelTimeTargets.containsKey(labelId):
+          labelTimeTargets[labelId] = targetHours;
+          labelTimeDirections[labelId] = direction;
+          labelTimeCategoryIds[labelId] = categoryId;
+          labelTimeCriterionIds[labelId] = criterionId;
+          labelTimeCriterionTitles[labelId] = title;
+          leafOrder.add((
+            habitId: null,
+            healthDataType: null,
+            measurableId: null,
+            categoryId: null,
+            labelId: labelId,
             isSteps: false,
           ));
         default:
@@ -249,6 +299,11 @@ class GoalFormMapping {
             categoryTimeDirections: const {},
             categoryTimeCriterionIds: const {},
             categoryTimeCriterionTitles: const {},
+            labelTimeTargets: const {},
+            labelTimeDirections: const {},
+            labelTimeCategoryIds: const {},
+            labelTimeCriterionIds: const {},
+            labelTimeCriterionTitles: const {},
             stepsCriterionId: 'steps',
             stepsCriterionTitle: null,
             compositeCriterionId: 'routine',
@@ -281,6 +336,11 @@ class GoalFormMapping {
       categoryTimeCriterionTitles: Map.unmodifiable(
         categoryTimeCriterionTitles,
       ),
+      labelTimeTargets: Map.unmodifiable(labelTimeTargets),
+      labelTimeDirections: Map.unmodifiable(labelTimeDirections),
+      labelTimeCategoryIds: Map.unmodifiable(labelTimeCategoryIds),
+      labelTimeCriterionIds: Map.unmodifiable(labelTimeCriterionIds),
+      labelTimeCriterionTitles: Map.unmodifiable(labelTimeCriterionTitles),
       stepsCriterionId: stepsCriterionId,
       stepsCriterionTitle: stepsCriterionTitle,
       compositeCriterionId: switch (criteria) {
@@ -329,6 +389,11 @@ class GoalFormMapping {
   final Map<String, GoalDirection> categoryTimeDirections;
   final Map<String, String> categoryTimeCriterionIds;
   final Map<String, String?> categoryTimeCriterionTitles;
+  final Map<String, num> labelTimeTargets;
+  final Map<String, GoalDirection> labelTimeDirections;
+  final Map<String, String?> labelTimeCategoryIds;
+  final Map<String, String> labelTimeCriterionIds;
+  final Map<String, String?> labelTimeCriterionTitles;
   final String stepsCriterionId;
   final String? stepsCriterionTitle;
   final String compositeCriterionId;
@@ -359,6 +424,10 @@ class GoalFormMapping {
     Map<String, num> categoryTimeTargets = const {},
     Map<String, GoalDirection> categoryTimeDirections = const {},
     Map<String, String> categoryTimeTitles = const {},
+    Map<String, num> labelTimeTargets = const {},
+    Map<String, GoalDirection> labelTimeDirections = const {},
+    Map<String, String> labelTimeTitles = const {},
+    Map<String, String?> labelTimeCategoryIds = const {},
     bool? watchesSteps,
     num? stepsTarget,
     GoalFormCompositeRule? compositeRule,
@@ -375,6 +444,7 @@ class GoalFormMapping {
     }
     if (measurableTargets.values.any((target) => target <= 0)) return null;
     if (categoryTimeTargets.values.any((target) => target <= 0)) return null;
+    if (labelTimeTargets.values.any((target) => target <= 0)) return null;
     if (healthTargets.entries.any(
       (entry) =>
           !GoalHealthDataTypes.supported.contains(entry.key) ||
@@ -388,12 +458,14 @@ class GoalFormMapping {
       ...measurableCriterionIds.values,
       ...healthCriterionIds.values,
       ...categoryTimeCriterionIds.values,
+      ...labelTimeCriterionIds.values,
       if (this.watchesSteps) stepsCriterionId,
       if (wasComposite ||
           habitTargets.length +
                   measurableTargets.length +
                   healthTargets.length +
                   categoryTimeTargets.length +
+                  labelTimeTargets.length +
                   (includeSteps ? 1 : 0) >
               1)
         compositeCriterionId,
@@ -483,10 +555,33 @@ class GoalFormMapping {
               GoalDirection.atMost,
         ),
     };
+    final labelTimeLeaves = {
+      for (final entry in labelTimeTargets.entries)
+        entry.key: GoalCriterion.labelTime(
+          criterionId:
+              labelTimeCriterionIds[entry.key] ??
+              allocateId('label-time-${entry.key}'),
+          labelId: entry.key,
+          categoryId: labelTimeCategoryIds.containsKey(entry.key)
+              ? labelTimeCategoryIds[entry.key]
+              : this.labelTimeCategoryIds[entry.key],
+          title: labelTimeCriterionIds.containsKey(entry.key)
+              ? labelTimeCriterionTitles[entry.key]
+              : labelTimeTitles[entry.key],
+          window: const GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetHours: entry.value,
+          direction:
+              labelTimeDirections[entry.key] ??
+              this.labelTimeDirections[entry.key] ??
+              GoalDirection.atLeast,
+        ),
+    };
     final orderedHabitIds = <String>{};
     final orderedMeasurableIds = <String>{};
     final orderedHealthDataTypes = <String>{};
     final orderedCategoryIds = <String>{};
+    final orderedLabelIds = <String>{};
     var stepsAdded = false;
     final leaves = <GoalCriterion>[];
     for (final entry in _leafOrder) {
@@ -513,6 +608,11 @@ class GoalFormMapping {
         if (categoryTime != null && orderedCategoryIds.add(categoryId)) {
           leaves.add(categoryTime);
         }
+      } else if (entry.labelId case final labelId?) {
+        final labelTime = labelTimeLeaves[labelId];
+        if (labelTime != null && orderedLabelIds.add(labelId)) {
+          leaves.add(labelTime);
+        }
       }
     }
     if (stepsLeaf != null && !stepsAdded) leaves.add(stepsLeaf);
@@ -527,6 +627,9 @@ class GoalFormMapping {
     }
     for (final entry in categoryTimeLeaves.entries) {
       if (!orderedCategoryIds.contains(entry.key)) leaves.add(entry.value);
+    }
+    for (final entry in labelTimeLeaves.entries) {
+      if (!orderedLabelIds.contains(entry.key)) leaves.add(entry.value);
     }
     if (leaves.isEmpty) return null;
     if (leaves.length == 1 && !wasComposite) return leaves.single;

@@ -9,6 +9,21 @@ typedef InsightsTimeRowRecord = ({
   String? categoryId,
 });
 
+/// One slim tracked-time row selected by a watched label for goal evaluation.
+///
+/// `markdown` is extracted directly from the serialized journal payload so
+/// goal-agent evidence keeps the entry's semantic structure without
+/// deserializing unrelated time entries. Older plain-text-only entries fall
+/// back to their `plainText` value at the query boundary.
+typedef GoalLabelTimeRowRecord = ({
+  String entryId,
+  String labelId,
+  DateTime dateFrom,
+  DateTime dateTo,
+  String? categoryId,
+  String? markdown,
+});
+
 const _insightsResolvedCategorySql = '''
   COALESCE(
     (
@@ -100,6 +115,72 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
           dateFrom: row.read<DateTime>('date_from'),
           dateTo: row.read<DateTime>('date_to'),
           categoryId: row.read<String?>('category_id'),
+        ),
+    ];
+  }
+
+  /// Returns tracked-time rows carrying any of [labelIds] in `[start, end)`.
+  ///
+  /// The projection shares Insights' privacy, duration, overlap, and linked
+  /// task category-attribution rules. It joins through the normalized
+  /// `labeled` table so renamed labels keep matching their stable ids and an
+  /// entry carrying two watched labels can be evaluated independently by
+  /// both criteria.
+  Future<List<GoalLabelTimeRowRecord>> goalLabelTimeRows({
+    required DateTime start,
+    required DateTime end,
+    required Set<String> labelIds,
+  }) async {
+    if (labelIds.isEmpty) return const [];
+    final orderedLabelIds = labelIds.toList()..sort();
+    final placeholders = List.filled(orderedLabelIds.length, '?').join(', ');
+    final rows = await customSelect(
+      '''
+        WITH private_flag AS (
+          SELECT COALESCE(
+            (SELECT status FROM config_flags WHERE name = 'private'),
+            FALSE
+          ) AS visible
+        )
+        SELECT
+          j.id AS entry_id,
+          l.label_id AS label_id,
+          j.date_from AS date_from,
+          j.date_to AS date_to,
+          $_insightsResolvedCategorySql AS category_id,
+          COALESCE(
+            json_extract(j.serialized, '\$.entryText.markdown'),
+            json_extract(j.serialized, '\$.entryText.plainText')
+          ) AS markdown
+        FROM journal j INDEXED BY idx_journal_insights_time
+        INNER JOIN labeled l ON l.journal_id = j.id
+        CROSS JOIN private_flag pf
+        WHERE j.type = 'JournalEntry'
+          AND j.deleted = FALSE
+          AND j.date_to > ?
+          AND j.date_from < ?
+          AND j.date_to > j.date_from
+          AND COALESCE(j.private, FALSE) IN (FALSE, pf.visible)
+          AND l.label_id IN ($placeholders)
+        ORDER BY j.date_from, j.id, l.label_id
+      ''',
+      variables: [
+        Variable<DateTime>(start),
+        Variable<DateTime>(end),
+        for (final labelId in orderedLabelIds) Variable<String>(labelId),
+      ],
+      readsFrom: {journal, labeled, linkedEntries, configFlags},
+    ).get();
+
+    return [
+      for (final row in rows)
+        (
+          entryId: row.read<String>('entry_id'),
+          labelId: row.read<String>('label_id'),
+          dateFrom: row.read<DateTime>('date_from'),
+          dateTo: row.read<DateTime>('date_to'),
+          categoryId: row.read<String?>('category_id'),
+          markdown: row.read<String?>('markdown'),
         ),
     ];
   }

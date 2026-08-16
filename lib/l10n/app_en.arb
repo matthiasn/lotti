@@ -3589,6 +3589,7 @@
   "goalDimensionHabitSource": "Habit completions",
   "goalDimensionHealthSource": "Health data",
   "goalDimensionImprovingNote": "Not there yet, but the last reading moved toward the target.",
+  "goalDimensionLabelTimeSource": "Tracked time by label",
   "goalDimensionMeasurableSource": "Your measurable",
   "goalDimensionMetricReading": "{currentValue} of {targetValue}",
   "@goalDimensionMetricReading": {
@@ -3770,6 +3771,23 @@
   "goalFormIntentionHelper": "Say it your way — this is how your agent will talk about it.",
   "goalFormIntentionHint": "Get to the gym twice a week, and keep up my morning exercises.",
   "goalFormIntentionPrompt": "What do you want to work toward?",
+  "goalFormLabelTimeCadence": "{labelName}: {direction} {target} {target, select, 1{hour} other{hours}} per day",
+  "@goalFormLabelTimeCadence": {
+    "description": "Confirmation summary for a daily label-filtered tracked-time criterion.",
+    "placeholders": {
+      "labelName": {
+        "type": "String"
+      },
+      "direction": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormLabelTimeSource": "Tracked time with this label · hours per day",
+  "goalFormLabelTimeTarget": "Hours per day",
   "goalFormMappingIntro": "I can only coach what I can see. These signals are my eyes.",
   "goalFormMappingTitle": "Here’s what I can watch",
   "goalFormMeasurableCadence": "{measurableName}: {target} per rolling week",

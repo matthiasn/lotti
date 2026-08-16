@@ -29,6 +29,24 @@ void main() {
     categoryTimeEvidenceStart: DateTime(2026, 8),
     categoryTimeEvidenceEnd: DateTime(2026, 8, 6),
     hasActiveCategoryTimer: true,
+    labelTimeDailyHours: {
+      'daily-content': {d(5): 0.75},
+    },
+    labelTimeEntriesByCriterion: {
+      'daily-content': [
+        GoalLabelTimeEntryEvidence(
+          entryId: 'entry-1',
+          labelId: 'content',
+          categoryId: 'work',
+          dateFrom: DateTime(2026, 8, 5, 9),
+          dateTo: DateTime(2026, 8, 5, 9, 45),
+          markdown: 'Drafted **release notes**.',
+        ),
+      ],
+    },
+    labelTimeEvidenceStart: DateTime(2026, 8, 5),
+    labelTimeEvidenceEnd: DateTime(2026, 8, 6),
+    hasActiveLabelTimer: true,
   );
 
   test('range queries are inclusive of both endpoints', () {
@@ -79,5 +97,17 @@ void main() {
     expect(window.categoryTimeEvidenceStart, DateTime(2026, 8));
     expect(window.categoryTimeEvidenceEnd, DateTime(2026, 8, 6));
     expect(window.hasActiveCategoryTimer, isTrue);
+  });
+
+  test('label time retains daily totals and semantic markdown evidence', () {
+    expect(window.labelTimeInRange('daily-content', d(5), d(5)), {
+      d(5): 0.75,
+    });
+    final evidence =
+        window.labelTimeEntriesByCriterion['daily-content']!.single;
+    expect(evidence.duration, const Duration(minutes: 45));
+    expect(evidence.markdown, 'Drafted **release notes**.');
+    expect(evidence.categoryId, 'work');
+    expect(window.hasActiveTrackedTimer, isTrue);
   });
 }

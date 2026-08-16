@@ -240,4 +240,23 @@ void main() {
 
     expect(decoded, criterion);
   });
+
+  test('label time round trip preserves label and optional category scope', () {
+    const criterion = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      categoryId: 'work',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+      title: 'Create content',
+    );
+
+    final decoded = GoalCriterion.fromJson(
+      jsonDecode(jsonEncode(criterion)) as Map<String, dynamic>,
+    );
+
+    expect(decoded, criterion);
+    expect(goalCriterionHabitIds(criterion), isEmpty);
+  });
 }

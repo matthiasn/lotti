@@ -212,4 +212,159 @@ void main() {
       );
     },
   );
+
+  test('label-time markdown changes the model-facing facts digest', () {
+    const labelCriteria = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+    GoalWakeFacts labelFacts(String markdown) => GoalWakeFacts(
+      trackStatus: GoalTrackStatus.atRisk,
+      evaluation: const GoalEvaluation(
+        attainment: 0.75,
+        satisfied: false,
+        dataCoverage: 1,
+        results: {
+          'daily-content': GoalCriterionResult(
+            criterionId: 'daily-content',
+            actual: 0.75,
+            target: 1,
+            ratio: 0.75,
+            satisfied: false,
+            sampleCount: 1,
+          ),
+        },
+      ),
+      labelTimeEntriesByCriterion: {
+        'daily-content': [
+          GoalLabelTimeEntryEvidence(
+            entryId: 'entry-1',
+            labelId: 'content',
+            dateFrom: DateTime(2026, 8, 9, 9),
+            dateTo: DateTime(2026, 8, 9, 9, 45),
+            markdown: markdown,
+          ),
+        ],
+      },
+    );
+
+    final original = labelFacts('Drafted **three** sections.');
+    final revised = labelFacts('Drafted **four** sections.');
+
+    expect(
+      goalAggregateFactsDigest(revised),
+      goalAggregateFactsDigest(original),
+    );
+    expect(
+      goalFactsDigest(
+        revised,
+        criteria: labelCriteria,
+        evaluationReference: reference,
+      ),
+      isNot(
+        goalFactsDigest(
+          original,
+          criteria: labelCriteria,
+          evaluationReference: reference,
+        ),
+      ),
+    );
+  });
+
+  test('label-time digest matches the bounded model-facing evidence', () {
+    const labelCriteria = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+    final entries = [
+      for (var index = 0; index < 201; index++)
+        GoalLabelTimeEntryEvidence(
+          entryId: 'entry-$index',
+          labelId: 'content',
+          categoryId: 'work',
+          dateFrom: DateTime(2026).add(Duration(minutes: index)),
+          dateTo: DateTime(2026).add(Duration(minutes: index + 1)),
+          markdown: 'Entry $index',
+        ),
+    ];
+    GoalWakeFacts boundedFacts(List<GoalLabelTimeEntryEvidence> evidence) =>
+        GoalWakeFacts(
+          trackStatus: GoalTrackStatus.atRisk,
+          evaluation: const GoalEvaluation(
+            attainment: 0.75,
+            satisfied: false,
+            dataCoverage: 1,
+            results: {
+              'daily-content': GoalCriterionResult(
+                criterionId: 'daily-content',
+                actual: 0.75,
+                target: 1,
+                ratio: 0.75,
+                satisfied: false,
+                sampleCount: 1,
+              ),
+            },
+          ),
+          labelTimeEntriesByCriterion: {'daily-content': evidence},
+        );
+    String digest(List<GoalLabelTimeEntryEvidence> evidence) => goalFactsDigest(
+      boundedFacts(evidence),
+      criteria: labelCriteria,
+      evaluationReference: reference,
+    );
+
+    final changedOmitted = [
+      GoalLabelTimeEntryEvidence(
+        entryId: entries.first.entryId,
+        labelId: entries.first.labelId,
+        categoryId: entries.first.categoryId,
+        dateFrom: entries.first.dateFrom,
+        dateTo: entries.first.dateTo,
+        markdown: 'Changed omitted entry',
+      ),
+      ...entries.skip(1),
+    ];
+    final changedRetained = [
+      ...entries.take(entries.length - 1),
+      GoalLabelTimeEntryEvidence(
+        entryId: entries.last.entryId,
+        labelId: entries.last.labelId,
+        categoryId: 'personal',
+        dateFrom: entries.last.dateFrom,
+        dateTo: entries.last.dateTo,
+        markdown: 'Changed retained entry',
+      ),
+    ];
+
+    expect(digest(changedOmitted), digest(entries));
+    expect(digest(changedRetained), isNot(digest(entries)));
+  });
+
+  test('label-time model evidence has a deterministic complete tie-break', () {
+    final at = DateTime(2026, 8, 9, 9);
+    GoalLabelTimeEntryEvidence evidence(String entryId) =>
+        GoalLabelTimeEntryEvidence(
+          entryId: entryId,
+          labelId: 'content',
+          dateFrom: at,
+          dateTo: at.add(const Duration(minutes: 5)),
+          markdown: entryId,
+        );
+
+    final ordered = goalLabelTimeEvidenceForFacts({
+      'criterion-b': [evidence('entry-b'), evidence('entry-a')],
+      'criterion-a': [evidence('entry-z')],
+    });
+
+    expect(
+      ordered.map((entry) => '${entry.criterionId}:${entry.evidence.entryId}'),
+      ['criterion-a:entry-z', 'criterion-b:entry-a', 'criterion-b:entry-b'],
+    );
+  });
 }

@@ -81,6 +81,69 @@ void main() {
     });
   });
 
+  group('label-time leaf — daily fulfillment', () {
+    const criterion = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
+    );
+
+    test('45 minutes is in progress', () {
+      final evaluation = evaluator.evaluate(
+        criterion,
+        GoalSignalWindow(
+          labelTimeDailyHours: {
+            'daily-content': {d(8): 0.75},
+          },
+        ),
+        saturday,
+      );
+
+      expect(evaluation.results['daily-content']!.actual, 0.75);
+      expect(evaluation.attainment, 0.75);
+      expect(evaluation.satisfied, isFalse);
+    });
+
+    test('another 20 minutes fulfills the same daily criterion', () {
+      final evaluation = evaluator.evaluate(
+        criterion,
+        GoalSignalWindow(
+          labelTimeDailyHours: {
+            'daily-content': {d(8): 65 / 60},
+          },
+        ),
+        saturday,
+      );
+
+      expect(
+        evaluation.results['daily-content']!.actual,
+        closeTo(65 / 60, 1e-9),
+      );
+      expect(evaluation.attainment, 1);
+      expect(evaluation.satisfied, isTrue);
+    });
+
+    test('short-term attainment re-windows the same label-time ledger', () {
+      final attainment = evaluator.shortTermAttainment(
+        criterion,
+        GoalSignalWindow(
+          labelTimeDailyHours: {
+            'daily-content': {
+              d(6): 0.25,
+              d(7): 0.5,
+              d(8): 0.75,
+            },
+          },
+        ),
+        saturday,
+      );
+
+      expect(attainment, 1);
+    });
+  });
+
   group('metric leaf — directions and aggregations', () {
     test('atMost is satisfied under the cap and decays over it', () {
       const espresso = GoalCriterion.metric(

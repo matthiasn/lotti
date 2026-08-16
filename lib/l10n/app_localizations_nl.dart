@@ -6327,6 +6327,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nog niet, maar de laatste meting ging richting het doel.';
 
   @override
+  String get goalDimensionLabelTimeSource => 'Tijd bijgehouden per label';
+
+  @override
   String get goalDimensionMeasurableSource => 'Jouw meetbare';
 
   @override
@@ -6547,6 +6550,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormIntentionPrompt => 'Waar wil je naartoe werken?';
+
+  @override
+  String goalFormLabelTimeCadence(
+    String labelName,
+    String direction,
+    String target,
+  ) {
+    return '$labelName: $direction $target uur per dag';
+  }
+
+  @override
+  String get goalFormLabelTimeSource =>
+      'Bijgehouden tijd met dit label · uren per dag';
+
+  @override
+  String get goalFormLabelTimeTarget => 'Uren per dag';
 
   @override
   String get goalFormMappingIntro =>

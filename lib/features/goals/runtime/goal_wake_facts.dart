@@ -88,6 +88,52 @@ String _healthEvidenceDigest(
   return sha1.convert(utf8.encode(evidence.join('|'))).toString();
 }
 
+/// Maximum counted label-time entry segments included in one model message.
+const goalLabelTimeEntryEvidenceLimit = 200;
+
+typedef GoalLabelTimeCriterionEvidence = ({
+  String criterionId,
+  GoalLabelTimeEntryEvidence evidence,
+});
+
+/// The deterministic bounded label-time projection shared by FACTS and its
+/// freshness digest.
+List<GoalLabelTimeCriterionEvidence> goalLabelTimeEvidenceForFacts(
+  Map<String, List<GoalLabelTimeEntryEvidence>> evidenceByCriterion,
+) {
+  final entries =
+      [
+        for (final entry in evidenceByCriterion.entries)
+          for (final evidence in entry.value)
+            (criterionId: entry.key, evidence: evidence),
+      ]..sort((a, b) {
+        final byStart = a.evidence.dateFrom.compareTo(b.evidence.dateFrom);
+        if (byStart != 0) return byStart;
+        final byCriterion = a.criterionId.compareTo(b.criterionId);
+        if (byCriterion != 0) return byCriterion;
+        return a.evidence.entryId.compareTo(b.evidence.entryId);
+      });
+  return entries.length <= goalLabelTimeEntryEvidenceLimit
+      ? entries
+      : entries.sublist(entries.length - goalLabelTimeEntryEvidenceLimit);
+}
+
+String _labelTimeEvidenceDigest(
+  Map<String, List<GoalLabelTimeEntryEvidence>> evidenceByCriterion,
+) {
+  if (evidenceByCriterion.isEmpty) return '';
+  final evidence = goalLabelTimeEvidenceForFacts(evidenceByCriterion).map(
+    (entry) =>
+        '${entry.criterionId}:${entry.evidence.entryId}:'
+        '${entry.evidence.labelId}:'
+        '${entry.evidence.categoryId ?? ''}:'
+        '${entry.evidence.dateFrom.toIso8601String()}:'
+        '${entry.evidence.dateTo.toIso8601String()}:'
+        '${entry.evidence.markdown}',
+  );
+  return sha1.convert(utf8.encode(evidence.join('|'))).toString();
+}
+
 /// Exact observations that one health criterion can expose to inference.
 ///
 /// Keeping this projection shared by rendering and freshness guarantees that
@@ -140,7 +186,8 @@ Map<String, List<GoalMetricObservation>> _renderedHealthEvidence({
       case GoalCriterionMetric() ||
           GoalCriterionHabit() ||
           GoalCriterionMeasurable() ||
-          GoalCriterionCategoryTime():
+          GoalCriterionCategoryTime() ||
+          GoalCriterionLabelTime():
         break;
     }
   }
@@ -169,7 +216,14 @@ String goalFactsDigest(
       evaluationReference: evaluationReference,
     ),
   );
-  return health.isEmpty ? aggregate : '$aggregate|health=$health';
+  final labelTime = _labelTimeEvidenceDigest(
+    facts.labelTimeEntriesByCriterion,
+  );
+  return [
+    aggregate,
+    if (health.isNotEmpty) 'health=$health',
+    if (labelTime.isNotEmpty) 'labelTime=$labelTime',
+  ].join('|');
 }
 
 /// The same fingerprint computed from a persisted register row, so a fresh
@@ -196,9 +250,13 @@ class GoalWakeFacts {
     this.shortTermAttainment,
     this.quantitativeObservationsByType = const {},
     this.categoryTimeSessionsByCategory = const {},
+    this.labelTimeEntriesByCriterion = const {},
+    this.labelTimeEvidenceStart,
+    this.labelTimeEvidenceEnd,
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
     this.hasActiveCategoryTimer = false,
+    this.hasActiveLabelTimer = false,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -220,12 +278,20 @@ class GoalWakeFacts {
   /// model suggestion into a user-approved outcome.
   final Map<String, List<GoalCategoryTimeSession>>
   categoryTimeSessionsByCategory;
+  final Map<String, List<GoalLabelTimeEntryEvidence>>
+  labelTimeEntriesByCriterion;
   final DateTime? categoryTimeEvidenceStart;
   final DateTime? categoryTimeEvidenceEnd;
+  final DateTime? labelTimeEvidenceStart;
+  final DateTime? labelTimeEvidenceEnd;
 
   /// Whether the category-time snapshot contains a still-running timer.
   /// Reports built from this prefix remain stale until a later settled wake.
   final bool hasActiveCategoryTimer;
+  final bool hasActiveLabelTimer;
+
+  bool get hasActiveTrackedTimer =>
+      hasActiveCategoryTimer || hasActiveLabelTimer;
 
   /// Whether the status changed against the last persisted register row.
   /// A first-ever evaluation counts as a transition (there is a new fact

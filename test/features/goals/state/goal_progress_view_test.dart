@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -386,6 +387,54 @@ void main() {
 
     expect(view.metric?.name, 'vibe-coding');
   });
+
+  test('label time projects daily hours across its stable label id', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.labelTime(
+        criterionId: 'daily-content',
+        labelId: 'content',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 1,
+      ),
+      signals: GoalSignalWindow(
+        labelTimeDailyHours: {
+          'daily-content': {today: 0.75},
+        },
+      ),
+      reference: today,
+      labelNames: const {'content': 'Content'},
+    );
+
+    expect(view.metric?.kind, GoalDimensionKind.labelTime);
+    expect(view.metric?.name, 'Content');
+    expect(view.metric?.target, 1);
+    expect(view.metric?.days.single.value, 0.75);
+    expect(view.metric?.days.single.isObserved, isTrue);
+  });
+
+  test(
+    'scoped label time prefers its title over resolved label and category',
+    () {
+      final view = buildGoalProgressView(
+        criteria: const GoalCriterion.labelTime(
+          criterionId: 'daily-content',
+          labelId: 'content',
+          categoryId: 'work',
+          title: 'Publishing',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetHours: 1,
+        ),
+        signals: const GoalSignalWindow(),
+        reference: today,
+        labelNames: const {'content': 'Content'},
+        categoryNames: const {'work': 'Work'},
+      );
+
+      expect(view.metric?.name, 'Publishing');
+    },
+  );
 
   test('sum and count metrics compare the aggregated rolling period', () {
     GoalProgressView build(GoalAggregation aggregation) =>
@@ -1051,7 +1100,7 @@ void main() {
     expect(periodTotal.valueMeetsTarget(periodTotal.days.single), isFalse);
   });
 
-  test('provider resolves measurable and category definitions and folds '
+  test('provider resolves measurable, category and label definitions and folds '
       'recorded capture decisions into agent-recorded provenance', () async {
     final reference = DateTime(2026, 8, 11, 14);
     final db = MockJournalDb();
@@ -1079,6 +1128,13 @@ void main() {
         end: any(named: 'end'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => db.goalLabelTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        labelIds: any(named: 'labelIds'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
       () => db.getMeasurableDataTypeById(measurableWater.id),
@@ -1086,6 +1142,18 @@ void main() {
     when(
       () => db.getCategoryById(categoryMindfulness.id),
     ).thenAnswer((_) async => categoryMindfulness);
+    final labelContent = LabelDefinition(
+      id: 'content',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      name: 'Content',
+      color: '#30A46C',
+      vectorClock: null,
+      private: false,
+    );
+    when(
+      () => db.getLabelDefinitionById(labelContent.id),
+    ).thenAnswer((_) async => labelContent);
     final spec =
         AgentDomainEntity.goalSpecVersion(
               id: 'goal-1:spec-v1',
@@ -1112,6 +1180,14 @@ void main() {
                     aggregation: GoalAggregation.sum,
                     targetHours: 2,
                     direction: GoalDirection.atLeast,
+                  ),
+                  GoalCriterion.labelTime(
+                    criterionId: 'content',
+                    labelId: labelContent.id,
+                    categoryId: categoryMindfulness.id,
+                    window: const GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.sum,
+                    targetHours: 2,
                   ),
                 ],
               ),
@@ -1170,8 +1246,13 @@ void main() {
     final names = {for (final metric in view!.metrics) metric.name};
     expect(names, contains(measurableWater.displayName));
     expect(names, contains(categoryMindfulness.name));
+    expect(
+      names,
+      contains('${labelContent.name} · ${categoryMindfulness.name}'),
+    );
     verify(() => db.getMeasurableDataTypeById(measurableWater.id)).called(1);
     verify(() => db.getCategoryById(categoryMindfulness.id)).called(1);
+    verify(() => db.getLabelDefinitionById(labelContent.id)).called(1);
 
     // The RECORDED decision's entry flows into agent-recorded provenance on
     // its day; the unrecorded msg-2 contributes nothing — so exactly one

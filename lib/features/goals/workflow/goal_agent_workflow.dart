@@ -277,8 +277,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
       agentId: agentId,
       version: version,
       now: reference,
-      categorySessionEvidenceStart: agentIdentity.createdAt,
-      categoryTimeEndExclusive: overdueEscalation
+      timeEntryEvidenceStart: agentIdentity.createdAt,
+      timeEntryEndExclusive: overdueEscalation
           ? _periodEndExclusive(escalationPeriod!)
           : null,
     );
@@ -315,9 +315,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
           derivation.facts.quantitativeObservationsByType,
       categoryTimeSessionsByCategory:
           derivation.facts.categoryTimeSessionsByCategory,
+      labelTimeEntriesByCriterion: derivation.facts.labelTimeEntriesByCriterion,
       categoryTimeEvidenceStart: derivation.facts.categoryTimeEvidenceStart,
       categoryTimeEvidenceEnd: derivation.facts.categoryTimeEvidenceEnd,
+      labelTimeEvidenceStart: derivation.facts.labelTimeEvidenceStart,
+      labelTimeEvidenceEnd: derivation.facts.labelTimeEvidenceEnd,
       hasActiveCategoryTimer: derivation.facts.hasActiveCategoryTimer,
+      hasActiveLabelTimer: derivation.facts.hasActiveLabelTimer,
     );
 
     // Spec-scoped like the persistence snapshot: an old-spec fresh
@@ -668,7 +672,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
       return WakeResult(
         success: true,
-        reportUpdated: reportHeadAdvanced && !facts.hasActiveCategoryTimer,
+        reportUpdated: reportHeadAdvanced && !facts.hasActiveTrackedTimer,
       );
     } catch (error, stackTrace) {
       _domainLogger?.error(

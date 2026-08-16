@@ -30,9 +30,9 @@ class _FakeSignalReader extends GoalSignalReader {
     required GoalCriterion criteria,
     required DateTime reference,
     int shortTermDays = 3,
-    bool includeCategoryTimeSessions = true,
-    DateTime? categorySessionEvidenceStart,
-    DateTime? categoryTimeEndExclusive,
+    bool includeTimeEntryEvidence = true,
+    DateTime? timeEntryEvidenceStart,
+    DateTime? timeEntryEndExclusive,
   }) async => window;
 }
 
@@ -165,13 +165,20 @@ void main() {
           as GoalNudgeEntity;
 
   test(
-    'wake facts retain category sessions for model pattern analysis',
+    'wake facts retain tracked-time evidence for model pattern analysis',
     () async {
       stubSpec();
       final session = GoalCategoryTimeSession(
         categoryId: 'vibe-coding',
         dateFrom: DateTime(2026, 8, 7, 23),
         dateTo: DateTime(2026, 8, 8, 1),
+      );
+      final labelEvidence = GoalLabelTimeEntryEvidence(
+        entryId: 'entry-1',
+        labelId: 'content',
+        dateFrom: DateTime(2026, 8, 8, 9),
+        dateTo: DateTime(2026, 8, 8, 9, 45),
+        markdown: 'Drafted **three** sections.',
       );
       final signals = GoalSignalWindow(
         quantitativeDailySums: onTrackSignals().quantitativeDailySums,
@@ -188,6 +195,11 @@ void main() {
         },
         categoryTimeEvidenceStart: DateTime(2026, 8, 2),
         categoryTimeEvidenceEnd: DateTime(2026, 8, 9),
+        labelTimeEntriesByCriterion: {
+          'daily-content': [labelEvidence],
+        },
+        labelTimeEvidenceStart: DateTime(2026, 8, 2),
+        labelTimeEvidenceEnd: DateTime(2026, 8, 9),
       );
 
       final derivation = await withClock(
@@ -196,7 +208,7 @@ void main() {
           agentId: agentId,
           version: specVersion as GoalSpecVersionEntity,
           now: now,
-          categorySessionEvidenceStart: DateTime(2026, 8, 2),
+          timeEntryEvidenceStart: DateTime(2026, 8, 2),
         ),
       );
 
@@ -206,6 +218,12 @@ void main() {
       );
       expect(derivation.facts.categoryTimeEvidenceStart, DateTime(2026, 8, 2));
       expect(derivation.facts.categoryTimeEvidenceEnd, DateTime(2026, 8, 9));
+      expect(
+        derivation.facts.labelTimeEntriesByCriterion['daily-content']?.single,
+        labelEvidence,
+      );
+      expect(derivation.facts.labelTimeEvidenceStart, DateTime(2026, 8, 2));
+      expect(derivation.facts.labelTimeEvidenceEnd, DateTime(2026, 8, 9));
       expect(
         derivation
             .facts
@@ -549,7 +567,7 @@ void main() {
         agentId: agentId,
         version: specVersion as GoalSpecVersionEntity,
         now: now,
-        includeCategoryTimeSessions: false,
+        includeTimeEntryEvidence: false,
       ),
     );
     final matchingRow =

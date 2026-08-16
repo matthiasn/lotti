@@ -108,7 +108,7 @@ class GoalAgentPhaseA {
       agentId: agentId,
       version: version,
       now: now,
-      includeCategoryTimeSessions: false,
+      includeTimeEntryEvidence: false,
     );
     final facts = derivation.facts;
     // The sweep runs AFTER derivation so an active banner minted from
@@ -318,17 +318,17 @@ class GoalAgentPhaseA {
     required String agentId,
     required GoalSpecVersionEntity version,
     required DateTime now,
-    bool includeCategoryTimeSessions = true,
-    DateTime? categorySessionEvidenceStart,
-    DateTime? categoryTimeEndExclusive,
+    bool includeTimeEntryEvidence = true,
+    DateTime? timeEntryEvidenceStart,
+    DateTime? timeEntryEndExclusive,
   }) async {
     final signals = await _signalReader.read(
       criteria: version.criteria,
       reference: now,
       shortTermDays: _policy.shortTermDays,
-      includeCategoryTimeSessions: includeCategoryTimeSessions,
-      categorySessionEvidenceStart: categorySessionEvidenceStart,
-      categoryTimeEndExclusive: categoryTimeEndExclusive,
+      includeTimeEntryEvidence: includeTimeEntryEvidence,
+      timeEntryEvidenceStart: timeEntryEvidenceStart,
+      timeEntryEndExclusive: timeEntryEndExclusive,
     );
     final evaluation = _evaluator.evaluate(version.criteria, signals, now);
     final shortTerm = _evaluator.shortTermAttainment(
@@ -370,9 +370,13 @@ class GoalAgentPhaseA {
         shortTermAttainment: shortTerm,
         quantitativeObservationsByType: signals.quantitativeObservationsByType,
         categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
+        labelTimeEntriesByCriterion: signals.labelTimeEntriesByCriterion,
         categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
         categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,
+        labelTimeEvidenceStart: signals.labelTimeEvidenceStart,
+        labelTimeEvidenceEnd: signals.labelTimeEvidenceEnd,
         hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
+        hasActiveLabelTimer: signals.hasActiveLabelTimer,
       ),
       periodKey: periodKey,
       priors: priors,

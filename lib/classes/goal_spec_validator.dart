@@ -43,7 +43,7 @@ abstract final class GoalSpecValidator {
         _windowJsonIssues(json['window'], '$path.window', issues);
       case 'metric' || 'measurable':
         _windowJsonIssues(json['window'], '$path.window', issues);
-      case 'categoryTime':
+      case 'categoryTime' || 'labelTime':
         _windowJsonIssues(json['window'], '$path.window', issues);
         final dailyTimeRange = json['dailyTimeRange'];
         if (dailyTimeRange is Map<String, dynamic>) {
@@ -148,31 +148,34 @@ abstract final class GoalSpecValidator {
         :final dailyTimeRange,
       ):
         _requireIdentifier(id, 'categoryId', categoryId, issues);
-        _requireFiniteTarget(id, targetHours, issues);
-        if (targetHours < 0) {
-          issues.add(
-            '$id: targetHours must not be negative, was $targetHours',
-          );
+        _validateTimeTarget(
+          id: id,
+          targetHours: targetHours,
+          aggregation: aggregation,
+          window: window,
+          dailyTimeRange: dailyTimeRange,
+          issues: issues,
+        );
+      case GoalCriterionLabelTime(
+        :final labelId,
+        :final categoryId,
+        :final targetHours,
+        :final window,
+        :final aggregation,
+        :final dailyTimeRange,
+      ):
+        _requireIdentifier(id, 'labelId', labelId, issues);
+        if (categoryId != null) {
+          _requireIdentifier(id, 'categoryId', categoryId, issues);
         }
-        if (aggregation == GoalAggregation.count) {
-          issues.add(
-            '$id: count aggregation uses day units and is invalid for an '
-            'hour target',
-          );
-        }
-        _requirePositiveRollingCount(id, window, issues);
-        if (dailyTimeRange case final range?) {
-          _requireMinuteOfDay(id, 'startMinute', range.startMinute, issues);
-          _requireMinuteOfDay(id, 'endMinute', range.endMinute, issues);
-          if (range.startMinute == range.endMinute &&
-              range.startMinute >= 0 &&
-              range.startMinute < Duration.minutesPerDay) {
-            issues.add(
-              '$id: daily time range endpoints must differ; omit the range '
-              'to measure the full day',
-            );
-          }
-        }
+        _validateTimeTarget(
+          id: id,
+          targetHours: targetHours,
+          aggregation: aggregation,
+          window: window,
+          dailyTimeRange: dailyTimeRange,
+          issues: issues,
+        );
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria):
         if (criteria.isEmpty) {
@@ -233,6 +236,39 @@ abstract final class GoalSpecValidator {
       issues.add(
         '$id: $field must be between 0 and 1439, was $minute',
       );
+    }
+  }
+
+  static void _validateTimeTarget({
+    required String id,
+    required num targetHours,
+    required GoalAggregation aggregation,
+    required GoalWindow window,
+    required GoalDailyTimeRange? dailyTimeRange,
+    required List<String> issues,
+  }) {
+    _requireFiniteTarget(id, targetHours, issues);
+    if (targetHours < 0) {
+      issues.add('$id: targetHours must not be negative, was $targetHours');
+    }
+    if (aggregation == GoalAggregation.count) {
+      issues.add(
+        '$id: count aggregation uses day units and is invalid for an '
+        'hour target',
+      );
+    }
+    _requirePositiveRollingCount(id, window, issues);
+    if (dailyTimeRange case final range?) {
+      _requireMinuteOfDay(id, 'startMinute', range.startMinute, issues);
+      _requireMinuteOfDay(id, 'endMinute', range.endMinute, issues);
+      if (range.startMinute == range.endMinute &&
+          range.startMinute >= 0 &&
+          range.startMinute < Duration.minutesPerDay) {
+        issues.add(
+          '$id: daily time range endpoints must differ; omit the range '
+          'to measure the full day',
+        );
+      }
     }
   }
 

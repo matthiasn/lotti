@@ -105,6 +105,29 @@ class GoalProgressEvaluator {
           direction,
           countPositiveValues: true,
         );
+      case GoalCriterionLabelTime(
+        :final criterionId,
+        :final aggregation,
+        :final targetHours,
+        :final direction,
+      ):
+        final range = window.periodRange(reference);
+        final series = _zeroFilledTime(
+          recorded: signals.labelTimeInRange(
+            criterionId,
+            range.start,
+            range.end,
+          ),
+          range: range,
+          reference: reference,
+        );
+        return _leafRatio(
+          series,
+          aggregation,
+          targetHours,
+          direction,
+          countPositiveValues: true,
+        );
       case GoalCriterionHabit(
         :final habitId,
         :final window,
@@ -222,6 +245,31 @@ class GoalProgressEvaluator {
           series: _zeroFilledCategoryTime(
             signals: signals,
             criterionId: criterionId,
+            range: window.periodRange(reference),
+            reference: reference,
+          ),
+          window: window,
+          reference: reference,
+          aggregation: aggregation,
+          target: targetHours,
+          direction: direction,
+          countPositiveValues: true,
+        ),
+      GoalCriterionLabelTime(
+        :final criterionId,
+        :final window,
+        :final aggregation,
+        :final targetHours,
+        :final direction,
+      ) =>
+        _metricLeaf(
+          criterionId: criterionId,
+          series: _zeroFilledTime(
+            recorded: signals.labelTimeInRange(
+              criterionId,
+              window.periodRange(reference).start,
+              window.periodRange(reference).end,
+            ),
             range: window.periodRange(reference),
             reference: reference,
           ),
@@ -400,6 +448,9 @@ class GoalProgressEvaluator {
       GoalCriterionMeasurable(:final criterionId) ||
       GoalCriterionCategoryTime(
         :final criterionId,
+      ) ||
+      GoalCriterionLabelTime(
+        :final criterionId,
       ) => results[criterionId]?.satisfied ?? false,
       GoalCriterionAllOf(:final criteria) =>
         criteria.isNotEmpty &&
@@ -430,6 +481,20 @@ class GoalProgressEvaluator {
       range.start,
       end,
     );
+    return _zeroFilledTime(
+      recorded: recorded,
+      range: range,
+      reference: reference,
+    );
+  }
+
+  Map<DateTime, num> _zeroFilledTime({
+    required Map<DateTime, num> recorded,
+    required ({DateTime start, DateTime end}) range,
+    required DateTime reference,
+  }) {
+    final today = GoalWindow.dayUtc(reference);
+    final end = range.end.isBefore(today) ? range.end : today;
     return {
       for (
         var day = range.start;

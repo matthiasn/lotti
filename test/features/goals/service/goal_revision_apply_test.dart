@@ -312,17 +312,50 @@ void main() {
     },
   );
 
-  test('a category-time sibling does not make habit cadence ambiguous', () {
-    const categoryTime = GoalCriterion.categoryTime(
-      criterionId: 'late-coding',
-      categoryId: 'vibe-coding',
+  test('label time takes target and period changes and binds by category', () {
+    const labelTime = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      categoryId: 'work',
       window: GoalWindow.day(),
       aggregation: GoalAggregation.sum,
-      targetHours: 0,
+      targetHours: 1,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'creative-day',
+      criteria: [steps, labelTime],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {
+          'metric': 'work',
+          'targetValue': 1.5,
+          'period': 'rolling 3 days',
+        },
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+    final time = revised.criteria.last as GoalCriterionLabelTime;
+
+    expect(time.targetHours, 1.5);
+    expect(time.categoryId, 'work');
+    expect(time.window, const GoalWindow.rollingDays(count: 3));
+    expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
+  });
+
+  test('a label-time sibling does not make habit cadence ambiguous', () {
+    const labelTime = GoalCriterion.labelTime(
+      criterionId: 'daily-content',
+      labelId: 'content',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 1,
     );
     const composite = GoalCriterion.allOf(
       criterionId: 'balanced-day',
-      criteria: [gym, categoryTime],
+      criteria: [gym, labelTime],
     );
 
     final result = applied(
@@ -334,7 +367,7 @@ void main() {
     final revised = result.criteria as GoalCriterionAllOf;
 
     expect((revised.criteria.first as GoalCriterionHabit).targetCount, 2);
-    expect(revised.criteria.last, categoryTime);
+    expect(revised.criteria.last, labelTime);
   });
 
   test('two habit leaves make a cadence change ambiguous — rejected', () {
