@@ -75,6 +75,10 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
       nextMidnight.difference(now) + const Duration(seconds: 1),
       () {
         if (!mounted) return;
+        // The controller's buckets are time-derived too (`showFrom` moves a
+        // habit between Due and Later at the boundary) — a bare rebuild
+        // would re-gate against yesterday's split.
+        unawaited(ref.read(habitsControllerProvider.notifier).refreshNow());
         setState(() {});
         _scheduleMidnightRebuild();
       },
@@ -269,7 +273,13 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
                             .setDisplayFilter,
                       ),
                       SizedBox(height: tokens.spacing.sectionGap),
-                      HabitsSummaryCard(visibleHabitIds: recordableIds),
+                      HabitsSummaryCard(
+                        visibleHabitIds: recordableIds,
+                        // Success-only, matching the rows: a skipped habit is
+                        // still due here, so it must not count as done above
+                        // an actionable, deficient goal.
+                        doneHabitIds: successToday,
+                      ),
                       SizedBox(height: tokens.spacing.step5),
                       if (failedFirstLoad)
                         Padding(

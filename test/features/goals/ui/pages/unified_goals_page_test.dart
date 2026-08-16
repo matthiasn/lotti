@@ -494,8 +494,10 @@ void main() {
       find.byType(HabitsSummaryCard),
     );
     // Only the in-window definition counts — the expired one is invisible
-    // and unrecordable on this surface, so it must not inflate "to go".
+    // and unrecordable on this surface, so it must not inflate "to go" —
+    // and done counts SUCCESS-ONLY, matching the rows.
     expect(summaryCard.visibleHabitIds, {habitFlossingDueLater.id});
+    expect(summaryCard.doneHabitIds, isNotNull);
   });
 
   testWidgets('a completion refetch invalidates the mounted goal progress '
@@ -605,7 +607,7 @@ void main() {
       habitDefinitions: [endsTonight, habitFlossingDueLater],
       openNowAll: [endsTonight, habitFlossingDueLater],
     );
-    await pump(tester, state, now: () => currentNow);
+    final controller = await pump(tester, state, now: () => currentNow);
 
     expect(
       find.byKey(Key('unified-goal-goal-1-c1-${endsTonight.id}')),
@@ -622,5 +624,10 @@ void main() {
       findsNothing,
     );
     expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+
+    // And the CONTROLLER was asked to rebucket: `showFrom` bucketing and the
+    // per-day maps are time-derived, so a bare rebuild would keep serving
+    // yesterday's split.
+    expect(controller.refreshNowCalls, 1);
   });
 }

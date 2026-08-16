@@ -116,6 +116,33 @@ void main() {
       expect(find.text('1 to go'), findsOneWidget);
     });
 
+    testWidgets('doneHabitIds overrides the handled-today count — a skip in '
+        'completedToday does not read as done', (tester) async {
+      final state = _state(definitionCount: 2).copyWith(
+        // Legacy handled set says both are done; the success-only override
+        // says only def-0 truly is.
+        completedToday: {'def-0', 'def-1'},
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const HabitsSummaryCard(
+            visibleHabitIds: {'def-0', 'def-1'},
+            doneHabitIds: {'def-0'},
+          ),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(state),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('1 to go'), findsOneWidget);
+      expect(find.text('All done today'), findsNothing);
+    });
+
     testWidgets('a SCOPED card with nothing in scope renders nothing — '
         'never a "0 / 0 · All done today" achievement', (tester) async {
       final state = _state(definitionCount: 2);

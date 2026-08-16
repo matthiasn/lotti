@@ -320,6 +320,18 @@ class HabitsController extends Notifier<HabitsState> {
     }
   }
 
+  /// Refetches completions and rebuckets for the current instant — the
+  /// day-boundary refresh a habits-rendering surface requests when its own
+  /// midnight timer fires while it stays mounted (no nav emission, no
+  /// database event): `showHabit` bucketing and the per-day maps are
+  /// time-derived and would otherwise serve yesterday's split.
+  Future<void> refreshNow() async {
+    if (!ref.mounted) return;
+    await _fetchHabitCompletions();
+    if (!ref.mounted) return;
+    _determineHabitSuccessByDays();
+  }
+
   /// Whether [navIndex] is a tab that renders habit rows from this
   /// controller. The unified Goals page (flag-gated) reuses the habits state
   /// wholesale, so it must trigger the same on-activation refresh the Habits

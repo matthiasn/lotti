@@ -490,6 +490,32 @@ void main() {
       });
     });
 
+    test('refreshNow refetches completions and rebuckets on demand — the '
+        'day-boundary hook for mounted habits surfaces', () {
+      fakeAsync((async) {
+        container.read(habitsControllerProvider);
+        async.flushMicrotasks();
+        definitionsController.add([testHabit1]);
+        async.flushMicrotasks();
+
+        clearInteractions(mockRepository);
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        container.read(habitsControllerProvider.notifier).refreshNow();
+        async.flushMicrotasks();
+
+        verify(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).called(1);
+      });
+    });
+
     test('ignores unrelated notifications', () {
       fakeAsync((async) {
         container.read(habitsControllerProvider);

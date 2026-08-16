@@ -18,7 +18,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// before this card; surfacing "don't break the chain" makes the habit loop's
 /// reward visible, which is the whole point of a habits surface.
 class HabitsSummaryCard extends ConsumerStatefulWidget {
-  const HabitsSummaryCard({this.visibleHabitIds, super.key});
+  const HabitsSummaryCard({
+    this.visibleHabitIds,
+    this.doneHabitIds,
+    super.key,
+  });
 
   /// When set, the fraction and progress bar count only these habit ids —
   /// the unified Goals page passes today's RECORDABLE definitions so a habit
@@ -27,6 +31,12 @@ class HabitsSummaryCard extends ConsumerStatefulWidget {
   /// user can neither see nor record. Null (the Habits tab) keeps the full
   /// definition count.
   final Set<String>? visibleHabitIds;
+
+  /// When set, "done" counts these ids instead of the controller's
+  /// `completedToday` — the unified Goals page passes its success-only set,
+  /// because on that surface a skipped habit is still due and must not read
+  /// as done. Null (the Habits tab) keeps the broader handled-today count.
+  final Set<String>? doneHabitIds;
 
   @override
   ConsumerState<HabitsSummaryCard> createState() => _HabitsSummaryCardState();
@@ -57,13 +67,14 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
   /// .visibleHabitIds] scope.
   (int, int) _counts(HabitsState state) {
     final filter = widget.visibleHabitIds;
+    final doneSet = widget.doneHabitIds ?? state.completedToday;
     if (filter == null) {
-      return (state.habitDefinitions.length, state.completedToday.length);
+      return (state.habitDefinitions.length, doneSet.length);
     }
     final total = state.habitDefinitions
         .where((habit) => filter.contains(habit.id))
         .length;
-    final done = state.completedToday.where(filter.contains).length;
+    final done = doneSet.where(filter.contains).length;
     return (total, done);
   }
 
