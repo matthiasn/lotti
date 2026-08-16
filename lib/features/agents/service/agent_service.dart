@@ -255,6 +255,30 @@ class AgentService {
     return true;
   }
 
+  /// Restores an agent to an exact lifecycle captured before a reversible
+  /// operation.
+  ///
+  /// This is deliberately separate from [resumeAgent]: rollback must not turn
+  /// a previously dormant or not-yet-activated agent into an active one. The
+  /// caller remains responsible for re-registering subscriptions when
+  /// [lifecycle] is [AgentLifecycle.active]. Non-active states remove any
+  /// subscriptions left by the interrupted operation.
+  Future<bool> restoreAgentLifecycle(
+    String agentId,
+    AgentLifecycle lifecycle,
+  ) async {
+    final updated = await _updateLifecycle(agentId, lifecycle);
+    if (!updated) return false;
+    if (lifecycle != AgentLifecycle.active) {
+      orchestrator.removeSubscriptions(agentId);
+    }
+    developer.log(
+      'Restored agent ${DomainLogger.sanitizeId(agentId)} to ${lifecycle.name}',
+      name: 'AgentService',
+    );
+    return true;
+  }
+
   /// Transition agent to [AgentLifecycle.destroyed] and unregister
   /// wake subscriptions.
   ///

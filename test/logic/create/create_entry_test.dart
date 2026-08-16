@@ -34,6 +34,28 @@ import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
+class _RejectingTaskCleanupPersistenceLogic extends PersistenceLogic {
+  @override
+  Future<bool?> updateDbEntity(
+    JournalEntity journalEntity, {
+    String? linkedId,
+    bool enqueueSync = true,
+    bool overrideComparison = false,
+    Future<void> Function()? beforeNotify,
+  }) {
+    if (journalEntity is Task && journalEntity.meta.deletedAt != null) {
+      return Future.value(false);
+    }
+    return super.updateDbEntity(
+      journalEntity,
+      linkedId: linkedId,
+      enqueueSync: enqueueSync,
+      overrideComparison: overrideComparison,
+      beforeNotify: beforeNotify,
+    );
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setFakeDocumentsPath();
@@ -420,6 +442,55 @@ void main() {
             reason: 'a failed explicit link must not leave an orphaned task',
           );
         }
+      },
+    );
+
+    test(
+      'createTask throws when failed project assignment cannot be cleaned up',
+      () async {
+        const projectId = 'cleanup-failure-project';
+        final projectRepository = MockProjectRepository();
+        final project = TestProjectFactory.create(
+          id: projectId,
+          categoryId: 'project-category',
+        );
+        getIt
+          ..registerSingleton<ProjectRepository>(projectRepository)
+          ..unregister<PersistenceLogic>()
+          ..registerSingleton<PersistenceLogic>(
+            _RejectingTaskCleanupPersistenceLogic(),
+          );
+        when(
+          () => projectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        String? createdTaskId;
+        when(
+          () => projectRepository.linkTaskToProject(
+            projectId: projectId,
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((invocation) async {
+          createdTaskId = invocation.namedArguments[#taskId]! as String;
+          return false;
+        });
+
+        await expectLater(
+          createTask(projectId: projectId),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('could not be soft-deleted'),
+            ),
+          ),
+        );
+
+        expect(createdTaskId, isNotNull);
+        expect(
+          await journalDb.journalEntityById(createdTaskId!),
+          isA<Task>(),
+          reason: 'the cleanup failure must be observable, not reported gone',
+        );
       },
     );
 

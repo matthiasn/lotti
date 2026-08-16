@@ -1224,9 +1224,12 @@ void main() {
             return identity.copyWith(lifecycle: AgentLifecycle.destroyed);
           });
           when(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).thenAnswer((_) async {
-            lifecycleEvents.add('resume');
+            lifecycleEvents.add('restore-lifecycle');
             return true;
           });
           await pumpPageWithData(
@@ -1241,7 +1244,7 @@ void main() {
             record: testRecord,
             projectAgent: identity,
             restoreAgentSubscriptions: () async {
-              lifecycleEvents.add('restore');
+              lifecycleEvents.add('restore-subscriptions');
             },
             extraOverrides: [
               projectRepositoryProvider.overrideWithValue(mockRepository),
@@ -1262,7 +1265,10 @@ void main() {
             find.text('Failed to delete project. Please try again.'),
             findsOneWidget,
           );
-          expect(lifecycleEvents, ['destroy', 'read', 'resume', 'restore']);
+          expect(
+            lifecycleEvents,
+            ['destroy', 'read', 'restore-lifecycle', 'restore-subscriptions'],
+          );
           verifyNever(
             () => mockRepository.deleteProject(
               any(),
@@ -1273,7 +1279,7 @@ void main() {
       );
 
       testWidgets(
-        'post-commit resume failure still restores agent subscriptions',
+        'post-commit lifecycle restore failure still restores subscriptions',
         (tester) async {
           tester.view
             ..physicalSize = const Size(430, 1200)
@@ -1300,10 +1306,13 @@ void main() {
             );
           });
           when(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).thenAnswer((_) async {
-            lifecycleEvents.add('resume');
-            throw StateError('post-commit resume failure');
+            lifecycleEvents.add('restore-lifecycle');
+            throw StateError('post-commit lifecycle restore failure');
           });
           await pumpPageWithData(
             tester,
@@ -1317,7 +1326,7 @@ void main() {
             record: testRecord,
             projectAgent: identity,
             restoreAgentSubscriptions: () async {
-              lifecycleEvents.add('restore');
+              lifecycleEvents.add('restore-subscriptions');
             },
             extraOverrides: [
               projectRepositoryProvider.overrideWithValue(mockRepository),
@@ -1336,7 +1345,12 @@ void main() {
 
           expect(
             lifecycleEvents,
-            ['read-1', 'resume', 'read-2', 'restore'],
+            [
+              'read-1',
+              'restore-lifecycle',
+              'read-2',
+              'restore-subscriptions',
+            ],
           );
           expect(
             find.text('Failed to delete project. Please try again.'),
@@ -1352,7 +1366,7 @@ void main() {
       );
 
       testWidgets(
-        'failed deletion resumes the retired agent and restores subscriptions',
+        'failed deletion restores the active agent and its subscriptions',
         (tester) async {
           tester.view
             ..physicalSize = const Size(430, 1200)
@@ -1382,9 +1396,12 @@ void main() {
             () => mockRepository.getProjectById(_projectId),
           ).thenAnswer((_) async => testProject);
           when(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).thenAnswer((_) async {
-            lifecycleEvents.add('resume');
+            lifecycleEvents.add('restore-lifecycle');
             return true;
           });
           await pumpPageWithData(
@@ -1399,7 +1416,7 @@ void main() {
             record: testRecord,
             projectAgent: identity,
             restoreAgentSubscriptions: () async {
-              lifecycleEvents.add('restore');
+              lifecycleEvents.add('restore-subscriptions');
             },
             extraOverrides: [
               projectRepositoryProvider.overrideWithValue(mockRepository),
@@ -1420,7 +1437,87 @@ void main() {
             find.text('Failed to delete project. Please try again.'),
             findsOneWidget,
           );
-          expect(lifecycleEvents, ['destroy', 'delete', 'resume', 'restore']);
+          expect(
+            lifecycleEvents,
+            [
+              'destroy',
+              'delete',
+              'restore-lifecycle',
+              'restore-subscriptions',
+            ],
+          );
+        },
+      );
+
+      testWidgets(
+        'failed deletion restores a dormant agent without subscriptions',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = _makeMockAgentService();
+          final identity = makeTestIdentity(
+            agentId: 'agent-project-1',
+            lifecycle: AgentLifecycle.dormant,
+          );
+          var restoreSubscriptionCalls = 0;
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepository.getProjectById(_projectId),
+          ).thenAnswer((_) async => testProject);
+          when(
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.dormant,
+            ),
+          ).thenAnswer((_) async => true);
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgent: identity,
+            restoreAgentSubscriptions: () async {
+              restoreSubscriptionCalls++;
+            },
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          verify(
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.dormant,
+            ),
+          ).called(1);
+          expect(restoreSubscriptionCalls, 0);
         },
       );
 
@@ -1449,7 +1546,10 @@ void main() {
             () => mockRepository.getProjectById(_projectId),
           ).thenAnswer((_) async => testProject);
           when(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).thenAnswer((_) async => false);
           await pumpPageWithData(
             tester,
@@ -1483,7 +1583,10 @@ void main() {
             findsOneWidget,
           );
           verify(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).called(1);
           expect(restoreCalls, 0);
         },
@@ -1515,7 +1618,10 @@ void main() {
             () => mockRepository.getProjectById(_projectId),
           ).thenAnswer((_) async => testProject);
           when(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).thenAnswer((_) async => true);
           await pumpPageWithData(
             tester,
@@ -1556,7 +1662,10 @@ void main() {
           await tester.pump();
 
           verify(
-            () => mockAgentService.resumeAgent(identity.agentId),
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
           ).called(1);
           expect(restoreCalls, 1);
         },
@@ -1614,7 +1723,12 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Project deleted'), findsOneWidget);
-          verifyNever(() => mockAgentService.resumeAgent(identity.agentId));
+          verifyNever(
+            () => mockAgentService.restoreAgentLifecycle(
+              identity.agentId,
+              AgentLifecycle.active,
+            ),
+          );
         },
       );
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -349,28 +350,20 @@ class ProjectRepository {
     required String projectId,
     required String taskId,
   }) async {
-    // Validate project/task metadata invariants against fresh rows at link
-    // time. Creation callers may have resolved the project before persisting
-    // the task, so sync can change either field during that async gap.
-    final results = await Future.wait([
-      getProjectById(projectId),
-      _journalDb.journalEntityById(taskId),
-    ]);
-    final project = results[0] as ProjectEntry?;
-    final task = results[1];
-    if (project == null || task is! Task) return false;
-    if (project.meta.categoryId != task.meta.categoryId) return false;
-    if ((project.meta.private ?? false) != (task.meta.private ?? false)) {
-      return false;
-    }
-
-    // Remove existing project link if the task is already in another project
+    // This read chooses the mutation shape and reserves the right number of
+    // vector clocks. Every branch re-reads both entities and this link inside
+    // the write transaction before it commits, so a sync update between this
+    // snapshot and the mutation can only reject the operation, never create a
+    // category/privacy-invalid link.
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);
     if (existingLink != null) {
       if (existingLink.fromId == projectId) {
-        return true; // already linked to this project
+        return _existingProjectLinkIsStillValid(
+          existingLink: existingLink,
+          projectId: projectId,
+          taskId: taskId,
+        );
       }
-      // Atomically soft-delete old link + create new link
       return _relinkTask(
         oldLink: existingLink,
         projectId: projectId,
@@ -397,8 +390,19 @@ class ProjectRepository {
           vectorClock: await _vectorClockService.getNextVectorClock(),
         );
 
-        final res = await _journalDb.upsertEntryLink(link);
-        if (res == 0) return false;
+        final committed = await _journalDb.transaction(() async {
+          if (!await _projectLinkInputsAreValid(
+            projectId: projectId,
+            taskId: taskId,
+          )) {
+            return false;
+          }
+          if (await _journalDb.getProjectLinkForTask(taskId) != null) {
+            return false;
+          }
+          return await _journalDb.upsertEntryLink(link) != 0;
+        });
+        if (!committed) return false;
         await _recordLinkSequence(
           link,
           subDomain: 'linkTaskToProject.recordSent',
@@ -501,6 +505,41 @@ class ProjectRepository {
   // Private helpers behind the public link/unlink methods. (Previously the
   // `_ProjectLinkHelpers` part-file extension.)
 
+  /// Reads link invariants directly from the transaction's journal snapshot.
+  ///
+  /// The public `journalEntityById` read is intentionally microtask-coalesced;
+  /// using `entityById` here prevents this integrity check from joining a read
+  /// wave created outside the active write transaction.
+  Future<bool> _projectLinkInputsAreValid({
+    required String projectId,
+    required String taskId,
+  }) async {
+    final projectRow = await _journalDb.entityById(projectId);
+    final taskRow = await _journalDb.entityById(taskId);
+    final project = projectRow == null ? null : fromDbEntity(projectRow);
+    final task = taskRow == null ? null : fromDbEntity(taskRow);
+    if (project is! ProjectEntry || task is! Task) return false;
+    if (project.meta.categoryId != task.meta.categoryId) return false;
+    return (project.meta.private ?? false) == (task.meta.private ?? false);
+  }
+
+  Future<bool> _existingProjectLinkIsStillValid({
+    required EntryLink existingLink,
+    required String projectId,
+    required String taskId,
+  }) {
+    return _journalDb.transaction(() async {
+      if (!await _projectLinkInputsAreValid(
+        projectId: projectId,
+        taskId: taskId,
+      )) {
+        return false;
+      }
+      final currentLink = await _journalDb.getProjectLinkForTask(taskId);
+      return currentLink == existingLink;
+    });
+  }
+
   /// Atomically soft-deletes an old project link and creates a new one
   /// within a single DB transaction. Notifications and sync enqueuing are
   /// deferred until after the transaction commits.
@@ -526,8 +565,18 @@ class ProjectRepository {
           vectorClock: await _vectorClockService.getNextVectorClock(),
         );
 
-        // Both writes in one transaction — if either fails, both roll back.
+        // The final invariant reads and both writes share one transaction. If
+        // sync changed either entity or the old link after the shape-selection
+        // snapshot, reject instead of committing stale validation.
         final success = await _journalDb.transaction(() async {
+          if (!await _projectLinkInputsAreValid(
+            projectId: projectId,
+            taskId: taskId,
+          )) {
+            return false;
+          }
+          final currentLink = await _journalDb.getProjectLinkForTask(taskId);
+          if (currentLink != oldLink) return false;
           final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
           if (deleteRes == 0) return false;
           final insertRes = await _journalDb.upsertEntryLink(newLink);

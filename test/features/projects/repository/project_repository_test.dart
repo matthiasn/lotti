@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -27,6 +28,38 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
+
+class _TransactionTrackingJournalDb extends MockJournalDb {
+  _TransactionTrackingJournalDb({
+    required this._rows,
+    this.onTransactionStart,
+  });
+
+  final Map<String, JournalDbEntity> _rows;
+  final void Function()? onTransactionStart;
+  bool entityReadInsideTransaction = false;
+  bool _insideTransaction = false;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) async {
+    onTransactionStart?.call();
+    _insideTransaction = true;
+    try {
+      return await action();
+    } finally {
+      _insideTransaction = false;
+    }
+  }
+
+  @override
+  Future<JournalDbEntity?> entityById(String id) async {
+    entityReadInsideTransaction |= _insideTransaction;
+    return _rows[id];
+  }
+}
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -135,11 +168,23 @@ void main() {
     when(() => mockNotifications.notify(any())).thenReturn(null);
     when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
     when(
+      () => mockDb.getProjectLinkForTask(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      mockVectorClockService.getNextVectorClock,
+    ).thenAnswer((_) async => const VectorClock({'d': 1}));
+    when(
       () => mockDb.journalEntityById('project-001'),
     ).thenAnswer((_) async => projectEntry);
     when(
       () => mockDb.journalEntityById('task-001'),
     ).thenAnswer((_) async => taskEntry);
+    when(
+      () => mockDb.entityById('project-001'),
+    ).thenAnswer((_) async => toDbEntity(projectEntry));
+    when(
+      () => mockDb.entityById('task-001'),
+    ).thenAnswer((_) async => toDbEntity(taskEntry));
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
@@ -941,8 +986,8 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('task-cross'),
-      ).thenAnswer((_) async => crossCategoryTask);
+        () => mockDb.entityById('task-cross'),
+      ).thenAnswer((_) async => toDbEntity(crossCategoryTask));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-001',
@@ -957,8 +1002,8 @@ void main() {
         meta: projectEntry.meta.copyWith(private: true),
       );
       when(
-        () => mockDb.journalEntityById('project-private'),
-      ).thenAnswer((_) async => privateProject);
+        () => mockDb.entityById('project-private'),
+      ).thenAnswer((_) async => toDbEntity(privateProject));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-private',
@@ -966,7 +1011,9 @@ void main() {
       );
 
       expect(result, isFalse);
-      verifyNever(() => mockDb.getProjectLinkForTask(any()));
+      verify(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).called(1);
       verifyNever(() => mockDb.upsertEntryLink(any()));
     });
 
@@ -976,8 +1023,8 @@ void main() {
         data: taskEntry.data,
       );
       when(
-        () => mockDb.journalEntityById('task-explicitly-public'),
-      ).thenAnswer((_) async => explicitlyPublicTask);
+        () => mockDb.entityById('task-explicitly-public'),
+      ).thenAnswer((_) async => toDbEntity(explicitlyPublicTask));
       when(
         () => mockDb.getProjectLinkForTask('task-explicitly-public'),
       ).thenAnswer((_) async => null);
@@ -1005,8 +1052,8 @@ void main() {
       );
 
       when(
-        () => mockDb.journalEntityById('task-001'),
-      ).thenAnswer((_) async => noteEntry);
+        () => mockDb.entityById('task-001'),
+      ).thenAnswer((_) async => toDbEntity(noteEntry));
 
       final result = await repository.linkTaskToProject(
         projectId: 'project-001',
@@ -1019,7 +1066,7 @@ void main() {
 
     test('returns false when project does not exist', () async {
       when(
-        () => mockDb.journalEntityById('missing'),
+        () => mockDb.entityById('missing'),
       ).thenAnswer((_) async => null);
 
       final result = await repository.linkTaskToProject(
@@ -1032,7 +1079,7 @@ void main() {
 
     test('returns false when task does not exist', () async {
       when(
-        () => mockDb.journalEntityById('missing'),
+        () => mockDb.entityById('missing'),
       ).thenAnswer((_) async => null);
 
       final result = await repository.linkTaskToProject(
@@ -1061,6 +1108,56 @@ void main() {
       verifyNever(() => mockNotifications.notify(any()));
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
+
+    test(
+      'revalidates privacy in the same transaction as a new link write',
+      () async {
+        final rows = <String, JournalDbEntity>{
+          projectEntry.id: toDbEntity(projectEntry),
+          taskEntry.id: toDbEntity(taskEntry),
+        };
+        final trackingDb = _TransactionTrackingJournalDb(
+          rows: rows,
+          onTransactionStart: () {
+            final privateProject = projectEntry.copyWith(
+              meta: projectEntry.meta.copyWith(private: true),
+            );
+            rows[projectEntry.id] = toDbEntity(privateProject);
+          },
+        );
+        when(
+          () => trackingDb.journalEntityById(projectEntry.id),
+        ).thenAnswer((_) async => projectEntry);
+        when(
+          () => trackingDb.journalEntityById(taskEntry.id),
+        ).thenAnswer((_) async => taskEntry);
+        when(
+          () => trackingDb.getProjectLinkForTask(taskEntry.id),
+        ).thenAnswer((_) async => null);
+        when(
+          () => trackingDb.upsertEntryLink(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+        final trackingRepository = ProjectRepository(
+          journalDb: trackingDb,
+          entitiesCacheService: mockEntitiesCacheService,
+          persistenceLogic: mockPersistence,
+          updateNotifications: mockNotifications,
+          vectorClockService: mockVectorClockService,
+        );
+
+        final result = await trackingRepository.linkTaskToProject(
+          projectId: projectEntry.id,
+          taskId: taskEntry.id,
+        );
+
+        expect(result, isFalse);
+        expect(trackingDb.entityReadInsideTransaction, isTrue);
+        verifyNever(() => trackingDb.upsertEntryLink(any()));
+      },
+    );
 
     test('returns true if task is already linked to same project', () async {
       final existingLink = EntryLink.project(
@@ -1822,7 +1919,7 @@ void main() {
       );
 
       expect(result, isFalse);
-      verifyNever(() => mockDb.journalEntityById(any()));
+      verifyNever(() => mockDb.entityById(any()));
     });
 
     test('links new task to the source task project when found', () async {
@@ -1836,8 +1933,8 @@ void main() {
         data: taskEntry.data,
       );
       when(
-        () => mockDb.journalEntityById('new-task'),
-      ).thenAnswer((_) async => newTaskEntry);
+        () => mockDb.entityById('new-task'),
+      ).thenAnswer((_) async => toDbEntity(newTaskEntry));
       when(
         () => mockDb.getProjectLinkForTask('new-task'),
       ).thenAnswer((_) async => null);

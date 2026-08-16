@@ -88,8 +88,11 @@ env var.
 
 The automated manual site catalog uses the faster opt-in widget harnesses
 registered in `docs-site/metadata/screenshot-cases.json`; run it with
-`make manual_screenshots`. Both paths write generated media to the sibling
-`legacy-media` checkout. See `test/README.md` for the four-variant contract.
+`make manual_screenshots`. That flow stages PNG captures in
+`build/manual_capture/` and the materialized catalog in `build/manual_media/`.
+The legacy full-shell flow instead writes beneath
+`LEGACY_MANUAL_CAPTURE_DIR`. See `test/README.md` for the four-variant
+contract.
 
 ## Infrastructure
 

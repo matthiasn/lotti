@@ -329,14 +329,16 @@ class ProjectDetailsPage extends ConsumerWidget {
     final restoreProjectAgentSubscriptions = projectAgents.isEmpty
         ? null
         : ref.read(projectAgentSubscriptionsRestorerProvider);
-    final retiredAgentIds = <String>[];
+    final retiredAgentLifecycles = <String, AgentLifecycle>{};
     for (final projectAgent in projectAgents) {
       final projectAgentId = projectAgent.agentId;
       final liveAgentService = agentService!;
       try {
         liveAgentService.abortRunningWake(projectAgentId);
         final retired = await liveAgentService.destroyAgent(projectAgentId);
-        if (retired) retiredAgentIds.add(projectAgentId);
+        if (retired) {
+          retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
+        }
         if (!retired) {
           developer.log(
             'Project agent was already absent while deleting its project',
@@ -356,7 +358,7 @@ class ProjectDetailsPage extends ConsumerWidget {
           );
           if (persistedAgent?.lifecycle == AgentLifecycle.destroyed &&
               restoreProjectAgentSubscriptions != null) {
-            retiredAgentIds.add(projectAgentId);
+            retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
           }
         } catch (recoveryError, recoveryStackTrace) {
           developer.log(
@@ -368,7 +370,7 @@ class ProjectDetailsPage extends ConsumerWidget {
         }
         await _restoreRetiredProjectAgents(
           agentService: liveAgentService,
-          agentIds: retiredAgentIds,
+          agentLifecycles: retiredAgentLifecycles,
           restoreSubscriptions: restoreProjectAgentSubscriptions,
         );
         if (!context.mounted) return;
@@ -415,7 +417,7 @@ class ProjectDetailsPage extends ConsumerWidget {
         restoreProjectAgentSubscriptions != null) {
       await _restoreRetiredProjectAgents(
         agentService: agentService,
-        agentIds: retiredAgentIds,
+        agentLifecycles: retiredAgentLifecycles,
         restoreSubscriptions: restoreProjectAgentSubscriptions,
       );
     }
@@ -438,18 +440,21 @@ class ProjectDetailsPage extends ConsumerWidget {
 
   Future<void> _restoreRetiredProjectAgents({
     required AgentService agentService,
-    required List<String> agentIds,
+    required Map<String, AgentLifecycle> agentLifecycles,
     required ProjectAgentSubscriptionsRestorer? restoreSubscriptions,
   }) async {
-    if (restoreSubscriptions == null || agentIds.isEmpty) return;
-    var restoredAnyAgent = false;
-    for (final agentId in agentIds) {
+    if (restoreSubscriptions == null || agentLifecycles.isEmpty) return;
+    var restoredAnyActiveAgent = false;
+    for (final MapEntry(key: agentId, value: lifecycle)
+        in agentLifecycles.entries) {
       try {
         final restored = await _restoreRetiredProjectAgent(
           agentService: agentService,
           agentId: agentId,
+          lifecycle: lifecycle,
         );
-        restoredAnyAgent |= restored;
+        restoredAnyActiveAgent |=
+            restored && lifecycle == AgentLifecycle.active;
         if (!restored) {
           developer.log(
             'Project agent disappeared while restoring a failed deletion',
@@ -465,21 +470,25 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
       }
     }
-    if (restoredAnyAgent) await restoreSubscriptions();
+    if (restoredAnyActiveAgent) await restoreSubscriptions();
   }
 
   Future<bool> _restoreRetiredProjectAgent({
     required AgentService agentService,
     required String agentId,
+    required AgentLifecycle lifecycle,
   }) async {
     try {
-      final resumed = await agentService.resumeAgent(agentId);
-      if (!resumed) return false;
+      final restored = await agentService.restoreAgentLifecycle(
+        agentId,
+        lifecycle,
+      );
+      if (!restored) return false;
     } catch (error, stackTrace) {
       final persistedAgent = await agentService.getAgent(agentId);
-      if (persistedAgent?.lifecycle != AgentLifecycle.active) rethrow;
+      if (persistedAgent?.lifecycle != lifecycle) rethrow;
       developer.log(
-        'Project agent resume committed before its sync flush failed',
+        'Project agent lifecycle restore committed before its sync flush failed',
         name: 'ProjectDetailsPage',
         error: error,
         stackTrace: stackTrace,

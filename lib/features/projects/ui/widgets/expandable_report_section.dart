@@ -133,19 +133,7 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0, 0.55, 1],
-          colors: [
-            Color.alphaBlend(
-              ai.accent.withValues(alpha: 0.12),
-              ai.background,
-            ),
-            ai.background,
-            ai.background,
-          ],
-        ),
+        color: ai.background,
         borderRadius: cardRadius,
         border: Border.all(color: ai.border),
       ),

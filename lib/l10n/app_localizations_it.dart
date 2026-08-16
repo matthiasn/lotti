@@ -9778,19 +9778,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get projectFilterLabel => 'Progetto';
 
   @override
-  String get projectHealthBandAtRisk => 'A Risk';
+  String get projectHealthBandAtRisk => 'A rischio';
 
   @override
   String get projectHealthBandBlocked => 'Bloccato';
 
   @override
-  String get projectHealthBandOnTrack => 'Sulla pista';
+  String get projectHealthBandOnTrack => 'In linea';
 
   @override
-  String get projectHealthBandSurviving => 'Sopravvivere';
+  String get projectHealthBandSurviving => 'A galla';
 
   @override
-  String get projectHealthBandWatch => 'Guarda qui';
+  String get projectHealthBandWatch => 'Da monitorare';
 
   @override
   String projectHealthConfidence(int confidence) {

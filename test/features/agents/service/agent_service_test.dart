@@ -970,6 +970,62 @@ void main() {
       });
     });
 
+    group('restoreAgentLifecycle', () {
+      test('restores the exact prior non-active lifecycle', () async {
+        final destroyed = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => destroyed);
+        when(
+          () => mockOrchestrator.removeSubscriptions('agent-1'),
+        ).thenReturn(null);
+
+        final result = await service.restoreAgentLifecycle(
+          'agent-1',
+          AgentLifecycle.dormant,
+        );
+
+        expect(result, isTrue);
+        final restored =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(restored.lifecycle, AgentLifecycle.dormant);
+        expect(restored.destroyedAt, isNull);
+        verify(() => mockOrchestrator.removeSubscriptions('agent-1')).called(1);
+      });
+
+      test('leaves active subscription restoration to the caller', () async {
+        final destroyed = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getEntity('agent-1'),
+        ).thenAnswer((_) async => destroyed);
+
+        final result = await service.restoreAgentLifecycle(
+          'agent-1',
+          AgentLifecycle.active,
+        );
+
+        expect(result, isTrue);
+        final restored =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as AgentIdentityEntity;
+        expect(restored.lifecycle, AgentLifecycle.active);
+        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+      });
+    });
+
     group('destroyAgent', () {
       test('sets lifecycle to destroyed, sets destroyedAt, '
           'and unregisters subscriptions', () async {

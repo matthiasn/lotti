@@ -7,6 +7,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
@@ -570,6 +571,38 @@ void main() {
   });
 
   group('ExpandableReportSection', () {
+    testWidgets('uses the exported AI card fill without an ad hoc gradient', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const ExpandableReportSection(
+            title: 'AI Report',
+            body: 'A concise assessment.',
+            fullContent: 'A concise assessment.',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final section = find.byType(ExpandableReportSection);
+      final decoration =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: section,
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      final tokens = tester.element(section).designTokens;
+      expect(decoration.color, tokens.colors.aiCard.background);
+      expect(decoration.gradient, isNull);
+    });
+
     testWidgets(
       'starts collapsed on the TLDR and expands to the full report body without repeating the TLDR section',
       (tester) async {

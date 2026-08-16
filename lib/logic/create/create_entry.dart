@@ -171,7 +171,13 @@ Future<Task?> createTask({
       taskId: task.meta.id,
     );
     if (!assigned) {
-      await _softDeleteFailedProjectTask(task);
+      final cleanedUp = await _softDeleteFailedProjectTask(task);
+      if (!cleanedUp) {
+        throw StateError(
+          'Project assignment failed and the created task could not be '
+          'soft-deleted: ${task.meta.id}',
+        );
+      }
       return null;
     }
   } else if (task != null && (linkedId ?? inheritContextFrom) != null) {
@@ -211,15 +217,16 @@ Future<Task?> createTask({
   return task;
 }
 
-Future<void> _softDeleteFailedProjectTask(Task task) async {
+Future<bool> _softDeleteFailedProjectTask(Task task) async {
   final persistenceLogic = getIt<PersistenceLogic>();
   final deletedMetadata = await persistenceLogic.updateMetadata(
     task.meta,
     deletedAt: DateTime.now(),
   );
-  await persistenceLogic.updateDbEntity(
-    task.copyWith(meta: deletedMetadata),
-  );
+  return await persistenceLogic.updateDbEntity(
+        task.copyWith(meta: deletedMetadata),
+      ) ??
+      false;
 }
 
 /// Copies the project assignment from [linkedId] to [newTaskId] via
