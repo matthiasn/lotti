@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -53,34 +52,6 @@ Stream<bool> agentIsRunningInWorkspace(
       runner.workspaceKeyFor(agentId) == workspaceKey;
   yield matches();
   yield* runner.runningAgentIds.map((_) => matches()).distinct();
-}
-
-/// The latest decisive wake outcome for one agent.
-///
-/// Filters the orchestrator's [WakeOrchestrator.runCompletions] broadcast to
-/// this agent's decisive runs ([WakeRunCompletion.isDecisive]: completed,
-/// failed, or the executor timeout) — a superseded wake (pressing "Update
-/// now" twice) is not a decision and must neither flash an error over an
-/// attempt still in flight nor clear one that is showing. The last emitted
-/// value is therefore the truth a card needs for failure feedback: a failure
-/// surfaces its error, and the next completed run clears it.
-///
-/// Kept alive for the app session ([Ref.keepAlive]): the underlying
-/// broadcast stream does not replay, so an autoDisposing subscription would
-/// forget a surfaced failure the moment the watching page navigates away.
-/// Outcomes from before an app restart are still not replayed — the durable
-/// record is the `wake_run_log` row.
-final StreamProviderFamily<WakeRunCompletion, String> agentWakeOutcomeProvider =
-    StreamProvider.autoDispose.family<WakeRunCompletion, String>(
-      agentWakeOutcome,
-      name: 'agentWakeOutcomeProvider',
-    );
-Stream<WakeRunCompletion> agentWakeOutcome(Ref ref, String agentId) {
-  ref.keepAlive();
-  final orchestrator = ref.watch(wakeOrchestratorProvider);
-  return orchestrator.runCompletions.where(
-    (completion) => completion.agentId == agentId && completion.isDecisive,
-  );
 }
 
 /// Stream that emits when a specific agent's data changes (from sync or local

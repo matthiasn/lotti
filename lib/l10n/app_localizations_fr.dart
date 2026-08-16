@@ -6377,6 +6377,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalDetailUpdateFailed => 'La dernière mise à jour a échoué';
 
   @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'La dernière mise à jour a échoué — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.';
 

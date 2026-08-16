@@ -2622,6 +2622,7 @@
   "goalDetailThisWeekTitle": "Esta semana",
   "goalDetailTimelineTitle": "Interacciones",
   "goalDetailUpdateFailed": "La última actualización falló",
+  "goalDetailUpdateFailedWithReason": "La última actualización falló — {reason}",
   "goalDetailWatchingSignals": "Las señales anteriores se actualizan en segundos. Tu agente solo ve las señales indicadas aquí.",
   "goalDimensionCategoryTimeSource": "Tiempo de categoría rastreado",
   "goalDimensionHabitReading": "{currentCount} de {targetCount} esta ventana",

@@ -333,6 +333,8 @@ void main() {
       addTearDown(outcomes.close);
       final running = StreamController<bool>.broadcast();
       addTearDown(running.close);
+      final refreshRunning = StreamController<bool>.broadcast();
+      addTearDown(refreshRunning.close);
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -351,6 +353,10 @@ void main() {
             agentIsRunningProvider(
               'goal-1',
             ).overrideWith((ref) => running.stream),
+            agentIsRunningInWorkspaceProvider((
+              'goal-1',
+              goalReportRefreshTriggerToken,
+            )).overrideWith((ref) => refreshRunning.stream),
             goalAgentHealthProvider('goal-1').overrideWith(
               (ref) async => (
                 trackStatus: GoalTrackStatus.onTrack,
@@ -394,16 +400,26 @@ void main() {
       await tester.pumpAndSettle();
       expect(failureLine, findsOneWidget);
 
-      // A retry starts: the running state takes the stage. Bounded pumps —
-      // the automation row's progress affordance animates, so the tree
-      // never settles while a run is active.
+      // An UNRELATED wake for the same agent starts — a chat reply, a
+      // Phase A subscription tick. The agent-wide running flag flips, but
+      // the failure line must not blink away: only a report refresh
+      // (workspace-scoped) takes its stage.
       running.add(true);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(failureLine, findsOneWidget);
+
+      // A report-refresh RETRY starts: the running state takes the stage.
+      // Bounded pumps — the automation row's progress affordance animates,
+      // so the tree never settles while a run is active.
+      refreshRunning.add(true);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(failureLine, findsNothing);
 
       // The retry lands: completed clears the failure for good.
       running.add(false);
+      refreshRunning.add(false);
       outcomes.add(
         const WakeRunCompletion(
           runKey: 'run-ok',
@@ -427,11 +443,13 @@ void main() {
           agentId: 'goal-1',
           status: WakeRunStatus.failed,
           triggerTokens: const {goalReportRefreshTriggerToken},
+          startedAt: DateTime(2026, 8, 16, 19, 13),
           finishedAt: DateTime(2026, 8, 16, 19, 14),
           error: StateError('Insufficient balance for request'),
         ),
         // The other device's successful refresh arrives by sync as agent
-        // state whose freshness watermark postdates the local failure.
+        // state whose freshness watermark (the successful run's START)
+        // postdates this failure's start.
         agentState:
             AgentDomainEntity.agentState(
                   id: 'goal-1:state',

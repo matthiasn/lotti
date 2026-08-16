@@ -6273,6 +6273,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailUpdateFailed => 'Seneste opdatering mislykkedes';
 
   @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Seneste opdatering mislykkedes — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
 

@@ -6338,6 +6338,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailUpdateFailed => 'A última atualização falhou';
 
   @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'A última atualização falhou — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Os sinais acima são atualizados em segundos. O teu agente vê apenas os sinais indicados aqui.';
 

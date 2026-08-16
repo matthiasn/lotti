@@ -2169,6 +2169,59 @@ void main() {
     await pumpEventQueue();
     expect(seen, [refreshFailure]);
 
+    // An abort from SUPERSEDING (pressing Update again) is bookkeeping, not
+    // a decision — it must not overwrite the surfaced failure. The executor
+    // TIMEOUT is the one abort that IS a decision.
+    completions.add(
+      WakeRunCompletion(
+        runKey: 'run-superseded',
+        agentId: 'goal-1',
+        status: WakeRunStatus.aborted,
+        triggerTokens: const {goalReportRefreshTriggerToken},
+        error: StateError('wake superseded by a newer manual request'),
+      ),
+    );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure]);
+    final timedOut = WakeRunCompletion(
+      runKey: 'run-timeout',
+      agentId: 'goal-1',
+      status: WakeRunStatus.aborted,
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      error: TimeoutException('timeout'),
+    );
+    completions.add(timedOut);
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut]);
+
+    // A refresh that completed WITHOUT advancing the report (inference
+    // finished without publishing) decides nothing: the surfaced failure
+    // stays until a report actually lands.
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'run-no-publish',
+        agentId: 'goal-1',
+        status: WakeRunStatus.completed,
+        reportUpdated: false,
+        triggerTokens: {goalReportRefreshTriggerToken},
+      ),
+    );
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut]);
+
+    // The deferred coalescing arm of the automatic refresh is a report wake
+    // too — its failures must surface, not vanish behind the token filter.
+    final deferredFailure = WakeRunCompletion(
+      runKey: 'run-deferred',
+      agentId: 'goal-1',
+      status: WakeRunStatus.failed,
+      triggerTokens: const {goalDeferredReportRefreshTriggerToken},
+      error: StateError('deferred refresh failed'),
+    );
+    completions.add(deferredFailure);
+    await pumpEventQueue();
+    expect(seen, [refreshFailure, timedOut, deferredFailure]);
+
     // An escalation is a report-producing wake too: its success clears.
     const escalationSuccess = WakeRunCompletion(
       runKey: 'run-escalation',
@@ -2178,6 +2231,9 @@ void main() {
     );
     completions.add(escalationSuccess);
     await pumpEventQueue();
-    expect(seen, [refreshFailure, escalationSuccess]);
+    expect(
+      seen,
+      [refreshFailure, timedOut, deferredFailure, escalationSuccess],
+    );
   });
 }

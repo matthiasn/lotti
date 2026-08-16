@@ -6392,6 +6392,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailUpdateFailed => 'Ultima actualizare a eșuat';
 
   @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Ultima actualizare a eșuat — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
 

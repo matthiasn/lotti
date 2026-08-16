@@ -703,15 +703,25 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
 
 /// The latest decisive outcome of this goal's REPORT-PRODUCING wakes.
 ///
-/// Narrows [agentWakeOutcomeProvider]'s per-agent stream to the runs that can
-/// actually change the standing read — explicit report refreshes (the
-/// Update-now button, the automation's armed refresh) and escalations, both
-/// of which run Phase B. Chat runs and the €0 Phase A subscription wakes
-/// share the same agent id but never touch the report: a failed chat must
-/// not print "Last update failed" on the read card, and the subscription
-/// wakes completing every few seconds must not silently clear a refresh
-/// failure that is still true. Kept alive for the session for the same
-/// reason as the provider it narrows.
+/// Filters the orchestrator's completion broadcast to this agent's decisive
+/// runs ([WakeRunCompletion.isDecisive]: completed, failed, or the executor
+/// timeout — a superseded/cancelled abort is bookkeeping for a replaced run
+/// and neither surfaces nor clears anything), narrowed to the wakes that can
+/// actually change the standing read: explicit report refreshes (the
+/// Update-now button, the automation's armed refresh and its deferred
+/// coalescing arm) and escalations. Chat runs and the €0 Phase A
+/// subscription wakes share the same agent id but never touch the report: a
+/// failed chat must not print "Last update failed" on the read card, and
+/// the subscription wakes completing every few seconds must not silently
+/// clear a refresh failure that is still true. A completed report wake that
+/// says it did NOT advance the report (`reportUpdated == false` — e.g.
+/// inference finished without publishing) is dropped for the same reason.
+///
+/// Kept alive for the app session ([Ref.keepAlive]): the broadcast stream
+/// does not replay, so an autoDisposing subscription would forget a surfaced
+/// failure the moment the watching page navigates away. Outcomes from before
+/// an app restart are still not replayed — the durable record is the
+/// `wake_run_log` row.
 final StreamProviderFamily<WakeRunCompletion, String>
 goalReportWakeOutcomeProvider = StreamProvider.autoDispose
     .family<WakeRunCompletion, String>(
@@ -725,7 +735,9 @@ Stream<WakeRunCompletion> goalReportWakeOutcome(Ref ref, String agentId) {
     (completion) =>
         completion.agentId == agentId &&
         completion.isDecisive &&
+        completion.reportUpdated != false &&
         (goalReportRefreshRequested(completion.triggerTokens) ||
+            goalDeferredReportRefreshRequested(completion.triggerTokens) ||
             goalEscalationPeriodFromTriggerTokens(completion.triggerTokens) !=
                 null),
   );

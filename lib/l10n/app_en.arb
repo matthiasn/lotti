@@ -3553,6 +3553,16 @@
   "@goalDetailUpdateFailed": {
     "description": "Error line on the goal read card when the last report update wake failed"
   },
+  "goalDetailUpdateFailedWithReason": "Last update failed — {reason}",
+  "@goalDetailUpdateFailedWithReason": {
+    "description": "Error line on the goal read card quoting why the last report update wake failed; the reason is the provider error text",
+    "placeholders": {
+      "reason": {
+        "type": "String",
+        "example": "Insufficient balance for request"
+      }
+    }
+  },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",

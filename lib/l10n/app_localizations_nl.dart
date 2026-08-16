@@ -6295,6 +6295,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailUpdateFailed => 'Laatste update mislukt';
 
   @override
+  String goalDetailUpdateFailedWithReason(String reason) {
+    return 'Laatste update mislukt — $reason';
+  }
+
+  @override
   String get goalDetailWatchingSignals =>
       'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
 

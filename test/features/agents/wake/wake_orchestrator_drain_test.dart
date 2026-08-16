@@ -1636,6 +1636,8 @@ void main() {
             // Run keys are opaque hashes, so agent-scoped listeners (the
             // read card's failure line) depend on the event naming its agent.
             expect(received!.agentId, 'agent-1');
+            expect(received!.startedAt, isNotNull);
+            expect(received!.finishedAt, isNotNull);
             expect(received!.error, isNull);
           });
         },

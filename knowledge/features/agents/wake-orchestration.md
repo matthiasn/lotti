@@ -291,15 +291,16 @@ outcome against durable state that arrived later by sync.
 It is **in-process only, never persisted**. Callers that enqueued a wake and
 need its precise outcome without polling — the Daily OS durable
 `draftPlan`/`refinePlan` job executor (ADR 0032 phase 1) — subscribe *before*
-enqueueing and filter on the returned run key. Agent-scoped consumers use
-`agentWakeOutcomeProvider` instead (session-kept-alive, since the broadcast
-stream does not replay across navigation), which filters to one agent's
-*decisive* outcomes — `WakeRunCompletion.isDecisive`: completed, failed, or
-the executor-timeout abort; a superseded or cancelled abort is bookkeeping
-for a replaced run and neither surfaces as an error nor clears one. The goals
-feature narrows further with `goalReportWakeOutcomeProvider` (report-refresh
-and escalation wakes only — chat runs and Phase A subscription ticks share
-the agent id but never touch the standing report), which feeds the goal read
+enqueueing and filter on the returned run key. The goals feature's
+`goalReportWakeOutcomeProvider` (session-kept-alive, since the broadcast
+stream does not replay across navigation) filters to one goal agent's
+*decisive* report-wake outcomes: `WakeRunCompletion.isDecisive` (completed,
+failed, or the executor-timeout abort — a superseded or cancelled abort is
+bookkeeping for a replaced run and neither surfaces as an error nor clears
+one), scoped to report-refresh (immediate and deferred) and escalation
+tokens — chat runs and Phase A subscription ticks share the agent id but
+never touch the standing report — and dropping a completed refresh whose
+`reportUpdated` is false, which decided nothing. It feeds the goal read
 card's update-failure line. The durable record of the same outcome remains
 the `wake_run_log` row.
 

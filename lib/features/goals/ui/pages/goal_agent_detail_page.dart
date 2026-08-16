@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1191,20 +1192,35 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
     // (provider out of credits, network down, the executor timeout) tells
     // the user instead of leaving a dead button under an eternal "Out of
     // date". A later successful update emits a completed outcome and clears
-    // the line; while a retry is in flight the running state takes the
-    // stage; and a success that arrives by SYNC (another device refreshed)
-    // outranks an older local failure via the freshness watermark, since
-    // the completion stream is process-local and cannot see it.
+    // the line. While a RETRY is in flight the running state takes the
+    // stage — scoped to the report-refresh workspace, so an unrelated chat
+    // run or Phase A subscription tick for the same agent cannot blink the
+    // error away. And a success that arrives by SYNC (another device
+    // refreshed) outranks an older local failure: `reportFreshAt` records
+    // the successful run's START, so it is compared against this failure's
+    // start — a refresh that began after ours began saw at least our
+    // evidence, even when its watermark predates our finish.
     final lastOutcome = ref
         .watch(goalReportWakeOutcomeProvider(widget.agentId))
         .value;
+    final reportRefreshInFlight =
+        ref
+            .watch(
+              agentIsRunningInWorkspaceProvider((
+                widget.agentId,
+                goalReportRefreshTriggerToken,
+              )),
+            )
+            .value ??
+        false;
     final reportFreshAt = widget.agentState?.reportFreshAt;
+    final failureAnchor = lastOutcome?.startedAt ?? lastOutcome?.finishedAt;
     final supersededBySyncedSuccess =
-        lastOutcome?.finishedAt != null &&
+        failureAnchor != null &&
         reportFreshAt != null &&
-        reportFreshAt.isAfter(lastOutcome!.finishedAt!);
+        reportFreshAt.isAfter(failureAnchor);
     final updateFailure =
-        !isRefreshing &&
+        !reportRefreshInFlight &&
             lastOutcome != null &&
             lastOutcome.status != WakeRunStatus.completed &&
             !supersededBySyncedSuccess
@@ -1300,8 +1316,9 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                             switch (_failureReason(updateFailure)) {
                               '' => messages.goalDetailUpdateFailed,
                               final reason =>
-                                '${messages.goalDetailUpdateFailed} — '
-                                    '$reason',
+                                messages.goalDetailUpdateFailedWithReason(
+                                  reason,
+                                ),
                             },
                             style: tokens.typography.styles.others.caption
                                 .copyWith(

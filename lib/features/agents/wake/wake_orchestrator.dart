@@ -161,6 +161,8 @@ class WakeRunCompletion {
     this.reason,
     this.triggerTokens = const {},
     this.finishedAt,
+    this.startedAt,
+    this.reportUpdated,
     this.error,
   });
 
@@ -183,11 +185,26 @@ class WakeRunCompletion {
   /// guessing from the reason string.
   final Set<String> triggerTokens;
 
-  /// When the run reached its terminal status, so a listener can reconcile
-  /// an in-process outcome against durable state that arrived later (a
-  /// successful report synced from another device outranks an older local
-  /// failure). Always set by the orchestrator; nullable only for fixtures.
+  /// When the run reached its terminal status. Always set by the
+  /// orchestrator; nullable only for fixtures.
   final DateTime? finishedAt;
+
+  /// When the executor actually started running, for terminal statuses that
+  /// had one. Freshness watermarks record a REFRESH START time
+  /// (`reportFreshAt` = the successful run's start), so a listener
+  /// reconciling an in-process failure against durable state that synced in
+  /// later must compare start-to-start — a remote success that began after
+  /// this run began supersedes it, even when its watermark predates this
+  /// run's finish.
+  final DateTime? startedAt;
+
+  /// Whether the wake actually advanced the agent's standing report, when
+  /// the executor said (goal wakes report it via `WakeExecutorResult`).
+  /// Null when unknown — treat as "assume yes" for compatibility. A
+  /// completed report wake that did NOT update the report (e.g. inference
+  /// finished without publishing) must not clear a surfaced failure whose
+  /// staleness is still true.
+  final bool? reportUpdated;
 
   /// Whether this outcome is a decision an agent-scoped surface should act
   /// on. Completed and failed runs decide; of the aborted runs only the
@@ -354,6 +371,8 @@ class WakeOrchestrator with AgentErrorLogging {
     WakeJob job,
     WakeRunStatus status, {
     Object? error,
+    DateTime? startedAt,
+    bool? reportUpdated,
   }) {
     if (_runCompletions.isClosed) return;
     _runCompletions.add(
@@ -363,6 +382,8 @@ class WakeOrchestrator with AgentErrorLogging {
         reason: job.reason,
         triggerTokens: job.triggerTokens,
         finishedAt: clock.now(),
+        startedAt: startedAt,
+        reportUpdated: reportUpdated,
         status: status,
         error: error,
       ),
