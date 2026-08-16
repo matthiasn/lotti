@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: JournalEntity
-description: The sixteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
+description: The eighteen-variant union every recorded journal entry is, what sits outside it, and the shared Metadata envelope that carries identity, time, ownership and sync state.
 resource: ../../lib/classes/journal_entities.dart
 tags: [domain, journal-entity, metadata, freezed]
 status: stable
@@ -18,14 +18,15 @@ sources:
     last_modified: 2026-07-22
 ---
 
-# One union, sixteen variants
+# One union, eighteen variants
 
 Every entry the user *records* is a `JournalEntity` — a Freezed union whose
 variants are:
 
 `journalEntry`, `journalImage`, `journalAudio`, `task`, `event`, `checklistItem`,
 `checklist`, `quantitative`, `measurement`, `aiResponse`, `workout`,
-`habitCompletion`, `survey`, `dayPlan`, `rating`, `project`.
+`habitCompletion`, `survey`, `dayPlan`, `rating`, `project`, `relationship`,
+`checkIn`.
 
 That breadth is why the [journal feature](../features/journal/) is the app's
 substrate rather than a note-taking screen: create, browse, search, link, focus
@@ -35,7 +36,7 @@ its own detail widget.
 ```mermaid
 classDiagram
   class JournalEntity {
-    <<Freezed union — 16 variants>>
+    <<Freezed union — 18 variants>>
     Metadata meta
   }
   class Metadata {
@@ -72,6 +73,8 @@ classDiagram
   JournalEntity <|-- DayPlanEntry
   JournalEntity <|-- RatingEntry
   JournalEntity <|-- ProjectEntry
+  JournalEntity <|-- RelationshipEntry
+  JournalEntity <|-- CheckInEntry
 
   Task o-- TaskData : payload
   JournalEvent o-- EventData : payload
@@ -144,9 +147,18 @@ each kind carries what it needs.
 - **Checklist content is modelled as its own entities** (`Checklist`,
   `ChecklistItem`) linked to the task, rather than flattened into the task row —
   which is what allows drag, drop, reorder and cross-checklist movement.
+- **A check-in's narrative is `entryText`, not a payload field.** `CheckInData`
+  carries only the structured part; the same holds for a relationship's notes.
+
+Two variants also **denormalize an owner id into the `subtype` column** via
+`toDbEntity`, so "all children of X" is an indexed filter rather than a link
+traversal: `habitCompletion` writes `habitId`, and `checkIn` writes
+`relationshipId`. That column is the only place the pattern lives — see
+[relationships](../features/relationships.md).
 
 # Related
 
 * [Entry links](entry-links.md) - how entities connect to each other.
+* [Relationships](../features/relationships.md) - the `relationship` and `checkIn` variants and their read paths.
 * [Entity definitions](entity-definitions.md) - categories, labels, habits, dashboards, measurables.
 * [Persistence](../architecture/persistence.md) - how these are stored and how writes reach the UI.

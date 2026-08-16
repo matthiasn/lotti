@@ -423,4 +423,173 @@ void main() {
       );
     });
   });
+
+  group('contact channels', () {
+    setUp(() {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (invocation) async => createdEntry(
+          invocation.namedArguments[#data] as RelationshipData,
+        ),
+      );
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => true);
+    });
+
+    testWidgets('an added channel persists with value and label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.ensureVisible(find.text('Add channel'));
+      await tester.tap(find.text('Add channel'));
+      await tester.pumpAndSettle();
+
+      // Field order: name, nickname, then the new row's value and label.
+      await tester.enterText(
+        find.byType(TextField).at(2),
+        ' +49 151 1234567 ',
+      );
+      await tester.enterText(find.byType(TextField).at(3), 'Personal');
+
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, hasLength(1));
+      final channel = data.contactChannels.single;
+      // Default type; value trimmed; label kept.
+      expect(channel.type, ContactChannelType.mobile);
+      expect(channel.value, '+49 151 1234567');
+      expect(channel.label, 'Personal');
+    });
+
+    testWidgets('changing a channel type updates its input and persists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.ensureVisible(find.text('Add channel'));
+      await tester.tap(find.text('Add channel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byType(DropdownButtonFormField<ContactChannelType>),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Messaging').last);
+      await tester.pumpAndSettle();
+
+      final valueField = tester.widget<TextField>(
+        find.byType(TextField).at(2),
+      );
+      expect(valueField.keyboardType, TextInputType.text);
+      await tester.enterText(find.byType(TextField).at(2), '@anna');
+
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels.single.type, ContactChannelType.messaging);
+      expect(data.contactChannels.single.value, '@anna');
+    });
+
+    testWidgets('a channel row left empty never persists', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.ensureVisible(find.text('Add channel'));
+      await tester.tap(find.text('Add channel'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      final data =
+          verify(
+                () => mockRepository.createRelationship(
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as RelationshipData;
+      expect(data.contactChannels, isEmpty);
+    });
+
+    testWidgets('edit mode prefills channels and removing one persists', (
+      tester,
+    ) async {
+      final initial = RelationshipEntry(
+        meta: Metadata(
+          id: 'rel-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: RelationshipData(
+          title: 'Anna',
+          contactChannels: const [
+            ContactChannel(
+              type: ContactChannelType.email,
+              value: 'anna@example.com',
+            ),
+          ],
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildForm(initial: initial));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.widgetWithText(TextField, 'anna@example.com'),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byIcon(Icons.remove_circle_outline_rounded),
+      );
+      await tester.tap(find.byIcon(Icons.remove_circle_outline_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final updated =
+          verify(
+                () => mockRepository.updateRelationship(captureAny()),
+              ).captured.single
+              as RelationshipEntry;
+      expect(updated.data.contactChannels, isEmpty);
+    });
+  });
 }

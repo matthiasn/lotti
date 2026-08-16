@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: Entry links
-description: One row per relationship, eight variants sharing one shape, and why the type column is what keeps old consumers working.
+description: One row per relationship, nine variants sharing one shape, and why the type column is what keeps old consumers working.
 resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
@@ -18,10 +18,11 @@ sources:
     last_modified: 2026-07-24
 ---
 
-# Eight variants, one shape
+# Nine variants, one shape
 
-`EntryLink` is a union of `basic`, `rating`, `project`, `blocks`, `followsUp`,
-`duplicates`, `fixes`, `supersedes` — mirrored by `EntryLinkType`.
+`EntryLink` is a union of `basic`, `rating`, `project`, `relationship`,
+`blocks`, `followsUp`, `duplicates`, `fixes`, `supersedes` — mirrored by
+`EntryLinkType`.
 
 **Every variant has the same shape**: id, `fromId`, `toId`, timestamps, vector
 clock. The relationship lives entirely in the **type column**.
@@ -50,6 +51,13 @@ erDiagram
 
 `UNIQUE(from_id, to_id, type)` is what lets one pair hold several different
 relationships while keeping each one singular.
+
+**A type does not always imply an endpoint type.** `relationship` binds a
+`RelationshipEntry` to *both* its check-ins and its linked tasks, so a
+`RelationshipLink` row alone does not say which it is. Consumers that want one
+of the two must resolve the endpoint's journal `type` — see
+`JournalDb.getLiveTasksByIds`, which filters on the indexed column so a
+person's whole check-in history is never deserialized just to be discarded.
 
 **Only these columns are queryable.** Everything else an `EntryLink` carries —
 `vectorClock`, `collapsed`, `deletedAt` — lives inside `serialized`.

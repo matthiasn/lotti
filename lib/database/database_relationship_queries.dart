@@ -73,6 +73,38 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
     };
   }
 
+  /// The live tasks among [ids], for resolving a relationship's linked
+  /// tasks. Relationship → check-in and relationship → task links share the
+  /// `RelationshipLink` type, so the caller cannot tell them apart from the
+  /// link rows alone; filtering on the indexed `type` column here means a
+  /// person's whole check-in history is never deserialized only to be
+  /// discarded. Respects the private-entry filter.
+  Future<List<Task>> getLiveTasksByIds(Set<String> ids) async {
+    if (ids.isEmpty) return const [];
+    final idList = ids.toList(growable: false);
+
+    Future<List<JournalDbEntity>> run({List<bool>? privateStatuses}) {
+      return (select(journal)..where((t) {
+            var predicate =
+                t.id.isIn(idList) &
+                t.type.equals('Task') &
+                t.task.equals(true) &
+                t.deleted.equals(false);
+            if (privateStatuses != null) {
+              predicate = predicate & t.private.isIn(privateStatuses);
+            }
+            return predicate;
+          }))
+          .get();
+    }
+
+    final rows = await _queryWithPrivateFilter(
+      allPrivate: run,
+      filtered: (statuses) => run(privateStatuses: statuses),
+    );
+    return rows.map(fromDbEntity).whereType<Task>().toList();
+  }
+
   SimpleSelectStatement<Journal, JournalDbEntity> _relationshipRows({
     List<bool>? privateStatuses,
   }) {

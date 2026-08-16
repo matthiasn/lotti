@@ -6,11 +6,15 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,6 +40,7 @@ void main() {
     bool important = false,
     int? cadenceDays,
     RelationshipStatus? status,
+    List<ContactChannel> contactChannels = const [],
   }) => RelationshipEntry(
     meta: meta('rel-1'),
     data: RelationshipData(
@@ -43,6 +48,7 @@ void main() {
       nickname: 'Sis',
       important: important,
       checkInCadenceDays: cadenceDays,
+      contactChannels: contactChannels,
       status:
           status ??
           RelationshipStatus.active(
@@ -52,6 +58,23 @@ void main() {
           ),
     ),
   );
+
+  Task task(String id, {String title = 'Prepare the call'}) =>
+      JournalEntity.task(
+            meta: meta(id),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'ts-$id',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+              title: title,
+            ),
+          )
+          as Task;
 
   CheckInEntry checkIn(
     String id, {
@@ -75,6 +98,10 @@ void main() {
     mockRepository = MockRelationshipRepository();
     mockNotifications = MockUpdateNotifications();
     getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+    // Most tests exercise other sections; linked tasks default to empty.
+    when(
+      () => mockRepository.getLinkedTasks('rel-1'),
+    ).thenAnswer((_) async => []);
   });
 
   tearDown(() async {
@@ -488,5 +515,346 @@ void main() {
     // before the sheet opened, plus the sheet's edit-only one. `findsWidgets`
     // here would pass on the app-bar icon alone and prove nothing.
     expect(find.byIcon(Icons.delete_outline_rounded), findsNWidgets(2));
+  });
+
+  testWidgets('renders contact channels with value and label', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(
+        contactChannels: const [
+          ContactChannel(
+            type: ContactChannelType.email,
+            value: 'anna@example.com',
+            label: 'Personal',
+          ),
+          ContactChannel(
+            type: ContactChannelType.mobile,
+            value: '+49 151 1234567',
+          ),
+        ],
+      ),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Contact channels'), findsOneWidget);
+    expect(find.text('anna@example.com'), findsOneWidget);
+    expect(find.text('Personal'), findsOneWidget);
+    expect(find.text('+49 151 1234567'), findsOneWidget);
+    // A channel without a label falls back to its localized type name.
+    expect(find.text('Mobile'), findsOneWidget);
+  });
+
+  testWidgets(
+    'renders linked tasks with localized status; empty state otherwise',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+        (_) async => [task('task-1')],
+      );
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Link task'), findsOneWidget);
+      expect(find.text('Prepare the call'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('No tasks linked yet.'), findsNothing);
+    },
+  );
+
+  testWidgets('shows the linked-tasks empty state', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    expect(find.text('No tasks linked yet.'), findsOneWidget);
+  });
+
+  testWidgets('tapping a linked task beams to the task', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+      (_) async => [task('task-1')],
+    );
+
+    final beamedTo = <String>[];
+    beamToNamedOverride = beamedTo.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Prepare the call'));
+    await tester.pumpAndSettle();
+
+    expect(beamedTo, ['/tasks/task-1']);
+  });
+
+  testWidgets('uses the localized fallback for an untitled linked task', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+      (_) async => [task('task-1', title: '')],
+    );
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    expect(find.text('(untitled)'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Unlink “(untitled)”? The task itself is not deleted.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'unlink asks for confirmation and removes the link on consent',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+        (_) async => [task('task-1')],
+      );
+      when(
+        () => mockRepository.unlinkTask(
+          relationshipId: 'rel-1',
+          taskId: 'task-1',
+        ),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.link_off_rounded));
+      await tester.pumpAndSettle();
+
+      // Nothing removed before consent; the modal names the task.
+      expect(
+        find.textContaining('Prepare the call'),
+        findsWidgets,
+      );
+      verifyNever(
+        () => mockRepository.unlinkTask(
+          relationshipId: any(named: 'relationshipId'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+
+      await tester.tap(find.text('Unlink Task'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockRepository.unlinkTask(
+          relationshipId: 'rel-1',
+          taskId: 'task-1',
+        ),
+      ).called(1);
+    },
+  );
+
+  testWidgets('unlink surfaces an error when the removal fails', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+      (_) async => [task('task-1')],
+    );
+    when(
+      () => mockRepository.unlinkTask(
+        relationshipId: 'rel-1',
+        taskId: 'task-1',
+      ),
+    ).thenAnswer((_) async => false);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unlink Task'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't unlink the task. Please try again."), findsOne);
+  });
+
+  testWidgets('unlink surfaces an error when the repository throws', (
+    tester,
+  ) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(),
+    );
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+    when(() => mockRepository.getLinkedTasks('rel-1')).thenAnswer(
+      (_) async => [task('task-1')],
+    );
+    when(
+      () => mockRepository.unlinkTask(
+        relationshipId: 'rel-1',
+        taskId: 'task-1',
+      ),
+    ).thenThrow(Exception('database unavailable'));
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.link_off_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unlink Task'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't unlink the task. Please try again."), findsOne);
+  });
+
+  group('link task picker -', () {
+    late MockJournalDb mockDb;
+    late MockFts5Db mockFts5Db;
+    late MockEntitiesCacheService mockCache;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+      mockFts5Db = MockFts5Db();
+      mockCache = MockEntitiesCacheService();
+      when(() => mockCache.sortedCategories).thenReturn([]);
+      when(
+        () => mockDb.getTasks(
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [task('task-2', title: 'Send the photos')]);
+      when(
+        () => mockFts5Db.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.value(const <String>[]));
+
+      getIt
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<Fts5Db>(mockFts5Db)
+        ..registerSingleton<EntitiesCacheService>(mockCache);
+
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+    });
+
+    tearDown(() async {
+      await getIt.unregister<JournalDb>();
+      await getIt.unregister<Fts5Db>();
+      await getIt.unregister<EntitiesCacheService>();
+    });
+
+    Future<void> pickTask(WidgetTester tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Link task'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send the photos'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('links the picked task and closes the picker', (tester) async {
+      when(
+        () => mockRepository.linkTask(
+          relationshipId: 'rel-1',
+          taskId: 'task-2',
+        ),
+      ).thenAnswer((_) async => true);
+
+      await pickTask(tester);
+
+      verify(
+        () => mockRepository.linkTask(
+          relationshipId: 'rel-1',
+          taskId: 'task-2',
+        ),
+      ).called(1);
+      expect(find.text('Send the photos'), findsNothing);
+      expect(
+        find.text('Could not link the task. Please try again.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'surfaces an error when the link write changes no row — a silent '
+      'close would read as a link that worked',
+      (tester) async {
+        when(
+          () => mockRepository.linkTask(
+            relationshipId: 'rel-1',
+            taskId: 'task-2',
+          ),
+        ).thenAnswer((_) async => false);
+
+        await pickTask(tester);
+
+        expect(
+          find.text('Could not link the task. Please try again.'),
+          findsOne,
+        );
+      },
+    );
+
+    testWidgets('surfaces an error when the link repository throws', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.linkTask(
+          relationshipId: 'rel-1',
+          taskId: 'task-2',
+        ),
+      ).thenThrow(Exception('database unavailable'));
+
+      await pickTask(tester);
+
+      expect(
+        find.text('Could not link the task. Please try again.'),
+        findsOne,
+      );
+    });
   });
 }

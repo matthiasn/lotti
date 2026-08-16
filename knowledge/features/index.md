@@ -26,6 +26,7 @@ what it does for a user; these describe how it runs.
 
 * [Categories](categories.md) - the app's primary scoping unit and its stored defaults.
 * [Projects](projects.md) - grouping between categories and tasks, with agent-authored health.
+* [Relationships](relationships.md) - a personal CRM on two journal variants: check-ins bound twice, recency without an N+1, and a cascade delete.
 * [Labels](labels.md) - the lightweight taxonomy and its AI-suggestion coupling.
 * [Insights](insights.md) - time analysis over the journal.
 * [Dashboards](dashboards.md) - user-built chart views over journal data.

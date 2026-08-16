@@ -3746,6 +3746,24 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Libellé (facultatif)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Messagerie';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobile';
+
+  @override
+  String get contactChannelTypePhone => 'Téléphone';
+
+  @override
+  String get contactChannelValueLabel => 'Numéro ou adresse';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10266,6 +10284,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get referenceImageSkip => 'Passer';
 
   @override
+  String get relationshipAddChannelButton => 'Ajouter un moyen de contact';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10295,6 +10316,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Chaque semaine';
 
   @override
+  String get relationshipCheckInsLabel => 'Échanges';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Coordonnées';
+
+  @override
   String get relationshipCreateTitle => 'Ajouter une personne';
 
   @override
@@ -10318,6 +10345,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de supprimer la personne. Réessaie.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Impossible de lier la tâche. Réessaie.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Impossible d\'enregistrer les modifications. Réessaie.';
 
@@ -10327,6 +10358,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Tâches';
+
+  @override
+  String get relationshipLinkTaskButton => 'Lier une tâche';
 
   @override
   String get relationshipLogCheckIn => 'Noter un échange';
@@ -10343,6 +10380,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Aucun échange noté — ajoute le premier après votre prochaine conversation.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Aucune tâche liée pour l\'instant.';
 
   @override
   String get relationshipNotFound =>

@@ -17,8 +17,8 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   Both ride the journal table as `JournalEntity.relationship` /
   `JournalEntity.checkIn` — payload-agnostic sync, `private` flag,
   categories, and export all apply with zero new infrastructure.
-- **Linking**: `EntryLink.relationship` binds relationship → check-in (and
-  later relationship → task). Check-ins also carry a denormalized
+- **Linking**: `EntryLink.relationship` binds relationship → check-in and
+  relationship ↔ task. Check-ins also carry a denormalized
   `relationshipId` so `affectedIds` emits a precise agent wake token and the
   journal `subtype` column supports indexed check-in queries.
 - `repository/` — `RelationshipRepository`: CRUD for both entity types
@@ -26,17 +26,20 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   ADR 0037 §5) plus the recency-ordered list used by the People tab.
 - `ui/` + `state/` — the flag-gated **People tab** (`/people`, its own
   beamer location): the relationship list ordered by last-check-in recency,
-  the per-person detail page (status/cadence/nickname chips, check-in log,
-  edit and delete actions), the add/edit person modal (name, nickname,
-  importance, cadence presets, status), and the check-in capture sheet
-  (interaction type, date, user-set sentiment — never AI-filled, ADR 0038 —
-  topics, narrative, next-time guidance; editable and deletable afterward).
+  the per-person detail page (status/cadence/nickname chips, contact
+  channels, a linked-tasks section — `RelationshipLink` both ways, with a
+  task picker and per-row unlink — and the check-in log, with edit and
+  delete actions), the add/edit person modal (name, nickname, importance,
+  cadence presets, status, and the manual contact-channel editor — desktop
+  parity per ADR 0041 §2), and the check-in capture sheet (interaction
+  type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,
+  narrative, next-time guidance; editable and deletable afterward).
 
 Not yet built: the banner-channel generalization (phase 3), the relationship
-agent (phases 4–5), voice check-ins (phase 6), contact linking, channels and
-quick actions (phase 7), OS reminders (phase 8). Relationships and check-ins
-deliberately do not appear in the main journal timeline; the People tab is
-their home.
+agent (phases 4–5), voice check-ins (phase 6), OS contact import/linking and
+call/message quick actions (phase 7), OS reminders (phase 8). Relationships
+and check-ins deliberately do not appear in the main journal timeline; the
+People tab is their home.
 
 Privacy stance (ADR 0037): relationship data is the most sensitive class the
 app holds — it describes third parties. It stays on-device, syncs only via
@@ -47,3 +50,9 @@ page resolves a private person to "no longer tracked" while private entries
 are hidden (the list filter alone would leave the `/people/<id>` route open),
 and the delete cascade reads check-ins unfiltered so hidden ones cannot
 survive the person they describe.
+
+Why check-ins are bound to a person twice, how the People list orders by
+recency without a per-person query, the status lifecycle, and what the delete
+cascade does and does not reach are documented in the knowledge bundle:
+
+**→ [knowledge/features/relationships.md](../../../knowledge/features/relationships.md)**

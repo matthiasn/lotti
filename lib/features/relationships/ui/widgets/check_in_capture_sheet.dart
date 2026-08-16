@@ -36,6 +36,16 @@ String checkInInteractionLabel(
   CheckInInteractionType.other => context.messages.checkInInteractionOther,
 };
 
+/// The icon for an interaction type — shared by the detail page's check-in
+/// rows and the journal card, so the two can't drift apart.
+IconData checkInInteractionIcon(CheckInInteractionType type) => switch (type) {
+  CheckInInteractionType.inPerson => Icons.people_rounded,
+  CheckInInteractionType.call => Icons.call_rounded,
+  CheckInInteractionType.videoCall => Icons.videocam_rounded,
+  CheckInInteractionType.message => Icons.chat_rounded,
+  CheckInInteractionType.other => Icons.forum_rounded,
+};
+
 /// The localized label for a sentiment — shared by the capture sheet and the
 /// detail page's check-in rows.
 String checkInSentimentLabel(

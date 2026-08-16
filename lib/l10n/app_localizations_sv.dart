@@ -3701,6 +3701,24 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Etikett (valfri)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-post';
+
+  @override
+  String get contactChannelTypeMessaging => 'Meddelanden';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobil';
+
+  @override
+  String get contactChannelTypePhone => 'Telefon';
+
+  @override
+  String get contactChannelValueLabel => 'Nummer eller adress';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10085,6 +10103,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get referenceImageSkip => 'Hoppa över';
 
   @override
+  String get relationshipAddChannelButton => 'Lägg till kontaktuppgift';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10114,6 +10135,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Varje vecka';
 
   @override
+  String get relationshipCheckInsLabel => 'Avstämningar';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Kontaktuppgifter';
+
+  @override
   String get relationshipCreateTitle => 'Lägg till person';
 
   @override
@@ -10137,6 +10164,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Personen kunde inte tas bort. Försök igen.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Uppgiften kunde inte länkas. Försök igen.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Ändringarna kunde inte sparas. Försök igen.';
 
@@ -10146,6 +10177,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Viktig';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Länkade uppgifter';
+
+  @override
+  String get relationshipLinkTaskButton => 'Länka uppgift';
 
   @override
   String get relationshipLogCheckIn => 'Logga avstämning';
@@ -10162,6 +10199,9 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Inga avstämningar än — logga en efter ert nästa samtal.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Inga uppgifter länkade än.';
 
   @override
   String get relationshipNotFound => 'Den här personen följs inte längre.';

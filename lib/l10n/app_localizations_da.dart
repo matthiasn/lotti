@@ -3692,6 +3692,24 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get contactChannelLabelLabel => 'Etiket (valgfri)';
+
+  @override
+  String get contactChannelTypeEmail => 'E-mail';
+
+  @override
+  String get contactChannelTypeMessaging => 'Beskeder';
+
+  @override
+  String get contactChannelTypeMobile => 'Mobil';
+
+  @override
+  String get contactChannelTypePhone => 'Telefon';
+
+  @override
+  String get contactChannelValueLabel => 'Nummer eller adresse';
+
+  @override
   String get contactUsDiscordLabel => 'Discord';
 
   @override
@@ -10077,6 +10095,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get referenceImageSkip => 'Spring over';
 
   @override
+  String get relationshipAddChannelButton => 'Tilføj kontaktoplysning';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10106,6 +10127,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Ugentligt';
 
   @override
+  String get relationshipCheckInsLabel => 'Check-ins';
+
+  @override
+  String get relationshipContactChannelsLabel => 'Kontaktoplysninger';
+
+  @override
   String get relationshipCreateTitle => 'Tilføj person';
 
   @override
@@ -10129,6 +10156,10 @@ class AppLocalizationsDa extends AppLocalizations {
       'Personen kunne ikke slettes. Prøv igen.';
 
   @override
+  String get relationshipErrorLinkTaskFailed =>
+      'Opgaven kunne ikke tilknyttes. Prøv igen.';
+
+  @override
   String get relationshipErrorUpdateFailed =>
       'Ændringerne kunne ikke gemmes. Prøv igen.';
 
@@ -10138,6 +10169,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipImportantLabel => 'Vigtig';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Opgaver';
+
+  @override
+  String get relationshipLinkTaskButton => 'Tilknyt opgave';
 
   @override
   String get relationshipLogCheckIn => 'Registrér check-in';
@@ -10154,6 +10191,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipNoCheckIns =>
       'Ingen check-ins endnu — registrér et efter jeres næste snak.';
+
+  @override
+  String get relationshipNoLinkedTasks => 'Ingen opgaver er tilknyttet endnu.';
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';

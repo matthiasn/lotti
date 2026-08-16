@@ -25,10 +25,12 @@ class RelationshipsLocation extends BeamLocation<BeamState> {
         title: messages.relationshipsPageTitle,
         child: const RelationshipsPage(),
       ),
+      // The detail page's own SliverAppBar shows the person's name; the
+      // BeamPage title is left unset so the window/tab bar falls back to
+      // the app name rather than misreading "People" for one person.
       if (relationshipId != null)
         BeamPage(
           key: ValueKey('people-details-$relationshipId'),
-          title: messages.relationshipsPageTitle,
           child: RelationshipDetailsPage(relationshipId: relationshipId),
         ),
     ];
