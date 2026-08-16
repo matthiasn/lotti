@@ -3362,6 +3362,17 @@
   "goalBannerSnoozeSixHours": "6 hours",
   "goalBannerSnoozeThreeHours": "3 hours",
   "goalBannerSnoozeTitle": "Snooze banner",
+  "goalChartSevenDayAverage": "7-day average",
+  "goalChartStepsPerDay": "Steps per day",
+  "goalChartTrend": "{trend, select, aboveToward{Current above 7-day average · toward target} aboveAway{Current above 7-day average · away from target} belowToward{Current below 7-day average · toward target} belowAway{Current below 7-day average · away from target} steady{Current matches 7-day average} other{Current matches 7-day average}}",
+  "@goalChartTrend": {
+    "description": "Legend label comparing the latest value with its trailing seven-day average and interpreting the direction against the goal.",
+    "placeholders": {
+      "trend": {
+        "type": "String"
+      }
+    }
+  },
   "goalChatEmpty": "Start a conversation with {agentName}.",
   "@goalChatEmpty": {
     "description": "Empty-state invitation in a goal-agent conversation.",

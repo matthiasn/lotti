@@ -757,7 +757,11 @@ flowchart TD
   (`reverse: true`) scroller joined to one `LinkedScrollGroup`, so a span
   wider than the viewport opens with today on screen and every track
   scrolls in unison — the same date stays vertically aligned down the
-  page, chart included. Aggregates never fold the rendered list — the
+  page, chart included. Every non-axis day track reserves the same
+  `kChartLeftAxisWidth` value-label gutter and right inset as the time-series
+  plots, so habit cells, bars, and line charts share one horizontal plot span;
+  narrow seven-day tracks stay trailing-anchored so today remains reachable.
+  Aggregates never fold the rendered list — the
   evaluator's numbers win — so a longer rendering cannot change a verdict,
   and the ages-out ring anchors at the window's own first day rather than
   the list head. The
@@ -768,9 +772,24 @@ flowchart TD
   lazy section could unmount the `ensureVisible` anchor the banner CTA
   scrolls to. The detail page expands the
   same source into a habit grid or metric series using each leaf criterion's
-  actual day/rolling/week/month range. Canonical weight data uses the shared
-  time-series line treatment, while paired systolic and diastolic dimensions
-  render as one dual-line blood-pressure chart with both authored targets;
+  actual day/rolling/week/month range. Canonical weight and daily-step data use
+  a two-series time-series treatment: the observed values plus a trailing
+  seven-calendar-day average. Daily steps render as discrete bars, while weight
+  keeps the shared actual-value area treatment; both overlay the average as a
+  dashed blue line. The average begins only after the rendered range has
+  accumulated a full seven-day span and folds only observed samples inside each
+  window, so a missing day does not become a false zero. It stops at the goal
+  view's deterministic `today` and is available only for
+  `dailySumThenAverage` criteria; future calendar days and period-level
+  aggregations therefore cannot produce a fabricated per-day trend or target.
+  Step cards name the observed series "Steps per day" while retaining "Average
+  steps per day" as the aggregate being judged. Their legends identify actual,
+  average, dashed
+  target, and the latest-value trend; the trend compares the latest observation
+  with its same-day average and interprets above/below through the criterion's
+  `atLeast`/`atMost` direction. Paired systolic and diastolic dimensions render
+  as one dual-line blood-pressure chart with both authored targets, and its
+  legend names the two actual series and two target rules independently;
   a partial blood-pressure import remains two separate cards so the available
   component is not hidden. Singleton health series render a visible point until
   a second observation can form a line. These daily health charts format their

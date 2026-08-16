@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
@@ -768,12 +769,14 @@ class GoalThisWeekCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step1),
-          GoalCompactWindowStrip(
-            days: progress.compactWindow,
-            lastDay: progress.today,
-            onDaySelected: onReflectDay,
-            ratingsByDay: ratingsByDay,
-            scrollGroup: scrollGroup,
+          _GoalPlotInset(
+            child: GoalCompactWindowStrip(
+              days: progress.compactWindow,
+              lastDay: progress.today,
+              onDaySelected: onReflectDay,
+              ratingsByDay: ratingsByDay,
+              scrollGroup: scrollGroup,
+            ),
           ),
           // Directly under the week it closes off, and inside the same card.
           // Stranded at the very bottom of the page — after every habit card,
@@ -1037,6 +1040,22 @@ typedef _MetricSummary = ({
   bool improving,
 });
 
+const _stepsDataType = 'cumulative_step_count';
+
+enum _MetricAverageTrend {
+  aboveToward,
+  aboveAway,
+  belowToward,
+  belowAway,
+  steady,
+}
+
+typedef _MetricTrendComparison = ({
+  num average,
+  num current,
+  _MetricAverageTrend trend,
+});
+
 _BloodPressureMetrics? _bloodPressureMetrics(
   List<GoalMetricProgressView> metrics,
 ) {
@@ -1245,6 +1264,10 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 maxVal: yValues.reduce(math.max),
                 unit: unit,
                 dateOnly: true,
+                seriesLabels: [
+                  context.messages.dashboardHealthSystolic,
+                  context.messages.dashboardHealthDiastolic,
+                ],
                 horizontalLines: [
                   _targetLine(metrics.systolic.target, systolicColor),
                   _targetLine(metrics.diastolic.target, diastolicColor),
@@ -1261,17 +1284,27 @@ class _BloodPressureDimensionCard extends StatelessWidget {
               entries: [
                 DashboardLegendEntry(
                   color: systolicColor,
+                  label: context.messages.dashboardHealthSystolic,
+                ),
+                DashboardLegendEntry(
+                  color: systolicColor,
                   label: _targetLegendLabel(
                     context,
-                    context.messages.dashboardHealthSystolic,
+                    '${context.messages.dashboardHealthSystolic} · '
+                    '${context.messages.habitsGoalLineLabel}',
                     metrics.systolic,
                   ),
                 ),
                 DashboardLegendEntry(
                   color: diastolicColor,
+                  label: context.messages.dashboardHealthDiastolic,
+                ),
+                DashboardLegendEntry(
+                  color: diastolicColor,
                   label: _targetLegendLabel(
                     context,
-                    context.messages.dashboardHealthDiastolic,
+                    '${context.messages.dashboardHealthDiastolic} · '
+                    '${context.messages.habitsGoalLineLabel}',
                     metrics.diastolic,
                   ),
                 ),
@@ -1364,6 +1397,114 @@ List<Observation> _metricObservations(GoalMetricProgressView metric) {
   return observations;
 }
 
+bool _showsSevenDayAverage(GoalMetricProgressView metric) =>
+    metric.aggregation == GoalAggregation.dailySumThenAverage &&
+    (metric.sourceId == GoalHealthDataTypes.weight ||
+        metric.sourceId == _stepsDataType);
+
+List<Observation> _sevenDayAverage(
+  GoalMetricProgressView metric, {
+  required DateTime today,
+}) {
+  final todayUtc = _utcDay(today);
+  final days =
+      metric.days.where((day) => !_utcDay(day.day).isAfter(todayUtc)).toList()
+        ..sort((a, b) => a.day.compareTo(b.day));
+  if (days.isEmpty) return const [];
+  final firstDay = _utcDay(days.first.day);
+  final observations = days.where((day) => day.isObserved).toList();
+  final averages = <Observation>[];
+  for (final day in days) {
+    final currentDay = _utcDay(day.day);
+    if (currentDay.difference(firstDay).inDays < 6) continue;
+    final windowStart = currentDay.subtract(const Duration(days: 6));
+    final available = observations.where((observation) {
+      final observationDay = _utcDay(observation.day);
+      return !observationDay.isBefore(windowStart) &&
+          !observationDay.isAfter(currentDay);
+    }).toList();
+    if (available.isEmpty) continue;
+    averages.add(
+      Observation(
+        day.day,
+        available.fold<num>(0, (sum, sample) => sum + sample.value) /
+            available.length,
+      ),
+    );
+  }
+  return averages;
+}
+
+DateTime _utcDay(DateTime value) =>
+    DateTime.utc(value.year, value.month, value.day);
+
+_MetricTrendComparison? _metricTrendComparison(
+  GoalMetricProgressView metric,
+  List<Observation> averages,
+) {
+  final observations = _metricObservations(metric);
+  if (observations.isEmpty || averages.isEmpty) return null;
+  final current = observations.last;
+  Observation? average;
+  for (final candidate in averages.reversed) {
+    if (_utcDay(candidate.dateTime) == _utcDay(current.dateTime)) {
+      average = candidate;
+      break;
+    }
+  }
+  if (average == null) return null;
+  final delta = current.value - average.value;
+  if (delta.abs() < 0.000001) {
+    return (
+      average: average.value,
+      current: current.value,
+      trend: _MetricAverageTrend.steady,
+    );
+  }
+  final above = delta > 0;
+  final toward = switch (metric.direction) {
+    GoalDirection.atLeast => above,
+    GoalDirection.atMost => !above,
+  };
+  return (
+    average: average.value,
+    current: current.value,
+    trend: switch ((above, toward)) {
+      (true, true) => _MetricAverageTrend.aboveToward,
+      (true, false) => _MetricAverageTrend.aboveAway,
+      (false, true) => _MetricAverageTrend.belowToward,
+      (false, false) => _MetricAverageTrend.belowAway,
+    },
+  );
+}
+
+bool _trendMovesTowardTarget(_MetricAverageTrend trend) => switch (trend) {
+  _MetricAverageTrend.aboveToward || _MetricAverageTrend.belowToward => true,
+  _MetricAverageTrend.aboveAway || _MetricAverageTrend.belowAway => false,
+  _MetricAverageTrend.steady => false,
+};
+
+String _localizedTrend(
+  BuildContext context,
+  _MetricAverageTrend trend,
+) => context.messages.goalChartTrend(switch (trend) {
+  _MetricAverageTrend.aboveToward => 'aboveToward',
+  _MetricAverageTrend.aboveAway => 'aboveAway',
+  _MetricAverageTrend.belowToward => 'belowToward',
+  _MetricAverageTrend.belowAway => 'belowAway',
+  _MetricAverageTrend.steady => 'steady',
+});
+
+String _metricTitle(BuildContext context, GoalMetricProgressView metric) =>
+    metric.sourceId == _stepsDataType
+    ? context.messages.goalChartStepsPerDay
+    : metric.name;
+
+String _metricSource(BuildContext context, GoalMetricProgressView metric) =>
+    metric.sourceId == _stepsDataType
+    ? context.messages.goalCreateStepsTargetLabel
+    : _dimensionSource(context, metric.kind);
+
 class _MetricDimensionCard extends StatelessWidget {
   const _MetricDimensionCard({
     required this.metric,
@@ -1399,8 +1540,8 @@ class _MetricDimensionCard extends StatelessWidget {
         children: [
           _DimensionHeader(
             kind: metric.kind,
-            title: metric.name,
-            source: _dimensionSource(context, metric.kind),
+            title: _metricTitle(context, metric),
+            source: _metricSource(context, metric),
             reading: reading,
             met: summary.met,
             hasData: summary.hasData,
@@ -1411,8 +1552,10 @@ class _MetricDimensionCard extends StatelessWidget {
                   metric.kind == GoalDimensionKind.labelTime) &&
               metric.dailyTimeRange != null)
             _CategoryBandSeries(metric: metric)
+          else if (_showsSevenDayAverage(metric))
+            _MetricTrendSeries(metric: metric, today: today)
           else if (GoalHealthDataTypes.supported.contains(metric.sourceId))
-            _MetricTrendSeries(metric: metric)
+            _MetricHealthSeries(metric: metric)
           else
             _MetricProgressSeries(metric: metric, scrollGroup: scrollGroup),
           SizedBox(height: tokens.spacing.step3),
@@ -1731,6 +1874,49 @@ class _LinkedDayTrackScrollerState extends State<_LinkedDayTrackScroller> {
   );
 }
 
+/// Starts short day tracks at the shared leading plot edge when they fit, but
+/// keeps today visible at the trailing edge when compact layouts must scroll.
+class _ShortDayTrackScroller extends StatelessWidget {
+  const _ShortDayTrackScroller({
+    required this.contentWidth,
+    required this.child,
+  });
+
+  final double contentWidth;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      reverse: contentWidth > constraints.maxWidth,
+      child: child,
+    ),
+  );
+}
+
+/// Gives non-axis day tracks the same horizontal plot bounds as the time-series
+/// charts. The left gutter is where line charts render value labels; the right
+/// inset mirrors their protective chart padding.
+class _GoalPlotInset extends StatelessWidget {
+  const _GoalPlotInset({required this.child, this.plotKey});
+
+  final Widget child;
+  final Key? plotKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: kChartLeftAxisWidth,
+        right: tokens.spacing.step2,
+      ),
+      child: SizedBox(key: plotKey, width: double.infinity, child: child),
+    );
+  }
+}
+
 class _DayTrack extends StatelessWidget {
   const _DayTrack({
     required this.height,
@@ -1896,6 +2082,15 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       );
     }
 
+    Widget track() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _WeekdayTrack(days: activeDays, habitId: habit.habitId),
+        SizedBox(height: tokens.spacing.step1),
+        cells(),
+      ],
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final inlineHeaderWidth =
@@ -1925,41 +2120,33 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               Text(cadence, style: cadenceStyle),
             ],
             SizedBox(height: tokens.spacing.step2),
-            if (activeDays.length > 7) ...[
-              Text(
-                _periodLabel(context, activeDays),
-                style: cadenceStyle,
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              _LinkedDayTrackScroller(
-                group: widget.scrollGroup,
+            if (activeDays.length > 7)
+              _GoalPlotInset(
+                plotKey: ValueKey('goal-habit-plot-${habit.habitId}'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _WeekdayTrack(
-                      days: activeDays,
-                      habitId: habit.habitId,
+                    Text(
+                      _periodLabel(context, activeDays),
+                      style: cadenceStyle,
                     ),
                     SizedBox(height: tokens.spacing.step1),
-                    cells(),
+                    _LinkedDayTrackScroller(
+                      group: widget.scrollGroup,
+                      child: track(),
+                    ),
                   ],
                 ),
-              ),
-            ] else
+              )
+            else
               // Labels and squares scroll as one unit, keeping each weekday
               // caption glued to its cell.
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _WeekdayTrack(
-                      days: activeDays,
-                      habitId: habit.habitId,
-                    ),
-                    SizedBox(height: tokens.spacing.step1),
-                    cells(),
-                  ],
+              _GoalPlotInset(
+                plotKey: ValueKey('goal-habit-plot-${habit.habitId}'),
+                child: _ShortDayTrackScroller(
+                  contentWidth:
+                      _dayTrackPitch(context, activeDays) * activeDays.length,
+                  child: track(),
                 ),
               ),
             if (widget.onOutcomeSelected != null &&
@@ -2369,7 +2556,134 @@ class _Reliability extends StatelessWidget {
 }
 
 class _MetricTrendSeries extends StatelessWidget {
-  const _MetricTrendSeries({required this.metric});
+  const _MetricTrendSeries({required this.metric, required this.today});
+
+  final GoalMetricProgressView metric;
+  final DateTime today;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final range = _metricDateRange([metric]);
+    if (range == null) return const SizedBox.shrink();
+    final actual = _metricObservations(metric);
+    final averages = _sevenDayAverage(metric, today: today);
+    final trend = _metricTrendComparison(metric, averages);
+    final actualColor = tokens.colors.interactive.enabled;
+    final averageColor = tokens.colors.alert.info.defaultColor;
+    final targetColor = tokens.colors.alert.warning.defaultColor;
+    final isSteps = metric.sourceId == _stepsDataType;
+    final actualLabel = _metricTitle(context, metric);
+    final yValues = <num>[
+      metric.target,
+      ...actual.map((observation) => observation.value),
+      ...averages.map((observation) => observation.value),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: tokens.spacing.step13,
+          child: isSteps
+              ? TimeSeriesBarLineChart(
+                  barData: actual,
+                  lineData: averages,
+                  rangeStart: range.start,
+                  rangeEnd: range.end,
+                  maxVal: yValues.reduce(math.max),
+                  barColor: actualColor,
+                  lineColor: averageColor,
+                  barLabel: actualLabel,
+                  lineLabel: context.messages.goalChartSevenDayAverage,
+                  unit: metric.unitName ?? '',
+                  dateOnly: true,
+                  horizontalLines: [
+                    _targetLine(metric.target, targetColor),
+                  ],
+                )
+              : TimeSeriesMultiLineChart(
+                  lineBarsData: [
+                    timeSeriesAreaLine(data: actual, color: actualColor),
+                    if (averages.isNotEmpty)
+                      _metricAverageLine(averages, averageColor),
+                  ],
+                  rangeStart: range.start,
+                  rangeEnd: range.end,
+                  minVal: yValues.reduce(math.min),
+                  maxVal: yValues.reduce(math.max),
+                  unit: metric.unitName ?? '',
+                  dateOnly: true,
+                  seriesLabels: [
+                    actualLabel,
+                    if (averages.isNotEmpty)
+                      context.messages.goalChartSevenDayAverage,
+                  ],
+                  horizontalLines: [
+                    _targetLine(metric.target, targetColor),
+                  ],
+                ),
+        ),
+        DashboardChartDateAxis(
+          rangeStart: range.start,
+          rangeEnd: range.end,
+          dateOnly: true,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        DashboardChartLegend(
+          entries: [
+            DashboardLegendEntry(color: actualColor, label: actualLabel),
+            if (averages.isNotEmpty)
+              DashboardLegendEntry(
+                color: averageColor,
+                label: context.messages.goalChartSevenDayAverage,
+              ),
+            DashboardLegendEntry(
+              color: targetColor,
+              label: _targetLegendLabel(
+                context,
+                context.messages.habitsGoalLineLabel,
+                metric,
+              ),
+            ),
+            if (trend != null)
+              DashboardLegendEntry(
+                color: _trendMovesTowardTarget(trend.trend)
+                    ? tokens.colors.alert.success.defaultColor
+                    : trend.trend == _MetricAverageTrend.steady
+                    ? tokens.colors.text.mediumEmphasis
+                    : tokens.colors.alert.error.defaultColor,
+                label: _localizedTrend(context, trend.trend),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+LineChartBarData _metricAverageLine(
+  List<Observation> observations,
+  Color color,
+) {
+  final style = chartEmphasisLine(color);
+  return LineChartBarData(
+    spots: [
+      for (final observation in observations)
+        FlSpot(
+          observation.dateTime.millisecondsSinceEpoch.toDouble(),
+          observation.value.toDouble(),
+        ),
+    ],
+    color: style.color,
+    barWidth: style.strokeWidth,
+    dashArray: style.dashArray,
+    isStrokeCapRound: true,
+    dotData: const FlDotData(show: false),
+  );
+}
+
+class _MetricHealthSeries extends StatelessWidget {
+  const _MetricHealthSeries({required this.metric});
 
   final GoalMetricProgressView metric;
 
@@ -2425,60 +2739,66 @@ class _MetricProgressSeries extends StatelessWidget {
       metric.target,
       (current, day) => day.value > current ? day.value : current,
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _periodLabel(context, metric.days),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+    return _GoalPlotInset(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _periodLabel(context, metric.days),
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step3),
-        SizedBox(
-          height: _chartHeight(tokens),
-          child: Stack(
-            children: [
-              // The target, drawn — but only where it is a PER-DAY quantity.
-              // For a `sum` or `count` criterion the target is a period-level
-              // total while these bars are single days, so a line at the
-              // target would put two already-sufficient days under a
-              // threshold they jointly cleared.
-              if (maxValue > 0 && metric.targetIsPerDay)
-                Positioned(
-                  key: const ValueKey('goal-metric-target-rule'),
-                  left: 0,
-                  right: 0,
-                  // Clamped to leave the rule's own thickness inside the plot.
-                  // When nothing beats the target, `maxValue` IS the target
-                  // and the offset became the full height — putting the line
-                  // on the clipped top edge, invisible in exactly the case it
-                  // matters most: a goal that is still behind.
-                  bottom: math.min(
-                    _chartHeight(tokens) *
-                        (metric.target / maxValue).clamp(0, 1),
-                    _chartHeight(tokens) - BorderWidths.hairline,
-                  ),
-                  child: SizedBox(
-                    height: BorderWidths.hairline,
-                    child: ColoredBox(color: tokens.colors.decorative.level01),
-                  ),
-                ),
-              Positioned.fill(
-                child: metric.days.length <= 7
-                    ? Align(
-                        alignment: Alignment.bottomLeft,
-                        child: _track(context, maxValue),
-                      )
-                    : _LinkedDayTrackScroller(
-                        group: scrollGroup,
-                        child: _track(context, maxValue),
+          SizedBox(height: tokens.spacing.step3),
+          SizedBox(
+            height: _chartHeight(tokens),
+            child: Stack(
+              children: [
+                // The target, drawn — but only where it is a PER-DAY quantity.
+                // For a `sum` or `count` criterion the target is a period-level
+                // total while these bars are single days, so a line at the
+                // target would put two already-sufficient days under a
+                // threshold they jointly cleared.
+                if (maxValue > 0 && metric.targetIsPerDay)
+                  Positioned(
+                    key: const ValueKey('goal-metric-target-rule'),
+                    left: 0,
+                    right: 0,
+                    // Clamped to leave the rule's own thickness inside the plot.
+                    // When nothing beats the target, `maxValue` IS the target
+                    // and the offset became the full height — putting the line
+                    // on the clipped top edge, invisible in exactly the case it
+                    // matters most: a goal that is still behind.
+                    bottom: math.min(
+                      _chartHeight(tokens) *
+                          (metric.target / maxValue).clamp(0, 1),
+                      _chartHeight(tokens) - BorderWidths.hairline,
+                    ),
+                    child: SizedBox(
+                      height: BorderWidths.hairline,
+                      child: ColoredBox(
+                        color: tokens.colors.decorative.level01,
                       ),
-              ),
-            ],
+                    ),
+                  ),
+                Positioned.fill(
+                  child: metric.days.length <= 7
+                      ? _ShortDayTrackScroller(
+                          contentWidth:
+                              _dayTrackPitch(context, metric.days) *
+                              metric.days.length,
+                          child: _track(context, maxValue),
+                        )
+                      : _LinkedDayTrackScroller(
+                          group: scrollGroup,
+                          child: _track(context, maxValue),
+                        ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -6297,6 +6297,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Amânați bannerul';
 
   @override
+  String get goalChartSevenDayAverage => 'Media pe 7 zile';
+
+  @override
+  String get goalChartStepsPerDay => 'Pași pe zi';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward':
+            'Valoarea curentă este peste media pe 7 zile · spre țintă',
+        'aboveAway':
+            'Valoarea curentă este peste media pe 7 zile · departe de țintă',
+        'belowToward': 'Valoarea curentă este sub media pe 7 zile · spre țintă',
+        'belowAway':
+            'Valoarea curentă este sub media pe 7 zile · departe de țintă',
+        'steady': 'Valoarea curentă corespunde mediei pe 7 zile',
+        'other': 'Valoarea curentă corespunde mediei pe 7 zile',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Începeți o conversație cu $agentName.';
   }

@@ -59,11 +59,11 @@ void main() {
       expect(items, hasLength(2));
     });
 
-    testWidgets('getTooltipItems formats value as integer with unit', (
+    testWidgets('getTooltipItems preserves decimal values and unit', (
       tester,
     ) async {
       final bar = makeBarData([
-        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 1234),
+        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 1234.5),
       ]);
 
       await hPumpChart(
@@ -77,16 +77,65 @@ void main() {
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
       final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
-      final barData = LineChartBarData(spots: const [FlSpot(0, 1234)]);
-      final spots = [LineBarSpot(barData, 0, const FlSpot(0, 1234))];
+      final barData = LineChartBarData(spots: const [FlSpot(0, 1234.5)]);
+      final spots = [LineBarSpot(barData, 0, const FlSpot(0, 1234.5))];
       final items = tooltipData.getTooltipItems(spots);
 
       expect(items, hasLength(1));
       final item = items.first!;
-      // First child TextSpan contains the integer value + unit
       final valueSpan = item.children!.first;
-      expect(valueSpan.toPlainText(), contains('1234'));
-      expect(valueSpan.toPlainText(), contains('kg'));
+      expect(valueSpan.toPlainText(), '1,234.5 kg\n');
+    });
+
+    testWidgets('tooltip values use the active app locale', (tester) async {
+      final bar = makeBarData([
+        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 1234.5),
+      ]);
+
+      await hPumpChart(
+        tester,
+        lineBarsData: [bar],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        unit: 'kg',
+        locale: const Locale('de'),
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final barData = LineChartBarData(spots: const [FlSpot(0, 1234.5)]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 0, const FlSpot(0, 1234.5)),
+      ]);
+
+      expect(items.single!.children!.first.toPlainText(), '1.234,5 kg\n');
+    });
+
+    testWidgets('series labels identify actual and average tooltip values', (
+      tester,
+    ) async {
+      final bar = makeBarData([
+        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 94.5),
+      ]);
+      await hPumpChart(
+        tester,
+        lineBarsData: [bar, bar],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        unit: 'kg',
+        seriesLabels: const ['Weight', '7-day average'],
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final barData = LineChartBarData(spots: const [FlSpot(0, 94.5)]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 1, const FlSpot(0, 94.5)),
+      ]);
+
+      expect(items.single!.children, hasLength(3));
+      expect(items.single!.children!.first.toPlainText(), '7-day average\n');
+      expect(items.single!.children![1].toPlainText(), '94.5 kg\n');
     });
 
     testWidgets('getTooltipItems second TextSpan contains formatted date', (

@@ -22,7 +22,9 @@ Future<void> hPumpChart(
   String unit = '',
   bool dateOnly = false,
   List<HorizontalLine> horizontalLines = const [],
+  List<String> seriesLabels = const [],
   Size physicalSize = const Size(800, 600),
+  Locale? locale,
 }) async {
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -43,9 +45,11 @@ Future<void> hPumpChart(
             unit: unit,
             dateOnly: dateOnly,
             horizontalLines: horizontalLines,
+            seriesLabels: seriesLabels,
           ),
         ),
       ),
+      locale: locale,
     ),
   );
   await tester.pump();

@@ -6255,6 +6255,32 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Adiar banner';
 
   @override
+  String get goalChartSevenDayAverage => 'Média de 7 dias';
+
+  @override
+  String get goalChartStepsPerDay => 'Passos por dia';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward':
+            'Valor atual acima da média de 7 dias · em direção à meta',
+        'aboveAway':
+            'Valor atual acima da média de 7 dias · afastando-se da meta',
+        'belowToward':
+            'Valor atual abaixo da média de 7 dias · em direção à meta',
+        'belowAway':
+            'Valor atual abaixo da média de 7 dias · afastando-se da meta',
+        'steady': 'Valor atual igual à média de 7 dias',
+        'other': 'Valor atual igual à média de 7 dias',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Inicia uma conversa com $agentName.';
   }

@@ -38,14 +38,11 @@ class TimeSeriesLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    final spots = data
-        .map(
-          (item) => FlSpot(
-            item.dateTime.millisecondsSinceEpoch.toDouble(),
-            item.value.toDouble(),
-          ),
-        )
-        .toList();
+    final series = timeSeriesAreaLine(
+      data: data,
+      color: tokens.colors.interactive.enabled,
+    );
+    final spots = series.spots;
 
     final axisValues = [
       ...spots.map((spot) => spot.y),
@@ -132,23 +129,33 @@ class TimeSeriesLineChart extends StatelessWidget {
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           minY: axis.min,
           maxY: axis.max,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              color: tokens.colors.interactive.enabled,
-              isStrokeCapRound: true,
-              dotData: FlDotData(show: spots.length == 1),
-              belowBarData: BarAreaData(
-                show: true,
-                color: tokens.colors.interactive.enabled.withValues(
-                  alpha: 0.12,
-                ),
-              ),
-            ),
-          ],
+          lineBarsData: [series],
         ),
         duration: Duration.zero,
       ),
     );
   }
 }
+
+/// Shared actual-value treatment for continuous time-series measurements.
+/// Keeps the line and its subtle same-hue area fill identical wherever an
+/// additional overlay (such as a rolling average) is added by the caller.
+LineChartBarData timeSeriesAreaLine({
+  required List<Observation> data,
+  required Color color,
+}) => LineChartBarData(
+  spots: [
+    for (final item in data)
+      FlSpot(
+        item.dateTime.millisecondsSinceEpoch.toDouble(),
+        item.value.toDouble(),
+      ),
+  ],
+  color: color,
+  isStrokeCapRound: true,
+  dotData: FlDotData(show: data.length == 1),
+  belowBarData: BarAreaData(
+    show: true,
+    color: color.withValues(alpha: 0.12),
+  ),
+);

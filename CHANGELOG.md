@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channels never enter AI context.
 
 ### Changed
+- **Goal signal charts now show the trend behind the number.** Daily steps use
+  bars and weight keeps its filled curve, both with a dashed trailing
+  seven-day average overlaid. Separate legends identify actuals, averages and
+  targets plus an above/below-average direction read in the context of the
+  goal. Habit strips and every signal chart now share the same plot bounds,
+  and the steps card distinguishes daily steps from the average it evaluates.
 - **The goal page opens with the agent's read, wider, without repeating
   itself.** The AI summary now sits first with the goal-days strip beneath
   it; the "Your goal" label and the statement no longer repeat under a

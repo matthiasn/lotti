@@ -6261,6 +6261,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Odložit banner';
 
   @override
+  String get goalChartSevenDayAverage => '7denní průměr';
+
+  @override
+  String get goalChartStepsPerDay => 'Kroky za den';
+
+  @override
+  String goalChartTrend(String trend) {
+    String _temp0 = intl.Intl.selectLogic(
+      trend,
+      {
+        'aboveToward': 'Aktuální hodnota nad 7denním průměrem · směrem k cíli',
+        'aboveAway': 'Aktuální hodnota nad 7denním průměrem · od cíle',
+        'belowToward': 'Aktuální hodnota pod 7denním průměrem · směrem k cíli',
+        'belowAway': 'Aktuální hodnota pod 7denním průměrem · od cíle',
+        'steady': 'Aktuální hodnota odpovídá 7dennímu průměru',
+        'other': 'Aktuální hodnota odpovídá 7dennímu průměru',
+      },
+    );
+    return '$_temp0';
+  }
+
+  @override
   String goalChatEmpty(String agentName) {
     return 'Začni konverzaci s agentem $agentName.';
   }

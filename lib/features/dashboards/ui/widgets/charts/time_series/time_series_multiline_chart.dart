@@ -2,6 +2,7 @@ import 'dart:core';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
@@ -23,6 +24,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     this.unit = '',
     this.dateOnly = false,
     this.horizontalLines = const [],
+    this.seriesLabels = const [],
     super.key,
   });
 
@@ -35,10 +37,16 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   final bool dateOnly;
   final List<HorizontalLine> horizontalLines;
 
+  /// Labels matched by index to [lineBarsData]. When supplied, tooltips name
+  /// each value so overlapping series such as actual and rolling average stay
+  /// distinguishable without relying on colour alone.
+  final List<String> seriesLabels;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final axis = niceAxis(minVal, maxVal);
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -63,6 +71,14 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
               tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
+                  final seriesLabel = spot.barIndex < seriesLabels.length
+                      ? seriesLabels[spot.barIndex]
+                      : '';
+                  final formattedValue = NumberFormat(
+                    '#,###.##',
+                    locale,
+                  ).format(spot.y);
+                  final unitSuffix = unit.isEmpty ? '' : ' $unit';
                   return LineTooltipItem(
                     '',
                     TextStyle(
@@ -71,8 +87,13 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                       color: tokens.colors.text.highEmphasis,
                     ),
                     children: [
+                      if (seriesLabel.isNotEmpty)
+                        TextSpan(
+                          text: '$seriesLabel\n',
+                          style: chartTooltipStyleBold,
+                        ),
                       TextSpan(
-                        text: '${spot.y.toInt()} $unit\n',
+                        text: '$formattedValue$unitSuffix\n',
                         style: chartTooltipStyleBold,
                       ),
                       TextSpan(
