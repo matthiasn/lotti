@@ -47,11 +47,11 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
       try {
         final criteria = await _headCriteria(identity.agentId);
         if (criteria == null) continue;
-        _goalAgentService.registerSignalSubscription(
+        _goalAgentService..registerSignalSubscription(
           identity.agentId,
           criteria,
-        );
-        _goalAgentService.restorePendingReportRefresh(
+        )
+        ..restorePendingReportRefresh(
           identity: identity,
           state: await _repository.getAgentState(identity.agentId),
         );

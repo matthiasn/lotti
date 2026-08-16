@@ -2,13 +2,13 @@
 
 A personal CRM for a small, deliberately curated set of people. One
 relationship entity per person, with a timeline of **check-ins** — structured
-interaction logs (type, sentiment, topics, narrative) — and, in later phases,
-a dedicated agent that tracks check-in cadence and briefs the user before the
-next conversation.
+interaction logs (type, sentiment, topics, narrative) — and, for people
+marked important, a dedicated agent that tracks check-in cadence and briefs
+the user before the next conversation.
 
 This feature is landing in phases; see the
 [implementation plan](../../../docs/implementation_plans/2026-08-13_relationship_management_v2.md)
-and ADRs 0037–0041. What exists today (phases 1–2, behind the
+and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
 `enable_relationships` flag):
 
 - **Domain model** in `lib/classes/`: `relationship_data.dart`
@@ -17,8 +17,8 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   Both ride the journal table as `JournalEntity.relationship` /
   `JournalEntity.checkIn` — payload-agnostic sync, `private` flag,
   categories, and export all apply with zero new infrastructure.
-- **Linking**: `EntryLink.relationship` binds relationship → check-in (and
-  later relationship → task). Check-ins also carry a denormalized
+- **Linking**: `EntryLink.relationship` binds relationship → check-in and
+  relationship ↔ task. Check-ins also carry a denormalized
   `relationshipId` so `affectedIds` emits a precise agent wake token and the
   journal `subtype` column supports indexed check-in queries.
 - `repository/` — `RelationshipRepository`: CRUD for both entity types
@@ -37,26 +37,33 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
 
 - `runtime/` + `service/` + `state/` — the **relationship agent's
   deterministic tier** (plan v2 phase 4, ADR 0059): marking a person
-  important lazily mints a durable agent (deterministic id, so devices
-  converge), linked via `AgentLink.agentRelationship` and subscribed to the
-  person's wake token. `RelationshipAgentPhaseA` runs on every tick at €0 —
-  re-arms the daily cadence wake, recomputes the one `relationshipHealth`
-  register row (skip-if-unchanged, so an uneventful tick writes nothing),
-  and arms a per-episode, lease-elected escalation when the cadence newly
-  lapses. The wake router sends everything to this tier until the LLM tier
-  ships. Deleting a person destroys their agent (the cascade's agent leg).
+  important quietly creates their dedicated agent, which tracks the
+  check-in cadence every day at zero AI cost. Deleting a person destroys
+  their agent (the cascade's agent leg).
+- `workflow/` + the rest of `service/`, `state/`, `ui/` — the **LLM tier**
+  (plan v2 phase 5): a lapsed cadence, a check-in newer than the current
+  briefing, a chat message, or an explicit "Brief me" triggers one AI run
+  that writes an executive briefing (with a health band) and at most one
+  check-in banner. The detail page mounts the briefing card ("Brief me"
+  names the cloud provider first, per ADR 0037) and `/people/<id>/chat`
+  opens the per-person agent chat. Banners surface through the
+  kind-agnostic channel (`lib/features/nudges/`), tapping through to the
+  person.
 
-Not yet built: the agent's LLM tier — briefings, banners, chat (phase 5) —
-voice check-ins (phase 6), OS contact import/linking and call/message quick
-actions (phase 7), OS reminders (phase 8). The banner channel itself is
-ready and kind-agnostic (`lib/features/nudges/`, phase 3). Relationships
+Not yet built: voice check-ins (phase 6), OS contact import/linking and
+call/message quick actions (phase 7), OS reminders (phase 8). Relationships
 and check-ins deliberately do not appear in the main journal timeline; the
 People tab is their home.
 
 Privacy stance (ADR 0037): relationship data is the most sensitive class the
 app holds — it describes third parties. It stays on-device, syncs only via
 the user's own end-to-end encrypted Matrix rooms, and contact channels never
-enter AI context.
+enter AI context. Concretely, `private` covers the whole person: a check-in
+inherits the relationship's `private` flag when it is created, the detail
+page resolves a private person to "no longer tracked" while private entries
+are hidden (the list filter alone would leave the `/people/<id>` route open),
+and the delete cascade reads check-ins unfiltered so hidden ones cannot
+survive the person they describe.
 
 Why check-ins are bound to a person twice, how the People list orders by
 recency without a per-person query, the status lifecycle, and what the delete

@@ -28,10 +28,11 @@ what its banners advertise).
   per-surface filtering), the banner style/animated-text/persona-chip/CTA
   primitives, and the snooze/rating sheets.
 
-This module never imports a producing feature. Goals registers
-`activeGoalNudgesProvider` as its source; relationships will register its
-own in a later phase (nothing produces `relationshipNudge` rows yet, so the
-People surface renders an empty, collapsed dock).
+This module never imports a producing feature. Both current producers
+register their source in `app_bootstrap.dart`: goals contributes
+`activeGoalNudgesProvider` and relationships contributes
+`activeRelationshipNudgesProvider`, so the dock's multi-source merge and
+the per-kind surface gate are live paths, not future-proofing.
 
 How the two entity variants are read through one view, why the dock's
 visibility rule is shared with the shell's reserved lane, how the rotation

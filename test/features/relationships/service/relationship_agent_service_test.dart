@@ -246,4 +246,47 @@ void main() {
       },
     );
   });
+
+  test('requestBriefing ensures the agent exists, then routes ONE manual '
+      'wake through the LLM tier via the report-refresh token', () async {
+    // The agent already exists: the ensure step is the fast path.
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => identity());
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+      ),
+    ).thenReturn('brief-run-1');
+
+    await withClock(
+      Clock.fixed(testDate),
+      () => service.requestBriefing(relationship()),
+    );
+
+    verifyNever(
+      () => agentService.createAgent(
+        kind: any(named: 'kind'),
+        displayName: any(named: 'displayName'),
+        config: any(named: 'config'),
+        agentId: any(named: 'agentId'),
+      ),
+    );
+    final captured = verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: any(named: 'reason'),
+        triggerTokens: captureAny(named: 'triggerTokens'),
+      ),
+    ).captured;
+    expect(
+      captured.whereType<Set<String>>().where(
+        (tokens) => tokens.contains(relationshipReportRefreshTriggerToken),
+      ),
+      hasLength(1),
+      reason: 'exactly ONE wake carries the report-refresh token',
+    );
+  });
 }

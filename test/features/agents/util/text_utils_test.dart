@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 
 /// Generators feeding the property tests for [truncateAgentText].
@@ -257,6 +258,36 @@ void main() {
       // holds an id annotation. Only the annotated line should be trimmed.
       const input = 'First line  \nShip the API ($uuid)  ';
       expect(sanitizeAgentReportText(input), 'First line  \nShip the API');
+    });
+  });
+  group('sanitizeNudgeBrief', () {
+    const uuid = '6af9c4b0-1234-4abc-8def-a1b2c3d4e5f6';
+
+    test('strips echoed ids from every copy field the banner renders', () {
+      const brief = NudgeBrief(
+        headline: 'Check in with Anna (id: $uuid)',
+        tagline: 'Last time: the move $uuid',
+        cta: 'Open ($uuid)',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      );
+      final out = sanitizeNudgeBrief(brief);
+      expect(out.headline, 'Check in with Anna');
+      expect(out.tagline, isNot(contains(uuid)));
+      expect(out.cta, isNot(contains(uuid)));
+      expect(out.tone, NudgeTone.nudge);
+    });
+
+    test('leaves clean copy and null optionals untouched', () {
+      const brief = NudgeBrief(
+        headline: 'Check in with Anna.',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      );
+      final out = sanitizeNudgeBrief(brief);
+      expect(out, brief);
+      expect(out.tagline, isNull);
+      expect(out.cta, isNull);
     });
   });
 }

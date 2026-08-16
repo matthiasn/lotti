@@ -303,9 +303,7 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
     // and locally hidden ids stay suppressed.
     return visibleNudgeBannerEntries(
       entries: raw,
-      locallySnoozedDeadlines: ref.read(
-        locallySnoozedNudgeDeadlinesProvider,
-      ),
+      locallySnoozedDeadlines: ref.read(locallySnoozedNudgeDeadlinesProvider),
       surface: widget.surface,
     );
   }
@@ -313,9 +311,7 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
   void _advance() {
     final entries = _visible(ref.read(activeNudgeBannersProvider));
     if (entries.length <= 1) return;
-    final currentIndex = entries.indexWhere(
-      (e) => e.nudge.id == _currentId,
-    );
+    final currentIndex = entries.indexWhere((e) => e.nudge.id == _currentId);
     setState(() {
       _currentId = entries[(currentIndex + 1) % entries.length].nudge.id;
     });
@@ -590,9 +586,7 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
                     ),
                     if (multi)
                       Padding(
-                        padding: EdgeInsets.only(
-                          bottom: tokens.spacing.step2,
-                        ),
+                        padding: EdgeInsets.only(bottom: tokens.spacing.step2),
                         // Decorative — the tenant's own content carries the
                         // semantics; dots would only add noise for readers.
                         child: ExcludeSemantics(

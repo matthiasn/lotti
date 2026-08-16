@@ -684,6 +684,212 @@ void main() {
       },
     );
 
+    test(
+      'a known incoming variant replaces a local unknown stub at an EQUAL '
+      'clock — the old-build round-trip must not pin the stripped row',
+      () async {
+        // An old build decoded an incoming relationshipNudge through the
+        // `unknown` fallback and persisted the payload-less stub with the
+        // incoming vector clock intact. After upgrade the row still decodes
+        // as unknown; without the refinement guard, re-delivery of the very
+        // version it stubbed compares `equal` and keep-local wins forever.
+        const sharedVc = VectorClock({'host-A': 3});
+        final localStub = AgentDomainEntity.unknown(
+          id: 'rnudge-stub-1',
+          agentId: 'relationship-agent-1',
+          createdAt: DateTime(2026, 8),
+          vectorClock: sharedVc,
+        );
+        final incoming = AgentDomainEntity.relationshipNudge(
+          id: 'rnudge-stub-1',
+          agentId: 'relationship-agent-1',
+          status: NudgeStatus.dismissed,
+          brief: const NudgeBrief(
+            headline: 'Check in with Anna — five weeks.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'dr',
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8, 2),
+          vectorClock: sharedVc,
+          totalVisibleMs: const GCounter({'host-B': 3000}),
+        );
+        when(
+          () => mockAgentRepo.getEntity('rnudge-stub-1'),
+        ).thenAnswer((_) async => localStub);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final upserted =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as RelationshipNudgeEntity;
+        expect(upserted.status, NudgeStatus.dismissed);
+        expect(upserted.totalVisibleMs.byHost, {'host-B': 3000});
+      },
+    );
+
+    test(
+      'a known incoming variant replaces a local unknown stub even when the '
+      'stub clock dominates — refinement beats clock order',
+      () async {
+        // The stub may carry a NEWER clock than a re-delivered older version
+        // (the old build stubbed v5, the backfill replays v3). An older known
+        // payload still beats a payload-less stub; re-delivery of the newer
+        // version later converges the row forward again.
+        const stubVc = VectorClock({'host-A': 5});
+        const incomingVc = VectorClock({'host-A': 3});
+        final localStub = AgentDomainEntity.unknown(
+          id: 'rnudge-stub-2',
+          agentId: 'relationship-agent-1',
+          createdAt: DateTime(2026, 8),
+          vectorClock: stubVc,
+        );
+        final incoming = AgentDomainEntity.relationshipNudge(
+          id: 'rnudge-stub-2',
+          agentId: 'relationship-agent-1',
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Check in with Anna — five weeks.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'dr',
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8, 2),
+          vectorClock: incomingVc,
+        );
+        when(
+          () => mockAgentRepo.getEntity('rnudge-stub-2'),
+        ).thenAnswer((_) async => localStub);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final upserted =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as RelationshipNudgeEntity;
+        expect(upserted.status, NudgeStatus.active);
+      },
+    );
+
+    test(
+      'an unknown-stub TOMBSTONE is kept against an older live payload — '
+      'refinement never resurrects a deletion',
+      () async {
+        const stubVc = VectorClock({'host-A': 5});
+        const incomingVc = VectorClock({'host-A': 3});
+        final localStub = AgentDomainEntity.unknown(
+          id: 'rnudge-stub-3',
+          agentId: 'relationship-agent-1',
+          createdAt: DateTime(2026, 8),
+          vectorClock: stubVc,
+          deletedAt: DateTime(2026, 8, 4),
+        );
+        final incoming = AgentDomainEntity.relationshipNudge(
+          id: 'rnudge-stub-3',
+          agentId: 'relationship-agent-1',
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Check in with Anna — five weeks.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'dr',
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8, 2),
+          vectorClock: incomingVc,
+        );
+        when(
+          () => mockAgentRepo.getEntity('rnudge-stub-3'),
+        ).thenAnswer((_) async => localStub);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'a clock-DOMINANT live payload replaces a tombstoned unknown stub — '
+      'the tombstone guard only blocks non-dominant resurrection',
+      () async {
+        // The guard keeps a stub tombstone against an OLDER live payload; a
+        // strictly newer live version causally supersedes the deletion and
+        // must still apply, or a tombstoned stub would pin the row forever.
+        const stubVc = VectorClock({'host-A': 3});
+        const incomingVc = VectorClock({'host-A': 5});
+        final localStub = AgentDomainEntity.unknown(
+          id: 'rnudge-stub-4',
+          agentId: 'relationship-agent-1',
+          createdAt: DateTime(2026, 8),
+          vectorClock: stubVc,
+          deletedAt: DateTime(2026, 8, 4),
+        );
+        final incoming = AgentDomainEntity.relationshipNudge(
+          id: 'rnudge-stub-4',
+          agentId: 'relationship-agent-1',
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Check in with Anna — five weeks.',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'dr',
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8, 6),
+          vectorClock: incomingVc,
+        );
+        when(
+          () => mockAgentRepo.getEntity('rnudge-stub-4'),
+        ).thenAnswer((_) async => localStub);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final upserted =
+            verify(
+                  () => mockAgentRepo.upsertEntity(captureAny()),
+                ).captured.single
+                as RelationshipNudgeEntity;
+        expect(upserted.status, NudgeStatus.active);
+      },
+    );
+
     test('a locally-dominating agent state is kept — incoming is neither '
         'merged nor applied', () async {
       // local dominates (a_gt_b), so the merge must NOT run; if it did it would

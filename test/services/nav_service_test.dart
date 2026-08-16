@@ -949,6 +949,7 @@ void main() {
       });
     });
 
+
     group('_handleNavigationFlagsUpdated fallback', () {
       test(
         'falls back to tasks when current path becomes unreachable after '

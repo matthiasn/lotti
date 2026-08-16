@@ -676,6 +676,21 @@ extension _AgentHandlers on SyncEventProcessor {
     final localVc = local?.vectorClock;
     if (local == null || localVc == null) return false;
 
+    // A local row that decodes as the forward-compat `unknown` fallback is a
+    // payload-less stub: an older build received a variant it did not know,
+    // the fallback decode kept only the envelope fields, and the row was
+    // re-serialized as `unknown` — with the incoming vector clock intact. A
+    // known incoming variant strictly refines such a stub regardless of clock
+    // order: keeping the stub would pin the stripped row forever, because a
+    // re-delivery of the very version it stubbed compares `equal`, and equal
+    // keeps local. The one thing a stub does carry faithfully is its
+    // tombstone, so a deletion is never resurrected by an older live payload.
+    if (local is AgentUnknownEntity &&
+        incoming is! AgentUnknownEntity &&
+        (local.deletedAt == null || incoming.deletedAt != null)) {
+      return false;
+    }
+
     return _localAgentPayloadDominates(
       localVc: localVc,
       incomingVc: incomingVc,
@@ -811,11 +826,13 @@ extension _AgentHandlers on SyncEventProcessor {
           incoming: i,
         ),
       // A cross-variant pair here means a goal nudge and a relationship nudge
-      // share one id. Nudge ids are kind-prefixed at mint time
-      // (`goal_nudge:…`, `relationship_nudge:…`), so this branch is
-      // unreachable in practice; deferring to whole-row LWW (rather than
-      // silently joining accumulators across kinds) keeps a hypothetical
-      // id collision from corrupting either side's history.
+      // share one id. The id shapes are disjoint at mint time — goal nudges
+      // are `goal_nudge:…`-prefixed strings, relationship nudges are bare
+      // UUIDv5s (`relationshipAdId`) — so this branch is unreachable in
+      // practice; deferring to whole-row LWW (rather than silently joining
+      // accumulators across kinds) keeps a hypothetical id collision from
+      // corrupting either side's history. A third nudge kind must keep its
+      // id shape disjoint from both.
       _ => null,
     };
     if (merged == null) return null;

@@ -248,9 +248,9 @@ void main() {
             ..wakeExecutor = (agentId, runKey, tokens, threadId) async {
               executedRunKeys.add(runKey);
               return null;
-            };
+            }
 
-          orchestrator.start(controller.stream);
+          ..start(controller.stream);
 
           // Emit a notification to enqueue a subscription job
           emitTokens(async, controller, {'entity-1'});

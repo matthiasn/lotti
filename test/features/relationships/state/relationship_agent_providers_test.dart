@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -11,10 +12,16 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -25,7 +32,7 @@ void main() {
 
   const agentId = 'relationship_agent:person-1';
 
-  AgentIdentityEntity identity() =>
+  AgentIdentityEntity identity({AgentConfig config = const AgentConfig()}) =>
       AgentDomainEntity.agent(
             id: agentId,
             agentId: agentId,
@@ -35,7 +42,7 @@ void main() {
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: '$agentId:state',
-            config: const AgentConfig(),
+            config: config,
             createdAt: DateTime(2026, 8, 16),
             updatedAt: DateTime(2026, 8, 16),
             vectorClock: null,
@@ -104,10 +111,12 @@ void main() {
   );
 
   test(
-    'every wake — cadence, signal, even a fired escalation — takes the '
-    'deterministic tier until the LLM tier ships (plan v2 phase 5)',
+    'the router splits the tiers: escalation and Brief me enter the LLM '
+    'tier, a chat token carries its durable turn, everything else stays '
+    'deterministic (plan v2 phase 5)',
     () async {
       final phaseA = MockRelationshipAgentPhaseA();
+      final workflow = MockRelationshipAgentWorkflow();
       when(
         () => phaseA.execute(
           agentIdentity: any(named: 'agentIdentity'),
@@ -116,13 +125,34 @@ void main() {
           threadId: any(named: 'threadId'),
         ),
       ).thenAnswer((_) async => const WakeResult(success: true));
+      when(
+        () => workflow.execute(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: any(named: 'runKey'),
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+        ),
+      ).thenAnswer((_) async => const WakeResult(success: true));
+      when(
+        () => workflow.executeUserMessage(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: any(named: 'runKey'),
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+          messageId: any(named: 'messageId'),
+        ),
+      ).thenAnswer((_) async => const WakeResult(success: true));
       final c = container(
-        overrides: [relationshipAgentPhaseAProvider.overrideWithValue(phaseA)],
+        overrides: [
+          relationshipAgentPhaseAProvider.overrideWithValue(phaseA),
+          relationshipAgentWorkflowProvider.overrideWithValue(workflow),
+        ],
       );
       final runner = c.read(
         relationshipAgentWakeRunnersProvider,
       )[AgentKinds.relationshipAgent]!;
 
+      // Escalation token → LLM tier.
       await runner(
         agentIdentity: identity(),
         runKey: 'run-2',
@@ -130,9 +160,58 @@ void main() {
         threadId: 'thread-2',
       );
       verify(
-        () => phaseA.execute(
+        () => workflow.execute(
           agentIdentity: any(named: 'agentIdentity'),
           runKey: 'run-2',
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+        ),
+      ).called(1);
+
+      // Brief me token → LLM tier.
+      await runner(
+        agentIdentity: identity(),
+        runKey: 'run-3',
+        triggerTokens: const {relationshipReportRefreshTriggerToken},
+        threadId: 'thread-3',
+      );
+      verify(
+        () => workflow.execute(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: 'run-3',
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+        ),
+      ).called(1);
+
+      // Chat token → LLM tier with its durable source turn.
+      await runner(
+        agentIdentity: identity(),
+        runKey: 'run-4',
+        triggerTokens: {relationshipChatMessageTriggerToken('msg-1')},
+        threadId: 'thread-4',
+      );
+      verify(
+        () => workflow.executeUserMessage(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: 'run-4',
+          triggerTokens: any(named: 'triggerTokens'),
+          threadId: any(named: 'threadId'),
+          messageId: 'msg-1',
+        ),
+      ).called(1);
+
+      // A plain signal/cadence wake stays on the €0 tier.
+      await runner(
+        agentIdentity: identity(),
+        runKey: 'run-5',
+        triggerTokens: {'person-1'},
+        threadId: 'thread-5',
+      );
+      verify(
+        () => phaseA.execute(
+          agentIdentity: any(named: 'agentIdentity'),
+          runKey: 'run-5',
           triggerTokens: any(named: 'triggerTokens'),
           threadId: any(named: 'threadId'),
         ),
@@ -169,7 +248,7 @@ void main() {
       );
       // Overdue: tracking started 2026-07-01 with the 30-day default.
       when(
-        () => relationshipRepository.getRelationshipById('person-1'),
+        () => relationshipRepository.getRelationshipByIdUnfiltered('person-1'),
       ).thenAnswer(
         (_) async => RelationshipEntry(
           meta: Metadata(
@@ -194,6 +273,15 @@ void main() {
         () => relationshipRepository.getAllCheckInsForRelationship('person-1'),
       ).thenAnswer((_) async => []);
       when(wakeManager.requestCheck).thenAnswer((_) {});
+      when(
+        () => agentRepository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => agentRepository.getEntitiesByAgentId(
+          any(),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
       final syncService = MockAgentSyncService();
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
 
@@ -225,8 +313,16 @@ void main() {
     },
   );
 
-  test('the provider graph wires the concrete service and maintenance', () {
-    final c = container();
+  test('the provider graph wires the concrete service, maintenance, '
+      'workflow and chat service', () {
+    final c = container(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(MockAiConfigRepository()),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          MockCloudInferenceRepository(),
+        ),
+      ],
+    );
     expect(
       c.read(relationshipAgentServiceProvider),
       isA<RelationshipAgentService>(),
@@ -235,5 +331,237 @@ void main() {
       c.read(relationshipRuntimeMaintenanceProvider),
       isA<RelationshipRuntimeMaintenance>(),
     );
+    expect(
+      c.read(relationshipAgentWorkflowProvider),
+      isA<RelationshipAgentWorkflow>(),
+    );
+    expect(
+      c.read(relationshipChatServiceProvider),
+      isA<RelationshipChatService>(),
+    );
+  });
+
+  group('relationshipBriefingDisclosureProvider', () {
+    const relationshipId = 'person-1';
+    const profileId = 'profile-1';
+
+    late MockAiConfigRepository aiConfigRepository;
+    late MockRelationshipRepository relationshipRepository;
+    late MockAgentRepository agentRepository;
+
+    final meliousProvider =
+        AiConfig.inferenceProvider(
+              id: 'melious-provider',
+              baseUrl: 'https://api.melious.ai',
+              apiKey: 'key',
+              name: 'Melious',
+              createdAt: DateTime(2026),
+              inferenceProviderType: InferenceProviderType.melious,
+            )
+            as AiConfigInferenceProvider;
+    final ollamaProvider =
+        AiConfig.inferenceProvider(
+              id: 'ollama-provider',
+              baseUrl: 'http://localhost:11434',
+              apiKey: '',
+              name: 'Ollama',
+              createdAt: DateTime(2026),
+              inferenceProviderType: InferenceProviderType.ollama,
+            )
+            as AiConfigInferenceProvider;
+
+    AiConfigModel model(String id, String providerId) =>
+        AiConfig.model(
+              id: id,
+              name: id,
+              providerModelId: id == 'model-glm' ? meliousGlm52ModelId : id,
+              inferenceProviderId: providerId,
+              createdAt: DateTime(2026),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: true,
+              supportsFunctionCalling: true,
+              description: id,
+            )
+            as AiConfigModel;
+
+    AiConfigInferenceProfile profile(String thinkingModelId) =>
+        AiConfig.inferenceProfile(
+              id: profileId,
+              name: 'My profile',
+              createdAt: DateTime(2026),
+              thinkingModelId: thinkingModelId,
+            )
+            as AiConfigInferenceProfile;
+
+    RelationshipEntry person({String? withProfileId}) => RelationshipEntry(
+      meta: Metadata(
+        id: relationshipId,
+        createdAt: DateTime(2026, 8),
+        updatedAt: DateTime(2026, 8),
+        dateFrom: DateTime(2026, 8),
+        dateTo: DateTime(2026, 8),
+      ),
+      data: RelationshipData(
+        title: 'Anna',
+        important: true,
+        profileId: withProfileId,
+        status: RelationshipStatus.active(
+          id: 'status-1',
+          createdAt: DateTime(2026, 8),
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    setUp(() {
+      aiConfigRepository = MockAiConfigRepository();
+      relationshipRepository = MockRelationshipRepository();
+      agentRepository = MockAgentRepository();
+      when(
+        () => aiConfigRepository.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => aiConfigRepository.getConfigById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => agentRepository.getEntity(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    Future<String?> disclosure() {
+      final c = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+          relationshipRepositoryProvider.overrideWithValue(
+            relationshipRepository,
+          ),
+          agentRepositoryProvider.overrideWithValue(agentRepository),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c.read(
+        relationshipBriefingDisclosureProvider(relationshipId).future,
+      );
+    }
+
+    test('a fully local profile needs no disclosure', () async {
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => person(withProfileId: profileId));
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile('model-local'));
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model('model-local', 'ollama-provider')]);
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [ollamaProvider]);
+
+      expect(await disclosure(), isNull);
+    });
+
+    test('a cloud-routed profile names its thinking provider', () async {
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => person(withProfileId: profileId));
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile('model-glm'));
+      when(
+        () => aiConfigRepository.getConfigById('model-glm'),
+      ).thenAnswer((_) async => model('model-glm', 'melious-provider'));
+      when(
+        () => aiConfigRepository.getConfigById('melious-provider'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model('model-glm', 'melious-provider')]);
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [meliousProvider]);
+
+      expect(await disclosure(), 'Melious');
+    });
+
+    test('the agent config profile routes when the relationship has none — '
+        'the dialog names the provider Phase B actually uses', () async {
+      // The config profile routes through Acme while the default model
+      // would route through Melious: identical resolution chains in the
+      // dialog and Phase B are exactly what this pins.
+      final acmeProvider =
+          AiConfig.inferenceProvider(
+                id: 'acme-provider',
+                baseUrl: 'https://api.acme.ai',
+                apiKey: 'key',
+                name: 'Acme',
+                createdAt: DateTime(2026),
+                inferenceProviderType: InferenceProviderType.melious,
+              )
+              as AiConfigInferenceProvider;
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => person());
+      when(
+        () => agentRepository.getEntity(
+          relationshipAgentIdFor(relationshipId),
+        ),
+      ).thenAnswer(
+        (_) async => identity(config: const AgentConfig(profileId: profileId)),
+      );
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile('model-acme'));
+      when(
+        () => aiConfigRepository.getConfigById('model-acme'),
+      ).thenAnswer((_) async => model('model-acme', 'acme-provider'));
+      when(
+        () => aiConfigRepository.getConfigById('acme-provider'),
+      ).thenAnswer((_) async => acmeProvider);
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer(
+        (_) async => [
+          model('model-acme', 'acme-provider'),
+          model('model-glm', 'melious-provider'),
+        ],
+      );
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [acmeProvider, meliousProvider]);
+
+      expect(await disclosure(), 'Acme');
+    });
+
+    test('a dangling profile id falls through to the default cloud model '
+        'and still disclosures — never silently local', () async {
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => person(withProfileId: 'gone'));
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model('model-glm', 'melious-provider')]);
+      when(
+        () => aiConfigRepository.getConfigById('melious-provider'),
+      ).thenAnswer((_) async => meliousProvider);
+
+      expect(await disclosure(), 'Melious');
+    });
+
+    test('no profile and no resolvable default yields null — the card '
+        'proceeds without naming anyone', () async {
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => person());
+
+      expect(await disclosure(), isNull);
+    });
   });
 }

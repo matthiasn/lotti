@@ -335,7 +335,7 @@ class _ChartHeadline extends StatelessWidget {
     final showTrend = stats.windowDays >= 14;
 
     // A Wrap, not a Row: on a phone the rate block plus both chips can
-    // exceed the card's width (the "pts to target" chip is the widest the
+    // exceed the card's width (the "pts to goal" chip is the widest the
     // badge gets), and the chips must flow onto a second line instead of
     // overflowing the card edge. Full-width so the single-line case keeps
     // the Row's rate-left / chips-right spread.
@@ -380,10 +380,11 @@ class _ChartHeadline extends StatelessWidget {
   }
 }
 
-/// The goal-status pill: how far the average is from the target. Below target
-/// it's a calm amber "warning" (e.g. "9% to goal"); at/above it flips to the
-/// success colour and "On track". Separate from the trend chip — one answers
-/// "where am I against the goal", the other "which way am I moving".
+/// The goal-status pill: how far the average is from [HabitChartStats.target].
+/// Below it, a calm amber "warning" counted in whole percentage points (e.g.
+/// "9 pts to goal", "1 pt to goal"); at or above, the success colour and
+/// "On track". Separate from the trend chip — one answers "where am I against
+/// the goal", the other "which way am I moving".
 class _GoalChip extends StatelessWidget {
   const _GoalChip({required this.stats});
 

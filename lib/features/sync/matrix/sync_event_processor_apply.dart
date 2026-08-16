@@ -423,8 +423,10 @@ class PreparedSyncEvent {
   final AgentDomainEntity? resolvedAgentEntity;
 
   /// Whether the raw incoming agent-state payload explicitly carried the
-  /// `pendingProjectActivityAt` slot. Null means the prepare path had no raw
-  /// field-presence information, as with already-typed outbox children.
+  /// `pendingProjectActivityAt` slot. Null means the defensive fallback
+  /// fired: prepare found no usable raw JSON to inspect (envelope missing
+  /// or malformed). Top-level events and both outbox-bundle delivery paths
+  /// (inline children and sidecar manifests) normally carry raw envelopes.
   final bool? pendingProjectActivityAtWasPresent;
 
   /// Resolved link when [syncMessage] is a [SyncAgentLink]. Same null

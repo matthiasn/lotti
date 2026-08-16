@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -23,8 +25,31 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockRelationshipAgentService relationshipAgentService;
+  late MockRelationshipRepository relationshipRepository;
   late MockDomainLogger logger;
   late RelationshipRuntimeMaintenance maintenance;
+
+  const relationshipId = 'person-1';
+
+  RelationshipEntry person({DateTime? deletedAt}) => RelationshipEntry(
+    meta: Metadata(
+      id: relationshipId,
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
+      deletedAt: deletedAt,
+    ),
+    data: RelationshipData(
+      title: 'Anna',
+      important: true,
+      status: RelationshipStatus.active(
+        id: 'status-1',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    ),
+  );
 
   AgentIdentityEntity identity({
     String kind = AgentKinds.relationshipAgent,
@@ -56,12 +81,14 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     relationshipAgentService = MockRelationshipAgentService();
+    relationshipRepository = MockRelationshipRepository();
     logger = MockDomainLogger();
     maintenance = RelationshipRuntimeMaintenance(
       agentService: agentService,
       repository: repository,
       syncService: syncService,
       relationshipAgentService: relationshipAgentService,
+      relationshipRepository: relationshipRepository,
       domainLogger: logger,
     );
     when(
@@ -72,6 +99,17 @@ void main() {
     when(
       () => relationshipAgentService.registerSubscription(any()),
     ).thenAnswer((_) async {});
+    when(
+      () => relationshipAgentService.watchedRelationshipId(agentId),
+    ).thenAnswer((_) async => relationshipId);
+    when(
+      () => relationshipAgentService.handleRelationshipDeleted(any()),
+    ).thenAnswer((_) async => true);
+    when(
+      () => relationshipRepository.getRelationshipByIdUnfiltered(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => person());
   });
 
   group('restoreSubscriptions', () {
@@ -183,6 +221,109 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('beforeWakeScan reaps an agent whose person is gone', () {
+    test('a tombstoned relationship tears the agent down instead of '
+        're-arming it — the orphan would otherwise wake forever', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => person(deletedAt: testDate));
+
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verify(
+        () => relationshipAgentService.handleRelationshipDeleted(
+          relationshipId,
+        ),
+      ).called(1);
+      // The heal below the reap must not run: re-arming the cadence is
+      // exactly what kept the orphan alive.
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
+
+    test('a relationship that no longer resolves at all is reaped too — a '
+        'purged row leaves the same orphan behind', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verify(
+        () => relationshipAgentService.handleRelationshipDeleted(
+          relationshipId,
+        ),
+      ).called(1);
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
+
+    test('a live person is never reaped — the cadence record is healed as '
+        'before', () async {
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verifyNever(
+        () => relationshipAgentService.handleRelationshipDeleted(any()),
+      );
+      verify(() => syncService.upsertEntity(any())).called(1);
+    });
+
+    test('an agent whose link is not written yet is left alone — that is '
+        'the creation race, not a deletion', () async {
+      when(
+        () => relationshipAgentService.watchedRelationshipId(agentId),
+      ).thenAnswer((_) async => null);
+
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verifyNever(
+        () => relationshipAgentService.handleRelationshipDeleted(any()),
+      );
+      verifyNever(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(any()),
+      );
+      verify(() => syncService.upsertEntity(any())).called(1);
+    });
+
+    test('the read is UNFILTERED: hiding private entries must not reap a '
+        "private person's agent on that device alone", () async {
+      await withClock(Clock.fixed(now), maintenance.beforeWakeScan);
+
+      verify(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).called(1);
+      verifyNever(
+        () => relationshipRepository.getRelationshipById(any()),
+      );
+    });
+
+    test(
+      'a reap failure is contained and logged like any other repair',
+      () async {
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenThrow(StateError('db closed'));
+
+        await expectLater(maintenance.beforeWakeScan(), completes);
+
+        verify(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            message: any(named: 'message', that: contains('beforeWakeScan')),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('onIdentityReceived', () {

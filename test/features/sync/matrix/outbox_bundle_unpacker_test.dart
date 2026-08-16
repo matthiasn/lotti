@@ -17,7 +17,16 @@ PreparedSyncEvent _preparedFor(Event event, SyncMessage msg) =>
 ResolvedOutboxSyncBundle _resolved(
   SyncOutboxBundle bundle, {
   List<Map<String, dynamic>?> rawChildren = const [],
-}) => ResolvedOutboxSyncBundle(bundle: bundle, rawChildren: rawChildren);
+}) => ResolvedOutboxSyncBundle(
+  jsonPath: bundle.jsonPath,
+  children: [
+    for (var index = 0; index < bundle.children.length; index++)
+      OutboxBundleChildEnvelope(
+        syncMessage: bundle.children[index],
+        rawJson: index < rawChildren.length ? rawChildren[index] : null,
+      ),
+  ],
+);
 
 enum _GeneratedBundleChildOutcome {
   ok,

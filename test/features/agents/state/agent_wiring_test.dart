@@ -268,5 +268,44 @@ void main() {
         expect((result! as WakeExecutorResult).reportUpdated, isFalse);
       },
     );
+
+    test(
+      'relationship runner preserves whether the standing report was updated',
+      () async {
+        when(() => agentService.getAgent('rel-agent-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'rel-agent-1',
+            agentId: 'rel-agent-1',
+            kind: AgentKinds.relationshipAgent,
+          ),
+        );
+        contributedRunners[AgentKinds.relationshipAgent] =
+            ({
+              required agentIdentity,
+              required runKey,
+              required triggerTokens,
+              required threadId,
+            }) async => const WakeResult(
+              success: true,
+              mutatedEntries: {
+                'report-1': VectorClock({'host-a': 2}),
+              },
+              reportUpdated: true,
+            );
+
+        final result = await wire()(
+          'rel-agent-1',
+          'run-key',
+          const {},
+          'thread',
+        );
+
+        expect(result, {
+          'report-1': const VectorClock({'host-a': 2}),
+        });
+        expect(result, isA<WakeExecutorResult>());
+        expect((result! as WakeExecutorResult).reportUpdated, isTrue);
+      },
+    );
   });
 }
