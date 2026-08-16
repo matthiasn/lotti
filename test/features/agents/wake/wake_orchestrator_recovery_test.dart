@@ -237,6 +237,7 @@ void main() {
                   queue: stuckQueue,
                   runner: stuckRunner,
                   domainLogger: logger,
+                  maxConcurrentWakes: () => 2,
                   wakeExecutor: (agentId, runKey, triggers, threadId) {
                     executedAgentIds.add(agentId);
                     if (agentId == 'stuck-agent') {

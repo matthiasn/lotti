@@ -444,8 +444,8 @@ class WakeOrchestrator with AgentErrorLogging {
   /// superseded and bail out.
   int _drainGeneration = 0;
 
-  /// Maximum duration for a drain before it is considered stale and the
-  /// guard is force-reset. This must remain longer than
+  /// Maximum interval without scheduler progress before a drain is considered
+  /// stale and the guard is force-reset. This must remain longer than
   /// [wakeRunMaxDuration], with headroom for the bounded pre-wake hook and
   /// terminal status persistence, so a valid slow wake is never superseded.
   static const _drainTimeout = Duration(minutes: 12);
