@@ -433,14 +433,24 @@ void main() {
   });
 
   group('projectActivityMonitorProvider', () {
-    test('creates the monitor from injected dependencies', () {
+    test('creates the monitor and wires project-agent retirement', () async {
       final mockNotifications = MockUpdateNotifications();
       final mockSyncService = MockAgentSyncService();
       final mockProjectRepository = MockProjectRepository();
       final logger = DomainLogger(loggingService: LoggingService());
+      when(
+        () => mockService.abortRunningWake('retired-project-agent'),
+      ).thenReturn(true);
+      when(
+        () => mockService.cancelPendingWake('retired-project-agent'),
+      ).thenReturn(null);
+      when(
+        () => mockService.destroyAgent('retired-project-agent'),
+      ).thenAnswer((_) async => true);
 
       final container = ProviderContainer(
         overrides: [
+          agentServiceProvider.overrideWithValue(mockService),
           updateNotificationsProvider.overrideWithValue(mockNotifications),
           loggingServiceProvider.overrideWithValue(LoggingService()),
           agentRepositoryProvider.overrideWithValue(mockRepository),
@@ -455,6 +465,12 @@ void main() {
 
       expect(monitor, isA<ProjectActivityMonitor>());
       expect(monitor.retireProjectAgent, isNotNull);
+      await monitor.retireProjectAgent!('retired-project-agent');
+      verifyInOrder([
+        () => mockService.abortRunningWake('retired-project-agent'),
+        () => mockService.cancelPendingWake('retired-project-agent'),
+        () => mockService.destroyAgent('retired-project-agent'),
+      ]);
 
       // Dispose should exercise the provider cleanup hook without errors.
       container.dispose();
