@@ -49,6 +49,21 @@ bool isRelationshipEscalationWorkspace(String? workspaceKey) =>
     workspaceKey != null &&
     workspaceKey.startsWith('$relationshipEscalationWorkspacePrefix:');
 
+/// Workspace key of the report-refresh escalation — the episode minted when
+/// a check-in lands after the current briefing was written (ADR 0059
+/// Decision 2's "check-in saved since the last report" fact).
+///
+/// Its own episode family INSIDE the escalation prefix (so the lease
+/// predicate covers it unchanged), never the lapse episode's key: an
+/// early-fired refresh consuming `relationship-escalation:<dueDayKey>`
+/// would let per-episode idempotence suppress the real cadence-lapse
+/// escalation when that day arrives. Scoped to the newest check-in's UTC
+/// day, so every device arming for the same evidence writes the identical
+/// record, and one refresh per UTC day is the deliberate ceiling.
+String relationshipReportRefreshEscalationWorkspaceKey(
+  String checkInUtcDayKey,
+) => relationshipEscalationWorkspaceKey('refresh-$checkInUtcDayKey');
+
 /// The due-day key encoded in a wake's trigger tokens, or null when the
 /// tokens carry no escalation marker.
 ///

@@ -1501,7 +1501,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           !allRows.any((nudge) => nudge.id == creationId) &&
           strategy.createdAds.any(
             (request) => !seenDigests.contains(
-              goalBriefDigest(_sanitizeBrief(request.brief)),
+              goalBriefDigest(sanitizeNudgeBrief(request.brief)),
             ),
           );
       final hasViableRerunReplacement = strategy.rerunRequests.any(
@@ -1638,7 +1638,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
         // Weaker models echo FACTS ids into copy; the banner renders
         // this text verbatim, so it gets the same sanitizer as reports.
-        final brief = _sanitizeBrief(request.brief);
+        final brief = sanitizeNudgeBrief(request.brief);
         final digest = goalBriefDigest(brief);
         if (!seenDigests.add(digest)) {
           logError('ad creation skipped: duplicate brief digest');
@@ -1941,17 +1941,6 @@ bool _offersGoalBanner(String? message) {
     r'ask\s+me|tell\s+me)\b',
   ).hasMatch(normalized);
 }
-
-/// The report sanitizer applied to every copy field a banner renders.
-NudgeBrief _sanitizeBrief(NudgeBrief brief) => brief.copyWith(
-  headline: sanitizeAgentReportText(brief.headline, stripBareIds: true),
-  tagline: brief.tagline == null
-      ? null
-      : sanitizeAgentReportText(brief.tagline!, stripBareIds: true),
-  cta: brief.cta == null
-      ? null
-      : sanitizeAgentReportText(brief.cta!, stripBareIds: true),
-);
 
 /// Near-duplicate dedupe key over the banner copy: the same words with
 /// different presets are the same ad.

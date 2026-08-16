@@ -26,6 +26,7 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -266,7 +267,7 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     // registers its active-banner source here (ADR 0059 Decision 6). A
     // source missing from this list simply never speaks.
     nudgeBannerSourcesProvider.overrideWithValue(
-      [activeGoalNudgesProvider],
+      [activeGoalNudgesProvider, activeRelationshipNudgesProvider],
     ),
     promptLogWrapRenderersProvider.overrideWithValue(
       dayPromptLogWrapRenderers,

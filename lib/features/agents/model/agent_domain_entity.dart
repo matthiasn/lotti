@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -1275,10 +1276,10 @@ void _validateGoalSpecJson(Map<String, dynamic> json) {
 /// same contracts whichever agent kind wrote them.
 void _validateNudgeJson(Map<String, dynamic> json) {
   final runtimeType = json['runtimeType'];
-  if (runtimeType != 'goalNudge' && runtimeType != 'relationshipNudge') {
+  if (!AgentEntityTypes.nudgeTypes.contains(runtimeType)) {
     return;
   }
-  final label = runtimeType == 'goalNudge'
+  final label = runtimeType == AgentEntityTypes.goalNudge
       ? 'goal nudge'
       : 'relationship nudge';
   final ratings = json['ratings'];

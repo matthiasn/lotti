@@ -10315,6 +10315,37 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'El informe se genera en $provider. Las notas sobre esta persona se enviarán allí para su procesamiento.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Continuar';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return '¿Enviar a $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Aún no hay informe: Ponme al día prepara uno con tus registros.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Informe solicitado: aparecerá aquí en breve.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'No se pudo solicitar el informe.';
+
+  @override
+  String get relationshipBriefingTitle => 'Informe';
+
+  @override
+  String get relationshipBriefMeButton => 'Ponme al día';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10342,6 +10373,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Semanal';
+
+  @override
+  String get relationshipChatTooltip => 'Chatear sobre esta persona';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Aún no hay agente: marca primero a esta persona como importante.';
 
   @override
   String get relationshipCheckInsLabel => 'Registros';
@@ -10381,11 +10419,28 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron guardar los cambios. Inténtalo de nuevo.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Necesita atención';
+
+  @override
+  String get relationshipHealthSteady => 'Estable';
+
+  @override
+  String get relationshipHealthStrained => 'Tensa';
+
+  @override
+  String get relationshipHealthThriving => 'Floreciente';
+
+  @override
   String get relationshipImportantDescription =>
       'Recuérdame mantener el contacto';
 
   @override
   String get relationshipImportantLabel => 'Importante';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Último registro $date';
+  }
 
   @override
   String get relationshipLinkedTasksLabel => 'Tareas';
@@ -10433,6 +10488,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Estado';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Seguimiento desde $date';
+  }
 
   @override
   String get saveButton => 'Guardar';

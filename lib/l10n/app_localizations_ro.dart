@@ -10370,6 +10370,37 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Rezumatul rulează pe $provider. Notițele despre această persoană vor fi trimise acolo pentru procesare.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Continuați';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Trimiteți la $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Niciun rezumat încă — Pune-mă la curent pregătește unul din check-inurile dvs.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Rezumat solicitat — va apărea aici în curând.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Rezumatul nu a putut fi solicitat.';
+
+  @override
+  String get relationshipBriefingTitle => 'Rezumat';
+
+  @override
+  String get relationshipBriefMeButton => 'Pune-mă la curent';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10398,6 +10429,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Săptămânal';
+
+  @override
+  String get relationshipChatTooltip => 'Discutați despre această persoană';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
 
   @override
   String get relationshipCheckInsLabel => 'Înregistrări';
@@ -10437,11 +10475,28 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modificările nu au putut fi salvate. Încercați din nou.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get relationshipHealthSteady => 'Stabilă';
+
+  @override
+  String get relationshipHealthStrained => 'Tensionată';
+
+  @override
+  String get relationshipHealthThriving => 'Înfloritoare';
+
+  @override
   String get relationshipImportantDescription =>
       'Amintiți-mi să păstrez legătura';
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Ultima înregistrare $date';
+  }
 
   @override
   String get relationshipLinkedTasksLabel => 'Sarcini';
@@ -10489,6 +10544,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stare';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Urmărire din $date';
+  }
 
   @override
   String get saveButton => 'Salvați';

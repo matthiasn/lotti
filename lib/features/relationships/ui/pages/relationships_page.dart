@@ -65,12 +65,16 @@ class RelationshipsPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // First load, nothing rendered yet. A background reload keeps
-                // the previous list (`items` stays non-null) and never
-                // reaches this arm.
-                null => const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator.adaptive()),
+                // First load only — a background reload never reaches this
+                // arm because the previous value is retained above. The
+                // detail page and the projects list share this shape.
+                null => SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+                    child: const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    ),
+                  ),
                 ),
                 [] => const SliverToBoxAdapter(child: _EmptyState()),
                 final list => SliverList.separated(
@@ -144,12 +148,17 @@ class _RelationshipRow extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       // Last-check-in recency (plan v2 phase 2); tracking start until the
-      // first check-in exists.
+      // first check-in exists. The two dates mean opposite things on a
+      // recency screen — a person added today has NOT been contacted today —
+      // so each branch names itself.
       subtitle: Text(
-        entryDateLabel(
-          context,
-          item.lastCheckInAt ?? relationship.meta.dateFrom,
-        ),
+        item.lastCheckInAt != null
+            ? context.messages.relationshipLastCheckInLabel(
+                entryDateLabel(context, item.lastCheckInAt!),
+              )
+            : context.messages.relationshipTrackingSinceLabel(
+                entryDateLabel(context, relationship.meta.dateFrom),
+              ),
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.lowEmphasis,
         ),

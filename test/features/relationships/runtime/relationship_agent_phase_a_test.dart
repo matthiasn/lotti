@@ -3,6 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -110,6 +111,12 @@ void main() {
     );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+    ).thenAnswer((_) async => []);
+    when(
       () => repository.getLinksFrom(
         agentId,
         type: AgentLinkTypes.agentRelationship,
@@ -138,6 +145,18 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
   });
+
+  AgentReportEntity freshReport(DateTime createdAt) =>
+      AgentDomainEntity.agentReport(
+            id: 'report-1',
+            agentId: agentId,
+            scope: AgentReportScopes.current,
+            createdAt: createdAt,
+            vectorClock: null,
+            content: 'briefing',
+            tldr: 'briefing',
+          )
+          as AgentReportEntity;
 
   RelationshipHealthEntity? writtenRegister() =>
       upserts.whereType<RelationshipHealthEntity>().singleOrNull;
@@ -187,6 +206,10 @@ void main() {
   test('inside the cadence: register says ok with the check-in as the '
       'reference; no escalation, no callback', () async {
     final lastCheckIn = DateTime(2026, 8, 14, 20);
+    // The briefing already covers the newest check-in — nothing is stale.
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15)));
     when(
       () => relationshipRepository.getAllCheckInsForRelationship(
         relationshipId,
@@ -319,6 +342,12 @@ void main() {
 
     test('still due (previous register already says due): no second '
         'escalation, no callback', () async {
+      // The briefing already covers the newest check-in — a still-due day
+      // with nothing new must stay quiet (only NEWLY due or fresh
+      // evidence spends the LLM tier).
+      when(
+        () => repository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 2)));
       when(
         () => repository.getEntity(relationshipHealthId(agentId)),
       ).thenAnswer(
@@ -391,6 +420,9 @@ void main() {
         relationshipId,
       ),
     ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 14, 20))]);
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15)));
 
     await withClock(Clock.fixed(now), run);
     final firstRegister = writtenRegister()!;
@@ -434,6 +466,158 @@ void main() {
     );
   });
 
+  test('a check-in newer than the briefing arms a report-refresh escalation '
+      'even inside the cadence — "check-in saved since last report" is a '
+      'spend-worthy fact (ADR 0059), and it must be due IMMEDIATELY, not on '
+      'the next due day', () async {
+    final checkInAt = DateTime(2026, 8, 14, 20);
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => [checkIn('c-1', checkInAt)]);
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 10)));
+    await withClock(Clock.fixed(now), run);
+
+    final escalation = writtenWakes().singleWhere(
+      (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+    );
+    // Its OWN episode family, keyed to the check-in's UTC day — consuming
+    // the lapse episode's key (2026-08-21) early would suppress the real
+    // lapse escalation when that day arrives.
+    final utc = checkInAt.toUtc();
+    final utcDay =
+        '${utc.year}-'
+        '${utc.month.toString().padLeft(2, '0')}-'
+        '${utc.day.toString().padLeft(2, '0')}';
+    expect(
+      escalation.workspaceKey,
+      relationshipReportRefreshEscalationWorkspaceKey(utcDay),
+    );
+    // The deadline is the check-in's own instant: deterministic across
+    // devices AND already past, so the briefing refresh fires now instead
+    // of waiting out the rest of the cadence.
+    expect(escalation.scheduledAt, checkInAt.toUtc());
+    expect(escalation.scheduledAt.isBefore(now.toUtc()), isTrue);
+    expect(escalationCallbacks, 1);
+  });
+
+  test('when the cadence newly lapses AND the briefing is stale, only the '
+      'lapse episode arms — its run regenerates the briefing anyway', () async {
+    // Check-in on 8/1 with a 7-day cadence → due day 8/8, well past `now`
+    // (8/16) and newly due (no previous register); the briefing predates
+    // the check-in, so both facts hold at once.
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 1, 18))]);
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 7, 30)));
+    await withClock(Clock.fixed(now), run);
+
+    final escalations = writtenWakes()
+        .where((w) => isRelationshipEscalationWorkspace(w.workspaceKey))
+        .toList();
+    expect(escalations, hasLength(1));
+    expect(
+      escalations.single.workspaceKey,
+      relationshipEscalationWorkspaceKey('2026-08-08'),
+    );
+    expect(escalations.single.workspaceKey, isNot(contains('refresh')));
+  });
+
+  group('the deterministic nudge sweep', () {
+    RelationshipNudgeEntity nudge({
+      required String id,
+      DateTime? staleAt,
+    }) =>
+        AgentDomainEntity.relationshipNudge(
+              id: id,
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Check in with Anna.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: id,
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+              staleAt: staleAt,
+            )
+            as RelationshipNudgeEntity;
+
+    test('an active banner past its deadline is terminally EXPIRED with '
+        'the deterministic deadline timestamp', () async {
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 1, 18))]);
+      when(
+        () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+      ).thenAnswer(
+        (_) async => [nudge(id: 'ad-old', staleAt: DateTime.utc(2026, 8, 10))],
+      );
+      await withClock(Clock.fixed(now), run);
+
+      final swept = upserts.whereType<RelationshipNudgeEntity>().single;
+      expect(swept.status, NudgeStatus.expired);
+      expect(swept.expiredAt, DateTime.utc(2026, 8, 10));
+    });
+
+    test(
+      'a satisfied cadence RETIRES the still-active banner — the agent '
+      'takes back an obsolete chide instead of running out its clock',
+      () async {
+        when(
+          () => relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 14, 20))]);
+        when(
+          () => repository.getLatestReport(any(), any()),
+        ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15)));
+        when(
+          () =>
+              repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+        ).thenAnswer(
+          (_) async => [
+            nudge(id: 'ad-live', staleAt: DateTime.utc(2026, 8, 20)),
+          ],
+        );
+        await withClock(Clock.fixed(now), run);
+
+        final swept = upserts.whereType<RelationshipNudgeEntity>().single;
+        expect(swept.status, NudgeStatus.retired);
+        expect(swept.retiredAt, now.toUtc());
+      },
+    );
+
+    test('a due cadence leaves the active banner alone — it is still the '
+        'right message', () async {
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 1, 18))]);
+      when(
+        () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+      ).thenAnswer(
+        (_) async => [
+          nudge(id: 'ad-live', staleAt: DateTime.utc(2026, 8, 20)),
+        ],
+      );
+      await withClock(Clock.fixed(now), run);
+      expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+    });
+  });
+
   group('relationshipCadenceWake', () {
     test('before the cadence hour it targets today, after it tomorrow — '
         'calendar components, not durations', () {
@@ -459,12 +643,16 @@ void main() {
     test('a consumed or missing cadence record is rewritten; a pending one '
         'for the same instant is left alone', () async {
       // Keep the cadence healthy so the ONLY wake in play is the cadence
-      // tick itself (an overdue fixture would also arm an escalation).
+      // tick itself (an overdue or stale fixture would also arm an
+      // escalation).
       when(
         () => relationshipRepository.getAllCheckInsForRelationship(
           relationshipId,
         ),
       ).thenAnswer((_) async => [checkIn('c-1', DateTime(2026, 8, 14, 20))]);
+      when(
+        () => repository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15)));
       // Default stubs: no existing record → the run writes one.
       await withClock(Clock.fixed(now), run);
       final wake = writtenWakes().single;

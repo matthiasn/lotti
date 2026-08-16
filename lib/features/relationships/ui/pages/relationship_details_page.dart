@@ -15,6 +15,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -169,41 +170,58 @@ class RelationshipDetailsPage extends ConsumerWidget {
                     DesignSystemBottomNavigationBar.occupiedHeight(context) +
                     tokens.spacing.step12,
               ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _RelationshipHeader(data: data),
-                  if (data.contactChannels.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.sectionGap),
-                    _SectionHeading(
-                      context.messages.relationshipContactChannelsLabel,
-                    ),
-                    SizedBox(height: tokens.spacing.step3),
-                    for (final channel in data.contactChannels)
-                      _ContactChannelRow(channel: channel),
-                  ],
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _LinkedTasksSection(
-                    relationshipId: relationshipId,
-                    tasks: detail.linkedTasks,
-                  ),
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _SectionHeading(
-                    context.messages.relationshipCheckInsLabel,
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  if (checkIns.isEmpty)
-                    Text(
-                      context.messages.relationshipNoCheckIns,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+              // The fixed sections stay in a list delegate; the check-in log
+              // grows without bound and renders lazily in its own builder
+              // sliver (the project-detail split: fixed sections + a builder
+              // list for the unbounded part).
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildListDelegate([
+                      _RelationshipHeader(data: data),
+                      // The executive briefing directly under the header —
+                      // the agent's standing voice on this page (plan v2
+                      // phase 5).
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      RelationshipBriefingCard(relationship: relationship),
+                      if (data.contactChannels.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        _SectionHeading(
+                          context.messages.relationshipContactChannelsLabel,
+                        ),
+                        SizedBox(height: tokens.spacing.step3),
+                        for (final channel in data.contactChannels)
+                          _ContactChannelRow(channel: channel),
+                      ],
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _LinkedTasksSection(
+                        relationshipId: relationshipId,
+                        tasks: detail.linkedTasks,
                       ),
-                    )
-                  else
-                    for (final checkIn in checkIns) ...[
-                      _CheckInRow(checkIn: checkIn),
-                      SizedBox(height: tokens.spacing.cardItemSpacing),
-                    ],
-                ]),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _SectionHeading(
+                        context.messages.relationshipCheckInsLabel,
+                      ),
+                      SizedBox(height: tokens.spacing.step3),
+                      if (checkIns.isEmpty)
+                        Text(
+                          context.messages.relationshipNoCheckIns,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                    ]),
+                  ),
+                  if (checkIns.isNotEmpty)
+                    SliverList.separated(
+                      itemCount: checkIns.length,
+                      separatorBuilder: (_, _) =>
+                          SizedBox(height: tokens.spacing.cardItemSpacing),
+                      itemBuilder: (context, index) =>
+                          _CheckInRow(checkIn: checkIns[index]),
+                    ),
+                ],
               ),
             ),
           ],
@@ -330,10 +348,20 @@ class _LinkedTasksSection extends ConsumerWidget {
             child: TaskSearchPickerBody(
               excludeIds: {relationshipId, ...linkedIds},
               onTaskSelected: (task) async {
-                final linked = await repository.linkTask(
-                  relationshipId: relationshipId,
-                  taskId: task.meta.id,
-                );
+                var linked = false;
+                try {
+                  linked = await repository.linkTask(
+                    relationshipId: relationshipId,
+                    taskId: task.meta.id,
+                  );
+                } catch (error, stackTrace) {
+                  developer.log(
+                    'Failed to link task to relationship',
+                    name: 'RelationshipDetailsPage',
+                    error: error,
+                    stackTrace: stackTrace,
+                  );
+                }
                 if (!modalContext.mounted) return;
                 Navigator.of(modalContext).pop();
                 // `createLink` answers false when the upsert changed no row,
@@ -368,14 +396,29 @@ class _LinkedTasksSection extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
-    final removed = await ref
-        .read(relationshipRepositoryProvider)
-        .unlinkTask(relationshipId: relationshipId, taskId: task.meta.id);
-    if (!removed && context.mounted) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.unlinkTaskFailedMessage,
+    try {
+      final removed = await ref
+          .read(relationshipRepositoryProvider)
+          .unlinkTask(relationshipId: relationshipId, taskId: task.meta.id);
+      if (!removed && context.mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.unlinkTaskFailedMessage,
+        );
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to unlink task from relationship',
+        name: 'RelationshipDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
       );
+      if (context.mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.unlinkTaskFailedMessage,
+        );
+      }
     }
   }
 
