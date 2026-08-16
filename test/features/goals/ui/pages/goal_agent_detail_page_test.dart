@@ -1417,6 +1417,93 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
   });
 
+  testWidgets('a long timeline renders a bounded first page — the eager '
+      'layout must not pay for years of retired banners on open', (
+    tester,
+  ) async {
+    GoalNudgeEntity past(int index) =>
+        AgentDomainEntity.goalNudge(
+              id: 'ad-past-$index',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.dismissed,
+              brief: GoalNudgeBrief(
+                headline: 'Past voice $index',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$index',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalNudgeHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [for (var i = 0; i < 25; i++) past(i)]),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // First page only: 20 of the 25 rows are built, plus the reveal.
+    expect(
+      find.textContaining('Past voice', skipOffstage: false),
+      findsNWidgets(20),
+    );
+    expect(
+      find.textContaining('Past voice 19', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Past voice 20', skipOffstage: false),
+      findsNothing,
+    );
+
+    final showMore = find.widgetWithText(DesignSystemButton, 'Show more');
+    await tester.scrollUntilVisible(
+      showMore,
+      400,
+      scrollable: find
+          .descendant(
+            of: find.byType(SingleChildScrollView).first,
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(showMore);
+    await tester.pump();
+    expect(
+      find.textContaining('Past voice', skipOffstage: false),
+      findsNWidgets(25),
+    );
+  });
+
   testWidgets('desktop keeps chat beside watched habits and complete banner '
       'history', (tester) async {
     const desktopSize = Size(1400, 1000);

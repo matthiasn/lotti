@@ -107,6 +107,48 @@ void main() {
     expect(exposures, hasLength(2));
   });
 
+  testWidgets('the child ticker is muted off-screen and unmuted in view — '
+      'an eagerly built below-the-fold banner must not animate', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              tracked(id: 'ad-top'),
+              const SizedBox(height: 3000),
+              tracked(id: 'ad-below'),
+            ],
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    bool tickerOf(String id) => TickerMode.valuesOf(
+      tester.element(
+        find.descendant(
+          of: find.byKey(ValueKey(id)),
+          matching: find.byType(Placeholder),
+        ),
+      ),
+    ).enabled;
+    expect(tickerOf('ad-top'), isTrue);
+    expect(
+      tickerOf('ad-below'),
+      isFalse,
+      reason: 'off-screen banners must not consume frame work',
+    );
+
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -3000),
+    );
+    await tester.pumpAndSettle();
+    expect(tickerOf('ad-below'), isTrue);
+  });
+
   testWidgets('a sibling growing in above moves the tracker across the '
       'viewport boundary with NO scroll gesture — the same element updates '
       'in place (didUpdateWidget), and its post-frame recheck flushes the '

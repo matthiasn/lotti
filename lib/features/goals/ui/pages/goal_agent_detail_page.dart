@@ -1021,14 +1021,31 @@ class _WatchingSection extends StatelessWidget {
   }
 }
 
-class _GoalHistorySection extends StatelessWidget {
+class _GoalHistorySection extends StatefulWidget {
   const _GoalHistorySection({required this.history});
 
   final List<GoalNudgeEntity> history;
 
   @override
+  State<_GoalHistorySection> createState() => _GoalHistorySectionState();
+}
+
+class _GoalHistorySectionState extends State<_GoalHistorySection> {
+  /// Initial render bound. `goalNudgeHistoryProvider` is deliberately
+  /// unbounded, and this page builds eagerly (no lazy list on this surface),
+  /// so a mature goal must not pay layout for years of retired banners on
+  /// page open. Show more reveals the full list — a user choice, still
+  /// eagerly built once made.
+  static const int _initialRows = 20;
+
+  bool _showAll = false;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final history = _showAll
+        ? widget.history
+        : widget.history.take(_initialRows).toList(growable: false);
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1065,6 +1082,17 @@ class _GoalHistorySection extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ],
+          if (!_showAll && widget.history.length > _initialRows) ...[
+            SizedBox(height: tokens.spacing.step1),
+            DesignSystemButton(
+              label: context.messages.aiResponseShowMore,
+              onPressed: () => setState(() => _showAll = true),
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.dense,
+              trailingIcon: Icons.expand_more_rounded,
+              alignsLabelToLeadingEdge: true,
             ),
           ],
         ],
