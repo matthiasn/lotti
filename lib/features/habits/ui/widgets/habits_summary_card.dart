@@ -95,6 +95,13 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
 
     final state = ref.watch(habitsControllerProvider);
     final (total, done) = _counts(state);
+    // A SCOPED card with nothing in scope renders nothing: "0 / 0 · All done
+    // today" would present an achievement where there was nothing recordable
+    // (every definition outside today's active window). The unscoped Habits
+    // tab keeps its zero-state card.
+    if (widget.visibleHabitIds != null && total == 0) {
+      return const SizedBox.shrink();
+    }
     final fraction = total == 0 ? 0.0 : (done / total).clamp(0.0, 1.0);
 
     final card = DecoratedBox(
@@ -108,10 +115,18 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
+            // A full-width Wrap, not a Row: on narrow cards, longer locales
+            // or large text scales the streak pill drops under the fraction
+            // instead of squeezing it into an overflow.
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: tokens.spacing.step4,
+                runSpacing: tokens.spacing.step2,
+                children: [
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -122,13 +137,12 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
                       _DoneFraction(done: done, total: total),
                     ],
                   ),
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                _StreakBadge(
-                  shortStreakCount: state.shortStreakCount,
-                  longStreakCount: state.longStreakCount,
-                ),
-              ],
+                  _StreakBadge(
+                    shortStreakCount: state.shortStreakCount,
+                    longStreakCount: state.longStreakCount,
+                  ),
+                ],
+              ),
             ),
             SizedBox(height: tokens.spacing.step4),
             _ProgressBar(fraction: fraction),

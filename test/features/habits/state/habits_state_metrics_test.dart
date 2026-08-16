@@ -284,30 +284,45 @@ void main() {
         glados.ListAnys(glados.any).listWithLengthInRange(
           0,
           12,
-          // -1 → null activeFrom; 0..40 → day offset from the base date.
-          glados.any.intInRange(-1, 41),
+          // Per habit: (activeFrom offset, activeUntil offset) from the base
+          // date; -1 → null on either bound.
+          glados.CombinableAny(glados.any).combine2(
+            glados.any.intInRange(-1, 41),
+            glados.any.intInRange(-1, 41),
+            (int from, int until) => (from: from, until: until),
+          ),
         ),
         glados.any.intInRange(0, 40),
-        (List<int> offsets, int queryOffset) =>
-            (offsets: offsets, queryOffset: queryOffset),
+        (List<({int from, int until})> windows, int queryOffset) =>
+            (windows: windows, queryOffset: queryOffset),
       ),
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'returns exactly the habits whose activeFrom date is on or before '
-      'the query day, preserving order',
+      'returns exactly the habits whose activeFrom..activeUntil window '
+      'contains the query day (from inclusive, until exclusive, date-only), '
+      'preserving order',
       (scenario) {
         // January window: multi-day Duration arithmetic is DST-safe here.
         final base = DateTime(2024, 1, 10);
         final habits = <HabitDefinition>[
-          for (var i = 0; i < scenario.offsets.length; i++)
+          for (var i = 0; i < scenario.windows.length; i++)
             hMakeHabitForActiveBy(
               'h$i',
-              scenario.offsets[i] == -1
+              scenario.windows[i].from == -1
                   ? null
-                  // Mix in a time-of-day so the property proves activeFrom
-                  // is compared date-only (same-day boundary included).
+                  // Mix in a time-of-day so the property proves both bounds
+                  // are compared date-only.
                   : base.add(
-                      Duration(days: scenario.offsets[i], hours: i % 24),
+                      Duration(days: scenario.windows[i].from, hours: i % 24),
+                    ),
+            ).copyWith(
+              activeUntil: scenario.windows[i].until == -1
+                  ? null
+                  : base.add(
+                      Duration(
+                        days: scenario.windows[i].until,
+                        hours: (i + 7) % 24,
+                      ),
                     ),
             ),
         ];
@@ -319,21 +334,30 @@ void main() {
 
         final result = activeBy(habits, ymd);
 
-        // Oracle: date-only activeFrom (null → DateTime(0)) must be on or
-        // before the parsed query day; order of survivors is preserved.
+        // Oracle: date-only activeFrom (null → DateTime(0)) on or before the
+        // parsed query day AND the day strictly before the date-only
+        // activeUntil (null → open-ended); order of survivors is preserved.
         final expectedIds = <String>[
           for (final habit in habits)
             if (!DateTime(
-              (habit.activeFrom ?? DateTime(0)).year,
-              (habit.activeFrom ?? DateTime(0)).month,
-              (habit.activeFrom ?? DateTime(0)).day,
-            ).isAfter(queryDay))
+                  (habit.activeFrom ?? DateTime(0)).year,
+                  (habit.activeFrom ?? DateTime(0)).month,
+                  (habit.activeFrom ?? DateTime(0)).day,
+                ).isAfter(queryDay) &&
+                (habit.activeUntil == null ||
+                    queryDay.isBefore(
+                      DateTime(
+                        habit.activeUntil!.year,
+                        habit.activeUntil!.month,
+                        habit.activeUntil!.day,
+                      ),
+                    )))
               habit.id,
         ];
         expect(
           result.map((habit) => habit.id).toList(),
           expectedIds,
-          reason: 'offsets=${scenario.offsets} query=$ymd',
+          reason: 'windows=${scenario.windows} query=$ymd',
         );
       },
       tags: 'glados',

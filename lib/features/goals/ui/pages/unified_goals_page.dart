@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -49,14 +51,39 @@ class UnifiedGoalsPage extends ConsumerStatefulWidget {
 class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
   final _scrollController = ScrollController();
 
+  /// Fires just past local midnight so the lifecycle-gated sets
+  /// (recordable ids, orphan rows, the scoped summary) recompute the moment
+  /// a habit's activeFrom/activeUntil boundary passes — a page parked
+  /// overnight must not keep offering rows the recording path would reject
+  /// the next day. Rescheduled after each fire.
+  Timer? _midnightTimer;
+
   @override
   void initState() {
     _scrollController.addListener(getIt<UserActivityService>().updateActivity);
     super.initState();
+    _scheduleMidnightRebuild();
+  }
+
+  void _scheduleMidnightRebuild() {
+    final now = ref.read(habitsNowProvider)();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer?.cancel();
+    _midnightTimer = Timer(
+      // A second past the boundary so day-granular comparisons land firmly
+      // on the new date.
+      nextMidnight.difference(now) + const Duration(seconds: 1),
+      () {
+        if (!mounted) return;
+        setState(() {});
+        _scheduleMidnightRebuild();
+      },
+    );
   }
 
   @override
   void dispose() {
+    _midnightTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -113,19 +140,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         ))
           habit.id,
     };
-    final visibleHabitIds = switch (state.displayFilter) {
-      HabitDisplayFilter.openNow => {
-        for (final h in state.openNowAll) h.id,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.pendingLater => {
-        for (final h in state.pendingLaterAll) h.id,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.completed => {
-        for (final h in state.completedAll) h.id,
-      }.intersection(recordableIds),
-      HabitDisplayFilter.all => recordableIds,
-    };
-
     // Goal-card rows count only real successes as done: goal criteria credit
     // `HabitCompletionType.success` alone, while `successfulToday` also
     // contains skips (the Habits tab's broader "handled today"). A skipped
@@ -133,6 +147,31 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     // reads green while the goal's window reading still reports a deficit.
     final todayYmd = gatingNow.ymd;
     final successToday = state.successfulByDay[todayYmd] ?? const <String>{};
+
+    // The legacy buckets treat ANY completion record (skip and fail
+    // included) as handled, but goal rows live in success-only terms — so
+    // for THEM, a habit skipped or failed today is still DUE (correctable to
+    // a success without hunting under Done), and only a real success counts
+    // as done. The orphan group below deliberately keeps the legacy buckets:
+    // it is the old habits list, just grouped.
+    final handledButNotSucceededToday = {
+      for (final h in state.completedAll)
+        if (!successToday.contains(h.id)) h.id,
+    };
+    final visibleHabitIds = switch (state.displayFilter) {
+      HabitDisplayFilter.openNow => {
+        for (final h in state.openNowAll) h.id,
+        ...handledButNotSucceededToday,
+      }.intersection(recordableIds),
+      HabitDisplayFilter.pendingLater => {
+        for (final h in state.pendingLaterAll) h.id,
+      }.intersection(recordableIds),
+      HabitDisplayFilter.completed => {
+        for (final h in state.completedAll)
+          if (successToday.contains(h.id)) h.id,
+      }.intersection(recordableIds),
+      HabitDisplayFilter.all => recordableIds,
+    };
 
     // Which habits any goal claims, from the resolved specs' criteria trees.
     // Orphan membership must not flicker while per-goal health is still on
@@ -316,7 +355,13 @@ class _GoalsHeader extends StatelessWidget {
           children: [
             title,
             SizedBox(height: tokens.spacing.step3),
-            tabs,
+            // Horizontally scrollable, the habits header's own narrow-width
+            // treatment: longer localized labels or large text scales must
+            // pan instead of overflowing the column.
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: tabs,
+            ),
           ],
         );
       },

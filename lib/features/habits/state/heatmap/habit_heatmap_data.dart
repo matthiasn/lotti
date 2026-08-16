@@ -54,7 +54,7 @@ class HeatmapDay extends Equatable {
 /// this function is fully deterministic (no wall clock).
 ///
 /// The denominator for each day is the union of [activeBy] (habits whose
-/// `activeFrom` is on/before the day) and habits with any recorded completion
+/// activeFrom/activeUntil window contains the day) and habits with any recorded completion
 /// that day — identical to [totalForDay]. The numerator counts only `success`
 /// completions: the heatmap measures actual wins, not avoidance. To fold skips
 /// into "done", widen the type guard below to

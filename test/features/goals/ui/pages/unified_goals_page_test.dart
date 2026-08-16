@@ -137,6 +137,7 @@ void main() {
     bool agentsFail = false,
     bool healthFails = false,
     GoalProgressView? Function()? progressOverride,
+    DateTime Function()? now,
     Size viewport = const Size(800, 2600),
   }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
@@ -153,7 +154,7 @@ void main() {
         mediaQueryData: MediaQueryData(size: viewport),
         overrides: [
           habitsControllerProvider.overrideWith(() => controller),
-          habitsNowProvider.overrideWithValue(() => _now),
+          habitsNowProvider.overrideWithValue(now ?? () => _now),
           habitHeatmapControllerProvider.overrideWith(
             _FakeHeatmapController.new,
           ),
@@ -360,19 +361,10 @@ void main() {
       viewport: const Size(430, 2600),
     );
 
-    // The wide FlutterTest fallback font renders roughly double-width text,
-    // so the folded segmented tabs overflow here even though the same layout
-    // fits with the app's real fonts (the 390px real-font capture in this
-    // PR's review screenshots renders cleanly). Tolerate ONLY
-    // overflow-shaped exceptions; anything else still fails the test.
-    var exception = tester.takeException();
-    while (exception != null) {
-      expect(
-        '$exception',
-        anyOf(contains('overflowed'), contains('Multiple exceptions')),
-      );
-      exception = tester.takeException();
-    }
+    // Nothing overflows even under the wide FlutterTest fallback font: the
+    // folded tabs pan horizontally, the chart headline wraps, and the
+    // summary card's streak pill drops under the fraction.
+    expect(tester.takeException(), isNull);
 
     // Folded: the tabs sit BELOW the title instead of beside it.
     final titleRect = tester.getRect(find.text('Goals'));
@@ -558,5 +550,77 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(progressReads, 2);
+  });
+
+  testWidgets('a habit skipped today stays DUE on its goal card while the '
+      'done filter shows only real successes', (tester) async {
+    // habitFlossing was skipped today: the legacy buckets file it under
+    // completed, but goal rows live in success-only terms.
+    final state =
+        baseState(
+          successfulToday: {habitFlossing.id},
+        ).copyWith(
+          displayFilter: HabitDisplayFilter.openNow,
+          openNowAll: [habitFlossingDueLater],
+          completedAll: [habitFlossing],
+        );
+    await pump(tester, state);
+
+    // Due filter: the skipped goal habit keeps its correctable row.
+    final row = tester.widget<HabitActionRow>(
+      find.byKey(Key('unified-goal-goal-1-c1-${habitFlossing.id}')),
+    );
+    expect(row.completedToday, isFalse);
+  });
+
+  testWidgets('the done filter shows a goal habit only for a REAL success, '
+      'not a skip', (tester) async {
+    final state =
+        baseState(
+          successfulToday: {habitFlossing.id},
+        ).copyWith(
+          displayFilter: HabitDisplayFilter.completed,
+          completedAll: [habitFlossing],
+        );
+    await pump(tester, state);
+
+    // Skipped ≠ done here: the goal card collapses to its header.
+    expect(
+      find.byKey(Key('unified-goal-goal-1-c1-${habitFlossing.id}')),
+      findsNothing,
+    );
+    expect(find.text('Fitness'), findsOneWidget);
+  });
+
+  testWidgets('crossing midnight retires rows whose active window ended, '
+      'without any new data event', (tester) async {
+    var currentNow = DateTime(2026, 8, 15, 23);
+    final endsTonight = habitFlossing.copyWith(
+      activeUntil: DateTime(2026, 8, 16),
+    );
+    when(
+      () => mockEntitiesCacheService.getHabitById(endsTonight.id),
+    ).thenAnswer((_) => endsTonight);
+    final state = baseState().copyWith(
+      habitDefinitions: [endsTonight, habitFlossingDueLater],
+      openNowAll: [endsTonight, habitFlossingDueLater],
+    );
+    await pump(tester, state, now: () => currentNow);
+
+    expect(
+      find.byKey(Key('unified-goal-goal-1-c1-${endsTonight.id}')),
+      findsOneWidget,
+    );
+
+    // Midnight passes while the page stays mounted: the timer rebuild must
+    // retire the row the recording path would now reject.
+    currentNow = DateTime(2026, 8, 16, 0, 0, 30);
+    await tester.pump(const Duration(hours: 1, minutes: 2));
+
+    expect(
+      find.byKey(Key('unified-goal-goal-1-c1-${endsTonight.id}')),
+      findsNothing,
+    );
+    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
   });
 }

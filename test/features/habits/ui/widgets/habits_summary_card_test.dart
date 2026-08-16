@@ -116,6 +116,25 @@ void main() {
       expect(find.text('1 to go'), findsOneWidget);
     });
 
+    testWidgets('a SCOPED card with nothing in scope renders nothing — '
+        'never a "0 / 0 · All done today" achievement', (tester) async {
+      final state = _state(definitionCount: 2);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const HabitsSummaryCard(visibleHabitIds: <String>{}),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(state),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('All done today'), findsNothing);
+      expect(find.text('0'), findsNothing);
+    });
+
     testWidgets('shows "All done today" once done == total (total > 0)', (
       tester,
     ) async {

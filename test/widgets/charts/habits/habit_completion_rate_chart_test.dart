@@ -136,6 +136,24 @@ void main() {
       expect(find.textContaining('to target'), findsOneWidget);
     });
 
+    testWidgets('a wrapped headline grows downward instead of overlapping '
+        'the plot', (tester) async {
+      tester.view.physicalSize = const Size(358, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpChart(tester, state: _fourteenDayState());
+      expect(tester.takeException(), isNull);
+
+      // Second run: the target chip sits BELOW the rate block…
+      final rateRect = tester.getRect(find.textContaining('7-day avg'));
+      final chipRect = tester.getRect(find.textContaining('to target'));
+      expect(chipRect.top, greaterThanOrEqualTo(rateRect.bottom - 1));
+      // …and the plot starts below the grown header instead of underneath it.
+      final chartRect = tester.getRect(find.byType(LineChart));
+      expect(chartRect.top, greaterThanOrEqualTo(chipRect.bottom - 1));
+    });
+
     testWidgets('disables the implicit data-swap animation', (tester) async {
       await pumpChart(tester, state: _fourteenDayState());
 

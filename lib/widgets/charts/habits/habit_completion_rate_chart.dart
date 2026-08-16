@@ -76,11 +76,13 @@ class HabitCompletionRateChart extends ConsumerWidget
 
     return Column(
       children: [
-        SizedBox(
-          // Holds the single headline row (rate + unit · goal chip · trend
-          // chip); the day breakdown centres within it, so selecting/clearing a
-          // day doesn't shift the chart below.
-          height: 44,
+        ConstrainedBox(
+          // A FLOOR, not a box: at the common single-line layout the headline
+          // holds its 44px so selecting/clearing a day doesn't shift the chart
+          // below — but when the Wrap flows the chips onto a second run
+          // (narrow cards, longer locales, large text scales) the header must
+          // grow instead of overflowing into the plot.
+          constraints: const BoxConstraints(minHeight: 44),
           child: state.selectedInfoYmd.isNotEmpty
               ? Center(
                   // A selected day swaps the headline for its split; it

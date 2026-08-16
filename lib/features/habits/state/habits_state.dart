@@ -160,12 +160,15 @@ int totalForDay(String ymd, HabitsState state) {
   return allByDay.union(activeHabitIds).length;
 }
 
-/// Filters [habitDefinitions] to those whose `activeFrom` date is on or
-/// before [ymd] (a `YYYY-MM-DD` string).
+/// Filters [habitDefinitions] to those whose active window contains [ymd]
+/// (a `YYYY-MM-DD` string): `activeFrom` on or before the day, and the day
+/// strictly before the exclusive `activeUntil` — the same window the
+/// recording paths enforce. A habit retired in June must not deflate July's
+/// chart and heatmap denominators, while June's own days still count it.
 ///
 /// Comparison is at day granularity. A null `activeFrom` is treated as the
-/// epoch (`DateTime(0)`), i.e. always active. Returns an empty list when [ymd]
-/// is empty.
+/// epoch (`DateTime(0)`), a null `activeUntil` as open-ended. Returns an
+/// empty list when [ymd] is empty.
 List<HabitDefinition> activeBy(
   List<HabitDefinition> habitDefinitions,
   String ymd,
@@ -173,13 +176,19 @@ List<HabitDefinition> activeBy(
   if (ymd.isEmpty) {
     return [];
   }
+  final day = DateTime.parse(ymd);
   final activeHabits = habitDefinitions.where((habitDefinition) {
     final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
+    final activeUntil = habitDefinition.activeUntil;
     return !DateTime(
-      activeFrom.year,
-      activeFrom.month,
-      activeFrom.day,
-    ).isAfter(DateTime.parse(ymd));
+          activeFrom.year,
+          activeFrom.month,
+          activeFrom.day,
+        ).isAfter(day) &&
+        (activeUntil == null ||
+            day.isBefore(
+              DateTime(activeUntil.year, activeUntil.month, activeUntil.day),
+            ));
   }).toList();
 
   return activeHabits;
