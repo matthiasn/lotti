@@ -2889,7 +2889,7 @@ void main() {
       "day's own value", (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
+        GoalThisWeekCard(
           progress: GoalProgressView(
             today: today,
             compositeRule: GoalCompositeRuleKind.all,
