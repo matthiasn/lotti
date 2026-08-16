@@ -591,12 +591,22 @@ flowchart TD
   shared rotation state cycles every standing banner ~15s each; a fresh
   acknowledgment (a re-run) jumps the queue;
   hover/touch and app-backgrounding pause the cycle; the dock collapses to
-  nothing when no goal is speaking. The goal detail page shows that goal's
-  banners uncycled via `GoalBannerCard` directly. Tapping a banner opens
+  nothing when no goal is speaking. Every dock tenant NAMES its goal — the
+  persona chip and a goal-title caption above the headline, on the desktop
+  and compact (bottom) docks alike, so the voice is never anonymous; the
+  reserved-lane math (`goalBannerDockReservedHeight`) covers the chip and
+  caption. The goal detail page shows that goal's
+  banners uncycled via `GoalBannerCard` directly — and applies NO snooze
+  filter: snoozes, day dismissals and the optimistic local echo quiet the
+  SHELL dock only (`goalBannerShellHiddenUntil`), while the page keeps the
+  banner captioned with a live countdown until it returns to the bar
+  (`goal-banner-shell-return-countdown`, the shared `WakeCountdownState`
+  tick). Tapping a banner opens
   its goal's detail page (the banner→conversation flow); the star button
   — rendered only while an outcome is due — opens the per-activation
   rating prompt (one outcome per activation, skips count). Snooze is the
-  prominent visibility action and opens fixed 1/3/6/8-hour choices. The
+  prominent visibility action and opens fixed 1/3/6/8-hour choices as
+  compact secondary duration chips. The
   de-emphasized final action dismisses the banner only for the current local
   calendar day; there is no direct X or swipe-to-dismiss shortcut.
 

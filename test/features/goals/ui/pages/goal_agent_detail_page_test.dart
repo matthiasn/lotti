@@ -530,6 +530,91 @@ void main() {
     });
   });
 
+  testWidgets('a banner snoozed from the shell dock STAYS on its goal page, '
+      'captioned with when it returns to the bar', (tester) async {
+    final now = DateTime(2026, 8, 11, 12);
+    final snoozed =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-goal-1',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Two walks left this window.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: 'Seven for seven.',
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            activeGoalNudgesProvider.overrideWith(
+              (ref) async => [
+                (
+                  nudge: snoozed.copyWith(
+                    snoozedUntil: now.add(const Duration(hours: 1)),
+                  ),
+                  goalTitle: 'Move more',
+                ),
+              ],
+            ),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      // Bounded pumps: the return countdown runs a real second-tick.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // The shell dock filters this banner out (visibleGoalBannerEntries),
+      // but the goal page does NOT: the banner card stays, and the caption
+      // says when it returns to the bar instead of letting it vanish.
+      expect(find.text('Two walks left this window.'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('goal-banner-shell-return-countdown')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Hidden from the banner bar'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('1:00:00'), findsOneWidget);
+    });
+  });
+
   testWidgets('a standing report renders its one-liner instead of the '
       'no-report hint', (tester) async {
     await tester.pumpWidget(
@@ -1207,8 +1292,14 @@ void main() {
         );
     await tester.pump();
 
-    expect(find.byType(GoalBannerCard), findsNWidgets(2));
-    expect(find.text('The stairs filed a complaint.'), findsNothing);
+    // Snooze quiets the SHELL dock, never this page: the goal's own page
+    // keeps the banner and captions it with the return countdown instead.
+    expect(find.byType(GoalBannerCard), findsNWidgets(3));
+    expect(find.text('The stairs filed a complaint.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-banner-shell-return-countdown')),
+      findsOneWidget,
+    );
     expect(find.text('Shoes miss you.'), findsOneWidget);
     expect(find.text('Third day on the couch.'), findsOneWidget);
   });

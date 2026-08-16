@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
@@ -43,6 +44,8 @@ import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
+import 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart'
+    show formatCountdown;
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -286,12 +289,24 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     // from a failed deadline reload keeps fresh banners (no-flash) but
     // never expired copy — whose tracker would keep counting exposure.
     final locallySnoozed = ref.watch(locallySnoozedNudgeDeadlinesProvider);
+    // Unlike the shell dock, this page applies NO snooze filter: snoozing
+    // quiets the rotating bar, but the goal's own page always shows the
+    // current banner — captioned with when it returns to the bar, so the
+    // banner never just vanishes without explanation.
     final nudges = [
-      for (final entry in visibleGoalBannerEntries(
-        entries: ref.watch(activeGoalNudgesProvider).value,
-        locallySnoozedDeadlines: locallySnoozed,
-      ))
-        if (entry.nudge.agentId == agentId) entry,
+      for (final entry
+          in ref.watch(activeGoalNudgesProvider).value ??
+              const <GoalBannerEntry>[])
+        if (entry.nudge.agentId == agentId &&
+            (entry.nudge.staleAt == null ||
+                clock.now().isBefore(entry.nudge.staleAt!)))
+          (
+            entry: entry,
+            shellHiddenUntil: goalBannerShellHiddenUntil(
+              entry,
+              locallySnoozedDeadlines: locallySnoozed,
+            ),
+          ),
     ];
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??
@@ -439,13 +454,15 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         // Every active banner remains reachable here, uncapped. The shell
         // rotates one slot; this goal-owned surface does not. Banners are an
         // interaction channel, not a replacement for the standing report.
-        for (final entry in nudges) ...[
+        for (final item in nudges) ...[
           SizedBox(height: tokens.spacing.step3),
           GoalBannerExposureTracker(
-            key: ValueKey('${entry.nudge.id}:${entry.nudge.activationCount}'),
-            nudgeId: entry.nudge.id,
+            key: ValueKey(
+              '${item.entry.nudge.id}:${item.entry.nudge.activationCount}',
+            ),
+            nudgeId: item.entry.nudge.id,
             child: GoalBannerCard(
-              entry: entry,
+              entry: item.entry,
               // Always non-null: a null callback would fall back to the
               // card's default navigate-to-detail — a self-navigation no-op
               // on this page. While the evidence is still resolving the CTA
@@ -460,6 +477,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
               },
             ),
           ),
+          if (item.shellHiddenUntil case final hiddenUntil?) ...[
+            SizedBox(height: tokens.spacing.step1),
+            _GoalBannerShellReturnCountdown(hiddenUntil: hiddenUntil),
+          ],
         ],
         // Gated on there BEING a change set, not merely on the agent being
         // active. The card renders nothing when nothing is pending, so an
@@ -1873,6 +1894,68 @@ class _GoalReportSections extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// The "back in the bar" caption under a banner that is snoozed or dismissed
+/// from the shell dock. A live countdown (the shared [WakeCountdownState]
+/// second-tick, TickerMode-aware) rather than a static estimate, and it
+/// renders nothing once the deadline passes — at that instant the dock shows
+/// the banner again and the caption would be stating a falsehood.
+class _GoalBannerShellReturnCountdown extends StatefulWidget {
+  const _GoalBannerShellReturnCountdown({required this.hiddenUntil});
+
+  final DateTime hiddenUntil;
+
+  @override
+  State<_GoalBannerShellReturnCountdown> createState() =>
+      _GoalBannerShellReturnCountdownState();
+}
+
+class _GoalBannerShellReturnCountdownState
+    extends State<_GoalBannerShellReturnCountdown>
+    with WakeCountdownState<_GoalBannerShellReturnCountdown> {
+  @override
+  DateTime get nextWakeAt => widget.hiddenUntil;
+
+  @override
+  void didUpdateWidget(covariant _GoalBannerShellReturnCountdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.hiddenUntil != widget.hiddenUntil) resyncCountdown();
+  }
+
+  @override
+  void onCountdownExpired() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (countdownSeconds <= 0) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    return Row(
+      key: const ValueKey('goal-banner-shell-return-countdown'),
+      children: [
+        Icon(
+          Icons.snooze_rounded,
+          size: tokens.typography.styles.others.caption.fontSize,
+          color: tokens.colors.text.lowEmphasis,
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        Expanded(
+          child: Text(
+            context.messages.goalBannerHiddenFromBar(
+              formatCountdown(countdownSeconds),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ),
       ],
     );
   }

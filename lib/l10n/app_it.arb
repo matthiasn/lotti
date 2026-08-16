@@ -2821,6 +2821,7 @@
   "goalAttainmentLabel": "{percent}% dell’obiettivo",
   "goalBannerActionFailed": "Non è stato salvato: riprova per favore.",
   "goalBannerDismissForDay": "Nascondi per oggi",
+  "goalBannerHiddenFromBar": "Nascosto dalla barra dei banner · torna tra {countdown}",
   "goalBannerRateTooltip": "Valuta questo banner",
   "goalBannerRatingSkip": "Salta",
   "goalBannerRatingTitle": "Com’era questo banner?",

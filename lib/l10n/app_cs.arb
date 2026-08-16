@@ -2571,6 +2571,7 @@
   "goalAttainmentLabel": "{percent} % cíle",
   "goalBannerActionFailed": "To se neuložilo — zkus to prosím znovu.",
   "goalBannerDismissForDay": "Skrýt na dnešek",
+  "goalBannerHiddenFromBar": "Skryto z lišty bannerů · zpět za {countdown}",
   "goalBannerRateTooltip": "Ohodnotit tento banner",
   "goalBannerRatingSkip": "Přeskočit",
   "goalBannerRatingTitle": "Jaký byl tento banner?",

@@ -2564,6 +2564,7 @@
   "goalAttainmentLabel": "{percent}% din obiectiv",
   "goalBannerActionFailed": "Nu s-a salvat — vă rugăm să încercați din nou.",
   "goalBannerDismissForDay": "Ascundeți pentru azi",
+  "goalBannerHiddenFromBar": "Ascuns din bara de bannere · revine în {countdown}",
   "goalBannerRateTooltip": "Evaluați acest banner",
   "goalBannerRatingSkip": "Omiteți",
   "goalBannerRatingTitle": "Cum vi s-a părut acest banner?",

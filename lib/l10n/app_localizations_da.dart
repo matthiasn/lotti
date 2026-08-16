@@ -6060,6 +6060,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalBannerDismissForDay => 'Skjul resten af dagen';
 
   @override
+  String goalBannerHiddenFromBar(String countdown) {
+    return 'Skjult fra bannerlinjen · tilbage om $countdown';
+  }
+
+  @override
   String get goalBannerRateTooltip => 'Bedøm dette banner';
 
   @override

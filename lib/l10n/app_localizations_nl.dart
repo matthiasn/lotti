@@ -6080,6 +6080,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalBannerDismissForDay => 'Voor vandaag verbergen';
 
   @override
+  String goalBannerHiddenFromBar(String countdown) {
+    return 'Verborgen uit de bannerbalk · terug over $countdown';
+  }
+
+  @override
   String get goalBannerRateTooltip => 'Beoordeel deze banner';
 
   @override

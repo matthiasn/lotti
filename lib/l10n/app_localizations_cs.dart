@@ -6124,6 +6124,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalBannerDismissForDay => 'Skrýt na dnešek';
 
   @override
+  String goalBannerHiddenFromBar(String countdown) {
+    return 'Skryto z lišty bannerů · zpět za $countdown';
+  }
+
+  @override
   String get goalBannerRateTooltip => 'Ohodnotit tento banner';
 
   @override

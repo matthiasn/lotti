@@ -266,13 +266,15 @@ void main() {
           .maxLines,
       isNull,
     );
-    expect(find.byType(GoalBannerPersonaChip), findsNothing);
+    // The COMPACT (bottom) dock names its goal too — compact trims the CTA
+    // and button labels for width, never the attribution.
+    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
+    expect(find.text('Move more'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('the dock spans its host and omits secondary identity copy', (
-    tester,
-  ) async {
+  testWidgets('the dock spans its host, NAMES its goal, and omits the '
+      'tagline', (tester) async {
     await pumpDock(tester, [
       entry(
         id: 'tagline',
@@ -283,8 +285,10 @@ void main() {
     ]);
 
     expect(find.text('One walk puts the rumors to bed.'), findsNothing);
-    expect(find.text('Walk'), findsNothing);
-    expect(find.byType(GoalBannerPersonaChip), findsNothing);
+    // The voice must not be anonymous: the persona chip and the goal's name
+    // attribute the nudge — a dock tenant reads as SOME goal speaking.
+    expect(find.text('Walk'), findsOneWidget);
+    expect(find.byType(GoalBannerPersonaChip), findsOneWidget);
     expect(
       tester.getSize(find.byType(GoalBannerDock)).width,
       tester.getSize(find.byType(Scaffold)).width,
@@ -319,8 +323,10 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
           .width,
-      greaterThan(frameRect.width * 0.45),
-      reason: 'a short CTA must not reserve half the dock from the copy',
+      greaterThan(frameRect.width * 0.4),
+      reason:
+          'a short CTA must not reserve half the dock from the copy — the '
+          'persona chip and its gap are the only other fixed claims',
     );
   });
 

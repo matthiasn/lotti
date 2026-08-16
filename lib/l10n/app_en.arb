@@ -3293,6 +3293,16 @@
   "@goalBannerDismissForDay": {
     "description": "De-emphasized action that hides a goal-agent banner until the next local day."
   },
+  "goalBannerHiddenFromBar": "Hidden from the banner bar · back in {countdown}",
+  "@goalBannerHiddenFromBar": {
+    "description": "Caption under a banner on the goal detail page while it is snoozed or dismissed from the shell banner bar",
+    "placeholders": {
+      "countdown": {
+        "type": "String",
+        "example": "25:10"
+      }
+    }
+  },
   "goalBannerRateTooltip": "Rate this banner",
   "goalBannerRatingSkip": "Skip",
   "@goalBannerRatingSkip": {

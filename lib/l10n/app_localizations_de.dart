@@ -6102,6 +6102,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalBannerDismissForDay => 'Für heute ausblenden';
 
   @override
+  String goalBannerHiddenFromBar(String countdown) {
+    return 'Aus der Bannerleiste ausgeblendet · wieder in $countdown';
+  }
+
+  @override
   String get goalBannerRateTooltip => 'Dieses Banner bewerten';
 
   @override
