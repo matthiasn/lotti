@@ -1343,19 +1343,20 @@ void main() {
     NudgeBannerEntry entry(String agentId, String headline) => (
       nudge: NudgeEntityView.of(
         AgentDomainEntity.goalNudge(
-          id: 'ad-$agentId-$headline',
-          agentId: agentId,
-          status: NudgeStatus.active,
-          brief: NudgeBrief(
-            headline: headline,
-            tone: NudgeTone.nudge,
-            animation: NudgeBannerAnimation.steady,
-          ),
-          briefDigest: 'd',
-          createdAt: DateTime(2026, 8, 10),
-          updatedAt: DateTime(2026, 8, 10),
-          vectorClock: null,
-        ),
+              id: 'ad-$agentId-$headline',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
+                headline: headline,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity,
       )!,
       subjectTitle: agentId,
       kind: NudgeBannerKind.goal,
@@ -2105,20 +2106,21 @@ void main() {
     NudgeBannerEntry entry(String id, String headline, DateTime staleAt) => (
       nudge: NudgeEntityView.of(
         AgentDomainEntity.goalNudge(
-          id: id,
-          agentId: 'goal-1',
-          status: NudgeStatus.active,
-          brief: NudgeBrief(
-            headline: headline,
-            tone: NudgeTone.nudge,
-            animation: NudgeBannerAnimation.steady,
-          ),
-          briefDigest: 'd-$id',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-          staleAt: staleAt,
-        ),
+              id: id,
+              agentId: 'goal-1',
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
+                headline: headline,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              staleAt: staleAt,
+            )
+            as GoalNudgeEntity,
       )!,
       subjectTitle: 'goal-1',
       kind: NudgeBannerKind.goal,

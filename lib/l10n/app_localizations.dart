@@ -17095,6 +17095,54 @@ abstract class AppLocalizations {
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
 
+  /// Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'The briefing runs on {provider}. Notes about this person will be sent there for processing.'**
+  String relationshipBriefingDisclosureBody(String provider);
+
+  /// No description provided for @relationshipBriefingDisclosureConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get relationshipBriefingDisclosureConfirm;
+
+  /// Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {provider}?'**
+  String relationshipBriefingDisclosureTitle(String provider);
+
+  /// No description provided for @relationshipBriefingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No briefing yet — Brief me prepares one from your check-ins.'**
+  String get relationshipBriefingEmpty;
+
+  /// No description provided for @relationshipBriefingRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing requested — it will appear here shortly.'**
+  String get relationshipBriefingRequested;
+
+  /// No description provided for @relationshipBriefingRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not request the briefing.'**
+  String get relationshipBriefingRequestFailed;
+
+  /// No description provided for @relationshipBriefingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing'**
+  String get relationshipBriefingTitle;
+
+  /// No description provided for @relationshipBriefMeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief me'**
+  String get relationshipBriefMeButton;
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -17136,6 +17184,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
+
+  /// No description provided for @relationshipChatTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat about this person'**
+  String get relationshipChatTooltip;
+
+  /// No description provided for @relationshipChatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent yet — mark this person as important first.'**
+  String get relationshipChatUnavailable;
 
   /// No description provided for @relationshipCheckInsLabel.
   ///
@@ -17197,6 +17257,30 @@ abstract class AppLocalizations {
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
 
+  /// No description provided for @relationshipHealthNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get relationshipHealthNeedsAttention;
+
+  /// No description provided for @relationshipHealthSteady.
+  ///
+  /// In en, this message translates to:
+  /// **'Steady'**
+  String get relationshipHealthSteady;
+
+  /// No description provided for @relationshipHealthStrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Strained'**
+  String get relationshipHealthStrained;
+
+  /// No description provided for @relationshipHealthThriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Thriving'**
+  String get relationshipHealthThriving;
+
   /// No description provided for @relationshipImportantDescription.
   ///
   /// In en, this message translates to:
@@ -17208,6 +17292,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Important'**
   String get relationshipImportantLabel;
+
+  /// No description provided for @relationshipLastCheckInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last check-in {date}'**
+  String relationshipLastCheckInLabel(String date);
 
   /// No description provided for @relationshipLinkedTasksLabel.
   ///
@@ -17298,6 +17388,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// No description provided for @relationshipTrackingSinceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking since {date}'**
+  String relationshipTrackingSinceLabel(String date);
 
   /// No description provided for @saveButton.
   ///

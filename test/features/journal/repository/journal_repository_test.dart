@@ -3,10 +3,12 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -289,6 +291,67 @@ void main() {
     });
 
     group('deleteJournalEntity', () {
+      test('routes a RelationshipEntry through the check-in cascade — the '
+          'ADR 0037 §5 invariant holds on the generic delete path too '
+          '(deep links included), not only on the People pages', () async {
+        final relationship = JournalEntity.relationship(
+          meta: testMeta(id: 'rel-1'),
+          data: RelationshipData(
+            title: 'Anna',
+            status: RelationshipStatus.active(
+              id: 'status-1',
+              createdAt: DateTime(2023),
+              utcOffset: 0,
+            ),
+          ),
+        );
+        final checkIn =
+            JournalEntity.checkIn(
+                  meta: testMeta(id: 'check-1'),
+                  data: const CheckInData(
+                    relationshipId: 'rel-1',
+                    interactionType: CheckInInteractionType.call,
+                  ),
+                )
+                as CheckInEntry;
+        when(
+          () => mockJournalDb.journalEntityById('rel-1'),
+        ).thenAnswer((_) async => relationship);
+        when(
+          () => mockJournalDb.getAllCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => [checkIn]);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              (invocation.positionalArguments.first as Metadata).copyWith(
+                deletedAt: DateTime(2024, 3, 15, 11),
+              ),
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.deleteJournalEntity('rel-1');
+
+        expect(result, isTrue);
+        final tombstoned = verify(
+          () => mockPersistenceLogic.updateDbEntity(captureAny()),
+        ).captured.cast<JournalEntity>();
+        // Relationship first (a half-finished cascade reads as "gone"),
+        // then its check-in — never the relationship alone.
+        expect(tombstoned, hasLength(2));
+        expect(tombstoned.first, isA<RelationshipEntry>());
+        expect(tombstoned.last, isA<CheckInEntry>());
+        expect(
+          tombstoned.every((e) => e.meta.deletedAt != null),
+          isTrue,
+        );
+      });
+
       test(
         'logs to DomainLogger and returns true when the lookup throws',
         () async {

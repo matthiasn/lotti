@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -5,10 +6,12 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// One People-list row: the relationship plus its most recent check-in time
 /// (null when no check-in exists yet).
@@ -29,20 +32,32 @@ typedef RelationshipListItem = ({
 class RelationshipRepository {
   RelationshipRepository({
     required this._journalDb,
+    required this._journalRepository,
     required this._persistenceLogic,
-    required this._updateNotifications,
   });
 
   final JournalDb _journalDb;
+  final JournalRepository _journalRepository;
   final PersistenceLogic _persistenceLogic;
-  final UpdateNotifications _updateNotifications;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
   /// Returns a relationship by its entity ID, or null.
+  ///
+  /// A private relationship resolves to null while private entries are
+  /// hidden. `journalEntityById` deliberately bypasses the private filter
+  /// (it is the single-id read the whole app shares), so the gate lives
+  /// here: without it a stale or hand-typed `/people/<private-id>` route
+  /// would render the person's name, status and cadence even though the
+  /// People list hides them.
   Future<RelationshipEntry?> getRelationshipById(String id) async {
     final entity = await _journalDb.journalEntityById(id);
-    return entity is RelationshipEntry ? entity : null;
+    if (entity is! RelationshipEntry) return null;
+    if ((entity.meta.private ?? false) &&
+        !await _journalDb.getConfigFlag(privateFlag)) {
+      return null;
+    }
+    return entity;
   }
 
   /// Returns all non-deleted relationships with their latest check-in time,
@@ -120,9 +135,8 @@ class RelationshipRepository {
     required RelationshipData data,
     EntryText? entryText,
     String? categoryId,
-    DateTime? trackingStartedAt,
   }) async {
-    final started = trackingStartedAt ?? DateTime.now();
+    final started = clock.now();
     final meta = await _persistenceLogic.createMetadata(
       dateFrom: started,
       dateTo: started,
@@ -144,6 +158,12 @@ class RelationshipRepository {
   ///
   /// The interaction time is `meta.dateFrom`/`dateTo`; the narrative lives in
   /// [entryText].
+  ///
+  /// The check-in inherits the relationship's category *and* its `private`
+  /// flag: a check-in is a note about the person, so it must not outlive the
+  /// person's privacy. `createDbEntity` only inherits privacy from a
+  /// `linkedId` passed to it, and the `RelationshipLink` here is written
+  /// separately, so the flag is set on the metadata up front.
   Future<CheckInEntry?> createCheckIn({
     required CheckInData data,
     EntryText? entryText,
@@ -153,11 +173,12 @@ class RelationshipRepository {
     final relationship = await getRelationshipById(data.relationshipId);
     if (relationship == null || relationship.isDeleted) return null;
 
-    final started = dateFrom ?? DateTime.now();
+    final started = dateFrom ?? clock.now();
     final meta = await _persistenceLogic.createMetadata(
       dateFrom: started,
       dateTo: dateTo ?? started,
       categoryId: relationship.categoryId,
+      private: relationship.meta.private,
     );
     final checkIn = CheckInEntry(
       meta: meta,
@@ -219,27 +240,36 @@ class RelationshipRepository {
     );
   }
 
-  /// Removes the [RelationshipLink] between the relationship and [taskId]
-  /// in whichever direction it exists, leaving any other link type between
-  /// the same pair intact (the `removeTypedLink` contract, ADR 0042).
-  ///
-  /// Deliberately not routed through `JournalRepository.removeTypedLink`:
-  /// that method notifies unconditionally per call, which for this
-  /// two-direction removal would emit two notifications even when nothing
-  /// was removed. One conditional notification after both deletes keeps the
-  /// providers from reloading on a no-op unlink.
+  /// Soft-deletes every live [RelationshipLink] between the relationship and
+  /// [taskId], in either direction, while leaving other link types intact.
+  /// Each tombstone goes through [JournalRepository.updateLink] so it receives
+  /// a new vector clock, enters the sync outbox, and notifies both endpoints.
   Future<bool> unlinkTask({
     required String relationshipId,
     required String taskId,
   }) async {
-    final linkTypeName = entryLinkTypeDbName(EntryLinkType.relationship);
-    final removed =
-        await _journalDb.deleteTypedLink(relationshipId, taskId, linkTypeName) +
-        await _journalDb.deleteTypedLink(taskId, relationshipId, linkTypeName);
-    if (removed > 0) {
-      _updateNotifications.notify({relationshipId, taskId, linkNotification});
+    final links = await _journalDb.typedLinksForTaskIds(
+      {relationshipId, taskId},
+      types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+    );
+    final matchingLinks = links.where(
+      (link) =>
+          link.deletedAt == null &&
+          ((link.fromId == relationshipId && link.toId == taskId) ||
+              (link.fromId == taskId && link.toId == relationshipId)),
+    );
+    final deletedAt = clock.now();
+    var found = false;
+    var updated = true;
+    for (final link in matchingLinks) {
+      found = true;
+      updated =
+          await _journalRepository.updateLink(
+            link.copyWith(deletedAt: deletedAt, hidden: true),
+          ) &&
+          updated;
     }
-    return removed > 0;
+    return found && updated;
   }
 
   // ── Update ─────────────────────────────────────────────────────────────────
@@ -284,9 +314,14 @@ class RelationshipRepository {
   /// change that introduced a link-only consumer would need to handle the
   /// tombstones explicitly.
   ///
-  /// When the relationship agent lands (plan v2 phases 4–5), this cascade
-  /// must grow to cover the agent identity, its reports and nudges, and any
-  /// pending reminder rows.
+  /// The agent leg of the cascade (ADR 0059 Decision 7 — identity, reports,
+  /// nudges, wake records) is NOT here: it lives in
+  /// `RelationshipAgentService.handleRelationshipDeleted`, invoked
+  /// best-effort by the delete surfaces, because this repository must not
+  /// depend on the agent service. Callers that reach this method through the
+  /// generic journal delete path get the same eventual consistency: a
+  /// deleted relationship's agent goes quiet (Phase A early-returns on the
+  /// tombstone) until its teardown runs.
   ///
   /// Returns whether the *relationship itself* was tombstoned. A check-in
   /// whose tombstone is rejected is logged and skipped rather than failing
@@ -300,7 +335,7 @@ class RelationshipRepository {
     final checkIns = await _journalDb.getAllCheckInsForRelationship(
       relationshipId,
     );
-    final deletedAt = DateTime.now();
+    final deletedAt = clock.now();
     // Tombstone the relationship first so a half-finished cascade reads as
     // "gone" rather than "live with missing check-ins".
     if (!await _softDelete(relationship, deletedAt)) return false;
@@ -325,7 +360,7 @@ class RelationshipRepository {
   Future<bool> deleteCheckIn(String checkInId) async {
     final entity = await _journalDb.journalEntityById(checkInId);
     if (entity is! CheckInEntry || entity.isDeleted) return false;
-    return _softDelete(entity, DateTime.now());
+    return _softDelete(entity, clock.now());
   }
 
   /// Writes a tombstone for [entity]. Returns false when the write was
@@ -348,8 +383,11 @@ class RelationshipRepository {
 final relationshipRepositoryProvider = Provider<RelationshipRepository>(
   (ref) => RelationshipRepository(
     journalDb: getIt<JournalDb>(),
+    // Constructed bare like every other JournalRepository call site — the
+    // class resolves its own dependencies via getIt and is not itself
+    // registered there.
+    journalRepository: JournalRepository(),
     persistenceLogic: getIt<PersistenceLogic>(),
-    updateNotifications: getIt<UpdateNotifications>(),
   ),
   name: 'relationshipRepositoryProvider',
 );

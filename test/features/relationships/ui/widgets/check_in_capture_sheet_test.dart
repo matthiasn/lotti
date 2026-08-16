@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -175,17 +176,19 @@ void main() {
     expect(capturedSave().data.sentiment, isNull);
   });
 
-  testWidgets('create mode passes an interaction time to the repository', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
+  testWidgets('create mode defaults the interaction time to NOW, to the '
+      'minute — not midnight, not createdAt', (tester) async {
+    final fixedNow = DateTime(2026, 8, 13, 10, 30);
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+    });
 
-    expect(capturedSave().dateFrom, isNotNull);
+    expect(capturedSave().dateFrom, fixedNow);
   });
 
   testWidgets('a refused save keeps the sheet open and reports it', (

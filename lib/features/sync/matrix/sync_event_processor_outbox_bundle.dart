@@ -212,8 +212,7 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     // already-applied writes stay (idempotent under VC dominance on the
     // next pass).
     final writePlans = <_OutboxBundleWritePlan>[];
-    final children = <SyncMessage>[];
-    final rawChildren = <Map<String, dynamic>>[];
+    final children = <OutboxBundleChildEnvelope>[];
     for (final parsed in parsedEntries) {
       final envelope = parsed.envelope;
       final payload = parsed.payload;
@@ -286,8 +285,12 @@ extension _OutboxBundleHandler on SyncEventProcessor {
         );
       }
 
-      children.add(envelope);
-      rawChildren.add(parsed.envelopeJson);
+      children.add(
+        OutboxBundleChildEnvelope(
+          syncMessage: envelope,
+          rawJson: parsed.envelopeJson,
+        ),
+      );
     }
 
     // Issue per-child writes serially. The earlier parallel `Future.wait`
@@ -328,11 +331,8 @@ extension _OutboxBundleHandler on SyncEventProcessor {
     );
 
     return ResolvedOutboxSyncBundle(
-      bundle: SyncOutboxBundle(
-        children: children,
-        jsonPath: jp,
-      ),
-      rawChildren: rawChildren,
+      children: children,
+      jsonPath: jp,
     );
   }
 }

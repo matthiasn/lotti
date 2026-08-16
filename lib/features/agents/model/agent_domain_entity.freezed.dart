@@ -4712,12 +4712,12 @@ class RelationshipHealthEntity implements AgentDomainEntity {
 /// someone important is itself the request to be nudged).
  final  DateTime referenceAt;
 /// The local calendar day the cadence lapses (component arithmetic:
-/// `referenceAt`'s day + [cadenceDays]).
+/// `referenceAt`'s day + `cadenceDays`).
  final  DateTime dueAt;
  final  DateTime createdAt;
  final  DateTime updatedAt;
 @override final  VectorClock? vectorClock;
-/// Null while the relationship has no check-ins ([referenceAt] then
+/// Null while the relationship has no check-ins (`referenceAt` then
 /// carries the tracking-start baseline).
  final  DateTime? lastCheckInAt;
 @override final  DateTime? deletedAt;

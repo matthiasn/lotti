@@ -10105,6 +10105,37 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'The briefing runs on $provider. Notes about this person will be sent there for processing.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Continue';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Send to $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'No briefing yet — Brief me prepares one from your check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing requested — it will appear here shortly.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Could not request the briefing.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Brief me';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10132,6 +10163,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Weekly';
+
+  @override
+  String get relationshipChatTooltip => 'Chat about this person';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'No agent yet — mark this person as important first.';
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
@@ -10171,10 +10209,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not save the changes. Please try again.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Needs attention';
+
+  @override
+  String get relationshipHealthSteady => 'Steady';
+
+  @override
+  String get relationshipHealthStrained => 'Strained';
+
+  @override
+  String get relationshipHealthThriving => 'Thriving';
+
+  @override
   String get relationshipImportantDescription => 'Nudge me to stay in touch';
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Last check-in $date';
+  }
 
   @override
   String get relationshipLinkedTasksLabel => 'Tasks';
@@ -10222,6 +10277,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Tracking since $date';
+  }
 
   @override
   String get saveButton => 'Save';
@@ -13647,12 +13707,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get navTabTitleTasks => 'Tasks';
 
   @override
-  String get nudgeBannerRatingSkip => 'Skip';
-
-  @override
-  String get nudgeBannerRatingTitle => 'How was this banner?';
-
-  @override
   String get outboxMonitorLabelError => 'error';
 
   @override
@@ -13669,11 +13723,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get outboxMonitorRetry => 'retry';
-
-  @override
-  String relationshipBannerSemanticLabel(String personName) {
-    return 'Relationship banner for $personName';
-  }
 
   @override
   String get saveLabel => 'Save';

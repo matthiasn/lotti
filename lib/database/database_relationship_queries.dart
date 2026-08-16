@@ -90,6 +90,7 @@ mixin _JournalDbRelationshipQueries on _$JournalDb, _JournalDbConfigFlags {
             var predicate =
                 t.id.isIn(idList) &
                 t.type.equals('Task') &
+                t.task.equals(true) &
                 t.deleted.equals(false);
             if (privateStatuses != null) {
               predicate = predicate & t.private.isIn(privateStatuses);

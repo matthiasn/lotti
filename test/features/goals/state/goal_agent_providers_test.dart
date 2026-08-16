@@ -69,9 +69,7 @@ void main() {
     updateNotifications = MockUpdateNotifications();
     wakeOrchestrator = MockWakeOrchestrator();
     when(() => updateNotifications.notify(any())).thenReturn(null);
-    when(
-      () => agentService.markReportStale(any()),
-    ).thenAnswer((_) async {});
+    when(() => agentService.markReportStale(any())).thenAnswer((_) async {});
     when(
       () => wakeOrchestrator.enqueueDeferredAutomaticWake(
         agentId: any(named: 'agentId'),
@@ -88,10 +86,7 @@ void main() {
     ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
-      () => repository.getEntitiesByAgentId(
-        any(),
-        type: any(named: 'type'),
-      ),
+      () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
     ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
@@ -560,9 +555,7 @@ void main() {
       ),
     );
     when(
-      () => repository.getEntity(
-        any(that: startsWith('$agentId:spec-v2')),
-      ),
+      () => repository.getEntity(any(that: startsWith('$agentId:spec-v2'))),
     ).thenAnswer(
       (invocation) async => upserted
           .whereType<GoalSpecVersionEntity>()
@@ -789,9 +782,7 @@ void main() {
         nudgeRow('ad-gone', NudgeStatus.dismissed, DateTime(2026, 8, 9)),
       ],
     );
-    when(
-      () => repository.getEntity(goalSpecHeadId('goal-a')),
-    ).thenAnswer(
+    when(() => repository.getEntity(goalSpecHeadId('goal-a'))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId('goal-a'),
         agentId: 'goal-a',
@@ -800,9 +791,7 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(
-      () => repository.getEntity('goal-a:spec-v1'),
-    ).thenAnswer(
+    when(() => repository.getEntity('goal-a:spec-v1')).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecVersion(
         id: 'goal-a:spec-v1',
         agentId: 'goal-a',
@@ -924,9 +913,7 @@ void main() {
         register('2026-08-09', 0.64, deficit: 2),
       ],
     );
-    when(
-      () => repository.getLatestReport(agentId, 'current'),
-    ).thenAnswer(
+    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
       (_) async =>
           AgentDomainEntity.agentReport(
                 id: 'r1',
@@ -1412,9 +1399,7 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(
-      () => repository.getLatestReport(agentId, 'current'),
-    ).thenAnswer(
+    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
       (_) async =>
           AgentDomainEntity.agentReport(
                 id: 'r-old',
@@ -1897,10 +1882,7 @@ void main() {
     ).thenAnswer((_) async => null);
     container.invalidate(activeGoalNudgesProvider);
     final headless = await container.read(activeGoalNudgesProvider.future);
-    expect(
-      {for (final e in headless) e.nudge.id},
-      {'ad-legacy'},
-    );
+    expect({for (final e in headless) e.nudge.id}, {'ad-legacy'});
   });
 
   test('goalNudgeHistoryProvider lists only terminal outcomes, newest '
@@ -1935,10 +1917,7 @@ void main() {
     final history = await container.read(
       goalNudgeHistoryProvider('goal-h').future,
     );
-    expect(
-      [for (final n in history) n.id],
-      ['ad-retired', 'ad-dismissed'],
-    );
+    expect([for (final n in history) n.id], ['ad-retired', 'ad-dismissed']);
   });
 
   test('goalNudgeHistoryProvider orders expired/superseded rows by their '
@@ -2200,13 +2179,9 @@ void main() {
     ).thenAnswer((_) => completions.stream);
 
     final seen = <WakeRunCompletion>[];
-    container.listen(
-      goalReportWakeOutcomeProvider('goal-1'),
-      (_, next) {
-        if (next.value case final value?) seen.add(value);
-      },
-      fireImmediately: true,
-    );
+    container.listen(goalReportWakeOutcomeProvider('goal-1'), (_, next) {
+      if (next.value case final value?) seen.add(value);
+    }, fireImmediately: true);
     await pumpEventQueue();
 
     final refreshFailure = WakeRunCompletion(
@@ -2304,10 +2279,12 @@ void main() {
     );
     completions.add(escalationSuccess);
     await pumpEventQueue();
-    expect(
-      seen,
-      [refreshFailure, timedOut, deferredFailure, escalationSuccess],
-    );
+    expect(seen, [
+      refreshFailure,
+      timedOut,
+      deferredFailure,
+      escalationSuccess,
+    ]);
   });
 
   test('goalReportWakeInFlightProvider is true only while a report wake '

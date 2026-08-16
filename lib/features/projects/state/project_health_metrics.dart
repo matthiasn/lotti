@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
+import 'package:lotti/features/agents/model/report_health_band.dart';
 
 /// User-facing health bands for project overviews.
 enum ProjectHealthBand {
@@ -54,32 +55,14 @@ ProjectHealthMetrics? projectHealthMetricsFromProvenance(
   );
 }
 
-/// Parses project health bands from canonical and slightly varied wire values.
-ProjectHealthBand? parseProjectHealthBand(String raw) {
-  final normalized = raw.trim().toLowerCase().replaceAll(RegExp('[^a-z]'), '');
-  return switch (normalized) {
-    'surviving' => ProjectHealthBand.surviving,
-    'ontrack' => ProjectHealthBand.onTrack,
-    'watch' => ProjectHealthBand.watch,
-    'atrisk' => ProjectHealthBand.atRisk,
-    'blocked' => ProjectHealthBand.blocked,
-    _ => null,
-  };
-}
+/// Parses project health bands from canonical and slightly varied wire
+/// values (the shared `report_health_band.dart` rules).
+ProjectHealthBand? parseProjectHealthBand(String raw) => parseReportHealthBand(
+  raw,
+  {for (final band in ProjectHealthBand.values) band.name: band},
+);
 
-/// Parses a confidence value (0–1) from a number or string.
-///
-/// Returns `null` for `null`, non-finite values (e.g. NaN, infinity),
-/// or values outside the 0–1 range.
-double? parseHealthConfidence(Object? value) {
-  if (value == null) return null;
-  final parsed = switch (value) {
-    final num number => number.toDouble(),
-    final String text => double.tryParse(text.trim()),
-    _ => null,
-  };
-  if (parsed == null || !parsed.isFinite || parsed < 0 || parsed > 1) {
-    return null;
-  }
-  return parsed;
-}
+/// Parses a confidence value (0–1) from a number or string — the shared
+/// fails-closed rules of `report_health_band.dart`.
+double? parseHealthConfidence(Object? value) =>
+    parseReportHealthConfidence(value);
