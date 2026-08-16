@@ -569,12 +569,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                 section
               else
                 // The reading measure belongs to the CONTENT, not the scroll
-                // view. Constraining the scroll view itself parked the
-                // desktop scrollbar at the measure's right edge — floating
-                // mid-pane — instead of at the pane's own edge beside the
-                // chat divider.
+                // view (constraining the scroll view parks the scrollbar at
+                // the measure's edge, floating mid-pane). CENTERED in the
+                // available width: left-aligned, a wide window carried a
+                // dead right half whenever the chat drawer was closed.
                 Align(
-                  alignment: AlignmentDirectional.topStart,
+                  alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: contentMaxWidth),
                     child: section,
@@ -694,9 +694,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                   // off-screen.
                   child: Stack(
                     children: [
-                      detailList(
-                        showChatAction: false,
-                        contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                      // The drawer overlays without reflowing the cards, but
+                      // the COLUMN glides: closed, it centers in the window
+                      // (a fixed left-aligned measure left the right half of
+                      // wide windows dead); open, it centers in what the
+                      // drawer leaves free.
+                      AnimatedPadding(
+                        duration: MotionDurations.medium2,
+                        curve: MotionCurves.emphasizedDecelerate,
+                        padding: EdgeInsetsDirectional.only(
+                          end: _chatOpen ? kGoalChatDrawerWidth : 0,
+                        ),
+                        child: detailList(
+                          showChatAction: false,
+                          contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                        ),
                       ),
                       PositionedDirectional(
                         top: 0,

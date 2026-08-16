@@ -1735,11 +1735,26 @@ void main() {
       tester.getSize(find.byType(GoalProgressCard)).width,
       lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
     );
+    // Closed drawer: the column centers in the WHOLE window — a fixed
+    // left-aligned measure left the right half of wide windows dead.
+    expect(
+      tester.getCenter(find.byType(GoalProgressCard)).dx,
+      moreOrLessEquals(desktopSize.width / 2, epsilon: 1),
+    );
 
     // The drawer opens from the named app-bar doorway and closes from its
     // own × — non-modal, the dashboard stays interactive throughout.
     await tester.tap(find.text('Talk to Move more'));
     await tester.pumpAndSettle();
+    // Open drawer: the column glides to the center of what the drawer
+    // leaves free instead of hiding under it.
+    expect(
+      tester.getCenter(find.byType(GoalProgressCard)).dx,
+      moreOrLessEquals(
+        (desktopSize.width - kGoalChatDrawerWidth) / 2,
+        epsilon: 1,
+      ),
+    );
     expect(
       tester
           .widget<IgnorePointer>(
