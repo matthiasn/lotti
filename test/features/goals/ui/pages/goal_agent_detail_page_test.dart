@@ -2898,8 +2898,7 @@ void main() {
                         scope: AgentReportScopes.current,
                         createdAt: now.subtract(const Duration(hours: 3)),
                         vectorClock: null,
-                        oneLiner: null,
-                        tldr: null,
+                        // No oneLiner/tldr: the legacy report shape.
                         content: 'Two walks landed this week.',
                         provenance: const {
                           'specVersionId': 'goal-1:spec-v1',
