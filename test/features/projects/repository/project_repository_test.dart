@@ -934,6 +934,33 @@ void main() {
       verifyNever(() => mockDb.upsertEntryLink(any()));
     });
 
+    test('treats null and false privacy as the same public value', () async {
+      final explicitlyPublicTask = Task(
+        meta: taskMeta.copyWith(private: false),
+        data: taskEntry.data,
+      );
+      when(
+        () => mockDb.journalEntityById('task-explicitly-public'),
+      ).thenAnswer((_) async => explicitlyPublicTask);
+      when(
+        () => mockDb.getProjectLinkForTask('task-explicitly-public'),
+      ).thenAnswer((_) async => null);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-explicitly-public',
+      );
+
+      expect(result, isTrue);
+      final link =
+          verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+              as EntryLink;
+      expect(link.toId, 'task-explicitly-public');
+    });
+
     test('rejects non-Task entity', () async {
       // A note entity should not be linkable as a "task"
       final noteEntry = JournalEntity.journalEntry(

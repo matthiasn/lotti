@@ -74,7 +74,9 @@ result is identical to the old join without its
 disagree on category or privacy. The fresh privacy check closes the async gap
 between resolving a project for task creation and persisting its link: if sync
 changes project privacy in between, the link is rejected and the creation path
-soft-deletes the new task. A category can still move after linking, and that
+soft-deletes the new task. Nullable privacy is normalized with `?? false`, so
+legacy `null` and explicit `false` are both public and remain link-compatible.
+A category can still move after linking, and that
 write is nowhere near the link, so the category rule has to be re-checked there
 too.
 
@@ -209,6 +211,9 @@ explicit return path back to the selected project. Add task creates a
 project-linked task with the project's privacy, serializes concurrent taps and
 project saves,
 awaits the category's default task-agent assignment, then opens the task. If
+that optional assignment fails after creation, the page reports the error but
+still opens the already-linked task, preventing a retry from creating another
+blank task. If
 the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced

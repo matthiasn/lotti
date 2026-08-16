@@ -358,7 +358,9 @@ class ProjectRepository {
     final task = results[1];
     if (project == null || task is! Task) return false;
     if (project.meta.categoryId != task.meta.categoryId) return false;
-    if (project.meta.private != task.meta.private) return false;
+    if ((project.meta.private ?? false) != (task.meta.private ?? false)) {
+      return false;
+    }
 
     // Remove existing project link if the task is already in another project
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);

@@ -455,7 +455,6 @@ class ProjectDetailsPage extends ConsumerWidget {
         tone: DesignSystemToastTone.error,
         title: context.messages.commonError,
       );
-      return;
     }
     if (!context.mounted) return;
     beamToNamed('/tasks/${task.meta.id}');

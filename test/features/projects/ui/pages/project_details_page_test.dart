@@ -1615,7 +1615,7 @@ void main() {
         },
       );
 
-      testWidgets('agent assignment failure keeps the created task closed', (
+      testWidgets('agent assignment failure still opens the created task', (
         tester,
       ) async {
         final task = makeTestTask(id: 'created-task', title: 'Created task');
@@ -1648,7 +1648,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(capturedPaths, isEmpty);
+        expect(capturedPaths, ['/tasks/created-task']);
         expect(find.text('Error'), findsOneWidget);
       });
 
