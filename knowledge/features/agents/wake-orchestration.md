@@ -223,8 +223,12 @@ Each acquisition carries an ownership lease. Stale-drain recovery releases the
 superseded generation's leases before starting its replacement; late cleanup or
 timeout callbacks from the old generation cannot release or abort the newer
 run that now owns the same agent lock. A dequeued job also rechecks its drain
-generation after every pre-dispatch await. If superseded, it releases any lease
-it acquired, returns the job to the queue, and wakes the active scheduler.
+generation after every pre-dispatch await. Before run-log insertion, a
+superseded drain returns the job to the queue and wakes the active scheduler;
+after insertion, it returns a persisted continuation that resumes the same run
+key without inserting a duplicate row. Drain-owned jobs remain visible to
+manual supersession and cancellation while outside the queue, so an obsolete
+older request is discarded rather than resurrected by a late continuation.
 
 Only the scheduler mutates `WakeQueue`, suppression state, throttle state and
 run-key history. Concurrent work begins only after a job has acquired its
@@ -259,7 +263,9 @@ waiting for another enqueue. Recovery releases the superseded generation's
 runner leases before replacement dispatch, so a terminal status write cannot
 consume the only global slot indefinitely. The threshold deliberately exceeds
 the wake cap, leaving room for the bounded pre-wake hook and terminal status
-persistence.
+persistence. Progress is refreshed again immediately before the executor timer
+is armed, so pre-execution persistence and policy latency never shorten the
+executor's own ten-minute window.
 
 # Completion signalling
 

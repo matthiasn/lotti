@@ -102,12 +102,66 @@ extension WakeDrainEngine on WakeOrchestrator {
     leases.forEach(runner.releaseLease);
   }
 
+  void _trackDrainOwnedJob(WakeJob job) {
+    _drainOwnedJobs[job.runKey] = job;
+  }
+
+  void _forgetDrainOwnedJob(WakeJob job) {
+    _drainOwnedJobs.remove(job.runKey);
+    _cancelledDrainOwnedRunReasons.remove(job.runKey);
+  }
+
+  String? _takeDrainOwnedCancellation(WakeJob job) {
+    final reason = _cancelledDrainOwnedRunReasons.remove(job.runKey);
+    if (reason != null) _drainOwnedJobs.remove(job.runKey);
+    return reason;
+  }
+
+  bool _discardCancelledDrainOwnedJob(
+    int generation,
+    WakeJob job, {
+    WakeRunnerLease? lease,
+  }) {
+    if (_takeDrainOwnedCancellation(job) == null) return false;
+    if (lease != null) _releaseDrainLease(generation, lease);
+    return true;
+  }
+
+  Future<void> _dropDrainOwnedJob(
+    WakeJob job, {
+    required String reason,
+    required bool emitUnpersistedCompletion,
+  }) async {
+    _forgetDrainOwnedJob(job);
+    if (_persistedWakeRunKeys.remove(job.runKey)) {
+      await _abortPersistedWake(
+        job,
+        reason: reason,
+        emitCompletion: true,
+      );
+    } else if (emitUnpersistedCompletion) {
+      _emitRunCompletion(
+        job,
+        WakeRunStatus.aborted,
+        error: StateError(reason),
+      );
+    }
+  }
+
   void _handOffSupersededJob(
     int generation,
     WakeJob job, {
     WakeRunnerLease? lease,
   }) {
+    if (_discardCancelledDrainOwnedJob(
+      generation,
+      job,
+      lease: lease,
+    )) {
+      return;
+    }
     if (lease != null) _releaseDrainLease(generation, lease);
+    _forgetDrainOwnedJob(job);
     queue.requeue(job);
     unawaited(processNext());
   }
@@ -161,20 +215,30 @@ extension WakeDrainEngine on WakeOrchestrator {
             },
           );
           if (job == null) break;
+          _trackDrainOwnedJob(job);
           inspectedJobs++;
 
           final wakeAllowed = await _wakeAllowedByCurrentPolicy(job);
+          if (_discardCancelledDrainOwnedJob(generation, job)) {
+            if (_drainGeneration != generation) return;
+            continue;
+          }
           if (_drainGeneration != generation) {
             _handOffSupersededJob(generation, job);
             return;
           }
           if (!wakeAllowed) {
+            const reason = 'wake dropped by current automation policy';
+            await _dropDrainOwnedJob(
+              job,
+              reason: reason,
+              emitUnpersistedCompletion: true,
+            );
             _log(
               'drain policy dropped automatic/disabled wake for '
               '${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
-            _emitRunCompletion(job, WakeRunStatus.aborted);
             continue;
           }
 
@@ -182,6 +246,14 @@ extension WakeDrainEngine on WakeOrchestrator {
             job.agentId,
             workspaceKey: job.workspaceKey,
           );
+          if (_discardCancelledDrainOwnedJob(
+            generation,
+            job,
+            lease: lease,
+          )) {
+            if (_drainGeneration != generation) return;
+            continue;
+          }
           if (_drainGeneration != generation) {
             _handOffSupersededJob(generation, job, lease: lease);
             return;
@@ -190,6 +262,7 @@ extension WakeDrainEngine on WakeOrchestrator {
             // Keep same-agent work queued while its active wake executes. The
             // active wake uses queue visibility to decide whether to arm its
             // existing follow-up throttle deadline.
+            _forgetDrainOwnedJob(job);
             deferred.add(job);
             continue;
           }
@@ -212,6 +285,11 @@ extension WakeDrainEngine on WakeOrchestrator {
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
                 subDomain: 'drain',
               );
+              await _dropDrainOwnedJob(
+                job,
+                reason: 'wake dropped by suppression re-check',
+                emitUnpersistedCompletion: false,
+              );
               _releaseDrainLease(generation, lease);
               continue;
             }
@@ -225,6 +303,7 @@ extension WakeDrainEngine on WakeOrchestrator {
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
                 subDomain: 'drain',
               );
+              _forgetDrainOwnedJob(job);
               _releaseDrainLease(generation, lease);
               deferred.add(job);
               continue;
@@ -235,11 +314,24 @@ extension WakeDrainEngine on WakeOrchestrator {
           // for the task to have meaningful content before their first run.
           final shouldSkipForAwaitingContent =
               await _shouldSkipForAwaitingContent(job);
+          if (_discardCancelledDrainOwnedJob(
+            generation,
+            job,
+            lease: lease,
+          )) {
+            if (_drainGeneration != generation) return;
+            continue;
+          }
           if (_drainGeneration != generation) {
             _handOffSupersededJob(generation, job, lease: lease);
             return;
           }
           if (shouldSkipForAwaitingContent) {
+            await _dropDrainOwnedJob(
+              job,
+              reason: 'wake skipped while awaiting content',
+              emitUnpersistedCompletion: false,
+            );
             _releaseDrainLease(generation, lease);
             continue;
           }
@@ -256,6 +348,7 @@ extension WakeDrainEngine on WakeOrchestrator {
                   // but keep the scheduler resilient if an unexpected failure
                   // escapes that boundary (for example, a logging implementation
                   // throwing before `_executeJob` enters its outer try/finally).
+                  _forgetDrainOwnedJob(job);
                   _releaseDrainLease(generation, lease);
                   logError(
                     'unexpected wake execution failure for '
@@ -364,15 +457,24 @@ extension WakeDrainEngine on WakeOrchestrator {
     );
   }
 
-  /// Finalize a persisted wake that resumed after its drain was superseded.
-  Future<void> _finishSupersededWake(WakeJob job) async {
+  Future<void> _abortPersistedWake(
+    WakeJob job, {
+    required String reason,
+    required bool emitCompletion,
+  }) async {
     await _safeUpdateStatus(
       job.runKey,
       WakeRunStatus.aborted.name,
       completedAt: clock.now(),
-      errorMessage: 'superseded drain',
+      errorMessage: reason,
     );
-    _emitRunCompletion(job, WakeRunStatus.aborted);
+    if (emitCompletion) {
+      _emitRunCompletion(
+        job,
+        WakeRunStatus.aborted,
+        error: StateError(reason),
+      );
+    }
   }
 
   /// Execute a single wake job: persist → run executor → update status.
@@ -395,37 +497,52 @@ extension WakeDrainEngine on WakeOrchestrator {
     );
 
     try {
-      final entry = WakeRunLogData(
-        runKey: job.runKey,
-        agentId: job.agentId,
-        reason: job.reason,
-        reasonId: job.reasonId,
-        threadId: threadId,
-        status: WakeRunStatus.running.name,
-        createdAt: job.createdAt,
-        startedAt: clock.now(),
-      );
-
-      // Fix C: Log insertWakeRun failures at ERROR level.
-      try {
-        await repository.insertWakeRun(entry: entry);
-      } catch (e, s) {
-        logError(
-          'insertWakeRun failed for ${DomainLogger.sanitizeId(job.runKey)}',
-          error: e,
-          stackTrace: s,
+      final runAlreadyPersisted = _persistedWakeRunKeys.remove(job.runKey);
+      if (!runAlreadyPersisted) {
+        final entry = WakeRunLogData(
+          runKey: job.runKey,
+          agentId: job.agentId,
+          reason: job.reason,
+          reasonId: job.reasonId,
+          threadId: threadId,
+          status: WakeRunStatus.running.name,
+          createdAt: job.createdAt,
+          startedAt: clock.now(),
         );
-        _emitRunCompletion(job, WakeRunStatus.failed, error: e);
-        return;
+
+        // Fix C: Log insertWakeRun failures at ERROR level.
+        try {
+          await repository.insertWakeRun(entry: entry);
+        } catch (error, stackTrace) {
+          _forgetDrainOwnedJob(job);
+          logError(
+            'insertWakeRun failed for ${DomainLogger.sanitizeId(job.runKey)}',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          _emitRunCompletion(job, WakeRunStatus.failed, error: error);
+          return;
+        }
       }
 
+      final postInsertCancellation = _takeDrainOwnedCancellation(job);
+      if (postInsertCancellation != null) {
+        await _abortPersistedWake(
+          job,
+          reason: postInsertCancellation,
+          emitCompletion: false,
+        );
+        return;
+      }
       if (_drainGeneration != generation) {
-        await _finishSupersededWake(job);
+        _persistedWakeRunKeys.add(job.runKey);
+        _handOffSupersededJob(generation, job, lease: lease);
         return;
       }
 
       final executor = wakeExecutor;
       if (executor == null) {
+        _forgetDrainOwnedJob(job);
         logError('no wakeExecutor set — marking run as failed');
         await _safeUpdateStatus(
           job.runKey,
@@ -461,21 +578,27 @@ extension WakeDrainEngine on WakeOrchestrator {
         }
       }
 
-      if (_drainGeneration != generation) {
-        await _finishSupersededWake(job);
-        return;
-      }
-
       // Policy may change while this job awaits runner acquisition, content
       // gating, run persistence, or the pre-wake hook. Re-read immediately
       // before executor setup so disabling automation cannot launch paid work
       // from a job that has already left the queue.
       final wakeAllowed = await _wakeAllowedByCurrentPolicy(job);
+      final finalPolicyCancellation = _takeDrainOwnedCancellation(job);
+      if (finalPolicyCancellation != null) {
+        await _abortPersistedWake(
+          job,
+          reason: finalPolicyCancellation,
+          emitCompletion: false,
+        );
+        return;
+      }
       if (_drainGeneration != generation) {
-        await _finishSupersededWake(job);
+        _persistedWakeRunKeys.add(job.runKey);
+        _handOffSupersededJob(generation, job, lease: lease);
         return;
       }
       if (!wakeAllowed) {
+        _forgetDrainOwnedJob(job);
         _log(
           'pre-execution policy dropped automatic/disabled wake for '
           '${DomainLogger.sanitizeId(job.agentId)}',
@@ -489,7 +612,11 @@ extension WakeDrainEngine on WakeOrchestrator {
         return;
       }
 
+      _forgetDrainOwnedJob(job);
       final startTime = clock.now();
+      if (_drainGeneration == generation) {
+        _drainLastProgressAt = startTime;
+      }
       Timer? timeoutTimer;
       try {
         // Pre-register suppression for the trigger tokens BEFORE executing.
@@ -688,31 +815,6 @@ extension WakeDrainEngine on WakeOrchestrator {
       }
     } finally {
       _releaseDrainLease(generation, lease);
-    }
-  }
-
-  /// Update wake run status, swallowing any DB errors so they don't escape
-  /// `_executeJob` / `_drain` / `processNext`.
-  Future<void> _safeUpdateStatus(
-    String runKey,
-    String status, {
-    DateTime? completedAt,
-    String? errorMessage,
-  }) async {
-    try {
-      await repository.updateWakeRunStatus(
-        runKey,
-        status,
-        completedAt: completedAt,
-        errorMessage: errorMessage,
-      );
-    } catch (e, s) {
-      logError(
-        'failed to update wake run status '
-        'for ${DomainLogger.sanitizeId(runKey)} to $status',
-        error: e,
-        stackTrace: s,
-      );
     }
   }
 

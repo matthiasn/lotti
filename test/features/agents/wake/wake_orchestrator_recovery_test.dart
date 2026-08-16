@@ -1,5 +1,28 @@
 import 'wake_orchestrator_test_harness.dart';
 
+class _AcquisitionGatedWakeRunner extends WakeRunner {
+  _AcquisitionGatedWakeRunner({
+    required this.gatedAgentId,
+    required this.gate,
+  });
+
+  final String gatedAgentId;
+  final Completer<void> gate;
+
+  @override
+  Future<WakeRunnerLease?> tryAcquireLease(
+    String agentId, {
+    String? workspaceKey,
+  }) async {
+    final lease = await super.tryAcquireLease(
+      agentId,
+      workspaceKey: workspaceKey,
+    );
+    if (agentId == gatedAgentId) await gate.future;
+    return lease;
+  }
+}
+
 void main() {
   configureWakeOrchestratorTestSuite();
 
@@ -110,6 +133,61 @@ void main() {
             executedAgentIds,
             equals(['first-agent', 'second-agent', 'next-agent']),
           );
+        });
+      });
+
+      test('starts the stale clock from the executor window', () {
+        fakeAsync((async) {
+          final finalPolicyGate = Completer<AgentDomainEntity?>();
+          final slowExecutionGate = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          var slowPolicyReads = 0;
+          when(() => mockRepository.getEntity(any())).thenAnswer((call) {
+            final agentId = call.positionalArguments.first as String;
+            if (agentId == 'slow-agent' && ++slowPolicyReads == 2) {
+              return finalPolicyGate.future;
+            }
+            return Future.value();
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              if (agentId == 'slow-agent') return slowExecutionGate.future;
+              return Future.value();
+            },
+          );
+
+          orchestrator.enqueueManualWake(
+            agentId: 'slow-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, isEmpty);
+
+          // Pre-execution work consumes three minutes before the executor's
+          // separate ten-minute cap begins.
+          async.elapse(const Duration(minutes: 3));
+          finalPolicyGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['slow-agent']));
+
+          // The drain is 12.5 minutes old, but executor work has only used
+          // 9.5 minutes of its valid ten-minute window.
+          async.elapse(const Duration(minutes: 9, seconds: 30));
+          orchestrator.enqueueManualWake(
+            agentId: 'next-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['slow-agent']));
+
+          slowExecutionGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['slow-agent', 'next-agent']));
         });
       });
 
@@ -245,6 +323,331 @@ void main() {
           async.flushMicrotasks();
         });
       });
+
+      test('does not resurrect a drain-owned superseded manual wake', () {
+        fakeAsync((async) {
+          final policyLookupGate = Completer<AgentDomainEntity?>();
+          final executedRunKeys = <String>[];
+          final completions = <WakeRunCompletion>[];
+          when(() => mockRepository.getEntity('manual-agent')).thenAnswer(
+            (_) => policyLookupGate.future,
+          );
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedRunKeys.add(runKey);
+              return Future.value();
+            },
+          );
+          final completionSub = orchestrator.runCompletions.listen(
+            completions.add,
+          );
+
+          final oldRunKey = orchestrator.enqueueManualWake(
+            agentId: 'manual-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedRunKeys, isEmpty);
+
+          async.elapse(const Duration(minutes: 1));
+          final newRunKey = orchestrator.enqueueManualWake(
+            agentId: 'manual-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(
+            completions,
+            contains(
+              isA<WakeRunCompletion>()
+                  .having((item) => item.runKey, 'runKey', oldRunKey)
+                  .having(
+                    (item) => item.status,
+                    'status',
+                    WakeRunStatus.aborted,
+                  ),
+            ),
+          );
+
+          policyLookupGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedRunKeys, equals([newRunKey]));
+          expect(executedRunKeys, isNot(contains(oldRunKey)));
+
+          completionSub.cancel();
+          async.flushMicrotasks();
+        });
+      });
+
+      test('releases and requeues work superseded during acquisition', () {
+        fakeAsync((async) {
+          final acquisitionGate = Completer<void>();
+          final contentGate = Completer<bool>();
+          final replacementGate = Completer<Map<String, VectorClock>?>();
+          final originalGate = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          final contentState = makeTestState(
+            id: 'state-acquisition-agent',
+            agentId: 'acquisition-agent',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-acquisition'),
+          );
+          when(() => mockRepository.getAgentState(any())).thenAnswer((call) {
+            final agentId = call.positionalArguments.first as String;
+            return Future.value(
+              agentId == 'acquisition-agent' ? contentState : null,
+            );
+          });
+          runner = _AcquisitionGatedWakeRunner(
+            gatedAgentId: 'acquisition-agent',
+            gate: acquisitionGate,
+          );
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            taskContentChecker: (taskId) => contentGate.future,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              if (agentId == 'acquisition-agent') return originalGate.future;
+              return replacementGate.future;
+            },
+          )..setAwaitingContent('acquisition-agent', awaiting: true);
+
+          orchestrator.enqueueManualWake(
+            agentId: 'acquisition-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(runner.isRunning('acquisition-agent'), isTrue);
+          expect(executedAgentIds, isEmpty);
+
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, isEmpty);
+
+          acquisitionGate.complete();
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+          expect(runner.activeAgentIds, equals({'replacement-agent'}));
+
+          replacementGate.complete(null);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          contentGate.complete(true);
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['replacement-agent', 'acquisition-agent']),
+          );
+
+          originalGate.complete(null);
+          async.flushMicrotasks();
+        });
+      });
+
+      test('releases and requeues work superseded during content gating', () {
+        fakeAsync((async) {
+          final contentGate = Completer<bool>();
+          final replacementGate = Completer<Map<String, VectorClock>?>();
+          final originalGate = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          final contentState = makeTestState(
+            id: 'state-content-agent',
+            agentId: 'content-agent',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-content'),
+          );
+          when(() => mockRepository.getAgentState(any())).thenAnswer((call) {
+            final agentId = call.positionalArguments.first as String;
+            return Future.value(
+              agentId == 'content-agent' ? contentState : null,
+            );
+          });
+
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            taskContentChecker: (taskId) => contentGate.future,
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              if (agentId == 'content-agent') return originalGate.future;
+              return replacementGate.future;
+            },
+          )..setAwaitingContent('content-agent', awaiting: true);
+
+          orchestrator.enqueueManualWake(
+            agentId: 'content-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(runner.isRunning('content-agent'), isTrue);
+          expect(executedAgentIds, isEmpty);
+
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          contentGate.complete(true);
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+
+          replacementGate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['replacement-agent', 'content-agent']),
+          );
+
+          originalGate.complete(null);
+          async.flushMicrotasks();
+        });
+      });
+
+      test('resumes a persisted wake superseded during run insertion', () {
+        fakeAsync((async) {
+          final insertGate = Completer<void>();
+          final replacementGate = Completer<Map<String, VectorClock>?>();
+          final executedAgentIds = <String>[];
+          final wakeStartAgentIds = <String>[];
+          var insertAgentInsertCount = 0;
+          when(
+            () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+          ).thenAnswer((call) async {
+            final entry = call.namedArguments[#entry] as WakeRunLogData;
+            if (entry.agentId == 'insert-agent') {
+              insertAgentInsertCount++;
+              await insertGate.future;
+            }
+          });
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            maxConcurrentWakes: () => 1,
+            onWakeStart: (agentId, runKey, threadId) async {
+              wakeStartAgentIds.add(agentId);
+            },
+            wakeExecutor: (agentId, runKey, triggers, threadId) {
+              executedAgentIds.add(agentId);
+              return replacementGate.future;
+            },
+          );
+
+          orchestrator.enqueueManualWake(
+            agentId: 'insert-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, isEmpty);
+
+          async.elapse(const Duration(minutes: 13));
+          orchestrator.enqueueManualWake(
+            agentId: 'replacement-agent',
+            reason: 'manual',
+          );
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+          expect(wakeStartAgentIds, equals(['replacement-agent']));
+
+          insertGate.complete();
+          async.flushMicrotasks();
+          expect(executedAgentIds, equals(['replacement-agent']));
+          expect(wakeStartAgentIds, equals(['replacement-agent']));
+
+          replacementGate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executedAgentIds,
+            equals(['replacement-agent', 'insert-agent']),
+          );
+          expect(
+            wakeStartAgentIds,
+            equals(['replacement-agent', 'insert-agent']),
+          );
+          expect(insertAgentInsertCount, 1);
+        });
+      });
+
+      test(
+        'resumes a persisted wake superseded during the final policy read',
+        () {
+          fakeAsync((async) {
+            final finalPolicyGate = Completer<AgentDomainEntity?>();
+            final replacementGate = Completer<Map<String, VectorClock>?>();
+            final executedAgentIds = <String>[];
+            var oldPolicyReads = 0;
+            var oldInsertCount = 0;
+            when(() => mockRepository.getEntity(any())).thenAnswer((call) {
+              final agentId = call.positionalArguments.first as String;
+              if (agentId == 'final-policy-agent' && ++oldPolicyReads == 2) {
+                return finalPolicyGate.future;
+              }
+              return Future.value();
+            });
+            when(
+              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+            ).thenAnswer((call) async {
+              final entry = call.namedArguments[#entry] as WakeRunLogData;
+              if (entry.agentId == 'final-policy-agent') oldInsertCount++;
+            });
+            orchestrator = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              maxConcurrentWakes: () => 1,
+              wakeExecutor: (agentId, runKey, triggers, threadId) {
+                executedAgentIds.add(agentId);
+                return replacementGate.future;
+              },
+            );
+
+            orchestrator.enqueueManualWake(
+              agentId: 'final-policy-agent',
+              reason: 'manual',
+            );
+            async.flushMicrotasks();
+            expect(oldPolicyReads, 2);
+            expect(executedAgentIds, isEmpty);
+
+            async.elapse(const Duration(minutes: 13));
+            orchestrator.enqueueManualWake(
+              agentId: 'replacement-agent',
+              reason: 'manual',
+            );
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['replacement-agent']));
+
+            finalPolicyGate.complete(null);
+            async.flushMicrotasks();
+            expect(executedAgentIds, equals(['replacement-agent']));
+
+            replacementGate.complete(null);
+            async.flushMicrotasks();
+            expect(
+              executedAgentIds,
+              equals(['replacement-agent', 'final-policy-agent']),
+            );
+            expect(oldPolicyReads, 4);
+            expect(oldInsertCount, 1);
+          });
+        },
+      );
     });
   });
 

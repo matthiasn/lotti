@@ -328,15 +328,66 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  List<WakeJob> _cancelDrainOwnedJobsWhere(
+    bool Function(WakeJob job) predicate, {
+    required String reason,
+  }) {
+    final cancelled = <WakeJob>[];
+    for (final job in _drainOwnedJobs.values) {
+      if (!predicate(job) ||
+          _cancelledDrainOwnedRunReasons.containsKey(job.runKey)) {
+        continue;
+      }
+      _cancelledDrainOwnedRunReasons[job.runKey] = reason;
+      cancelled.add(job);
+    }
+    return cancelled;
+  }
+
   void _emitRemovedRunCompletions(
     Iterable<WakeJob> jobs, {
     required String reason,
   }) {
     for (final job in jobs) {
+      if (_persistedWakeRunKeys.remove(job.runKey)) {
+        unawaited(
+          _safeUpdateStatus(
+            job.runKey,
+            WakeRunStatus.aborted.name,
+            completedAt: clock.now(),
+            errorMessage: reason,
+          ),
+        );
+      }
       _emitRunCompletion(
         job,
         WakeRunStatus.aborted,
         error: StateError(reason),
+      );
+    }
+  }
+
+  /// Update wake run status without letting persistence failures escape the
+  /// orchestrator's execution or cancellation paths.
+  Future<void> _safeUpdateStatus(
+    String runKey,
+    String status, {
+    DateTime? completedAt,
+    String? errorMessage,
+  }) async {
+    try {
+      await repository.updateWakeRunStatus(
+        runKey,
+        status,
+        completedAt: completedAt,
+        errorMessage: errorMessage,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to update wake run status '
+        'for ${DomainLogger.sanitizeId(runKey)} to $status',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
@@ -451,6 +502,18 @@ class WakeOrchestrator with AgentErrorLogging {
   /// run for the same agent.
   final _drainLeasesByGeneration = <int, Set<WakeRunnerLease>>{};
 
+  /// Jobs temporarily owned by the drain while they are outside [queue] but
+  /// have not started executor work yet.
+  final _drainOwnedJobs = <String, WakeJob>{};
+
+  /// Cancellation reason for drain-owned jobs removed by a newer request or
+  /// explicit cancellation while an asynchronous pre-dispatch step was active.
+  final _cancelledDrainOwnedRunReasons = <String, String>{};
+
+  /// Run keys whose `wake_run_log` row already exists when stale recovery
+  /// returns their job to the queue.
+  final _persistedWakeRunKeys = <String>{};
+
   /// Maximum interval without scheduler progress before a drain is considered
   /// stale and the guard is force-reset. This must remain longer than
   /// [wakeRunMaxDuration], with headroom for the bounded pre-wake hook and
@@ -540,8 +603,13 @@ class WakeOrchestrator with AgentErrorLogging {
       agentId,
       (job) => job.initiator == WakeInitiator.automation,
     );
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) =>
+          job.agentId == agentId && job.initiator == WakeInitiator.automation,
+      reason: reason,
+    );
     _emitRemovedRunCompletions(
-      removed,
+      [...removed, ...owned],
       reason: reason,
     );
   }
@@ -824,13 +892,18 @@ class WakeOrchestrator with AgentErrorLogging {
     // per submission) opt out so a second submission in the same workspace
     // cannot drop the first's still-queued parse before it drains.
     if (supersede) {
+      const supersededReason = 'wake superseded by a newer manual request';
       final removed = queue.removeByAgent(
         agentId,
         workspaceKey: workspaceKey,
       );
+      final owned = _cancelDrainOwnedJobsWhere(
+        (job) => job.agentId == agentId && job.workspaceKey == workspaceKey,
+        reason: supersededReason,
+      );
       _emitRemovedRunCompletions(
-        removed,
-        reason: 'wake superseded by a newer manual request',
+        [...removed, ...owned],
+        reason: supersededReason,
       );
     }
 
@@ -868,16 +941,23 @@ class WakeOrchestrator with AgentErrorLogging {
     String? workspaceKey,
     bool allWorkspaces = false,
   }) {
+    const cancellationReason = 'wake cancelled before execution';
     final removed = queue.removeByAgent(
       agentId,
       workspaceKey: workspaceKey,
       allWorkspaces: allWorkspaces,
     );
-    _emitRemovedRunCompletions(
-      removed,
-      reason: 'wake cancelled before execution',
+    final owned = _cancelDrainOwnedJobsWhere(
+      (job) =>
+          job.agentId == agentId &&
+          (allWorkspaces || job.workspaceKey == workspaceKey),
+      reason: cancellationReason,
     );
-    return removed;
+    _emitRemovedRunCompletions(
+      [...removed, ...owned],
+      reason: cancellationReason,
+    );
+    return [...removed, ...owned];
   }
 
   /// Wake [agentId] for externally produced content (e.g. a completed audio
