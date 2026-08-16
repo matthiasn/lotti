@@ -1,5 +1,5 @@
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:beamer/beamer.dart';
+import 'package:flutter/widgets.dart';
 
 /// Route helpers for the goal surfaces during the flagged unified-Goals
 /// rollout.
@@ -12,27 +12,40 @@ import 'package:lotti/services/nav_service.dart';
 /// strands the user on the wrong tab when they arrived from Goals, and is
 /// silently normalized to `/tasks` when only the Goals flag is enabled.
 
-/// The root path of the goal surface the user is currently on: `/goals` when
-/// the current route lives under the unified Goals tab, `/agents` otherwise
-/// (including when no [NavService] is registered — widget tests exercise the
-/// goal pages without one, and `/agents` is the pre-merge behavior).
-String goalSurfaceRootPath() {
-  if (!getIt.isRegistered<NavService>()) return '/agents';
-  final currentPath = getIt<NavService>().currentPath;
-  return currentPath == '/goals' || currentPath.startsWith('/goals/')
+/// The root path of the goal surface the page at [context] belongs to:
+/// `/goals` when the page is hosted inside the unified Goals tab's own
+/// Beamer, `/agents` otherwise.
+///
+/// Resolved from the ENCLOSING delegate's current route, not from
+/// `NavService.currentPath`: tab taps change only the active index, so the
+/// global path can still point at a different tab while a retained goal page
+/// acts — and both tabs can retain goal pages simultaneously. Without an
+/// enclosing Beamer (widget tests, previews) this falls back to `/agents`,
+/// the pre-merge behavior.
+String goalSurfaceRootPath(BuildContext context) {
+  String? path;
+  try {
+    path = Beamer.of(context).configuration.uri.path;
+  } catch (_) {
+    path = null;
+  }
+  return path == '/goals' || (path?.startsWith('/goals/') ?? false)
       ? '/goals'
       : '/agents';
 }
 
 /// The current surface's goal-creation wizard route.
-String goalCreatePath() => '${goalSurfaceRootPath()}/create';
+String goalCreatePath(BuildContext context) =>
+    '${goalSurfaceRootPath(context)}/create';
 
 /// The current surface's detail route for [agentId].
-String goalDetailPath(String agentId) =>
-    '${goalSurfaceRootPath()}/details/$agentId';
+String goalDetailPath(BuildContext context, String agentId) =>
+    '${goalSurfaceRootPath(context)}/details/$agentId';
 
 /// The current surface's chat route for [agentId].
-String goalChatPath(String agentId) => '${goalDetailPath(agentId)}/chat';
+String goalChatPath(BuildContext context, String agentId) =>
+    '${goalDetailPath(context, agentId)}/chat';
 
 /// The current surface's edit-wizard route for [agentId].
-String goalEditPath(String agentId) => '${goalDetailPath(agentId)}/edit';
+String goalEditPath(BuildContext context, String agentId) =>
+    '${goalDetailPath(context, agentId)}/edit';

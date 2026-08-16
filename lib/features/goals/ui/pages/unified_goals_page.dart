@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
@@ -74,25 +75,37 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     final identities = agents.value ?? const [];
     final failedFirstLoad = agents.value == null && agents.hasError;
 
-    // The due/later/done tabs select habit ROWS; `all` shows every ACTIVE
-    // habit. Deliberately the category-UNFILTERED buckets: this page exposes
-    // no category-filter control, so it must not silently inherit a selection
-    // made on the Habits tab. `all` still passes an explicit set (the active
-    // definitions) rather than null: a goal's criteria tree can reference a
-    // habit that was later deactivated, and such a row must not render an
-    // actionable quick-complete that would bypass the goal recording path's
-    // lifecycle checks.
+    // The due/later/done tabs select habit ROWS; `all` shows every habit
+    // that is recordable TODAY. Deliberately the category-UNFILTERED
+    // buckets: this page exposes no category-filter control, so it must not
+    // silently inherit a selection made on the Habits tab. Every branch
+    // additionally intersects with the goal recording path's own lifecycle
+    // gate (`GoalHabitCompletionService.isRecordableDay` — active flag AND
+    // the activeFrom/activeUntil window): a goal's criteria tree can
+    // reference a habit that was deactivated or has aged out of its window,
+    // and such a row must not render an actionable quick-complete that the
+    // service itself would reject.
+    final gatingNow = ref.watch(habitsNowProvider)();
+    final recordableIds = {
+      for (final habit in state.habitDefinitions)
+        if (GoalHabitCompletionService.isRecordableDay(
+          habit,
+          day: gatingNow,
+          now: gatingNow,
+        ))
+          habit.id,
+    };
     final visibleHabitIds = switch (state.displayFilter) {
-      HabitDisplayFilter.openNow => {for (final h in state.openNowAll) h.id},
+      HabitDisplayFilter.openNow => {
+        for (final h in state.openNowAll) h.id,
+      }.intersection(recordableIds),
       HabitDisplayFilter.pendingLater => {
         for (final h in state.pendingLaterAll) h.id,
-      },
+      }.intersection(recordableIds),
       HabitDisplayFilter.completed => {
         for (final h in state.completedAll) h.id,
-      },
-      HabitDisplayFilter.all => {
-        for (final h in state.habitDefinitions) h.id,
-      },
+      }.intersection(recordableIds),
+      HabitDisplayFilter.all => recordableIds,
     };
 
     // Goal-card rows count only real successes as done: goal criteria credit
@@ -100,7 +113,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     // contains skips (the Habits tab's broader "handled today"). A skipped
     // habit must keep its one-tap success button on a goal card, or the card
     // reads green while the goal's window reading still reports a deficit.
-    final todayYmd = ref.watch(habitsNowProvider)().ymd;
+    final todayYmd = gatingNow.ymd;
     final successToday = state.successfulByDay[todayYmd] ?? const <String>{};
 
     // Which habits any goal claims, from the resolved specs' criteria trees.

@@ -1001,7 +1001,10 @@ flowchart TD
   not `successfulToday`, which also counts skips) because goal criteria
   credit only real successes; the page reads the category-UNFILTERED
   buckets (`openNowAll` etc.) so it cannot inherit the Habits tab's
-  hidden category filter. Habits that no goal's criteria tree claims
+  hidden category filter, and every filter branch intersects with
+  `GoalHabitCompletionService.isRecordableDay` — the recording path's own
+  lifecycle gate (active flag plus the activeFrom/activeUntil window) — so
+  no row offers a quick-complete the service would reject. Habits that no goal's criteria tree claims
   (`goalCriterionHabitIds`) render in a "not in a goal" group — gated on
   every per-goal health having resolved, so cached habits never flash in
   as ungrouped. `GoalsLocation` hosts the detail/chat/wizard pages under

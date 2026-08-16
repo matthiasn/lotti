@@ -313,4 +313,72 @@ void main() {
       );
     });
   }
+
+  group('isRecordableDay', () {
+    final windowed = habit.copyWith(
+      activeFrom: DateTime(2026, 8),
+      activeUntil: DateTime(2026, 8, 20),
+    );
+    final now = DateTime(2026, 8, 15, 14);
+
+    test('accepts a day inside the active window, up to today', () {
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed,
+          day: DateTime(2026, 8, 15),
+          now: now,
+        ),
+        isTrue,
+      );
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed,
+          day: DateTime(2026, 8),
+          now: now,
+        ),
+        isTrue,
+      );
+    });
+
+    test('rejects future days, days outside the window, and inactive '
+        'definitions — the same gate the unified Goals page uses for row '
+        'actionability', () {
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed,
+          day: DateTime(2026, 8, 16),
+          now: now,
+        ),
+        isFalse,
+        reason: 'future day',
+      );
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed,
+          day: DateTime(2026, 7, 31),
+          now: now,
+        ),
+        isFalse,
+        reason: 'before activeFrom',
+      );
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed.copyWith(activeUntil: DateTime(2026, 8, 15)),
+          day: DateTime(2026, 8, 15),
+          now: now,
+        ),
+        isFalse,
+        reason: 'activeUntil is exclusive',
+      );
+      expect(
+        GoalHabitCompletionService.isRecordableDay(
+          windowed.copyWith(active: false),
+          day: DateTime(2026, 8, 15),
+          now: now,
+        ),
+        isFalse,
+        reason: 'inactive definition',
+      );
+    });
+  });
 }

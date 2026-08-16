@@ -798,6 +798,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     final goalAgentService = container.read(goalAgentServiceProvider);
+    // Captured before the awaits: the exits must stay on the surface whose
+    // Beamer hosts this wizard, and the context may be unmounted by the time
+    // the service round-trips.
+    final surfaceRoot = goalSurfaceRootPath(context);
     try {
       final agentId = widget.agentId;
       if (agentId == null) {
@@ -810,7 +814,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         container
           ..invalidate(activeGoalAgentsProvider)
           ..invalidate(activeGoalNudgesProvider);
-        if (mounted) beamToNamed(goalSurfaceRootPath());
+        if (mounted) beamToNamed(surfaceRoot);
         return;
       }
 
@@ -832,7 +836,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         :final reason,
       ) when reason == GoalSpecRevisionService.ownerStaleVersionReason) {
         _invalidateGoalViews(container, agentId);
-        if (mounted) beamToNamed(goalDetailPath(agentId));
+        if (mounted) beamToNamed('$surfaceRoot/details/$agentId');
         return;
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
@@ -840,7 +844,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         throw StateError(reason);
       }
       _invalidateGoalViews(container, agentId);
-      if (mounted) beamToNamed(goalDetailPath(agentId));
+      if (mounted) beamToNamed('$surfaceRoot/details/$agentId');
     } on Object {
       if (mounted) {
         setState(() {
@@ -901,7 +905,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     }
     final agentId = widget.agentId;
     beamToNamed(
-      agentId == null ? goalSurfaceRootPath() : goalDetailPath(agentId),
+      agentId == null
+          ? goalSurfaceRootPath(context)
+          : goalDetailPath(context, agentId),
     );
   }
 
@@ -993,6 +999,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       size: DesignSystemButtonSize.large,
       fullWidth: true,
     );
+    // Captured while the wizard's context is still hosted: the pop callback
+    // fires post-frame, after the route — and its Beamer lookup — is gone.
+    final surfaceRoot = goalSurfaceRootPath(context);
     return PopScope(
       canPop: _step == _visibleSteps.first,
       onPopInvokedWithResult: (didPop, _) {
@@ -1000,7 +1009,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final agentId = widget.agentId;
             beamToNamed(
-              agentId == null ? goalSurfaceRootPath() : goalDetailPath(agentId),
+              agentId == null ? surfaceRoot : '$surfaceRoot/details/$agentId',
             );
           });
         } else {

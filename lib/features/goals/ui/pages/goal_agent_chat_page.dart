@@ -27,7 +27,7 @@ class GoalAgentChatPage extends ConsumerWidget {
     final name = isActiveGoal
         ? identity.displayName
         : context.messages.agentsPageTitle;
-    final detailPath = goalDetailPath(agentId);
+    final detailPath = goalDetailPath(context, agentId);
     final page = Scaffold(
       appBar: AppBar(
         leading: BackButton(

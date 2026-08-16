@@ -437,6 +437,32 @@ void main() {
     );
   });
 
+  testWidgets('a habit whose activeUntil has passed renders no actionable '
+      'row even while its definition is still flagged active', (tester) async {
+    // The boolean `active` flag alone is not the lifecycle: the goal
+    // recording path also enforces the activeFrom/activeUntil window, and
+    // the rows must not offer what the service would reject.
+    final expired = habitFlossing.copyWith(
+      activeUntil: DateTime(2026, 8, 10),
+    );
+    when(
+      () => mockEntitiesCacheService.getHabitById(expired.id),
+    ).thenAnswer((_) => expired);
+    final state = baseState().copyWith(
+      habitDefinitions: [expired, habitFlossingDueLater],
+      openNowAll: [expired, habitFlossingDueLater],
+    );
+    await pump(tester, state);
+
+    expect(find.byType(UnifiedGoalCard), findsOneWidget);
+    expect(
+      find.byKey(Key('unified-goal-goal-1-c1-${expired.id}')),
+      findsNothing,
+    );
+    // The in-window habit keeps its row in the orphan group.
+    expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+  });
+
   testWidgets('the aggregate heatmap opts out of the category filter', (
     tester,
   ) async {
