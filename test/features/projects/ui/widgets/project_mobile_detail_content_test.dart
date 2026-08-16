@@ -88,6 +88,29 @@ void main() {
       expect(editRequests, 1);
     });
 
+    testWidgets('keeps project metadata close to the title with a menu', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: makeTestProjectRecord(),
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onEdit: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final titleTop = tester.getTopLeft(find.text('Test Project')).dy;
+      final statusTop = tester.getTopLeft(find.text('Open')).dy;
+      expect(
+        statusTop - titleTop,
+        lessThan(48),
+        reason: 'The menu hit target must not create an empty toolbar row.',
+      );
+    });
+
     testWidgets('disables mutating menu actions while an inline save runs', (
       tester,
     ) async {
@@ -632,17 +655,18 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('At Risk'), findsOneWidget);
-      expect(find.byIcon(Icons.unfold_more_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.unfold_more_rounded), findsNothing);
 
       final titleTop = tester.getTopLeft(find.text('Design system'));
       final statusTop = tester.getTopLeft(find.text('Active'));
       final categoryTop = tester.getTopLeft(find.text('Work'));
       final riskTop = tester.getTopLeft(find.text('At Risk'));
 
-      expect((statusTop.dy - titleTop.dy).abs(), lessThan(8));
+      expect(statusTop.dy, greaterThan(titleTop.dy));
+      expect((statusTop.dy - categoryTop.dy).abs(), lessThan(8));
       expect(riskTop.dy, greaterThan(titleTop.dy));
       expect(riskTop.dy, greaterThan(categoryTop.dy));
-      expect(statusTop.dx, greaterThan(categoryTop.dx));
+      expect(statusTop.dx, lessThan(categoryTop.dx));
     });
 
     testWidgets('uses the heading 3 title size from Figma', (tester) async {

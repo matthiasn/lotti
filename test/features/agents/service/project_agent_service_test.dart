@@ -926,6 +926,81 @@ void main() {
       });
     });
 
+    group('getProjectAgentsForProject', () {
+      test('returns every unique live linked project agent', () async {
+        final olderDate = kAgentTestDate.subtract(const Duration(days: 1));
+        final links = [
+          AgentLink.agentProject(
+            id: 'link-new',
+            fromId: 'agent-new',
+            toId: 'project-1',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-old',
+            fromId: 'agent-old',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-old-duplicate',
+            fromId: 'agent-old',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+          AgentLink.agentProject(
+            id: 'link-destroyed',
+            fromId: 'agent-destroyed',
+            toId: 'project-1',
+            createdAt: olderDate,
+            updatedAt: olderDate,
+            vectorClock: null,
+          ),
+        ];
+        final newer = makeIdentity(agentId: 'agent-new');
+        final older = makeIdentity(
+          agentId: 'agent-old',
+          lifecycle: AgentLifecycle.dormant,
+        );
+        final destroyed = makeIdentity(
+          agentId: 'agent-destroyed',
+          lifecycle: AgentLifecycle.destroyed,
+        );
+        when(
+          () => mockRepository.getLinksTo(
+            'project-1',
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async => links);
+        when(
+          () => mockRepository.getEntitiesByIds([
+            'agent-new',
+            'agent-old',
+            'agent-destroyed',
+          ]),
+        ).thenAnswer(
+          (_) async => {
+            newer.id: newer,
+            older.id: older,
+            destroyed.id: destroyed,
+          },
+        );
+
+        final result = await service.getProjectAgentsForProject('project-1');
+
+        expect(result.map((identity) => identity.agentId), [
+          'agent-new',
+          'agent-old',
+        ]);
+      });
+    });
+
     group('triggerReanalysis', () {
       test('enqueues a manual wake with reason reanalysis', () {
         when(

@@ -174,26 +174,44 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Wrap(
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step1,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Flexible(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        context.messages.projectShowcaseProjectTasksTab,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: ShowcasePalette.highText(context),
-                            ),
-                      ),
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      context.messages.projectShowcaseProjectTasksTab,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: ShowcasePalette.highText(context),
+                          ),
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step2),
                   CountDotBadge(
                     count: record.highlightedTaskSummaries.length,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.timer_outlined,
+                        size: tokens.typography.lineHeight.caption,
+                        color: ShowcasePalette.timeGreen(context),
+                      ),
+                      SizedBox(width: tokens.spacing.step1),
+                      Text(
+                        showcaseFormatDuration(
+                          record.highlightedTasksTotalDuration,
+                        ),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: ShowcasePalette.timeGreen(context),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -210,26 +228,6 @@ class _ProjectTasksPanelHeader extends StatelessWidget {
                 onPressed: isAddingTask || !isAddTaskEnabled ? null : onAddTask,
               ),
             ],
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.timer_outlined,
-              size: tokens.typography.lineHeight.subtitle2,
-              color: ShowcasePalette.timeGreen(context),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Text(
-              showcaseFormatDuration(
-                record.highlightedTasksTotalDuration,
-              ),
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: ShowcasePalette.timeGreen(context),
-              ),
-            ),
           ],
         ),
       ],

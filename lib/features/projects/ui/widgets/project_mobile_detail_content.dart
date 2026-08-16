@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -18,7 +17,6 @@ import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
-import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
@@ -153,32 +151,19 @@ class _ProjectMobileDetailContentState
 
     return ColoredBox(
       color: ShowcasePalette.page(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DetailContentWidth(
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: tokens.spacing.step4,
+      child: DetailContentWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (splitController == null)
+              Padding(
+                padding: EdgeInsets.only(top: tokens.spacing.step3),
+                child: DesignSystemBackControl(
+                  foregroundColor: ShowcasePalette.highText(context),
+                  onTap: widget.onBack,
+                ),
               ),
-              child: DesignSystemShowcaseMobileDetailHeader(
-                foregroundColor: ShowcasePalette.highText(context),
-                onBack: widget.onBack,
-                showBackControl: splitController == null,
-                trailing: menuItems.isEmpty
-                    ? const SizedBox.shrink()
-                    : DesignSystemContextMenuButton(
-                        items: menuItems,
-                        tooltip: MaterialLocalizations.of(
-                          context,
-                        ).showMenuTooltip,
-                        iconColor: ShowcasePalette.highText(context),
-                      ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: DetailContentWidth(
+            Expanded(
               child: DesignSystemScrollbar(
                 controller: _scrollController,
                 child: CustomScrollView(
@@ -186,7 +171,9 @@ class _ProjectMobileDetailContentState
                   slivers: [
                     SliverPadding(
                       padding: EdgeInsets.only(
-                        top: tokens.spacing.step3,
+                        top: splitController == null
+                            ? tokens.spacing.step2
+                            : tokens.spacing.step5,
                         bottom: tokens.spacing.step6,
                       ),
                       sliver: SliverMainAxisGroup(
@@ -198,10 +185,21 @@ class _ProjectMobileDetailContentState
                               onTargetDateTap: widget.onTargetDateTap,
                               onStatusTap: widget.onStatusTap,
                               isInteractive: !isMutating,
+                              trailing: menuItems.isEmpty
+                                  ? null
+                                  : DesignSystemContextMenuButton(
+                                      items: menuItems,
+                                      tooltip: MaterialLocalizations.of(
+                                        context,
+                                      ).showMenuTooltip,
+                                      iconColor: ShowcasePalette.highText(
+                                        context,
+                                      ),
+                                    ),
                             ),
                           ),
                           SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step5),
+                            child: SizedBox(height: tokens.spacing.step4),
                           ),
                           SliverToBoxAdapter(
                             child: widget.record.healthMetrics == null
@@ -224,7 +222,7 @@ class _ProjectMobileDetailContentState
                                   ),
                           ),
                           SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step6),
+                            child: SizedBox(height: tokens.spacing.step5),
                           ),
                           if (description.isNotEmpty) ...[
                             SliverToBoxAdapter(
@@ -265,7 +263,7 @@ class _ProjectMobileDetailContentState
                             ),
                           ),
                           SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step6),
+                            child: SizedBox(height: tokens.spacing.step5),
                           ),
                           ProjectTasksSliverPanel(
                             record: widget.record,
@@ -283,8 +281,8 @@ class _ProjectMobileDetailContentState
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -332,6 +330,7 @@ class _ProjectMobileHeader extends StatelessWidget {
     this.onTargetDateTap,
     this.onStatusTap,
     this.isInteractive = true,
+    this.trailing,
   });
 
   final ProjectRecord record;
@@ -339,6 +338,7 @@ class _ProjectMobileHeader extends StatelessWidget {
   final VoidCallback? onTargetDateTap;
   final VoidCallback? onStatusTap;
   final bool isInteractive;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -347,137 +347,78 @@ class _ProjectMobileHeader extends StatelessWidget {
     final titleStyle = tokens.typography.styles.heading.heading3.copyWith(
       color: ShowcasePalette.highText(context),
     );
-    final statusPill = ProjectStatusPill(
-      status: record.project.data.status,
-      large: true,
-      onTap: isInteractive ? onStatusTap : null,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final statusOnNextLine = _shouldWrapStatusPill(
-          context,
-          maxWidth: constraints.maxWidth,
-          title: record.project.data.title,
-          status: record.project.data.status,
-          titleStyle: titleStyle,
-          tokens: tokens,
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
           children: [
-            if (!statusOnNextLine)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        record.project.data.title,
-                        style: titleStyle,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step4),
-                  statusPill,
-                ],
-              )
-            else ...[
-              Semantics(
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                end: trailing == null
+                    ? 0
+                    : tokens.spacing.step9 + tokens.spacing.step2,
+              ),
+              child: Semantics(
                 header: true,
                 child: Text(
                   record.project.data.title,
                   style: titleStyle,
                 ),
               ),
-              SizedBox(height: tokens.spacing.step3),
-              Align(
-                alignment: Alignment.centerRight,
-                child: statusPill,
-              ),
-            ],
-            SizedBox(height: tokens.spacing.step3),
-            Wrap(
-              spacing: tokens.spacing.step3,
-              runSpacing: tokens.spacing.step3,
-              children: [
-                if (category != null)
-                  CategoryTag(
-                    label: category.name,
-                    icon: category.icon?.iconData ?? Icons.label_outline,
-                    color: colorFromCssHex(
-                      category.color ?? defaultCategoryColorHex,
-                    ),
-                    onTap: isInteractive ? onCategoryTap : null,
-                  )
-                else if (onCategoryTap != null)
-                  OutlinedMetaTag(
-                    icon: Icons.label_outline,
-                    label: context.messages.habitCategoryLabel,
-                    onTap: isInteractive ? onCategoryTap : null,
-                    isPlaceholder: true,
-                  ),
-                if (record.project.data.targetDate case final targetDate?)
-                  OutlinedMetaTag(
-                    icon: Icons.watch_later_outlined,
-                    label: DateFormat.yMMMd(
-                      Localizations.localeOf(context).toString(),
-                    ).format(targetDate),
-                    onTap: isInteractive ? onTargetDateTap : null,
-                  )
-                else if (onTargetDateTap != null)
-                  OutlinedMetaTag(
-                    icon: Icons.watch_later_outlined,
-                    label: context.messages.projectTargetDateLabel,
-                    onTap: isInteractive ? onTargetDateTap : null,
-                    isPlaceholder: true,
-                  ),
-              ],
             ),
+            if (trailing != null)
+              PositionedDirectional(
+                top: -tokens.spacing.step2,
+                end: 0,
+                child: trailing!,
+              ),
           ],
-        );
-      },
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        Wrap(
+          spacing: tokens.spacing.step2,
+          runSpacing: tokens.spacing.step2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ProjectStatusPill(
+              status: record.project.data.status,
+              onTap: isInteractive ? onStatusTap : null,
+            ),
+            if (category != null)
+              CategoryTag(
+                label: category.name,
+                icon: category.icon?.iconData ?? Icons.label_outline,
+                color: colorFromCssHex(
+                  category.color ?? defaultCategoryColorHex,
+                ),
+                onTap: isInteractive ? onCategoryTap : null,
+              )
+            else if (onCategoryTap != null)
+              OutlinedMetaTag(
+                icon: Icons.label_outline,
+                label: context.messages.habitCategoryLabel,
+                onTap: isInteractive ? onCategoryTap : null,
+                isPlaceholder: true,
+              ),
+            if (record.project.data.targetDate case final targetDate?)
+              OutlinedMetaTag(
+                icon: Icons.watch_later_outlined,
+                label: DateFormat.yMMMd(
+                  Localizations.localeOf(context).toString(),
+                ).format(targetDate),
+                onTap: isInteractive ? onTargetDateTap : null,
+              )
+            else if (onTargetDateTap != null)
+              OutlinedMetaTag(
+                icon: Icons.watch_later_outlined,
+                label: context.messages.projectTargetDateLabel,
+                onTap: isInteractive ? onTargetDateTap : null,
+                isPlaceholder: true,
+              ),
+          ],
+        ),
+      ],
     );
   }
-}
-
-bool _shouldWrapStatusPill(
-  BuildContext context, {
-  required double maxWidth,
-  required String title,
-  required ProjectStatus status,
-  required TextStyle titleStyle,
-  required DsTokens tokens,
-}) {
-  final textDirection = Directionality.of(context);
-  final textScaler = MediaQuery.textScalerOf(context);
-  final titlePainter = TextPainter(
-    text: TextSpan(text: title, style: titleStyle),
-    textDirection: textDirection,
-    maxLines: 1,
-    textScaler: textScaler,
-  )..layout();
-
-  final statusPainter = TextPainter(
-    text: TextSpan(
-      text: showcaseProjectStatusLabel(context, status),
-      style: tokens.typography.styles.subtitle.subtitle2.copyWith(height: 1),
-    ),
-    textDirection: textDirection,
-    maxLines: 1,
-    textScaler: textScaler,
-  )..layout();
-
-  final statusWidth =
-      tokens.spacing.step3 +
-      tokens.typography.lineHeight.caption +
-      tokens.spacing.step1 +
-      statusPainter.width +
-      tokens.spacing.step1 +
-      tokens.typography.lineHeight.caption +
-      tokens.spacing.step3;
-
-  return titlePainter.width + tokens.spacing.step4 + statusWidth > maxWidth;
 }

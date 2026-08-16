@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
 
 /// Collapsible "AI report" block: an always-visible TLDR with an optional
 /// expandable remainder, plus trailing report controls.
@@ -115,149 +114,210 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
         : trimmedAdditional;
   }
 
-  Widget _buildLink(
-    BuildContext context,
-    InlineSpan text,
-    String url,
-    TextStyle style,
-  ) => buildMarkdownLink(
-    context,
-    text,
-    url,
-    style,
-    linkColor: ShowcasePalette.teal(context),
-  );
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
     final parsed = _parseContent();
     final hasAdditionalContent =
         parsed.additional != null && parsed.additional!.trim().isNotEmpty;
     final canExpand = hasAdditionalContent;
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: ai.bodyText,
+    );
+    final hasFooter =
+        widget.trailingLabel != null ||
+        (!widget.isRefreshing && widget.nextWakeAt != null) ||
+        widget.onRefresh != null;
+    final cardRadius = BorderRadius.circular(tokens.radii.l);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Semantics(
-                header: true,
-                button: canExpand,
-                expanded: canExpand ? _expanded : null,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(tokens.radii.s),
-                  onTap: canExpand
-                      ? () => setState(() => _expanded = !_expanded)
-                      : null,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      minHeight: TapTargets.minimum,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.subtitle.subtitle2
-                                .copyWith(
-                                  color: ShowcasePalette.highText(context),
-                                ),
-                          ),
-                        ),
-                        if (canExpand) ...[
-                          SizedBox(width: tokens.spacing.step2),
-                          Icon(
-                            _expanded
-                                ? Icons.keyboard_arrow_down_rounded
-                                : Icons.chevron_right_rounded,
-                            size: IconSizes.s,
-                            color: ShowcasePalette.mediumText(context),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0, 0.55, 1],
+          colors: [
+            Color.alphaBlend(
+              ai.accent.withValues(alpha: 0.12),
+              ai.background,
             ),
-            if (widget.trailingLabel case final trailingLabel?) ...[
-              SizedBox(width: tokens.spacing.step2),
-              Flexible(
-                child: Text(
-                  trailingLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: ShowcasePalette.mediumText(context),
-                  ),
-                ),
-              ),
-            ],
-            if (!widget.isRefreshing && widget.nextWakeAt != null) ...[
-              SizedBox(width: tokens.spacing.step2),
-              _ReportCountdownPill(nextWakeAt: widget.nextWakeAt!),
-            ],
-            if (!widget.isRefreshing &&
-                widget.nextWakeAt != null &&
-                widget.onCancelScheduledWake != null)
-              DesignSystemIconAction(
-                icon: Icons.close_rounded,
-                tooltip: context.messages.taskAgentCancelTimerTooltip,
-                onPressed: widget.onCancelScheduledWake,
-              ),
-            if (widget.onRefresh != null)
-              DesignSystemIconAction(
-                icon: Icons.refresh_rounded,
-                tooltip: context.messages.taskAgentRunNowTooltip,
-                onPressed: widget.onRefresh,
-                isBusy: widget.isRefreshing,
-              ),
+            ai.background,
+            ai.background,
           ],
         ),
-        SizedBox(height: tokens.spacing.step2),
-        AnimatedSize(
-          duration: MotionDurations.short4,
-          curve: MotionCurves.standard,
-          alignment: Alignment.topLeft,
-          child: _expanded || !canExpand
-              ? Column(
-                  key: const ValueKey('expanded-report'),
+        borderRadius: cardRadius,
+        border: Border.all(color: ai.border),
+      ),
+      child: ClipRRect(
+        borderRadius: cardRadius,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                tokens.spacing.step4,
+                tokens.spacing.cardPadding,
+                tokens.spacing.step3,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: tokens.spacing.step8,
+                    height: tokens.spacing.step8,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: ai.accentSoft,
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                      border: Border.all(color: ai.border),
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: tokens.spacing.step6,
+                      color: ai.accent,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        widget.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: ai.titleText),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                0,
+                tokens.spacing.cardPadding,
+                tokens.spacing.step3,
+              ),
+              child: AnimatedSize(
+                duration: MotionDurations.short4,
+                curve: MotionCurves.standard,
+                alignment: Alignment.topLeft,
+                child: Column(
+                  key: ValueKey(
+                    _expanded ? 'expanded-report' : 'collapsed-report',
+                  ),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SelectionArea(
-                      child: GptMarkdown(
-                        parsed.tldr,
-                        onLinkTap: handleMarkdownLinkTap,
-                        linkBuilder: _buildLink,
-                      ),
+                      child: AgentMarkdownView(parsed.tldr, style: bodyStyle),
                     ),
-                    if (hasAdditionalContent) ...[
-                      SizedBox(height: tokens.spacing.step4),
+                    if (_expanded && hasAdditionalContent) ...[
+                      SizedBox(height: tokens.spacing.sectionGap),
                       SelectionArea(
-                        child: GptMarkdown(
+                        child: AgentMarkdownView(
                           parsed.additional!,
-                          onLinkTap: handleMarkdownLinkTap,
-                          linkBuilder: _buildLink,
+                          style: bodyStyle,
+                        ),
+                      ),
+                    ],
+                    if (canExpand) ...[
+                      SizedBox(height: tokens.spacing.step1),
+                      Semantics(
+                        button: true,
+                        expanded: _expanded,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => setState(
+                              () => _expanded = !_expanded,
+                            ),
+                            borderRadius: BorderRadius.circular(tokens.radii.s),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: tokens.spacing.step8,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _expanded
+                                        ? Icons.keyboard_arrow_down_rounded
+                                        : Icons.chevron_right_rounded,
+                                    size: tokens.spacing.step5,
+                                    color: ai.metaText,
+                                  ),
+                                  SizedBox(width: tokens.spacing.step2),
+                                  Text(
+                                    _expanded
+                                        ? context.messages.aiCardShowLess
+                                        : context.messages.aiCardReadMore,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .others
+                                        .caption
+                                        .copyWith(color: ai.metaText),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ],
-                )
-              : SelectionArea(
-                  key: const ValueKey('collapsed-report'),
-                  child: GptMarkdown(
-                    parsed.tldr,
-                    onLinkTap: handleMarkdownLinkTap,
-                    linkBuilder: _buildLink,
+                ),
+              ),
+            ),
+            if (hasFooter)
+              DecoratedBox(
+                decoration: BoxDecoration(color: ai.footerWash),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.cardPadding,
+                    vertical: tokens.spacing.step2,
+                  ),
+                  child: Row(
+                    children: [
+                      if (widget.trailingLabel case final trailingLabel?)
+                        Expanded(
+                          child: Text(
+                            trailingLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(color: ai.metaText),
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      if (!widget.isRefreshing && widget.nextWakeAt != null)
+                        _ReportCountdownPill(nextWakeAt: widget.nextWakeAt!),
+                      if (!widget.isRefreshing &&
+                          widget.nextWakeAt != null &&
+                          widget.onCancelScheduledWake != null)
+                        DesignSystemIconAction(
+                          icon: Icons.close_rounded,
+                          tooltip: context.messages.taskAgentCancelTimerTooltip,
+                          onPressed: widget.onCancelScheduledWake,
+                        ),
+                      if (widget.onRefresh != null)
+                        DesignSystemIconAction(
+                          icon: Icons.refresh_rounded,
+                          tooltip: context.messages.taskAgentRunNowTooltip,
+                          onPressed: widget.onRefresh,
+                          isBusy: widget.isRefreshing,
+                        ),
+                    ],
                   ),
                 ),
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

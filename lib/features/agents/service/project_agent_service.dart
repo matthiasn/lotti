@@ -201,6 +201,35 @@ class ProjectAgentService {
     return agentService.getAgent(agentId);
   }
 
+  /// Finds every live project agent linked to [projectId].
+  ///
+  /// Concurrent provisioning can temporarily leave multiple active links for
+  /// one project. Destructive project operations must retire all of them, not
+  /// only the primary identity used for ordinary report presentation.
+  Future<List<AgentIdentityEntity>> getProjectAgentsForProject(
+    String projectId,
+  ) async {
+    final links = (await repository.getLinksTo(
+      projectId,
+      type: AgentLinkTypes.agentProject,
+    )).orderedPrimaryFirst();
+    final agentIds = <String>[];
+    final seenAgentIds = <String>{};
+    for (final link in links) {
+      if (seenAgentIds.add(link.fromId)) agentIds.add(link.fromId);
+    }
+    if (agentIds.isEmpty) return const [];
+
+    final entitiesById = await repository.getEntitiesByIds(agentIds);
+    return [
+      for (final agentId in agentIds)
+        if (entitiesById[agentId] case final AgentIdentityEntity identity)
+          if (identity.kind == _agentKind &&
+              identity.lifecycle != AgentLifecycle.destroyed)
+            identity,
+    ];
+  }
+
   /// Trigger a manual re-analysis wake for [agentId].
   void triggerReanalysis(String agentId) {
     domainLogger?.log(

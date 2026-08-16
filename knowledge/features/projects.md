@@ -221,23 +221,27 @@ the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
 project and invalidates pending edits when sync reports that the project was
-deleted. Overlapping reloads are generation-guarded, so an older read that
-finishes after a newer deletion cannot repopulate the editor and resurrect the
-tombstoned project on save. Cancel and system-back exits discard the shared
+deleted. The project lookup is applied before task rollups are loaded, so a
+slow or failed task query cannot delay tombstone handling. Overlapping reloads
+are generation-guarded, so an older read that finishes after a newer deletion
+cannot repopulate the editor and resurrect the tombstoned project on save.
+Cancel and system-back exits discard the shared
 editor draft before returning to the still-mounted desktop detail, so canceled
 values cannot appear there or leak into a later inline save. Project deletion
-aborts any running wake and retires its project agent before soft-deleting the
-project, so runtime subscriptions and pending work
-cannot outlive the project. A retirement error aborts deletion instead of
-claiming success; when that error followed a committed lifecycle write, the
-deletion path re-reads the agent, resumes it and restores its subscriptions
-before returning. A failed project write performs the same compensation after
-a successful retirement. The detail keeps the last
-resolved agent identity during provider reloads, and captures the subscription
-restorer before deletion awaits, so neither a sync refresh nor route disposal
-can bypass that lifecycle cleanup. Task creation and deletion each hold the
-shared detail mutation lock through completion, preventing overlapping edits,
-task creation, or deletion.
+resolves every live linked project agent, aborts their running wakes and
+retires all of them before soft-deleting the project, so duplicate identities,
+runtime subscriptions and pending work cannot outlive the project. A
+retirement error aborts deletion instead of claiming success; when that error
+followed a committed lifecycle write, the deletion path re-reads the agent,
+resumes it and restores its subscriptions before returning. After a failed or
+throwing project write, the path verifies the tombstone before compensation:
+retired agents are restored only when the project is confirmed to remain, and
+a committed tombstone is treated as successful deletion. The detail keeps the
+last resolved agent identity during provider reloads, and captures the
+subscription restorer before deletion awaits, so neither a sync refresh nor
+route disposal can bypass that lifecycle cleanup. Task creation and deletion
+each hold the shared detail mutation lock through completion, preventing
+overlapping edits, task creation, or deletion.
 
 # Health is agent-authored
 

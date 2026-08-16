@@ -31,6 +31,8 @@ import 'package:lotti/widgets/ui/error_state_widget.dart';
 typedef ProjectTaskCreator = Future<Task?> Function(String projectId);
 typedef ProjectTaskAgentAssigner = Future<void> Function(Task task);
 typedef ProjectAgentSubscriptionsRestorer = Future<void> Function();
+typedef ProjectAgentsForProjectResolver =
+    Future<List<AgentIdentityEntity>> Function(String projectId);
 
 /// Injectable task-creation seam used by the project detail action.
 final projectTaskCreatorProvider = Provider<ProjectTaskCreator>(
@@ -54,6 +56,15 @@ final projectAgentSubscriptionsRestorerProvider =
     Provider<ProjectAgentSubscriptionsRestorer>(
       (ref) => ref.watch(projectAgentServiceProvider).restoreSubscriptions,
       name: 'projectAgentSubscriptionsRestorerProvider',
+    );
+
+/// Resolves every live project agent at deletion time, including duplicate
+/// identities that can briefly coexist after concurrent provisioning.
+final projectAgentsForProjectResolverProvider =
+    Provider<ProjectAgentsForProjectResolver>(
+      (ref) =>
+          ref.watch(projectAgentServiceProvider).getProjectAgentsForProject,
+      name: 'projectAgentsForProjectResolverProvider',
     );
 
 /// Read-first project detail surface rendered in the desktop right pane and as
@@ -142,7 +153,6 @@ class ProjectDetailsPage extends ConsumerWidget {
                 context,
                 ref,
                 record.project,
-                projectAgentId: identity?.agentId,
               ),
               onAddTask: () => _addTask(context, ref),
               onRefreshReport: identity == null
@@ -282,13 +292,9 @@ class ProjectDetailsPage extends ConsumerWidget {
   Future<void> _deleteProject(
     BuildContext context,
     WidgetRef ref,
-    ProjectEntry project, {
-    required String? projectAgentId,
-  }) async {
+    ProjectEntry project,
+  ) async {
     final repository = ref.read(projectRepositoryProvider);
-    final agentService = projectAgentId == null
-        ? null
-        : ref.read(agentServiceProvider);
     final confirmed = await showConfirmationModal(
       context: context,
       title: context.messages.projectDeleteConfirmTitle,
@@ -296,16 +302,41 @@ class ProjectDetailsPage extends ConsumerWidget {
       confirmLabel: context.messages.projectActionDelete,
     );
     if (!confirmed || !context.mounted) return;
-    final restoreProjectAgentSubscriptions = projectAgentId == null
+
+    late final List<AgentIdentityEntity> projectAgents;
+    try {
+      projectAgents = await ref.read(
+        projectAgentsForProjectResolverProvider,
+      )(project.id);
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to resolve project agents before deleting their project',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectDeleteFailed,
+      );
+      return;
+    }
+
+    final agentService = projectAgents.isEmpty
+        ? null
+        : ref.read(agentServiceProvider);
+    final restoreProjectAgentSubscriptions = projectAgents.isEmpty
         ? null
         : ref.read(projectAgentSubscriptionsRestorerProvider);
-
-    var agentRetired = false;
-    if (projectAgentId != null && agentService != null) {
+    final retiredAgentIds = <String>[];
+    for (final projectAgent in projectAgents) {
+      final projectAgentId = projectAgent.agentId;
+      final liveAgentService = agentService!;
       try {
-        agentService.abortRunningWake(projectAgentId);
-        final retired = await agentService.destroyAgent(projectAgentId);
-        agentRetired = retired;
+        liveAgentService.abortRunningWake(projectAgentId);
+        final retired = await liveAgentService.destroyAgent(projectAgentId);
+        if (retired) retiredAgentIds.add(projectAgentId);
         if (!retired) {
           developer.log(
             'Project agent was already absent while deleting its project',
@@ -320,21 +351,12 @@ class ProjectDetailsPage extends ConsumerWidget {
           stackTrace: stackTrace,
         );
         try {
-          final persistedAgent = await agentService.getAgent(projectAgentId);
+          final persistedAgent = await liveAgentService.getAgent(
+            projectAgentId,
+          );
           if (persistedAgent?.lifecycle == AgentLifecycle.destroyed &&
               restoreProjectAgentSubscriptions != null) {
-            final restored = await _restoreRetiredProjectAgent(
-              agentService: agentService,
-              agentId: projectAgentId,
-              restoreSubscriptions: restoreProjectAgentSubscriptions,
-            );
-            if (!restored) {
-              developer.log(
-                'Project agent disappeared while recovering from a failed '
-                'retirement',
-                name: 'ProjectDetailsPage',
-              );
-            }
+            retiredAgentIds.add(projectAgentId);
           }
         } catch (recoveryError, recoveryStackTrace) {
           developer.log(
@@ -344,6 +366,11 @@ class ProjectDetailsPage extends ConsumerWidget {
             stackTrace: recoveryStackTrace,
           );
         }
+        await _restoreRetiredProjectAgents(
+          agentService: liveAgentService,
+          agentIds: retiredAgentIds,
+          restoreSubscriptions: restoreProjectAgentSubscriptions,
+        );
         if (!context.mounted) return;
         context.showToast(
           tone: DesignSystemToastTone.error,
@@ -367,28 +394,30 @@ class ProjectDetailsPage extends ConsumerWidget {
         stackTrace: stackTrace,
       );
     }
-    if (!deleted &&
-        agentRetired &&
-        projectAgentId != null &&
-        agentService != null &&
-        restoreProjectAgentSubscriptions != null) {
+    var projectStillExists = false;
+    if (!deleted) {
       try {
-        final restored = await _restoreRetiredProjectAgent(
-          agentService: agentService,
-          agentId: projectAgentId,
-          restoreSubscriptions: restoreProjectAgentSubscriptions,
-        );
-        if (!restored) {
-          throw StateError('Retired project agent could not be resumed');
-        }
+        projectStillExists =
+            await repository.getProjectById(project.id) != null;
+        deleted = !projectStillExists;
       } catch (error, stackTrace) {
         developer.log(
-          'Failed to restore project agent after project deletion failed',
+          'Failed to verify project tombstone after deletion failed',
           name: 'ProjectDetailsPage',
           error: error,
           stackTrace: stackTrace,
         );
       }
+    }
+    if (!deleted &&
+        projectStillExists &&
+        agentService != null &&
+        restoreProjectAgentSubscriptions != null) {
+      await _restoreRetiredProjectAgents(
+        agentService: agentService,
+        agentIds: retiredAgentIds,
+        restoreSubscriptions: restoreProjectAgentSubscriptions,
+      );
     }
     if (!context.mounted) return;
     if (!deleted) {
@@ -407,10 +436,41 @@ class ProjectDetailsPage extends ConsumerWidget {
     _handleBack(context);
   }
 
+  Future<void> _restoreRetiredProjectAgents({
+    required AgentService agentService,
+    required List<String> agentIds,
+    required ProjectAgentSubscriptionsRestorer? restoreSubscriptions,
+  }) async {
+    if (restoreSubscriptions == null || agentIds.isEmpty) return;
+    var restoredAnyAgent = false;
+    for (final agentId in agentIds) {
+      try {
+        final restored = await _restoreRetiredProjectAgent(
+          agentService: agentService,
+          agentId: agentId,
+        );
+        restoredAnyAgent |= restored;
+        if (!restored) {
+          developer.log(
+            'Project agent disappeared while restoring a failed deletion',
+            name: 'ProjectDetailsPage',
+          );
+        }
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to restore project agent after project deletion failed',
+          name: 'ProjectDetailsPage',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    if (restoredAnyAgent) await restoreSubscriptions();
+  }
+
   Future<bool> _restoreRetiredProjectAgent({
     required AgentService agentService,
     required String agentId,
-    required ProjectAgentSubscriptionsRestorer restoreSubscriptions,
   }) async {
     try {
       final resumed = await agentService.resumeAgent(agentId);
@@ -425,7 +485,6 @@ class ProjectDetailsPage extends ConsumerWidget {
         stackTrace: stackTrace,
       );
     }
-    await restoreSubscriptions();
     return true;
   }
 

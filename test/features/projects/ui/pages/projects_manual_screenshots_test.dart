@@ -667,10 +667,9 @@ void main() {
         expect(find.text(messages.projectStatusChangeTitle), findsOneWidget);
         expect(find.text('Project Waddle'), findsOneWidget);
         expect(find.text(messages.projectTargetDateLabel), findsOneWidget);
-        expect(
-          find.text(messages.projectHealthSectionTitle),
-          findsOneWidget,
-        );
+        expect(find.text(messages.projectHealthSectionTitle), findsNothing);
+        expect(find.text(messages.cancelButton), findsOneWidget);
+        expect(find.text(messages.saveButton), findsOneWidget);
         await captureScreenshot(
           tester,
           'projects_editor_${viewport}_$theme',

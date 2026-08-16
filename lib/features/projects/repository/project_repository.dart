@@ -326,12 +326,14 @@ class ProjectRepository {
     );
     final deleted = project.copyWith(meta: updatedMeta);
     final result = await _persistenceLogic.updateDbEntity(deleted);
-    if (result ?? false) {
+    final committed =
+        (result ?? false) || await getProjectById(project.id) == null;
+    if (committed) {
       _updateNotifications.notify({
         projectEntityUpdateNotification(deleted.id),
       });
     }
-    return result ?? false;
+    return committed;
   }
 
   // ── Linking ────────────────────────────────────────────────────────────────

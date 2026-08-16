@@ -524,16 +524,11 @@ void main() {
       when(
         () => mockRepo.getProjectById(projectId),
       ).thenAnswer((_) async => null);
-      final syncedTask = makeTestTask(id: 'deleted-project-sync-task');
-      when(
-        () => mockRepo.getTasksForProject(projectId),
-      ).thenAnswer((_) async => [syncedTask]);
       final deletionObserved = Completer<void>();
       final subscription = container.listen(
         projectDetailControllerProvider(projectId),
         (_, next) {
-          if (next.linkedTasks.any((task) => task.id == syncedTask.id) &&
-              !deletionObserved.isCompleted) {
+          if (next.project == null && !deletionObserved.isCompleted) {
             deletionObserved.complete();
           }
         },
@@ -553,6 +548,38 @@ void main() {
       verifyNever(() => mockRepo.updateProject(any()));
     });
 
+    test('applies a synced deletion even when task loading fails', () async {
+      final container = await createLoadedContainer();
+      final subscription = container.listen(
+        projectDetailControllerProvider(projectId),
+        (_, _) {},
+      );
+      final notifier = container.read(
+        projectDetailControllerProvider(projectId).notifier,
+      )..updateTitle('Unsaved title');
+      clearInteractions(mockRepo);
+      when(
+        () => mockRepo.getProjectById(projectId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => throw StateError('task rollup failed'));
+
+      updateStreamController.add({projectId});
+      await pumpEventQueue();
+      await pumpEventQueue();
+
+      final deleted = container.read(
+        projectDetailControllerProvider(projectId),
+      );
+      expect(deleted.project, isNull);
+      expect(deleted.hasChanges, isFalse);
+
+      await notifier.saveChanges();
+      verifyNever(() => mockRepo.updateProject(any()));
+      subscription.close();
+    });
+
     test('ignores an older reload that completes after a deletion', () async {
       final container = await createLoadedContainer();
       final staleTasks = Completer<List<Task>>();
@@ -563,7 +590,6 @@ void main() {
         id: projectId,
         title: 'Stale project',
       );
-      final deletionMarker = makeTestTask(id: 'deletion-marker');
       final staleTask = makeTestTask(id: 'stale-task');
       when(
         () => mockRepo.getProjectById(projectId),
@@ -579,7 +605,7 @@ void main() {
           firstReloadStarted.complete();
           return staleTasks.future;
         }
-        return Future.value([deletionMarker]);
+        return Future.value([]);
       });
 
       updateStreamController.add({projectId});
@@ -589,9 +615,7 @@ void main() {
       final subscription = container.listen(
         projectDetailControllerProvider(projectId),
         (_, next) {
-          if (next.project == null &&
-              next.linkedTasks.any((task) => task.id == deletionMarker.id) &&
-              !deletionObserved.isCompleted) {
+          if (next.project == null && !deletionObserved.isCompleted) {
             deletionObserved.complete();
           }
         },
@@ -608,7 +632,7 @@ void main() {
         projectDetailControllerProvider(projectId),
       );
       expect(state.project, isNull);
-      expect(state.linkedTasks.map((task) => task.id), [deletionMarker.id]);
+      expect(state.linkedTasks, isEmpty);
       expect(state.hasChanges, isFalse);
     });
 

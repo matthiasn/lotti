@@ -831,6 +831,9 @@ void main() {
           projectEntry.copyWith(meta: deletedMeta),
         ),
       ).thenAnswer((_) async => false);
+      when(
+        () => mockDb.journalEntityById(projectEntry.id),
+      ).thenAnswer((_) async => projectEntry);
 
       final result = await repository.deleteProject(
         projectEntry,
@@ -851,6 +854,39 @@ void main() {
       ).called(1);
       verifyNever(() => mockNotifications.notify(any()));
     });
+
+    test(
+      'accepts a false result when the project tombstone committed',
+      () async {
+        final deletedMeta = projectMeta.copyWith(deletedAt: testDate);
+        when(
+          () => mockPersistence.updateMetadata(
+            projectMeta,
+            deletedAt: testDate,
+          ),
+        ).thenAnswer((_) async => deletedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(
+            projectEntry.copyWith(meta: deletedMeta),
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDb.journalEntityById(projectEntry.id),
+        ).thenAnswer((_) async => null);
+
+        final result = await repository.deleteProject(
+          projectEntry,
+          deletedAt: testDate,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockNotifications.notify({
+            projectEntityUpdateNotification(projectEntry.id),
+          }),
+        ).called(1);
+      },
+    );
   });
 
   group('linkTaskToProject', () {

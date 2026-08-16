@@ -66,46 +66,50 @@ class HealthPanel extends StatelessWidget {
               ProjectHealthBandTag(band: metrics.band),
             ],
           ),
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step2),
           Text(
             metrics.rationale,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
+            style: tokens.typography.styles.body.bodySmall.copyWith(
               color: ShowcasePalette.highText(context),
             ),
           ),
-          if (confidence != null) ...[
+          if (confidence != null || record.blockedTaskCount > 0) ...[
             SizedBox(height: tokens.spacing.step2),
-            Text(
-              context.messages.projectHealthConfidence(
-                (confidence * 100).round(),
-              ),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: ShowcasePalette.mediumText(context),
-              ),
-            ),
-          ],
-          if (record.blockedTaskCount > 0) ...[
-            SizedBox(height: tokens.spacing.step4),
-            Row(
+            Wrap(
+              spacing: tokens.spacing.step4,
+              runSpacing: tokens.spacing.step2,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: IconSizes.m,
-                  color: tokens.colors.alert.error.defaultColor,
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                Expanded(
-                  child: Text(
-                    context.messages.projectShowcaseBlockedTaskCount(
-                      record.blockedTaskCount,
+                if (confidence != null)
+                  Text(
+                    context.messages.projectHealthConfidence(
+                      (confidence * 100).round(),
                     ),
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: ShowcasePalette.mediumText(context),
                     ),
                   ),
-                ),
-                if (showBlockerAction) ...[
-                  SizedBox(width: tokens.spacing.step3),
+                if (record.blockedTaskCount > 0)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: IconSizes.s,
+                        color: tokens.colors.alert.error.defaultColor,
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Text(
+                        context.messages.projectShowcaseBlockedTaskCount(
+                          record.blockedTaskCount,
+                        ),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: ShowcasePalette.mediumText(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (showBlockerAction)
                   DesignSystemButton(
                     label: context.messages.projectShowcaseViewBlocker,
                     variant: DesignSystemButtonVariant.secondary,
@@ -113,13 +117,12 @@ class HealthPanel extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.padded,
                     onPressed: onViewBlockerPressed,
                   ),
-                ],
               ],
             ),
           ],
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step3),
           const DesignSystemDivider(),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step3),
           DesignSystemProgressBar(
             value: progressValue,
             label: context.messages.navTabTitleTasks,
@@ -134,7 +137,7 @@ class HealthPanel extends StatelessWidget {
             fillColor: tokens.colors.interactive.enabled,
             trackColor: ShowcasePalette.border(context),
           ),
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step2),
           Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step3,

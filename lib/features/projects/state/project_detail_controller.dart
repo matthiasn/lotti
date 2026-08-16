@@ -95,28 +95,36 @@ class ProjectDetailController extends Notifier<ProjectDetailState> {
   Future<void> _reload() async {
     final reloadGeneration = ++_reloadGeneration;
     try {
-      final (project, tasks) = await (
-        _repository.getProjectById(_projectId),
-        _repository.getTasksForProject(_projectId),
-      ).wait;
+      final project = await _repository.getProjectById(_projectId);
       if (!ref.mounted || reloadGeneration != _reloadGeneration) return;
 
       if (project == null) {
         _originalProject = null;
         _pendingProject = null;
+        state = state.copyWith(
+          project: null,
+          linkedTasks: const [],
+          isLoading: false,
+          hasChanges: false,
+          error: null,
+        );
+        return;
+      }
+
+      final tasks = await _repository.getTasksForProject(_projectId);
+      if (!ref.mounted || reloadGeneration != _reloadGeneration) return;
+
+      if (_originalProject == null || !_hasChanges()) {
+        // First load or clean reload: update both baseline and pending.
+        _originalProject = project;
+        _pendingProject = project;
       } else {
-        if (_originalProject == null || !_hasChanges()) {
-          // First load or clean reload: update both baseline and pending.
-          _originalProject = project;
-          _pendingProject = project;
-        } else {
-          _pendingProject = _rebasePendingProject(
-            persisted: project,
-            original: _originalProject!,
-            pending: _pendingProject!,
-          );
-          _originalProject = project;
-        }
+        _pendingProject = _rebasePendingProject(
+          persisted: project,
+          original: _originalProject!,
+          pending: _pendingProject!,
+        );
+        _originalProject = project;
       }
 
       state = state.copyWith(
