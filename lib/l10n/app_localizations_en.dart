@@ -6210,6 +6210,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Talk to $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Talk to agent';
 
   @override
@@ -6304,6 +6309,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'The whole goal';
+
+  @override
   String get goalCreateFailed => 'Saving the goal failed — please try again.';
 
   @override
@@ -6396,7 +6404,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'What your agent is saying';
+
+  @override
   String get goalDetailSignalsTitle => 'Signals';
+
+  @override
+  String get goalDetailStatementLabel => 'Your goal';
 
   @override
   String get goalDetailThisWeekTitle => 'This week';
@@ -6415,6 +6429,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signals listed above update within seconds. Your agent only sees the signals listed here.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Watching';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Tracked category time';
@@ -6502,6 +6519,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-day average';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName needs attention';
   }
 
   @override
@@ -7035,6 +7057,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalStatusRecovering => 'Recovering';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Updates from its linked source · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'calendar month';
 
   @override
@@ -7186,7 +7213,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitsFilterPendingLater => 'later';
 
   @override
-  String get habitsGoalLineLabel => 'Target';
+  String get habitsGoalLineLabel => 'Goal';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7220,8 +7247,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts to target',
-      one: '1 pt to target',
+      other: '$points pts to goal',
+      one: '1 pt to goal',
     );
     return '$_temp0';
   }
@@ -13729,6 +13756,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get navTabTitleTasks => 'Tasks';
 
   @override
+  String get nudgeBannerRatingSkip => 'Skip';
+
+  @override
+  String get nudgeBannerRatingTitle => 'How was this banner?';
+
+  @override
   String get outboxMonitorLabelError => 'error';
 
   @override
@@ -13745,6 +13778,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get outboxMonitorRetry => 'retry';
+
+  @override
+  String relationshipBannerSemanticLabel(String personName) {
+    return 'Relationship banner for $personName';
+  }
 
   @override
   String get saveLabel => 'Save';

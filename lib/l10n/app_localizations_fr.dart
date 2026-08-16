@@ -6334,6 +6334,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Parler à $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Parler à l\'agent';
 
   @override
@@ -6433,6 +6438,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Tout l\'objectif';
+
+  @override
   String get goalCreateFailed =>
       'L’enregistrement de l’objectif a échoué — réessaie.';
 
@@ -6528,7 +6536,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Ce que dit ton agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signaux';
+
+  @override
+  String get goalDetailStatementLabel => 'Ton objectif';
 
   @override
   String get goalDetailThisWeekTitle => 'Cette semaine';
@@ -6547,6 +6561,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Suit';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Temps de catégorie suivi';
@@ -6634,6 +6651,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · moyenne sur 7 jours';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName a besoin d\'attention';
   }
 
   @override
@@ -7171,6 +7193,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalStatusRecovering => 'En reprise';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Mises à jour de sa source liée · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'mois civil';
 
   @override
@@ -7330,7 +7357,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsFilterPendingLater => 'plus tard';
 
   @override
-  String get habitsGoalLineLabel => 'Cible';
+  String get habitsGoalLineLabel => 'Objectif';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7364,8 +7391,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pts avant la cible',
-      one: '1 pt avant la cible',
+      other: '$points pts avant l\'\'objectif',
+      one: '1 pt avant l\'\'objectif',
     );
     return '$_temp0';
   }

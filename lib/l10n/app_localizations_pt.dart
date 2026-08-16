@@ -3161,7 +3161,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInInteractionInPerson => 'Pessoalmente';
 
   @override
-  String get checkInInteractionLabel => 'Como vocês entraram em contato?';
+  String get checkInInteractionLabel => 'Como vocês conversaram?';
 
   @override
   String get checkInInteractionMessage => 'Mensagem';
@@ -6297,6 +6297,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Falar com $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Falar com o agente de meta';
 
   @override
@@ -6397,6 +6402,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Todo o objetivo';
+
+  @override
   String get goalCreateFailed =>
       'Não foi possível guardar a meta — tenta novamente.';
 
@@ -6490,7 +6498,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'O que o teu agente diz';
+
+  @override
   String get goalDetailSignalsTitle => 'Sinais';
+
+  @override
+  String get goalDetailStatementLabel => 'Sua meta';
 
   @override
   String get goalDetailThisWeekTitle => 'Esta semana';
@@ -6509,6 +6523,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Os sinais acima são atualizados em segundos. O teu agente vê apenas os sinais indicados aqui.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Acompanha';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Tempo da categoria rastreada';
@@ -6596,6 +6613,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · média de 7 dias';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName precisa de atenção';
   }
 
   @override
@@ -7132,6 +7154,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalStatusRecovering => 'A recuperar';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Atualizações de sua fonte vinculada · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'mês de calendário';
 
   @override
@@ -7283,7 +7310,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get habitsFilterPendingLater => 'mais tarde';
 
   @override
-  String get habitsGoalLineLabel => 'Meta';
+  String get habitsGoalLineLabel => 'Objetivo';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -10372,7 +10399,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipImportantLabel => 'Importante';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Tarefas vinculadas';
+  String get relationshipLinkedTasksLabel => 'Tarefas';
 
   @override
   String get relationshipLinkTaskButton => 'Vincular tarefa';
@@ -10413,7 +10440,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipStatusArchived => 'Arquivado';
 
   @override
-  String get relationshipStatusDormant => 'Inativo';
+  String get relationshipStatusDormant => 'Adormecido';
 
   @override
   String get relationshipStatusFieldLabel => 'Status';

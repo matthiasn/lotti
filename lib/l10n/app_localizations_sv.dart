@@ -3140,7 +3140,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInInteractionInPerson => 'Personligen';
 
   @override
-  String get checkInInteractionLabel => 'Hur hade ni kontakt?';
+  String get checkInInteractionLabel => 'Hur pratade ni?';
 
   @override
   String get checkInInteractionMessage => 'Meddelande';
@@ -6244,6 +6244,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Prata med $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Prata med agenten';
 
   @override
@@ -6338,6 +6343,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Hela målet';
+
+  @override
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 
   @override
@@ -6430,7 +6438,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Det här säger din agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signaler';
+
+  @override
+  String get goalDetailStatementLabel => 'Ditt mål';
 
   @override
   String get goalDetailThisWeekTitle => 'Den här veckan';
@@ -6449,6 +6463,9 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Följer';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Spårad kategoritid';
@@ -6536,6 +6553,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-dagarsgenomsnitt';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName behöver uppmärksamhet';
   }
 
   @override
@@ -7069,6 +7091,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalStatusRecovering => 'På väg tillbaka';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Uppdateringar från dess länkade källa · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermånad';
 
   @override
@@ -7220,7 +7247,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsFilterPendingLater => 'Senare';
 
   @override
-  String get habitsGoalLineLabel => 'Målvärde';
+  String get habitsGoalLineLabel => 'Mål';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7254,8 +7281,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points poäng till målvärdet',
-      one: '1 poäng till målvärdet',
+      other: '$points poäng till mål',
+      one: '1 poäng till mål',
     );
     return '$_temp0';
   }
@@ -10282,7 +10309,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipImportantLabel => 'Viktig';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Länkade uppgifter';
+  String get relationshipLinkedTasksLabel => 'Uppgifter';
 
   @override
   String get relationshipLinkTaskButton => 'Länka uppgift';

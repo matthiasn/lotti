@@ -708,4 +708,120 @@ void main() {
       );
     });
   });
+
+  group('error toasts', () {
+    testWidgets('shows a toast when create returns null', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save this person. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when create throws', (tester) async {
+      when(
+        () => mockRepository.createRelationship(
+          data: any(named: 'data'),
+        ),
+      ).thenThrow(Exception('db locked'));
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Anna');
+      await tester.ensureVisible(find.text('Create'));
+      await tester.tap(find.text('Create'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save this person. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when update returns false', (tester) async {
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) async => false);
+
+      final initial = RelationshipEntry(
+        meta: Metadata(
+          id: 'rel-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: RelationshipData(
+          title: 'Anna',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildForm(initial: initial));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when update throws', (tester) async {
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenThrow(Exception('db locked'));
+
+      final initial = RelationshipEntry(
+        meta: Metadata(
+          id: 'rel-1',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+        ),
+        data: RelationshipData(
+          title: 'Anna',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildForm(initial: initial));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the changes. Please try again.'),
+        findsOne,
+      );
+    });
+  });
 }

@@ -6302,6 +6302,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Promluvit si s agentem $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Mluvit s agentem';
 
   @override
@@ -6395,6 +6400,9 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return 'Včera: $metCount z $dimensionCount dimenzí · potřeba: $requiredCount.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Celý cíl';
 
   @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
@@ -6491,7 +6499,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Co říká tvůj agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signály';
+
+  @override
+  String get goalDetailStatementLabel => 'Tvůj cíl';
 
   @override
   String get goalDetailThisWeekTitle => 'Tento týden';
@@ -6510,6 +6524,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
@@ -6596,6 +6613,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7denní průměr';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName vyžaduje pozornost';
   }
 
   @override
@@ -7137,6 +7159,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalStatusRecovering => 'Zotavuje se';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Aktualizace z propojeného zdroje · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendářní měsíc';
 
   @override
@@ -7290,7 +7317,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsFilterPendingLater => 'později';
 
   @override
-  String get habitsGoalLineLabel => 'Cílová hodnota';
+  String get habitsGoalLineLabel => 'Cíl';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7321,7 +7348,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points b. k cílové hodnotě';
+    return '$points b. k cíli';
   }
 
   @override
@@ -10417,7 +10444,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipImportantLabel => 'Důležité';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Propojené úkoly';
+  String get relationshipLinkedTasksLabel => 'Úkoly';
 
   @override
   String get relationshipLinkTaskButton => 'Propojit úkol';
