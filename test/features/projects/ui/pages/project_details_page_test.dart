@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -1124,6 +1125,158 @@ void main() {
           ),
         );
       });
+
+      testWidgets(
+        'post-commit retirement failure restores the project agent',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = _makeMockAgentService();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          final lifecycleEvents = <String>[];
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('destroy');
+            throw StateError('post-commit outbox failure');
+          });
+          when(
+            () => mockAgentService.getAgent(identity.agentId),
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('read');
+            return identity.copyWith(lifecycle: AgentLifecycle.destroyed);
+          });
+          when(
+            () => mockAgentService.resumeAgent(identity.agentId),
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('resume');
+            return true;
+          });
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgent: identity,
+            restoreAgentSubscriptions: () async {
+              lifecycleEvents.add('restore');
+            },
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Failed to delete project. Please try again.'),
+            findsOneWidget,
+          );
+          expect(lifecycleEvents, ['destroy', 'read', 'resume', 'restore']);
+          verifyNever(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'post-commit resume failure still restores agent subscriptions',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(430, 1200)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final mockRepository = MockProjectRepository();
+          final mockAgentService = _makeMockAgentService();
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+          final lifecycleEvents = <String>[];
+          var agentReadCount = 0;
+          when(
+            () => mockAgentService.destroyAgent(identity.agentId),
+          ).thenThrow(StateError('post-commit retirement failure'));
+          when(
+            () => mockAgentService.getAgent(identity.agentId),
+          ).thenAnswer((_) async {
+            agentReadCount++;
+            lifecycleEvents.add('read-$agentReadCount');
+            return identity.copyWith(
+              lifecycle: agentReadCount == 1
+                  ? AgentLifecycle.destroyed
+                  : AgentLifecycle.active,
+            );
+          });
+          when(
+            () => mockAgentService.resumeAgent(identity.agentId),
+          ).thenAnswer((_) async {
+            lifecycleEvents.add('resume');
+            throw StateError('post-commit resume failure');
+          });
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: testRecord,
+            projectAgent: identity,
+            restoreAgentSubscriptions: () async {
+              lifecycleEvents.add('restore');
+            },
+            extraOverrides: [
+              projectRepositoryProvider.overrideWithValue(mockRepository),
+              agentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          );
+
+          tester
+              .widget<ProjectMobileDetailContent>(
+                find.byType(ProjectMobileDetailContent),
+              )
+              .onDelete!();
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete').last);
+          await tester.pumpAndSettle();
+
+          expect(
+            lifecycleEvents,
+            ['read-1', 'resume', 'read-2', 'restore'],
+          );
+          expect(
+            find.text('Failed to delete project. Please try again.'),
+            findsOneWidget,
+          );
+          verifyNever(
+            () => mockRepository.deleteProject(
+              any(),
+              deletedAt: any(named: 'deletedAt'),
+            ),
+          );
+        },
+      );
 
       testWidgets(
         'failed deletion resumes the retired agent and restores subscriptions',

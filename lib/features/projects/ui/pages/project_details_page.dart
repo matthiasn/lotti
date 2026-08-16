@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -317,6 +319,31 @@ class ProjectDetailsPage extends ConsumerWidget {
           error: error,
           stackTrace: stackTrace,
         );
+        try {
+          final persistedAgent = await agentService.getAgent(projectAgentId);
+          if (persistedAgent?.lifecycle == AgentLifecycle.destroyed &&
+              restoreProjectAgentSubscriptions != null) {
+            final restored = await _restoreRetiredProjectAgent(
+              agentService: agentService,
+              agentId: projectAgentId,
+              restoreSubscriptions: restoreProjectAgentSubscriptions,
+            );
+            if (!restored) {
+              developer.log(
+                'Project agent disappeared while recovering from a failed '
+                'retirement',
+                name: 'ProjectDetailsPage',
+              );
+            }
+          }
+        } catch (recoveryError, recoveryStackTrace) {
+          developer.log(
+            'Failed to restore project agent after retirement failed',
+            name: 'ProjectDetailsPage',
+            error: recoveryError,
+            stackTrace: recoveryStackTrace,
+          );
+        }
         if (!context.mounted) return;
         context.showToast(
           tone: DesignSystemToastTone.error,
@@ -346,11 +373,14 @@ class ProjectDetailsPage extends ConsumerWidget {
         agentService != null &&
         restoreProjectAgentSubscriptions != null) {
       try {
-        final resumed = await agentService.resumeAgent(projectAgentId);
-        if (!resumed) {
+        final restored = await _restoreRetiredProjectAgent(
+          agentService: agentService,
+          agentId: projectAgentId,
+          restoreSubscriptions: restoreProjectAgentSubscriptions,
+        );
+        if (!restored) {
           throw StateError('Retired project agent could not be resumed');
         }
-        await restoreProjectAgentSubscriptions();
       } catch (error, stackTrace) {
         developer.log(
           'Failed to restore project agent after project deletion failed',
@@ -375,6 +405,28 @@ class ProjectDetailsPage extends ConsumerWidget {
       title: context.messages.projectDeleteSuccess,
     );
     _handleBack(context);
+  }
+
+  Future<bool> _restoreRetiredProjectAgent({
+    required AgentService agentService,
+    required String agentId,
+    required ProjectAgentSubscriptionsRestorer restoreSubscriptions,
+  }) async {
+    try {
+      final resumed = await agentService.resumeAgent(agentId);
+      if (!resumed) return false;
+    } catch (error, stackTrace) {
+      final persistedAgent = await agentService.getAgent(agentId);
+      if (persistedAgent?.lifecycle != AgentLifecycle.active) rethrow;
+      developer.log(
+        'Project agent resume committed before its sync flush failed',
+        name: 'ProjectDetailsPage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    await restoreSubscriptions();
+    return true;
   }
 
   Future<void> _addTask(BuildContext context, WidgetRef ref) async {
