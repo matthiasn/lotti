@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-05
+    last_modified: 2026-08-16
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition
@@ -76,6 +76,13 @@ flowchart LR
 The durable contract is **last write wins per `(habitId, dateFrom.ymd)`**: read
 models collapse repeated rows and keep the entry with the newest metadata write
 timestamp before deriving UI state.
+
+The goal-details quick picker uses that contract to clear a day without
+deleting history: it appends a newer `HabitCompletionEntry` whose nullable
+`completionType` is empty. The goal signal reader treats that latest empty
+outcome as no goal-day entry. The habits tab retains its older legacy-null
+semantics described below; clearing from the goal surface does not redefine
+statistics or streak policy.
 
 **That resolver is deliberately pure**, covered by both example tests and Glados
 properties. It protects the tab maps, streak inputs, card strips, repository reads

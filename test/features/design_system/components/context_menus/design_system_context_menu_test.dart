@@ -168,6 +168,58 @@ void main() {
       expect(decoration.border, isNull);
     });
 
+    testWidgets(
+      'edge-to-edge items meet the clipped bottom edge and expose selection',
+      (tester) async {
+        const menuKey = Key('edge-menu');
+        const lastItemKey = Key('last-item');
+        final semantics = tester.ensureSemantics();
+
+        await _pumpContextMenu(
+          tester,
+          const DesignSystemContextMenu(
+            key: menuKey,
+            header: 'Tue, Aug 11',
+            edgeToEdge: true,
+            items: [
+              DesignSystemContextMenuItem(label: 'Success'),
+              DesignSystemContextMenuItem(
+                key: lastItemKey,
+                label: 'No entry',
+                icon: Icons.radio_button_unchecked_rounded,
+                iconColor: Colors.grey,
+                isSelected: true,
+              ),
+            ],
+          ),
+        );
+
+        expect(
+          tester.getRect(find.byKey(lastItemKey)).bottom,
+          tester.getRect(find.byKey(menuKey)).bottom,
+          reason: 'the last hover fill must reach the rounded menu edge',
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('No entry')),
+          matchesSemantics(
+            label: 'No entry',
+            isButton: true,
+            hasEnabledState: true,
+            isSelected: true,
+            hasSelectedState: true,
+          ),
+        );
+        final icon = tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(lastItemKey),
+            matching: find.byIcon(Icons.radio_button_unchecked_rounded),
+          ),
+        );
+        expect(icon.color, Colors.grey);
+        semantics.dispose();
+      },
+    );
+
     testWidgets('uses small size spec', (tester) async {
       const key = Key('small-menu');
 

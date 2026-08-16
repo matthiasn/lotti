@@ -810,8 +810,10 @@ flowchart TD
   page after the last habit card, and it is truthful: the today swatch is
   dashed like the cell, the partial swatch carries the dot. Each day square
   shows its concrete date in a hover/long-press tooltip (the same localized
-  string as its semantics), and the Success/Missed menu opens with the
-  selected day's date as a disabled header row; a day cell's visual stays at
+  string as its semantics), and the Success/Skip/Missed/No entry menu opens
+  with the selected day's date as a quiet header row. Its edge-to-edge action
+  bands share one clipped rounded surface, so the last hover fill reaches the
+  bottom corners; a day cell's visual stays at
   the compact chip size while its interactive slot meets
   `TapTargets.minimum` vertically. Weekday labels render directly above
   their squares inside ONE shared horizontal scroller, so labels and cells
@@ -840,8 +842,8 @@ flowchart TD
   listed). A reliability tail is shown
   only for an authored rolling-seven-day habit; other windows do not reinterpret
   their period as weekly reliability. Every
-  habit day in that grid — including previous days — opens success/missed
-  actions only when the selected day lies inside the habit's active lifetime
+  habit day in that grid — including previous days — opens success, skip,
+  missed, and no-entry actions only when the selected day lies inside the habit's active lifetime
   and is not in the future; future calendar cells stay read-only and the
   persistence service enforces the same boundary.
   Both the detail callback and persistence service gate edits on an active goal
@@ -851,6 +853,9 @@ flowchart TD
   privacy, sync and reminder behavior remain shared. Historical corrections
   keep the selected calendar day but use the current wall-clock fields so
   deterministic entry ids do not collide when an outcome is changed back.
+  No entry is also a correction: it appends a newest completion with a null
+  outcome, which the goal signal reader omits while the older same-day stack
+  remains available in journal history.
   The resulting local journal signal wakes Phase A immediately. When the
   register changes, Phase A marks the report stale and joins the shared
   two-minute fact-grounded refresh countdown; the progress evidence therefore

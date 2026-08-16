@@ -14,6 +14,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
@@ -2052,7 +2053,9 @@ class _ProgressDayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hit = day.hasValue;
-    final missed = day.habitCompletionType == HabitCompletionType.fail;
+    final completionType = day.habitCompletionType;
+    final skipped = completionType == HabitCompletionType.skip;
+    final missed = completionType == HabitCompletionType.fail;
     // A completed day is a partial success (lighter wash) while the habit's
     // own window target was not yet met as of that day; a null verdict from
     // older projections keeps the established full-strength rendering.
@@ -2086,6 +2089,8 @@ class _ProgressDayCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: missed
             ? tokens.colors.alert.error.defaultColor
+            : skipped
+            ? tokens.colors.background.level03
             : goalDayStateFill(tokens, dayState),
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: border,
@@ -2095,6 +2100,12 @@ class _ProgressDayCell extends StatelessWidget {
               Icons.close_rounded,
               size: IconSizes.xs,
               color: tokens.colors.alert.error.ink,
+            )
+          : skipped
+          ? Icon(
+              Icons.remove_rounded,
+              size: IconSizes.xs,
+              color: tokens.colors.text.mediumEmphasis,
             )
           : dayState == GoalCompactDayState.partial
           ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
@@ -2128,11 +2139,14 @@ class _ProgressDayCell extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final date = DateFormat.yMMMd(locale).format(day.day);
     final menuDate = DateFormat.MMMEd(locale).format(day.day);
-    final outcome = hit
-        ? context.messages.completeHabitSuccessButton
-        : missed
-        ? context.messages.completeHabitFailButton
-        : context.messages.goalProgressHabitDayNoEntry;
+    final outcome = switch (completionType) {
+      HabitCompletionType.success =>
+        context.messages.completeHabitSuccessButton,
+      HabitCompletionType.skip => context.messages.completeHabitSkipButton,
+      HabitCompletionType.fail => context.messages.completeHabitFailButton,
+      HabitCompletionType.open ||
+      null => context.messages.goalProgressHabitDayNoEntry,
+    };
     final semanticLabel = context.messages.goalProgressHabitDaySemantics(
       date,
       outcome,
@@ -2152,6 +2166,7 @@ class _ProgressDayCell extends StatelessWidget {
       label: semanticLabel,
       button: true,
       enabled: enabled && !saving,
+      excludeSemantics: true,
       // The visual stays at the compact chip size; the hit slot meets the
       // design system's touch floor vertically and fills the track pitch
       // horizontally — invisible ergonomics, unchanged rhythm.
@@ -2160,82 +2175,16 @@ class _ProgressDayCell extends StatelessWidget {
           'goal-habit-day-$habitId-'
           '${day.day.toIso8601String().substring(0, 10)}',
         ),
-        child: PopupMenuButton<HabitCompletionType>(
+        child: _HabitDayOutcomeMenu(
           enabled: enabled && !saving,
-          initialValue: day.habitCompletionType,
-          padding: EdgeInsets.zero,
-          menuPadding: EdgeInsets.zero,
-          position: PopupMenuPosition.under,
-          offset: Offset(0, tokens.spacing.step2),
-          color: tokens.colors.background.level01,
-          surfaceTintColor: Colors.transparent,
-          constraints: BoxConstraints.tightFor(width: tokens.spacing.step13),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tokens.radii.s),
+          currentOutcome: completionType,
+          headerKey: ValueKey(
+            'goal-habit-day-date-$habitId-'
+            '${day.day.toIso8601String().substring(0, 10)}',
           ),
-          // The hover/long-press affordance carries the concrete date, so a
-          // square never has to be resolved back to a calendar day mentally.
-          tooltip: semanticLabel,
-          onSelected: (outcome) {
-            if (outcome != day.habitCompletionType) callback(outcome);
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem<HabitCompletionType>(
-              key: ValueKey(
-                'goal-habit-day-date-$habitId-'
-                '${day.day.toIso8601String().substring(0, 10)}',
-              ),
-              enabled: false,
-              height: ControlSizes.iconChipCompact,
-              child: Text(
-                menuDate,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ),
-            const PopupMenuDivider(),
-            PopupMenuItem(
-              key: const ValueKey('goal-habit-day-success'),
-              value: HabitCompletionType.success,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_rounded,
-                    size: IconSizes.s,
-                    color: tokens.colors.alert.success.ink,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(
-                    context.messages.completeHabitSuccessButton,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              key: const ValueKey('goal-habit-day-missed'),
-              value: HabitCompletionType.fail,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.close_rounded,
-                    size: IconSizes.s,
-                    color: tokens.colors.alert.error.ink,
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(
-                    context.messages.completeHabitFailButton,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          menuDate: menuDate,
+          semanticLabel: semanticLabel,
+          onSelected: callback,
           child: Center(
             child: saving
                 ? SizedBox.square(
@@ -2247,6 +2196,128 @@ class _ProgressDayCell extends StatelessWidget {
                   )
                 : decoratedCell,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The goal-details quick picker for one habit day.
+///
+/// This stays intentionally smaller than the full habit-recording dialog: a
+/// date header and four immediate actions. The old Material popup left its
+/// last hover band above the rounded bottom edge; the design-system menu uses
+/// one clipped, edge-to-edge surface so the highlight follows both corners.
+class _HabitDayOutcomeMenu extends StatefulWidget {
+  const _HabitDayOutcomeMenu({
+    required this.enabled,
+    required this.currentOutcome,
+    required this.headerKey,
+    required this.menuDate,
+    required this.semanticLabel,
+    required this.onSelected,
+    required this.child,
+  });
+
+  final bool enabled;
+  final HabitCompletionType? currentOutcome;
+  final Key headerKey;
+  final String menuDate;
+  final String semanticLabel;
+  final ValueChanged<HabitCompletionType> onSelected;
+  final Widget child;
+
+  @override
+  State<_HabitDayOutcomeMenu> createState() => _HabitDayOutcomeMenuState();
+}
+
+class _HabitDayOutcomeMenuState extends State<_HabitDayOutcomeMenu> {
+  final MenuController _controller = MenuController();
+
+  bool _isSelected(HabitCompletionType outcome) =>
+      outcome == HabitCompletionType.open
+      ? widget.currentOutcome == null ||
+            widget.currentOutcome == HabitCompletionType.open
+      : widget.currentOutcome == outcome;
+
+  void _select(HabitCompletionType outcome) {
+    _controller.close();
+    if (_isSelected(outcome)) return;
+    widget.onSelected(outcome);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return MenuAnchor(
+      controller: _controller,
+      alignmentOffset: Offset(0, tokens.spacing.step2),
+      style: const MenuStyle(
+        backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+        elevation: WidgetStatePropertyAll(0),
+        padding: WidgetStatePropertyAll(EdgeInsets.zero),
+        shape: WidgetStatePropertyAll(RoundedRectangleBorder()),
+        side: WidgetStatePropertyAll(BorderSide.none),
+      ),
+      menuChildren: [
+        DesignSystemContextMenu(
+          key: const ValueKey('goal-habit-day-menu'),
+          header: widget.menuDate,
+          headerKey: widget.headerKey,
+          edgeToEdge: true,
+          size: DesignSystemContextMenuSize.small,
+          width: tokens.spacing.step13,
+          semanticsLabel: widget.semanticLabel,
+          items: [
+            DesignSystemContextMenuItem(
+              key: const ValueKey('goal-habit-day-success'),
+              label: context.messages.completeHabitSuccessButton,
+              icon: Icons.check_rounded,
+              iconColor: tokens.colors.alert.success.ink,
+              isSelected: _isSelected(HabitCompletionType.success),
+              onTap: () => _select(HabitCompletionType.success),
+            ),
+            DesignSystemContextMenuItem(
+              key: const ValueKey('goal-habit-day-skipped'),
+              label: context.messages.completeHabitSkipButton,
+              icon: Icons.remove_rounded,
+              iconColor: tokens.colors.text.mediumEmphasis,
+              isSelected: _isSelected(HabitCompletionType.skip),
+              onTap: () => _select(HabitCompletionType.skip),
+            ),
+            DesignSystemContextMenuItem(
+              key: const ValueKey('goal-habit-day-missed'),
+              label: context.messages.completeHabitFailButton,
+              icon: Icons.close_rounded,
+              iconColor: tokens.colors.alert.error.ink,
+              isSelected: _isSelected(HabitCompletionType.fail),
+              onTap: () => _select(HabitCompletionType.fail),
+            ),
+            DesignSystemContextMenuItem(
+              key: const ValueKey('goal-habit-day-none'),
+              label: context.messages.goalProgressHabitDayNoEntry,
+              icon: Icons.radio_button_unchecked_rounded,
+              iconColor: tokens.colors.text.lowEmphasis,
+              isSelected: _isSelected(HabitCompletionType.open),
+              onTap: () => _select(HabitCompletionType.open),
+            ),
+          ],
+        ),
+      ],
+      builder: (context, controller, child) => Tooltip(
+        message: widget.semanticLabel,
+        child: InkWell(
+          onTap: widget.enabled
+              ? () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                }
+              : null,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          child: widget.child,
         ),
       ),
     );

@@ -86,9 +86,11 @@ the read carrying the cost pills and automation controls — Habits and
 Signals sections, and a goal-scoped completion-rate chart). Agent replies retain their Markdown
 structure, while long replies start compact and can be expanded in place.
 The detail grid follows each habit's authored day, rolling, week, or month
-window and can record success or a miss on any day inside the habit's active
-lifetime through the normal habit-completion path while the goal remains active;
-  current and past edits wake the deterministic evaluator, mark the standing
+window and can record success, skip, miss, or clear on any day inside the
+habit's active lifetime through the normal habit-completion path while the goal
+remains active. Clear appends a latest completion with an empty outcome, so the
+older same-day completion stack remains intact. Current and past edits wake the
+  deterministic evaluator, mark the standing
   report out of date, and start a visible two-minute refresh countdown. Further
   edits join that countdown without postponing it. The shared agent controls let
   the user update immediately, skip the pending run once, or turn automatic
