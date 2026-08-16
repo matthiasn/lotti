@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/projects
     title: Projects feature source
-    last_modified: 2026-08-15
+    last_modified: 2026-08-16
   - id: queries
     resource: ../../lib/database/database_project_queries.dart
     title: Project queries and the coalescing wave
@@ -68,11 +68,15 @@ the latest non-hidden `ProjectLink` on every link and entity write**, so the
 result is identical to the old join without its
 `USE TEMP B-TREE FOR ORDER BY` sort.
 
-## Membership is scoped to a category — from the task's side
+## Membership is scoped to category and privacy
 
-`linkTaskToProject` refuses a link whose two sides disagree on category, which
-covers the moment the link is created. But a category can move afterwards, and
-that write is nowhere near the link, so the rule has to be re-checked there too.
+`linkTaskToProject` re-reads both entities and refuses a link whose two sides
+disagree on category or privacy. The fresh privacy check closes the async gap
+between resolving a project for task creation and persisting its link: if sync
+changes project privacy in between, the link is rejected and the creation path
+soft-deletes the new task. A category can still move after linking, and that
+write is nowhere near the link, so the category rule has to be re-checked there
+too.
 
 **`EntryController.updateCategoryId` does that for the task side**: it drops the
 project link of every task it moves when the new category is not the project's
@@ -81,7 +85,7 @@ own.
 ```mermaid
 stateDiagram-v2
   [*] --> Unlinked
-  Unlinked --> Linked: linkTaskToProject (same category only)
+  Unlinked --> Linked: linkTaskToProject (same category and privacy)
   Linked --> Linked: task category re-picked unchanged
   Linked --> Unlinked: task category changed or cleared
   Linked --> Mismatched: project moved to another category
@@ -163,6 +167,10 @@ Project-agent one-liners are resolved in two bulk reads when the snapshot is
 assembled, then stored on each `ProjectListItemData`. Rows therefore render a
 stable subtitle without one provider/query chain per card, and local search
 matches the same one-liner text that the list displays. Background enrichment
+listens through `projectAgentOverviewUpdateStreamProvider`, which bulk-resolves
+the affected agent IDs and emits only when at least one is a project agent;
+unrelated task, event, day and improver writes therefore do not rebuild the
+project query, task rollups, links and reports. Background enrichment
 reloads preserve the last rendered snapshot, category-filter metadata, and
 create affordance until the replacement is ready. If agent enrichment fails,
 the replacement snapshot retains the last resolved one-liner for each surviving
@@ -205,11 +213,15 @@ the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced
 project and invalidates pending edits when sync reports that the project was
-deleted. Project deletion aborts any running wake and retires its project agent
+deleted. Cancel and system-back exits discard the shared editor draft before
+returning to the still-mounted desktop detail, so canceled values cannot appear
+there or leak into a later inline save. Project deletion aborts any running wake and retires its project agent
 before soft-deleting the project, so runtime subscriptions and pending work
 cannot outlive the project. A retirement error aborts deletion instead of
-claiming success; a failed project write compensates by resuming the retired
-agent and restoring its runtime subscriptions. The detail keeps the last
+claiming success; when that error followed a committed lifecycle write, the
+deletion path re-reads the agent, resumes it and restores its subscriptions
+before returning. A failed project write performs the same compensation after
+a successful retirement. The detail keeps the last
 resolved agent identity during provider reloads, and captures the subscription
 restorer before deletion awaits, so neither a sync refresh nor route disposal
 can bypass that lifecycle cleanup. Task creation and deletion each hold the

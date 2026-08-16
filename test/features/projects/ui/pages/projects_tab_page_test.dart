@@ -685,6 +685,36 @@ void main() {
     );
   });
 
+  testWidgets('sort-only changes keep the Current-empty All action', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      groups: [],
+      overviewGroups: [buildWorkGroup()],
+    );
+    final pageContext = tester.element(find.byType(ProjectsTabPage));
+    final container = ProviderScope.containerOf(pageContext);
+    container
+        .read(projectsFilterControllerProvider.notifier)
+        .setSortMode(ProjectsSortMode.name);
+    await tester.pump();
+
+    expect(find.text(pageContext.messages.projectsScopeAll), findsNWidgets(2));
+    expect(find.text(pageContext.messages.projectsClearFilters), findsNothing);
+    tester
+        .widget<ProjectsOverviewContent>(
+          find.byType(ProjectsOverviewContent),
+        )
+        .onEmptyAction!();
+    await tester.pump();
+
+    expect(
+      container.read(projectsFilterControllerProvider).selectedStatusIds,
+      isEmpty,
+    );
+  });
+
   testWidgets('filtered-empty action restores the default current view', (
     tester,
   ) async {

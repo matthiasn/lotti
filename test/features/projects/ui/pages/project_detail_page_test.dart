@@ -47,6 +47,7 @@ class _TestProjectDetailController extends ProjectDetailController {
   DateTime? lastUpdatedTargetDate;
   bool updateTargetDateCalledWithNull = false;
   int saveChangesCalls = 0;
+  int discardChangesCalls = 0;
 
   @override
   ProjectDetailState build() => _state = _initialState;
@@ -84,6 +85,13 @@ class _TestProjectDetailController extends ProjectDetailController {
   @override
   Future<void> saveChanges() async {
     saveChangesCalls++;
+  }
+
+  @override
+  void discardChanges() {
+    discardChangesCalls++;
+    _state = _initialState.copyWith(hasChanges: false);
+    state = _state;
   }
 }
 
@@ -792,9 +800,9 @@ void main() {
           () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
         ).thenReturn(null);
         getIt.registerSingleton<NavService>(mockNavService);
-        await pumpPage(
+        final controller = await pumpPage(
           tester,
-          controllerState: defaultState(),
+          controllerState: defaultState(hasChanges: true),
           returnPath: '/projects/test-project-id',
         );
 
@@ -804,6 +812,7 @@ void main() {
         verify(
           () => mockNavService.beamToNamed('/projects/test-project-id'),
         ).called(1);
+        expect(controller.discardChangesCalls, 1);
       });
 
       testWidgets('native back honors the supplied project workspace route', (
@@ -814,9 +823,9 @@ void main() {
           () => mockNavService.beamToNamed(any(), data: any(named: 'data')),
         ).thenReturn(null);
         getIt.registerSingleton<NavService>(mockNavService);
-        await pumpPage(
+        final controller = await pumpPage(
           tester,
-          controllerState: defaultState(),
+          controllerState: defaultState(hasChanges: true),
           returnPath: '/projects/test-project-id',
         );
 
@@ -826,6 +835,7 @@ void main() {
         verify(
           () => mockNavService.beamToNamed('/projects/test-project-id'),
         ).called(1);
+        expect(controller.discardChangesCalls, 1);
       });
     });
 

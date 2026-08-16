@@ -134,12 +134,49 @@ final _projectOneLinerCacheProvider = Provider<Map<String, String?>>(
   (ref) => <String, String?>{},
 );
 
+/// Emits only shared agent-update batches that concern project agents.
+///
+/// Agent writes publish a shared [agentNotification] alongside affected IDs.
+/// Resolving those IDs in one batch keeps unrelated task, event, day, and
+/// improver agent activity from rebuilding the complete Projects overview.
+final projectAgentOverviewUpdateStreamProvider =
+    StreamProvider.autoDispose<Set<String>>((ref) async* {
+      final notifications = ref.watch(updateNotificationsProvider);
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      await for (final ids in notifications.updateStream.where(
+        (ids) => ids.contains(agentNotification),
+      )) {
+        final affectedIds = ids.where((id) => id != agentNotification).toSet();
+        if (affectedIds.isEmpty) continue;
+
+        try {
+          final entities = await agentRepository.getEntitiesByIds(affectedIds);
+          final concernsProjectAgent = entities.values.any(
+            (entity) =>
+                entity is AgentIdentityEntity &&
+                entity.kind == AgentKinds.projectAgent,
+          );
+          if (concernsProjectAgent) yield ids;
+        } catch (error, stackTrace) {
+          // Missing an update would leave a stale one-liner indefinitely.
+          // On the rare lookup failure, prefer one conservative refresh.
+          developer.log(
+            'Failed to scope agent update for the Projects overview',
+            name: 'projectAgentOverviewUpdateStreamProvider',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          yield ids;
+        }
+      }
+    });
+
 final projectsOverviewProvider =
     StreamProvider.autoDispose<ProjectsOverviewSnapshot>((ref) {
       final repository = ref.watch(projectRepositoryProvider);
       final agentRepository = ref.watch(agentRepositoryProvider);
       final oneLinerCache = ref.watch(_projectOneLinerCacheProvider);
-      ref.watch(agentUpdateStreamProvider(agentNotification));
+      ref.watch(projectAgentOverviewUpdateStreamProvider);
       return repository
           .watchProjectsOverview(query: const ProjectsQuery())
           .asyncMap(

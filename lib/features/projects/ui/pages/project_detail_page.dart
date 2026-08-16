@@ -30,7 +30,9 @@ import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 /// Edits go through [ProjectDetailController]: the status picker, title field,
 /// and target-date field mutate the controller's pending project, and the
 /// bottom bar's Save button persists them (also bound to Cmd/Ctrl+S). On a
-/// successful save it shows a success toast and navigates back.
+/// successful save it shows a success toast and navigates back. Cancel and
+/// system-back exits discard the shared controller draft before navigation so
+/// the underlying desktop detail cannot retain or later persist canceled data.
 ///
 /// When [returnPath] is supplied, successful saves and explicit back actions
 /// beam there first. Otherwise, when [categoryId] is non-null the page came
@@ -102,10 +104,21 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
       tone: DesignSystemToastTone.success,
       title: context.messages.saveSuccessful,
     );
-    _handleBackNavigation();
+    _handleBackNavigation(discardChanges: false);
   }
 
-  void _handleBackNavigation() {
+  void _discardPendingChanges() {
+    final controller = ref.read(
+      projectDetailControllerProvider(widget.projectId).notifier,
+    );
+    final state = ref.read(
+      projectDetailControllerProvider(widget.projectId),
+    );
+    if (state.hasChanges) controller.discardChanges();
+  }
+
+  void _handleBackNavigation({bool discardChanges = true}) {
+    if (discardChanges) _discardPendingChanges();
     final returnPath = widget.returnPath;
     if (returnPath != null && getIt.isRegistered<NavService>()) {
       getIt<NavService>().beamToNamed(returnPath);
@@ -197,8 +210,9 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     return PopScope(
       canPop: widget.categoryId == null && widget.returnPath == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop &&
-            (widget.categoryId != null || widget.returnPath != null)) {
+        if (didPop) {
+          _discardPendingChanges();
+        } else if (widget.categoryId != null || widget.returnPath != null) {
           _handleBackNavigation();
         }
       },

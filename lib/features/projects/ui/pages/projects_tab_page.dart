@@ -259,14 +259,13 @@ class _ProjectsListScaffold extends ConsumerWidget {
         : _filterCategoriesFromOverview(overview.groups);
     final rawHasProjects =
         overview?.groups.any((group) => group.projects.isNotEmpty) ?? false;
-    final isDefaultCurrent =
+    final isUnfilteredCurrentScope =
         const SetEquality<String>().equals(
           filter.selectedStatusIds,
           currentProjectStatusFilterIds,
         ) &&
         filter.selectedCategoryIds.isEmpty &&
-        filter.textQuery.trim().isEmpty &&
-        filter.sortMode == ProjectsSortMode.actionable;
+        filter.textQuery.trim().isEmpty;
     final floatingActionButton = visibleGroupsAsync.value == null
         ? null
         : DesignSystemFloatingActionButton(
@@ -353,22 +352,22 @@ class _ProjectsListScaffold extends ConsumerWidget {
                       listBottomPadding: listBottomPadding,
                       emptyTitle: !rawHasProjects
                           ? context.messages.projectsEmptyTitle
-                          : isDefaultCurrent
+                          : isUnfilteredCurrentScope
                           ? context.messages.projectsEmptyCurrentTitle
                           : context.messages.projectsEmptyFilteredTitle,
                       emptyBody: !rawHasProjects
                           ? context.messages.projectsEmptyBody
-                          : isDefaultCurrent
+                          : isUnfilteredCurrentScope
                           ? context.messages.projectsEmptyCurrentBody
                           : context.messages.projectsEmptyFilteredBody,
                       emptyActionLabel: !rawHasProjects
                           ? context.messages.projectCreateButton
-                          : isDefaultCurrent
+                          : isUnfilteredCurrentScope
                           ? context.messages.projectsScopeAll
                           : context.messages.projectsClearFilters,
                       onEmptyAction: !rawHasProjects
                           ? () => showProjectCreateModal(context: context)
-                          : isDefaultCurrent
+                          : isUnfilteredCurrentScope
                           ? () => ref
                                 .read(
                                   projectsFilterControllerProvider.notifier,

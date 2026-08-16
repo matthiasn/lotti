@@ -48,9 +48,9 @@ void main() {
       overrides: [
         projectRepositoryProvider.overrideWithValue(mockRepo),
         agentRepositoryProvider.overrideWithValue(mockAgentRepo),
-        agentUpdateStreamProvider(
-          agentNotification,
-        ).overrideWith((ref) => const Stream.empty()),
+        projectAgentOverviewUpdateStreamProvider.overrideWith(
+          (ref) => const Stream.empty(),
+        ),
       ],
     );
   });
@@ -279,9 +279,9 @@ void main() {
           overrides: [
             projectRepositoryProvider.overrideWithValue(mockRepo),
             agentRepositoryProvider.overrideWithValue(mockAgentRepo),
-            agentUpdateStreamProvider(
-              agentNotification,
-            ).overrideWith((ref) => agentUpdates.stream),
+            projectAgentOverviewUpdateStreamProvider.overrideWith(
+              (ref) => agentUpdates.stream,
+            ),
           ],
         );
         addTearDown(scopedContainer.dispose);
@@ -312,6 +312,65 @@ void main() {
           values.last.groups.first.projects.single.oneLiner,
           'Release review is ready',
         );
+      },
+    );
+
+    test(
+      'projectsOverviewProvider ignores unrelated agent notifications',
+      () async {
+        final snapshot = makeSnapshot();
+        final agentUpdates = StreamController<Set<String>>.broadcast();
+        addTearDown(agentUpdates.close);
+        final notifications = MockUpdateNotifications();
+        var enrichmentAttempts = 0;
+        when(
+          () => notifications.updateStream,
+        ).thenAnswer((_) => agentUpdates.stream);
+        when(
+          () => mockAgentRepo.getEntitiesByIds({'task-agent-id'}),
+        ).thenAnswer(
+          (_) async => {
+            'task-agent-id': makeTestIdentity(
+              id: 'task-agent-id',
+              agentId: 'task-agent-id',
+            ),
+          },
+        );
+        when(
+          () => mockRepo.watchProjectsOverview(query: const ProjectsQuery()),
+        ).thenAnswer((_) => Stream.value(snapshot));
+        when(
+          () => mockAgentRepo.getLinksToMultiple(
+            any(),
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer((_) async {
+          enrichmentAttempts++;
+          return <String, List<AgentLink>>{};
+        });
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepo),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+        final subscription = scopedContainer.listen(
+          projectsOverviewProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await scopedContainer.read(projectsOverviewProvider.future);
+        expect(enrichmentAttempts, 1);
+
+        agentUpdates.add({'task-agent-id', agentNotification});
+        await pumpEventQueue();
+        await pumpEventQueue();
+
+        expect(enrichmentAttempts, 1);
       },
     );
 

@@ -347,7 +347,9 @@ class ProjectRepository {
     required String projectId,
     required String taskId,
   }) async {
-    // Validate same-category constraint (parallel fetch)
+    // Validate project/task metadata invariants against fresh rows at link
+    // time. Creation callers may have resolved the project before persisting
+    // the task, so sync can change either field during that async gap.
     final results = await Future.wait([
       getProjectById(projectId),
       _journalDb.journalEntityById(taskId),
@@ -356,6 +358,7 @@ class ProjectRepository {
     final task = results[1];
     if (project == null || task is! Task) return false;
     if (project.meta.categoryId != task.meta.categoryId) return false;
+    if (project.meta.private != task.meta.private) return false;
 
     // Remove existing project link if the task is already in another project
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);

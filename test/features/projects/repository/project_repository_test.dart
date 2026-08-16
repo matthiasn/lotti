@@ -916,6 +916,24 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('rejects linking when project and task privacy differ', () async {
+      final privateProject = projectEntry.copyWith(
+        meta: projectEntry.meta.copyWith(private: true),
+      );
+      when(
+        () => mockDb.journalEntityById('project-private'),
+      ).thenAnswer((_) async => privateProject);
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-private',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockDb.getProjectLinkForTask(any()));
+      verifyNever(() => mockDb.upsertEntryLink(any()));
+    });
+
     test('rejects non-Task entity', () async {
       // A note entity should not be linkable as a "task"
       final noteEntry = JournalEntity.journalEntry(
