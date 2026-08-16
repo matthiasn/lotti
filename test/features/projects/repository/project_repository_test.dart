@@ -31,14 +31,16 @@ import '../test_utils.dart';
 
 class _TransactionTrackingJournalDb extends MockJournalDb {
   _TransactionTrackingJournalDb({
-    required this._rows,
+    required this.rows,
     this.onTransactionStart,
   });
 
-  final Map<String, JournalDbEntity> _rows;
+  final Map<String, JournalDbEntity> rows;
   final void Function()? onTransactionStart;
   bool entityReadInsideTransaction = false;
+  bool taskReadInsideTransaction = false;
   bool _insideTransaction = false;
+  bool get insideTransaction => _insideTransaction;
 
   @override
   Future<T> transaction<T>(
@@ -57,7 +59,19 @@ class _TransactionTrackingJournalDb extends MockJournalDb {
   @override
   Future<JournalDbEntity?> entityById(String id) async {
     entityReadInsideTransaction |= _insideTransaction;
-    return _rows[id];
+    return rows[id];
+  }
+
+  @override
+  Future<JournalEntity?> journalEntityById(String id) async {
+    final row = rows[id];
+    return row == null ? null : fromDbEntity(row);
+  }
+
+  @override
+  Future<List<Task>> getTasksForProject(String projectId) async {
+    taskReadInsideTransaction |= _insideTransaction;
+    return const [];
   }
 }
 
@@ -839,9 +853,11 @@ void main() {
         final committedProject = changedProject.copyWith(meta: updatedMeta);
         var readCount = 0;
         when(
-          () => mockDb.journalEntityById(projectEntry.id),
+          () => mockDb.entityById(projectEntry.id),
         ).thenAnswer(
-          (_) async => readCount++ == 0 ? projectEntry : committedProject,
+          (_) async => toDbEntity(
+            readCount++ == 0 ? projectEntry : committedProject,
+          ),
         );
         when(
           () => mockPersistence.updateMetadata(projectMeta),
@@ -875,6 +891,45 @@ void main() {
       verifyNever(() => mockPersistence.updateMetadata(any()));
       verifyNever(() => mockPersistence.updateDbEntity(any()));
       verifyNever(() => mockNotifications.notify(any()));
+    });
+
+    test('checks category membership and writes in one transaction', () async {
+      final trackingDb = _TransactionTrackingJournalDb(
+        rows: {projectEntry.id: toDbEntity(projectEntry)},
+      );
+      final movedProject = projectEntry.copyWith(
+        meta: projectMeta.copyWith(categoryId: 'cat-2'),
+      );
+      final updatedMeta = movedProject.meta.copyWith(
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: const VectorClock({'device-1': 2}),
+      );
+      var writeInsideTransaction = false;
+      when(
+        () => mockPersistence.updateMetadata(movedProject.meta),
+      ).thenAnswer((_) async => updatedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          movedProject.copyWith(meta: updatedMeta),
+        ),
+      ).thenAnswer((_) async {
+        writeInsideTransaction = trackingDb.insideTransaction;
+        return true;
+      });
+      final trackingRepository = ProjectRepository(
+        journalDb: trackingDb,
+        entitiesCacheService: mockEntitiesCacheService,
+        persistenceLogic: mockPersistence,
+        updateNotifications: mockNotifications,
+        vectorClockService: mockVectorClockService,
+      );
+
+      final result = await trackingRepository.updateProject(movedProject);
+
+      expect(result, isTrue);
+      expect(trackingDb.entityReadInsideTransaction, isTrue);
+      expect(trackingDb.taskReadInsideTransaction, isTrue);
+      expect(writeInsideTransaction, isTrue);
     });
   });
 
@@ -1182,12 +1237,6 @@ void main() {
             rows[projectEntry.id] = toDbEntity(privateProject);
           },
         );
-        when(
-          () => trackingDb.journalEntityById(projectEntry.id),
-        ).thenAnswer((_) async => projectEntry);
-        when(
-          () => trackingDb.journalEntityById(taskEntry.id),
-        ).thenAnswer((_) async => taskEntry);
         when(
           () => trackingDb.getProjectLinkForTask(taskEntry.id),
         ).thenAnswer((_) async => null);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -211,6 +213,8 @@ void main() {
       repository: mockRepository,
       orchestrator: mockOrchestrator,
       syncService: mockSyncService,
+      projectExists: (_) async => true,
+      mutationCoordinator: ProjectAgentMutationCoordinator(),
       domainLogger: DomainLogger(loggingService: LoggingService())
         ..enabledDomains.add(LogDomain.agentRuntime),
       onPersistedStateChanged: notifiedAgentIds.add,
@@ -233,6 +237,8 @@ void main() {
           repository: generatedRepository,
           orchestrator: generatedOrchestrator,
           syncService: generatedSyncService,
+          projectExists: (_) async => true,
+          mutationCoordinator: ProjectAgentMutationCoordinator(),
           onPersistedStateChanged: generatedNotifiedAgentIds.add,
         );
         const projectId = 'generated-project';
@@ -558,6 +564,79 @@ void main() {
       });
 
       test(
+        'deletes a newly created agent when the project is tombstoned',
+        () async {
+          final identity = makeIdentity();
+          final template = makeTestTemplate(
+            kind: AgentTemplateKind.projectAgent,
+          );
+          var existenceChecks = 0;
+          final compensatingService = ProjectAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+            projectExists: (_) async => existenceChecks++ == 0,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
+            onPersistedStateChanged: notifiedAgentIds.add,
+          );
+          when(
+            () => mockRepository.getLinksTo(
+              'project-deleted-by-sync',
+              type: AgentLinkTypes.agentProject,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity(kTestTemplateId),
+          ).thenAnswer((_) async => template);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => makeState());
+          when(
+            () => mockAgentService.deleteAgent(identity.agentId),
+          ).thenAnswer((_) async {});
+
+          await expectLater(
+            () => compensatingService.createProjectAgent(
+              projectId: 'project-deleted-by-sync',
+              templateId: kTestTemplateId,
+              displayName: 'Orphan prevention',
+              allowedCategoryIds: const {},
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                contains('project-deleted-by-sync'),
+              ),
+            ),
+          );
+
+          expect(existenceChecks, 2);
+          verify(
+            () => mockAgentService.deleteAgent(identity.agentId),
+          ).called(1);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+          expect(notifiedAgentIds, isEmpty);
+        },
+      );
+
+      test(
         'persists a one-shot fallback for the explicit creation wake',
         () async {
           final identity = makeIdentity();
@@ -858,6 +937,35 @@ void main() {
       );
     });
 
+    test(
+      'serializes same-project mutations without blocking other projects',
+      () async {
+        final coordinator = ProjectAgentMutationCoordinator();
+        final firstStarted = Completer<void>();
+        final releaseFirst = Completer<void>();
+        final order = <String>[];
+
+        final first = coordinator.run('project-1', () async {
+          order.add('first-start');
+          firstStarted.complete();
+          await releaseFirst.future;
+          order.add('first-end');
+        });
+        await firstStarted.future;
+        final second = coordinator.run('project-1', () async {
+          order.add('second');
+        });
+        await coordinator.run('project-2', () async {
+          order.add('other-project');
+        });
+
+        expect(order, ['first-start', 'other-project']);
+        releaseFirst.complete();
+        await Future.wait([first, second]);
+        expect(order, ['first-start', 'other-project', 'first-end', 'second']);
+      },
+    );
+
     group('getProjectAgentForProject', () {
       test('returns identity via link lookup', () async {
         final link = AgentLink.agentProject(
@@ -1102,6 +1210,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
+            projectExists: (_) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
             cancellationCoordinator: cancellationCoordinator,
           );
@@ -1168,6 +1278,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: failingSyncService,
+            projectExists: (_) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
             onPersistedStateChanged: notifiedAgentIds.add,
           );
           final state = makeState().copyWith(
@@ -1945,6 +2057,8 @@ void main() {
             repository: mockRepository,
             orchestrator: mockOrchestrator,
             syncService: mockSyncService,
+            projectExists: (_) async => true,
+            mutationCoordinator: ProjectAgentMutationCoordinator(),
           );
 
           final failingAgent = makeIdentity(agentId: 'pa-fail');

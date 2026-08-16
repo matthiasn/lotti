@@ -414,74 +414,20 @@ class ProjectDetailsPage extends ConsumerWidget {
     );
     if (!confirmed || !context.mounted) return;
 
-    late final List<AgentIdentityEntity> projectAgents;
-    try {
-      projectAgents = await resolveProjectAgents(project.id);
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to resolve project agents before deleting their project',
-        name: 'ProjectDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
+    final mutationCoordinator = ref.read(
+      projectAgentMutationCoordinatorProvider,
+    );
+    await mutationCoordinator.run(project.id, () async {
       if (!context.mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.projectDeleteFailed,
-      );
-      return;
-    }
-    if (!context.mounted) return;
-
-    final agentService = projectAgents.isEmpty
-        ? null
-        : ref.read(agentServiceProvider);
-    final restoreProjectAgentSubscriptions = projectAgents.isEmpty
-        ? null
-        : ref.read(projectAgentSubscriptionsRestorerProvider);
-    final retiredAgentLifecycles = <String, AgentLifecycle>{};
-    for (final projectAgent in projectAgents) {
-      final projectAgentId = projectAgent.agentId;
-      final liveAgentService = agentService!;
+      late final List<AgentIdentityEntity> projectAgents;
       try {
-        liveAgentService.abortRunningWake(projectAgentId);
-        final retired = await liveAgentService.destroyAgent(projectAgentId);
-        if (retired) {
-          retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
-        }
-        if (!retired) {
-          developer.log(
-            'Project agent was already absent while deleting its project',
-            name: 'ProjectDetailsPage',
-          );
-        }
+        projectAgents = await resolveProjectAgents(project.id);
       } catch (error, stackTrace) {
         developer.log(
-          'Failed to stop and retire project agent while deleting its project',
+          'Failed to resolve project agents before deleting their project',
           name: 'ProjectDetailsPage',
           error: error,
           stackTrace: stackTrace,
-        );
-        try {
-          final persistedAgent = await liveAgentService.getAgent(
-            projectAgentId,
-          );
-          if (persistedAgent?.lifecycle == AgentLifecycle.destroyed &&
-              restoreProjectAgentSubscriptions != null) {
-            retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
-          }
-        } catch (recoveryError, recoveryStackTrace) {
-          developer.log(
-            'Failed to restore project agent after retirement failed',
-            name: 'ProjectDetailsPage',
-            error: recoveryError,
-            stackTrace: recoveryStackTrace,
-          );
-        }
-        await _restoreRetiredProjectAgents(
-          agentService: liveAgentService,
-          agentLifecycles: retiredAgentLifecycles,
-          restoreSubscriptions: restoreProjectAgentSubscriptions,
         );
         if (!context.mounted) return;
         context.showToast(
@@ -490,59 +436,119 @@ class ProjectDetailsPage extends ConsumerWidget {
         );
         return;
       }
-    }
+      if (!context.mounted) return;
 
-    var deleted = false;
-    try {
-      deleted = await repository.deleteProject(
-        project,
-        deletedAt: clock.now(),
-      );
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to soft-delete project',
-        name: 'ProjectDetailsPage',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-    if (!deleted) {
+      final agentService = projectAgents.isEmpty
+          ? null
+          : ref.read(agentServiceProvider);
+      final restoreProjectAgentSubscriptions = projectAgents.isEmpty
+          ? null
+          : ref.read(projectAgentSubscriptionsRestorerProvider);
+      final retiredAgentLifecycles = <String, AgentLifecycle>{};
+      for (final projectAgent in projectAgents) {
+        final projectAgentId = projectAgent.agentId;
+        final liveAgentService = agentService!;
+        try {
+          liveAgentService.abortRunningWake(projectAgentId);
+          final retired = await liveAgentService.destroyAgent(projectAgentId);
+          if (retired) {
+            retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
+          }
+          if (!retired) {
+            developer.log(
+              'Project agent was already absent while deleting its project',
+              name: 'ProjectDetailsPage',
+            );
+          }
+        } catch (error, stackTrace) {
+          developer.log(
+            'Failed to stop and retire project agent while deleting its project',
+            name: 'ProjectDetailsPage',
+            error: error,
+            stackTrace: stackTrace,
+          );
+          try {
+            final persistedAgent = await liveAgentService.getAgent(
+              projectAgentId,
+            );
+            if (persistedAgent?.lifecycle == AgentLifecycle.destroyed &&
+                restoreProjectAgentSubscriptions != null) {
+              retiredAgentLifecycles[projectAgentId] = projectAgent.lifecycle;
+            }
+          } catch (recoveryError, recoveryStackTrace) {
+            developer.log(
+              'Failed to restore project agent after retirement failed',
+              name: 'ProjectDetailsPage',
+              error: recoveryError,
+              stackTrace: recoveryStackTrace,
+            );
+          }
+          await _restoreRetiredProjectAgents(
+            agentService: liveAgentService,
+            agentLifecycles: retiredAgentLifecycles,
+            restoreSubscriptions: restoreProjectAgentSubscriptions,
+          );
+          if (!context.mounted) return;
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.projectDeleteFailed,
+          );
+          return;
+        }
+      }
+
+      var deleted = false;
       try {
-        deleted = await repository.getProjectById(project.id) == null;
+        deleted = await repository.deleteProject(
+          project,
+          deletedAt: clock.now(),
+        );
       } catch (error, stackTrace) {
         developer.log(
-          'Failed to verify project tombstone after deletion failed',
+          'Failed to soft-delete project',
           name: 'ProjectDetailsPage',
           error: error,
           stackTrace: stackTrace,
         );
       }
-    }
-    // A delete that is neither committed nor verifiably committed must be
-    // compensated. Restoring is reversible; leaving a live project with every
-    // linked agent destroyed is not.
-    if (!deleted && agentService != null) {
-      await _restoreRetiredProjectAgents(
-        agentService: agentService,
-        agentLifecycles: retiredAgentLifecycles,
-        restoreSubscriptions: restoreProjectAgentSubscriptions,
-      );
-    }
-    if (!context.mounted) return;
-    if (!deleted) {
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.projectDeleteFailed,
-      );
-      return;
-    }
+      if (!deleted) {
+        try {
+          deleted = await repository.getProjectById(project.id) == null;
+        } catch (error, stackTrace) {
+          developer.log(
+            'Failed to verify project tombstone after deletion failed',
+            name: 'ProjectDetailsPage',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+      // A delete that is neither committed nor verifiably committed must be
+      // compensated. Restoring is reversible; leaving a live project with every
+      // linked agent destroyed is not.
+      if (!deleted && agentService != null) {
+        await _restoreRetiredProjectAgents(
+          agentService: agentService,
+          agentLifecycles: retiredAgentLifecycles,
+          restoreSubscriptions: restoreProjectAgentSubscriptions,
+        );
+      }
+      if (!context.mounted) return;
+      if (!deleted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectDeleteFailed,
+        );
+        return;
+      }
 
-    if (!context.mounted) return;
-    context.showToast(
-      tone: DesignSystemToastTone.success,
-      title: context.messages.projectDeleteSuccess,
-    );
-    _handleBack(context);
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.projectDeleteSuccess,
+      );
+      _handleBack(context);
+    });
   }
 
   Future<void> _restoreRetiredProjectAgents({

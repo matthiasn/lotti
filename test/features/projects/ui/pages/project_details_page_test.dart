@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -1419,6 +1420,71 @@ void main() {
             deletedAt: any(named: 'deletedAt'),
           ),
         ]);
+      });
+
+      testWidgets('waits for in-flight provisioning before deletion', (
+        tester,
+      ) async {
+        beamToNamedOverride = (_) {};
+        addTearDown(() => beamToNamedOverride = null);
+        final mockRepository = MockProjectRepository();
+        final coordinator = ProjectAgentMutationCoordinator();
+        final provisioningStarted = Completer<void>();
+        final releaseProvisioning = Completer<void>();
+        final provisioning = coordinator.run(_projectId, () async {
+          provisioningStarted.complete();
+          await releaseProvisioning.future;
+        });
+        await provisioningStarted.future;
+        when(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((_) async => true);
+        await pumpPageWithData(
+          tester,
+          controllerState: ProjectDetailState(
+            project: testProject,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          record: testRecord,
+          resolveProjectAgents: (_) async => [],
+          extraOverrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepository),
+            projectAgentMutationCoordinatorProvider.overrideWithValue(
+              coordinator,
+            ),
+          ],
+        );
+
+        tester
+            .widget<ProjectMobileDetailContent>(
+              find.byType(ProjectMobileDetailContent),
+            )
+            .onDelete!();
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete').last);
+        await tester.pump();
+
+        verifyNever(
+          () => mockRepository.deleteProject(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        );
+        releaseProvisioning.complete();
+        await provisioning;
+        await tester.pumpAndSettle();
+        verify(
+          () => mockRepository.deleteProject(
+            testProject,
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).called(1);
       });
 
       testWidgets('agent resolution failure aborts project deletion', (

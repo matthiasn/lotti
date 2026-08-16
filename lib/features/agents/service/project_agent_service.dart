@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -18,6 +19,33 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
+/// Serializes project-agent provisioning with destructive project mutations.
+///
+/// Agent state and projects live in separate databases, so they cannot share a
+/// database transaction. Holding this per-project coordinator across both the
+/// final project existence checks and the destructive project flow closes the
+/// local create/delete race; a post-create check still compensates project
+/// tombstones arriving independently through sync.
+class ProjectAgentMutationCoordinator {
+  final Map<String, Future<void>> _tails = {};
+
+  Future<T> run<T>(String projectId, Future<T> Function() action) async {
+    final previous = _tails[projectId] ?? Future<void>.value();
+    final completed = Completer<void>();
+    final tail = completed.future;
+    _tails[projectId] = tail;
+    await previous;
+    try {
+      return await action();
+    } finally {
+      completed.complete();
+      if (identical(_tails[projectId], tail)) {
+        final _ = _tails.remove(projectId);
+      }
+    }
+  }
+}
+
 /// Project-agent-specific lifecycle management.
 ///
 /// Mirrors `TaskAgentService` but manages project-scoped agents that monitor
@@ -28,6 +56,8 @@ class ProjectAgentService {
     required this.repository,
     required this.orchestrator,
     required this.syncService,
+    required this.projectExists,
+    required this.mutationCoordinator,
     this.domainLogger,
     this.onPersistedStateChanged,
     ProjectActivityCancellationCoordinator? cancellationCoordinator,
@@ -37,6 +67,8 @@ class ProjectAgentService {
   final AgentService agentService;
   final AgentRepository repository;
   final WakeOrchestrator orchestrator;
+  final Future<bool> Function(String projectId) projectExists;
+  final ProjectAgentMutationCoordinator mutationCoordinator;
   final ProjectActivityCancellationCoordinator _cancellationCoordinator;
 
   /// Sync-aware write service. All entity/link writes go through this so
@@ -53,23 +85,30 @@ class ProjectAgentService {
   /// Create a new Project Agent for [projectId].
   ///
   /// Steps:
-  /// 1. Create the agent via [AgentService.createAgent] with kind
+  /// 1. Serialize with project deletion and verify the project still exists.
+  /// 2. Create the agent via [AgentService.createAgent] with kind
   ///    `'project_agent'`.
-  /// 2. Update the agent's state with `activeProjectId = projectId`.
-  /// 3. Create an [AgentProjectLink] from agentId → projectId.
-  /// 4. If [templateId] is provided, create a `templateAssignment` link.
-  /// 5. Enqueue a creation wake with a one-shot persisted fallback.
+  /// 3. Update the agent's state with `activeProjectId = projectId`.
+  /// 4. Create an [AgentProjectLink] from agentId → projectId.
+  /// 5. If [templateId] is provided, create a `templateAssignment` link.
+  /// 6. Compensate a concurrent sync tombstone before announcing the agent.
+  /// 7. Enqueue a creation wake with a one-shot persisted fallback.
   ///
   /// Returns the created [AgentIdentityEntity].
   ///
-  /// Throws [StateError] if a Project Agent already exists for [projectId].
+  /// Throws [StateError] if the project no longer exists or a Project Agent
+  /// already exists for [projectId].
   Future<AgentIdentityEntity> createProjectAgent({
     required String projectId,
     required String templateId,
     required String displayName,
     required Set<String> allowedCategoryIds,
     String? profileId,
-  }) async {
+  }) => mutationCoordinator.run(projectId, () async {
+    if (!await projectExists(projectId)) {
+      throw StateError('Project $projectId no longer exists.');
+    }
+
     final identity = await syncService.runInTransaction(() async {
       // Definitive duplicate check inside the transaction to prevent
       // concurrent createProjectAgent calls from both committing.
@@ -156,6 +195,14 @@ class ProjectAgentService {
       return identity;
     });
 
+    // Sync can tombstone the journal project while the independent agent-store
+    // transaction is committing. Compensate before announcing, subscribing, or
+    // waking the new identity so no orphan project agent escapes this method.
+    if (!await projectExists(projectId)) {
+      await agentService.deleteAgent(identity.agentId);
+      throw StateError('Project $projectId no longer exists.');
+    }
+
     onPersistedStateChanged
       ?..call(identity.agentId)
       // `projectAgentProvider` refreshes on the *project* id, and nothing in
@@ -182,7 +229,7 @@ class ProjectAgentService {
     );
 
     return identity;
-  }
+  });
 
   /// Find the Project Agent for [projectId], or `null` if none exists.
   ///

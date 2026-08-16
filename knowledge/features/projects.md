@@ -131,10 +131,12 @@ controller is the single funnel this rule has to sit in.
 
 **The project side refuses to create a mismatch.**
 `ProjectRepository.updateProject` compares the stored and requested category
-before writing. When they differ, any linked task makes the update fail; the
-tasks must be unlinked before the project can move. Keeping that guard in the
-repository covers both the inline picker and the full editor instead of relying
-on either UI to remember the invariant.
+inside the same journal transaction that writes the project. When they differ,
+any linked task makes the update fail; the tasks must be unlinked before the
+project can move. `linkTaskToProject` uses the same database transaction domain,
+so a new membership cannot land between the guard and the category write.
+Keeping that guard in the repository covers both the inline picker and the full
+editor instead of relying on either UI to remember the invariant.
 
 # Two hot reads are shaped for bursts
 
@@ -220,7 +222,9 @@ project saves,
 awaits the category's default task-agent assignment, then opens the task. If
 that optional assignment fails after creation, the page reports the error but
 still opens the already-linked task, preventing a retry from creating another
-blank task. If
+blank task. Back, system-back, task-row navigation and the overflow menu remain
+locked until this mutation settles, so the page cannot be disposed between
+creating the blank task and opening its editor. If
 the explicit project link loses a race with sync or otherwise fails, creation
 soft-deletes the new task before surfacing the error, preventing blank orphans.
 The inline editor rebases only locally changed fields onto a concurrently synced

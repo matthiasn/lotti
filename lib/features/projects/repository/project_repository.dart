@@ -311,22 +311,35 @@ class ProjectRepository {
   /// negative result is verified against the stored project before this method
   /// reports failure.
   Future<bool> updateProject(ProjectEntry project) async {
-    final persistedBeforeUpdate = await getProjectById(project.id);
-    if (persistedBeforeUpdate == null) return false;
-    if (persistedBeforeUpdate.meta.categoryId != project.meta.categoryId &&
-        (await getTasksForProject(project.id)).isNotEmpty) {
-      return false;
-    }
+    ProjectEntry? updated;
+    final committed = await _journalDb.transaction<bool>(() async {
+      final persistedRow = await _journalDb.entityById(project.id);
+      final persisted = persistedRow == null
+          ? null
+          : fromDbEntity(persistedRow);
+      if (persisted is! ProjectEntry) return false;
+      if (persisted.meta.categoryId != project.meta.categoryId &&
+          (await getTasksForProject(project.id)).isNotEmpty) {
+        return false;
+      }
 
-    final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
-    final updated = project.copyWith(meta: updatedMeta);
-    final result = await _persistenceLogic.updateDbEntity(updated);
-    final committed =
-        (result ?? false) ||
-        _projectContentMatches(await getProjectById(project.id), updated);
+      final updatedMeta = await _persistenceLogic.updateMetadata(project.meta);
+      updated = project.copyWith(meta: updatedMeta);
+      final result = await _persistenceLogic.updateDbEntity(updated!);
+      if (result ?? false) return true;
+
+      final committedRow = await _journalDb.entityById(project.id);
+      final committedProject = committedRow == null
+          ? null
+          : fromDbEntity(committedRow);
+      return _projectContentMatches(
+        committedProject is ProjectEntry ? committedProject : null,
+        updated!,
+      );
+    });
     if (committed) {
       _updateNotifications.notify({
-        projectEntityUpdateNotification(updated.id),
+        projectEntityUpdateNotification(updated!.id),
       });
     }
     return committed;

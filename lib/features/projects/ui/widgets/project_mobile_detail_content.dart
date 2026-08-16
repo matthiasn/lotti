@@ -91,7 +91,11 @@ class _ProjectMobileDetailContentState
 
   Future<void> _handleAddTask() async {
     final onAddTask = widget.onAddTask;
-    if (onAddTask == null || widget.isSaving || _isAddingTask || _isDeleting) {
+    if (onAddTask == null ||
+        widget.isSaving ||
+        _isAddingTask ||
+        _isDeleting ||
+        _isAssigningAgent) {
       return;
     }
 
@@ -174,158 +178,166 @@ class _ProjectMobileDetailContentState
         ),
     ];
 
-    return ColoredBox(
-      color: ShowcasePalette.page(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (splitController == null)
-            DetailContentWidth(
-              child: Padding(
-                padding: EdgeInsets.only(top: tokens.spacing.step3),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: DesignSystemBackControl(
-                    foregroundColor: ShowcasePalette.highText(context),
-                    onTap: widget.onBack,
+    return PopScope(
+      canPop: !isMutating,
+      child: ColoredBox(
+        color: ShowcasePalette.page(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (splitController == null)
+              DetailContentWidth(
+                child: Padding(
+                  padding: EdgeInsets.only(top: tokens.spacing.step3),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: DesignSystemBackControl(
+                      foregroundColor: ShowcasePalette.highText(context),
+                      onTap: isMutating ? null : widget.onBack,
+                    ),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: DesignSystemScrollbar(
+                controller: _scrollController,
+                size: splitController == null
+                    ? DesignSystemScrollbarSize.small
+                    : DesignSystemScrollbarSize.defaultSize,
+                child: DetailContentWidth(
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.only(
+                          top: splitController == null
+                              ? tokens.spacing.step2
+                              : tokens.spacing.step5,
+                          bottom: splitController == null
+                              ? tokens.spacing.step12 + tokens.spacing.step8
+                              : tokens.spacing.step6,
+                        ),
+                        sliver: SliverMainAxisGroup(
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: _ProjectMobileHeader(
+                                record: widget.record,
+                                onCategoryTap: widget.onCategoryTap,
+                                onTargetDateTap: widget.onTargetDateTap,
+                                onStatusTap: widget.onStatusTap,
+                                isInteractive: !isMutating,
+                                trailing: menuItems.isEmpty || isMutating
+                                    ? null
+                                    : DesignSystemContextMenuButton(
+                                        items: menuItems,
+                                        tooltip: MaterialLocalizations.of(
+                                          context,
+                                        ).showMenuTooltip,
+                                        iconColor: ShowcasePalette.highText(
+                                          context,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step4),
+                            ),
+                            SliverToBoxAdapter(
+                              child: widget.record.healthMetrics == null
+                                  ? ProjectHealthEmptyState(
+                                      onRunReport: isMutating
+                                          ? null
+                                          : widget.onRefreshReport,
+                                      hasAgent: widget.hasProjectAgent,
+                                      isRunningReport:
+                                          widget.isRefreshingReport,
+                                      onAssignAgent:
+                                          widget.onAssignAgent == null
+                                          ? null
+                                          : _handleAssignAgent,
+                                      isAssigningAgent: _isAssigningAgent,
+                                    )
+                                  : HealthPanel(
+                                      record: widget.record,
+                                      currentTime: widget.currentTime,
+                                      onViewBlockerPressed:
+                                          isMutating ||
+                                              firstBlockedTask == null ||
+                                              widget.onTaskTap == null
+                                          ? null
+                                          : () => widget.onTaskTap!(
+                                              firstBlockedTask,
+                                            ),
+                                    ),
+                            ),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step5),
+                            ),
+                            if (description.isNotEmpty) ...[
+                              SliverToBoxAdapter(
+                                child: _ProjectDescription(
+                                  description: description,
+                                ),
+                              ),
+                              SliverToBoxAdapter(
+                                child: SizedBox(height: tokens.spacing.step6),
+                              ),
+                            ],
+                            SliverToBoxAdapter(
+                              child: ExpandableReportSection(
+                                title: context
+                                    .messages
+                                    .projectShowcaseAiReportTitle,
+                                body:
+                                    widget.record.aiSummary.isEmpty &&
+                                        widget.record.reportContent.isEmpty
+                                    ? context.messages.agentReportNone
+                                    : widget.record.aiSummary,
+                                fullContent: widget.record.reportContent,
+                                trailingLabel:
+                                    widget.record.reportUpdatedAt == null
+                                    ? null
+                                    : showcaseUpdatedLabel(
+                                        context,
+                                        updatedAt:
+                                            widget.record.reportUpdatedAt!,
+                                        currentTime: widget.currentTime,
+                                      ),
+                                nextWakeAt: widget.record.reportNextWakeAt,
+                                onRefresh: isMutating
+                                    ? null
+                                    : widget.onRefreshReport,
+                                onCancelScheduledWake: isMutating
+                                    ? null
+                                    : widget.onCancelScheduledReportWake,
+                                isRefreshing: widget.isRefreshingReport,
+                              ),
+                            ),
+                            if (!isMutating)
+                              if (widget.agentActions case final actions?)
+                                SliverToBoxAdapter(child: actions),
+                            SliverToBoxAdapter(
+                              child: SizedBox(height: tokens.spacing.step5),
+                            ),
+                            ProjectTasksSliverPanel(
+                              record: widget.record,
+                              onTaskTap: isMutating ? null : widget.onTaskTap,
+                              onAddTask: widget.onAddTask == null
+                                  ? null
+                                  : _handleAddTask,
+                              isAddTaskEnabled: !isMutating,
+                              isAddingTask: _isAddingTask,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          Expanded(
-            child: DesignSystemScrollbar(
-              controller: _scrollController,
-              size: splitController == null
-                  ? DesignSystemScrollbarSize.small
-                  : DesignSystemScrollbarSize.defaultSize,
-              child: DetailContentWidth(
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.only(
-                        top: splitController == null
-                            ? tokens.spacing.step2
-                            : tokens.spacing.step5,
-                        bottom: splitController == null
-                            ? tokens.spacing.step12 + tokens.spacing.step8
-                            : tokens.spacing.step6,
-                      ),
-                      sliver: SliverMainAxisGroup(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: _ProjectMobileHeader(
-                              record: widget.record,
-                              onCategoryTap: widget.onCategoryTap,
-                              onTargetDateTap: widget.onTargetDateTap,
-                              onStatusTap: widget.onStatusTap,
-                              isInteractive: !isMutating,
-                              trailing: menuItems.isEmpty
-                                  ? null
-                                  : DesignSystemContextMenuButton(
-                                      items: menuItems,
-                                      tooltip: MaterialLocalizations.of(
-                                        context,
-                                      ).showMenuTooltip,
-                                      iconColor: ShowcasePalette.highText(
-                                        context,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step4),
-                          ),
-                          SliverToBoxAdapter(
-                            child: widget.record.healthMetrics == null
-                                ? ProjectHealthEmptyState(
-                                    onRunReport: isMutating
-                                        ? null
-                                        : widget.onRefreshReport,
-                                    hasAgent: widget.hasProjectAgent,
-                                    isRunningReport: widget.isRefreshingReport,
-                                    onAssignAgent: widget.onAssignAgent == null
-                                        ? null
-                                        : _handleAssignAgent,
-                                    isAssigningAgent: _isAssigningAgent,
-                                  )
-                                : HealthPanel(
-                                    record: widget.record,
-                                    currentTime: widget.currentTime,
-                                    onViewBlockerPressed:
-                                        firstBlockedTask == null ||
-                                            widget.onTaskTap == null
-                                        ? null
-                                        : () => widget.onTaskTap!(
-                                            firstBlockedTask,
-                                          ),
-                                  ),
-                          ),
-                          SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step5),
-                          ),
-                          if (description.isNotEmpty) ...[
-                            SliverToBoxAdapter(
-                              child: _ProjectDescription(
-                                description: description,
-                              ),
-                            ),
-                            SliverToBoxAdapter(
-                              child: SizedBox(height: tokens.spacing.step6),
-                            ),
-                          ],
-                          SliverToBoxAdapter(
-                            child: ExpandableReportSection(
-                              title:
-                                  context.messages.projectShowcaseAiReportTitle,
-                              body:
-                                  widget.record.aiSummary.isEmpty &&
-                                      widget.record.reportContent.isEmpty
-                                  ? context.messages.agentReportNone
-                                  : widget.record.aiSummary,
-                              fullContent: widget.record.reportContent,
-                              trailingLabel:
-                                  widget.record.reportUpdatedAt == null
-                                  ? null
-                                  : showcaseUpdatedLabel(
-                                      context,
-                                      updatedAt: widget.record.reportUpdatedAt!,
-                                      currentTime: widget.currentTime,
-                                    ),
-                              nextWakeAt: widget.record.reportNextWakeAt,
-                              onRefresh: isMutating
-                                  ? null
-                                  : widget.onRefreshReport,
-                              onCancelScheduledWake: isMutating
-                                  ? null
-                                  : widget.onCancelScheduledReportWake,
-                              isRefreshing: widget.isRefreshingReport,
-                            ),
-                          ),
-                          if (!isMutating)
-                            if (widget.agentActions case final actions?)
-                              SliverToBoxAdapter(child: actions),
-                          SliverToBoxAdapter(
-                            child: SizedBox(height: tokens.spacing.step5),
-                          ),
-                          ProjectTasksSliverPanel(
-                            record: widget.record,
-                            onTaskTap: widget.onTaskTap,
-                            onAddTask: widget.onAddTask == null
-                                ? null
-                                : _handleAddTask,
-                            isAddTaskEnabled: !widget.isSaving && !_isDeleting,
-                            isAddingTask: _isAddingTask,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

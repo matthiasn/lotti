@@ -234,6 +234,8 @@ void main() {
           repository: repository,
           orchestrator: orchestrator,
           syncService: syncService,
+          projectExists: (_) async => true,
+          mutationCoordinator: ProjectAgentMutationCoordinator(),
           cancellationCoordinator: coordinator,
         );
         final raceMonitor = ProjectActivityMonitor(

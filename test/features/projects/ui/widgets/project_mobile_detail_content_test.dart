@@ -18,6 +18,7 @@ import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/health_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -133,7 +134,7 @@ void main() {
       );
     });
 
-    testWidgets('disables mutating menu actions while an inline save runs', (
+    testWidgets('hides the overflow menu while an inline save runs', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -149,11 +150,7 @@ void main() {
         ),
       );
 
-      final menu = tester.widget<DesignSystemContextMenuButton>(
-        find.byType(DesignSystemContextMenuButton),
-      );
-      expect(menu.items, hasLength(3));
-      expect(menu.items.every((item) => item.onTap == null), isTrue);
+      expect(find.byType(DesignSystemContextMenuButton), findsNothing);
     });
 
     testWidgets('disables Add task while an inline save runs', (tester) async {
@@ -476,11 +473,7 @@ void main() {
       await tester.tap(addButton);
       await tester.pump();
 
-      final menu = tester.widget<DesignSystemContextMenuButton>(
-        find.byType(DesignSystemContextMenuButton),
-      );
-      expect(menu.items, hasLength(3));
-      expect(menu.items.every((item) => item.onTap == null), isTrue);
+      expect(find.byType(DesignSystemContextMenuButton), findsNothing);
       expect(
         tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
         isNull,
@@ -496,6 +489,87 @@ void main() {
 
       pending.complete();
       await tester.pump();
+    });
+
+    testWidgets('locks navigation until Add task finishes', (tester) async {
+      final pending = Completer<void>();
+      var backRequests = 0;
+      var openedTasks = 0;
+      final record = makeTestProjectRecord(
+        highlightedTaskSummaries: [makeTestTaskSummary()],
+      );
+      await tester.pumpWidget(
+        wrap(
+          ProjectMobileDetailContent(
+            record: record,
+            currentTime: DateTime(2026, 3, 28, 1, 18),
+            onBack: () => backRequests++,
+            onTaskTap: (_) => openedTasks++,
+            onAddTask: () => pending.future,
+          ),
+          size: const Size(430, 1200),
+        ),
+      );
+      await tester.pump();
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add task');
+      await tester.ensureVisible(addButton);
+
+      await tester.tap(addButton);
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<DesignSystemBackControl>(
+              find.byType(DesignSystemBackControl),
+            )
+            .onTap,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<ProjectTasksSliverPanel>(
+              find.byType(ProjectTasksSliverPanel),
+            )
+            .onTaskTap,
+        isNull,
+      );
+      expect(
+        tester.widget<PopScope>(find.byType(PopScope).last).canPop,
+        isFalse,
+      );
+      await tester.tap(
+        find.byType(DesignSystemBackControl),
+        warnIfMissed: false,
+      );
+      await tester.tap(
+        find.text(record.highlightedTaskSummaries.single.task.data.title),
+      );
+      expect(backRequests, 0);
+      expect(openedTasks, 0);
+
+      pending.complete();
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<DesignSystemBackControl>(
+              find.byType(DesignSystemBackControl),
+            )
+            .onTap,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<ProjectTasksSliverPanel>(
+              find.byType(ProjectTasksSliverPanel),
+            )
+            .onTaskTap,
+        isNotNull,
+      );
+      expect(
+        tester.widget<PopScope>(find.byType(PopScope).last).canPop,
+        isTrue,
+      );
     });
 
     testWidgets('disables project actions while deletion is pending', (
@@ -532,10 +606,7 @@ void main() {
           .onTap!();
       await tester.pump();
 
-      final pendingMenu = tester.widget<DesignSystemContextMenuButton>(
-        find.byType(DesignSystemContextMenuButton),
-      );
-      expect(pendingMenu.items.every((item) => item.onTap == null), isTrue);
+      expect(find.byType(DesignSystemContextMenuButton), findsNothing);
       expect(
         tester.widget<CategoryTag>(find.byType(CategoryTag)).onTap,
         isNull,
