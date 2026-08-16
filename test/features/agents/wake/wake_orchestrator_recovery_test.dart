@@ -287,7 +287,7 @@ void main() {
               ..flushMicrotasks();
             expect(executedAgentIds, equals(['stuck-agent']));
 
-            // The 2-minute hard cap fires, aborts the run, and the aborted
+            // The 10-minute hard cap fires, aborts the run, and the aborted
             // status write hangs — the drain stays locked.
             async
               ..elapse(WakeOrchestrator.wakeRunMaxDuration)
@@ -302,7 +302,7 @@ void main() {
             ).called(1);
 
             // Advance well past the 5-minute stale-drain timeout (total since
-            // drain start is now > 7 minutes).
+            // drain start is now > 15 minutes).
             async
               ..elapse(const Duration(minutes: 6))
               ..flushMicrotasks();

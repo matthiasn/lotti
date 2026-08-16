@@ -63,7 +63,7 @@ sources:
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results
-    last_modified: 2026-08-13
+    last_modified: 2026-08-16
   - id: tool-dispatcher
     resource: ../../lib/features/goals/workflow/goal_tool_dispatcher.dart
     title: GoalToolDispatcher — proposal persistence and spec revision routing

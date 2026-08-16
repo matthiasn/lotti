@@ -11,7 +11,7 @@ sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-08-14
+    last_modified: 2026-08-16
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason
@@ -232,6 +232,16 @@ watermark.
 The bounded limit also keeps provider, API and database pressure finite. A
 downstream provider rate-limit or connection failure continues through the
 per-wake failure path and does not cancel other active wakes.
+
+# Wake execution bound
+
+A single wake may run for at most **10 minutes**. This cap accommodates slower
+local reasoning models and multi-turn workflows while still releasing a stuck
+runner eventually. Crossing it marks the wake run `aborted` and releases the
+agent lock. Dart cannot cancel the executor's underlying future, so inference
+may continue in the background; its eventual result is ignored by the drain.
+Workflows must therefore continue to treat late writes as normal database
+mutations that can produce a later notification.
 
 # Completion signalling
 

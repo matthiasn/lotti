@@ -91,11 +91,12 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     ..writeln()
     ..writeln(
       '| Model | Cases | Pass | Pass rate | Mean in | Mean out | Credits | '
-      'Credits/goal-month* | Wh | Wh/goal-month* |',
+      'Credits/goal-month* | Wh | Wh/goal-month* | Mean latency | '
+      'P95 latency |',
     )
     ..writeln(
       '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | '
-      '---: |',
+      '---: | ---: | ---: |',
     );
 
   final ranked = [...modelIds]
@@ -115,6 +116,11 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     final credits = creditsSum?.$1;
     final inputTokens = sumOf(cases, 'inputTokens');
     final outputTokens = sumOf(cases, 'outputTokens');
+    final latencyValues = cases
+        .map((result) => result['latencyMs'])
+        .whereType<num>()
+        .map((value) => value.toDouble())
+        .toList();
     final perGoalMonth = creditsSum == null
         ? null
         : creditsSum.$1 / creditsSum.$2 * wakesPerDay * 30;
@@ -132,7 +138,8 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
       '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
       '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
       '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
-      '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} |',
+      '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} | '
+      '${_meanDuration(latencyValues)} | ${_p95Duration(latencyValues)} |',
     );
   }
 
@@ -182,7 +189,8 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
       'and procedural banner rendering (ADR 0058) cost nothing. All '
       'figures are observations for monitoring — never targets or caps. '
       '"not reported" means the provider returned no data, not that the '
-      'run was free.',
+      'run was free. Latency is wall-clock time per scenario, including '
+      'every follow-up turn.',
     );
   return buffer.toString();
 }
@@ -190,3 +198,19 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
 String _meanCount((double, int)? totalAndCount) => totalAndCount == null
     ? 'not reported'
     : (totalAndCount.$1 / totalAndCount.$2).round().toString();
+
+String _meanDuration(List<double> milliseconds) {
+  if (milliseconds.isEmpty) return 'not reported';
+  final mean = milliseconds.reduce((a, b) => a + b) / milliseconds.length;
+  return _formatDuration(mean);
+}
+
+String _p95Duration(List<double> milliseconds) {
+  if (milliseconds.isEmpty) return 'not reported';
+  final sorted = [...milliseconds]..sort();
+  final index = (sorted.length * 0.95).ceil() - 1;
+  return _formatDuration(sorted[index]);
+}
+
+String _formatDuration(double milliseconds) =>
+    '${(milliseconds / 1000).toStringAsFixed(2)}s';

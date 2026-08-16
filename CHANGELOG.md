@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggests nothing at all.
 
 ### Changed
+- **Slow local agents get more time to finish.** An agent wake can now run for
+  up to ten minutes instead of two, so larger local reasoning models are less
+  likely to be aborted before they return.
 - **Editing a goal is two steps, not three.** The separate "What do you want
   to work toward?" page is gone from the edit flow: the statement is a
   single-line field at the top of the edit page, with the suggestion chips

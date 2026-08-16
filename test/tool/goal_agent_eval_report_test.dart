@@ -22,6 +22,7 @@ Map<String, dynamic> _case({
   double? energyWh,
   int? inputTokens,
   int? outputTokens,
+  int? latencyMs,
   List<String> toolNames = const [],
   String? errorMessage,
 }) => {
@@ -33,6 +34,7 @@ Map<String, dynamic> _case({
   'energyWh': energyWh,
   'inputTokens': inputTokens,
   'outputTokens': outputTokens,
+  'latencyMs': latencyMs,
   'toolCalls': [
     for (final name in toolNames) {'name': name, 'argumentsJson': '{}'},
   ],
@@ -52,6 +54,7 @@ void main() {
             energyWh: 0.3,
             inputTokens: 1000,
             outputTokens: 200,
+            latencyMs: 1000,
           ),
           _case(
             modelId: 'glm-5.2',
@@ -60,6 +63,7 @@ void main() {
             energyWh: 0.6,
             inputTokens: 1200,
             outputTokens: 300,
+            latencyMs: 3000,
           ),
         ],
       ),
@@ -88,6 +92,8 @@ void main() {
     expect(glmIndex, greaterThanOrEqualTo(0), reason: report);
     expect(qwenIndex, greaterThan(glmIndex));
     expect(report, contains('| Mean in | Mean out |'));
+    expect(report, contains('| Mean latency | P95 latency |'));
+    expect(report, contains('| 2.00s | 3.00s |'));
 
     // Credits sum and the goal-month extrapolation:
     // 0.004 total / 2 cases × 3 wakes × 30 days = 0.18.
@@ -114,6 +120,7 @@ void main() {
     // The extrapolation states its assumption.
     expect(report, contains('3 LLM wakes/day'));
     expect(report, contains('never targets or caps'));
+    expect(report, contains('wall-clock time per scenario'));
   });
 
   test('multiple samples of one cell aggregate into the same matrix cell', () {
