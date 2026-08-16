@@ -319,7 +319,7 @@ class ProjectRepository {
           : fromDbEntity(persistedRow);
       if (persisted is! ProjectEntry) return false;
       if (persisted.meta.categoryId != project.meta.categoryId &&
-          (await getTasksForProject(project.id)).isNotEmpty) {
+          (await _journalDb.getTaskIdsForProjects({project.id})).isNotEmpty) {
         return false;
       }
 

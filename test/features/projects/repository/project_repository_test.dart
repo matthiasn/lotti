@@ -69,9 +69,9 @@ class _TransactionTrackingJournalDb extends MockJournalDb {
   }
 
   @override
-  Future<List<Task>> getTasksForProject(String projectId) async {
+  Future<Set<String>> getTaskIdsForProjects(Set<String> projectIds) async {
     taskReadInsideTransaction |= _insideTransaction;
-    return const [];
+    return const {};
   }
 }
 
@@ -882,8 +882,8 @@ void main() {
         meta: projectMeta.copyWith(categoryId: 'cat-2'),
       );
       when(
-        () => mockDb.getTasksForProject(projectEntry.id),
-      ).thenAnswer((_) async => [taskEntry]);
+        () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+      ).thenAnswer((_) async => {taskEntry.id});
 
       final result = await repository.updateProject(movedProject);
 
@@ -892,6 +892,38 @@ void main() {
       verifyNever(() => mockPersistence.updateDbEntity(any()));
       verifyNever(() => mockNotifications.notify(any()));
     });
+
+    test(
+      'rejects category changes when private linked tasks are hidden',
+      () async {
+        final privateProject = projectEntry.copyWith(
+          meta: projectMeta.copyWith(private: true),
+        );
+        final movedProject = privateProject.copyWith(
+          meta: privateProject.meta.copyWith(categoryId: 'cat-2'),
+        );
+        when(
+          () => mockDb.entityById(projectEntry.id),
+        ).thenAnswer((_) async => toDbEntity(privateProject));
+        when(
+          () => mockDb.getTasksForProject(projectEntry.id),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).thenAnswer((_) async => {taskEntry.id});
+
+        final result = await repository.updateProject(movedProject);
+
+        expect(result, isFalse);
+        verify(
+          () => mockDb.getTaskIdsForProjects({projectEntry.id}),
+        ).called(1);
+        verifyNever(() => mockDb.getTasksForProject(any()));
+        verifyNever(() => mockPersistence.updateMetadata(any()));
+        verifyNever(() => mockPersistence.updateDbEntity(any()));
+        verifyNever(() => mockNotifications.notify(any()));
+      },
+    );
 
     test('checks category membership and writes in one transaction', () async {
       final trackingDb = _TransactionTrackingJournalDb(

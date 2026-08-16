@@ -133,10 +133,12 @@ controller is the single funnel this rule has to sit in.
 `ProjectRepository.updateProject` compares the stored and requested category
 inside the same journal transaction that writes the project. When they differ,
 any linked task makes the update fail; the tasks must be unlinked before the
-project can move. `linkTaskToProject` uses the same database transaction domain,
-so a new membership cannot land between the guard and the category write.
-Keeping that guard in the repository covers both the inline picker and the full
-editor instead of relying on either UI to remember the invariant.
+project can move. The guard reads the unfiltered denormalized `project_id`
+membership rather than the visible task list, so hidden private tasks still
+protect the invariant. `linkTaskToProject` uses the same database transaction
+domain, so a new membership cannot land between the guard and the category
+write. Keeping that guard in the repository covers both the inline picker and
+the full editor instead of relying on either UI to remember the invariant.
 
 # Two hot reads are shaped for bursts
 
