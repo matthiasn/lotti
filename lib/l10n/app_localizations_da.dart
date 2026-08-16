@@ -6213,9 +6213,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String goalChatTalkTo(String agentName) {
-    return 'Tal med $agentName';
-  }
+  String get goalChatTalkToAgent => 'Tal med agenten';
 
   @override
   String goalChatWhyPrefill(String status) {
@@ -6343,9 +6341,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDetailSignalsTitle => 'Signaler';
-
-  @override
-  String get goalDetailStatementLabel => 'Dit mål';
 
   @override
   String get goalDetailThisWeekTitle => 'Denne uge';

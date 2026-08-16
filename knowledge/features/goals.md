@@ -718,10 +718,12 @@ flowchart TD
   size, so the two surfaces draw the same instrument at the same scale (the
   strip's earlier 12px list default read as illegible dots). The detail page
   is the §4b dashboard: a centered column capped at the unified-Goals
-  measure (`kUnifiedGoalsContentMaxWidth`) whose hero stack puts the
-  deterministic This-week card (`GoalThisWeekCard` — whole-goal strip,
-  Reflect-on-today, yesterday tally) above the timestamped Agent's-read
-  card, both at the full content width on every viewport,
+  measure (`kUnifiedGoalsContentMaxWidth`, 900 — what the Habits dashboard
+  effectively renders beside the desktop sidebar, shared by the goals
+  list) whose hero stack leads with the
+  timestamped Agent's-read card, the deterministic This-week card
+  (`GoalThisWeekCard` — whole-goal strip, Reflect-on-today, yesterday
+  tally) beneath it, both at the full content width on every viewport,
   with the Habits and Signals sections beneath (habit cards name the other
   goals sharing them via `goalHabitMembershipsProvider` — one recording,
   reflected everywhere), a goal-scoped completion-rate chart (`HabitsChartCard(habitIds: …)` — the shared card
@@ -875,11 +877,16 @@ flowchart TD
   to the TLDR **and** the report carries no renderable structured sections.
   Sections live in provenance rather than in `content`, so a report whose
   flat text happens to equal its TLDR would otherwise lose the toggle and
-  make its sections unreachable. The goal statement is explicitly labelled ("Your goal") so it
-  cannot read as a status claim against the health chip, the persona chip
+  make its sections unreachable. The header carries the title, pill and
+  trend only — the goal statement does not repeat there (the title already
+  identifies the goal; the full definition lives behind Edit goal) EXCEPT
+  on a dormant goal, where no Edit doorway exists and the header is the
+  statement's only remaining surface. The
+  persona chip
   anchors to the title's first line, the app bar reveals the goal name only
   after the header scrolls away (no doubled title in one viewport), and
-  phones get a persistent chat action in the app bar. On the detail page a
+  phones get a persistent chat action in the app bar; every chat doorway is
+  labelled "Talk to agent" rather than repeating the goal's name. On the detail page a
   banner's CTA performs its verb instead of navigating to the current route:
   `GoalBannerCard.onCtaPressed` opens `GoalLogTodaySheet` — one-tap Mark
   done per habit through the shared completion path, read-only rows naming

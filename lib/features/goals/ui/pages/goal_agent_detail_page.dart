@@ -54,8 +54,8 @@ import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// One goal — the §4b dashboard: header (name · unified status pill ·
-/// trend), the hero stack (the deterministic This-week card above the
-/// timestamped Agent's-read card, each at the full content width), active
+/// trend), the hero stack (the timestamped Agent's-read card above the
+/// deterministic Goal-days card, each at the full content width), active
 /// banners and pending proposals,
 /// then the Habits and Signals evidence sections, the reflection history,
 /// the About-this-agent expander (cost pills + automation), and the
@@ -428,6 +428,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           health: health,
           healthAvailable: healthAsync.hasValue,
           spec: spec,
+          // An ACTIVE goal's header stays tidy — the title names the goal
+          // and the full definition lives behind Edit goal. A dormant goal
+          // has no Edit doorway, so the header is the statement's only
+          // remaining surface and must keep showing it.
+          showStatement: !isActive,
           // Whatever the page is ACTUALLY showing as an assessment — the
           // spec-matched report when there is one, otherwise the one-liner
           // the card falls back to. Keying only off the report let the chip
@@ -435,8 +440,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
           hasStandingAssessment: hasStandingAssessment,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
-        // The hero stack: the deterministic week above the agent's
-        // narrative — the two answers to "how is this going" — each at the
+        // The hero stack: the agent's narrative above the deterministic
+        // week — the two answers to "how is this going" — each at the
         // full content width, so the day strip and the read never trade
         // legibility for a shared row. The stretching Column matters: on
         // desktop every section sits under an Align whose loose constraints
@@ -444,11 +449,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (thisWeek != null) ...[
-              thisWeek,
-              SizedBox(height: tokens.spacing.cardItemSpacing),
-            ],
+            // The read LEADS: the agent's judgement is the page's answer to
+            // "how is this going", and the deterministic day strip is its
+            // first piece of evidence beneath.
             agentRead,
+            if (thisWeek != null) ...[
+              SizedBox(height: tokens.spacing.cardItemSpacing),
+              thisWeek,
+            ],
           ],
         ),
         // Every active banner remains reachable here, uncapped. The shell
@@ -561,7 +569,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           DesignSystemButton(
-            label: context.messages.goalChatTalkTo(goalIdentity.displayName),
+            label: context.messages.goalChatTalkToAgent,
             onPressed: () => beamToNamed(goalChatPath(agentId)),
             leadingIcon: Icons.chat_bubble_outline_rounded,
             // Secondary: the persistent app-bar action is the primary
@@ -586,10 +594,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         controller: _scrollController,
         // The mobile shell keeps the bottom navigation overlaid on goals
         // subroutes, so the final content must clear it.
+        // The Habits dashboard's behavior: a step6 gutter that holds on
+        // small screens, with the centered cap binding on wide ones — the
+        // goals list and this page share both numbers with Habits.
         padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step6,
           tokens.spacing.step5,
-          tokens.spacing.step5,
-          tokens.spacing.step5,
+          tokens.spacing.step6,
           tokens.spacing.step5 +
               DesignSystemBottomNavigationBar.occupiedHeight(context),
         ),
@@ -656,9 +667,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
               IconButton(
                 key: const ValueKey('goal-detail-chat-action'),
                 icon: const Icon(Icons.chat_bubble_outline_rounded),
-                tooltip: context.messages.goalChatTalkTo(
-                  goalIdentity.displayName,
-                ),
+                tooltip: context.messages.goalChatTalkToAgent,
                 onPressed: () => beamToNamed(goalChatPath(agentId)),
               ),
             // Desktop: the drawer's named doorway (§4b header). In the
@@ -680,14 +689,10 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                       maxWidth: tokens.spacing.step13,
                     ),
                     child: Tooltip(
-                      message: context.messages.goalChatTalkTo(
-                        goalIdentity.displayName,
-                      ),
+                      message: context.messages.goalChatTalkToAgent,
                       child: DesignSystemButton(
                         key: const ValueKey('goal-detail-talk-to'),
-                        label: context.messages.goalChatTalkTo(
-                          goalIdentity.displayName,
-                        ),
+                        label: context.messages.goalChatTalkToAgent,
                         leadingIcon: Icons.chat_bubble_outline_rounded,
                         variant: DesignSystemButtonVariant.secondary,
                         size: DesignSystemButtonSize.dense,
@@ -940,6 +945,7 @@ class _GoalHeader extends StatelessWidget {
     required this.healthAvailable,
     required this.spec,
     required this.hasStandingAssessment,
+    required this.showStatement,
     super.key,
   });
 
@@ -947,6 +953,11 @@ class _GoalHeader extends StatelessWidget {
   final GoalAgentHealth? health;
   final bool healthAvailable;
   final GoalSpecVersionEntity? spec;
+
+  /// Whether the header renders the goal statement. False on an active
+  /// goal (the definition lives behind Edit goal); true on a dormant one,
+  /// where no Edit doorway exists and this is the statement's only surface.
+  final bool showStatement;
 
   /// Whether the agent has already published an assessment of this goal.
   /// Suppresses the "No data" pill, which would otherwise sit directly
@@ -1023,25 +1034,16 @@ class _GoalHeader extends StatelessWidget {
             ),
           ],
         ),
-        if (spec?.statement case final statement?) ...[
-          SizedBox(height: tokens.spacing.step3),
-          // Explicitly labelled as the aspiration: unlabelled, the statement
-          // reads as the agent asserting current status directly against the
-          // health chip above it.
-          Text(
-            context.messages.goalDetailStatementLabel,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+        if (showStatement)
+          if (spec?.statement case final statement?) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Text(
+              statement,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
-          ),
-          SizedBox(height: tokens.spacing.step1),
-          Text(
-            statement,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ],
+          ],
       ],
     );
   }

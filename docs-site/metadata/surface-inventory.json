@@ -1265,6 +1265,20 @@
       ],
       "page": "ai-and-automation/goal-agents",
       "status": "planned"
+    },
+    {
+      "id": "people-relationships",
+      "title": "People (relationships, experimental)",
+      "kind": "route-page",
+      "source": "lib/beamer/locations/relationships_location.dart",
+      "sourcePattern": "'/people'",
+      "locator": "/people",
+      "routes": [
+        "/people",
+        "/people/:relationshipId"
+      ],
+      "page": "organize-and-reflect/people",
+      "status": "planned"
     }
   ]
 }
