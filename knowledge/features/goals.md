@@ -774,11 +774,17 @@ flowchart TD
   same source into a habit grid or metric series using each leaf criterion's
   actual day/rolling/week/month range. Canonical weight and daily-step data use
   a two-series time-series treatment: the observed values plus a trailing
-  seven-calendar-day average. The average begins only after the rendered range
-  has accumulated a full seven-day span and folds only observed samples inside
-  each window, so a missing day does not become a false zero. Step cards name
-  the observed series "Steps per day" while retaining "Average steps per day"
-  as the aggregate being judged. Their legends identify actual, average, dashed
+  seven-calendar-day average. Daily steps render as discrete bars, while weight
+  keeps the shared actual-value area treatment; both overlay the average as a
+  dashed blue line. The average begins only after the rendered range has
+  accumulated a full seven-day span and folds only observed samples inside each
+  window, so a missing day does not become a false zero. It stops at the goal
+  view's deterministic `today` and is available only for
+  `dailySumThenAverage` criteria; future calendar days and period-level
+  aggregations therefore cannot produce a fabricated per-day trend or target.
+  Step cards name the observed series "Steps per day" while retaining "Average
+  steps per day" as the aggregate being judged. Their legends identify actual,
+  average, dashed
   target, and the latest-value trend; the trend compares the latest observation
   with its same-day average and interprets above/below through the criterion's
   `atLeast`/`atMost` direction. Paired systolic and diastolic dimensions render

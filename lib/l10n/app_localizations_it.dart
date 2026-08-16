@@ -6271,7 +6271,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalBannerSnoozeTitle => 'Posticipa banner';
 
   @override
-  String get goalChartSevenDayAverage => 'Media di 7 giorni';
+  String get goalChartSevenDayAverage => 'Media su 7 giorni';
 
   @override
   String get goalChartStepsPerDay => 'Passi al giorno';

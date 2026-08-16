@@ -6266,13 +6266,13 @@ class AppLocalizationsPt extends AppLocalizations {
       trend,
       {
         'aboveToward':
-            'Valor atual acima da média de 7 dias · em direção ao objetivo',
+            'Valor atual acima da média de 7 dias · em direção à meta',
         'aboveAway':
-            'Valor atual acima da média de 7 dias · afastando-se do objetivo',
+            'Valor atual acima da média de 7 dias · afastando-se da meta',
         'belowToward':
-            'Valor atual abaixo da média de 7 dias · em direção ao objetivo',
+            'Valor atual abaixo da média de 7 dias · em direção à meta',
         'belowAway':
-            'Valor atual abaixo da média de 7 dias · afastando-se do objetivo',
+            'Valor atual abaixo da média de 7 dias · afastando-se da meta',
         'steady': 'Valor atual igual à média de 7 dias',
         'other': 'Valor atual igual à média de 7 dias',
       },

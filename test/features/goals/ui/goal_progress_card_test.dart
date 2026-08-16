@@ -8,6 +8,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -1170,8 +1172,8 @@ void main() {
       );
       expect(find.text('Systolic'), findsOneWidget);
       expect(find.text('Diastolic'), findsOneWidget);
-      expect(find.text('Target ≤ 125'), findsOneWidget);
-      expect(find.text('Target ≤ 85'), findsOneWidget);
+      expect(find.text('Systolic · Target ≤ 125'), findsOneWidget);
+      expect(find.text('Diastolic · Target ≤ 85'), findsOneWidget);
       expect(
         tester
             .widget<TimeSeriesMultiLineChart>(
@@ -1367,6 +1369,8 @@ void main() {
 
       expect(find.text('122 / 81 mmHg'), findsOneWidget);
       expect(find.text('On target today'), findsOneWidget);
+      expect(find.text('Systolic · Target ≤ 125'), findsOneWidget);
+      expect(find.text('Diastolic · Target ≤ 85'), findsOneWidget);
       expect(
         find.text("Today's latest reading is on target; keep it going."),
         findsOneWidget,
@@ -1418,6 +1422,8 @@ void main() {
     expect(find.byType(FractionallySizedBox), findsNothing);
     final chart = tester.widget<LineChart>(find.byType(LineChart));
     expect(chart.data.lineBarsData, hasLength(2));
+    expect(chart.data.lineBarsData.first.belowBarData.show, isTrue);
+    expect(chart.data.lineBarsData.last.dashArray, isNotEmpty);
     expect(chart.data.lineBarsData.first.spots.map((spot) => spot.y), [
       100,
       98,
@@ -1443,6 +1449,97 @@ void main() {
       find.text('Current below 7-day average · toward target'),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+    'rolling average stops at today when the window has future days',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                sourceId: GoalHealthDataTypes.weight,
+                name: 'Weight',
+                target: 88,
+                direction: GoalDirection.atMost,
+                unitName: 'kg',
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 94),
+                  for (var offset = 1; offset <= 3; offset++)
+                    GoalProgressDay(
+                      day: today.add(Duration(days: offset)),
+                      value: 0,
+                      isObserved: false,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData.last.spots, hasLength(1));
+      expect(
+        chart.data.lineBarsData.last.spots.single.x,
+        today.millisecondsSinceEpoch.toDouble(),
+      );
+    },
+  );
+
+  testWidgets('short windows hide the average legend when no line exists', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              sourceId: GoalHealthDataTypes.weight,
+              name: 'Weight',
+              target: 88,
+              days: [
+                for (var offset = 5; offset >= 0; offset--) day(offset, 94),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('7-day average'), findsNothing);
+  });
+
+  testWidgets('non-average weight aggregation keeps its aggregation chart', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              sourceId: GoalHealthDataTypes.weight,
+              name: 'Weight total',
+              target: 600,
+              aggregation: GoalAggregation.sum,
+              days: [
+                for (var offset = 6; offset >= 0; offset--) day(offset, 90),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(TimeSeriesLineChart), findsOneWidget);
+    expect(find.byType(TimeSeriesMultiLineChart), findsNothing);
+    expect(find.text('7-day average'), findsNothing);
   });
 
   testWidgets(
@@ -1482,10 +1579,12 @@ void main() {
 
       expect(find.text('Steps per day'), findsNWidgets(2));
       expect(find.text('Average steps per day'), findsOneWidget);
-      expect(find.byType(TimeSeriesMultiLineChart), findsOneWidget);
-      final chart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(chart.data.lineBarsData, hasLength(2));
-      expect(chart.data.lineBarsData.last.spots.map((spot) => spot.y), [
+      expect(find.byType(TimeSeriesBarLineChart), findsOneWidget);
+      expect(find.byType(BarChart), findsOneWidget);
+      final overlay = tester.widget<LineChart>(find.byType(LineChart));
+      expect(overlay.data.lineBarsData, hasLength(2));
+      expect(overlay.data.lineBarsData.last.dashArray, isNotEmpty);
+      expect(overlay.data.lineBarsData.last.spots.map((spot) => spot.y), [
         9500,
         8500,
       ]);
@@ -1579,6 +1678,49 @@ void main() {
       find.bySemanticsLabel('Aug 11: no value; target 8,000'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('short habit and metric tracks share the leading plot origin', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 1,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+            metric: GoalMetricProgressView(
+              name: 'Meditation',
+              sourceId: 'meditation',
+              target: 10,
+              days: [
+                for (var offset = 6; offset >= 0; offset--) day(offset, 5),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final shortTracks = tester.widgetList<SingleChildScrollView>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.horizontal,
+      ),
+    );
+    expect(shortTracks, hasLength(2));
+    expect(shortTracks.map((track) => track.reverse), everyElement(isFalse));
   });
 
   testWidgets('mixed composite renders habit and every metric series', (

@@ -2609,7 +2609,7 @@
   "goalBannerSnoozeTitle": "Amânați bannerul",
   "goalChartSevenDayAverage": "Media pe 7 zile",
   "goalChartStepsPerDay": "Pași pe zi",
-  "goalChartTrend": "{trend, select, aboveToward{Valoarea curentă peste media pe 7 zile · spre obiectiv} aboveAway{Valoarea curentă peste media pe 7 zile · departe de obiectiv} belowToward{Valoarea curentă sub media pe 7 zile · spre obiectiv} belowAway{Valoarea curentă sub media pe 7 zile · departe de obiectiv} steady{Valoarea curentă corespunde mediei pe 7 zile} other{Valoarea curentă corespunde mediei pe 7 zile}}",
+  "goalChartTrend": "{trend, select, aboveToward{Valoarea curentă este peste media pe 7 zile · spre țintă} aboveAway{Valoarea curentă este peste media pe 7 zile · departe de țintă} belowToward{Valoarea curentă este sub media pe 7 zile · spre țintă} belowAway{Valoarea curentă este sub media pe 7 zile · departe de țintă} steady{Valoarea curentă corespunde mediei pe 7 zile} other{Valoarea curentă corespunde mediei pe 7 zile}}",
   "goalChatEmpty": "Începeți o conversație cu {agentName}.",
   "goalChatFailed": "Mesajul nu a fost trimis.",
   "goalChatHistoryError": "Această conversație nu poate fi încărcată acum.",

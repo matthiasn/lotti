@@ -6307,12 +6307,13 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.selectLogic(
       trend,
       {
-        'aboveToward': 'Valoarea curentă peste media pe 7 zile · spre obiectiv',
+        'aboveToward':
+            'Valoarea curentă este peste media pe 7 zile · spre țintă',
         'aboveAway':
-            'Valoarea curentă peste media pe 7 zile · departe de obiectiv',
-        'belowToward': 'Valoarea curentă sub media pe 7 zile · spre obiectiv',
+            'Valoarea curentă este peste media pe 7 zile · departe de țintă',
+        'belowToward': 'Valoarea curentă este sub media pe 7 zile · spre țintă',
         'belowAway':
-            'Valoarea curentă sub media pe 7 zile · departe de obiectiv',
+            'Valoarea curentă este sub media pe 7 zile · departe de țintă',
         'steady': 'Valoarea curentă corespunde mediei pe 7 zile',
         'other': 'Valoarea curentă corespunde mediei pe 7 zile',
       },

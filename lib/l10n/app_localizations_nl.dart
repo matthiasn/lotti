@@ -6228,13 +6228,13 @@ class AppLocalizationsNl extends AppLocalizations {
       trend,
       {
         'aboveToward':
-            'Huidige waarde boven het 7-daags gemiddelde · richting doel',
+            'Huidige waarde boven het 7-daags gemiddelde · richting het doel',
         'aboveAway':
-            'Huidige waarde boven het 7-daags gemiddelde · weg van doel',
+            'Huidige waarde boven het 7-daags gemiddelde · weg van het doel',
         'belowToward':
-            'Huidige waarde onder het 7-daags gemiddelde · richting doel',
+            'Huidige waarde onder het 7-daags gemiddelde · richting het doel',
         'belowAway':
-            'Huidige waarde onder het 7-daags gemiddelde · weg van doel',
+            'Huidige waarde onder het 7-daags gemiddelde · weg van het doel',
         'steady': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
         'other': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
       },

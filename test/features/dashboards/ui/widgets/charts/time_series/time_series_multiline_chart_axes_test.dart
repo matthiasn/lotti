@@ -87,6 +87,30 @@ void main() {
       expect(valueSpan.toPlainText(), '1,234.5 kg\n');
     });
 
+    testWidgets('tooltip values use the active app locale', (tester) async {
+      final bar = makeBarData([
+        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 1234.5),
+      ]);
+
+      await hPumpChart(
+        tester,
+        lineBarsData: [bar],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        unit: 'kg',
+        locale: const Locale('de'),
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final barData = LineChartBarData(spots: const [FlSpot(0, 1234.5)]);
+      final items = tooltipData.getTooltipItems([
+        LineBarSpot(barData, 0, const FlSpot(0, 1234.5)),
+      ]);
+
+      expect(items.single!.children!.first.toPlainText(), '1.234,5 kg\n');
+    });
+
     testWidgets('series labels identify actual and average tooltip values', (
       tester,
     ) async {

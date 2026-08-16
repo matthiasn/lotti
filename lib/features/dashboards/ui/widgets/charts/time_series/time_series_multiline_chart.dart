@@ -46,6 +46,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final axis = niceAxis(minVal, maxVal);
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -75,6 +76,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                       : '';
                   final formattedValue = NumberFormat(
                     '#,###.##',
+                    locale,
                   ).format(spot.y);
                   final unitSuffix = unit.isEmpty ? '' : ' $unit';
                   return LineTooltipItem(

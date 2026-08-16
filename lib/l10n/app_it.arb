@@ -2864,7 +2864,7 @@
   "goalBannerSnoozeSixHours": "6 ore",
   "goalBannerSnoozeThreeHours": "3 ore",
   "goalBannerSnoozeTitle": "Posticipa banner",
-  "goalChartSevenDayAverage": "Media di 7 giorni",
+  "goalChartSevenDayAverage": "Media su 7 giorni",
   "goalChartStepsPerDay": "Passi al giorno",
   "goalChartTrend": "{trend, select, aboveToward{Valore attuale sopra la media di 7 giorni · verso l’obiettivo} aboveAway{Valore attuale sopra la media di 7 giorni · lontano dall’obiettivo} belowToward{Valore attuale sotto la media di 7 giorni · verso l’obiettivo} belowAway{Valore attuale sotto la media di 7 giorni · lontano dall’obiettivo} steady{Valore attuale uguale alla media di 7 giorni} other{Valore attuale uguale alla media di 7 giorni}}",
   "goalChatEmpty": "Inizia una conversazione con {agentName}.",

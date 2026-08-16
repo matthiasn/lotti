@@ -6258,7 +6258,7 @@ class AppLocalizationsDe extends AppLocalizations {
         'belowAway':
             'Aktueller Wert unter dem 7-Tage-Durchschnitt · vom Ziel weg',
         'steady': 'Aktueller Wert entspricht dem 7-Tage-Durchschnitt',
-        'other': 'Aktueller Wert entspricht dem 7-Tage-Durchschnitt',
+        'other': 'Trend konnte nicht bestimmt werden',
       },
     );
     return '$_temp0';
