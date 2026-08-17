@@ -12,7 +12,7 @@ const int _taskPageSize = 200;
 /// inside the demo.
 ///
 /// Without this, connecting real AI is a dead end on seeded tasks:
-/// `ProfileAutomationResolver.resolveForTask` only consults a task's agent
+/// `ProfileAutomationResolver.resolveForSubject` only consults a task's agent
 /// and its own `TaskData.profileId`, and the seeded fixture tasks carry
 /// neither (they are written straight into the world, bypassing the task
 /// creation path that would inherit a profile). Every skill run would log
@@ -26,7 +26,7 @@ const int _taskPageSize = 200;
 ///    `resolveForCategory` and newly created tasks inherit the profile.
 /// 2. Every non-deleted task without a `profileId` — the seeded fixtures,
 ///    plus any task the user created before connecting — is stamped with
-///    [profileId] so `resolveForTask` finds it.
+///    [profileId] so `resolveForSubject` finds it.
 ///
 /// Runs inside the ACTIVE demo generation; [journalDb] and [persistence]
 /// are that generation's handles, so nothing here can touch the real world.

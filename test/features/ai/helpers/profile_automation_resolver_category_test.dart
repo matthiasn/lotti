@@ -24,7 +24,7 @@ void main() {
     mockTemplateService = MockAgentTemplateService();
     mockProfileResolver = MockProfileResolver();
     resolver = ProfileAutomationResolver(
-      taskAgentService: mockTaskAgentService,
+      subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
     );
@@ -40,7 +40,7 @@ void main() {
   group('resolveForCategory', () {
     test('resolves via category defaultProfileId when lookup wired', () async {
       final resolverWithCategory = ProfileAutomationResolver(
-        taskAgentService: mockTaskAgentService,
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
         categoryProfileLookup: (categoryId) async {
@@ -78,7 +78,7 @@ void main() {
 
     test('returns null when category has no defaultProfileId', () async {
       final resolverWithCategory = ProfileAutomationResolver(
-        taskAgentService: mockTaskAgentService,
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
         categoryProfileLookup: (_) async => null,
@@ -96,7 +96,7 @@ void main() {
 
     test('returns null when profile cannot be loaded', () async {
       final resolverWithCategory = ProfileAutomationResolver(
-        taskAgentService: mockTaskAgentService,
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
         categoryProfileLookup: (_) async => 'broken-profile',
@@ -111,7 +111,7 @@ void main() {
     });
   });
 
-  group('resolveProfileIdForTask', () {
+  group('resolveProfileIdForSubject', () {
     test(
       'returns agentConfig.profileId when set (agent path wins)',
       () async {
@@ -131,7 +131,7 @@ void main() {
           () => mockTemplateService.getActiveVersion(template.id),
         ).thenAnswer((_) async => version);
 
-        final result = await resolver.resolveProfileIdForTask('task-1');
+        final result = await resolver.resolveProfileIdForSubject('task-1');
 
         expect(result, 'agent-profile-id');
       },
@@ -154,7 +154,7 @@ void main() {
           () => mockTemplateService.getActiveVersion(template.id),
         ).thenAnswer((_) async => version);
 
-        final result = await resolver.resolveProfileIdForTask('task-1');
+        final result = await resolver.resolveProfileIdForSubject('task-1');
 
         expect(result, 'ver-profile-id');
       },
@@ -177,7 +177,7 @@ void main() {
           () => mockTemplateService.getActiveVersion(template.id),
         ).thenAnswer((_) async => version);
 
-        final result = await resolver.resolveProfileIdForTask('task-1');
+        final result = await resolver.resolveProfileIdForSubject('task-1');
 
         expect(result, 'tpl-profile-id');
       },
@@ -187,17 +187,17 @@ void main() {
       'falls back to task-level profileId when no agent exists',
       () async {
         final resolverWithLookup = ProfileAutomationResolver(
-          taskAgentService: mockTaskAgentService,
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
-          taskProfileLookup: (taskId) async =>
+          subjectProfileLookup: (taskId) async =>
               taskId == 'task-orphan' ? 'task-inherited-profile' : null,
         );
         when(
           () => mockTaskAgentService.getTaskAgentForTask('task-orphan'),
         ).thenAnswer((_) async => null);
 
-        final result = await resolverWithLookup.resolveProfileIdForTask(
+        final result = await resolverWithLookup.resolveProfileIdForSubject(
           'task-orphan',
         );
 
@@ -215,10 +215,10 @@ void main() {
         final template = makeTestTemplate();
         final version = makeTestTemplateVersion();
         final resolverWithLookup = ProfileAutomationResolver(
-          taskAgentService: mockTaskAgentService,
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
-          taskProfileLookup: (_) async => 'task-different-profile',
+          subjectProfileLookup: (_) async => 'task-different-profile',
         );
         when(
           () => mockTaskAgentService.getTaskAgentForTask('task-1'),
@@ -230,7 +230,7 @@ void main() {
           () => mockTemplateService.getActiveVersion(template.id),
         ).thenAnswer((_) async => version);
 
-        final result = await resolverWithLookup.resolveProfileIdForTask(
+        final result = await resolverWithLookup.resolveProfileIdForSubject(
           'task-1',
         );
 
@@ -245,7 +245,7 @@ void main() {
           () => mockTaskAgentService.getTaskAgentForTask('task-1'),
         ).thenAnswer((_) async => null);
 
-        final result = await resolver.resolveProfileIdForTask('task-1');
+        final result = await resolver.resolveProfileIdForSubject('task-1');
 
         expect(result, isNull);
       },
@@ -257,13 +257,13 @@ void main() {
       () async {
         // Wire a categoryProfileLookup that would explode the test if called.
         final resolverWithCategory = ProfileAutomationResolver(
-          taskAgentService: mockTaskAgentService,
+          subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
           templateService: mockTemplateService,
           profileResolver: mockProfileResolver,
-          taskProfileLookup: (_) async => null,
+          subjectProfileLookup: (_) async => null,
           categoryProfileLookup: (_) async {
             fail(
-              'resolveProfileIdForTask must not consult '
+              'resolveProfileIdForSubject must not consult '
               'categoryProfileLookup',
             );
           },
@@ -272,7 +272,7 @@ void main() {
           () => mockTaskAgentService.getTaskAgentForTask('task-1'),
         ).thenAnswer((_) async => null);
 
-        final result = await resolverWithCategory.resolveProfileIdForTask(
+        final result = await resolverWithCategory.resolveProfileIdForSubject(
           'task-1',
         );
 

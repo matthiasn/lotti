@@ -1175,7 +1175,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(resolver.resolveForTaskCalls, [linkedTask.id]);
+        expect(resolver.resolveForSubjectCalls, [linkedTask.id]);
         expect(resolver.resolveForCategoryCalls, isEmpty);
         expect(capturedParams, isNotNull);
         expect(capturedParams!.entityId, entity.id);
@@ -1930,9 +1930,9 @@ void main() {
 
     // When the entity itself is a Task, linkedTaskId is non-null
     // (journalEntity.id) so the override handler resolves the profile via
-    // resolveForTask rather than resolveForCategory. This drives the
+    // resolveForSubject rather than resolveForCategory. This drives the
     // task-profile branch and proves the resolved default is honoured.
-    testWidgets('Task entity resolves its profile via resolveForTask (not '
+    testWidgets('Task entity resolves its profile via resolveForSubject (not '
         'resolveForCategory) and the picker highlights that default row', (
       tester,
     ) async {
@@ -2013,9 +2013,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The Task's profile was resolved via resolveForTask, keyed by the
+      // The Task's profile was resolved via resolveForSubject, keyed by the
       // task id — never via resolveForCategory.
-      expect(resolver.resolveForTaskCalls, ['task-override']);
+      expect(resolver.resolveForSubjectCalls, ['task-override']);
       expect(resolver.resolveForCategoryCalls, isEmpty);
 
       // Picker is open; tapping the default-badged row (modelA) collapses
@@ -2499,7 +2499,7 @@ class _StubAiConfigRepository implements AiConfigRepository {
 /// `inference_model_picker_modal_test.dart` in isolation.
 class _NullProfileResolver implements ProfileAutomationResolver {
   @override
-  Future<ResolvedProfile?> resolveForTask(String taskId) async => null;
+  Future<ResolvedProfile?> resolveForSubject(String taskId) async => null;
 
   @override
   Future<ResolvedProfile?> resolveForCategory(String categoryId) async => null;
@@ -2518,7 +2518,7 @@ class _FixedProfileResolver implements ProfileAutomationResolver {
   final ResolvedProfile _profile;
 
   @override
-  Future<ResolvedProfile?> resolveForTask(String taskId) async => _profile;
+  Future<ResolvedProfile?> resolveForSubject(String taskId) async => _profile;
 
   @override
   Future<ResolvedProfile?> resolveForCategory(String categoryId) async =>
@@ -2530,17 +2530,17 @@ class _FixedProfileResolver implements ProfileAutomationResolver {
 
 /// Resolver that returns a fixed profile and records which method was
 /// invoked (and with which id). Used to prove the override handler routes
-/// Task entities through `resolveForTask` rather than `resolveForCategory`.
+/// Task entities through `resolveForSubject` rather than `resolveForCategory`.
 class _RecordingProfileResolver implements ProfileAutomationResolver {
   _RecordingProfileResolver(this._profile);
 
   final ResolvedProfile _profile;
-  final List<String> resolveForTaskCalls = [];
+  final List<String> resolveForSubjectCalls = [];
   final List<String> resolveForCategoryCalls = [];
 
   @override
-  Future<ResolvedProfile?> resolveForTask(String taskId) async {
-    resolveForTaskCalls.add(taskId);
+  Future<ResolvedProfile?> resolveForSubject(String taskId) async {
+    resolveForSubjectCalls.add(taskId);
     return _profile;
   }
 

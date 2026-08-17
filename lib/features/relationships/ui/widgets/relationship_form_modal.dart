@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -230,7 +231,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
 
     setState(() => _isSaving = true);
+    // Every provider is read before the first `await`. Saving pops the sheet,
+    // and the category write, the agent hand-off and any retry that follows
+    // all run past that point — reading through `ref` once the element is
+    // unmounted throws and aborts the save mid-way.
     final repository = ref.read(relationshipRepositoryProvider);
+    final journalRepository = ref.read(journalRepositoryProvider);
+    // Only resolved when it will actually be used — `_important` is form
+    // state, known before any await, so this stays ahead of the unmount.
+    final agentService = _important
+        ? ref.read(relationshipAgentServiceProvider)
+        : null;
     final nickname = _nicknameController.text.trim();
 
     try {
@@ -257,11 +268,12 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         // through the dedicated journal path, which handles clearing (a
         // freezed copyWith cannot null a field) plus vector clock and sync.
         if (success && _categoryId != initial.meta.categoryId) {
-          await ref
-              .read(journalRepositoryProvider)
-              .updateCategoryId(initial.meta.id, categoryId: _categoryId);
+          await journalRepository.updateCategoryId(
+            initial.meta.id,
+            categoryId: _categoryId,
+          );
         }
-        if (success) _ensureAgentIfImportant(updated);
+        if (success) _ensureAgentIfImportant(agentService, updated);
         if (!mounted) return;
         if (success) {
           Navigator.of(context).pop(updated);
@@ -283,7 +295,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           ),
           categoryId: _categoryId,
         );
-        if (created != null) _ensureAgentIfImportant(created);
+        if (created != null) _ensureAgentIfImportant(agentService, created);
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -321,13 +333,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
   /// takes effect immediately). Fire-and-forget with contained failure —
   /// agent wiring must never fail the save the user just watched succeed.
-  void _ensureAgentIfImportant(RelationshipEntry relationship) {
-    if (!relationship.data.important) return;
+  /// Takes the service rather than reading it: this outlives the sheet by
+  /// design — the agent is created after the modal has popped — so it must
+  /// not touch `ref`.
+  void _ensureAgentIfImportant(
+    RelationshipAgentService? agentService,
+    RelationshipEntry relationship,
+  ) {
+    if (!relationship.data.important || agentService == null) return;
     unawaited(() async {
       try {
-        await ref
-            .read(relationshipAgentServiceProvider)
-            .ensureAgentForRelationship(relationship);
+        await agentService.ensureAgentForRelationship(relationship);
       } catch (e, s) {
         developer.log(
           'Failed to ensure relationship agent',

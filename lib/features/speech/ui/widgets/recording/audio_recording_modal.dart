@@ -25,7 +25,13 @@ class AudioRecordingModal {
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
   /// selects which navigator hosts the sheet.
-  static Future<void> show(
+  ///
+  /// Returns the id of the audio entry the recording created, or `null` when
+  /// the sheet was dismissed or the recording cancelled. Callers that want to
+  /// do something with the recording — the check-in sheet waits for its
+  /// transcript — need the id; the ones that only wanted the side effect can
+  /// keep ignoring it.
+  static Future<String?> show(
     BuildContext context, {
     String? linkedId,
     String? categoryId,
@@ -69,6 +75,7 @@ class AudioRecordingModal {
     if (linkedId == null && createdId != null) {
       beamToNamed('/journal/$createdId');
     }
+    return createdId;
   }
 }
 

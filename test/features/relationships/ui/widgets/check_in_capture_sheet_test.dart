@@ -1,22 +1,115 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:record/record.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
+/// Stands in for the transcription service: answers the pre-flight probe and
+/// hands back a wait the test drives directly.
+class _StubTranscriptionService implements CheckInTranscriptionService {
+  _StubTranscriptionService({
+    required this.canTranscribeResult,
+    required this.transcript,
+    this.gate,
+  });
+
+  final bool canTranscribeResult;
+  final String? transcript;
+  final Completer<String?>? gate;
+  int cancelCount = 0;
+
+  @override
+  Future<bool> canTranscribe(String subjectId) async => canTranscribeResult;
+
+  @override
+  CheckInTranscriptWait transcribe({
+    required String audioEntryId,
+    required String subjectId,
+    Duration timeout = checkInTranscriptTimeout,
+  }) {
+    final completer = gate ?? (Completer<String?>()..complete(transcript));
+    return CheckInTranscriptWait.forTesting(
+      result: completer.future,
+      onCancel: () {
+        cancelCount++;
+        if (!completer.isCompleted) completer.complete(null);
+      },
+    );
+  }
+}
+
 void main() {
+  group('mergeCheckInNarrative', () {
+    test('uses the transcript when the field is empty', () {
+      expect(
+        mergeCheckInNarrative(existing: '', transcript: 'She got the job.'),
+        'She got the job.',
+      );
+    });
+
+    test('appends below text the user already typed', () {
+      expect(
+        mergeCheckInNarrative(
+          existing: 'Called on the way home.',
+          transcript: 'She got the job.',
+        ),
+        'Called on the way home.\n\nShe got the job.',
+      );
+    });
+
+    // A second recording adds to the account; nothing typed is ever lost.
+    test('keeps appending across repeated recordings', () {
+      final once = mergeCheckInNarrative(
+        existing: '',
+        transcript: 'First take.',
+      );
+
+      expect(
+        mergeCheckInNarrative(existing: once, transcript: 'Second take.'),
+        'First take.\n\nSecond take.',
+      );
+    });
+
+    test('leaves the field untouched for a blank transcript', () {
+      expect(
+        mergeCheckInNarrative(existing: 'Typed.', transcript: '   '),
+        'Typed.',
+      );
+    });
+
+    test('trims both sides before joining', () {
+      expect(
+        mergeCheckInNarrative(
+          existing: '  Typed.  \n',
+          transcript: '\n  Spoken.  ',
+        ),
+        'Typed.\n\nSpoken.',
+      );
+    });
+  });
+
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
+  late _StubTranscriptionService stubTranscription;
 
   CheckInEntry createdEntry(CheckInData data) => CheckInEntry(
     meta: Metadata(
@@ -33,6 +126,11 @@ void main() {
 
   setUp(() {
     mockRepository = MockRelationshipRepository();
+    // The speak flow reads the person to scope the recording to their
+    // category; every other flow ignores it.
+    when(
+      () => mockRepository.getRelationshipById(any()),
+    ).thenAnswer((_) async => testRelationship);
     when(
       () => mockRepository.createCheckIn(
         data: any(named: 'data'),
@@ -46,10 +144,50 @@ void main() {
     );
   });
 
+  /// The tracked person, filed under [categoryId] — the category whose
+  /// profile and speech dictionary the recording will be transcribed with.
+  RelationshipEntry relationshipIn(String? categoryId) =>
+      testRelationship.copyWith(
+        meta: testRelationship.meta.copyWith(categoryId: categoryId),
+      );
+
   Widget buildForm() => makeTestableWidgetWithScaffold(
     const CheckInCaptureForm(relationshipId: 'rel-001'),
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
+    ],
+  );
+
+  /// The form with both voice seams stubbed: [recordedEntryId] is what the
+  /// recorder sheet resolves to, [transcript] what the wait yields.
+  Widget buildSpeakableForm({
+    required String? recordedEntryId,
+    required String? transcript,
+    Completer<String?>? transcriptGate,
+    void Function(String? categoryId)? onLaunch,
+    bool canTranscribe = true,
+  }) => makeTestableWidgetWithScaffold(
+    const CheckInCaptureForm(relationshipId: 'rel-001'),
+    overrides: [
+      relationshipRepositoryProvider.overrideWithValue(mockRepository),
+
+      checkInRecorderLauncherProvider.overrideWithValue(
+        ({
+          required BuildContext context,
+          required String relationshipId,
+          String? categoryId,
+        }) async {
+          onLaunch?.call(categoryId);
+          return recordedEntryId;
+        },
+      ),
+      checkInTranscriptionServiceProvider.overrideWithValue(
+        stubTranscription = _StubTranscriptionService(
+          canTranscribeResult: canTranscribe,
+          transcript: transcript,
+          gate: transcriptGate,
+        ),
+      ),
     ],
   );
 
@@ -574,6 +712,343 @@ void main() {
         find.text('Could not delete the check-in. Please try again.'),
         findsOne,
       );
+    });
+  });
+
+  group('speak check-in', () {
+    Finder speakButton() => find.byKey(const Key('check_in_speak_button'));
+    Finder narrativeField() => find.ancestor(
+      of: find.text('What did you talk about?'),
+      matching: find.byType(TextField),
+    );
+
+    String narrativeText(WidgetTester tester) =>
+        tester.widget<TextField>(narrativeField()).controller!.text;
+
+    testWidgets('offers the button on a fresh check-in', (tester) async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      expect(speakButton(), findsOne);
+      expect(find.text('Speak check-in'), findsOne);
+    });
+
+    // The bug this guards: with no audio model — or a person filed under no
+    // category, which can never pass the automatic-inference gate — the sheet
+    // used to record and then sit on "Transcribing…" for the full five-minute
+    // timeout before admitting no run was ever started.
+    testWidgets('refuses before recording when nothing can transcribe', (
+      tester,
+    ) async {
+      var launches = 0;
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: 'never reached',
+          canTranscribe: false,
+          onLaunch: (_) => launches++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(launches, 0, reason: 'no recording should be wasted');
+      expect(find.text('Transcribing…'), findsNothing);
+      expect(
+        find.textContaining('Transcription is not set up'),
+        findsOne,
+      );
+    });
+
+    testWidgets('prefills the empty narrative with the transcript', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: 'She got the job.',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(narrativeText(tester), 'She got the job.');
+    });
+
+    // Speaking never destroys typing — the account grows, it is not replaced.
+    testWidgets('appends below text the user already typed', (tester) async {
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: 'She got the job.',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(narrativeField(), 'Called on the way home.');
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(
+        narrativeText(tester),
+        'Called on the way home.\n\nShe got the job.',
+      );
+    });
+
+    testWidgets('scopes the recording to the person and their category', (
+      tester,
+    ) async {
+      String? launchedCategoryId;
+      var launches = 0;
+      when(() => mockRepository.getRelationshipById('rel-001')).thenAnswer(
+        (_) async => relationshipIn('category-7'),
+      );
+
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: 'Spoken.',
+          onLaunch: (categoryId) {
+            launches++;
+            launchedCategoryId = categoryId;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(launches, 1);
+      expect(launchedCategoryId, 'category-7');
+    });
+
+    testWidgets('shows the transcribing state while the wait is open', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+
+      expect(find.text('Transcribing…'), findsOne);
+      expect(find.text('Speak check-in'), findsNothing);
+
+      gate.complete('Arrived at last.');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Speak check-in'), findsOne);
+      expect(narrativeText(tester), 'Arrived at last.');
+    });
+
+    testWidgets('a dismissed recording leaves the narrative alone', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSpeakableForm(recordedEntryId: null, transcript: 'never used'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(narrativeField(), 'Typed only.');
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(narrativeText(tester), 'Typed only.');
+      expect(find.text('Transcribing…'), findsNothing);
+    });
+
+    // No profile, no model, or a run that never finished: the user is told
+    // once and keeps a usable field rather than an empty spinner.
+    testWidgets('says so when no transcript came back', (tester) async {
+      await tester.pumpWidget(
+        buildSpeakableForm(recordedEntryId: 'audio-1', transcript: null),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(narrativeField(), 'Typed only.');
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No transcript came back. You can type it instead.'),
+        findsOne,
+      );
+      expect(narrativeText(tester), 'Typed only.');
+      expect(find.text('Speak check-in'), findsOne);
+    });
+
+    testWidgets('ignores a second tap while a transcript is in flight', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      var launches = 0;
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+          onLaunch: (_) => launches++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+      await tester.tap(speakButton(), warnIfMissed: false);
+      await tester.pump();
+
+      expect(launches, 1);
+
+      gate.complete('Done.');
+      await tester.pumpAndSettle();
+    });
+
+    // Saving mid-wait used to pop the sheet and silently drop the words the
+    // user was still waiting for, leaving the check-in with no narrative.
+    testWidgets('holds Save while a transcript is in flight', (tester) async {
+      final gate = Completer<String?>();
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
+      expect(
+        tester.widget<DesignSystemButton>(saveButton).onPressed,
+        isNotNull,
+        reason: 'enabled before speaking',
+      );
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+
+      expect(tester.widget<DesignSystemButton>(saveButton).onPressed, isNull);
+
+      gate.complete('Arrived.');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<DesignSystemButton>(saveButton).onPressed,
+        isNotNull,
+      );
+    });
+
+    // A dismissed sheet must stop the wait rather than leave it re-reading the
+    // database on every write until the timeout expires.
+    testWidgets('cancels the wait when the sheet goes away', (tester) async {
+      final gate = Completer<String?>();
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+      expect(stubTranscription.cancelCount, 0);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      expect(stubTranscription.cancelCount, 1);
+    });
+
+    testWidgets('is offered when editing an existing check-in too', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      expect(speakButton(), findsOne);
+    });
+  });
+
+  // The default launcher, exercised for real: the whole phase depends on the
+  // recording being linked to the *person*, since that is what makes the
+  // generalized automation resolve their profile and wake their agent.
+  group('showCheckInRecorder', () {
+    testWidgets('opens the recording sheet linked to the person', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1000, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      // The recorder controller resolves its logger from GetIt.
+      await setUpTestGetIt();
+      addTearDown(tearDownTestGetIt);
+
+      final recorderRepository = MockAudioRecorderRepository();
+      when(
+        () => recorderRepository.amplitudeStream,
+      ).thenAnswer((_) => const Stream<Amplitude>.empty());
+      final categoryRepository = MockCategoryRepository();
+      when(
+        () => categoryRepository.watchCategory(any()),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => Consumer(
+              builder: (context, ref, _) => ElevatedButton(
+                onPressed: () => ref.read(checkInRecorderLauncherProvider)(
+                  context: context,
+                  relationshipId: 'rel-001',
+                  categoryId: 'category-7',
+                ),
+                child: const Text('Speak'),
+              ),
+            ),
+          ),
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              recorderRepository,
+            ),
+            categoryRepositoryProvider.overrideWithValue(categoryRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Speak'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final content = tester.widget<AudioRecordingModalContent>(
+        find.byType(AudioRecordingModalContent),
+      );
+      expect(content.linkedId, 'rel-001');
+      expect(content.categoryId, 'category-7');
     });
   });
 }

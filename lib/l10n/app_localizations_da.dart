@@ -3135,10 +3135,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInSentimentStrained => 'Anstrengt';
 
   @override
+  String get checkInSpeakButton => 'Indtal check-in';
+
+  @override
   String get checkInTopicsHint => 'Kommasepareret, f.eks. arbejde, rejser';
 
   @override
   String get checkInTopicsLabel => 'Emner';
+
+  @override
+  String get checkInTranscribingLabel => 'Transskriberer…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Der kom ingen udskrift. Du kan skrive den selv.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.';
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';

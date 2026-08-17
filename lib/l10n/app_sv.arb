@@ -1574,8 +1574,12 @@
   "checkInSentimentLabel": "Hur kändes det?",
   "checkInSentimentNeutral": "Neutralt",
   "checkInSentimentStrained": "Ansträngt",
+  "checkInSpeakButton": "Tala in avstämning",
   "checkInTopicsHint": "Kommaseparerade, t.ex. jobb, resor",
   "checkInTopicsLabel": "Ämnen",
+  "checkInTranscribingLabel": "Transkriberar…",
+  "checkInTranscriptFailed": "Ingen transkription kom tillbaka. Du kan skriva den själv.",
+  "checkInTranscriptUnavailable": "Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.",
   "checklistAddItem": "Lägg till ett nytt föremål",
   "checklistAiConfidenceLabel": "Självförtroende: {level}",
   "@checklistAiConfidenceLabel": {

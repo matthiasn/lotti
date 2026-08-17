@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Relationships
-description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, how the deterministic agent tier tracks cadence at zero inference cost, and how the LLM tier turns a fired escalation into a briefing, a banner and chat without ever seeing a contact channel.
+description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, how the deterministic agent tier tracks cadence at zero inference cost, how the LLM tier turns a fired escalation into a briefing, a banner and chat without ever seeing a contact channel, and how a spoken check-in reaches a transcript now that automated transcription resolves any subject entity rather than only tasks.
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
@@ -36,6 +36,18 @@ sources:
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
     title: ADR 0059 — Relationship agents on the shared runtime
     last_modified: 2026-08-16
+  - id: subject-agent
+    resource: ../../lib/features/agents/service/subject_agent_lookup.dart
+    title: SubjectAgentResolver — the kind-agnostic agent lookup
+    last_modified: 2026-08-17
+  - id: transcript-wait
+    resource: ../../lib/features/relationships/service/check_in_transcription_service.dart
+    title: CheckInTranscriptionService — waiting for a spoken check-in's transcript
+    last_modified: 2026-08-17
+  - id: automation
+    resource: ../../lib/features/ai/helpers/profile_automation_resolver.dart
+    title: ProfileAutomationResolver — subject-shaped profile resolution
+    last_modified: 2026-08-17
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -324,6 +336,113 @@ removed:
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
   model to a provider name; a cloud provider is named in a consent dialog
   first (ADR 0037), and an unresolvable profile is treated as cloud.
+
+# Voice check-ins (plan v2 phase 6)
+
+The capture sheet's "Speak check-in" records through the shared recording
+sheet and hands the transcript back to the user to edit. The hard part is not
+the UI: it is that **automated transcription used to be task-shaped**.
+
+`ProfileAutomationService.tryTranscribe` and `ProfileAutomationResolver` took
+a `taskId`, resolved the agent through `TaskAgentService.getTaskAgentForTask`,
+and read `profileId` only off `Task.data`. A recording linked to a person hit
+every one of those and declined silently — no profile, no transcription, no
+wake. Phase 6 replaces the task with a **subject**: any journal entity that
+can own an agent, a profile and a category.
+
+Three seams carry the generalization:
+
+* `SubjectAgentResolver` (`agents/service/subject_agent_lookup.dart`) walks
+  `subjectAgentLinkTypes` — task, project, event, relationship, in that order
+  — and returns the agent behind the first link type present. A link that
+  points at an unloadable agent yields `null` rather than falling through, so
+  a broken link can never attach a foreign agent to an entity. `agentDay` is
+  deliberately excluded: a day agent's subject is a date key, not something a
+  recording hangs off.
+* `subjectProfileIdOf` (`ai/state/profile_automation_providers.dart`) reads
+  the profile a subject stores in its own payload, per variant —
+  `Task.data.profileId`, `ProjectData.profileId`,
+  `RelationshipData.profileId`. Everything else in the resolver was already
+  kind-agnostic: the category lookup reads `meta.categoryId`, which every
+  variant has.
+* `AutomaticPromptTrigger` withholds `linkedTaskId` from non-task subjects.
+  That parameter feeds both `buildTaskDetailsJson` *and* the consumption
+  record's `taskId`, so passing a person's id there would file the spend
+  against a task that does not exist. The trigger resolves the entity once and
+  passes the id only when it really is a task.
+
+```mermaid
+sequenceDiagram
+  participant Sheet as CheckInCaptureForm
+  participant Modal as AudioRecordingModal
+  participant Rec as AudioRecorderController
+  participant Trig as AutomaticPromptTrigger
+  participant Svc as CheckInTranscriptionService
+  participant Agent as relationship agent
+
+  Sheet->>Svc: canTranscribe(personId)
+  Svc-->>Sheet: false → refuse now, never record
+  Sheet->>Modal: show(linkedId: personId, categoryId: person's category)
+  Modal-->>Sheet: audio entry id (null if dismissed)
+  Sheet->>Svc: transcribe(entryId, subjectId: personId)
+  Note over Svc: starts watching updateStream first
+  alt automatic path is live
+    Rec->>Trig: triggerAutomaticPrompts(entryId, linkedSubjectId: personId)
+    Note over Trig: unawaited — the sheet never blocks on the recorder
+    Trig->>Trig: tryTranscribe → runTranscription(linkedTaskId: null)
+    Trig->>Agent: requestContentWake(transcriptionComplete)
+  else automatic path declines
+    Svc->>Svc: requestTranscription → runTranscription(linkedTaskId: null)
+  end
+  Svc-->>Sheet: transcript
+  Sheet->>Sheet: mergeCheckInNarrative(existing, transcript)
+```
+
+**Who runs the transcription is the subtle part.** The recorder fires
+`AutomaticPromptTrigger` on every stop, and that path is gated on
+`ProfileAutomationService._categoryAllowsAutomation` — the category's
+automatic-inference switch. That gate is documented as the consent for
+spending tokens *without a user gesture*, and pressing "Speak check-in" is a
+gesture. Leaning on it alone made the feature refuse for a reason unrelated to
+the request: a person filed under **no category** can never pass it, whatever
+models are configured, so their spoken check-in silently never ran.
+
+`CheckInTranscriptionService` therefore owns the decision. It asks
+`hasAutomatedSkillType` whether the automatic path will run; if it will, it
+stands aside and only waits, and if it will not, it calls
+`ProfileAutomationService.requestTranscription` — the same resolution minus
+the consent gate — and runs the skill itself. Exactly one run happens either
+way, so a spoken check-in is never billed twice. `canTranscribe` is the
+render-time counterpart: it answers "could *either* path produce words", and
+the sheet refuses **before** recording when neither can, rather than capturing
+audio for a transcript that can never arrive.
+
+The sheet and the run are **not** connected by a return value, so the service
+bridges the gap by subscribing to `UpdateNotifications.updateStream` *before*
+its first read (a transcript landing between the two is not missed) and
+re-reading the audio entry on every notification carrying its id. An empty
+`entryText` reads as "not yet", because the audio entry's own creation
+notification arrives long before any run finishes. The wait ends three ways:
+the transcript arrives; the run resolves no model or throws, which cancels the
+wait immediately rather than stranding the user on a spinner; or
+`checkInTranscriptTimeout` (5 minutes) expires. `CheckInTranscriptWait.cancel`
+is the fourth exit, called from the sheet's `dispose` so a dismissed sheet
+stops re-reading the database.
+
+Two invariants hold regardless of what comes back:
+
+* **Nothing auto-saves.** The transcript populates the text field;
+  the check-in exists only once the user presses save. This is the same rule
+  that keeps `CheckInSentiment` user-set (ADR 0038).
+* **Speaking never destroys typing.** `mergeCheckInNarrative` appends below
+  existing text, blank-line separated, so a second recording adds to the
+  account rather than replacing it.
+
+Name accuracy comes from the **category's `speechDictionary`**, not from
+anything relationship-specific: the recording is created with the person's
+`categoryId`, and `PromptBuilderHelper.getSpeechDictionaryTerms` reads the
+audio entry's own category, sending those terms as provider context bias and
+injecting them into the transcription prompt.
 
 # Privacy
 

@@ -1574,8 +1574,12 @@
   "checkInSentimentLabel": "Hvordan føltes det?",
   "checkInSentimentNeutral": "Neutralt",
   "checkInSentimentStrained": "Anstrengt",
+  "checkInSpeakButton": "Indtal check-in",
   "checkInTopicsHint": "Kommasepareret, f.eks. arbejde, rejser",
   "checkInTopicsLabel": "Emner",
+  "checkInTranscribingLabel": "Transskriberer…",
+  "checkInTranscriptFailed": "Der kom ingen udskrift. Du kan skrive den selv.",
+  "checkInTranscriptUnavailable": "Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.",
   "checklistAddItem": "Tilføj en ny genstand",
   "checklistAiConfidenceLabel": "Selvtillid: {level}",
   "@checklistAiConfidenceLabel": {
