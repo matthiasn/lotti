@@ -16,5 +16,6 @@ String barTooltipText(BarTooltipItem item) => _joined(item.text, item.children);
 
 String _joined(String text, List<TextSpan>? children) =>
     text +
-    [for (final child in children ?? const <TextSpan>[]) child.toPlainText()]
-        .join();
+    [
+      for (final child in children ?? const <TextSpan>[]) child.toPlainText(),
+    ].join();

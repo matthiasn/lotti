@@ -782,14 +782,19 @@ flowchart TD
   caption inside it, down to a one-letter form — until the whole span fits the
   width it was given, and only a span that overflows even at the legibility
   floor becomes a trailing-anchored (`reverse: true`) scroller joined to one
-  `LinkedScrollGroup`, where every track then pans in unison. A fortnight at
-  the authored pitch is wider than a phone card, and the scroller that
-  resulted opened with the first days of the span cut in half off the left
-  edge. A gutter is reserved where a VALUE AXIS is drawn and nowhere else:
-  the time-series plots and the hand-painted metric bars measure their own
-  (`chartLeftAxisWidth`, from the tick labels they will actually render), and
-  the habit grids and the whole-goal strip — which draw no axis — start on the
-  card's own rail with their span caption above them.
+  `LinkedScrollGroup`, where every track then pans in unison. One policy
+  (`_fitOrScroll`), by WIDTH, for all three tracks: deciding by day count
+  wrapped a span that provably fitted, and a fortnight at the authored pitch
+  is wider than a phone card, so the scroller opened with the first days of
+  the span cut in half off the left edge. A gutter is reserved where a VALUE
+  AXIS is drawn and nowhere else — the time-series plots and the hand-painted
+  metric bars take `kChartLeftAxisWidth`, the habit grids and the whole-goal
+  strip start on the card's own rail with their span caption above them.
+  That gutter is ONE constant rather than a per-chart measurement on purpose:
+  a chart and the date axis beneath it are separate widgets, so a measured
+  gutter has to be threaded to both by hand, and every card pairing them would
+  have to re-derive the chart's own axis rule to do it — buying ~10px of plot
+  at the price of the exact misalignment the width exists to prevent.
   Aggregates never fold the rendered list — the
   evaluator's numbers win — so a longer rendering cannot change a verdict,
   and the ages-out ring anchors at the window's own first day rather than

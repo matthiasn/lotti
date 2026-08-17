@@ -13,6 +13,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -829,12 +830,22 @@ void main() {
   testWidgets('the partial-day dot scales with the square it marks', (
     tester,
   ) async {
-    Future<double> dotWidth(double cellSize) async {
+    // The square's size is derived from the width the track has to fit into,
+    // so a squeezed strip is how a small cell is produced.
+    Future<double> dotWidth({
+      required double width,
+      required int dayCount,
+    }) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          GoalCompactWindowStrip(
-            days: const [GoalCompactDayState.partial],
-            cellSize: cellSize,
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: GoalCompactWindowStrip(
+                days: List.filled(dayCount, GoalCompactDayState.partial),
+              ),
+            ),
           ),
         ),
       );
@@ -851,8 +862,8 @@ void main() {
           .width;
     }
 
-    final compact = await dotWidth(IconSizes.xs);
-    final large = await dotWidth(ControlSizes.iconChipCompact);
+    final compact = await dotWidth(width: 200, dayCount: 30);
+    final large = await dotWidth(width: 760, dayCount: 8);
     // A dot fixed at the compact size vanishes inside the 28px square the
     // detail page uses, and the partial state is the one that has no colour
     // of its own to fall back on.
@@ -1823,31 +1834,26 @@ void main() {
       ),
     );
 
-    // A tinted, bordered callout rather than one more caption row: this is
-    // the one thing on the card the app is ASKING the user to do, and at
-    // caption weight between two other caption rows it read as fine print.
+    // The design system's own inline callout, not a second callout dialect:
+    // this is the one thing on the card the app is ASKING the user to do, and
+    // as a caption row between two other caption rows it read as fine print.
     final callout = find.byKey(
       const ValueKey('goal-habit-checkoff-callout-bp'),
     );
     expect(callout, findsOneWidget);
-    final decoration =
-        tester.widget<DecoratedBox>(callout).decoration as BoxDecoration;
-    expect(decoration.color, isNotNull);
-    expect(decoration.border, isNotNull);
-    final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
-    final prompt = tester.widget<Text>(
-      find.text('Blood Pressure recorded today — check off this habit?'),
-    );
     expect(
-      prompt.style?.fontSize,
-      tokens.typography.styles.body.bodySmall.fontSize,
+      tester.widget<DesignSystemInlineCallout>(callout).text,
+      'Blood Pressure recorded today — check off this habit?',
     );
-    expect(prompt.style?.color, tokens.colors.text.highEmphasis);
-    // The action is the callout's point, so it is the card's primary button.
+    // The action rides the callout's trailing edge, as its primary button.
     final button = tester.widget<DesignSystemButton>(
       find.byKey(const ValueKey('goal-habit-checkoff-bp')),
     );
     expect(button.variant, DesignSystemButtonVariant.primary);
+    expect(
+      find.descendant(of: callout, matching: find.byWidget(button)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('metric bars expose localized date, value, target, and state', (

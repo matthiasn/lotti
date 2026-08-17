@@ -50,17 +50,9 @@ class UnifiedGoalsPage extends ConsumerStatefulWidget {
   ConsumerState<UnifiedGoalsPage> createState() => _UnifiedGoalsPageState();
 }
 
-class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
+class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
+    with GoalHealthRefreshOnEntry {
   final _scrollController = ScrollController();
-
-  /// The health signals already asked for since this page was opened.
-  ///
-  /// A goal that watches steps, weight or blood pressure reads journal rows
-  /// written by the health importer, and nothing on this page would otherwise
-  /// import: opening Goals must therefore pull those signals forward. Keyed so
-  /// the request fires ONCE per surface entry — the specs resolve
-  /// asynchronously and this build runs on every provider tick.
-  final _refreshedHealthRequests = <String>{};
 
   /// Fires just past local midnight so the lifecycle-gated sets
   /// (recordable ids, orphan rows, the scoped summary) recompute the moment
@@ -108,26 +100,6 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     _midnightTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  /// Queues a delta import for every health signal the listed goals watch,
-  /// skipping anything already requested this visit.
-  ///
-  /// Fire-and-forget and post-frame: the import is a side effect of ARRIVING
-  /// here, not of painting, and the page renders from what is already stored
-  /// while the delta lands.
-  void _refreshHealthSignals(List<GoalCriterion> criteria) {
-    final pending = GoalHealthRefreshService.importRequestsFor(
-      criteria,
-    ).difference(_refreshedHealthRequests);
-    if (pending.isEmpty) return;
-    _refreshedHealthRequests.addAll(pending);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final service = ref.read(goalHealthRefreshServiceProvider);
-      if (service == null) return;
-      unawaited(service.refreshRequests(pending));
-    });
   }
 
   @override
@@ -239,7 +211,10 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         if (health.value?.spec?.criteria case final criteria?)
           ...goalCriterionHabitIds(criteria),
     };
-    _refreshHealthSignals([
+    // Opening Goals pulls every goal's health signals forward — nothing else
+    // on this page imports, so the cards would otherwise be as stale as the
+    // last time something else happened to fetch.
+    refreshHealthSignals([
       for (final health in healths) ?health.value?.spec?.criteria,
     ]);
 

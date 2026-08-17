@@ -44,7 +44,6 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final axis = niceAxis(minVal, maxVal);
-    final leftAxisWidth = chartLeftAxisWidth(context, axis);
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Padding(
@@ -95,7 +94,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                 showTitles: true,
                 interval: axis.interval,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: leftAxisWidth,
+                reservedSize: kChartLeftAxisWidth,
                 // Suppress the bottom tick (it overlaps the date axis) but keep
                 // the top tick so the value scale's ceiling shows — matching
                 // the bar and single-line variants' shared-axis behavior.

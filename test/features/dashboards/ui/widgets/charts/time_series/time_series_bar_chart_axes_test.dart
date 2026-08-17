@@ -66,20 +66,10 @@ void main() {
       final barChart = tester.widget<BarChart>(find.byType(BarChart));
       final leftTitles = barChart.data.titlesData.leftTitles.sideTitles;
       expect(leftTitles.showTitles, isTrue);
-      // The gutter is MEASURED from the ticks this axis will actually draw,
-      // not a fixed worst-case width, so the plot keeps everything the labels
-      // do not need.
-      expect(
-        leftTitles.reservedSize,
-        chartLeftAxisWidth(
-          tester.element(find.byType(BarChart)),
-          NiceAxis(
-            min: barChart.data.minY,
-            max: barChart.data.maxY,
-            interval: barChart.data.gridData.horizontalInterval!,
-          ),
-        ),
-      );
+      // ONE gutter for every chart and every date axis beside one: a
+      // per-chart measurement would have to be threaded to both halves by
+      // hand, and the half that missed it drifts out from under the data.
+      expect(leftTitles.reservedSize, kChartLeftAxisWidth);
       // The min tick is suppressed (it overlaps the bottom axis), but the top
       // nice-number bound is labelled so the value scale's ceiling is readable.
       expect(leftTitles.minIncluded, isFalse);

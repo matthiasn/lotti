@@ -290,17 +290,9 @@ void main() {
       // The bottom date axis is rendered by the shared DashboardChartDateAxis
       // widget, not by fl_chart.
       expect(titlesData.bottomTitles.sideTitles.showTitles, isFalse);
-      // Measured from the ticks the axis will actually draw.
       expect(
         titlesData.leftTitles.sideTitles.reservedSize,
-        chartLeftAxisWidth(
-          tester.element(find.byType(LineChart)),
-          NiceAxis(
-            min: lineChart.data.minY,
-            max: lineChart.data.maxY,
-            interval: lineChart.data.gridData.horizontalInterval!,
-          ),
-        ),
+        kChartLeftAxisWidth,
       );
     });
   });

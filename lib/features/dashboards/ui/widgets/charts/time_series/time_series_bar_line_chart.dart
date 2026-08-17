@@ -60,7 +60,6 @@ class TimeSeriesBarLineChart extends StatelessWidget {
     final lineSpots = _indexedSpots(lineData, start);
     final lineStyle = chartEmphasisLine(lineColor);
     final barRadius = Radius.circular(tokens.radii.xs);
-    final leftAxisWidth = chartLeftAxisWidth(context, axis);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -70,7 +69,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final plotWidth = math.max(
-            constraints.maxWidth - leftAxisWidth,
+            constraints.maxWidth - kChartLeftAxisWidth,
             0,
           );
           final barWidth = math.min(
@@ -91,11 +90,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
                     getDrawingHorizontalLine: (value) => chartGridLine(context),
                   ),
                   barTouchData: const BarTouchData(enabled: false),
-                  titlesData: _axisTitles(
-                    axis,
-                    showLabels: true,
-                    leftAxisWidth: leftAxisWidth,
-                  ),
+                  titlesData: _axisTitles(axis, showLabels: true),
                   borderData: FlBorderData(
                     show: true,
                     border: Border.all(
@@ -143,11 +138,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
                           _tooltipItems(context, spots, start: start),
                     ),
                   ),
-                  titlesData: _axisTitles(
-                    axis,
-                    showLabels: false,
-                    leftAxisWidth: leftAxisWidth,
-                  ),
+                  titlesData: _axisTitles(axis, showLabels: false),
                   borderData: FlBorderData(show: false),
                   extraLinesData: ExtraLinesData(
                     horizontalLines: horizontalLines,
@@ -182,11 +173,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
     );
   }
 
-  FlTitlesData _axisTitles(
-    NiceAxis axis, {
-    required bool showLabels,
-    required double leftAxisWidth,
-  }) {
+  FlTitlesData _axisTitles(NiceAxis axis, {required bool showLabels}) {
     return FlTitlesData(
       rightTitles: const AxisTitles(),
       topTitles: const AxisTitles(),
@@ -198,7 +185,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
           getTitlesWidget: showLabels
               ? leftTitleWidgets
               : (_, _) => const SizedBox.shrink(),
-          reservedSize: leftAxisWidth,
+          reservedSize: kChartLeftAxisWidth,
           minIncluded: false,
         ),
       ),

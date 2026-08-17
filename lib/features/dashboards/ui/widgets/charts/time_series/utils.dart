@@ -9,57 +9,41 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 typedef ColorByValue = Color Function(Observation);
 
-/// Fallback width of the value (left) axis gutter, used where the tick labels
-/// are not known ahead of time. The shared [DashboardChartDateAxis] left-pads
-/// by exactly this much so its labels line up under the plot, not under the
-/// y-axis numbers.
+/// Width of the value (left) axis gutter reserved inside every time-series
+/// chart, and the exact left pad [DashboardChartDateAxis] applies, so a
+/// chart's date labels always sit under its plot rather than under its y-axis
+/// numbers.
 ///
-/// Prefer [chartLeftAxisWidth], which measures the axis the chart will actually
-/// draw: a fixed 52 was sized for the widest label any chart might ever carry,
-/// which left every three-character axis ("140", "15K", "96") paying for four
-/// digits it never renders and squeezed the plot to the right of it.
+/// ONE constant for every chart and every date axis, deliberately. Sizing the
+/// gutter per chart from the labels it happens to draw buys ~10px of plot and
+/// costs correctness: a chart and the date axis beside it are separate
+/// widgets, so a measured gutter has to be threaded to both by hand, and the
+/// five dashboards cards and three goal cards that pair them would each have
+/// to re-derive the chart's own axis rule to do it. One of them getting it
+/// wrong is invisible until the labels drift out from under the data.
+///
+/// 40 rather than the 52 this used to be: `formatAxisValue` compacts anything
+/// from a thousand up ("15K"), so no axis label needs four digits of room.
 const double kChartLeftAxisWidth = 40;
 
-/// Floor and ceiling for a measured gutter. The floor keeps a one-character
-/// axis from pulling the plot flush against the card edge; the ceiling stops a
-/// pathological range from eating the plot.
-const double _kChartLeftAxisMinWidth = 28;
-const double _kChartLeftAxisMaxWidth = 64;
-
-/// The gutter [axis]'s own tick labels actually need, in the ambient text
-/// scale.
+/// The laid-out width of [text] in [style], at the ambient text scale.
 ///
-/// Charts call this for their `reservedSize`; callers that render their own
-/// [DashboardChartDateAxis] or day track beside the plot pass the same value
-/// so both stay on one grid.
-double chartLeftAxisWidth(BuildContext context, NiceAxis axis) {
-  if (!axis.interval.isFinite || axis.interval <= 0) {
-    return kChartLeftAxisWidth;
-  }
-  final style = chartAxisLabelStyle(context);
-  final scaler = MediaQuery.textScalerOf(context);
-  final direction = Directionality.of(context);
-  var widest = 0.0;
-  // Bounded: a degenerate min/max/interval combination must not spin here.
-  for (var tick = 0; tick < 16; tick++) {
-    final value = axis.min + axis.interval * tick;
-    if (value > axis.max + axis.interval / 2) break;
-    final painter = TextPainter(
-      text: TextSpan(text: formatAxisValue(value), style: style),
-      textDirection: direction,
-      textScaler: scaler,
-      maxLines: 1,
-    )..layout();
-    widest = math.max(widest, painter.width);
-  }
-  return (widest + context.designTokens.spacing.step3).clamp(
-    _kChartLeftAxisMinWidth,
-    _kChartLeftAxisMaxWidth,
-  );
+/// One helper rather than the private `_textWidth` every surface used to grow
+/// its own: `MediaQuery.textScalerOf` and `Directionality` both have to be
+/// threaded through, and a copy that forgets either mis-sizes only its own
+/// surface, only at raised text scales — the least likely place to look.
+double chartTextWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  return painter.width;
 }
 
-/// The type both axes are drawn in — extracted so [chartLeftAxisWidth] can
-/// measure exactly what [ChartLabel] will paint.
+/// The type both axes are drawn in — shared so the value labels a chart
+/// paints and the date labels beneath it cannot drift apart.
 TextStyle chartAxisLabelStyle(BuildContext context) {
   final tokens = context.designTokens;
   // body-small (not the smaller caption) at medium emphasis keeps axis
@@ -83,17 +67,12 @@ class DashboardChartDateAxis extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.dateOnly = false,
-    this.leftAxisWidth,
     super.key,
   });
 
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool dateOnly;
-
-  /// The plot's own left gutter, when the caller measured it with
-  /// [chartLeftAxisWidth]. Null keeps the [kChartLeftAxisWidth] fallback.
-  final double? leftAxisWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +101,7 @@ class DashboardChartDateAxis extends StatelessWidget {
     ];
     return Padding(
       padding: EdgeInsets.only(
-        left: leftAxisWidth ?? kChartLeftAxisWidth,
+        left: kChartLeftAxisWidth,
         right: tokens.spacing.step2,
       ),
       child: Row(
@@ -174,7 +153,7 @@ TextStyle chartTooltipDateStyle(BuildContext context) {
 /// The series name above a value: smaller and lighter than the number, so a
 /// tooltip reads as "this number, of this kind" rather than as two equally
 /// loud lines.
-TextStyle chartTooltipLabelStyle(BuildContext context) {
+TextStyle _tooltipLabelStyle(BuildContext context) {
   final tokens = context.designTokens;
   return tokens.typography.styles.others.caption.copyWith(
     color: tokens.colors.text.lowEmphasis,
@@ -190,8 +169,33 @@ TextStyle chartTooltipValueStyle(BuildContext context) {
   );
 }
 
-/// Builds one fl_chart tooltip out of [entries], with [date] rendered exactly
-/// ONCE as a header above the value rows.
+/// The lines one tooltip renders: the day once as a header, then a quiet
+/// label and a bold value per entry.
+///
+/// One builder for all three tooltip flavours (line, bar, and the Material
+/// tooltip a hand-painted plot raises), because the promise they make is that
+/// a value reads identically whichever chart it came from — and three copies
+/// of the same span sequence is exactly how that promise gets broken.
+List<InlineSpan> _tooltipSpans(
+  BuildContext context, {
+  required String date,
+  required List<ChartTooltipEntry> entries,
+  bool leadWithDate = true,
+}) => [
+  if (leadWithDate)
+    TextSpan(text: '$date\n', style: chartTooltipDateStyle(context)),
+  for (var index = 0; index < entries.length; index++) ...[
+    if (entries[index].label case final label? when label.trim().isNotEmpty)
+      TextSpan(text: '$label\n', style: _tooltipLabelStyle(context)),
+    TextSpan(
+      text: entries[index].value + (index == entries.length - 1 ? '' : '\n'),
+      style: chartTooltipValueStyle(context),
+    ),
+  ],
+];
+
+/// Builds the fl_chart tooltip for a set of touched spots, with [date]
+/// rendered exactly ONCE as a header above the value rows.
 ///
 /// fl_chart paints one text block per touched spot, so a per-spot date meant a
 /// two-series tooltip printed "Aug 14" twice — once under each value. The
@@ -204,25 +208,20 @@ List<LineTooltipItem> chartTooltipItems(
   BuildContext context, {
   required String date,
   required List<ChartTooltipEntry> entries,
-}) {
-  final valueStyle = chartTooltipValueStyle(context);
-  return [
-    for (var index = 0; index < entries.length; index++)
-      LineTooltipItem(
-        '',
-        valueStyle,
-        textAlign: TextAlign.start,
-        children: [
-          if (index == 0)
-            TextSpan(text: '$date\n', style: chartTooltipDateStyle(context)),
-          if (entries[index].label case final label?
-              when label.trim().isNotEmpty)
-            TextSpan(text: '$label\n', style: chartTooltipLabelStyle(context)),
-          TextSpan(text: entries[index].value, style: valueStyle),
-        ],
-      ),
-  ];
-}
+}) => [
+  for (var index = 0; index < entries.length; index++)
+    LineTooltipItem(
+      '',
+      chartTooltipValueStyle(context),
+      textAlign: TextAlign.start,
+      children: _tooltipSpans(
+        context,
+        date: date,
+        entries: [entries[index]],
+        leadWithDate: index == 0,
+      ).cast<TextSpan>(),
+    ),
+];
 
 /// The same tooltip content as [chartTooltipItems], as one rich message for a
 /// Material [Tooltip].
@@ -235,17 +234,7 @@ InlineSpan chartTooltipMessage(
   required String date,
   required List<ChartTooltipEntry> entries,
 }) => TextSpan(
-  children: [
-    TextSpan(text: date, style: chartTooltipDateStyle(context)),
-    for (final entry in entries) ...[
-      if (entry.label case final label? when label.trim().isNotEmpty)
-        TextSpan(text: '\n$label', style: chartTooltipLabelStyle(context)),
-      TextSpan(
-        text: '\n${entry.value}',
-        style: chartTooltipValueStyle(context),
-      ),
-    ],
-  ],
+  children: _tooltipSpans(context, date: date, entries: entries),
 );
 
 /// Shared tooltip surface for a chart, so a hand-painted series' Material
@@ -264,69 +253,83 @@ BarTooltipItem chartBarTooltipItem(
   BuildContext context, {
   required String date,
   required String value,
-  String? label,
-}) {
-  final valueStyle = chartTooltipValueStyle(context);
-  return BarTooltipItem(
-    '',
-    valueStyle,
-    textAlign: TextAlign.start,
-    children: [
-      TextSpan(text: '$date\n', style: chartTooltipDateStyle(context)),
-      if (label != null && label.trim().isNotEmpty)
-        TextSpan(text: '$label\n', style: chartTooltipLabelStyle(context)),
-      TextSpan(text: value, style: valueStyle),
-    ],
-  );
-}
+}) => BarTooltipItem(
+  '',
+  chartTooltipValueStyle(context),
+  textAlign: TextAlign.start,
+  children: _tooltipSpans(
+    context,
+    date: date,
+    entries: [(label: null, value: value)],
+  ).cast<TextSpan>(),
+);
 
-/// [chartTouchTooltipData] for bar charts — same surface, same fit-inside
-/// guarantee, same padding.
-BarTouchTooltipData chartBarTouchTooltipData(
-  BuildContext context, {
-  required GetBarTooltipItem getTooltipItem,
-}) {
-  final tokens = context.designTokens;
-  return BarTouchTooltipData(
-    tooltipMargin: isMobile ? tokens.spacing.step6 : tokens.spacing.step5,
-    tooltipPadding: EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step3,
-      vertical: tokens.spacing.step2,
-    ),
-    getTooltipColor: (_) => tokens.colors.background.level03,
-    tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
-    fitInsideHorizontally: true,
-    fitInsideVertically: true,
-    maxContentWidth: tokens.spacing.step13,
-    getTooltipItem: getTooltipItem,
-  );
-}
-
-/// The tooltip settings every time-series chart shares.
+/// The tooltip chrome every time-series chart shares.
+///
+/// One record, two fl_chart classes: `LineTouchTooltipData` and
+/// `BarTouchTooltipData` are unrelated types with the same eight settings, so
+/// the values live here once and each builder spells only its own constructor.
 ///
 /// `fitInside*` is the load-bearing part: a tooltip near the top or the edge
 /// of the plot used to be drawn outside the chart box and was then clipped by
 /// the card around it, so the value the user tapped for was the half that got
 /// cut off. Shifted inside, it is always readable.
+({
+  double margin,
+  EdgeInsets padding,
+  Color background,
+  BorderRadius radius,
+  double maxContentWidth,
+})
+_tooltipChrome(BuildContext context) {
+  final tokens = context.designTokens;
+  return (
+    margin: isMobile ? tokens.spacing.step6 : tokens.spacing.step5,
+    padding: EdgeInsets.symmetric(
+      horizontal: tokens.spacing.step3,
+      vertical: tokens.spacing.step2,
+    ),
+    background: tokens.colors.background.level03,
+    radius: BorderRadius.circular(tokens.radii.s),
+    // Wide enough for a series name plus its unit on one line; the default
+    // 120 broke "7-day average" across two.
+    maxContentWidth: tokens.spacing.step13,
+  );
+}
+
+/// [_tooltipChrome] as a line chart's touch settings.
 LineTouchTooltipData chartTouchTooltipData(
   BuildContext context, {
   required GetLineTooltipItems getTooltipItems,
 }) {
-  final tokens = context.designTokens;
+  final chrome = _tooltipChrome(context);
   return LineTouchTooltipData(
-    tooltipMargin: isMobile ? tokens.spacing.step6 : tokens.spacing.step5,
-    tooltipPadding: EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step3,
-      vertical: tokens.spacing.step2,
-    ),
-    getTooltipColor: (_) => tokens.colors.background.level03,
-    tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+    tooltipMargin: chrome.margin,
+    tooltipPadding: chrome.padding,
+    getTooltipColor: (_) => chrome.background,
+    tooltipBorderRadius: chrome.radius,
     fitInsideHorizontally: true,
     fitInsideVertically: true,
-    // Wide enough for a series name plus its unit on one line; the default
-    // 120 broke "7-day average" across two.
-    maxContentWidth: tokens.spacing.step13,
+    maxContentWidth: chrome.maxContentWidth,
     getTooltipItems: getTooltipItems,
+  );
+}
+
+/// [_tooltipChrome] as a bar chart's touch settings.
+BarTouchTooltipData chartBarTouchTooltipData(
+  BuildContext context, {
+  required GetBarTooltipItem getTooltipItem,
+}) {
+  final chrome = _tooltipChrome(context);
+  return BarTouchTooltipData(
+    tooltipMargin: chrome.margin,
+    tooltipPadding: chrome.padding,
+    getTooltipColor: (_) => chrome.background,
+    tooltipBorderRadius: chrome.radius,
+    fitInsideHorizontally: true,
+    fitInsideVertically: true,
+    maxContentWidth: chrome.maxContentWidth,
+    getTooltipItem: getTooltipItem,
   );
 }
 

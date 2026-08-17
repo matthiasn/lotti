@@ -57,7 +57,6 @@ class TimeSeriesBarChart extends StatelessWidget {
       (m, o) => max(m, o.value.toDouble()),
     );
     final axis = niceAxis(0, maxVal, zeroBased: true);
-    final leftAxisWidth = chartLeftAxisWidth(context, axis);
     final barRadius = Radius.circular(tokens.radii.xs);
     final observations = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
@@ -77,7 +76,7 @@ class TimeSeriesBarChart extends StatelessWidget {
           // so the fit has to be exact. The gap collapses to zero once the bars
           // get dense (e.g. a year of daily bars).
           final count = observations.length;
-          final plotWidth = constraints.maxWidth - leftAxisWidth;
+          final plotWidth = constraints.maxWidth - kChartLeftAxisWidth;
           final groupsSpace = count > 1 && plotWidth / count > 4 ? 1 : 0;
           final rawWidth = count == 0
               ? plotWidth
@@ -138,7 +137,7 @@ class TimeSeriesBarChart extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: leftTitleWidgets,
-                    reservedSize: leftAxisWidth,
+                    reservedSize: kChartLeftAxisWidth,
                     interval: axis.interval,
                     // Suppress the bottom tick (it overlaps the date axis) but
                     // keep the top tick so the value scale's ceiling shows.

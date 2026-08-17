@@ -14,6 +14,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -33,7 +34,6 @@ class GoalCompactWindowStrip extends StatelessWidget {
   const GoalCompactWindowStrip({
     required this.days,
     this.placeholder = false,
-    this.cellSize = ControlSizes.iconChipCompact,
     this.lastDay,
     this.onDaySelected,
     this.ratingsByDay = const {},
@@ -52,11 +52,6 @@ class GoalCompactWindowStrip extends StatelessWidget {
   /// not share an encoding, or the strip contradicts a Healthy chip beside
   /// it.
   final bool placeholder;
-
-  /// Edge of one day's square. Defaults to the habit day square's size —
-  /// list rows and the detail page draw the same instrument at the same
-  /// scale. The 12px default the list once used rendered as illegible dots.
-  final double cellSize;
 
   /// The day the last cell stands for. Every earlier cell counts back from
   /// it, which is how a tap resolves to a date without a second parallel
@@ -113,23 +108,12 @@ class GoalCompactWindowStrip extends StatelessWidget {
     final visible = days;
     final onDaySelected = this.onDaySelected;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final trackDayList = [
-      for (var index = 0; index < visible.length; index++)
-        GoalProgressDay(
-          day: lastDay == null
-              ? DateTime.utc(2000, 1, index + 1)
-              : _dateAt(index, visible.length),
-          value: 0,
-        ),
-    ];
     final metrics = goalDayTrackMetrics(
       context,
-      trackDayList,
+      dayCount: visible.length,
       availableWidth: availableWidth,
     );
-    // A caller-chosen cell size still wins where the columns are not being
-    // squeezed — the list rows deliberately draw at the habit square's scale.
-    final resolvedCellSize = math.min(cellSize, metrics.cellSize);
+    final resolvedCellSize = metrics.cellSize;
 
     Widget cellAt(int index) {
       if (placeholder) return _PlaceholderDayCell(size: resolvedCellSize);
@@ -180,7 +164,15 @@ class GoalCompactWindowStrip extends StatelessWidget {
     // The pitch is narrower than the 48px touch floor — seven of those do not
     // fit a phone card — so, exactly as the habit cells already do, the slot
     // takes the full pitch horizontally and clears the floor vertically.
-    final trackDays = lastDay == null ? null : trackDayList;
+    final trackDays = lastDay == null
+        ? null
+        : [
+            for (var index = 0; index < visible.length; index++)
+              GoalProgressDay(
+                day: _dateAt(index, visible.length),
+                value: 0,
+              ),
+          ];
     final row = trackDays == null
         ? Row(
             mainAxisSize: MainAxisSize.min,
@@ -218,6 +210,11 @@ class GoalCompactWindowStrip extends StatelessWidget {
                 ),
           ].join(', ');
 
+    // Hoisted: constructing the format inside the column loop parsed the same
+    // pattern once per day.
+    final weekdayFormat = metrics.narrowLabels
+        ? DateFormat.EEEEE(locale)
+        : DateFormat.E(locale);
     final labelled = trackDays == null
         ? row
         : Column(
@@ -227,18 +224,12 @@ class GoalCompactWindowStrip extends StatelessWidget {
               // column. This strip used to be seven bare squares that each
               // opened a specific date's sheet, with no way to tell which.
               _DayTrack(
-                height: math.max(
-                  IconSizes.s,
-                  _weekdayLabelMetrics(context, trackDays).height,
-                ),
+                height: metrics.labelHeight,
                 pitch: metrics.pitch,
                 children: [
                   for (final day in trackDays)
                     Text(
-                      (metrics.narrowLabels
-                              ? DateFormat.EEEEE(locale)
-                              : DateFormat.E(locale))
-                          .format(day.day),
+                      weekdayFormat.format(day.day),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.clip,
@@ -277,11 +268,17 @@ class GoalCompactWindowStrip extends StatelessWidget {
       // dateless placeholder Row) size themselves to `pitch * days`, and on
       // a 320px phone a list row's column is a few pixels narrower than
       // seven full-size cells. Everywhere with room, the fit is identity.
-      // A span wider than a week scrolls (in unison with the other tracks)
-      // instead of scale-down-fitting: thirty cells squeezed into a card
-      // width would be unreadable dots.
-      child: visible.length > 7
-          ? _LinkedDayTrackScroller(group: scrollGroup, child: labelled)
+      // An extended span goes through the page's shared fit-or-scroll policy
+      // instead — by WIDTH, like every other track. Wrapping it by day count
+      // put a span that fits into a trailing-anchored scroller, which is what
+      // opened it with its first days cut off the left edge.
+      child: availableWidth != null
+          ? _fitOrScroll(
+              contentWidth: metrics.pitch * visible.length,
+              availableWidth: availableWidth,
+              group: scrollGroup,
+              child: labelled,
+            )
           : onDaySelected == null
           ? ExcludeSemantics(
               child: FittedBox(
@@ -1253,10 +1250,6 @@ class _BloodPressureDimensionCard extends StatelessWidget {
               rangeStart: range.start,
               rangeEnd: range.end,
               dateOnly: true,
-              leftAxisWidth: chartLeftAxisWidth(
-                context,
-                niceAxis(yValues.reduce(math.min), yValues.reduce(math.max)),
-              ),
             ),
             SizedBox(height: tokens.spacing.step3),
             // Two lines, two entries. Each carries its own threshold as a
@@ -1618,32 +1611,35 @@ class _DimensionHeader extends StatelessWidget {
 class _WeekdayTrack extends StatelessWidget {
   const _WeekdayTrack({
     required this.days,
-    required this.habitId,
+    required this.trackId,
     required this.metrics,
   });
 
   final List<GoalProgressDay> days;
-  final String habitId;
+
+  /// Key namespace for this track's captions — a habit id, or the metric's
+  /// criterion id. Not a habit id as such: a metric track wearing a habit's
+  /// identity to reach this widget was the field name lying about itself.
+  final String trackId;
   final GoalDayTrackMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final labelMetrics = _weekdayLabelMetrics(context, days);
     // The one-letter form only where the column cannot hold "Mon": narrow
     // labels are harder to read, so they are a fallback, not the default.
     final format = metrics.narrowLabels
         ? DateFormat.EEEEE(locale)
         : DateFormat.E(locale);
     return _DayTrack(
-      height: math.max(IconSizes.s, labelMetrics.height),
+      height: metrics.labelHeight,
       pitch: metrics.pitch,
       children: [
         for (final day in days)
           SizedBox(
             key: ValueKey(
-              'goal-habit-weekday-$habitId-'
+              'goal-habit-weekday-$trackId-'
               '${day.day.toIso8601String().substring(0, 10)}',
             ),
             width: metrics.cellSize,
@@ -1683,20 +1679,28 @@ String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
         context.messages.goalDimensionLabelTimeSource,
     };
 
-({double width, double height}) _weekdayLabelMetrics(
-  BuildContext context,
-  List<GoalProgressDay> days,
-) {
+/// The widest and tallest weekday caption a track will paint.
+///
+/// Measured over the SEVEN distinct weekday names, not over the track's days:
+/// a ninety-day span still draws only seven different strings, and laying out
+/// one TextPainter per day put ninety layouts in the middle of `build` to
+/// learn what seven already answer.
+({double width, double height}) _weekdayLabelMetrics(BuildContext context) {
   final locale = Localizations.localeOf(context).toLanguageTag();
   final style = context.designTokens.typography.styles.others.caption;
-  final scaler = MediaQuery.textScalerOf(context);
+  final format = DateFormat.E(locale);
+  // Any seven consecutive days cover every weekday exactly once.
+  final week = DateTime.utc(2024, 1, 8);
   var width = 0.0;
   var height = 0.0;
-  for (final day in days) {
+  for (var offset = 0; offset < DateTime.daysPerWeek; offset++) {
     final painter = TextPainter(
-      text: TextSpan(text: DateFormat.E(locale).format(day.day), style: style),
+      text: TextSpan(
+        text: format.format(week.add(Duration(days: offset))),
+        style: style,
+      ),
       textDirection: Directionality.of(context),
-      textScaler: scaler,
+      textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
     width = math.max(width, painter.width);
@@ -1706,11 +1710,16 @@ String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
 }
 
 /// The geometry one day track draws on: the column pitch, the square inside
-/// each column, and whether the weekday captions still fit at full length.
+/// each column, whether the weekday captions still fit at full length, and
+/// how tall a caption row has to be.
+///
+/// The caption height rides along so the caption track does not re-measure
+/// the same seven strings the pitch was already derived from.
 typedef GoalDayTrackMetrics = ({
   double pitch,
   double cellSize,
   bool narrowLabels,
+  double labelHeight,
 });
 
 /// The narrowest column a day is still legible in — a 12px square with a
@@ -1733,28 +1742,30 @@ double _minimumDayPitch(DsTokens tokens) => IconSizes.xs + tokens.spacing.step2;
 /// phone card, and the trailing-edge scroller that resulted opened with the
 /// first days of the span cut in half off the left edge.
 GoalDayTrackMetrics goalDayTrackMetrics(
-  BuildContext context,
-  List<GoalProgressDay> days, {
+  BuildContext context, {
+  required int dayCount,
   double? availableWidth,
 }) {
   final tokens = context.designTokens;
   final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
-  final labelWidth = _weekdayLabelMetrics(context, days).width;
+  final label = _weekdayLabelMetrics(context);
+  final labelWidth = label.width;
   final expandedPitch = labelWidth + tokens.spacing.step1;
   final textScaledUp = MediaQuery.textScalerOf(context).scale(1) > 1;
   var pitch = textScaledUp && expandedPitch > defaultPitch
       ? expandedPitch
       : defaultPitch;
-  if (availableWidth != null && availableWidth > 0 && days.isNotEmpty) {
+  if (availableWidth != null && availableWidth > 0 && dayCount > 0) {
     // Floored, so `pitch * days` can never round up past the width it was
     // derived from and reintroduce a one-pixel scroller.
-    final fitted = (availableWidth / days.length).floorToDouble();
+    final fitted = (availableWidth / dayCount).floorToDouble();
     if (fitted < pitch) {
       pitch = math.max(fitted, _minimumDayPitch(tokens));
     }
   }
   return (
     pitch: pitch,
+    labelHeight: math.max(IconSizes.s, label.height),
     // The square shrinks with its column, or neighbouring cells would touch
     // and the track would read as one bar.
     cellSize: math.min(
@@ -1768,16 +1779,6 @@ GoalDayTrackMetrics goalDayTrackMetrics(
     // rendering and stays untouched.
     narrowLabels: pitch < defaultPitch && pitch < labelWidth,
   );
-}
-
-double _textWidth(BuildContext context, String text, TextStyle style) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: Directionality.of(context),
-    textScaler: MediaQuery.textScalerOf(context),
-    maxLines: 1,
-  )..layout();
-  return painter.width;
 }
 
 /// Keeps weekday labels and day cells on the compact handoff grid.
@@ -1831,6 +1832,25 @@ class _LinkedDayTrackScrollerState extends State<_LinkedDayTrackScroller> {
     controller: _controller,
     child: widget.child,
   );
+}
+
+/// A day track, panning only where it genuinely cannot fit.
+///
+/// ONE policy for all three tracks — the whole-goal strip, the habit squares
+/// and the metric bars. They each used to decide for themselves, and the strip
+/// decided by day COUNT, so it wrapped a span that provably fitted in a
+/// trailing-anchored scroller and opened it with the first days cut off.
+Widget _fitOrScroll({
+  required double contentWidth,
+  required double availableWidth,
+  required LinkedScrollGroup? group,
+  required Widget child,
+}) {
+  if (contentWidth <= availableWidth) return child;
+  // Trailing-anchored, and joined to the page's group: a span wider than the
+  // viewport opens with today on screen, and every track pans together so the
+  // same date stays aligned down the page.
+  return _LinkedDayTrackScroller(group: group, child: child);
 }
 
 class _DayTrack extends StatelessWidget {
@@ -2008,7 +2028,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       children: [
         _WeekdayTrack(
           days: activeDays,
-          habitId: habit.habitId,
+          trackId: habit.habitId,
           metrics: metrics,
         ),
         SizedBox(height: tokens.spacing.step1),
@@ -2019,16 +2039,18 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final inlineHeaderWidth =
-            _textWidth(context, cadence, cadenceStyle) +
-            tokens.spacing.step3 +
-            (note == null ? 0 : _textWidth(context, note, noteStyle));
+            chartTextWidth(context, cadence, cadenceStyle) +
+            (note == null
+                ? 0
+                : tokens.spacing.step3 +
+                      chartTextWidth(context, note, noteStyle));
         final cadenceFitsInline = inlineHeaderWidth <= constraints.maxWidth;
         // The track is sized to the width it actually has, so a fortnight of
         // days fits the card instead of opening scrolled past its own first
         // day.
         final metrics = goalDayTrackMetrics(
           context,
-          activeDays,
+          dayCount: activeDays.length,
           availableWidth: constraints.maxWidth,
         );
         final contentWidth = metrics.pitch * activeDays.length;
@@ -2037,21 +2059,25 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           children: [
             // What this habit asks for | how far off it is. One meaning per
             // side, so neither has to be read as a qualifier of the other.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (cadenceFitsInline)
-                  Flexible(
-                    child: Text(cadence, maxLines: 1, style: cadenceStyle),
-                  )
-                else
-                  const Spacer(),
-                if (note != null) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(note, style: noteStyle),
+            // The row only exists when it has something to hold: a cadence
+            // that had to wrap and no deficit note left it as a lone Spacer,
+            // a zero-height row right-aligning a sibling that is not there.
+            if (cadenceFitsInline || note != null)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (cadenceFitsInline)
+                    Flexible(
+                      child: Text(cadence, maxLines: 1, style: cadenceStyle),
+                    )
+                  else
+                    const Spacer(),
+                  if (note != null) ...[
+                    SizedBox(width: tokens.spacing.step3),
+                    Text(note, style: noteStyle),
+                  ],
                 ],
-              ],
-            ),
+              ),
             if (!cadenceFitsInline) ...[
               SizedBox(height: tokens.spacing.step1),
               Text(cadence, style: cadenceStyle),
@@ -2067,98 +2093,48 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 children: [
                   Text(_periodLabel(context, activeDays), style: cadenceStyle),
                   SizedBox(height: tokens.spacing.step2),
-                  if (contentWidth > constraints.maxWidth)
-                    // Only where even the narrowest column overflows: the
-                    // labels and squares then pan as one unit, in unison with
-                    // every other track on the page.
-                    _LinkedDayTrackScroller(
-                      group: widget.scrollGroup,
-                      child: track(metrics),
-                    )
-                  else
-                    track(metrics),
+                  // Labels and squares pan as one unit, and only where even
+                  // the narrowest column overflows.
+                  _fitOrScroll(
+                    contentWidth: contentWidth,
+                    availableWidth: constraints.maxWidth,
+                    group: widget.scrollGroup,
+                    child: track(metrics),
+                  ),
                 ],
               ),
             ),
             if (widget.onOutcomeSelected != null &&
                 habit.suggestedFromDimensionName != null) ...[
               SizedBox(height: tokens.spacing.step4),
-              _HabitCheckOffCallout(
-                habitId: habit.habitId,
-                dimensionName: habit.suggestedFromDimensionName!,
-                onCheckOff: _savingDay != null
-                    ? null
-                    : () => _recordOutcome(
-                        widget.today,
-                        HabitCompletionType.success,
-                      ),
+              // The design system's inline callout, with the action it is
+              // asking for on its trailing edge: this is the one thing on the
+              // card the app wants the user to do, and as a caption row
+              // between two other caption rows it read as more fine print.
+              DesignSystemInlineCallout(
+                key: ValueKey('goal-habit-checkoff-callout-${habit.habitId}'),
+                icon: Icons.auto_awesome_rounded,
+                tone: tokens.colors.interactive.enabled,
+                text: context.messages.goalHabitCheckOffSuggestion(
+                  habit.suggestedFromDimensionName!,
+                ),
+                trailing: DesignSystemButton(
+                  key: ValueKey('goal-habit-checkoff-${habit.habitId}'),
+                  label: context.messages.goalHabitCheckOffAction,
+                  onPressed: _savingDay != null
+                      ? null
+                      : () => _recordOutcome(
+                          widget.today,
+                          HabitCompletionType.success,
+                        ),
+                  size: DesignSystemButtonSize.dense,
+                  leadingIcon: Icons.check_rounded,
+                ),
               ),
             ],
           ],
         );
       },
-    );
-  }
-}
-
-/// The "you already recorded the evidence — shall I tick the box?" prompt.
-///
-/// A tinted, bordered callout rather than the caption-and-tertiary-button row
-/// it used to be: this is the one thing on the card the app is ASKING the user
-/// to do, and at caption weight between two other caption rows it read as more
-/// fine print. The sparkle stays the agent-suggestion mark it is everywhere
-/// else in the app.
-class _HabitCheckOffCallout extends StatelessWidget {
-  const _HabitCheckOffCallout({
-    required this.habitId,
-    required this.dimensionName,
-    required this.onCheckOff,
-  });
-
-  final String habitId;
-  final String dimensionName;
-  final VoidCallback? onCheckOff;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final accent = tokens.colors.interactive.enabled;
-    return DecoratedBox(
-      key: ValueKey('goal-habit-checkoff-callout-$habitId'),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: SurfaceAlphas.washControl),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(
-          color: accent.withValues(alpha: SurfaceAlphas.muted),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step3),
-        child: Row(
-          children: [
-            Icon(Icons.auto_awesome_rounded, size: IconSizes.l, color: accent),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Text(
-                context.messages.goalHabitCheckOffSuggestion(dimensionName),
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step3),
-            DesignSystemButton(
-              key: ValueKey('goal-habit-checkoff-$habitId'),
-              label: context.messages.goalHabitCheckOffAction,
-              onPressed: onCheckOff,
-              // Primary: it is the callout's whole point, and a tertiary
-              // button inside a tinted box disappeared into it.
-              size: DesignSystemButtonSize.dense,
-              leadingIcon: Icons.check_rounded,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -2225,7 +2201,9 @@ class _ProgressDayCell extends StatelessWidget {
         : (day.targetSatisfied ?? true)
         ? GoalCompactDayState.full
         : GoalCompactDayState.partial;
+    // The square's own edge; the interactive slot around it is larger.
     final visualDimension = size;
+    final glyphSize = math.min(IconSizes.xs, visualDimension * 0.6);
     // Ages-out is a quiet outline, not the page's alarm hue: an on-track
     // habit must never wear warning orange. Today-and-done rings in the
     // success family — the cell is data, not a control.
@@ -2261,13 +2239,13 @@ class _ProgressDayCell extends StatelessWidget {
       child: missed
           ? Icon(
               Icons.close_rounded,
-              size: math.min(IconSizes.xs, visualDimension * 0.6),
+              size: glyphSize,
               color: tokens.colors.alert.error.ink,
             )
           : skipped
           ? Icon(
               Icons.remove_rounded,
-              size: math.min(IconSizes.xs, visualDimension * 0.6),
+              size: glyphSize,
               color: tokens.colors.text.mediumEmphasis,
             )
           : dayState == GoalCompactDayState.partial
@@ -2600,12 +2578,6 @@ class _MetricTrendSeries extends StatelessWidget {
           rangeStart: range.start,
           rangeEnd: range.end,
           dateOnly: true,
-          leftAxisWidth: chartLeftAxisWidth(
-            context,
-            isSteps
-                ? niceAxis(0, yValues.reduce(math.max), zeroBased: true)
-                : niceAxis(yValues.reduce(math.min), yValues.reduce(math.max)),
-          ),
         ),
         SizedBox(height: tokens.spacing.step3),
         // One entry per line drawn, and nothing else. The fourth entry used to
@@ -2712,15 +2684,19 @@ class _MetricProgressSeries extends StatelessWidget {
       (current, day) => day.value > current ? day.value : current,
     );
     // A "nice" axis so the two ticks the plot labels are rounded values a
-    // reader can trust, rather than the raw series maximum.
+    // reader can trust, rather than the raw series maximum. The gutter is the
+    // page-wide one every plot and date axis shares.
     final axis = niceAxis(0, maxValue, zeroBased: true);
-    final axisWidth = chartLeftAxisWidth(context, axis);
+    final chartHeight = _chartHeight(tokens);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final plotWidth = math.max<double>(constraints.maxWidth - axisWidth, 0);
+        final plotWidth = math.max<double>(
+          constraints.maxWidth - kChartLeftAxisWidth,
+          0,
+        );
         final metrics = goalDayTrackMetrics(
           context,
-          metric.days,
+          dayCount: metric.days.length,
           availableWidth: plotWidth,
         );
         final contentWidth = metrics.pitch * metric.days.length;
@@ -2731,7 +2707,9 @@ class _MetricProgressSeries extends StatelessWidget {
             // The span, on the plot's own rail rather than the card's — it
             // labels the bars, so it starts where they start.
             Padding(
-              padding: EdgeInsetsDirectional.only(start: axisWidth),
+              padding: const EdgeInsetsDirectional.only(
+                start: kChartLeftAxisWidth,
+              ),
               child: Text(
                 _periodLabel(context, metric.days),
                 style: tokens.typography.styles.others.caption.copyWith(
@@ -2741,61 +2719,27 @@ class _MetricProgressSeries extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step3),
             SizedBox(
-              height: _chartHeight(tokens),
+              height: chartHeight,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // The value axis these bars are drawn against. Without it
-                  // the card showed a wall of bars and no way to read a
-                  // magnitude off any of them.
-                  SizedBox(
-                    width: axisWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ChartLabel(formatAxisValue(axis.max)),
-                        ChartLabel(formatAxisValue(axis.min)),
-                      ],
-                    ),
-                  ),
+                  _PlotValueAxis(axis: axis),
                   Expanded(
                     child: Stack(
                       children: [
-                        // The target, drawn — but only where it is a PER-DAY
-                        // quantity. For a `sum` or `count` criterion the
-                        // target is a period-level total while these bars are
-                        // single days, so a line at the target would put two
-                        // already-sufficient days under a threshold they
-                        // jointly cleared.
                         if (axis.max > 0 && metric.targetIsPerDay)
-                          Positioned(
-                            key: const ValueKey('goal-metric-target-rule'),
-                            left: 0,
-                            right: 0,
-                            // Clamped to leave the rule's own thickness inside
-                            // the plot: a target at the axis ceiling would
-                            // otherwise land on the clipped top edge, invisible
-                            // in exactly the case it matters most.
-                            bottom: math.min(
-                              _chartHeight(tokens) *
-                                  (metric.target / axis.max).clamp(0, 1),
-                              _chartHeight(tokens) - BorderWidths.hairline,
-                            ),
-                            child: SizedBox(
-                              height: BorderWidths.hairline,
-                              child: ColoredBox(
-                                color: tokens.colors.decorative.level01,
-                              ),
-                            ),
+                          _TargetRule(
+                            target: metric.target,
+                            axisMax: axis.max,
+                            height: chartHeight,
                           ),
                         Positioned.fill(
-                          child: contentWidth > plotWidth
-                              ? _LinkedDayTrackScroller(
-                                  group: scrollGroup,
-                                  child: track,
-                                )
-                              : track,
+                          child: _fitOrScroll(
+                            contentWidth: contentWidth,
+                            availableWidth: plotWidth,
+                            group: scrollGroup,
+                            child: track,
+                          ),
                         ),
                       ],
                     ),
@@ -2806,41 +2750,47 @@ class _MetricProgressSeries extends StatelessWidget {
             SizedBox(height: tokens.spacing.step1),
             // The date axis: one caption per bar, on the bars' own grid.
             Padding(
-              padding: EdgeInsetsDirectional.only(start: axisWidth),
+              padding: const EdgeInsetsDirectional.only(
+                start: kChartLeftAxisWidth,
+              ),
               child: _WeekdayTrack(
                 days: metric.days,
-                habitId: 'metric-${metric.criterionId}',
+                trackId: 'metric-${metric.criterionId}',
                 metrics: metrics,
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
-            DashboardChartLegend(
-              entries: [
-                DashboardLegendEntry(
-                  color: goalDayStateFill(tokens, GoalCompactDayState.full),
-                  label: context.messages.goalMetricLegendOnTarget,
-                ),
-                DashboardLegendEntry(
-                  color: goalDayStateFill(tokens, GoalCompactDayState.partial),
-                  label: context.messages.goalMetricLegendOffTarget,
-                ),
-                DashboardLegendEntry(
-                  color: goalDayStateFill(tokens, GoalCompactDayState.none),
-                  label: context.messages.goalProgressHabitDayNoEntry,
-                ),
-                if (metric.targetIsPerDay)
-                  DashboardLegendEntry(
-                    color: tokens.colors.decorative.level01,
-                    label: context.messages.habitsGoalLineLabel,
-                    annotation: _targetThreshold(context, metric),
-                  ),
-              ],
-            ),
+            DashboardChartLegend(entries: _legendEntries(context, tokens)),
           ],
         );
       },
     );
   }
+
+  /// The three fills a bar can wear, plus the threshold its rule marks.
+  List<DashboardLegendEntry> _legendEntries(
+    BuildContext context,
+    DsTokens tokens,
+  ) => [
+    DashboardLegendEntry(
+      color: goalDayStateFill(tokens, GoalCompactDayState.full),
+      label: context.messages.goalMetricLegendOnTarget,
+    ),
+    DashboardLegendEntry(
+      color: goalDayStateFill(tokens, GoalCompactDayState.partial),
+      label: context.messages.goalMetricLegendOffTarget,
+    ),
+    DashboardLegendEntry(
+      color: goalDayStateFill(tokens, GoalCompactDayState.none),
+      label: context.messages.goalProgressHabitDayNoEntry,
+    ),
+    if (metric.targetIsPerDay)
+      DashboardLegendEntry(
+        color: tokens.colors.decorative.level01,
+        label: context.messages.habitsGoalLineLabel,
+        annotation: _targetThreshold(context, metric),
+      ),
+  ];
 
   /// The bars on the page's shared day grid.
   ///
@@ -2855,6 +2805,17 @@ class _MetricProgressSeries extends StatelessWidget {
   ) {
     final tokens = context.designTokens;
     final height = _chartHeight(tokens);
+    // Built once for the whole track rather than per bar: a ninety-day span
+    // was constructing ninety date formats, ninety number formats and ninety
+    // tooltip decorations on every build, for a popup at most one of them
+    // will ever show.
+    final locale = Localizations.localeOf(context).toString();
+    final chrome = (
+      dateFormat: DateFormat.MMMd(locale),
+      number: NumberFormat.decimalPattern(locale),
+      tooltip: chartTooltipDecoration(context),
+      unit: metric.unitName?.trim() ?? '',
+    );
     return _DayTrack(
       height: height,
       pitch: metrics.pitch,
@@ -2866,17 +2827,22 @@ class _MetricProgressSeries extends StatelessWidget {
           SizedBox(
             width: metrics.cellSize,
             height: height,
-            child: _bar(context, day, maxValue),
+            child: _bar(context, day, maxValue, chrome),
           ),
       ],
     );
   }
 
-  Widget _bar(BuildContext context, GoalProgressDay day, num maxValue) {
+  Widget _bar(
+    BuildContext context,
+    GoalProgressDay day,
+    num maxValue,
+    _BarChrome chrome,
+  ) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    final date = DateFormat.MMMd(locale).format(day.day);
-    final number = NumberFormat.decimalPattern(locale);
+    final date = chrome.dateFormat.format(day.day);
+    final number = chrome.number;
     // The shared per-day policy: a bar drawn against a per-day target rule
     // is judged by the day's own value, so a 12,400-step day beats a 10,000
     // target even when the trailing week's average is still short. Only a
@@ -2921,7 +2887,7 @@ class _MetricProgressSeries extends StatelessWidget {
       ),
     );
     final provenance = metric.agentRecordedProvenanceByDay[day.day];
-    final unit = metric.unitName?.trim() ?? '';
+    final unit = chrome.unit;
     return Semantics(
       label: context.messages.goalMetricBarSemantics(
         status,
@@ -2934,7 +2900,7 @@ class _MetricProgressSeries extends StatelessWidget {
       // 45-minute afternoon was on screen with no way to find out it was 45.
       child: Tooltip(
         triggerMode: TooltipTriggerMode.tap,
-        decoration: chartTooltipDecoration(context),
+        decoration: chrome.tooltip,
         richMessage: chartTooltipMessage(
           context,
           date: date,
@@ -3002,6 +2968,71 @@ class _MetricProgressSeries extends StatelessWidget {
     );
   }
 }
+
+/// The value axis a hand-painted plot is read against: the scale's ceiling and
+/// its floor, on the same gutter every fl_chart plot on the page reserves.
+///
+/// Two ticks rather than a full ladder — these bars are a compact strip inside
+/// a card, and the numbers exist to give the silhouette a magnitude, not to
+/// support reading a value off the grid. Tapping a bar gives the exact figure.
+class _PlotValueAxis extends StatelessWidget {
+  const _PlotValueAxis({required this.axis});
+
+  final NiceAxis axis;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: kChartLeftAxisWidth,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        ChartLabel(formatAxisValue(axis.max)),
+        ChartLabel(formatAxisValue(axis.min)),
+      ],
+    ),
+  );
+}
+
+/// The per-day target, drawn across the plot.
+///
+/// Clamped to leave the rule's own thickness inside the plot: a target at the
+/// axis ceiling would otherwise land on the clipped top edge, invisible in
+/// exactly the case it matters most — a goal that is still behind.
+class _TargetRule extends StatelessWidget {
+  const _TargetRule({
+    required this.target,
+    required this.axisMax,
+    required this.height,
+  });
+
+  final num target;
+  final double axisMax;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    key: const ValueKey('goal-metric-target-rule'),
+    left: 0,
+    right: 0,
+    bottom: math.min(
+      height * (target / axisMax).clamp(0, 1),
+      height - BorderWidths.hairline,
+    ),
+    child: SizedBox(
+      height: BorderWidths.hairline,
+      child: ColoredBox(color: context.designTokens.colors.decorative.level01),
+    ),
+  );
+}
+
+/// The formatters and decoration one bar track shares across its bars.
+typedef _BarChrome = ({
+  DateFormat dateFormat,
+  NumberFormat number,
+  BoxDecoration tooltip,
+  String unit,
+});
 
 class _CategoryBandSeries extends StatelessWidget {
   const _CategoryBandSeries({required this.metric});
@@ -3244,14 +3275,15 @@ class _ProgressLegend extends StatelessWidget {
       spacing: tokens.spacing.step4,
       runSpacing: tokens.spacing.step2,
       children: [
+        // The SAME fills the cells draw, through the same helper — spelled out
+        // by hand here, this key could drift from the squares it explains (and
+        // from the metric legend three cards down, which reads the helper).
         item(
-          tokens.colors.alert.success.defaultColor,
+          goalDayStateFill(tokens, GoalCompactDayState.full),
           context.messages.goalProgressDone,
         ),
         item(
-          tokens.colors.alert.success.defaultColor.withValues(
-            alpha: SurfaceAlphas.muted,
-          ),
+          goalDayStateFill(tokens, GoalCompactDayState.partial),
           context.messages.goalProgressPartial,
           dotted: true,
         ),
@@ -3261,7 +3293,7 @@ class _ProgressLegend extends StatelessWidget {
         // green ones and both edge cases while staying silent about the
         // majority fill, which is the one a reader most needs named.
         item(
-          tokens.colors.background.level03,
+          goalDayStateFill(tokens, GoalCompactDayState.none),
           context.messages.goalProgressHabitDayNoEntry,
         ),
         item(

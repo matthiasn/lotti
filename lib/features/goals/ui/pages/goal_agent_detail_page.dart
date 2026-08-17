@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -74,7 +73,8 @@ class GoalAgentDetailPage extends ConsumerStatefulWidget {
       _GoalAgentDetailPageState();
 }
 
-class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
+class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
+    with GoalHealthRefreshOnEntry {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
   final GlobalKey _progressSectionKey = GlobalKey();
@@ -107,35 +107,6 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
         if (mounted && _chatOpen) _drawerFocusNode.requestFocus();
       });
     }
-  }
-
-  /// The health signals already asked for since this page was opened.
-  ///
-  /// A goal watching steps, weight or blood pressure reads journal rows the
-  /// health importer writes; opening the goal's own page pulls them forward so
-  /// the cards are never a day behind the phone's health store. Keyed so the
-  /// request fires ONCE per visit — this build runs on every provider tick.
-  final _refreshedHealthRequests = <String>{};
-
-  /// Queues a delta import for every health signal [criteria] watch, skipping
-  /// anything already requested this visit.
-  ///
-  /// Post-frame and fire-and-forget: the import is a side effect of ARRIVING
-  /// here, not of painting, and the page renders from what is already stored
-  /// while the delta lands.
-  void _refreshHealthSignals(GoalCriterion? criteria) {
-    if (criteria == null) return;
-    final pending = GoalHealthRefreshService.importRequestsFor([
-      criteria,
-    ]).difference(_refreshedHealthRequests);
-    if (pending.isEmpty) return;
-    _refreshedHealthRequests.addAll(pending);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final service = ref.read(goalHealthRefreshServiceProvider);
-      if (service == null) return;
-      unawaited(service.refreshRequests(pending));
-    });
   }
 
   /// One tap-region group for the drawer and every control that opens it:
@@ -303,7 +274,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
-    _refreshHealthSignals(spec?.criteria);
+    // Opening a goal pulls the health signals it watches forward, so the
+    // cards are never a day behind the phone's health store.
+    refreshHealthSignals([?spec?.criteria]);
     // The page's ONE time range: the same shared span the completion chart
     // reads, applied to every day track so any date lines up vertically
     // down the page.

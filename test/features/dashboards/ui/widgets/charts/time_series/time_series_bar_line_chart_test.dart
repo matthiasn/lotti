@@ -17,6 +17,7 @@ void main() {
     List<Observation>? bars,
     List<Observation>? line,
     Locale? locale,
+    bool dateOnly = true,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -40,7 +41,7 @@ void main() {
               barLabel: 'Steps per day',
               lineLabel: '7-day average',
               unit: 'steps',
-              dateOnly: true,
+              dateOnly: dateOnly,
               horizontalLines: [HorizontalLine(y: 10000)],
             ),
           ),
@@ -117,5 +118,24 @@ void main() {
     ]);
 
     expect(lineTooltipText(items.single!), contains('1.234,5 steps'));
+  });
+
+  testWidgets('a clock-bearing chart dates its tooltip to the device clock', (
+    tester,
+  ) async {
+    await pumpChart(tester, dateOnly: false);
+
+    final overlay = tester.widget<LineChart>(find.byType(LineChart));
+    final tooltip = overlay.data.lineTouchData.touchTooltipData;
+    final actualBar = LineChartBarData(spots: const [FlSpot(2, 9000)]);
+    final items = tooltip.getTooltipItems([
+      LineBarSpot(actualBar, 0, const FlSpot(2, 9000)),
+    ]);
+
+    // Daily health series pass `dateOnly` so a device west of UTC cannot shift
+    // a goal day backward; everything else keeps the clock, which is the half
+    // of the fork the goal cards never exercise.
+    expect(lineTooltipText(items.single!), startsWith('Aug 3, '));
+    expect(lineTooltipText(items.single!), contains('9,000 steps'));
   });
 }

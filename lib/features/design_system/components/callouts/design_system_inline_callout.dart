@@ -21,6 +21,7 @@ class DesignSystemInlineCallout extends StatelessWidget {
     required this.text,
     super.key,
     this.tone,
+    this.trailing,
   });
 
   /// Leading glyph, drawn in the callout's tone.
@@ -31,6 +32,11 @@ class DesignSystemInlineCallout extends StatelessWidget {
 
   /// Border and glyph colour; defaults to the warning tone.
   final Color? tone;
+
+  /// Optional action on the trailing edge — the one thing the callout is
+  /// asking for, where it asks for something (the goal cards' "Mark done").
+  /// Null keeps the read-only band this component started as.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +68,10 @@ class DesignSystemInlineCallout extends StatelessWidget {
                 ),
               ),
             ),
+            if (trailing case final trailing?) ...[
+              SizedBox(width: tokens.spacing.step3),
+              trailing,
+            ],
           ],
         ),
       ),

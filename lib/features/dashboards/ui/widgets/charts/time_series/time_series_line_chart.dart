@@ -49,7 +49,6 @@ class TimeSeriesLineChart extends StatelessWidget {
     final minY = axisValues.isNotEmpty ? axisValues.reduce(min).floor() : 0;
     final maxY = axisValues.isNotEmpty ? axisValues.reduce(max).ceil() : 1;
     final axis = niceAxis(minY, maxY);
-    final leftAxisWidth = chartLeftAxisWidth(context, axis);
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Padding(
@@ -96,7 +95,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: leftAxisWidth,
+                reservedSize: kChartLeftAxisWidth,
                 // Suppress the bottom tick (it overlaps the date axis) but keep
                 // the default top tick so the value scale's ceiling is labelled.
                 interval: axis.interval,

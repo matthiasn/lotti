@@ -1,7 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -34,25 +36,44 @@ class GoalHealthRefreshService {
   final DomainLogger? _domainLogger;
 
   /// The types [criteria] read from the platform health store, as import
-  /// requests — de-duplicated, and with the blood-pressure pair collapsed onto
-  /// the one composite request that fetches both halves in a single pass.
+  /// requests — de-duplicated, and with each composite family collapsed onto
+  /// the one request that fetches all of its members in a single pass.
   static Set<String> importRequestsFor(Iterable<GoalCriterion> criteria) => {
     for (final criterion in criteria)
       for (final dataType in goalCriterionMetricDataTypes(criterion))
-        if (GoalHealthDataTypes.isPlatformHealthImported(dataType))
-          _importRequest(dataType),
+        ?importRequestFor(dataType),
   };
 
-  static String _importRequest(String dataType) => switch (dataType) {
-    GoalHealthDataTypes.bloodPressureSystolic ||
-    GoalHealthDataTypes.bloodPressureDiastolic => _bloodPressureRequest,
-    _ => dataType,
-  };
+  /// The import [HealthImport] would have to run to freshen [dataType], or
+  /// null where the type is not the platform health store's to give.
+  ///
+  /// Both tables are read off the importer rather than restated here: a fourth
+  /// activity type or a second composite family added there must not leave the
+  /// goal surfaces silently blind to it.
+  static String? importRequestFor(String dataType) {
+    for (final composite in HealthImport.compositeStorageTypes.entries) {
+      // Only a composite that genuinely COLLAPSES several storage types: one
+      // blood-pressure reading is two samples, and requesting the halves
+      // separately would queue two imports for what the user authorized once.
+      // A single-member composite (`BODY_MASS_INDEX` → weight) is an alias for
+      // a dashboard's benefit, not a collapse — it fetches exactly the same
+      // samples under a name a weight goal has no business asking for.
+      if (composite.value.length > 1 && composite.value.contains(dataType)) {
+        return composite.key;
+      }
+    }
+    if (HealthImport.activityStorageTypes.contains(dataType) ||
+        dataType.startsWith(_healthDataTypePrefix)) {
+      return dataType;
+    }
+    return null;
+  }
 
-  /// `HealthImport.compositeStorageTypes`' key for the systolic/diastolic
-  /// pair. Requesting the halves separately would queue two imports and raise
-  /// the authorization question twice for what the user turned on once.
-  static const _bloodPressureRequest = 'BLOOD_PRESSURE';
+  /// The naming convention `HealthImport.resolveHealthDataTypes` resolves
+  /// against — everything the `health` plugin owns arrives under it. A habit,
+  /// a measurable or tracked time is written inside Lotti and is current by
+  /// construction, so nothing outside this prefix is worth re-importing.
+  static const _healthDataTypePrefix = 'HealthDataType.';
 
   /// Queues a delta import for every health signal [criteria] watch.
   ///
@@ -93,3 +114,35 @@ final goalHealthRefreshServiceProvider = Provider<GoalHealthRefreshService?>(
       : null,
   name: 'goalHealthRefreshServiceProvider',
 );
+
+/// Re-imports a goal surface's health signals once per visit.
+///
+/// The subtle half of "refresh on entry" is not the fan-out — the service owns
+/// that — but *when*: the goal pages rebuild on every provider tick, and their
+/// specs resolve asynchronously, so the request has to be de-duplicated across
+/// rebuilds and deferred past the frame that discovered it. Both goal surfaces
+/// mix this in rather than keeping a copy of it each.
+mixin GoalHealthRefreshOnEntry<T extends ConsumerStatefulWidget>
+    on ConsumerState<T> {
+  final Set<String> _refreshedHealthRequests = {};
+
+  /// Queues a delta import for every health signal [criteria] watch, skipping
+  /// anything already requested this visit.
+  ///
+  /// Safe to call from `build`: the import is a side effect of ARRIVING here,
+  /// not of painting, so it is fired after the frame and never awaited. The
+  /// page renders from what is already stored while the delta lands.
+  void refreshHealthSignals(Iterable<GoalCriterion> criteria) {
+    final pending = GoalHealthRefreshService.importRequestsFor(
+      criteria,
+    ).difference(_refreshedHealthRequests);
+    if (pending.isEmpty) return;
+    _refreshedHealthRequests.addAll(pending);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final service = ref.read(goalHealthRefreshServiceProvider);
+      if (service == null) return;
+      unawaited(service.refreshRequests(pending));
+    });
+  }
+}

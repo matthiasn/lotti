@@ -259,4 +259,68 @@ void main() {
     expect(decoded, criterion);
     expect(goalCriterionHabitIds(criterion), isEmpty);
   });
+
+  test('goalCriterionMetricDataTypes collects the quantitative leaves and '
+      'nothing else', () {
+    const criterion = GoalCriterion.allOf(
+      criterionId: 'root',
+      criteria: [
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        GoalCriterion.anyOf(
+          criterionId: 'either',
+          criteria: [
+            GoalCriterion.metric(
+              criterionId: 'weight',
+              dataType: 'HealthDataType.WEIGHT',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.dailySumThenAverage,
+              target: 88,
+              direction: GoalDirection.atMost,
+            ),
+            // The kinds a goal reads out of its OWN journal. They are current
+            // by construction, and the health-refresh join must not ask an
+            // importer for them.
+            GoalCriterion.habit(
+              criterionId: 'gym',
+              habitId: 'gym',
+              window: GoalWindow.rollingDays(count: 7),
+              targetCount: 3,
+            ),
+            GoalCriterion.measurable(
+              criterionId: 'words',
+              dataTypeId: 'words-written',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.sum,
+              target: 1000,
+            ),
+            GoalCriterion.categoryTime(
+              criterionId: 'coding',
+              categoryId: 'vibe-coding',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.sum,
+              targetHours: 8,
+            ),
+            GoalCriterion.labelTime(
+              criterionId: 'content',
+              labelId: 'content',
+              window: GoalWindow.day(),
+              aggregation: GoalAggregation.sum,
+              targetHours: 1,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    expect(goalCriterionMetricDataTypes(criterion), {
+      'cumulative_step_count',
+      'HealthDataType.WEIGHT',
+    });
+  });
 }
