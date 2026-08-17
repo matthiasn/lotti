@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contact channels never enter AI context. Cadence nudges and executive
   briefings ship alongside it — see the relationship-agent entry under
   Changed.
+- **Groundwork for contact import and one-tap call, message and email** on
+  the People tab. No new screens yet: this is the permission and plugin
+  layer those actions need. Android now lists a Contacts permission, and
+  both mobile platforms can hand a phone number to the dialer or messages
+  app and an address to mail. The permission is requested when you open the
+  contact picker, never at launch, and Lotti only ever reads the contacts
+  you choose — it does not write to your address book, and it does not read
+  it in the background. Desktop is unaffected: contact channels are still
+  entered by hand there.
 
 ### Changed
 - **Relationship agents brief, nudge and chat.** Marking a person important
