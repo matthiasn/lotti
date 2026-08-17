@@ -44,6 +44,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>sms</string>
+		<string>mailto</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppleMusicUsageDescription</key>
@@ -52,6 +58,8 @@
 	<string>Not actually used, only required for permissions library</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to scan QR codes</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Pick the people you want to track, so their phone number and email are filled in for you. Only the contacts you choose are read, and only while the picker is open.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Read Health data</string>
 	<key>NSHealthUpdateUsageDescription</key>

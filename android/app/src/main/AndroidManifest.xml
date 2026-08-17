@@ -16,6 +16,31 @@
          with an inexact mode (see NotificationService). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Read-only, and requested at picker time rather than at launch: the
+         relationship contact picker and multi-select import copy channels
+         from the contacts the user chooses (ADR 0041). Lotti never writes
+         to the address book, so WRITE_CONTACTS is deliberately absent. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Android 11+ package visibility for the relationship quick actions.
+         The action must be VIEW, not DIAL/SENDTO: url_launcher_android
+         resolves both canLaunchUrl and launchUrl through an ACTION_VIEW
+         intent, so a DIAL/SENDTO declaration would leave canLaunchUrl
+         reporting false and every quick action disabled. The schemes match
+         contactChannelUri exactly — a test pins that correspondence. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="sms" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
    <application
         android:label="Lotti"
         android:requestLegacyExternalStorage="true"
