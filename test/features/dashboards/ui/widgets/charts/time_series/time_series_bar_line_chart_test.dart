@@ -1,11 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../../../../../helpers/chart_tooltip_text.dart';
-
 import '../../../../../../widget_test_utils.dart';
 
 void main() {
@@ -135,7 +135,15 @@ void main() {
     // Daily health series pass `dateOnly` so a device west of UTC cannot shift
     // a goal day backward; everything else keeps the clock, which is the half
     // of the fork the goal cards never exercise.
-    expect(lineTooltipText(items.single!), startsWith('Aug 3, '));
+    //
+    // The expected day is derived through the SAME local conversion the
+    // formatter makes, not hard-coded: `chartDateFormatterFull` renders on the
+    // device clock, so a literal "Aug 3" only holds on a machine at or east of
+    // UTC — which is a test that passes in CI and fails on a laptop in Denver.
+    final localDay = DateFormat.MMMd(
+      'en',
+    ).format(DateTime.fromMillisecondsSinceEpoch(end.millisecondsSinceEpoch));
+    expect(lineTooltipText(items.single!), startsWith('$localDay, '));
     expect(lineTooltipText(items.single!), contains('9,000 steps'));
   });
 }
