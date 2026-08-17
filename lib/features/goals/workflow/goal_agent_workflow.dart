@@ -3,6 +3,7 @@ import 'dart:convert' show utf8;
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart' show sha1;
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -439,6 +441,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // The deterministic status is authoritative: a report claiming
       // anything else is rejected in-conversation.
       expectedStatus: facts.trackStatus,
+      expectedRollingAggregates: _rollingAggregateStrings(version, facts),
     );
 
     final allTools = [
@@ -811,6 +814,48 @@ class GoalAgentWorkflow with AgentErrorLogging {
         RegExp(
           r"\b(?:can't|cannot|unable|refuse|blocked|no banner)\b",
         ).hasMatch(normalized);
+  }
+
+  /// The pre-rounded aggregates the report's rolling standing must quote,
+  /// rendered exactly as the FACTS block carries them.
+  ///
+  /// Metric leaves only. A habit result's `actual` is a completion count and a
+  /// composite's is a count of satisfied children, so requiring those would
+  /// match any stray digit rather than proving the aggregate was read. Every
+  /// evaluated model substitutes the LATEST reading for the mean on the
+  /// multi-series health goal — reporting 94 kg where FACTS say 95 — which is
+  /// a wrong number in front of the user, not a wording preference.
+  List<String> _rollingAggregateStrings(
+    GoalSpecVersionEntity version,
+    GoalWakeFacts facts,
+  ) {
+    final metricIds = <String>{};
+    void walk(GoalCriterion criterion) {
+      switch (criterion) {
+        case GoalCriterionMetric(:final criterionId):
+          metricIds.add(criterionId);
+        case GoalCriterionAllOf(:final criteria) ||
+            GoalCriterionAnyOf(:final criteria) ||
+            GoalCriterionAtLeastCount(:final criteria):
+          criteria.forEach(walk);
+        case GoalCriterionHabit() ||
+            GoalCriterionMeasurable() ||
+            GoalCriterionCategoryTime() ||
+            GoalCriterionLabelTime():
+          break;
+      }
+    }
+
+    walk(version.criteria);
+    return [
+      for (final id in metricIds)
+        if (facts.evaluation.results[id] case final result?)
+          // A window with no observations has no aggregate to quote, and an
+          // insufficientData report should name the gap instead — demanding a
+          // number there would force the model to invent one.
+          if (result.sampleCount > 0)
+            '${roundGoalAggregate(result.actual, against: result.target)}',
+    ];
   }
 
   /// The deterministic ad requirement (policy rows P4/P5): an eligible

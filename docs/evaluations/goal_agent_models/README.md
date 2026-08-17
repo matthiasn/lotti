@@ -282,6 +282,64 @@ Run-to-run variance was never quantified (the same contract was never run
 twice), so single-scenario moves of ±3 in this table are not interpretable;
 the category shifts and the 29-case total are far outside plausible noise.
 
+## DeepSeek V4 Flash, and the noise floor — 2026-08-17
+
+`deepseek-v4-flash-0731` matches or beats the default on policy compliance at
+roughly a tenth of the price, reproduced across two independent 10-sample runs:
+
+| Model | Run 1 | Run 2 | Credits/goal-month | Wh/goal-month | Mean latency | P95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `deepseek-v4-flash-0731` | 216/250 | 215/250 | 0.032 | 115.3 | 3.44s | 5.96s |
+| `glm-5.2` | 206/250 | 210/250 | 0.359 | 137.1 | 4.04s | 7.32s |
+
+**11.2x cheaper, faster at mean and p95, marginally less energy.** The cost and
+latency margins are an order of magnitude clear of the noise; the quality gap
+is not — see below.
+
+Two operational notes. The floating alias `deepseek-v4-flash` was down when
+this ran (five consecutive `HTTP 503`, "the model provider encountered an
+error"), so only the dated snapshot is usable; adopting it means pinning, with
+the staleness cost that implies. And its residual failures cluster in the
+INTERACTIVE half, where the runtime discards unauthorised banners at
+persistence anyway (`goal_agent_workflow.dart`, the `!adsEligible` /
+`cooldownBlocksAds` / `freshActiveExists` guards on the create and rerun
+loops) — so 18 of its 34 failures cost tokens without reaching the user. Its
+user-visible defect is the complex-health reporting gap, not ad restraint.
+
+### The noise floor, measured across five identical runs
+
+Running the same model on the same code five times is the control this suite
+never had. Totals: **219, 213, 223, 215, 214** — mean 216.8, range 10, sd 3.7.
+
+**A single 10-sample total carries about +/-7 at 95%.** Any delta below that is
+unmeasured, whatever direction it points.
+
+Per-scenario noise is wildly uneven, and the noisy ones are exactly where
+report quality is judged:
+
+| Scenario | Five identical runs | Range |
+| --- | --- | ---: |
+| `gh_complex_habit_behind` | 9, 5, 8, 8, 5 | 4 |
+| `evo_withdrawn` | 5, 8, 9, 8, 6 | 4 |
+| `wk_mixed_musing_question` | 3, 3, 4, 1, 2 | 3 |
+| `gh_complex_latest_on_target` | 7, 8, 7, 5, 6 | 3 |
+| `evo_ambiguous` | 6, 4, 3, 4, 4 | 3 |
+
+17 of 25 scenarios have range <= 1 and are effectively deterministic. Five are
+unreadable at 10 samples: passing them requires many terms to land at once, so
+the pass probability is a product of chances rather than a single draw.
+
+**Rules this imposes:**
+
+- Treat a total delta under ~8 cases as unmeasured. Resolving a 3-case effect
+  needs roughly 50 samples per cell (~1250 cases per model), not 10.
+- Never read per-scenario movement on the five noisy rows.
+- Deltas already published under the old assumption: the ad-tool gate's +3 per
+  model and the rolling-aggregate check's +4 are both inside the floor and are
+  justified by mechanism, not measurement. The muse-glimmer gap (66 cases), the
+  11.6x cost gap and the 28x energy gap are far outside it. DeepSeek versus GLM
+  at +5 to +10 is about one sd — "at least as good", not "better".
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:

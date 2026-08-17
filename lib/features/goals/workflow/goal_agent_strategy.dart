@@ -53,6 +53,7 @@ class GoalAgentStrategy extends ConversationStrategy
     Set<String>? activeAdIds,
     this._allowedCurrentActionCriterionIds = const {},
     this.expectedStatus,
+    this.expectedRollingAggregates = const [],
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -84,6 +85,10 @@ class GoalAgentStrategy extends ConversationStrategy
   /// declares it authoritative, so a report claiming any other status is
   /// rejected in-conversation instead of publishing a contradiction.
   final GoalTrackStatus? expectedStatus;
+
+  /// Deterministic aggregate values, pre-rounded exactly as FACTS render them,
+  /// that the report's rolling standing must quote. Empty disables the check.
+  final List<String> expectedRollingAggregates;
 
   GoalTrackStatus? _reportStatus;
   String? _reportOneLiner;
@@ -270,6 +275,29 @@ class GoalAgentStrategy extends ConversationStrategy
             'it is authoritative — use it verbatim.',
       );
       return;
+    }
+    // The rolling standing slot exists to state the deterministic aggregate.
+    // Models substitute the LATEST reading for it — reporting a 7-day mean
+    // weight of 94 kg when FACTS say 95 — or recompute a spurious precision
+    // ("127.85" where FACTS carry 127). Both put a wrong number in front of
+    // the user, and every evaluated model does it, so it is enforced here
+    // rather than asked for in prose. Same authority as trackStatus above.
+    if (structured != null && expectedRollingAggregates.isNotEmpty) {
+      final missing = expectedRollingAggregates
+          .where((value) => !structured.rollingWindow.contains(value))
+          .toList();
+      if (missing.isNotEmpty) {
+        await _reject(
+          call: call,
+          manager: manager,
+          error:
+              'Error: the rolling standing must quote the FACTS aggregates '
+              'verbatim — ${missing.join(', ')} '
+              '${missing.length == 1 ? 'is' : 'are'} missing. Use the '
+              'aggregate, never the latest reading, and never recompute it.',
+        );
+        return;
+      }
     }
     _reportStatus = status;
     _reportOneLiner = oneLiner;
