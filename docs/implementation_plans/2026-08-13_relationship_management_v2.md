@@ -1,7 +1,7 @@
 # Relationship Management — Implementation Plan v2
 
 - Date: 2026-08-13
-- Status: Phases 1-8 landed; phase 9 (docs, privacy, release readiness) outstanding
+- Status: Phases 1-8 landed. Phase 9 partial: ADRs accepted and the privacy policy written; the docs-site manual page is tracked separately, and the CHANGELOG/metainfo entry for the flag flip is still owed.
 - Supersedes: [2026-07-22_relationship_management.md](2026-07-22_relationship_management.md)
 - ADRs: [0037](../adr/0037-relationship-on-device-storage-and-privacy.md) (holds),
   [0038](../adr/0038-relationship-domain-model.md) (holds, two deltas),
@@ -402,6 +402,13 @@ payload** on any platform (no `onDidReceiveNotificationResponse`, no
 wherever it was. That predates this phase and wants its own change.
 
 ### Phase 9 — Docs, privacy, release readiness
+
+Partially landed. Done: the knowledge concept (kept current from phase 1 on),
+`PRIVACY.md` §Relationships and check-ins plus the `READ_CONTACTS` entry in
+the permission list, and the ADR housekeeping — 0037, 0038, 0040, 0041 and
+0059 flipped to Accepted, 0039 already Accepted-with-supersessions from phase
+8. Outstanding: the docs-site manual page (tracked outside this stack), and
+the CHANGELOG/metainfo note when the flag actually flips on.
 
 1. `knowledge/features/relationships.md` concept (+ index/code-map rows,
    `make knowledge_check`); feature README kept current from Phase 2 on.
