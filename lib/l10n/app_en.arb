@@ -1889,8 +1889,24 @@
   "checkInSentimentLabel": "How did it feel?",
   "checkInSentimentNeutral": "Neutral",
   "checkInSentimentStrained": "Strained",
+  "checkInSpeakButton": "Speak check-in",
+  "@checkInSpeakButton": {
+    "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
+  },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
+  "checkInTranscribingLabel": "Transcribing…",
+  "@checkInTranscribingLabel": {
+    "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
+  },
+  "checkInTranscriptFailed": "No transcript came back. You can type it instead.",
+  "@checkInTranscriptFailed": {
+    "description": "Message shown when a spoken check-in produced no transcript and the user has to type the narrative."
+  },
+  "checkInTranscriptUnavailable": "Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.",
+  "@checkInTranscriptUnavailable": {
+    "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
+  },
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {

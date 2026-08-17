@@ -50,8 +50,34 @@ and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
   kind-agnostic channel (`lib/features/nudges/`), tapping through to the
   person.
 
-Not yet built: voice check-ins (phase 6), OS contact import/linking and
-call/message quick actions (phase 7), OS reminders (phase 8). Relationships
+- **Voice check-ins** (plan v2 phase 6): "Speak check-in" on the capture
+  sheet records through the shared recording sheet with the *person* as the
+  recording's linked entity, then waits for the transcript and drops it into
+  the narrative field for the user to edit and confirm. Nothing auto-saves —
+  the check-in stays user-authored, and speaking never overwrites text the
+  user already typed. Transcription resolves the person's inference profile
+  (or their category's) because the automation path is now kind-agnostic
+  rather than task-only, and the finished transcript wakes the relationship
+  agent so the briefing catches up with what was just said.
+
+  The button only needs a **transcription model** — not the category's
+  automatic-inference switch. That switch governs unattended runs, so when it
+  is off (or the person has no category at all) the sheet runs the
+  transcription the user just asked for itself, rather than refusing. With no
+  model configured anywhere it says so before recording, instead of capturing
+  audio for a transcript that can never arrive — and if the recording sheet's
+  speech-recognition checkbox was unticked for that take, it says so straight
+  away rather than waiting out the transcription timeout.
+
+  Transcription accuracy for names comes from the **category's
+  `speechDictionary`**: terms listed there are sent to the provider as
+  context bias and injected into the transcription prompt, so a category
+  used for people should list the names it expects to hear. It is edited in
+  category settings, and applies to every recording in that category — a
+  spoken check-in included.
+
+Not yet built: OS contact import/linking and call/message quick actions
+(phase 7), OS reminders (phase 8). Relationships
 and check-ins deliberately do not appear in the main journal timeline; the
 People tab is their home.
 

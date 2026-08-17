@@ -1396,8 +1396,12 @@
   "checkInSentimentLabel": "Cum a fost?",
   "checkInSentimentNeutral": "Neutru",
   "checkInSentimentStrained": "Tensionat",
+  "checkInSpeakButton": "Dictați contactul",
   "checkInTopicsHint": "Separate prin virgulă, de ex. muncă, călătorii",
   "checkInTopicsLabel": "Subiecte",
+  "checkInTranscribingLabel": "Se transcrie…",
+  "checkInTranscriptFailed": "Nu a venit nicio transcriere. O puteți scrie dvs.",
+  "checkInTranscriptUnavailable": "Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.",
   "checklistAddItem": "Adăugați un element nou",
   "checklistAiConfidenceLabel": "Încredere: {level}",
   "@checklistAiConfidenceLabel": {

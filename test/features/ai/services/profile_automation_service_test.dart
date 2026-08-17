@@ -314,7 +314,7 @@ void main() {
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => const <AiConfig>[]);
-    // Default: the task inherits nothing beyond what `resolveForTask` returns.
+    // Default: the task inherits nothing beyond what `resolveForSubject` returns.
     // The `inherited profile fallback` group overrides this per test.
     when(
       () => mockResolver.resolveAutomationFallbacks(any()),
@@ -454,7 +454,7 @@ void main() {
           skillId: 'skill-transcribe',
           automate: true,
         );
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: [assignment],
             withTranscription: true,
@@ -469,18 +469,18 @@ void main() {
         categoryAllowsAutomation = false;
         stubFullyAutomatedEnvironment();
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         // The gate short-circuits before any profile work.
-        verifyNever(() => mockResolver.resolveForTask(any()));
+        verifyNever(() => mockResolver.resolveForSubject(any()));
       });
 
       test(
         'image analysis does not run when the category has it off',
         () async {
           categoryAllowsAutomation = false;
-          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
             (_) async => makeProfile(
               skillAssignments: const [
                 SkillAssignment(skillId: 'skill-image', automate: true),
@@ -489,10 +489,10 @@ void main() {
             ),
           );
 
-          final result = await service.tryAnalyzeImage(taskId: 'task-1');
+          final result = await service.tryAnalyzeImage(subjectId: 'task-1');
 
           expect(result.handled, isFalse);
-          verifyNever(() => mockResolver.resolveForTask(any()));
+          verifyNever(() => mockResolver.resolveForSubject(any()));
         },
       );
 
@@ -501,13 +501,13 @@ void main() {
       test('direct transcription fallback is gated too', () async {
         categoryAllowsAutomation = false;
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
           () => mockAiConfig.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [makeModel()]);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         verifyNever(
@@ -521,7 +521,7 @@ void main() {
 
         expect(
           await service.hasAutomatedSkillType(
-            taskId: 'task-1',
+            subjectId: 'task-1',
             skillType: SkillType.transcription,
           ),
           isFalse,
@@ -531,7 +531,7 @@ void main() {
       test('the gate is asked about the task being automated', () async {
         stubFullyAutomatedEnvironment();
 
-        await service.tryTranscribe(taskId: 'task-1');
+        await service.tryTranscribe(subjectId: 'task-1');
 
         expect(automationLookupTaskIds, ['task-1']);
       });
@@ -575,9 +575,104 @@ void main() {
         );
         stubFullyAutomatedEnvironment();
 
-        final result = await ungated.tryTranscribe(taskId: 'task-1');
+        final result = await ungated.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
+      });
+    });
+
+    // The gesture-initiated counterpart to tryTranscribe. The category switch
+    // is documented as the consent gate for inference with *no* user gesture,
+    // so a direct request must not be subject to it — a person filed under no
+    // category could otherwise never dictate a check-in.
+    group('requestTranscription', () {
+      test('runs with the category switch off', () async {
+        categoryAllowsAutomation = false;
+        const assignment = SkillAssignment(
+          skillId: 'skill-transcribe',
+          automate: true,
+        );
+        final profile = makeProfile(
+          skillAssignments: [assignment],
+          withTranscription: true,
+        );
+        final skill = makeSkill(id: 'skill-transcribe');
+        when(
+          () => mockResolver.resolveForSubject('rel-1'),
+        ).thenAnswer((_) async => profile);
+        when(
+          () => mockAiConfig.getConfigById('skill-transcribe'),
+        ).thenAnswer((_) async => skill);
+
+        final result = await service.requestTranscription(subjectId: 'rel-1');
+
+        expect(result.handled, isTrue);
+        expect(result.skill, equals(skill));
+        expect(
+          automationLookupTaskIds,
+          isEmpty,
+          reason: 'the consent gate must not be consulted for a gesture',
+        );
+      });
+
+      test(
+        'still declines when no profile resolves a transcription skill',
+        () async {
+          when(
+            () => mockResolver.resolveForSubject('rel-1'),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.requestTranscription(subjectId: 'rel-1');
+
+          expect(result.handled, isFalse);
+        },
+      );
+    });
+
+    group('canTranscribeOnRequest', () {
+      test('true for a profile that automates transcription', () async {
+        categoryAllowsAutomation = false;
+        const assignment = SkillAssignment(
+          skillId: 'skill-transcribe',
+          automate: true,
+        );
+        when(() => mockResolver.resolveForSubject('rel-1')).thenAnswer(
+          (_) async => makeProfile(
+            skillAssignments: [assignment],
+            withTranscription: true,
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('skill-transcribe'),
+        ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
+
+        expect(
+          await service.canTranscribeOnRequest(subjectId: 'rel-1'),
+          isTrue,
+        );
+      });
+
+      test('false when nothing resolves a speech-to-text model', () async {
+        when(
+          () => mockResolver.resolveForSubject('rel-1'),
+        ).thenAnswer((_) async => null);
+
+        expect(
+          await service.canTranscribeOnRequest(subjectId: 'rel-1'),
+          isFalse,
+        );
+      });
+
+      // A probe answers a render-time question and must not fabricate
+      // execution records on every rebuild.
+      test('leaves no trace in the log', () async {
+        when(
+          () => mockResolver.resolveForSubject('rel-1'),
+        ).thenAnswer((_) async => null);
+
+        await service.canTranscribeOnRequest(subjectId: 'rel-1');
+
+        expect(capturedLogLines, isEmpty);
       });
     });
 
@@ -596,13 +691,13 @@ void main() {
           final skill = makeSkill(id: 'skill-transcribe');
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-transcribe'),
           ).thenAnswer((_) async => skill);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.resolvedProfile, equals(profile));
@@ -615,12 +710,12 @@ void main() {
         'returns not-handled when user opted out of speech recognition',
         () async {
           final result = await service.tryTranscribe(
-            taskId: 'task-1',
+            subjectId: 'task-1',
             enableSpeechRecognition: false,
           );
 
           expect(result.handled, isFalse);
-          verifyNever(() => mockResolver.resolveForTask(any()));
+          verifyNever(() => mockResolver.resolveForSubject(any()));
           verifyNever(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
           );
@@ -640,14 +735,14 @@ void main() {
         final skill = makeSkill(id: 'skill-transcribe');
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-transcribe'),
         ).thenAnswer((_) async => skill);
 
         final result = await service.tryTranscribe(
-          taskId: 'task-1',
+          subjectId: 'task-1',
         );
 
         expect(result.handled, isTrue);
@@ -655,10 +750,10 @@ void main() {
 
       test('returns not-handled when no profile resolved', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
@@ -676,7 +771,7 @@ void main() {
           final recommendedQwen = makeModel();
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -685,7 +780,7 @@ void main() {
             () => mockAiConfig.getConfigById('provider-mlx'),
           ).thenAnswer((_) async => provider);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.id, skillTranscribeContextId);
@@ -714,7 +809,7 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -723,7 +818,7 @@ void main() {
             () => mockAiConfig.getConfigById(provider.id),
           ).thenAnswer((_) async => provider);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isFalse);
         },
@@ -799,7 +894,7 @@ void main() {
           ];
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -810,7 +905,7 @@ void main() {
             ).thenAnswer((_) async => provider);
           }
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(
@@ -850,7 +945,7 @@ void main() {
           ];
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -861,7 +956,7 @@ void main() {
             ).thenAnswer((_) async => provider);
           }
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(
@@ -891,7 +986,7 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -900,7 +995,7 @@ void main() {
             () => mockAiConfig.getConfigById(provider.id),
           ).thenAnswer((_) async => provider);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(
@@ -925,13 +1020,13 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-image'),
         ).thenAnswer((_) async => imageSkill);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
@@ -947,10 +1042,10 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         // Should not even look up the skill config.
@@ -969,13 +1064,13 @@ void main() {
         final skill = makeSkill(id: 'skill-transcribe');
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-transcribe'),
         ).thenAnswer((_) async => skill);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
@@ -991,13 +1086,13 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-missing'),
         ).thenAnswer((_) async => null);
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
@@ -1022,13 +1117,13 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-vision'),
           ).thenAnswer((_) async => skill);
 
-          final result = await service.tryAnalyzeImage(taskId: 'task-1');
+          final result = await service.tryAnalyzeImage(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.skillType, SkillType.imageAnalysis);
@@ -1050,13 +1145,13 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-vision'),
         ).thenAnswer((_) async => skill);
 
-        final result = await service.tryAnalyzeImage(taskId: 'task-1');
+        final result = await service.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
@@ -1098,7 +1193,7 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-image'),
@@ -1107,7 +1202,7 @@ void main() {
             () => mockAiConfig.getConfigById('skill-transcribe'),
           ).thenAnswer((_) async => transcribeSkill);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.id, 'skill-transcribe');
@@ -1132,7 +1227,7 @@ void main() {
           final skill2 = makeSkill(id: 'skill-t2');
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-t1'),
@@ -1141,7 +1236,7 @@ void main() {
             () => mockAiConfig.getConfigById('skill-t2'),
           ).thenAnswer((_) async => skill2);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isFalse);
         },
@@ -1166,7 +1261,7 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-transcribe'),
@@ -1175,7 +1270,7 @@ void main() {
             () => mockAiConfig.getConfigById('skill-image'),
           ).thenAnswer((_) async => imageSkill);
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.id, 'skill-transcribe');
@@ -1195,7 +1290,7 @@ void main() {
     group('skip reasons reach the log', () {
       test('the per-recording opt-out says so', () async {
         await service.tryTranscribe(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           enableSpeechRecognition: false,
         );
 
@@ -1213,7 +1308,7 @@ void main() {
       test('the category gate says so', () async {
         categoryAllowsAutomation = false;
 
-        await service.tryAnalyzeImage(taskId: 'task-1');
+        await service.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(
           loggedLines(),
@@ -1233,7 +1328,7 @@ void main() {
           domainLogger: mockDomainLogger,
         );
 
-        await unwired.tryAnalyzeImage(taskId: 'task-1');
+        await unwired.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(
           loggedLines(),
@@ -1247,7 +1342,7 @@ void main() {
       });
 
       test('an empty model slot names the skill it skipped', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-transcribe', automate: true),
@@ -1258,7 +1353,7 @@ void main() {
           (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
         );
 
-        await service.tryTranscribe(taskId: 'task-1');
+        await service.tryTranscribe(subjectId: 'task-1');
 
         expect(
           loggedLines(),
@@ -1273,7 +1368,7 @@ void main() {
       });
 
       test('a missing skill config says which assignment broke', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-gone', automate: true),
@@ -1285,7 +1380,7 @@ void main() {
           () => mockAiConfig.getConfigById('skill-gone'),
         ).thenAnswer((_) async => null);
 
-        await service.tryTranscribe(taskId: 'task-1');
+        await service.tryTranscribe(subjectId: 'task-1');
 
         expect(
           loggedLines(),
@@ -1299,7 +1394,7 @@ void main() {
       });
 
       test('an ambiguous profile says how many matched', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-t1', automate: true),
@@ -1315,7 +1410,7 @@ void main() {
           () => mockAiConfig.getConfigById('skill-t2'),
         ).thenAnswer((_) async => makeSkill(id: 'skill-t2'));
 
-        await service.tryTranscribe(taskId: 'task-1');
+        await service.tryTranscribe(subjectId: 'task-1');
 
         expect(
           loggedLines(),
@@ -1330,20 +1425,20 @@ void main() {
 
       test('exhausting the walk reports how many profiles it tried', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
           () => mockResolver.resolveAutomationFallbacks('task-1'),
         ).thenAnswer((_) async => [makeProfile(), makeProfile()]);
 
-        await service.tryAnalyzeImage(taskId: 'task-1');
+        await service.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(
           loggedLines(),
           contains(
             allOf(
               startsWith('profileResolution:'),
-              contains('walked 0 task-linked and 2 inherited profile(s)'),
+              contains('walked 0 subject-linked and 2 inherited profile(s)'),
             ),
           ),
         );
@@ -1352,7 +1447,7 @@ void main() {
       // The declines are only half of it: a run that picked the wrong profile
       // is as opaque as one that never happened.
       test('a successful run names the skill and where it came from', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-transcribe', automate: true),
@@ -1364,7 +1459,7 @@ void main() {
           (_) async => makeSkill(id: 'skill-transcribe', name: 'Transcribe'),
         );
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isTrue);
         expect(
@@ -1373,7 +1468,7 @@ void main() {
             allOf(
               startsWith('resolved:'),
               contains('"Transcribe"'),
-              contains('task-linked profile'),
+              contains('subject-linked profile'),
             ),
           ),
         );
@@ -1383,7 +1478,7 @@ void main() {
       test('task ids are sanitized', () async {
         categoryAllowsAutomation = false;
 
-        await service.tryAnalyzeImage(taskId: 'task-abcdef-secret-suffix');
+        await service.tryAnalyzeImage(subjectId: 'task-abcdef-secret-suffix');
 
         final line = loggedLines().singleWhere(
           (l) => l.startsWith('categoryGate:'),
@@ -1399,7 +1494,7 @@ void main() {
         'the direct fallback says when no speech model is configured',
         () async {
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -1409,7 +1504,7 @@ void main() {
             ],
           );
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isFalse);
           expect(
@@ -1426,7 +1521,7 @@ void main() {
 
       test('the direct fallback tallies why each speech model lost', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
           () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -1446,7 +1541,7 @@ void main() {
           ),
         );
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         expect(
@@ -1468,7 +1563,7 @@ void main() {
       // private hostnames or filesystem paths into an exportable log.
       test('the direct fallback logs no user-entered model text', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
           () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -1485,7 +1580,7 @@ void main() {
           () => mockAiConfig.getConfigById('provider-mlx'),
         ).thenAnswer((_) async => makeProvider());
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isTrue);
         final line = loggedLines().singleWhere(
@@ -1502,7 +1597,7 @@ void main() {
       // no inference. Logging them would manufacture execution records and
       // bury the decision belonging to the recording being diagnosed.
       test('a matching capability probe records nothing', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-transcribe', automate: true),
@@ -1515,7 +1610,7 @@ void main() {
         );
 
         final available = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         );
 
@@ -1527,7 +1622,7 @@ void main() {
         categoryAllowsAutomation = false;
 
         final available = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.imageAnalysis,
         );
 
@@ -1554,14 +1649,14 @@ void main() {
           categoryAutomationLookup: (_) async => false,
         );
 
-        final result = await loggerless.tryAnalyzeImage(taskId: 'task-1');
+        final result = await loggerless.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
       });
     });
 
     group('inherited profile fallback', () {
-      /// What `resolveForTask` returns once a thinking model is picked by hand
+      /// What `resolveForSubject` returns once a thinking model is picked by hand
       /// and the agent has no base profile — thinking route only.
       ResolvedProfile handPickedModelRoute() =>
           makeProfile(thinkingModelId: 'glm-5.2');
@@ -1585,7 +1680,7 @@ void main() {
         'picked by hand',
         () async {
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => handPickedModelRoute());
           when(
             () => mockResolver.resolveAutomationFallbacks('task-1'),
@@ -1601,7 +1696,7 @@ void main() {
             () => mockAiConfig.getConfigById('skill-transcribe'),
           ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.id, 'skill-transcribe');
@@ -1619,7 +1714,7 @@ void main() {
         'picked by hand',
         () async {
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => handPickedModelRoute());
           when(
             () => mockResolver.resolveAutomationFallbacks('task-1'),
@@ -1638,7 +1733,7 @@ void main() {
             ),
           );
 
-          final result = await service.tryAnalyzeImage(taskId: 'task-1');
+          final result = await service.tryAnalyzeImage(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.skill!.id, 'skill-image');
@@ -1652,7 +1747,7 @@ void main() {
       test(
         'the task-linked profile wins and the inherited ones are never read',
         () async {
-          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
             (_) async => makeProfile(
               skillAssignments: const [
                 SkillAssignment(skillId: 'skill-transcribe', automate: true),
@@ -1664,7 +1759,7 @@ void main() {
             () => mockAiConfig.getConfigById('skill-transcribe'),
           ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(result.resolvedProfile!.transcriptionModelId, 'whisper-1');
@@ -1677,7 +1772,7 @@ void main() {
       test(
         'only the capability the task-linked profile lacks falls back',
         () async {
-          when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+          when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
             (_) async => makeProfile(
               skillAssignments: const [
                 SkillAssignment(skillId: 'skill-image', automate: true),
@@ -1712,9 +1807,11 @@ void main() {
             (_) async => makeSkill(id: 'skill-inherited-transcribe'),
           );
 
-          final imageResult = await service.tryAnalyzeImage(taskId: 'task-1');
+          final imageResult = await service.tryAnalyzeImage(
+            subjectId: 'task-1',
+          );
           final transcribeResult = await service.tryTranscribe(
-            taskId: 'task-1',
+            subjectId: 'task-1',
           );
 
           expect(imageResult.skill!.id, 'skill-image');
@@ -1732,7 +1829,7 @@ void main() {
 
       test('walks the inherited profiles in order', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => handPickedModelRoute());
         when(
           () => mockResolver.resolveAutomationFallbacks('task-1'),
@@ -1750,7 +1847,7 @@ void main() {
           () => mockAiConfig.getConfigById('skill-transcribe'),
         ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isTrue);
         expect(
@@ -1764,7 +1861,7 @@ void main() {
       // doing nothing, so ambiguity ends the walk instead of demoting the
       // task to a profile it never selected.
       test('an ambiguous task-linked profile ends the walk', () async {
-        when(() => mockResolver.resolveForTask('task-1')).thenAnswer(
+        when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
               SkillAssignment(skillId: 'skill-t1', automate: true),
@@ -1780,7 +1877,7 @@ void main() {
           () => mockAiConfig.getConfigById('skill-t2'),
         ).thenAnswer((_) async => makeSkill(id: 'skill-t2'));
 
-        final result = await service.tryTranscribe(taskId: 'task-1');
+        final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         verifyNever(() => mockResolver.resolveAutomationFallbacks(any()));
@@ -1791,7 +1888,7 @@ void main() {
       test('the category gate short-circuits before the walk', () async {
         categoryAllowsAutomation = false;
 
-        final result = await service.tryAnalyzeImage(taskId: 'task-1');
+        final result = await service.tryAnalyzeImage(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         verifyNever(() => mockResolver.resolveAutomationFallbacks(any()));
@@ -1801,7 +1898,7 @@ void main() {
         'the checkbox affordance reflects the inherited transcription skill',
         () async {
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => handPickedModelRoute());
           when(
             () => mockResolver.resolveAutomationFallbacks('task-1'),
@@ -1818,7 +1915,7 @@ void main() {
           ).thenAnswer((_) async => makeSkill(id: 'skill-transcribe'));
 
           final available = await service.hasAutomatedSkillType(
-            taskId: 'task-1',
+            subjectId: 'task-1',
             skillType: SkillType.transcription,
           );
 
@@ -1831,7 +1928,7 @@ void main() {
         'the capability',
         () async {
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => handPickedModelRoute());
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -1840,7 +1937,7 @@ void main() {
             () => mockAiConfig.getConfigById('provider-mlx'),
           ).thenAnswer((_) async => makeProvider());
 
-          final result = await service.tryTranscribe(taskId: 'task-1');
+          final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
           expect(
@@ -1890,7 +1987,7 @@ void main() {
         );
 
         when(
-          () => localResolver.resolveForTask('generated-task'),
+          () => localResolver.resolveForSubject('generated-task'),
         ).thenAnswer((_) async {
           resolverCalls++;
           return scenario.profileMissing ? null : profile;
@@ -1911,19 +2008,19 @@ void main() {
 
         final result = switch (scenario.operation) {
           _GeneratedAutomationOperation.transcribeDefault =>
-            await localService.tryTranscribe(taskId: 'generated-task'),
+            await localService.tryTranscribe(subjectId: 'generated-task'),
           _GeneratedAutomationOperation.transcribeOptIn =>
             await localService.tryTranscribe(
-              taskId: 'generated-task',
+              subjectId: 'generated-task',
               enableSpeechRecognition: true,
             ),
           _GeneratedAutomationOperation.transcribeOptOut =>
             await localService.tryTranscribe(
-              taskId: 'generated-task',
+              subjectId: 'generated-task',
               enableSpeechRecognition: false,
             ),
           _GeneratedAutomationOperation.analyzeImage =>
-            await localService.tryAnalyzeImage(taskId: 'generated-task'),
+            await localService.tryAnalyzeImage(subjectId: 'generated-task'),
         };
 
         expect(
@@ -1998,7 +2095,7 @@ void main() {
         }
 
         when(
-          () => localResolver.resolveForTask('rank-task'),
+          () => localResolver.resolveForSubject('rank-task'),
         ).thenAnswer((_) async => null);
         when(
           () => localResolver.resolveAutomationFallbacks(any()),
@@ -2012,7 +2109,7 @@ void main() {
           ).thenAnswer((_) async => provider);
         }
 
-        final result = await localService.tryTranscribe(taskId: 'rank-task');
+        final result = await localService.tryTranscribe(subjectId: 'rank-task');
 
         // At least one valid STT candidate always exists, so a model is always
         // selected.
@@ -2047,7 +2144,7 @@ void main() {
         // The ranking is deterministic: a second resolution selects the same
         // model id for the identical candidate set.
         final secondResult = await localService.tryTranscribe(
-          taskId: 'rank-task',
+          subjectId: 'rank-task',
         );
         expect(
           secondResult.resolvedProfile!.transcriptionModelId,
@@ -2071,14 +2168,14 @@ void main() {
         final skill = makeSkill(id: 'skill-transcribe');
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-transcribe'),
         ).thenAnswer((_) async => skill);
 
         final result = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         );
 
@@ -2087,11 +2184,11 @@ void main() {
 
       test('returns false when no profile resolved', () async {
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
 
         final result = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         );
 
@@ -2105,7 +2202,7 @@ void main() {
           final model = makeModel();
 
           when(
-            () => mockResolver.resolveForTask('task-1'),
+            () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -2115,7 +2212,7 @@ void main() {
           ).thenAnswer((_) async => provider);
 
           final result = await service.hasAutomatedSkillType(
-            taskId: 'task-1',
+            subjectId: 'task-1',
             skillType: SkillType.transcription,
           );
 
@@ -2138,14 +2235,14 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => profile);
         when(
           () => mockAiConfig.getConfigById('skill-vision'),
         ).thenAnswer((_) async => skill);
 
         final result = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         );
 
@@ -2168,14 +2265,14 @@ void main() {
             final skill = makeSkill(id: skillId, skillType: skillType);
 
             when(
-              () => mockResolver.resolveForTask('task-$skillId'),
+              () => mockResolver.resolveForSubject('task-$skillId'),
             ).thenAnswer((_) async => profile);
             when(
               () => mockAiConfig.getConfigById(skillId),
             ).thenAnswer((_) async => skill);
 
             final result = await service.hasAutomatedSkillType(
-              taskId: 'task-$skillId',
+              subjectId: 'task-$skillId',
               skillType: skillType,
             );
 
@@ -2205,14 +2302,14 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-image-prompt'),
+            () => mockResolver.resolveForSubject('task-image-prompt'),
           ).thenAnswer((_) async => profile);
           when(
             () => mockAiConfig.getConfigById('skill-image-prompt'),
           ).thenAnswer((_) async => skill);
 
           final result = await service.hasAutomatedSkillType(
-            taskId: 'task-image-prompt',
+            subjectId: 'task-image-prompt',
             skillType: SkillType.imagePromptGeneration,
           );
 
@@ -2240,12 +2337,12 @@ void main() {
           );
 
           when(
-            () => mockResolver.resolveForTask('task-image-gen-missing'),
+            () => mockResolver.resolveForSubject('task-image-gen-missing'),
           ).thenAnswer(
             (_) async => makeProfile(skillAssignments: [assignment]),
           );
           when(
-            () => mockResolver.resolveForTask('task-image-gen-present'),
+            () => mockResolver.resolveForSubject('task-image-gen-present'),
           ).thenAnswer(
             (_) async => makeProfile(
               skillAssignments: [assignment],
@@ -2257,11 +2354,11 @@ void main() {
           ).thenAnswer((_) async => skill);
 
           final missingResult = await service.hasAutomatedSkillType(
-            taskId: 'task-image-gen-missing',
+            subjectId: 'task-image-gen-missing',
             skillType: SkillType.imageGeneration,
           );
           final presentResult = await service.hasAutomatedSkillType(
-            taskId: 'task-image-gen-present',
+            subjectId: 'task-image-gen-present',
             skillType: SkillType.imageGeneration,
           );
 

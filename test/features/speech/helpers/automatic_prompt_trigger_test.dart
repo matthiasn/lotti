@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
@@ -10,11 +11,13 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 
@@ -22,9 +25,12 @@ void main() {
   late MockDomainLogger mockDomainLogger;
   late MockProfileAutomationService mockProfileAutomationService;
   late MockSkillInferenceRunner mockRunner;
-  late MockTaskAgentService mockTaskAgentService;
+  late MockJournalDb mockJournalDb;
+  late MockSubjectAgentResolver mockSubjectAgentResolver;
   late MockWakeOrchestrator mockWakeOrchestrator;
   late ProviderContainer container;
+
+  const entryId = 'entry-1';
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -56,11 +62,42 @@ void main() {
         as AiConfigSkill;
   }
 
+  /// Makes [subjectId] resolve to an entity of the given kind, and makes
+  /// transcription succeed for it. Returns the handled result so callers can
+  /// assert on what was forwarded to the runner.
+  Future<AutomationResult> stubHandledTranscription(
+    String subjectId, {
+    JournalEntity? entity,
+  }) async {
+    final result = AutomationResult(handled: true, skill: testSkill());
+    when(
+      () => mockProfileAutomationService.tryTranscribe(
+        subjectId: subjectId,
+        enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+      ),
+    ).thenAnswer((_) async => result);
+    when(
+      () => mockJournalDb.journalEntityById(subjectId),
+    ).thenAnswer((_) async => entity);
+    when(
+      () => mockRunner.runTranscription(
+        audioEntryId: any(named: 'audioEntryId'),
+        automationResult: any(named: 'automationResult'),
+        linkedTaskId: any(named: 'linkedTaskId'),
+      ),
+    ).thenAnswer((_) async {});
+    return result;
+  }
+
   setUp(() async {
     mockDomainLogger = MockDomainLogger();
     mockProfileAutomationService = MockProfileAutomationService();
     mockRunner = MockSkillInferenceRunner();
-    mockTaskAgentService = MockTaskAgentService();
+    mockJournalDb = MockJournalDb();
+    mockSubjectAgentResolver = MockSubjectAgentResolver();
+    when(
+      () => mockSubjectAgentResolver(any<String>()),
+    ).thenAnswer((_) async => null);
     mockWakeOrchestrator = MockWakeOrchestrator();
 
     // The trigger resolves `getIt<DomainLogger>()`; swap the real logger
@@ -93,13 +130,13 @@ void main() {
 
     when(
       () => mockProfileAutomationService.tryTranscribe(
-        taskId: any(named: 'taskId'),
+        subjectId: any(named: 'subjectId'),
         enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
       ),
     ).thenAnswer((_) async => AutomationResult.notHandled);
 
     when(
-      () => mockTaskAgentService.getTaskAgentForTask(any()),
+      () => mockJournalDb.journalEntityById(any<String>()),
     ).thenAnswer((_) async => null);
 
     when(
@@ -116,7 +153,10 @@ void main() {
           mockProfileAutomationService,
         ),
         skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+        journalDbProvider.overrideWithValue(mockJournalDb),
+        subjectAgentResolverProvider.overrideWithValue(
+          mockSubjectAgentResolver,
+        ),
         wakeOrchestratorProvider.overrideWithValue(mockWakeOrchestrator),
       ],
     );
@@ -127,45 +167,119 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  group('AutomaticPromptTrigger', () {
-    test('logs and returns when no linkedTaskId', () async {
-      final trigger = container.read(automaticPromptTriggerProvider);
+  AutomaticPromptTrigger trigger() =>
+      container.read(automaticPromptTriggerProvider);
 
-      await trigger.triggerAutomaticPrompts(
-        'entry-1',
+  group('no linked subject', () {
+    test('logs and never asks automation to transcribe', () async {
+      await trigger().triggerAutomaticPrompts(entryId, stoppedState());
+
+      verify(
+        () => mockDomainLogger.log(
+          LogDomain.ai,
+          any<String>(that: contains('No linked subject')),
+          subDomain: 'triggerAutomaticPrompts',
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockProfileAutomationService.tryTranscribe(
+          subjectId: any(named: 'subjectId'),
+          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+        ),
+      );
+    });
+  });
+
+  group('automation gate', () {
+    test('runs the transcription skill when the profile handles it', () async {
+      const subjectId = 'task-1';
+      final result = await stubHandledTranscription(
+        subjectId,
+        entity: testTask,
+      );
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
         stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verify(
+        () => mockRunner.runTranscription(
+          audioEntryId: entryId,
+          automationResult: result,
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).called(1);
+      verify(
+        () => mockDomainLogger.log(
+          LogDomain.ai,
+          any<String>(that: contains('Profile-driven transcription')),
+          subDomain: 'triggerAutomaticPrompts',
+        ),
+      ).called(1);
+    });
+
+    test('does not run the skill when the profile declines', () async {
+      const subjectId = 'task-declined';
+      when(
+        () => mockProfileAutomationService.tryTranscribe(
+          subjectId: subjectId,
+          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+        ),
+      ).thenAnswer((_) async => AutomationResult.notHandled);
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
       );
 
       verify(
         () => mockDomainLogger.log(
           LogDomain.ai,
-          any<String>(that: contains('No linked task')),
+          any<String>(that: contains('did not handle transcription')),
           subDomain: 'triggerAutomaticPrompts',
         ),
       ).called(1);
-
       verifyNever(
-        () => mockProfileAutomationService.tryTranscribe(
-          taskId: any(named: 'taskId'),
-          enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+        () => mockRunner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
         ),
       );
     });
 
-    test('handles exception gracefully', () async {
+    test('forwards the per-recording speech opt-out verbatim', () async {
+      const subjectId = 'task-optout';
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(enableSpeechRecognition: false),
+        linkedSubjectId: subjectId,
+      );
+
+      verify(
+        () => mockProfileAutomationService.tryTranscribe(
+          subjectId: subjectId,
+          enableSpeechRecognition: false,
+        ),
+      ).called(1);
+    });
+
+    test('logs and swallows a throwing automation service', () async {
       when(
         () => mockProfileAutomationService.tryTranscribe(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
           enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
         ),
       ).thenThrow(Exception('Service error'));
 
-      final trigger = container.read(automaticPromptTriggerProvider);
-
-      await trigger.triggerAutomaticPrompts(
-        'entry-1',
+      await trigger().triggerAutomaticPrompts(
+        entryId,
         stoppedState(),
-        linkedTaskId: 'task-1',
+        linkedSubjectId: 'task-1',
       );
 
       verify(
@@ -177,288 +291,231 @@ void main() {
         ),
       ).called(1);
     });
+  });
 
-    group('Profile-driven path', () {
-      test('runs transcription when profile handles it', () async {
-        const taskId = 'test-task';
-        const entryId = 'test-entry';
-        final skill = testSkill();
+  // The task context and the consumption record's `taskId` share one
+  // parameter, so a non-task subject must not be smuggled through it.
+  group('task context is withheld from non-task subjects', () {
+    test('a task subject passes its own id as the task context', () async {
+      const subjectId = 'task-ctx';
+      final result = await stubHandledTranscription(
+        subjectId,
+        entity: testTask,
+      );
 
-        final result = AutomationResult(handled: true, skill: skill);
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
 
-        when(
-          () => mockProfileAutomationService.tryTranscribe(
-            taskId: taskId,
-            enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-          ),
-        ).thenAnswer((_) async => result);
-
-        when(
-          () => mockRunner.runTranscription(
-            audioEntryId: entryId,
-            automationResult: result,
-            linkedTaskId: taskId,
-          ),
-        ).thenAnswer((_) async {});
-
-        final trigger = container.read(automaticPromptTriggerProvider);
-
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          stoppedState(),
-          linkedTaskId: taskId,
-        );
-
-        verify(
-          () => mockRunner.runTranscription(
-            audioEntryId: entryId,
-            automationResult: result,
-            linkedTaskId: taskId,
-          ),
-        ).called(1);
-
-        verify(
-          () => mockDomainLogger.log(
-            LogDomain.ai,
-            any<String>(that: contains('Profile-driven transcription')),
-            subDomain: 'triggerAutomaticPrompts',
-          ),
-        ).called(1);
-      });
-
-      test('logs when profile does not handle transcription', () async {
-        const taskId = 'test-task';
-        const entryId = 'test-entry';
-
-        when(
-          () => mockProfileAutomationService.tryTranscribe(
-            taskId: taskId,
-            enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-          ),
-        ).thenAnswer((_) async => AutomationResult.notHandled);
-
-        final trigger = container.read(automaticPromptTriggerProvider);
-
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          stoppedState(),
-          linkedTaskId: taskId,
-        );
-
-        verify(
-          () => mockDomainLogger.log(
-            LogDomain.ai,
-            any<String>(that: contains('did not handle transcription')),
-            subDomain: 'triggerAutomaticPrompts',
-          ),
-        ).called(1);
-
-        verifyNever(
-          () => mockRunner.runTranscription(
-            audioEntryId: any(named: 'audioEntryId'),
-            automationResult: any(named: 'automationResult'),
-            linkedTaskId: any(named: 'linkedTaskId'),
-          ),
-        );
-      });
-
-      test('passes enableSpeechRecognition to automation service', () async {
-        const taskId = 'test-task';
-
-        final trigger = container.read(automaticPromptTriggerProvider);
-
-        await trigger.triggerAutomaticPrompts(
-          'entry-1',
-          stoppedState(enableSpeechRecognition: false),
-          linkedTaskId: taskId,
-        );
-
-        verify(
-          () => mockProfileAutomationService.tryTranscribe(
-            taskId: taskId,
-            enableSpeechRecognition: false,
-          ),
-        ).called(1);
-      });
+      verify(
+        () => mockRunner.runTranscription(
+          audioEntryId: entryId,
+          automationResult: result,
+          linkedTaskId: subjectId,
+        ),
+      ).called(1);
     });
 
-    group('agent nudge on transcription completion', () {
-      test(
-        'enqueues a manual wake after a successful profile-driven '
-        'transcription so the user does not wait through the throttle',
-        () async {
-          const taskId = 'task-nudge';
-          const entryId = 'entry-nudge';
-          final skill = testSkill();
-          final result = AutomationResult(handled: true, skill: skill);
-          final agent = makeTestIdentity(agentId: 'agent-nudge');
-
-          when(
-            () => mockProfileAutomationService.tryTranscribe(
-              taskId: taskId,
-              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-            ),
-          ).thenAnswer((_) async => result);
-          when(
-            () => mockRunner.runTranscription(
-              audioEntryId: entryId,
-              automationResult: result,
-              linkedTaskId: taskId,
-            ),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockTaskAgentService.getTaskAgentForTask(taskId),
-          ).thenAnswer((_) async => agent);
-
-          final trigger = container.read(automaticPromptTriggerProvider);
-
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            stoppedState(),
-            linkedTaskId: taskId,
-          );
-
-          verify(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: 'agent-nudge',
-              reason: 'transcriptionComplete',
-              triggerTokens: {taskId, entryId},
-            ),
-          ).called(1);
-        },
+    test('a relationship subject passes no task context', () async {
+      const subjectId = 'relationship-ctx';
+      final result = await stubHandledTranscription(
+        subjectId,
+        entity: testRelationship,
       );
 
-      test(
-        'logs the stale outcome when automatic updates are off and the '
-        'orchestrator only marks the report stale instead of waking',
-        () async {
-          const taskId = 'task-stale';
-          const entryId = 'entry-stale';
-          final skill = testSkill();
-          final result = AutomationResult(handled: true, skill: skill);
-          final agent = makeTestIdentity(agentId: 'agent-stale');
-
-          when(
-            () => mockProfileAutomationService.tryTranscribe(
-              taskId: taskId,
-              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-            ),
-          ).thenAnswer((_) async => result);
-          when(
-            () => mockRunner.runTranscription(
-              audioEntryId: entryId,
-              automationResult: result,
-              linkedTaskId: taskId,
-            ),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockTaskAgentService.getTaskAgentForTask(taskId),
-          ).thenAnswer((_) async => agent);
-          when(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: 'agent-stale',
-              reason: 'transcriptionComplete',
-              triggerTokens: {taskId, entryId},
-            ),
-          ).thenReturn(false);
-
-          final trigger = container.read(automaticPromptTriggerProvider);
-
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            stoppedState(),
-            linkedTaskId: taskId,
-          );
-
-          verify(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: 'agent-stale',
-              reason: 'transcriptionComplete',
-              triggerTokens: {taskId, entryId},
-            ),
-          ).called(1);
-          verify(
-            () => mockDomainLogger.log(
-              LogDomain.ai,
-              any<String>(that: contains('Marked report stale')),
-              subDomain: 'nudgeTaskAgent',
-            ),
-          ).called(1);
-        },
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
       );
 
-      test(
-        'does not nudge when no task agent is registered for the task',
-        () async {
-          const taskId = 'task-orphan';
-          const entryId = 'entry-orphan';
-          final skill = testSkill();
-          final result = AutomationResult(handled: true, skill: skill);
+      verify(
+        () => mockRunner.runTranscription(
+          audioEntryId: entryId,
+          automationResult: result,
+          // ignore: avoid_redundant_argument_values
+          linkedTaskId: null,
+        ),
+      ).called(1);
+    });
 
-          when(
-            () => mockProfileAutomationService.tryTranscribe(
-              taskId: taskId,
-              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-            ),
-          ).thenAnswer((_) async => result);
-          when(
-            () => mockRunner.runTranscription(
-              audioEntryId: entryId,
-              automationResult: result,
-              linkedTaskId: taskId,
-            ),
-          ).thenAnswer((_) async {});
-          when(
-            () => mockTaskAgentService.getTaskAgentForTask(taskId),
-          ).thenAnswer((_) async => null);
+    test('a subject that no longer resolves passes no task context', () async {
+      const subjectId = 'vanished';
+      final result = await stubHandledTranscription(subjectId);
 
-          final trigger = container.read(automaticPromptTriggerProvider);
-
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            stoppedState(),
-            linkedTaskId: taskId,
-          );
-
-          verifyNever(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-              triggerTokens: any(named: 'triggerTokens'),
-            ),
-          );
-        },
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
       );
 
-      test(
-        'does not nudge when transcription was not handled by automation',
-        () async {
-          const taskId = 'task-skip';
-          const entryId = 'entry-skip';
+      verify(
+        () => mockRunner.runTranscription(
+          audioEntryId: entryId,
+          automationResult: result,
+          // ignore: avoid_redundant_argument_values
+          linkedTaskId: null,
+        ),
+      ).called(1);
+    });
+  });
 
-          when(
-            () => mockProfileAutomationService.tryTranscribe(
-              taskId: taskId,
-              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
-            ),
-          ).thenAnswer((_) async => AutomationResult.notHandled);
+  group('agent nudge on transcription completion', () {
+    test(
+      'wakes the task agent with both the subject and entry tokens',
+      () async {
+        const subjectId = 'task-nudge';
+        await stubHandledTranscription(subjectId, entity: testTask);
+        when(
+          () => mockSubjectAgentResolver(subjectId),
+        ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-nudge'));
 
-          final trigger = container.read(automaticPromptTriggerProvider);
+        await trigger().triggerAutomaticPrompts(
+          entryId,
+          stoppedState(),
+          linkedSubjectId: subjectId,
+        );
 
-          await trigger.triggerAutomaticPrompts(
-            entryId,
-            stoppedState(),
-            linkedTaskId: taskId,
-          );
+        verify(
+          () => mockWakeOrchestrator.requestContentWake(
+            agentId: 'agent-nudge',
+            reason: 'transcriptionComplete',
+            triggerTokens: {subjectId, entryId},
+          ),
+        ).called(1);
+      },
+    );
 
-          verifyNever(
-            () => mockWakeOrchestrator.requestContentWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-              triggerTokens: any(named: 'triggerTokens'),
-            ),
-          );
-        },
+    // The whole point of phase 6: a spoken check-in refreshes the person's
+    // briefing, which only happens if a non-task subject reaches the wake.
+    test('wakes a relationship agent for a spoken check-in', () async {
+      const subjectId = 'relationship-nudge';
+      await stubHandledTranscription(subjectId, entity: testRelationship);
+      when(
+        () => mockSubjectAgentResolver(subjectId),
+      ).thenAnswer(
+        (_) async => makeTestIdentity(agentId: 'relationship-agent'),
+      );
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verify(
+        () => mockWakeOrchestrator.requestContentWake(
+          agentId: 'relationship-agent',
+          reason: 'transcriptionComplete',
+          triggerTokens: {subjectId, entryId},
+        ),
+      ).called(1);
+    });
+
+    test(
+      'logs the stale outcome when the orchestrator declines to wake',
+      () async {
+        const subjectId = 'task-stale';
+        await stubHandledTranscription(subjectId, entity: testTask);
+        when(
+          () => mockSubjectAgentResolver(subjectId),
+        ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-stale'));
+        when(
+          () => mockWakeOrchestrator.requestContentWake(
+            agentId: 'agent-stale',
+            reason: 'transcriptionComplete',
+            triggerTokens: {subjectId, entryId},
+          ),
+        ).thenReturn(false);
+
+        await trigger().triggerAutomaticPrompts(
+          entryId,
+          stoppedState(),
+          linkedSubjectId: subjectId,
+        );
+
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.ai,
+            any<String>(that: contains('Marked report stale')),
+            subDomain: 'nudgeSubjectAgent',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('does not wake when the subject has no agent', () async {
+      const subjectId = 'subject-orphan';
+      await stubHandledTranscription(subjectId, entity: testTask);
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verifyNever(
+        () => mockWakeOrchestrator.requestContentWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+        ),
+      );
+    });
+
+    test('does not wake when automation never transcribed', () async {
+      const subjectId = 'subject-skip';
+      when(
+        () => mockSubjectAgentResolver(subjectId),
+      ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-skip'));
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verifyNever(
+        () => mockWakeOrchestrator.requestContentWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+        ),
+      );
+    });
+
+    // A missed nudge is recoverable through the subscription path; losing the
+    // transcript because the lookup threw is not.
+    test('a failing agent lookup is logged, not propagated', () async {
+      const subjectId = 'subject-boom';
+      await stubHandledTranscription(subjectId, entity: testTask);
+      when(
+        () => mockSubjectAgentResolver(subjectId),
+      ).thenThrow(Exception('link read failed'));
+
+      await trigger().triggerAutomaticPrompts(
+        entryId,
+        stoppedState(),
+        linkedSubjectId: subjectId,
+      );
+
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'nudgeSubjectAgent',
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockDomainLogger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: 'triggerAutomaticPrompts',
+        ),
       );
     });
   });

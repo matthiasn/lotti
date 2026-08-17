@@ -40,7 +40,7 @@ class AutomaticImageAnalysisTrigger {
 
       final automationService = ref.read(profileAutomationServiceProvider);
       final result = await automationService.tryAnalyzeImage(
-        taskId: linkedTaskId,
+        subjectId: linkedTaskId,
       );
 
       if (!result.handled) {

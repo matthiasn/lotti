@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contact channels never enter AI context. Cadence nudges and executive
   briefings ship alongside it — see the relationship-agent entry under
   Changed.
+- **Spoken check-ins.** "Speak check-in" on the check-in sheet records the
+  conversation and fills the narrative in with the transcript, ready to edit
+  before you save — nothing is saved for you, and speaking never overwrites
+  what you already typed; it is added underneath. The recording is filed
+  against the person, so it is transcribed with their inference profile (or
+  their category's) and their category's speech dictionary, which is where
+  to list the names you expect to hear. When the transcript lands, the
+  person's briefing refreshes on its own. If no transcript comes back, the
+  sheet says so and leaves the field to you.
 
 ### Changed
 - **Relationship agents brief, nudge and chat.** Marking a person important
@@ -35,6 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rules — and a chat about that person. Dismissing a banner keeps the
   agent quiet for the rest of the day; contact channels remain structurally
   invisible to the AI. Deleting a person also retires their agent.
+- **Recordings attached to a project or an event now transcribe too.**
+  Automatic transcription used to resolve an inference profile only through a
+  task, so a recording made against anything else was quietly left
+  untranscribed and its agent never woken. It now resolves whichever entity
+  the recording belongs to — task, project, event or person.
 - **Goal signal charts now show the trend behind the number.** Daily steps use
   bars and weight keeps its filled curve, both with a dashed trailing
   seven-day average overlaid. Legends identify actuals, averages and targets,

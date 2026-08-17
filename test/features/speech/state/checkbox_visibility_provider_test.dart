@@ -58,7 +58,7 @@ void main() {
   void stubHasTranscription({required bool result}) {
     when(
       () => automationService.hasAutomatedSkillType(
-        taskId: any(named: 'taskId'),
+        subjectId: any(named: 'subjectId'),
         skillType: any(named: 'skillType'),
       ),
     ).thenAnswer((_) async => result);
@@ -76,7 +76,7 @@ void main() {
       expect(result, isTrue);
       verify(
         () => automationService.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         ),
       ).called(1);
@@ -123,7 +123,7 @@ void main() {
       );
       verify(
         () => automationService.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         ),
       ).called(2);
@@ -142,7 +142,7 @@ void main() {
       expect(visibility.none, isTrue);
       verifyNever(
         () => automationService.hasAutomatedSkillType(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
           skillType: any(named: 'skillType'),
         ),
       );
@@ -152,7 +152,7 @@ void main() {
       // Never-completing future keeps hasProfileTranscription in loading.
       when(
         () => automationService.hasAutomatedSkillType(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
           skillType: any(named: 'skillType'),
         ),
       ).thenAnswer((_) => Completer<bool>().future);
@@ -168,7 +168,7 @@ void main() {
     test('treats a failed transcription check as hidden', () async {
       when(
         () => automationService.hasAutomatedSkillType(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
           skillType: any(named: 'skillType'),
         ),
       ).thenThrow(Exception('profile lookup failed'));

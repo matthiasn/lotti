@@ -1574,8 +1574,12 @@
   "checkInSentimentLabel": "Com'è andata?",
   "checkInSentimentNeutral": "Neutro",
   "checkInSentimentStrained": "Teso",
+  "checkInSpeakButton": "Detta il contatto",
   "checkInTopicsHint": "Separati da virgole, ad es. lavoro, viaggi",
   "checkInTopicsLabel": "Argomenti",
+  "checkInTranscribingLabel": "Trascrizione in corso…",
+  "checkInTranscriptFailed": "Non è arrivata nessuna trascrizione. Puoi scriverlo tu.",
+  "checkInTranscriptUnavailable": "La trascrizione non è configurata per questa persona. Aggiungi un modello audio e attiva l'inferenza automatica per la sua categoria, oppure scrivi il contatto.",
   "checklistAddItem": "Aggiungi un nuovo articolo",
   "checklistAiConfidenceLabel": "Confidenza: {level}",
   "@checklistAiConfidenceLabel": {

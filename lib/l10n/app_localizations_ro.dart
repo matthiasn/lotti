@@ -3187,11 +3187,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInSentimentStrained => 'Tensionat';
 
   @override
+  String get checkInSpeakButton => 'Dictați contactul';
+
+  @override
   String get checkInTopicsHint =>
       'Separate prin virgulă, de ex. muncă, călătorii';
 
   @override
   String get checkInTopicsLabel => 'Subiecte';
+
+  @override
+  String get checkInTranscribingLabel => 'Se transcrie…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Nu a venit nicio transcriere. O puteți scrie dvs.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.';
 
   @override
   String get checklistAddItem => 'Adăugați un element nou';

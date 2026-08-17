@@ -3161,10 +3161,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInSentimentStrained => 'Angespannt';
 
   @override
+  String get checkInSpeakButton => 'Check-in sprechen';
+
+  @override
   String get checkInTopicsHint => 'Kommagetrennt, z. B. Arbeit, Reisen';
 
   @override
   String get checkInTopicsLabel => 'Themen';
+
+  @override
+  String get checkInTranscribingLabel => 'Wird transkribiert…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Es kam keine Transkription zurück. Du kannst es auch tippen.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transkription ist für diese Person nicht eingerichtet. Füge ein Audiomodell hinzu und aktiviere die automatische Inferenz für ihre Kategorie, oder tippe das Check-in.';
 
   @override
   String get checklistAddItem => 'Neues Element hinzufügen';

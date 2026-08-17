@@ -3176,10 +3176,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checkInSentimentStrained => 'Tenso';
 
   @override
+  String get checkInSpeakButton => 'Dictar el contacto';
+
+  @override
   String get checkInTopicsHint => 'Separados por comas, p. ej. trabajo, viajes';
 
   @override
   String get checkInTopicsLabel => 'Temas';
+
+  @override
+  String get checkInTranscribingLabel => 'Transcribiendo…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'No llegó ninguna transcripción. Puedes escribirlo tú.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'La transcripción no está configurada para esta persona. Añade un modelo de audio y activa la inferencia automática en su categoría, o escribe el registro.';
 
   @override
   String get checklistAddItem => 'Agregar un nuevo elemento';

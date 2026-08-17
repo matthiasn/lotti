@@ -70,7 +70,7 @@ void main() {
 
     when(
       () => mockProfileAutomationService.tryAnalyzeImage(
-        taskId: any(named: 'taskId'),
+        subjectId: any(named: 'subjectId'),
       ),
     ).thenAnswer((_) async => AutomationResult.notHandled);
 
@@ -107,7 +107,7 @@ void main() {
 
       verifyNever(
         () => mockProfileAutomationService.tryAnalyzeImage(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
         ),
       );
     });
@@ -131,7 +131,7 @@ void main() {
     test('handles exception gracefully', () async {
       when(
         () => mockProfileAutomationService.tryAnalyzeImage(
-          taskId: any(named: 'taskId'),
+          subjectId: any(named: 'subjectId'),
         ),
       ).thenThrow(Exception('Service error'));
 
@@ -161,7 +161,7 @@ void main() {
         final result = AutomationResult(handled: true, skill: skill);
 
         when(
-          () => mockProfileAutomationService.tryAnalyzeImage(taskId: taskId),
+          () => mockProfileAutomationService.tryAnalyzeImage(subjectId: taskId),
         ).thenAnswer((_) async => result);
 
         when(
@@ -201,7 +201,7 @@ void main() {
         const imageEntryId = 'test-image';
 
         when(
-          () => mockProfileAutomationService.tryAnalyzeImage(taskId: taskId),
+          () => mockProfileAutomationService.tryAnalyzeImage(subjectId: taskId),
         ).thenAnswer((_) async => AutomationResult.notHandled);
 
         final trigger = container.read(automaticImageAnalysisTriggerProvider);
@@ -236,7 +236,7 @@ void main() {
         final result = AutomationResult(handled: true, skill: skill);
 
         when(
-          () => mockProfileAutomationService.tryAnalyzeImage(taskId: taskId),
+          () => mockProfileAutomationService.tryAnalyzeImage(subjectId: taskId),
         ).thenAnswer((_) async => result);
 
         when(

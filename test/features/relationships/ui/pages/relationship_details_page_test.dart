@@ -902,8 +902,9 @@ void main() {
       'screen — the no-flash house rule, pinned', (tester) async {
     final updates = StreamController<Set<String>>.broadcast();
     addTearDown(updates.close);
-    when(() => mockNotifications.updateStream)
-        .thenAnswer((_) => updates.stream);
+    when(
+      () => mockNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
     var calls = 0;
     final second = Completer<RelationshipEntry?>();
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((_) {

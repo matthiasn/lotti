@@ -3144,10 +3144,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInSentimentStrained => 'Ansträngt';
 
   @override
+  String get checkInSpeakButton => 'Tala in avstämning';
+
+  @override
   String get checkInTopicsHint => 'Kommaseparerade, t.ex. jobb, resor';
 
   @override
   String get checkInTopicsLabel => 'Ämnen';
+
+  @override
+  String get checkInTranscribingLabel => 'Transkriberar…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Ingen transkription kom tillbaka. Du kan skriva den själv.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.';
 
   @override
   String get checklistAddItem => 'Lägg till ett nytt föremål';
