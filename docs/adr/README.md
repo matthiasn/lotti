@@ -41,9 +41,10 @@ Each ADR should contain:
 | --- | --- | --- |
 | [0037: Relationship Data Stays On-Device](./0037-relationship-on-device-storage-and-privacy.md) | Proposed | Local-only storage, opt-in E2E sync, zero external retention, explicit cloud-AI consent, deletion cascade, GDPR framing. |
 | [0038: Relationship Domain Model](./0038-relationship-domain-model.md) | Proposed | `relationship`/`checkIn` journal subtypes, embedded person identity, status union, `RelationshipLink` task/timeline linking, no schema change. |
-| [0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md) | Proposed | Importance-gated cadence rule, event-driven scheduling on the synced notification inbox, startup reconcile, platform limits. |
-| [0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md) | Proposed | Relationship agent + report contract, health band, strict context boundary, privacy-weighted model routing, honesty rules. |
+| [0039: Relationship Check-In Reminders](./0039-relationship-check-in-reminders.md) | Proposed, superseded in part by 0059 | Importance-gated cadence rule (survives as Phase A wake facts), event-driven scheduling on the synced notification inbox (deferred), startup reconcile, platform limits. |
+| [0040: Relationship Executive Briefing](./0040-relationship-executive-briefing.md) | Proposed, amended by 0059 | Relationship agent + report contract, health band, strict context boundary, privacy-weighted model routing, honesty rules; runtime binding and template assumption amended. |
 | [0041: Relationship Contact Linking](./0041-relationship-contact-linking.md) | Proposed | Selective per-relationship contact linking (no bulk import), channel snapshots, call/message actions from the briefing, post-interaction check-in prompt. |
+| [0059: Relationship Agents on the Shared Runtime and the Kind-Agnostic Nudge Substrate](./0059-relationship-agent-runtime-and-nudge-generalization.md) | Proposed | Registered runtime kind on two-tier wakes (no template), per-episode lease-elected escalations with baseline tokens, banner dock as the attention channel (OS reminders deferred), sibling `relationshipNudge` variant with mixed-fleet-safe rollout, per-kind dock visibility. |
 
 ### Learning verification decision cluster
 
@@ -125,3 +126,4 @@ Each ADR should contain:
 - [`0056-need-to-know-visual-brief-boundary.md`](./0056-need-to-know-visual-brief-boundary.md)
 - [`0057-decade-scale-agent-memory.md`](./0057-decade-scale-agent-memory.md)
 - [`0058-procedural-text-banners-no-generative-imagery.md`](./0058-procedural-text-banners-no-generative-imagery.md)
+- [`0059-relationship-agent-runtime-and-nudge-generalization.md`](./0059-relationship-agent-runtime-and-nudge-generalization.md)

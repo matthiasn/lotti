@@ -9,6 +9,7 @@ what it does for a user; these describe how it runs.
 * [Agents](agents/) - the persisted agent runtime: wake scheduling, memory, proposals, review gates.
 * [AI](ai/) - the shared inference plumbing: configuration, provider routing, conversations, embeddings.
 * [Daily OS](daily_os_next/) - the day-planning runtime: coordinator and per-day agents, durable outbox, the capture ritual.
+* [Nudges](nudges.md) - the kind-agnostic banner channel: one view over two entity variants, one visibility contract, one rotating dock.
 * [AI chat](ai_chat.md) - a session-scoped Q&A surface over task history.
 * [AI consumption](ai_consumption.md) - the receipt for every piece of AI work.
 

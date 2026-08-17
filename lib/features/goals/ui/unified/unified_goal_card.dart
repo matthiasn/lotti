@@ -8,12 +8,12 @@ import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -198,8 +198,8 @@ class UnifiedGoalCard extends ConsumerWidget {
               lastDay: progress?.today,
               ratingsByDay: ratingsByDay,
             );
-            final leading = GoalBannerPersonaChip(
-              monogram: GoalBannerPersonaChip.monogramFor(
+            final leading = NudgeBannerPersonaChip(
+              monogram: NudgeBannerPersonaChip.monogramFor(
                 identity.displayName,
               ),
               fill: color.withValues(alpha: SurfaceAlphas.washChip),

@@ -4,9 +4,9 @@ import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart' show sha1;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -30,19 +30,20 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Backward-compatible name used throughout the workflow and its tests.
-const Duration goalAdLifetime = goalBannerLifetime;
+const Duration goalAdLifetime = nudgeBannerLifetime;
 
 /// Stable output IDs let a wake recognize that its interactive reply's
 /// transaction committed even when the deferred sync-outbox flush failed.
@@ -415,8 +416,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
     final activeAdIds = {
-      for (final n in nudges.where((n) => n.status == GoalNudgeStatus.active))
-        n.id,
+      for (final n in nudges.where((n) => n.status == NudgeStatus.active)) n.id,
     };
     final knownAdIds = {
       ...activeAdIds,
@@ -791,7 +791,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// enter the reuse pool), except dismissals — the user's quiet window
   /// binds the whole goal. Legacy rows without provenance pass.
   bool _specScopedRow(GoalNudgeEntity nudge, String versionId) {
-    if (nudge.status == GoalNudgeStatus.dismissed) return true;
+    if (nudge.status == NudgeStatus.dismissed) return true;
     final origin = nudge.provenance['specVersionId'];
     return origin == null || origin == versionId;
   }
@@ -830,7 +830,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final retired = {for (final action in strategy.retireRequests) action.adId};
     final freshActive = nudges.any(
       (n) =>
-          n.status == GoalNudgeStatus.active &&
+          n.status == NudgeStatus.active &&
           !retired.contains(n.id) &&
           now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
     );
@@ -848,7 +848,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     if (strategy.createdAds.isNotEmpty) return true;
     final byId = {for (final nudge in nudges) nudge.id: nudge};
     return strategy.rerunRequests.any(
-      (action) => byId[action.adId]?.status == GoalNudgeStatus.retired,
+      (action) => byId[action.adId]?.status == NudgeStatus.retired,
     );
   }
 
@@ -1254,18 +1254,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // another model call.
       for (final action in strategy.snoozeRequests) {
         final nudge = byId[action.adId];
-        if (nudge == null || nudge.status != GoalNudgeStatus.active) continue;
-        final updated = snoozeGoalBannerEntity(
-          nudge: nudge,
-          now: now,
-          until: action.until,
-          returnUtcOffsetMinutes: action.returnUtcOffsetMinutes,
-          eventId: const Uuid().v5(
-            Namespace.url.value,
-            'lotti://goal-agent/${nudge.id}/snooze/$runKey/'
-            '${action.until.toUtc().toIso8601String()}',
-          ),
-        );
+        if (nudge == null || nudge.status != NudgeStatus.active) continue;
+        final updated =
+            snoozeNudgeBannerEntity(
+                  nudge: NudgeEntityView.of(nudge)!,
+                  now: now,
+                  until: action.until,
+                  returnUtcOffsetMinutes: action.returnUtcOffsetMinutes,
+                  eventId: const Uuid().v5(
+                    Namespace.url.value,
+                    'lotti://goal-agent/${nudge.id}/snooze/$runKey/'
+                    '${action.until.toUtc().toIso8601String()}',
+                  ),
+                )
+                as GoalNudgeEntity;
         await _syncService.upsertEntity(updated);
         // A single model turn may request several successive quiet deadlines
         // for one banner. Fold each write into the next so no append-only event
@@ -1435,13 +1437,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
           for (final action in strategy.retireRequests) action.adId,
         };
         for (final nudge in nudges) {
-          if (nudge.status != GoalNudgeStatus.active ||
+          if (nudge.status != NudgeStatus.active ||
               modelRetired.contains(nudge.id)) {
             continue;
           }
           await _syncService.upsertEntity(
             nudge.copyWith(
-              status: GoalNudgeStatus.retired,
+              status: NudgeStatus.retired,
               retiredAt: now.toUtc(),
               updatedAt: now,
               provenance: {
@@ -1463,12 +1465,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
         // survives; rewriting expired→retired would feed the clock-expired
         // ad back into the reuse library.
         final nudge = byId[action.adId];
-        if (nudge == null || nudge.status != GoalNudgeStatus.active) {
+        if (nudge == null || nudge.status != NudgeStatus.active) {
           continue;
         }
         await _syncService.upsertEntity(
           nudge.copyWith(
-            status: GoalNudgeStatus.retired,
+            status: NudgeStatus.retired,
             retiredAt: now.toUtc(),
             updatedAt: now,
             provenance: {...nudge.provenance, 'retireReason': action.reason},
@@ -1503,7 +1505,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             ),
           );
       final hasViableRerunReplacement = strategy.rerunRequests.any(
-        (action) => byId[action.adId]?.status == GoalNudgeStatus.retired,
+        (action) => byId[action.adId]?.status == NudgeStatus.retired,
       );
       final hasViableInteractiveReplacement =
           interactiveAdRequested &&
@@ -1521,14 +1523,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final replacedRetiredNow = <String>{};
       if (hasViableInteractiveReplacement && !staleSpecWake && adsEligible) {
         for (final nudge in nudges) {
-          if (nudge.status != GoalNudgeStatus.active ||
+          if (nudge.status != NudgeStatus.active ||
               explicitlyRetiredNow.contains(nudge.id)) {
             continue;
           }
           replacedRetiredNow.add(nudge.id);
           await _syncService.upsertEntity(
             nudge.copyWith(
-              status: GoalNudgeStatus.retired,
+              status: NudgeStatus.retired,
               retiredAt: now.toUtc(),
               updatedAt: now,
               provenance: {
@@ -1545,7 +1547,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final retiredNow = {...explicitlyRetiredNow, ...replacedRetiredNow};
       var freshActiveExists = nudges.any(
         (n) =>
-            n.status == GoalNudgeStatus.active &&
+            n.status == NudgeStatus.active &&
             !retiredNow.contains(n.id) &&
             now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
       );
@@ -1567,13 +1569,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
           continue;
         }
         final nudge = byId[action.adId];
-        if (nudge == null || nudge.status != GoalNudgeStatus.retired) {
+        if (nudge == null || nudge.status != NudgeStatus.retired) {
           continue;
         }
         freshActiveExists = true;
         await _syncService.upsertEntity(
           nudge.copyWith(
-            status: GoalNudgeStatus.active,
+            status: NudgeStatus.active,
             activationCount: nudge.activationCount + 1,
             activatedAt: now.toUtc(),
             staleAt: now.toUtc().add(goalAdLifetime),
@@ -1659,7 +1661,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           AgentDomainEntity.goalNudge(
             id: creationId,
             agentId: agentId,
-            status: GoalNudgeStatus.active,
+            status: NudgeStatus.active,
             brief: brief,
             briefDigest: digest,
             // UTC throughout: local instants serialize without an offset
@@ -1941,7 +1943,7 @@ bool _offersGoalBanner(String? message) {
 }
 
 /// The report sanitizer applied to every copy field a banner renders.
-GoalNudgeBrief _sanitizeBrief(GoalNudgeBrief brief) => brief.copyWith(
+NudgeBrief _sanitizeBrief(NudgeBrief brief) => brief.copyWith(
   headline: sanitizeAgentReportText(brief.headline, stripBareIds: true),
   tagline: brief.tagline == null
       ? null
@@ -1953,7 +1955,7 @@ GoalNudgeBrief _sanitizeBrief(GoalNudgeBrief brief) => brief.copyWith(
 
 /// Near-duplicate dedupe key over the banner copy: the same words with
 /// different presets are the same ad.
-String goalBriefDigest(GoalNudgeBrief brief) => sha1
+String goalBriefDigest(NudgeBrief brief) => sha1
     .convert(
       utf8.encode(
         [
@@ -1969,7 +1971,7 @@ Map<String, String> _withoutGoalBannerSnooze(
   Map<String, String> provenance,
 ) => {
   for (final entry in provenance.entries)
-    if (entry.key != goalBannerSnoozedUntilKey &&
+    if (entry.key != nudgeBannerSnoozedUntilKey &&
         entry.key != 'snoozeReason' &&
         entry.key != 'snoozedAt')
       entry.key: entry.value,

@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/ui/goal_banner_style.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 
 import '../../../widget_test_utils.dart';
 
 void main() {
   final tokens = resolveTestTheme().extension<DsTokens>()!;
-  final style = goalBannerStyle(
-    tone: GoalNudgeTone.nudge,
-    accent: GoalBannerAccent.ember,
+  final style = nudgeBannerStyle(
+    tone: NudgeTone.nudge,
+    accent: NudgeBannerAccent.ember,
     colors: tokens.colors,
     brightness: Brightness.dark,
   );
 
   Size chipSize(WidgetTester tester) =>
-      tester.getSize(find.byType(GoalBannerPersonaChip));
+      tester.getSize(find.byType(NudgeBannerPersonaChip));
 
   testWidgets('the persona monogram is the goal title initial, uppercased', (
     tester,
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalBannerPersonaChip.forStyle(
-          monogram: GoalBannerPersonaChip.monogramFor('expedition fitness'),
+        NudgeBannerPersonaChip.forStyle(
+          monogram: NudgeBannerPersonaChip.monogramFor('expedition fitness'),
           style: style,
         ),
       ),
@@ -40,7 +40,7 @@ void main() {
         MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(scale)),
           child: Center(
-            child: GoalBannerPersonaChip.forStyle(monogram: 'E', style: style),
+            child: NudgeBannerPersonaChip.forStyle(monogram: 'E', style: style),
           ),
         ),
       ),
@@ -61,7 +61,7 @@ void main() {
     var tapped = false;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalBannerCtaPill(
+        NudgeBannerCtaPill(
           label: 'Log a walk',
           style: style,
           onTap: () => tapped = true,

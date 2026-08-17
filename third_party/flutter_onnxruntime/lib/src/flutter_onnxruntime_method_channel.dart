@@ -71,14 +71,12 @@ class MethodChannelFlutterOnnxruntime extends FlutterOnnxruntimePlatform {
       processedInputs[entry.key] = {'valueId': entry.value.id};
     }
 
-    final result = await methodChannel.invokeMethod<Map<Object?, Object?>>(
-      'runInference',
-      {
-        'sessionId': sessionId,
-        'inputs': processedInputs,
-        'runOptions': runOptions ?? {},
-      },
-    );
+    final result = await methodChannel
+        .invokeMethod<Map<Object?, Object?>>('runInference', {
+          'sessionId': sessionId,
+          'inputs': processedInputs,
+          'runOptions': runOptions ?? {},
+        });
     return _convertMapToStringDynamic(result ?? {});
   }
 

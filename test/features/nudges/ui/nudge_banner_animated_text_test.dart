@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
-import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
+import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
 
 import '../../../widget_test_utils.dart';
 
 void main() {
-  Widget host(GoalBannerAnimation animation, {bool reduced = false}) =>
+  Widget host(NudgeBannerAnimation animation, {bool reduced = false}) =>
       makeTestableWidget(
         MediaQuery(
           data: MediaQueryData(disableAnimations: reduced),
           child: SizedBox(
             width: 300,
-            child: GoalBannerAnimatedText(
+            child: NudgeBannerAnimatedText(
               text: 'Your inner couch potato is winning.',
               animation: animation,
               style: const TextStyle(fontSize: 16),
@@ -24,7 +24,7 @@ void main() {
   testWidgets('reduced motion degrades every preset to plain text', (
     tester,
   ) async {
-    for (final animation in GoalBannerAnimation.values) {
+    for (final animation in NudgeBannerAnimation.values) {
       await tester.pumpWidget(host(animation, reduced: true));
       await tester.pump();
       expect(
@@ -39,9 +39,9 @@ void main() {
   testWidgets('animated presets run a repeating controller and still '
       'render the copy', (tester) async {
     for (final animation in [
-      GoalBannerAnimation.pulse,
-      GoalBannerAnimation.wave,
-      GoalBannerAnimation.glitch,
+      NudgeBannerAnimation.pulse,
+      NudgeBannerAnimation.wave,
+      NudgeBannerAnimation.glitch,
     ]) {
       await tester.pumpWidget(host(animation));
       await tester.pump(const Duration(milliseconds: 500));
@@ -49,7 +49,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     }
     // Wave splits into words instead of one text run.
-    await tester.pumpWidget(host(GoalBannerAnimation.wave));
+    await tester.pumpWidget(host(NudgeBannerAnimation.wave));
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('winning.'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -58,7 +58,7 @@ void main() {
   testWidgets('the typewriter reveals characters over the cycle', (
     tester,
   ) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.typewriter));
+    await tester.pumpWidget(host(NudgeBannerAnimation.typewriter));
     await tester.pump(const Duration(milliseconds: 200));
     final partial = tester
         .widgetList<Text>(find.byType(Text))
@@ -71,10 +71,10 @@ void main() {
   testWidgets('marquee remains visibly animated when the text fits', (
     tester,
   ) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.marquee));
+    await tester.pumpWidget(host(NudgeBannerAnimation.marquee));
     await tester.pump();
     final transform = find.descendant(
-      of: find.byType(GoalBannerAnimatedText),
+      of: find.byType(NudgeBannerAnimatedText),
       matching: find.byType(Transform),
     );
     final atStart = tester.widget<Transform>(transform).transform;
@@ -89,7 +89,7 @@ void main() {
   });
 
   testWidgets('pulse has a clearly visible opacity range', (tester) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.pulse));
+    await tester.pumpWidget(host(NudgeBannerAnimation.pulse));
     await tester.pump();
     final atStart = tester.widget<Opacity>(find.byType(Opacity)).opacity;
     await tester.pump(const Duration(milliseconds: 750));
@@ -116,9 +116,9 @@ void main() {
     useNarrowSurface(tester);
     await tester.pumpWidget(
       makeTestableWidget(
-        const GoalBannerAnimatedText(
+        const NudgeBannerAnimatedText(
           text: 'Your inner couch potato is winning.',
-          animation: GoalBannerAnimation.marquee,
+          animation: NudgeBannerAnimation.marquee,
           style: TextStyle(fontSize: 16),
         ),
       ),
@@ -126,7 +126,7 @@ void main() {
     await tester.pump();
     final line = tester.getSize(
       find.descendant(
-        of: find.byType(GoalBannerAnimatedText),
+        of: find.byType(NudgeBannerAnimatedText),
         matching: find.text('Your inner couch potato is winning.'),
       ),
     );
@@ -143,9 +143,9 @@ void main() {
     useNarrowSurface(tester);
     await tester.pumpWidget(
       makeTestableWidget(
-        const GoalBannerAnimatedText(
+        const NudgeBannerAnimatedText(
           text: 'Your inner couch potato is winning again today.',
-          animation: GoalBannerAnimation.marquee,
+          animation: NudgeBannerAnimation.marquee,
           style: TextStyle(fontSize: 16),
         ),
       ),
@@ -166,9 +166,9 @@ void main() {
     useNarrowSurface(tester);
     await tester.pumpWidget(
       makeTestableWidget(
-        const GoalBannerAnimatedText(
+        const NudgeBannerAnimatedText(
           text: 'Your inner couch potato is winning again today.',
-          animation: GoalBannerAnimation.marquee,
+          animation: NudgeBannerAnimation.marquee,
           style: TextStyle(fontSize: 16),
         ),
       ),
@@ -188,7 +188,7 @@ void main() {
       return Offset(storage[12], storage[13]);
     }
 
-    final host = find.byType(GoalBannerAnimatedText);
+    final host = find.byType(NudgeBannerAnimatedText);
 
     // At the very start of the cycle the marquee sits at its resting
     // (untranslated) position: sin(-pi/2) maps to t == 0 via the standard
@@ -229,10 +229,10 @@ void main() {
   testWidgets('flipping to reduced motion stops the running controller', (
     tester,
   ) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.pulse));
+    await tester.pumpWidget(host(NudgeBannerAnimation.pulse));
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.hasRunningAnimations, isTrue);
-    await tester.pumpWidget(host(GoalBannerAnimation.pulse, reduced: true));
+    await tester.pumpWidget(host(NudgeBannerAnimation.pulse, reduced: true));
     await tester.pump();
     expect(tester.hasRunningAnimations, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -243,15 +243,15 @@ void main() {
   ) async {
     final longCopy = 'Your inner couch potato is winning ' * 12;
     for (final animation in const [
-      GoalBannerAnimation.steady,
-      GoalBannerAnimation.pulse,
-      GoalBannerAnimation.glitch,
+      NudgeBannerAnimation.steady,
+      NudgeBannerAnimation.pulse,
+      NudgeBannerAnimation.glitch,
     ]) {
       await tester.pumpWidget(
         makeTestableWidget(
           SizedBox(
             width: 300,
-            child: GoalBannerAnimatedText(
+            child: NudgeBannerAnimatedText(
               text: longCopy,
               animation: animation,
               style: const TextStyle(fontSize: 16),
@@ -262,7 +262,7 @@ void main() {
       await tester.pump();
       final text = tester.widget<Text>(
         find.descendant(
-          of: find.byType(GoalBannerAnimatedText),
+          of: find.byType(NudgeBannerAnimatedText),
           matching: find.text(longCopy),
         ),
       );
@@ -282,9 +282,9 @@ void main() {
       makeTestableWidget(
         SizedBox(
           width: 300,
-          child: GoalBannerAnimatedText(
+          child: NudgeBannerAnimatedText(
             text: longCopy,
-            animation: GoalBannerAnimation.wave,
+            animation: NudgeBannerAnimation.wave,
             style: const TextStyle(fontSize: 16),
           ),
         ),
@@ -295,14 +295,14 @@ void main() {
     // bobbing off the card.
     expect(
       find.descendant(
-        of: find.byType(GoalBannerAnimatedText),
+        of: find.byType(NudgeBannerAnimatedText),
         matching: find.byType(Wrap),
       ),
       findsNothing,
     );
     final text = tester.widget<Text>(
       find.descendant(
-        of: find.byType(GoalBannerAnimatedText),
+        of: find.byType(NudgeBannerAnimatedText),
         matching: find.text(longCopy),
       ),
     );
@@ -311,7 +311,7 @@ void main() {
 
   testWidgets('the typewriter exposes the FULL headline to screen readers '
       'while the visual prefix is still typing', (tester) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.typewriter));
+    await tester.pumpWidget(host(NudgeBannerAnimation.typewriter));
     await tester.pump(const Duration(milliseconds: 100));
     // Early in the cycle only a prefix is painted…
     final semantics = tester.getSemantics(
@@ -324,11 +324,11 @@ void main() {
 
   testWidgets('a preset swap under the same element resyncs the '
       'controller — synced rows keep animating (or stop)', (tester) async {
-    await tester.pumpWidget(host(GoalBannerAnimation.steady));
+    await tester.pumpWidget(host(NudgeBannerAnimation.steady));
     await tester.pump();
     expect(tester.hasRunningAnimations, isFalse);
 
-    await tester.pumpWidget(host(GoalBannerAnimation.pulse));
+    await tester.pumpWidget(host(NudgeBannerAnimation.pulse));
     await tester.pump(const Duration(milliseconds: 50));
     expect(
       tester.hasRunningAnimations,
@@ -336,7 +336,7 @@ void main() {
       reason: 'steady→pulse must start the stopped controller',
     );
 
-    await tester.pumpWidget(host(GoalBannerAnimation.steady));
+    await tester.pumpWidget(host(NudgeBannerAnimation.steady));
     await tester.pump();
     expect(
       tester.hasRunningAnimations,

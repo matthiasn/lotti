@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/fable-5, at: 2026-08-15T21:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-16T12:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -623,29 +623,36 @@ flowchart TD
 
 ## The visible layer (PR 5)
 
-- **Banners** (`ui/goal_banner_*.dart`): procedural text banners per
-  ADR 0058 — model-authored copy, code-owned animation presets (all
-  degrade to plain text under reduced motion) and accent presets bound to
-  design-system tokens. The register TINTS the accent (`goalBannerStyle`):
+- **Banners**: procedural text banners per ADR 0058 — model-authored copy,
+  code-owned animation presets (all degrade to plain text under reduced motion)
+  and accent presets bound to design-system tokens. Since ADR 0059 the
+  substrate itself is kind-agnostic and lives in `lib/features/nudges/`;
+  `ui/goal_banner_card.dart` is the goal-owned surface on top of it. The
+  register TINTS the accent (`nudgeBannerStyle`):
   one hue at graded washes (`SurfaceAlphas.washBorder/washChip/washControl`
   plus the `tint` fill) for the card fill, border, persona chip and CTA
   pill, so the banner's state reads before a word is (celebrate green,
   restart teal, nudge ember, roast the hand-authored `GoalAccentHues.neon`
-  lime). Rendered in a single **shell-level dock** (`GoalBannerDock`,
+  lime). Rendered in a single **shell-level dock** (`NudgeBannerDock`,
   mounted in `beamer_app.dart`) — one rotating slot at the bottom of the
   content region on desktop (beside the sidebar) and above the bottom nav
-  on mobile, on the main working tabs only (Tasks, DailyOS, Habits). One
+  on mobile. **Goal** banners appear on the main working tabs only (Tasks,
+  DailyOS, Habits); the dock itself is kind-agnostic and other kinds carry
+  their own surface gate, so the list here is goal-specific rather than the
+  dock's — see [nudges](nudges.md) for `nudgeKindShowsOn` and the rotation
+  state machine. One
   shared rotation state cycles every standing banner ~15s each; a fresh
   acknowledgment (a re-run) jumps the queue;
   hover/touch and app-backgrounding pause the cycle; the dock collapses to
-  nothing when no goal is speaking. Every dock tenant NAMES its goal — the
-  persona chip and a goal-title caption above the headline, on the desktop
+  nothing when no tenant is speaking on the current surface. Every dock
+  tenant NAMES its subject — the
+  persona chip and a subject-title caption above the headline, on the desktop
   and compact (bottom) docks alike, so the voice is never anonymous; the
-  reserved-lane math (`goalBannerDockReservedHeight`) covers the chip and
+  reserved-lane math (`nudgeBannerDockReservedHeight`) covers the chip and
   caption. The goal detail page shows that goal's
   banners uncycled via `GoalBannerCard` directly — and applies NO snooze
   filter: snoozes, day dismissals and the optimistic local echo quiet the
-  SHELL dock only (`goalBannerShellHiddenUntil`), while the page keeps the
+  SHELL dock only (`nudgeBannerShellHiddenUntil`), while the page keeps the
   banner captioned with a live countdown until it returns to the bar
   (`goal-banner-shell-return-countdown`, the shared `WakeCountdownState`
   tick). Tapping a banner opens
@@ -657,15 +664,36 @@ flowchart TD
   de-emphasized final action dismisses the banner only for the current local
   calendar day; there is no direct X or swipe-to-dismiss shortcut.
 
-  ```mermaid
-  stateDiagram-v2
-      [*] --> shown
-      shown --> snoozed: choose 1h / 3h / 6h / 8h
-      snoozed --> shown: deadline reached or app resumes after it
-      shown --> dismissedForDay: choose Dismiss for today
-      dismissedForDay --> shown: next local calendar day
-      shown --> snoozed: chat chooses another future instant
-  ```
+  **The channel itself is not this feature's.** ADR 0059 generalized the dock,
+  its rotation, the shared visibility contract, the snooze/rating sheets,
+  exposure metering and the concurrent-merge rules into the kind-agnostic
+  substrate at `lib/features/nudges/` — read
+  [Nudges](nudges.md) for how any of that works. Goals is one *producer*: it
+  registers `activeGoalNudgesProvider` as a banner source, and
+  `nudgeKindShowsOn` keeps goal banners on exactly the main working tabs
+  (Tasks, DailyOS, Habits).
+
+  What remains goal-owned:
+
+  - `ui/goal_banner_card.dart` — the full detail card. The goal detail page
+    lists that goal's banners uncycled through it rather than through the
+    shell dock, passing a CTA override that anchor-scrolls to the evidence the
+    page already hosts. The card keeps `cardPadding` on its lateral and bottom
+    edges but uses `spacing.step2` above the fixed-height action header,
+    preventing the rating and snooze tap targets from creating a visually
+    double-padded top edge.
+  - Tapping a banner opens **its goal's** detail page — the
+    banner→conversation flow, carried as the entry's `tapRoute`.
+  - A **chat-requested snooze** accepts an arbitrary future duration or
+    date/time and automatically restores the exact banner at that deadline;
+    successive requests in one model turn fold over the just-written row
+    rather than the turn's initial snapshot.
+  - `GoalFactsRenderer` turns the append-only interaction histories into wake
+    evidence: duration, local start, requested-return hour, weekday and recent
+    choices under `ads.snoozeBehavior`; day-dismissal local hours, weekdays and
+    recent quiet intervals under `ads.dismissalBehavior`. Repeated interaction
+    hours are evidence for future initial display timing, not an automatic
+    scheduling command.
 
   Every visibility choice persists on the `GoalNudgeEntity`: the effective
   `snoozedUntil`, `lastSnoozeDuration`, and `dismissedForDayAt` drive current
@@ -692,7 +720,7 @@ flowchart TD
   hours are evidence for future initial display timing, not an automatic
   scheduling command.
   Exposure is measured in visibility episodes by
-  `GoalBannerExposureTracker` gated on THREE signals — the tracker's
+  `NudgeBannerExposureTracker` gated on THREE signals — the tracker's
   stopwatch runs only while the app lifecycle is `resumed`, `TickerMode`
   reports the host tab on screen, AND the banner intersects its enclosing
   viewport (rechecked on scroll events, lifecycle changes and post-rebuild
@@ -701,10 +729,10 @@ flowchart TD
   visible→hidden transition — backgrounding, tab switch, scroll-out,
   unmount — flushes its own episode into the per-host G-counters, so
   returning starts a new episode. Writes per nudge are serialized in
-  `GoalNudgeInteractions` so a rapid flush/visibility-action pair cannot lose an
+  `NudgeInteractions` so a rapid flush/visibility-action pair cannot lose an
   update to a stale read.
   The dock and the full detail card both render the selected animation through
-  `GoalBannerAnimatedText`; the dock and its animated tenant span their host,
+  `NudgeBannerAnimatedText`; the dock and its animated tenant span their host,
   and both desktop and compact docks show the complete authored headline with
   no avatar, secondary tagline, or line cap; compact snooze remains at the
   trailing edge. A chat-requested snooze accepts an arbitrary future duration

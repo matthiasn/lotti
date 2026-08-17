@@ -20,6 +20,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -257,6 +258,12 @@ List<Override> buildProviderOverrides(ProfileContext context) {
         ...ref.watch(dailyOsRuntimeMaintenanceProvider),
         ref.watch(goalRuntimeMaintenanceProvider),
       ],
+    ),
+    // The banner dock renders every kind through one substrate; each kind
+    // registers its active-banner source here (ADR 0059 Decision 6). A
+    // source missing from this list simply never speaks.
+    nudgeBannerSourcesProvider.overrideWithValue(
+      [activeGoalNudgesProvider],
     ),
     promptLogWrapRenderersProvider.overrideWithValue(
       dayPromptLogWrapRenderers,

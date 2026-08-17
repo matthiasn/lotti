@@ -9,7 +9,7 @@
 library;
 
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
@@ -306,20 +306,20 @@ not a progress log.
 
 /// The tools of the goal-agent surface.
 ///
-/// `create_goal_ad` carries the TYPED fields of `GoalNudgeBrief`
+/// `create_goal_ad` carries the TYPED fields of `NudgeBrief`
 /// (ADR 0058): model-authored banner copy plus preset selections from the
 /// code-owned catalogs. Copy fields are the only model text a surface
 /// renders verbatim, so they are what the leakage evals police.
 /// Banner presentation catalogs — the code-owned presets of ADR 0058,
 /// derived from the real enums so the contract cannot drift.
 final List<String> goalNudgeToneNames = [
-  for (final value in GoalNudgeTone.values) value.name,
+  for (final value in NudgeTone.values) value.name,
 ];
 final List<String> goalBannerAnimationNames = [
-  for (final value in GoalBannerAnimation.values) value.name,
+  for (final value in NudgeBannerAnimation.values) value.name,
 ];
 final List<String> goalBannerAccentNames = [
-  for (final value in GoalBannerAccent.values) value.name,
+  for (final value in NudgeBannerAccent.values) value.name,
 ];
 
 final List<AgentToolDefinition> goalAgentTools = [

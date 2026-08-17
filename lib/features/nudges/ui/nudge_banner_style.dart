@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// The resolved look of one banner: an accent hue and its three washes —
@@ -8,7 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// colour statement (the design handover's surface recipe). Every value
 /// binds to a design-system token; no banner ever introduces a colour or an
 /// alpha of its own.
-typedef GoalBannerStyle = ({
+typedef NudgeBannerStyle = ({
   Color accent,
   Color fill,
   Color border,
@@ -25,27 +25,27 @@ typedef GoalBannerStyle = ({
 /// picks ride that register default — they are the same three families —
 /// while the two *energy variants*, `tide` and `aurora`, deliberately
 /// override the hue.
-GoalBannerStyle goalBannerStyle({
-  required GoalNudgeTone tone,
-  required GoalBannerAccent accent,
+NudgeBannerStyle nudgeBannerStyle({
+  required NudgeTone tone,
+  required NudgeBannerAccent accent,
   required DsColors colors,
   required Brightness brightness,
 }) {
   final registerHue = switch (tone) {
     // A beginning, not a verdict: the established "an agent wrote this"
     // teal — the warmest register belongs to the emptiest window.
-    GoalNudgeTone.encourage => colors.aiCard.accent,
+    NudgeTone.encourage => colors.aiCard.accent,
     // Green at a glance — doing well must be visible pre-reading.
-    GoalNudgeTone.celebrate => colors.alert.success.defaultColor,
-    GoalNudgeTone.nudge => colors.alert.warning.defaultColor,
-    GoalNudgeTone.roast => GoalAccentHues.neon(brightness),
+    NudgeTone.celebrate => colors.alert.success.defaultColor,
+    NudgeTone.nudge => colors.alert.warning.defaultColor,
+    NudgeTone.roast => GoalAccentHues.neon(brightness),
   };
   final hue = switch (accent) {
-    GoalBannerAccent.tide => colors.alert.info.defaultColor,
-    GoalBannerAccent.aurora => GoalAccentHues.aurora(brightness),
-    GoalBannerAccent.calm ||
-    GoalBannerAccent.ember ||
-    GoalBannerAccent.neon => registerHue,
+    NudgeBannerAccent.tide => colors.alert.info.defaultColor,
+    NudgeBannerAccent.aurora => GoalAccentHues.aurora(brightness),
+    NudgeBannerAccent.calm ||
+    NudgeBannerAccent.ember ||
+    NudgeBannerAccent.neon => registerHue,
   };
   return (
     accent: hue,

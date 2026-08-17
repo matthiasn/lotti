@@ -4,9 +4,9 @@ import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -964,8 +964,8 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   const factory AgentDomainEntity.goalNudge({
     required String id,
     required String agentId,
-    required GoalNudgeStatus status,
-    required GoalNudgeBrief brief,
+    required NudgeStatus status,
+    required NudgeBrief brief,
     required String briefDigest,
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -992,8 +992,8 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// preserve their append-only interaction history so future agent wakes
     /// can learn which local times users repeatedly defer and request.
     DateTime? snoozedUntil,
-    GoalBannerSnoozeDuration? lastSnoozeDuration,
-    @Default(<GoalNudgeSnooze>[]) List<GoalNudgeSnooze> snoozeHistory,
+    NudgeBannerSnoozeDuration? lastSnoozeDuration,
+    @Default(<NudgeSnooze>[]) List<NudgeSnooze> snoozeHistory,
 
     /// The latest "not today" choice. The banner remains active and becomes
     /// visible again when this instant is no longer on the reading device's
@@ -1002,8 +1002,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
     /// Append-only day-dismissal evidence. Current visibility reads the latest
     /// day-dismissal instant above; future timing analysis reads this history.
-    @Default(<GoalNudgeDayDismissal>[])
-    List<GoalNudgeDayDismissal> dismissalHistory,
+    @Default(<NudgeDayDismissal>[]) List<NudgeDayDismissal> dismissalHistory,
 
     /// How many times this ad has been activated (1-based; a reuse
     /// re-entry increments it). Rating prompts key off this: one outcome
@@ -1012,7 +1011,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
     /// Rating-prompt outcomes, one per rated-or-skipped activation
     /// (append-only; never overwritten).
-    @Default(<GoalNudgeRating>[]) List<GoalNudgeRating> ratings,
+    @Default(<NudgeRating>[]) List<NudgeRating> ratings,
 
     /// Accumulated visible milliseconds, per host — grow-only counters so
     /// concurrent exposure on two devices can merge by element-wise max
@@ -1032,6 +1031,92 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(<String, String>{}) Map<String, String> provenance,
     DateTime? deletedAt,
   }) = GoalNudgeEntity;
+
+  /// A relationship nudge — one banner, its brief, and its whole life.
+  ///
+  /// The sibling of [GoalNudgeEntity] on the kind-agnostic nudge substrate
+  /// (ADR 0059): identical lifecycle, accumulator and exposure semantics,
+  /// enforced per-variant by the shared resolver helpers rather than by a
+  /// second copy of the rules. Existing `goalNudge` rows are never converted
+  /// or renamed.
+  ///
+  /// Mixed-fleet behaviour: peers too old to know this variant decode it as
+  /// [AgentUnknownEntity] and never surface it. That fallback is LOSSY — it
+  /// keeps five fields and re-persists them under the original
+  /// `relationshipNudge` discriminator — so the decode funnel degrades such a
+  /// round-trip back to [AgentUnknownEntity] on upgrade rather than throwing
+  /// on the fields the old peer dropped (see [_isUnknownFallbackRoundTrip]).
+  /// This is why no producer of this variant may ship before that handling is
+  /// in the fleet: the row content itself cannot be recovered.
+  const factory AgentDomainEntity.relationshipNudge({
+    required String id,
+    required String agentId,
+    required NudgeStatus status,
+    required NudgeBrief brief,
+    required String briefDigest,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+
+    /// Wake provenance (the DayPlanEntity precedent).
+    String? runKey,
+    String? threadId,
+
+    /// The cadence-health register row that justified this nudge
+    /// (the `goalNudge.triggerProgressId` analogue; ADR 0059 Decision 2).
+    String? triggerRegisterId,
+    String? reasonSummary,
+
+    /// How long this nudge may claim to be current; relationship-relevant
+    /// events pull it forward (staleness is a contract, not a hope).
+    DateTime? staleAt,
+    DateTime? activatedAt,
+    DateTime? dismissedAt,
+    DateTime? retiredAt,
+    DateTime? expiredAt,
+    DateTime? supersededAt,
+
+    /// Temporary visibility state. Snoozes keep the activation active and
+    /// preserve their append-only interaction history so future agent wakes
+    /// can learn which local times users repeatedly defer and request.
+    DateTime? snoozedUntil,
+    NudgeBannerSnoozeDuration? lastSnoozeDuration,
+    @Default(<NudgeSnooze>[]) List<NudgeSnooze> snoozeHistory,
+
+    /// The latest "not today" choice. The banner remains active and becomes
+    /// visible again when this instant is no longer on the reading device's
+    /// local calendar day.
+    DateTime? dismissedForDayAt,
+
+    /// Append-only day-dismissal evidence. Current visibility reads the latest
+    /// day-dismissal instant above; future timing analysis reads this history.
+    @Default(<NudgeDayDismissal>[]) List<NudgeDayDismissal> dismissalHistory,
+
+    /// How many times this nudge has been activated (1-based; a reuse
+    /// re-entry increments it). Rating prompts key off this: one outcome
+    /// per activation in the ratings history.
+    @Default(1) int activationCount,
+
+    /// Rating-prompt outcomes, one per rated-or-skipped activation
+    /// (append-only; never overwritten).
+    @Default(<NudgeRating>[]) List<NudgeRating> ratings,
+
+    /// Accumulated visible milliseconds, per host — grow-only counters so
+    /// concurrent exposure on two devices can merge by element-wise max
+    /// instead of losing one side to whole-row LWW (`.value` is the total).
+    @Default(GCounter.empty())
+    @JsonKey(name: 'totalVisibleMsByHost')
+    GCounter totalVisibleMs,
+    @Default(GCounter.empty())
+    @JsonKey(name: 'impressionCountByHost')
+    GCounter impressionCount,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+
+    /// Pipeline outcomes (verification verdict, generator model, …).
+    @Default(<String, String>{}) Map<String, String> provenance,
+    DateTime? deletedAt,
+  }) = RelationshipNudgeEntity;
 
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
@@ -1069,7 +1154,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 AgentDomainEntity _decodeAgentDomainEntity(Map<String, dynamic> json) {
   final repaired = _repairLegacyWeekRollup(json);
   _validateGoalSpecJson(repaired);
-  _validateGoalNudgeJson(repaired);
+  _validateNudgeJson(repaired);
+  if (_isUnknownFallbackRoundTrip(repaired)) {
+    return AgentUnknownEntity.fromJson(repaired);
+  }
   final entity = _$AgentDomainEntityFromJson(repaired);
   if (entity is GoalSpecVersionEntity) {
     final issues = GoalSpecValidator.criterionIssues(entity.criteria);
@@ -1078,6 +1166,47 @@ AgentDomainEntity _decodeAgentDomainEntity(Map<String, dynamic> json) {
     }
   }
   return entity;
+}
+
+/// Exactly the keys an [AgentUnknownEntity] round-trip emits.
+///
+/// The union's `fallbackUnion: 'unknown'` routes any `runtimeType` a build
+/// does not know to [AgentUnknownEntity], which keeps five fields — and whose
+/// generated `toJson` writes back the ORIGINAL discriminator rather than
+/// `'unknown'`. A peer too old to know a variant therefore re-persists (and
+/// re-syncs) a truncated row still tagged with the variant it could not read.
+const Set<String> _unknownFallbackKeys = {
+  'id',
+  'agentId',
+  'createdAt',
+  'vectorClock',
+  'deletedAt',
+  'runtimeType',
+};
+
+/// Whether [json] is an older peer's [AgentUnknownEntity] round-trip of a
+/// variant THIS build understands.
+///
+/// Without this, upgrading a client that had stored such a row makes every
+/// read of it explode: the generated decoder dispatches on the preserved
+/// discriminator and then demands required fields the older peer already
+/// dropped (`status`, `brief`, …). The failure is an [ArgumentError] from an
+/// enum converter, not a [FormatException], so sync cannot classify it as
+/// permanently poisonous and retries it forever — and one such row fails the
+/// whole batched read it lands in, not just itself.
+///
+/// The test is deliberately narrow: the payload must carry NO key outside
+/// [_unknownFallbackKeys]. Genuine corruption or truncation of a real payload
+/// keeps some of its own fields and so still throws, preserving the
+/// poison-payload contract above. The content of the original nudge is
+/// unrecoverable — the old peer discarded it on write — so the row degrades to
+/// the same inert [AgentUnknownEntity] it already was on that peer, and never
+/// surfaces, instead of taking a query down with it.
+bool _isUnknownFallbackRoundTrip(Map<String, dynamic> json) {
+  final runtimeType = json['runtimeType'];
+  // An absent/unknown discriminator already lands on the fallback branch.
+  if (runtimeType is! String || runtimeType == 'unknown') return false;
+  return json.keys.every(_unknownFallbackKeys.contains);
 }
 
 /// Raw-JSON goal-spec validation BEFORE the generated decoder runs:
@@ -1103,16 +1232,24 @@ void _validateGoalSpecJson(Map<String, dynamic> json) {
 }
 
 /// Cross-field rating validation the per-field converters cannot do.
-void _validateGoalNudgeJson(Map<String, dynamic> json) {
-  if (json['runtimeType'] != 'goalNudge') return;
+/// One rule set for every nudge variant (ADR 0059): the histories carry the
+/// same contracts whichever agent kind wrote them.
+void _validateNudgeJson(Map<String, dynamic> json) {
+  final runtimeType = json['runtimeType'];
+  if (runtimeType != 'goalNudge' && runtimeType != 'relationshipNudge') {
+    return;
+  }
+  final label = runtimeType == 'goalNudge'
+      ? 'goal nudge'
+      : 'relationship nudge';
   final ratings = json['ratings'];
   if (ratings is List) {
     for (final entry in ratings) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeRatingJsonIssues(entry);
+      final issues = nudgeRatingJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge rating: ${issues.join('; ')}',
+          'Invalid $label rating: ${issues.join('; ')}',
         );
       }
     }
@@ -1121,10 +1258,10 @@ void _validateGoalNudgeJson(Map<String, dynamic> json) {
   if (snoozeHistory is List) {
     for (final entry in snoozeHistory) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeSnoozeJsonIssues(entry);
+      final issues = nudgeSnoozeJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge snooze: ${issues.join('; ')}',
+          'Invalid $label snooze: ${issues.join('; ')}',
         );
       }
     }
@@ -1133,10 +1270,10 @@ void _validateGoalNudgeJson(Map<String, dynamic> json) {
   if (dismissalHistory is List) {
     for (final entry in dismissalHistory) {
       if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeDayDismissalJsonIssues(entry);
+      final issues = nudgeDayDismissalJsonIssues(entry);
       if (issues.isNotEmpty) {
         throw FormatException(
-          'Invalid goal nudge day dismissal: ${issues.join('; ')}',
+          'Invalid $label day dismissal: ${issues.join('; ')}',
         );
       }
     }

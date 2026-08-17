@@ -859,6 +859,11 @@ void main() {
               status: false,
             ),
             const ConfigFlag(
+              name: enableRelationshipsFlag,
+              description: 'Enable People Page?',
+              status: false,
+            ),
+            const ConfigFlag(
               name: enableSessionRatingsFlag,
               description: 'Enable Session Ratings?',
               status: false,
@@ -926,6 +931,12 @@ void main() {
         icon: Icons.track_changes_outlined,
       ),
       (
+        name: enableRelationshipsFlag,
+        description: 'Enable People Page?',
+        status: false,
+        icon: Icons.people_outline_rounded,
+      ),
+      (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
@@ -987,6 +998,10 @@ void main() {
             enableUnifiedGoalsFlag => (
               context.messages.configFlagEnableUnifiedGoals,
               context.messages.configFlagEnableUnifiedGoalsDescription,
+            ),
+            enableRelationshipsFlag => (
+              context.messages.configFlagEnableRelationships,
+              context.messages.configFlagEnableRelationshipsDescription,
             ),
             enableSessionRatingsFlag => (
               context.messages.configFlagEnableSessionRatings,

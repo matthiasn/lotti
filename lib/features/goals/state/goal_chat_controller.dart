@@ -2,14 +2,16 @@ import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 
 @immutable
 class GoalChatComposerState {
@@ -142,8 +144,8 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
         locallySnoozedNudgeDeadlinesProvider.notifier,
       );
       for (final nudge in rows.whereType<GoalNudgeEntity>()) {
-        final until = goalBannerSnoozedUntil(nudge);
-        if (nudge.status == GoalNudgeStatus.active &&
+        final until = nudgeBannerSnoozedUntil(NudgeEntityView.of(nudge)!);
+        if (nudge.status == NudgeStatus.active &&
             until != null &&
             until.isAfter(now)) {
           local.add(nudge.id, nudge.activationCount, until);

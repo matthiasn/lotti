@@ -4,13 +4,14 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-enum _GoalBannerVisibilityAction {
+enum _NudgeBannerVisibilityAction {
   oneHour,
   threeHours,
   sixHours,
@@ -18,31 +19,32 @@ enum _GoalBannerVisibilityAction {
   dismissForDay,
 }
 
-extension on _GoalBannerVisibilityAction {
-  GoalBannerSnoozeDuration? get duration => switch (this) {
-    _GoalBannerVisibilityAction.oneHour => GoalBannerSnoozeDuration.oneHour,
-    _GoalBannerVisibilityAction.threeHours =>
-      GoalBannerSnoozeDuration.threeHours,
-    _GoalBannerVisibilityAction.sixHours => GoalBannerSnoozeDuration.sixHours,
-    _GoalBannerVisibilityAction.eightHours =>
-      GoalBannerSnoozeDuration.eightHours,
-    _GoalBannerVisibilityAction.dismissForDay => null,
+extension on _NudgeBannerVisibilityAction {
+  NudgeBannerSnoozeDuration? get duration => switch (this) {
+    _NudgeBannerVisibilityAction.oneHour => NudgeBannerSnoozeDuration.oneHour,
+    _NudgeBannerVisibilityAction.threeHours =>
+      NudgeBannerSnoozeDuration.threeHours,
+    _NudgeBannerVisibilityAction.sixHours => NudgeBannerSnoozeDuration.sixHours,
+    _NudgeBannerVisibilityAction.eightHours =>
+      NudgeBannerSnoozeDuration.eightHours,
+    // Exhaustiveness only: the dismiss branch never reads a duration.
+    _NudgeBannerVisibilityAction.dismissForDay => null, // coverage:ignore-line
   };
 }
 
 /// Opens the snooze-first visibility sheet and persists the chosen action.
-Future<bool> showGoalBannerSnoozeSheet(
+Future<bool> showNudgeBannerSnoozeSheet(
   BuildContext context,
   WidgetRef ref,
-  GoalBannerEntry entry,
+  NudgeBannerEntry entry,
 ) async {
   final tokens = context.designTokens;
   final messages = context.messages;
   final messenger = ScaffoldMessenger.maybeOf(context);
-  final failedNotice = messages.goalBannerActionFailed;
+  final failedNotice = messages.saveFailedRetry;
   final container = ProviderScope.containerOf(context, listen: false);
-  final interactions = ref.read(goalNudgeInteractionsProvider);
-  final action = await showModalBottomSheet<_GoalBannerVisibilityAction>(
+  final interactions = ref.read(nudgeInteractionsProvider);
+  final action = await showModalBottomSheet<_NudgeBannerVisibilityAction>(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
@@ -55,12 +57,12 @@ Future<bool> showGoalBannerSnoozeSheet(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                messages.goalBannerSnoozeTitle,
+                messages.nudgeBannerSnoozeTitle,
                 style: tokens.typography.styles.subtitle.subtitle1,
               ),
               SizedBox(height: tokens.spacing.step1),
               Text(
-                messages.goalBannerSnoozePrompt,
+                messages.nudgeBannerSnoozePrompt,
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
@@ -73,22 +75,22 @@ Future<bool> showGoalBannerSnoozeSheet(
                 spacing: tokens.spacing.step2,
                 runSpacing: tokens.spacing.step2,
                 children: [
-                  for (final option in <(_GoalBannerVisibilityAction, String)>[
+                  for (final option in <(_NudgeBannerVisibilityAction, String)>[
                     (
-                      _GoalBannerVisibilityAction.oneHour,
-                      messages.goalBannerSnoozeOneHour,
+                      _NudgeBannerVisibilityAction.oneHour,
+                      messages.nudgeBannerSnoozeOneHour,
                     ),
                     (
-                      _GoalBannerVisibilityAction.threeHours,
-                      messages.goalBannerSnoozeThreeHours,
+                      _NudgeBannerVisibilityAction.threeHours,
+                      messages.nudgeBannerSnoozeThreeHours,
                     ),
                     (
-                      _GoalBannerVisibilityAction.sixHours,
-                      messages.goalBannerSnoozeSixHours,
+                      _NudgeBannerVisibilityAction.sixHours,
+                      messages.nudgeBannerSnoozeSixHours,
                     ),
                     (
-                      _GoalBannerVisibilityAction.eightHours,
-                      messages.goalBannerSnoozeEightHours,
+                      _NudgeBannerVisibilityAction.eightHours,
+                      messages.nudgeBannerSnoozeEightHours,
                     ),
                   ])
                     DesignSystemButton(
@@ -106,11 +108,11 @@ Future<bool> showGoalBannerSnoozeSheet(
               ),
               SizedBox(height: tokens.spacing.step3),
               DesignSystemButton(
-                label: messages.goalBannerDismissForDay,
+                label: messages.nudgeBannerDismissForDay,
                 variant: DesignSystemButtonVariant.tertiary,
                 onPressed: () => Navigator.of(
                   sheetContext,
-                ).pop(_GoalBannerVisibilityAction.dismissForDay),
+                ).pop(_NudgeBannerVisibilityAction.dismissForDay),
               ),
             ],
           ),
@@ -122,7 +124,7 @@ Future<bool> showGoalBannerSnoozeSheet(
 
   DateTime? hiddenUntil;
   try {
-    hiddenUntil = action == _GoalBannerVisibilityAction.dismissForDay
+    hiddenUntil = action == _NudgeBannerVisibilityAction.dismissForDay
         ? await interactions.dismissForDay(
             entry.nudge.id,
             forActivation: entry.nudge.activationCount,
@@ -137,14 +139,14 @@ Future<bool> showGoalBannerSnoozeSheet(
     return false;
   }
   if (hiddenUntil == null) {
-    container.invalidate(activeGoalNudgesProvider);
+    invalidateNudgeBannerSources(container);
     return false;
   }
 
   container
       .read(locallySnoozedNudgeDeadlinesProvider.notifier)
       .add(entry.nudge.id, entry.nudge.activationCount, hiddenUntil);
-  container.invalidate(activeGoalNudgesProvider);
+  invalidateNudgeBannerSources(container);
   return true;
 }
 
@@ -153,10 +155,10 @@ Future<bool> showGoalBannerSnoozeSheet(
 /// Sentinel contract: 1..5 = rating, 0 = the explicit Skip button, null =
 /// barrier/back/drag dismissal — which consumes NOTHING, so the one rating
 /// opportunity per activation survives an accidental swipe-away.
-Future<void> showGoalBannerRatingSheet(
+Future<void> showNudgeBannerRatingSheet(
   BuildContext context,
   WidgetRef ref,
-  GoalBannerEntry entry,
+  NudgeBannerEntry entry,
 ) async {
   final tokens = context.designTokens;
   final messages = context.messages;
@@ -164,9 +166,9 @@ Future<void> showGoalBannerRatingSheet(
   // the banner (and dispose the calling widget's ref) while the sheet is
   // open, and the container outlives the widget.
   final messenger = ScaffoldMessenger.maybeOf(context);
-  final failedNotice = messages.goalBannerActionFailed;
+  final failedNotice = messages.saveFailedRetry;
   final container = ProviderScope.containerOf(context, listen: false);
-  final interactions = ref.read(goalNudgeInteractionsProvider);
+  final interactions = ref.read(nudgeInteractionsProvider);
   final outcome = await showModalBottomSheet<int>(
     context: context,
     showDragHandle: true,
@@ -178,7 +180,7 @@ Future<void> showGoalBannerRatingSheet(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              messages.goalBannerRatingTitle,
+              messages.nudgeBannerRatingTitle,
               style: tokens.typography.styles.subtitle.subtitle1,
             ),
             SizedBox(height: tokens.spacing.step3),
@@ -202,7 +204,7 @@ Future<void> showGoalBannerRatingSheet(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.of(sheetContext).pop(0),
-                child: Text(messages.goalBannerRatingSkip),
+                child: Text(messages.nudgeBannerRatingSkip),
               ),
             ),
           ],
@@ -223,5 +225,5 @@ Future<void> showGoalBannerRatingSheet(
     // notice tells the user their pick did not stick.
     messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
   }
-  container.invalidate(activeGoalNudgesProvider);
+  invalidateNudgeBannerSources(container);
 }

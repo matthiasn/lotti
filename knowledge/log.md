@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-08-16
+* **Addition**: New feature concept [Nudges](features/nudges.md) — the banner
+  channel generalized out of the goal feature by ADR 0059: the `NudgeEntityView`
+  seam over the two entity variants, the per-kind source registry, the single
+  visibility contract the shell's reserved lane shares with the dock, the dock's
+  rotation state machine, and the two-stage concurrent-sync resolution.
+* **Migration**: Moved the banner substrate's architecture out of
+  [Goal agents](features/goals.md), which now describes only the goal-owned
+  surface and links to the new concept.
+
 ## 2026-08-06
 * **Addition**: New feature concept
   [Backup and restore](features/backup-and-restore.md) — the authoritative

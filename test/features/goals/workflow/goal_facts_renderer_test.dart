@@ -4,8 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
@@ -90,24 +90,24 @@ void main() {
 
   GoalNudgeEntity nudge({
     required String id,
-    required GoalNudgeStatus status,
-    List<GoalNudgeRating> ratings = const [],
+    required NudgeStatus status,
+    List<NudgeRating> ratings = const [],
     DateTime? activatedAt,
     DateTime? dismissedAt,
     DateTime? staleAt,
     int activationCount = 1,
-    List<GoalNudgeSnooze> snoozeHistory = const [],
-    List<GoalNudgeDayDismissal> dismissalHistory = const [],
+    List<NudgeSnooze> snoozeHistory = const [],
+    List<NudgeDayDismissal> dismissalHistory = const [],
   }) =>
       AgentDomainEntity.goalNudge(
             id: id,
             agentId: 'goal-1',
             status: status,
-            brief: const GoalNudgeBrief(
+            brief: const NudgeBrief(
               headline: 'Your inner couch potato is winning.',
               tagline: 'Six days of quiet shoes.',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.pulse,
+              tone: NudgeTone.nudge,
+              animation: NudgeBannerAnimation.pulse,
             ),
             briefDigest: 'digest-$id',
             createdAt: DateTime(2026, 8, 8),
@@ -781,7 +781,7 @@ void main() {
   });
 
   test('active ads carry freshness; a stale-marked ad is exposed as such', () {
-    final recordedOutcome = GoalNudgeRating(
+    final recordedOutcome = NudgeRating(
       activation: 1,
       ratedAt: now.subtract(const Duration(hours: 1)),
       rating: 4,
@@ -790,14 +790,14 @@ void main() {
       nudges: [
         nudge(
           id: 'ad-fresh',
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           activatedAt: now.subtract(const Duration(hours: 6)),
           staleAt: now.add(const Duration(hours: 66)),
           ratings: [recordedOutcome],
         ),
         nudge(
           id: 'ad-stale',
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           activatedAt: now.subtract(const Duration(hours: 80)),
           staleAt: now.subtract(const Duration(hours: 8)),
         ),
@@ -819,11 +819,11 @@ void main() {
 
   test('only retired ads with mean rating >= 4 are offered for re-run, '
       'best first; skips never count', () {
-    GoalNudgeRating rating(
+    NudgeRating rating(
       int activation,
       int? value, {
       bool skipped = false,
-    }) => GoalNudgeRating(
+    }) => NudgeRating(
       activation: activation,
       ratedAt: DateTime(2026, 8, activation),
       rating: value,
@@ -833,24 +833,24 @@ void main() {
       nudges: [
         nudge(
           id: 'ad-great',
-          status: GoalNudgeStatus.retired,
+          status: NudgeStatus.retired,
           ratings: [rating(1, 5), rating(2, null, skipped: true), rating(3, 4)],
           activationCount: 3,
         ),
         nudge(
           id: 'ad-good',
-          status: GoalNudgeStatus.retired,
+          status: NudgeStatus.retired,
           ratings: [rating(1, 4)],
         ),
         nudge(
           id: 'ad-meh',
-          status: GoalNudgeStatus.retired,
+          status: NudgeStatus.retired,
           ratings: [rating(1, 2)],
         ),
-        nudge(id: 'ad-unrated', status: GoalNudgeStatus.retired),
+        nudge(id: 'ad-unrated', status: NudgeStatus.retired),
         nudge(
           id: 'ad-active-top',
-          status: GoalNudgeStatus.active,
+          status: NudgeStatus.active,
           ratings: [rating(1, 5)],
         ),
       ],
@@ -868,12 +868,12 @@ void main() {
   });
 
   test('snooze behavior gives the model durable local timing patterns', () {
-    GoalNudgeSnooze event(
+    NudgeSnooze event(
       String id, {
       required int startHourUtc,
       required int durationHours,
       int returnUtcOffsetMinutes = 120,
-    }) => GoalNudgeSnooze(
+    }) => NudgeSnooze(
       id: id,
       activation: 1,
       snoozedAt: DateTime.utc(2026, 8, 10, startHourUtc),
@@ -883,7 +883,7 @@ void main() {
         10,
         startHourUtc + durationHours,
       ),
-      duration: goalBannerSnoozeDurationFor(
+      duration: nudgeBannerSnoozeDurationFor(
         Duration(hours: durationHours),
       ),
       durationMinutes: durationHours * 60,
@@ -894,7 +894,7 @@ void main() {
       nudges: [
         nudge(
           id: 'ad-history',
-          status: GoalNudgeStatus.retired,
+          status: NudgeStatus.retired,
           snoozeHistory: [
             event(
               's1',
@@ -929,12 +929,12 @@ void main() {
   });
 
   test('dismissal behavior gives the model durable local timing patterns', () {
-    GoalNudgeDayDismissal event(
+    NudgeDayDismissal event(
       String id, {
       required int day,
       required int hourUtc,
       required int quietHours,
-    }) => GoalNudgeDayDismissal(
+    }) => NudgeDayDismissal(
       id: id,
       activation: 1,
       dismissedAt: DateTime.utc(2026, 8, day, hourUtc),
@@ -945,7 +945,7 @@ void main() {
       nudges: [
         nudge(
           id: 'ad-dismissal-history',
-          status: GoalNudgeStatus.retired,
+          status: NudgeStatus.retired,
           dismissalHistory: [
             event('d1', day: 10, hourUtc: 18, quietHours: 4),
             event('d2', day: 11, hourUtc: 19, quietHours: 3),
@@ -977,7 +977,7 @@ void main() {
                       nudges: [
                         nudge(
                           id: 'ad-x',
-                          status: GoalNudgeStatus.dismissed,
+                          status: NudgeStatus.dismissed,
                           dismissedAt: dismissedAt,
                         ),
                       ],

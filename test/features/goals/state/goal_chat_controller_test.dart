@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -320,11 +321,11 @@ GoalNudgeEntity _nudge({
     AgentDomainEntity.goalNudge(
           id: id,
           agentId: 'goal-1',
-          status: GoalNudgeStatus.active,
-          brief: const GoalNudgeBrief(
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
             headline: 'Keep walking',
-            tone: GoalNudgeTone.nudge,
-            animation: GoalBannerAnimation.steady,
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
           ),
           briefDigest: id,
           createdAt: DateTime(2026, 8, 11),

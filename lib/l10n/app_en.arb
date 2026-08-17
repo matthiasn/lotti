@@ -3319,11 +3319,6 @@
       }
     }
   },
-  "goalBannerActionFailed": "That didn't save — please try again.",
-  "goalBannerDismissForDay": "Dismiss for today",
-  "@goalBannerDismissForDay": {
-    "description": "De-emphasized action that hides a goal-agent banner until the next local day."
-  },
   "goalBannerHiddenFromBar": "Hidden from the banner bar · back in {countdown}",
   "@goalBannerHiddenFromBar": {
     "description": "Caption under a banner on the goal detail page while it is snoozed or dismissed from the shell banner bar",
@@ -3334,15 +3329,6 @@
       }
     }
   },
-  "goalBannerRateTooltip": "Rate this banner",
-  "goalBannerRatingSkip": "Skip",
-  "@goalBannerRatingSkip": {
-    "description": "Skips the banner rating prompt for this activation."
-  },
-  "goalBannerRatingTitle": "How was this banner?",
-  "@goalBannerRatingTitle": {
-    "description": "Title of the per-activation rating prompt for a goal banner."
-  },
   "goalBannerSemanticLabel": "Goal banner for {goalTitle}",
   "@goalBannerSemanticLabel": {
     "description": "Accessibility label of one goal ad banner; goalTitle is the goal name.",
@@ -3352,16 +3338,15 @@
       }
     }
   },
-  "goalBannerSnoozeEightHours": "8 hours",
-  "goalBannerSnoozeLabel": "Snooze",
-  "@goalBannerSnoozeLabel": {
-    "description": "Primary action for temporarily hiding a goal-agent banner."
+  "goalBufferDays": "{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}",
+  "@goalBufferDays": {
+    "description": "Rolling-window goal at rate: days until the oldest success ages out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-  "goalBannerSnoozeOneHour": "1 hour",
-  "goalBannerSnoozePrompt": "When should it come back?",
-  "goalBannerSnoozeSixHours": "6 hours",
-  "goalBannerSnoozeThreeHours": "3 hours",
-  "goalBannerSnoozeTitle": "Snooze banner",
   "goalChartSevenDayAverage": "7-day average",
   "goalChartStepsDaily": "Steps",
   "@goalChartStepsDaily": {
@@ -5206,6 +5191,29 @@
       }
     }
   },
+  "nudgeBannerDismissForDay": "Dismiss for today",
+  "@nudgeBannerDismissForDay": {
+    "description": "De-emphasized action that hides a nudge banner until the next local day."
+  },
+  "nudgeBannerRateTooltip": "Rate this banner",
+  "nudgeBannerRatingSkip": "Skip",
+  "@nudgeBannerRatingSkip": {
+    "description": "Skips the banner rating prompt for this activation."
+  },
+  "nudgeBannerRatingTitle": "How was this banner?",
+  "@nudgeBannerRatingTitle": {
+    "description": "Title of the per-activation rating prompt for a nudge banner."
+  },
+  "nudgeBannerSnoozeEightHours": "8 hours",
+  "nudgeBannerSnoozeLabel": "Snooze",
+  "@nudgeBannerSnoozeLabel": {
+    "description": "Primary action for temporarily hiding a nudge banner."
+  },
+  "nudgeBannerSnoozeOneHour": "1 hour",
+  "nudgeBannerSnoozePrompt": "When should it come back?",
+  "nudgeBannerSnoozeSixHours": "6 hours",
+  "nudgeBannerSnoozeThreeHours": "3 hours",
+  "nudgeBannerSnoozeTitle": "Snooze banner",
   "onboardingApiKeyConnect": "Connect",
   "onboardingApiKeyConnecting": "Connecting…",
   "onboardingApiKeyEnterKeyHint": "Enter a valid key to continue.",
@@ -5723,6 +5731,15 @@
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
   "relationshipAddChannelButton": "Add channel",
+  "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
+  "@relationshipBannerSemanticLabel": {
+    "description": "Accessibility label of one relationship nudge banner; personName is the person's name.",
+    "placeholders": {
+      "personName": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -5773,6 +5790,7 @@
   "relationshipStatusFieldLabel": "Status",
   "saveButton": "Save",
   "saveButtonLabel": "Save",
+  "saveFailedRetry": "That didn't save — please try again.",
   "saveLabel": "Save",
   "saveShortcutTooltip": "Save — Ctrl+S (⌘S on Mac)",
   "saveSuccessful": "Saved successfully",

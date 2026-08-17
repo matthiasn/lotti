@@ -1947,7 +1947,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       ScaffoldMessenger.maybeOf(context)
         ?..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text(context.messages.goalBannerActionFailed)),
+          SnackBar(content: Text(context.messages.saveFailedRetry)),
         );
     }
   }

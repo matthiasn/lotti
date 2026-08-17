@@ -2,8 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -598,15 +598,15 @@ void main() {
   test("a minted revision supersedes the old spec's live nudges — the "
       'revised goal never runs beside advice for the superseded one', () async {
     stubSpec();
-    GoalNudgeEntity nudgeRow(String id, GoalNudgeStatus status) =>
+    GoalNudgeEntity nudgeRow(String id, NudgeStatus status) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8, 9),
@@ -618,10 +618,10 @@ void main() {
       () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
     ).thenAnswer(
       (_) async => [
-        nudgeRow('ad-active', GoalNudgeStatus.active),
-        nudgeRow('ad-ready', GoalNudgeStatus.ready),
-        nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
-        nudgeRow('ad-retired', GoalNudgeStatus.retired),
+        nudgeRow('ad-active', NudgeStatus.active),
+        nudgeRow('ad-ready', NudgeStatus.ready),
+        nudgeRow('ad-dismissed', NudgeStatus.dismissed),
+        nudgeRow('ad-retired', NudgeStatus.retired),
       ],
     );
 
@@ -640,11 +640,11 @@ void main() {
     expect(
       {for (final n in nudgeWrites) n.id: n.status},
       {
-        'ad-active': GoalNudgeStatus.superseded,
-        'ad-ready': GoalNudgeStatus.superseded,
+        'ad-active': NudgeStatus.superseded,
+        'ad-ready': NudgeStatus.superseded,
         // Retired rows are the reuse library — a top-rated old-goal ad
         // must not be re-activated beside the revised statement.
-        'ad-retired': GoalNudgeStatus.superseded,
+        'ad-retired': NudgeStatus.superseded,
       },
       reason:
           'live and reusable nudges move with the spec; the user '

@@ -1,6 +1,11 @@
 # ADR 0039: Relationship Check-In Reminders
 
-- Status: Proposed
+- Status: Proposed — superseded in part by
+  [ADR 0059](./0059-relationship-agent-runtime-and-nudge-generalization.md):
+  the primary attention channel is the in-app banner dock; the
+  `relationshipCheckIn` inbox variant and `reconcile()` wiring below are
+  deferred to their own change, and the eligibility rule (Decision 2)
+  survives as deterministic Phase A wake facts.
 - Date: 2026-07-22
 
 ## Context
@@ -85,5 +90,6 @@ notification, rather than a periodic job.
 - [ADR 0037: Relationship Data Stays On-Device](./0037-relationship-on-device-storage-and-privacy.md)
 - [ADR 0038: Relationship Domain Model](./0038-relationship-domain-model.md)
 - [ADR 0027: Wake Notification Propagation and Storm Prevention](./0027-wake-notification-propagation-and-storm-prevention.md)
+- [ADR 0059: Relationship Agents on the Shared Runtime and the Kind-Agnostic Nudge Substrate](./0059-relationship-agent-runtime-and-nudge-generalization.md) — supersedes the attention-channel choice; keeps the eligibility rule
 - [Implementation plan](../implementation_plans/2026-07-22_relationship_management.md)
   (superseded by [v2](../implementation_plans/2026-08-13_relationship_management_v2.md))

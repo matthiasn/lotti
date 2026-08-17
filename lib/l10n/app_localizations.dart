@@ -10571,41 +10571,11 @@ abstract class AppLocalizations {
   /// **'{percent}% of target'**
   String goalAttainmentLabel(int percent);
 
-  /// No description provided for @goalBannerActionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'That didn\'t save — please try again.'**
-  String get goalBannerActionFailed;
-
-  /// De-emphasized action that hides a goal-agent banner until the next local day.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss for today'**
-  String get goalBannerDismissForDay;
-
   /// Caption under a banner on the goal detail page while it is snoozed or dismissed from the shell banner bar
   ///
   /// In en, this message translates to:
   /// **'Hidden from the banner bar · back in {countdown}'**
   String goalBannerHiddenFromBar(String countdown);
-
-  /// No description provided for @goalBannerRateTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate this banner'**
-  String get goalBannerRateTooltip;
-
-  /// Skips the banner rating prompt for this activation.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get goalBannerRatingSkip;
-
-  /// Title of the per-activation rating prompt for a goal banner.
-  ///
-  /// In en, this message translates to:
-  /// **'How was this banner?'**
-  String get goalBannerRatingTitle;
 
   /// Accessibility label of one goal ad banner; goalTitle is the goal name.
   ///
@@ -10613,47 +10583,11 @@ abstract class AppLocalizations {
   /// **'Goal banner for {goalTitle}'**
   String goalBannerSemanticLabel(String goalTitle);
 
-  /// No description provided for @goalBannerSnoozeEightHours.
+  /// Rolling-window goal at rate: days until the oldest success ages out.
   ///
   /// In en, this message translates to:
-  /// **'8 hours'**
-  String get goalBannerSnoozeEightHours;
-
-  /// Primary action for temporarily hiding a goal-agent banner.
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze'**
-  String get goalBannerSnoozeLabel;
-
-  /// No description provided for @goalBannerSnoozeOneHour.
-  ///
-  /// In en, this message translates to:
-  /// **'1 hour'**
-  String get goalBannerSnoozeOneHour;
-
-  /// No description provided for @goalBannerSnoozePrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'When should it come back?'**
-  String get goalBannerSnoozePrompt;
-
-  /// No description provided for @goalBannerSnoozeSixHours.
-  ///
-  /// In en, this message translates to:
-  /// **'6 hours'**
-  String get goalBannerSnoozeSixHours;
-
-  /// No description provided for @goalBannerSnoozeThreeHours.
-  ///
-  /// In en, this message translates to:
-  /// **'3 hours'**
-  String get goalBannerSnoozeThreeHours;
-
-  /// No description provided for @goalBannerSnoozeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Snooze banner'**
-  String get goalBannerSnoozeTitle;
+  /// **'{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}'**
+  String goalBufferDays(int count);
 
   /// No description provided for @goalChartSevenDayAverage.
   ///
@@ -15457,6 +15391,72 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
   String notificationSuggestionAttentionTitle(int count);
 
+  /// De-emphasized action that hides a nudge banner until the next local day.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss for today'**
+  String get nudgeBannerDismissForDay;
+
+  /// No description provided for @nudgeBannerRateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this banner'**
+  String get nudgeBannerRateTooltip;
+
+  /// Skips the banner rating prompt for this activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get nudgeBannerRatingSkip;
+
+  /// Title of the per-activation rating prompt for a nudge banner.
+  ///
+  /// In en, this message translates to:
+  /// **'How was this banner?'**
+  String get nudgeBannerRatingTitle;
+
+  /// No description provided for @nudgeBannerSnoozeEightHours.
+  ///
+  /// In en, this message translates to:
+  /// **'8 hours'**
+  String get nudgeBannerSnoozeEightHours;
+
+  /// Primary action for temporarily hiding a nudge banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze'**
+  String get nudgeBannerSnoozeLabel;
+
+  /// No description provided for @nudgeBannerSnoozeOneHour.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour'**
+  String get nudgeBannerSnoozeOneHour;
+
+  /// No description provided for @nudgeBannerSnoozePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'When should it come back?'**
+  String get nudgeBannerSnoozePrompt;
+
+  /// No description provided for @nudgeBannerSnoozeSixHours.
+  ///
+  /// In en, this message translates to:
+  /// **'6 hours'**
+  String get nudgeBannerSnoozeSixHours;
+
+  /// No description provided for @nudgeBannerSnoozeThreeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'3 hours'**
+  String get nudgeBannerSnoozeThreeHours;
+
+  /// No description provided for @nudgeBannerSnoozeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze banner'**
+  String get nudgeBannerSnoozeTitle;
+
   /// No description provided for @onboardingApiKeyConnect.
   ///
   /// In en, this message translates to:
@@ -17047,6 +17047,12 @@ abstract class AppLocalizations {
   /// **'Add channel'**
   String get relationshipAddChannelButton;
 
+  /// Accessibility label of one relationship nudge banner; personName is the person's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship banner for {personName}'**
+  String relationshipBannerSemanticLabel(String personName);
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -17262,6 +17268,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get saveButtonLabel;
+
+  /// No description provided for @saveFailedRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save — please try again.'**
+  String get saveFailedRetry;
 
   /// No description provided for @saveLabel.
   ///

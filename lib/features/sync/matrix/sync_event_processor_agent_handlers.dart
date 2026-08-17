@@ -212,12 +212,14 @@ extension _AgentHandlers on SyncEventProcessor {
           incoming: resolvedEntity,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
-      } else if (resolvedEntity is GoalNudgeEntity) {
-        // Goal nudges accumulate exposure counters and rating history
+      } else if (resolvedEntity is GoalNudgeEntity ||
+          resolvedEntity is RelationshipNudgeEntity) {
+        // Nudges accumulate exposure counters and rating history
         // across years of activations (ADR 0055); like the agent-state
         // counters, a concurrent conflict must join them element-wise
         // instead of letting whole-row LWW erase one device's outcomes.
-        mergedState = await _mergeConcurrentGoalNudge(
+        // One merge path serves every nudge variant (ADR 0059).
+        mergedState = await _mergeConcurrentNudge(
           incoming: resolvedEntity,
           prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
@@ -747,16 +749,19 @@ extension _AgentHandlers on SyncEventProcessor {
     return merged == winner ? null : merged;
   }
 
-  /// The [GoalNudgeEntity] analogue of [_mergeConcurrentAgentState]: on a
+  /// The nudge analogue of [_mergeConcurrentAgentState]: on a
   /// **concurrent** clock conflict, returns the nudge with exposure
   /// counters joined, ratings unioned and watermarks widened via
-  /// [mergeGoalNudgeAccumulators], with non-accumulator fields from the
-  /// deterministic winner — which honours the dismissal-terminal override
-  /// before generic LWW, so a concurrent bookkeeping write can never
-  /// resurrect a dismissed ad. Returns null when clocks are missing or
-  /// not concurrent (causal dominance already carries the accumulators).
-  Future<GoalNudgeEntity?> _mergeConcurrentGoalNudge({
-    required GoalNudgeEntity incoming,
+  /// [mergeNudgeAccumulators] (through its per-variant adapters), with
+  /// non-accumulator fields from the deterministic winner — which honours
+  /// the dismissal-terminal override before generic LWW, so a concurrent
+  /// bookkeeping write can never resurrect a dismissed banner. Returns
+  /// null when clocks are missing or not concurrent (causal dominance
+  /// already carries the accumulators). One method serves every nudge
+  /// variant (ADR 0059); a cross-variant id collision defers to the
+  /// standard whole-row path.
+  Future<AgentDomainEntity?> _mergeConcurrentNudge({
+    required AgentDomainEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final incomingVc = incoming.vectorClock;
@@ -766,7 +771,7 @@ extension _AgentHandlers on SyncEventProcessor {
       incoming.id,
       prefetchedAgentEntitiesById,
     );
-    if (local is! GoalNudgeEntity) return null;
+    if (local == null) return null;
     final localVc = local.vectorClock;
     if (localVc == null) return null;
 
@@ -792,11 +797,28 @@ extension _AgentHandlers on SyncEventProcessor {
         );
     final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
 
-    final merged = mergeGoalNudgeAccumulators(
-      winner: winner,
-      local: local,
-      incoming: incoming,
-    );
+    final merged = switch ((local, incoming)) {
+      (final GoalNudgeEntity l, final GoalNudgeEntity i) =>
+        mergeGoalNudgeAccumulators(
+          winner: winner as GoalNudgeEntity,
+          local: l,
+          incoming: i,
+        ),
+      (final RelationshipNudgeEntity l, final RelationshipNudgeEntity i) =>
+        mergeRelationshipNudgeAccumulators(
+          winner: winner as RelationshipNudgeEntity,
+          local: l,
+          incoming: i,
+        ),
+      // A cross-variant pair here means a goal nudge and a relationship nudge
+      // share one id. Nudge ids are kind-prefixed at mint time
+      // (`goal_nudge:…`, `relationship_nudge:…`), so this branch is
+      // unreachable in practice; deferring to whole-row LWW (rather than
+      // silently joining accumulators across kinds) keeps a hypothetical
+      // id collision from corrupting either side's history.
+      _ => null,
+    };
+    if (merged == null) return null;
     // As with agent state: only diverge from the standard whole-row path
     // when the join actually recovers something the winner lacked.
     return merged == winner ? null : merged;

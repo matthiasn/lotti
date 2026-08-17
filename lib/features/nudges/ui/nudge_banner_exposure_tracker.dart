@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 
 /// Measures visibility episodes for one banner: the stopwatch runs while
 /// the host tab is on screen (TickerMode — the app shell keeps inactive
@@ -21,8 +21,8 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 /// with a repeating headline animation would otherwise burn frame work the
 /// user cannot see. TickerMode composes with ancestors by AND, so enabling
 /// it here never overrides the app shell's inactive-tab muting.
-class GoalBannerExposureTracker extends ConsumerStatefulWidget {
-  const GoalBannerExposureTracker({
+class NudgeBannerExposureTracker extends ConsumerStatefulWidget {
+  const NudgeBannerExposureTracker({
     required this.nudgeId,
     required this.child,
     super.key,
@@ -32,14 +32,14 @@ class GoalBannerExposureTracker extends ConsumerStatefulWidget {
   final Widget child;
 
   @override
-  ConsumerState<GoalBannerExposureTracker> createState() =>
+  ConsumerState<NudgeBannerExposureTracker> createState() =>
       _ExposureTrackerState();
 }
 
-class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
+class _ExposureTrackerState extends ConsumerState<NudgeBannerExposureTracker>
     with WidgetsBindingObserver {
   final Stopwatch _visible = Stopwatch();
-  GoalNudgeInteractionsFlush? _flush;
+  NudgeInteractionsFlush? _flush;
   ScrollPosition? _position;
 
   /// Starts false — the first layout-safe visibility sample is the
@@ -82,7 +82,7 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
     super.didChangeDependencies();
     // Captured while the element is live: `ref` must not be touched from
     // dispose, and the flush must survive the widget's death.
-    _flush = ref.read(goalNudgeExposureFlushProvider);
+    _flush = ref.read(nudgeExposureFlushProvider);
     final position = Scrollable.maybeOf(context)?.position;
     if (!identical(position, _position)) {
       _position?.removeListener(_recheck);
@@ -96,7 +96,7 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
   }
 
   @override
-  void didUpdateWidget(GoalBannerExposureTracker oldWidget) {
+  void didUpdateWidget(NudgeBannerExposureTracker oldWidget) {
     super.didUpdateWidget(oldWidget);
     // A sibling banner inserted or removed above this one moves it across
     // the viewport boundary with no scroll event — the rebuild that

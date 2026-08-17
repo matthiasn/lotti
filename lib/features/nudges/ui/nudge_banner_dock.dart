@@ -1,25 +1,25 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
-import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
-import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
-import 'package:lotti/features/goals/ui/goal_banner_style.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/service/nudge_interactions.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// How long one banner holds the dock before the rotation advances — long
-/// enough to read the copy twice and act, short enough that three goals
+/// enough to read the copy twice and act, short enough that three tenants
 /// cycle fully within a minute (design handover 1b).
-const goalBannerDockTenure = Duration(seconds: 15);
+const nudgeBannerDockTenure = Duration(seconds: 15);
 
 /// Height of [lines] lines rendered in [style] at [scaler] — measured from
 /// the actual text metrics so the dock reserve tracks the real typography
@@ -35,14 +35,19 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
 }
 
 /// Applies the render-time visibility contract shared by the dock and the
-/// shell lane that reserves space for it.
-List<GoalBannerEntry> visibleGoalBannerEntries({
-  required Iterable<GoalBannerEntry>? entries,
-  required Map<String, GoalBannerLocalSuppression> locallySnoozedDeadlines,
+/// shell lane that reserves space for it, including the per-kind surface
+/// gate (ADR 0059 Decision 6): an entry whose kind does not speak on
+/// [surface] is not visible there, whatever its own state says. A null
+/// [surface] skips the gate — subject-owned pages (a goal's detail page)
+/// list their own banners regardless of shell surface.
+List<NudgeBannerEntry> visibleNudgeBannerEntries({
+  required Iterable<NudgeBannerEntry>? entries,
+  required Map<String, NudgeBannerLocalSuppression> locallySnoozedDeadlines,
+  required NudgeBannerSurface? surface,
   DateTime? now,
 }) {
   final instant = now ?? clock.now();
-  bool isLocallySuppressed(GoalBannerEntry entry) {
+  bool isLocallySuppressed(NudgeBannerEntry entry) {
     final suppression = locallySnoozedDeadlines[entry.nudge.id];
     return suppression != null &&
         suppression.activation == entry.nudge.activationCount &&
@@ -50,11 +55,12 @@ List<GoalBannerEntry> visibleGoalBannerEntries({
   }
 
   return [
-    for (final entry in entries ?? const <GoalBannerEntry>[])
-      if ((entry.nudge.staleAt == null ||
+    for (final entry in entries ?? const <NudgeBannerEntry>[])
+      if ((surface == null || nudgeKindShowsOn(entry.kind, surface)) &&
+          (entry.nudge.staleAt == null ||
               instant.isBefore(entry.nudge.staleAt!)) &&
-          !goalBannerIsSnoozed(entry.nudge, instant) &&
-          !goalBannerIsDismissedForDay(entry.nudge, instant) &&
+          !nudgeBannerIsSnoozed(entry.nudge, instant) &&
+          !nudgeBannerIsDismissedForDay(entry.nudge, instant) &&
           !isLocallySuppressed(entry))
         entry,
   ];
@@ -62,15 +68,16 @@ List<GoalBannerEntry> visibleGoalBannerEntries({
 
 /// When [entry] returns to the SHELL dock, or null while it is eligible now.
 ///
-/// Snoozes and day dismissals quiet the rotating dock only — the goal detail
-/// page always shows its goal's current banner, captioned with this deadline
-/// as a countdown, so "where did my banner go" is answered on the page that
-/// owns it. Considers the durable snooze, the durable rest-of-day dismissal
-/// (until the next local midnight) and this device's optimistic local echo,
-/// returning the LATEST active deadline.
-DateTime? goalBannerShellHiddenUntil(
-  GoalBannerEntry entry, {
-  required Map<String, GoalBannerLocalSuppression> locallySnoozedDeadlines,
+/// Snoozes and day dismissals quiet the rotating dock only — the subject's own
+/// page (a goal's detail page, a person's page) always shows its current
+/// banner, captioned with this deadline as a countdown, so "where did my
+/// banner go" is answered on the page that owns it. Considers the durable
+/// snooze, the durable rest-of-day dismissal (until the next local midnight)
+/// and this device's optimistic local echo, returning the LATEST active
+/// deadline.
+DateTime? nudgeBannerShellHiddenUntil(
+  NudgeBannerEntry entry, {
+  required Map<String, NudgeBannerLocalSuppression> locallySnoozedDeadlines,
   DateTime? now,
 }) {
   final instant = now ?? clock.now();
@@ -80,11 +87,11 @@ DateTime? goalBannerShellHiddenUntil(
     if (latest == null || candidate.isAfter(latest!)) latest = candidate;
   }
 
-  if (goalBannerIsSnoozed(entry.nudge, instant)) {
-    consider(goalBannerSnoozedUntil(entry.nudge));
+  if (nudgeBannerIsSnoozed(entry.nudge, instant)) {
+    consider(nudgeBannerSnoozedUntil(entry.nudge));
   }
-  if (goalBannerIsDismissedForDay(entry.nudge, instant)) {
-    consider(goalBannerNextLocalMidnight(instant));
+  if (nudgeBannerIsDismissedForDay(entry.nudge, instant)) {
+    consider(nudgeBannerNextLocalMidnight(instant));
   }
   final suppression = locallySnoozedDeadlines[entry.nudge.id];
   if (suppression != null &&
@@ -95,7 +102,7 @@ DateTime? goalBannerShellHiddenUntil(
 }
 
 /// Clearance the compact (mobile) dock claims above the bottom bar when a
-/// goal is speaking — the shell reserves it in the overlay-height scope so
+/// banner is speaking — the shell reserves it in the overlay-height scope so
 /// page content and FABs never sit underneath (handover 1b's reserved lane).
 ///
 /// Derived entirely from the dock's own design-system dimensions and text
@@ -106,14 +113,14 @@ DateTime? goalBannerShellHiddenUntil(
 /// the chrome — outer padding (`step3` both edges), the tenure-strip slot
 /// (`step1`), the tenant's own vertical padding (`step3` both edges) — and the
 /// multi-tenant dot-row footer
-/// (`step2` dot + `step2` bottom padding), always included so a two-plus-goal
-/// dock never under-clears. `goal_banner_dock_test.dart` asserts the reserve
+/// (`step2` dot + `step2` bottom padding), always included so a two-plus-tenant
+/// dock never under-clears. `nudge_banner_dock_test.dart` asserts the reserve
 /// covers the actual rendered dock at 1× and 2×, single- and multi-tenant.
-/// Collapses to zero reserve when no goal speaks (the caller only adds it
+/// Collapses to zero reserve when no banner speaks (the caller only adds it
 /// while the dock is speaking).
-double goalBannerDockReservedHeight(
+double nudgeBannerDockReservedHeight(
   BuildContext context, {
-  required Iterable<GoalNudgeBrief> briefs,
+  required Iterable<NudgeBrief> briefs,
 }) {
   final tokens = context.designTokens;
   final spacing = tokens.spacing;
@@ -128,7 +135,7 @@ double goalBannerDockReservedHeight(
       ? spacing.step2 *
             2 // dot row + its bottom padding
       : 0;
-  // The persona chip scales with text size (see [GoalBannerPersonaChip]).
+  // The persona chip scales with text size (see [NudgeBannerPersonaChip]).
   final chipSize = spacing.step6 * scaler.scale(1);
   final reservedHorizontally =
       spacing.step3 * 2 + // outer dock padding
@@ -139,7 +146,7 @@ double goalBannerDockReservedHeight(
       TapTargets.minimum; // snooze target
   final measuredWidth = MediaQuery.sizeOf(context).width - reservedHorizontally;
   final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
-  // The goal-title caption rides above every headline (one ellipsized line).
+  // The subject-title caption rides above every headline (one ellipsized line).
   final captionLine = _textBlockHeight(
     tokens.typography.styles.others.caption,
     1,
@@ -149,7 +156,7 @@ double goalBannerDockReservedHeight(
   for (final brief in activeBriefs) {
     final height =
         captionLine +
-        (brief.animation == GoalBannerAnimation.marquee && !animationsDisabled
+        (brief.animation == NudgeBannerAnimation.marquee && !animationsDisabled
             ? _textBlockHeight(
                 tokens.typography.styles.subtitle.subtitle2,
                 1,
@@ -175,10 +182,10 @@ double goalBannerDockReservedHeight(
 }
 
 /// The dock — one rotating slot for the agents' standing voices, the
-/// "now playing" bar of the goal feature (design handover 1b).
+/// "now playing" bar of the banner channel (design handover 1b).
 ///
 /// One fixed-height region cycles every standing banner round-robin,
-/// [goalBannerDockTenure] per tenant, with ONE shared rotation state: the
+/// [nudgeBannerDockTenure] per tenant, with ONE shared rotation state: the
 /// shell mounts a single dock instance that survives tab switches. Rules:
 ///
 /// - a freshly refreshed banner (a completion acknowledgment) jumps the
@@ -195,21 +202,29 @@ double goalBannerDockReservedHeight(
 /// Exposure metering rides the existing tracker: a docked tenant is visible
 /// whenever the app is foregrounded, so tenure ≈ real screen time — exactly
 /// what the rating/reuse loop needs.
-class GoalBannerDock extends ConsumerStatefulWidget {
-  const GoalBannerDock({required this.compact, super.key});
+class NudgeBannerDock extends ConsumerStatefulWidget {
+  const NudgeBannerDock({
+    required this.compact,
+    required this.surface,
+    super.key,
+  });
 
   /// Phone layout: complete animated headline and compact snooze control.
   final bool compact;
 
+  /// The navigation surface this mount lives on; the dock filters its
+  /// tenants per kind (ADR 0059 Decision 6).
+  final NudgeBannerSurface surface;
+
   @override
-  ConsumerState<GoalBannerDock> createState() => _GoalBannerDockState();
+  ConsumerState<NudgeBannerDock> createState() => _NudgeBannerDockState();
 }
 
-class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
+class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _tenure = AnimationController(
     vsync: this,
-    duration: goalBannerDockTenure,
+    duration: nudgeBannerDockTenure,
   );
 
   /// The cycle pauses while the app is not foregrounded — a rotation the
@@ -249,6 +264,19 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   }
 
   @override
+  void didUpdateWidget(NudgeBannerDock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.surface == widget.surface) return;
+    // The shell mounts ONE dock and swaps its surface as tabs change, so a
+    // surface whose kinds are all filtered out (People, until a relationship
+    // agent ships) empties the dock without any provider event. Without a
+    // reconcile here the tenure would run out on that surface, `_advance`
+    // would bail on the empty list without restarting it, and the rotation
+    // would stay dead after returning to a surface that does have tenants.
+    setState(() => _reconcile(_visible(ref.read(activeNudgeBannersProvider))));
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final backgrounded = state != AppLifecycleState.resumed;
     if (backgrounded == _backgrounded) return;
@@ -257,7 +285,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
       _tenure.stop();
     } else if (!_hovered &&
         !_touched &&
-        _visible(ref.read(activeGoalNudgesProvider).value).length > 1) {
+        _visible(ref.read(activeNudgeBannersProvider)).length > 1) {
       _tenure.forward();
     }
   }
@@ -269,20 +297,21 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     super.dispose();
   }
 
-  List<GoalBannerEntry> _visible(List<GoalBannerEntry>? raw) {
+  List<NudgeBannerEntry> _visible(List<NudgeBannerEntry>? raw) {
     // Same render-time contract as every banner surface: retained data
     // survives a failed background refresh, but stale copy never renders,
     // and locally hidden ids stay suppressed.
-    return visibleGoalBannerEntries(
+    return visibleNudgeBannerEntries(
       entries: raw,
       locallySnoozedDeadlines: ref.read(
         locallySnoozedNudgeDeadlinesProvider,
       ),
+      surface: widget.surface,
     );
   }
 
   void _advance() {
-    final entries = _visible(ref.read(activeGoalNudgesProvider).value);
+    final entries = _visible(ref.read(activeNudgeBannersProvider));
     if (entries.length <= 1) return;
     final currentIndex = entries.indexWhere(
       (e) => e.nudge.id == _currentId,
@@ -303,7 +332,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   /// Reconciles rotation state against a new provider snapshot: adopts a
   /// first tenant, queue-jumps fresh acknowledgments, and advances off a
   /// tenant that disappeared (dismissal, supersession, staleness).
-  void _reconcile(List<GoalBannerEntry> entries) {
+  void _reconcile(List<NudgeBannerEntry> entries) {
     if (entries.isEmpty) {
       _currentId = null;
       _seenActivations.clear();
@@ -358,9 +387,9 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   /// The entry after [removedId] in the last rendered order, skipping any
   /// that also left, and never landing back on [removedId] — the tenant
   /// that would have been next had the current one simply advanced.
-  GoalBannerEntry? _successorOf(
+  NudgeBannerEntry? _successorOf(
     String? removedId,
-    List<GoalBannerEntry> entries,
+    List<NudgeBannerEntry> entries,
   ) {
     final from = _lastOrder.indexOf(removedId ?? '');
     if (from < 0) return null;
@@ -380,7 +409,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
       _tenure.stop();
     } else if (!_tenure.isAnimating &&
         !_backgrounded &&
-        _visible(ref.read(activeGoalNudgesProvider).value).length > 1) {
+        _visible(ref.read(activeNudgeBannersProvider)).length > 1) {
       _tenure.forward();
     }
   }
@@ -388,17 +417,17 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   @override
   Widget build(BuildContext context) {
     ref
-      ..listen(activeGoalNudgesProvider, (_, next) {
-        setState(() => _reconcile(_visible(next.value)));
+      ..listen(activeNudgeBannersProvider, (_, next) {
+        setState(() => _reconcile(_visible(next)));
       })
       ..listen(locallySnoozedNudgeDeadlinesProvider, (_, _) {
         setState(
-          () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
+          () => _reconcile(_visible(ref.read(activeNudgeBannersProvider))),
         );
       });
 
     final tokens = context.designTokens;
-    final entries = _visible(ref.watch(activeGoalNudgesProvider).value);
+    final entries = _visible(ref.watch(activeNudgeBannersProvider));
 
     // First build when the provider was ALREADY resolved (a cached value on
     // tab re-entry): `ref.listen` fires only on changes, so this adopts the
@@ -418,7 +447,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
             (e) => e.nudge.id == _currentId,
             // Transient guard (the orElse) for the frame between a removed
             // id landing on `_currentId` and the reconcile that fixes it.
-            orElse: () => entries.first,
+            orElse: () => entries.first, // coverage:ignore-line
           );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -469,11 +498,11 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   Widget _buildDock(
     BuildContext context,
     DsTokens tokens,
-    List<GoalBannerEntry> entries,
-    GoalBannerEntry current,
+    List<NudgeBannerEntry> entries,
+    NudgeBannerEntry current,
     bool reduceMotion,
   ) {
-    final style = goalBannerStyle(
+    final style = nudgeBannerStyle(
       tone: current.nudge.brief.tone,
       accent: current.nudge.brief.accent,
       colors: tokens.colors,
@@ -491,8 +520,8 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
         entry: current,
         style: style,
         compact: widget.compact,
-        onSnooze: () => showGoalBannerSnoozeSheet(context, ref, current),
-        onRate: () => showGoalBannerRatingSheet(context, ref, current),
+        onSnooze: () => showNudgeBannerSnoozeSheet(context, ref, current),
+        onRate: () => showNudgeBannerRatingSheet(context, ref, current),
       ),
     );
 
@@ -509,7 +538,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
             color: style.fill,
             borderRadius: radius,
             child: Ink(
-              key: const ValueKey('goal-banner-dock-frame'),
+              key: const ValueKey('nudge-banner-dock-frame'),
               decoration: BoxDecoration(
                 borderRadius: radius,
                 border: Border.all(color: style.border),
@@ -635,8 +664,8 @@ class _DockTenant extends ConsumerWidget {
     required this.onRate,
   });
 
-  final GoalBannerEntry entry;
-  final GoalBannerStyle style;
+  final NudgeBannerEntry entry;
+  final NudgeBannerStyle style;
   final bool compact;
   final VoidCallback onSnooze;
   final VoidCallback onRate;
@@ -645,16 +674,24 @@ class _DockTenant extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
-    final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
+    final ratingDue = NudgeInteractions.ratingDue(entry.nudge);
 
-    return GoalBannerExposureTracker(
+    return NudgeBannerExposureTracker(
       nudgeId: entry.nudge.id,
       child: Semantics(
         container: true,
-        label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
+        label: switch (entry.kind) {
+          NudgeBannerKind.goal => context.messages.goalBannerSemanticLabel(
+            entry.subjectTitle,
+          ),
+          NudgeBannerKind.relationship =>
+            context.messages.relationshipBannerSemanticLabel(
+              entry.subjectTitle,
+            ),
+        },
         child: InkWell(
-          key: const ValueKey('goal-banner-dock-tenant'),
-          onTap: () => beamToNamed(goalDetailPath(entry.nudge.agentId)),
+          key: const ValueKey('nudge-banner-dock-tenant'),
+          onTap: () => beamToNamed(entry.tapRoute),
           child: Padding(
             padding: EdgeInsets.only(
               left: tokens.spacing.cardPadding,
@@ -665,29 +702,29 @@ class _DockTenant extends ConsumerWidget {
             child: Row(
               children: [
                 // The same identity language as the full banner card: the
-                // persona chip and the goal's name, so the voice in the dock
-                // is never anonymous — a nudge only makes sense as SOME
-                // goal's nudge. Excluded from semantics: the enclosing node
-                // already announces the goal via goalBannerSemanticLabel,
-                // and merging these in would read the name (and monogram)
-                // twice before the headline.
+                // persona chip and the subject's name, so the voice in the
+                // dock is never anonymous — a nudge only makes sense as SOME
+                // subject's nudge. Excluded from semantics: the enclosing
+                // node already announces the subject via the per-kind
+                // semantic label, and merging these in would read the name
+                // (and monogram) twice before the headline.
                 ExcludeSemantics(
-                  child: GoalBannerPersonaChip.forStyle(
-                    monogram: GoalBannerPersonaChip.monogramFor(
-                      entry.goalTitle,
+                  child: NudgeBannerPersonaChip.forStyle(
+                    monogram: NudgeBannerPersonaChip.monogramFor(
+                      entry.subjectTitle,
                     ),
                     style: style,
                   ),
                 ),
                 SizedBox(width: tokens.spacing.step3),
                 Expanded(
-                  key: const ValueKey('goal-banner-copy-region'),
+                  key: const ValueKey('nudge-banner-copy-region'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ExcludeSemantics(
                         child: Text(
-                          entry.goalTitle,
+                          entry.subjectTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tokens.typography.styles.others.caption
@@ -696,7 +733,7 @@ class _DockTenant extends ConsumerWidget {
                               ),
                         ),
                       ),
-                      GoalBannerAnimatedText(
+                      NudgeBannerAnimatedText(
                         text: brief.headline,
                         animation: brief.animation,
                         maxLines: null,
@@ -713,12 +750,10 @@ class _DockTenant extends ConsumerWidget {
                   // CTA copy is contractually 2–4 words. Keep it intrinsic so
                   // it cannot claim a flex share and arbitrarily cap the banner
                   // copy at half the dock.
-                  GoalBannerCtaPill(
+                  NudgeBannerCtaPill(
                     label: brief.cta!,
                     style: style,
-                    onTap: () => beamToNamed(
-                      goalDetailPath(entry.nudge.agentId),
-                    ),
+                    onTap: () => beamToNamed(entry.tapRoute),
                   ),
                 ],
                 if (!compact)
@@ -728,7 +763,7 @@ class _DockTenant extends ConsumerWidget {
                     child: ratingDue
                         ? IconButton(
                             onPressed: onRate,
-                            tooltip: context.messages.goalBannerRateTooltip,
+                            tooltip: context.messages.nudgeBannerRateTooltip,
                             icon: Icon(
                               Icons.star_outline_rounded,
                               size: tokens.spacing.step5,
@@ -738,9 +773,9 @@ class _DockTenant extends ConsumerWidget {
                         : null,
                   ),
                 DesignSystemButton(
-                  key: const ValueKey('goal-banner-dock-snooze'),
-                  label: compact ? '' : context.messages.goalBannerSnoozeLabel,
-                  semanticsLabel: context.messages.goalBannerSnoozeLabel,
+                  key: const ValueKey('nudge-banner-dock-snooze'),
+                  label: compact ? '' : context.messages.nudgeBannerSnoozeLabel,
+                  semanticsLabel: context.messages.nudgeBannerSnoozeLabel,
                   leadingIcon: Icons.snooze_rounded,
                   size: DesignSystemButtonSize.dense,
                   tapTargetSize: MaterialTapTargetSize.padded,

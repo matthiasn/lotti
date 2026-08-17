@@ -3,7 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
@@ -13,7 +13,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// A banner brief accumulated from one `create_goal_ad` call.
-typedef GoalAdRequest = ({GoalNudgeBrief brief, String? reasonSummary});
+typedef GoalAdRequest = ({NudgeBrief brief, String? reasonSummary});
 
 /// A retire/rerun request accumulated during the conversation.
 typedef GoalAdAction = ({String adId, String reason});
@@ -329,10 +329,10 @@ class GoalAgentStrategy extends ConversationStrategy
     ConversationManager manager,
   ) async {
     final headline = _trimmed(args['headline']);
-    final tone = GoalNudgeTone.values
+    final tone = NudgeTone.values
         .where((t) => t.name == args['tone'])
         .firstOrNull;
-    final animation = GoalBannerAnimation.values
+    final animation = NudgeBannerAnimation.values
         .where((a) => a.name == args['animation'])
         .firstOrNull;
     if (headline.isEmpty || tone == null || animation == null) {
@@ -347,14 +347,14 @@ class GoalAgentStrategy extends ConversationStrategy
       return;
     }
     final accent =
-        GoalBannerAccent.values
+        NudgeBannerAccent.values
             .where((a) => a.name == args['accent'])
             .firstOrNull ??
-        GoalBannerAccent.calm;
+        NudgeBannerAccent.calm;
     final tagline = _trimmed(args['tagline']);
     final cta = _trimmed(args['cta']);
     _createdAds.add((
-      brief: GoalNudgeBrief(
+      brief: NudgeBrief(
         headline: headline,
         tone: tone,
         animation: animation,

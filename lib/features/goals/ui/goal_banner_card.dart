@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
-import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
-import 'package:lotti/features/goals/ui/goal_banner_style.dart';
-import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
-import 'package:lotti/features/goals/ui/goal_routes.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/service/nudge_interactions.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -26,7 +25,7 @@ import 'package:lotti/services/nav_service.dart';
 class GoalBannerCard extends ConsumerWidget {
   const GoalBannerCard({required this.entry, this.onCtaPressed, super.key});
 
-  final GoalBannerEntry entry;
+  final NudgeBannerEntry entry;
 
   /// Overrides the CTA pill's default navigate-to-detail behavior. The goal
   /// detail page passes an anchor-scroll to the evidence it hosts — a CTA on
@@ -37,17 +36,17 @@ class GoalBannerCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
-    final style = goalBannerStyle(
+    final style = nudgeBannerStyle(
       tone: brief.tone,
       accent: brief.accent,
       colors: tokens.colors,
       brightness: Theme.of(context).brightness,
     );
-    final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
+    final ratingDue = NudgeInteractions.ratingDue(entry.nudge);
     final radius = BorderRadius.circular(tokens.radii.l);
 
     return Semantics(
-      label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
+      label: context.messages.goalBannerSemanticLabel(entry.subjectTitle),
       child: Material(
         key: ValueKey('goal-banner-${entry.nudge.id}'),
         color: style.fill,
@@ -56,7 +55,7 @@ class GoalBannerCard extends ConsumerWidget {
           borderRadius: radius,
           // The card body is the doorway to the conversation about this
           // nudge; rating and visibility actions own separate controls.
-          onTap: () => beamToNamed(goalDetailPath(entry.nudge.agentId)),
+          onTap: () => beamToNamed(entry.tapRoute),
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: radius,
@@ -75,9 +74,9 @@ class GoalBannerCard extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      GoalBannerPersonaChip.forStyle(
-                        monogram: GoalBannerPersonaChip.monogramFor(
-                          entry.goalTitle,
+                      NudgeBannerPersonaChip.forStyle(
+                        monogram: NudgeBannerPersonaChip.monogramFor(
+                          entry.subjectTitle,
                         ),
                         style: style,
                       ),
@@ -86,7 +85,7 @@ class GoalBannerCard extends ConsumerWidget {
                       // ellipsize freely — never on the CTA row.
                       Expanded(
                         child: Text(
-                          entry.goalTitle,
+                          entry.subjectTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: tokens.typography.styles.others.caption
@@ -103,12 +102,13 @@ class GoalBannerCard extends ConsumerWidget {
                         height: TapTargets.minimum,
                         child: ratingDue
                             ? IconButton(
-                                onPressed: () => showGoalBannerRatingSheet(
+                                onPressed: () => showNudgeBannerRatingSheet(
                                   context,
                                   ref,
                                   entry,
                                 ),
-                                tooltip: context.messages.goalBannerRateTooltip,
+                                tooltip:
+                                    context.messages.nudgeBannerRateTooltip,
                                 icon: Icon(
                                   Icons.star_outline_rounded,
                                   size: tokens.spacing.step5,
@@ -119,11 +119,11 @@ class GoalBannerCard extends ConsumerWidget {
                       ),
                       DesignSystemButton(
                         key: const ValueKey('goal-banner-snooze'),
-                        label: context.messages.goalBannerSnoozeLabel,
+                        label: context.messages.nudgeBannerSnoozeLabel,
                         leadingIcon: Icons.snooze_rounded,
                         size: DesignSystemButtonSize.dense,
                         tapTargetSize: MaterialTapTargetSize.padded,
-                        onPressed: () => showGoalBannerSnoozeSheet(
+                        onPressed: () => showNudgeBannerSnoozeSheet(
                           context,
                           ref,
                           entry,
@@ -135,7 +135,7 @@ class GoalBannerCard extends ConsumerWidget {
                   // Generated copy is never localised and wraps freely —
                   // the layout must hold long German compounds without
                   // collision (handover stress test).
-                  GoalBannerAnimatedText(
+                  NudgeBannerAnimatedText(
                     text: brief.headline,
                     animation: brief.animation,
                     // One step below bodyLarge, weight carrying the
@@ -159,14 +159,10 @@ class GoalBannerCard extends ConsumerWidget {
                   ],
                   if (brief.cta != null) ...[
                     SizedBox(height: tokens.spacing.step3),
-                    GoalBannerCtaPill(
+                    NudgeBannerCtaPill(
                       label: brief.cta!,
                       style: style,
-                      onTap:
-                          onCtaPressed ??
-                          () => beamToNamed(
-                            goalDetailPath(entry.nudge.agentId),
-                          ),
+                      onTap: onCtaPressed ?? () => beamToNamed(entry.tapRoute),
                     ),
                   ],
                 ],

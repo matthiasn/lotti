@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -253,7 +253,7 @@ class GoalAgentPhaseA {
         type: AgentEntityTypes.goalNudge,
       )).whereType<GoalNudgeEntity>();
       for (final nudge in nudges) {
-        if (nudge.deletedAt != null || nudge.status != GoalNudgeStatus.active) {
+        if (nudge.deletedAt != null || nudge.status != NudgeStatus.active) {
           continue;
         }
         // A banner that synced in AFTER the revision sweep carries the
@@ -270,7 +270,7 @@ class GoalAgentPhaseA {
               origin.status == GoalSpecVersionStatus.superseded) {
             await _syncService.upsertEntity(
               nudge.copyWith(
-                status: GoalNudgeStatus.superseded,
+                status: NudgeStatus.superseded,
                 supersededAt: now.toUtc(),
                 updatedAt: now,
               ),
@@ -296,7 +296,7 @@ class GoalAgentPhaseA {
         if (!deadlinePassed && !dataStale) continue;
         await _syncService.upsertEntity(
           nudge.copyWith(
-            status: GoalNudgeStatus.expired,
+            status: NudgeStatus.expired,
             // Deadline expiry keeps the deterministic deadline timestamp;
             // data-stale expiry records the sweep instant that observed
             // the changed evidence.

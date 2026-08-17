@@ -1,20 +1,21 @@
 import 'package:clock/clock.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
+import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:uuid/uuid.dart';
 
-/// The user's side of the ad contract (ADR 0055): temporary visibility
-/// choices, the per-activation rating prompt, and exposure accounting.
+/// The user's side of the banner contract (ADR 0055, generalized by
+/// ADR 0059): temporary visibility choices, the per-activation rating
+/// prompt, and exposure accounting — for every nudge variant.
 ///
 /// All writes go through the sync service so peers converge; the exposure
 /// counters are per-host G-counters incremented under this device's host
 /// key, and the rating history is append-only — the concurrent resolver
 /// unions it, so nothing recorded here is ever lost to LWW.
-class GoalNudgeInteractions {
-  GoalNudgeInteractions({
+class NudgeInteractions {
+  NudgeInteractions({
     required this._repository,
     required this._syncService,
     String Function()? newId,
@@ -27,7 +28,7 @@ class GoalNudgeInteractions {
   /// The host key is immutable for the install — cached so the exposure
   /// read-modify-write has NO await between reading the row and writing
   /// it back (a sync application landing in such a window would be
-  /// overwritten by the stale snapshot, resurrecting a dismissed ad).
+  /// overwritten by the stale snapshot, resurrecting a dismissed banner).
   String? _hostCache;
 
   Future<String> _localHost() async =>
@@ -52,17 +53,24 @@ class GoalNudgeInteractions {
     return tail;
   }
 
+  /// The stored nudge behind [nudgeId], or null when the row is missing or
+  /// not a nudge variant.
+  Future<NudgeEntityView?> _nudge(String nudgeId) async {
+    final entity = await _repository.getEntity(nudgeId);
+    return entity == null ? null : NudgeEntityView.of(entity);
+  }
+
   /// Whether the rating prompt is due: exactly one outcome per activation
   /// (a skip counts — the prompt never nags twice for the same run).
-  static bool ratingDue(GoalNudgeEntity nudge) =>
-      nudge.status == GoalNudgeStatus.active &&
+  static bool ratingDue(NudgeEntityView nudge) =>
+      nudge.status == NudgeStatus.active &&
       !nudge.ratings.any((r) => r.activation == nudge.activationCount);
 
   /// Temporarily hides an active banner and appends the timing choice used by
-  /// future goal-agent wakes to learn better initial display windows.
+  /// future agent wakes to learn better initial display windows.
   Future<DateTime?> snooze(
     String nudgeId, {
-    required GoalBannerSnoozeDuration duration,
+    required NudgeBannerSnoozeDuration duration,
     int? forActivation,
   }) async {
     final exactDuration = duration.duration;
@@ -78,25 +86,25 @@ class GoalNudgeInteractions {
     await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
-          final nudge = await _repository.getEntity(nudgeId);
-          if (nudge is! GoalNudgeEntity) return;
-          if (nudge.status != GoalNudgeStatus.active) return;
+          final nudge = await _nudge(nudgeId);
+          if (nudge == null) return;
+          if (nudge.status != NudgeStatus.active) return;
           if (forActivation != null && forActivation != nudge.activationCount) {
             return;
           }
           final now = clock.now();
-          final updated = snoozeGoalBannerEntity(
+          final updated = snoozeNudgeBannerEntity(
             nudge: nudge,
             now: now,
             until: now.add(exactDuration),
             eventId: eventId,
           );
           await _syncService.upsertEntity(updated);
-          persistedUntil = updated.snoozedUntil;
+          persistedUntil = NudgeEntityView.of(updated)!.snoozedUntil;
         });
       } catch (error) {
-        final fresh = await _repository.getEntity(nudgeId);
-        if (fresh is GoalNudgeEntity &&
+        final fresh = await _nudge(nudgeId);
+        if (fresh != null &&
             fresh.snoozeHistory.any((event) => event.id == eventId)) {
           persistedUntil = fresh.snoozeHistory
               .firstWhere((event) => event.id == eventId)
@@ -120,26 +128,27 @@ class GoalNudgeInteractions {
     await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
-          final nudge = await _repository.getEntity(nudgeId);
-          if (nudge is! GoalNudgeEntity ||
-              nudge.status != GoalNudgeStatus.active) {
+          final nudge = await _nudge(nudgeId);
+          if (nudge == null || nudge.status != NudgeStatus.active) {
             return;
           }
           if (forActivation != null && forActivation != nudge.activationCount) {
             return;
           }
           final now = clock.now();
-          final updated = dismissGoalBannerForDayEntity(
+          final updated = dismissNudgeBannerForDayEntity(
             nudge: nudge,
             now: now,
             eventId: eventId,
           );
           await _syncService.upsertEntity(updated);
-          persistedUntil = updated.dismissalHistory.last.dismissedUntil;
+          persistedUntil = NudgeEntityView.of(
+            updated,
+          )!.dismissalHistory.last.dismissedUntil;
         });
       } catch (error) {
-        final fresh = await _repository.getEntity(nudgeId);
-        if (fresh is GoalNudgeEntity &&
+        final fresh = await _nudge(nudgeId);
+        if (fresh != null &&
             fresh.dismissalHistory.any((event) => event.id == eventId)) {
           persistedUntil = fresh.dismissalHistory
               .firstWhere((event) => event.id == eventId)
@@ -175,8 +184,8 @@ class GoalNudgeInteractions {
     return _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
-          final nudge = await _repository.getEntity(nudgeId);
-          if (nudge is! GoalNudgeEntity) return;
+          final nudge = await _nudge(nudgeId);
+          if (nudge == null) return;
           final activation = forActivation ?? nudge.activationCount;
           if (activation != nudge.activationCount) return;
           if (nudge.ratings.any((r) => r.activation == activation)) return;
@@ -184,7 +193,7 @@ class GoalNudgeInteractions {
             nudge.copyWith(
               ratings: [
                 ...nudge.ratings,
-                GoalNudgeRating(
+                NudgeRating(
                   activation: activation,
                   ratedAt: clock.now().toUtc(),
                   rating: rating,
@@ -199,8 +208,8 @@ class GoalNudgeInteractions {
         // Same durable-commit shape as dismissal: an outcome already on
         // the row is success, and "please try again" would prompt a
         // duplicate attempt the one-per-activation guard silently drops.
-        final fresh = await _repository.getEntity(nudgeId);
-        if (fresh is GoalNudgeEntity &&
+        final fresh = await _nudge(nudgeId);
+        if (fresh != null &&
             forActivation != null &&
             fresh.ratings.any((r) => r.activation == forActivation)) {
           return;
@@ -228,8 +237,8 @@ class GoalNudgeInteractions {
       // land in that gap and be clobbered by this bookkeeping upsert
       // (with a newer clock — unrecoverable by the resolver).
       await _syncService.runInTransaction(() async {
-        final nudge = await _repository.getEntity(nudgeId);
-        if (nudge is! GoalNudgeEntity) return;
+        final nudge = await _nudge(nudgeId);
+        if (nudge == null) return;
         final now = clock.now();
         // The flush arrives at the END of the episode; the banner became
         // visible one episode-length earlier. Stamping `now` would push

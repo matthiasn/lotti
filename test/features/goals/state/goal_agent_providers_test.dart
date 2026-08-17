@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -28,9 +28,11 @@ import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
-import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/time_service.dart';
@@ -729,17 +731,17 @@ void main() {
       'newest first, with the goal title attached', () async {
     GoalNudgeEntity nudgeRow(
       String id,
-      GoalNudgeStatus status,
+      NudgeStatus status,
       DateTime activatedAt,
     ) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: 'goal-a',
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8),
@@ -775,16 +777,16 @@ void main() {
       () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
     ).thenAnswer(
       (_) async => [
-        nudgeRow('ad-old', GoalNudgeStatus.active, DateTime(2026, 8, 8)),
-        nudgeRow('ad-new', GoalNudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow('ad-old', NudgeStatus.active, DateTime(2026, 8, 8)),
+        nudgeRow('ad-new', NudgeStatus.active, DateTime(2026, 8, 10)),
         nudgeRow(
           'ad-snoozed',
-          GoalNudgeStatus.active,
+          NudgeStatus.active,
           DateTime(2026, 8, 11),
         ).copyWith(
           provenance: const {'snoozedUntil': '2099-08-11T12:00:00.000Z'},
         ),
-        nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
+        nudgeRow('ad-gone', NudgeStatus.dismissed, DateTime(2026, 8, 9)),
       ],
     );
     when(
@@ -831,7 +833,7 @@ void main() {
     await container.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     final entries = await container.read(activeGoalNudgesProvider.future);
     // The SNOOZED row stays in the list: a snooze quiets the shell dock
-    // (visibleGoalBannerEntries filters per surface), while the goal detail
+    // (visibleNudgeBannerEntries filters per surface), while the goal detail
     // page keeps the banner with its return countdown — dropping it here
     // made the banner vanish from the page the moment the durable snooze
     // reloaded this provider.
@@ -839,7 +841,7 @@ void main() {
       [for (final entry in entries) entry.nudge.id],
       ['ad-snoozed', 'ad-new', 'ad-old'],
     );
-    expect(entries.first.goalTitle, 'Walk daily');
+    expect(entries.first.subjectTitle, 'Walk daily');
 
     // An ad past its staleAt stops rendering even while still `active`.
     when(
@@ -848,7 +850,7 @@ void main() {
       (_) async => [
         nudgeRow(
           'ad-stale',
-          GoalNudgeStatus.active,
+          NudgeStatus.active,
           DateTime(2026, 8),
         ).copyWith(staleAt: DateTime(2026, 8, 2)),
       ],
@@ -1326,7 +1328,7 @@ void main() {
       ),
     ).thenReturn(null);
 
-    container.read(goalNudgeExposureFlushProvider)(
+    container.read(nudgeExposureFlushProvider)(
       'ad-err',
       const Duration(seconds: 1),
     );
@@ -1337,7 +1339,7 @@ void main() {
         any(),
         any<Object>(),
         stackTrace: any(named: 'stackTrace'),
-        subDomain: 'goalNudgeExposure',
+        subDomain: 'nudgeExposure',
         message: any(named: 'message', that: contains('ad-err')),
       ),
     ).called(1);
@@ -1347,14 +1349,14 @@ void main() {
       'fire-and-forget', () async {
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => repository.getEntity('ad-x')).thenAnswer((_) async => null);
-    container.read(goalNudgeExposureFlushProvider)(
+    container.read(nudgeExposureFlushProvider)(
       'ad-x',
       const Duration(seconds: 2),
     );
     // Unknown id is a no-op inside the service — the provider's job is
     // only to bridge the sync call into a void signature.
     await container
-        .read(goalNudgeInteractionsProvider)
+        .read(nudgeInteractionsProvider)
         .recordExposure('ad-x', visibleFor: const Duration(seconds: 2));
     verify(() => repository.getEntity('ad-x')).called(greaterThan(0));
   });
@@ -1563,11 +1565,11 @@ void main() {
             AgentDomainEntity.goalNudge(
                   id: 'ad-deadline',
                   agentId: 'goal-a',
-                  status: GoalNudgeStatus.active,
-                  brief: const GoalNudgeBrief(
+                  status: NudgeStatus.active,
+                  brief: const NudgeBrief(
                     headline: 'h',
-                    tone: GoalNudgeTone.nudge,
-                    animation: GoalBannerAnimation.steady,
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
                   ),
                   briefDigest: 'd',
                   createdAt: start,
@@ -1674,11 +1676,11 @@ void main() {
             AgentDomainEntity.goalNudge(
                   id: 'ad-snoozed',
                   agentId: 'goal-a',
-                  status: GoalNudgeStatus.active,
-                  brief: const GoalNudgeBrief(
+                  status: NudgeStatus.active,
+                  brief: const NudgeBrief(
                     headline: 'h',
-                    tone: GoalNudgeTone.nudge,
-                    animation: GoalBannerAnimation.steady,
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
                   ),
                   briefDigest: 'd',
                   createdAt: start,
@@ -1714,9 +1716,10 @@ void main() {
           'ad-snoozed',
         );
         expect(
-          visibleGoalBannerEntries(
+          visibleNudgeBannerEntries(
             entries: container.read(activeGoalNudgesProvider).value,
             locallySnoozedDeadlines: const {},
+            surface: NudgeBannerSurface.tasks,
           ),
           isEmpty,
         );
@@ -1727,9 +1730,10 @@ void main() {
         // ...and at the deadline the provider's own timer invalidates it,
         // so shell surfaces rebuild and the filter lets the row through.
         expect(
-          visibleGoalBannerEntries(
+          visibleNudgeBannerEntries(
             entries: container.read(activeGoalNudgesProvider).value,
             locallySnoozedDeadlines: const {},
+            surface: NudgeBannerSurface.tasks,
           ).single.nudge.id,
           'ad-snoozed',
         );
@@ -1751,11 +1755,11 @@ void main() {
             AgentDomainEntity.goalNudge(
                   id: 'ad-dismissed-today',
                   agentId: 'goal-a',
-                  status: GoalNudgeStatus.active,
-                  brief: const GoalNudgeBrief(
+                  status: NudgeStatus.active,
+                  brief: const NudgeBrief(
                     headline: 'h',
-                    tone: GoalNudgeTone.nudge,
-                    animation: GoalBannerAnimation.steady,
+                    tone: NudgeTone.nudge,
+                    animation: NudgeBannerAnimation.steady,
                   ),
                   briefDigest: 'd',
                   createdAt: start,
@@ -1786,9 +1790,10 @@ void main() {
           'ad-dismissed-today',
         );
         expect(
-          visibleGoalBannerEntries(
+          visibleNudgeBannerEntries(
             entries: container.read(activeGoalNudgesProvider).value,
             locallySnoozedDeadlines: const {},
+            surface: NudgeBannerSurface.tasks,
           ),
           isEmpty,
         );
@@ -1797,9 +1802,10 @@ void main() {
           ..elapse(const Duration(minutes: 31))
           ..flushMicrotasks();
         expect(
-          visibleGoalBannerEntries(
+          visibleNudgeBannerEntries(
             entries: container.read(activeGoalNudgesProvider).value,
             locallySnoozedDeadlines: const {},
+            surface: NudgeBannerSurface.tasks,
           ).single.nudge.id,
           'ad-dismissed-today',
         );
@@ -1846,11 +1852,11 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: 'goal-a',
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8, 9),
@@ -1899,15 +1905,15 @@ void main() {
 
   test('goalNudgeHistoryProvider lists only terminal outcomes, newest '
       'first — pipeline rows and failures stay internal', () async {
-    GoalNudgeEntity row(String id, GoalNudgeStatus status, int day) =>
+    GoalNudgeEntity row(String id, NudgeStatus status, int day) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: 'goal-h',
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8, day),
@@ -1919,11 +1925,11 @@ void main() {
       () => repository.getEntitiesByAgentId('goal-h', type: 'goalNudge'),
     ).thenAnswer(
       (_) async => [
-        row('ad-dismissed', GoalNudgeStatus.dismissed, 3),
-        row('ad-retired', GoalNudgeStatus.retired, 5),
-        row('ad-active', GoalNudgeStatus.active, 6),
-        row('ad-draft', GoalNudgeStatus.draft, 7),
-        row('ad-failed', GoalNudgeStatus.failed, 8),
+        row('ad-dismissed', NudgeStatus.dismissed, 3),
+        row('ad-retired', NudgeStatus.retired, 5),
+        row('ad-active', NudgeStatus.active, 6),
+        row('ad-draft', NudgeStatus.draft, 7),
+        row('ad-failed', NudgeStatus.failed, 8),
       ],
     );
     final history = await container.read(
@@ -1940,7 +1946,7 @@ void main() {
       'missing — proves each switch arm, not just the sort', () async {
     GoalNudgeEntity row({
       required String id,
-      required GoalNudgeStatus status,
+      required NudgeStatus status,
       required DateTime updatedAt,
       DateTime? expiredAt,
       DateTime? supersededAt,
@@ -1949,10 +1955,10 @@ void main() {
               id: id,
               agentId: 'goal-h2',
               status: status,
-              brief: const GoalNudgeBrief(
+              brief: const NudgeBrief(
                 headline: 'h',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
               ),
               briefDigest: 'd-$id',
               createdAt: DateTime(2026, 8),
@@ -1971,7 +1977,7 @@ void main() {
         // later exposure flush) must NOT leak in; the expiredAt arm wins.
         row(
           id: 'ad-expired-stamped',
-          status: GoalNudgeStatus.expired,
+          status: NudgeStatus.expired,
           updatedAt: DateTime(2026, 8, 20),
           expiredAt: DateTime(2026, 8, 5),
         ),
@@ -1979,13 +1985,13 @@ void main() {
         // the stamped row above.
         row(
           id: 'ad-expired-fallback',
-          status: GoalNudgeStatus.expired,
+          status: NudgeStatus.expired,
           updatedAt: DateTime(2026, 8, 12),
         ),
         // supersededAt PRESENT, older than its updatedAt.
         row(
           id: 'ad-superseded-stamped',
-          status: GoalNudgeStatus.superseded,
+          status: NudgeStatus.superseded,
           updatedAt: DateTime(2026, 8, 18),
           supersededAt: DateTime(2026, 8, 3),
         ),
@@ -1993,7 +1999,7 @@ void main() {
         // all four.
         row(
           id: 'ad-superseded-fallback',
-          status: GoalNudgeStatus.superseded,
+          status: NudgeStatus.superseded,
           updatedAt: DateTime(2026, 8, 25),
         ),
       ],

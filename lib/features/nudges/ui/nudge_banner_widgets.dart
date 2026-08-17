@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/ui/goal_banner_style.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 
 /// The monogram identity chip: a letter on a tinted [fill] wash. Typography
 /// and colour only — no faces, no imagery (ADR 0058 holds even for
 /// identity). Shared by the banner card, the dock and the agents list; the
 /// caller supplies the wash (an accent on banners, the health hue on the
 /// list row).
-class GoalBannerPersonaChip extends StatelessWidget {
-  const GoalBannerPersonaChip({
+class NudgeBannerPersonaChip extends StatelessWidget {
+  const NudgeBannerPersonaChip({
     required this.monogram,
     required this.fill,
     super.key,
   });
 
-  /// Convenience: the persona chip for a [GoalBannerStyle] — the accent's
+  /// Convenience: the persona chip for a [NudgeBannerStyle] — the accent's
   /// 22% chip wash.
-  GoalBannerPersonaChip.forStyle({
+  NudgeBannerPersonaChip.forStyle({
     required this.monogram,
-    required GoalBannerStyle style,
+    required NudgeBannerStyle style,
     super.key,
   }) : fill = style.chipFill;
 
@@ -58,8 +58,8 @@ class GoalBannerPersonaChip extends StatelessWidget {
 
 /// The one pressable-looking element that is actually pressable: the
 /// accent-washed CTA pill. Shared by the banner card and the dock.
-class GoalBannerCtaPill extends StatelessWidget {
-  const GoalBannerCtaPill({
+class NudgeBannerCtaPill extends StatelessWidget {
+  const NudgeBannerCtaPill({
     required this.label,
     required this.style,
     required this.onTap,
@@ -67,7 +67,7 @@ class GoalBannerCtaPill extends StatelessWidget {
   });
 
   final String label;
-  final GoalBannerStyle style;
+  final NudgeBannerStyle style;
   final VoidCallback onTap;
 
   @override

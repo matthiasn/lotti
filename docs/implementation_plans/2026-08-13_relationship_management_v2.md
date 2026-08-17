@@ -7,7 +7,8 @@
   [0038](../adr/0038-relationship-domain-model.md) (holds, two deltas),
   [0039](../adr/0039-relationship-check-in-reminders.md) (superseded in part — banner channel first),
   [0040](../adr/0040-relationship-executive-briefing.md) (amended — two-tier wakes, no template),
-  [0041](../adr/0041-relationship-contact-linking.md) (holds, one delta — multi-select import)
+  [0041](../adr/0041-relationship-contact-linking.md) (holds, one delta — multi-select import),
+  [0059](../adr/0059-relationship-agent-runtime-and-nudge-generalization.md) (records D2/D3 — written before Phase 3, per Phase 9 item 3)
 - Runtime foundation: ADRs [0053](../adr/0053-goal-driven-agents-per-goal-producers.md)–[0058](../adr/0058-procedural-text-banners-no-generative-imagery.md)
   and [knowledge/features/goals.md](../../knowledge/features/goals.md)
 

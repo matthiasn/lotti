@@ -95,7 +95,7 @@ class _GoalLogTodaySheetState extends ConsumerState<GoalLogTodaySheet> {
       ScaffoldMessenger.maybeOf(context)
         ?..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text(context.messages.goalBannerActionFailed)),
+          SnackBar(content: Text(context.messages.saveFailedRetry)),
         );
     }
   }

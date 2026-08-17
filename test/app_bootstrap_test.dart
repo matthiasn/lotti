@@ -20,6 +20,8 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_re
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -186,9 +188,9 @@ void main() {
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode:
-        // 11 overrides instead of the real profile's 12. Which providers those
+        // 12 overrides instead of the real profile's 13. Which providers those
         // are is asserted in the 'agent runtime registrations' group below.
-        expect(buildProviderOverrides(context), hasLength(11));
+        expect(buildProviderOverrides(context), hasLength(12));
 
         // A representative write lands in the guest world only.
         final task = TestTaskFactory.create(id: 'guest-task-1');
@@ -250,7 +252,7 @@ void main() {
         isTrue,
       );
       // ...and the bridge carries the Matrix override too.
-      expect(buildProviderOverrides(context), hasLength(12));
+      expect(buildProviderOverrides(context), hasLength(13));
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.
@@ -515,6 +517,16 @@ void main() {
         maintenance.whereType<GoalRuntimeMaintenance>(),
         hasLength(1),
       );
+    });
+
+    test('registers the goal banner source with the shared dock', () {
+      // Without this the kind-agnostic dock has no sources and every goal
+      // banner silently disappears from the shell (ADR 0059 Decision 6).
+      final sources = containerFor(
+        realContext(),
+      ).read(nudgeBannerSourcesProvider);
+
+      expect(sources, [activeGoalNudgesProvider]);
     });
 
     test('registers both day prompt-log wrap renderers', () {

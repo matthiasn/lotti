@@ -140,7 +140,7 @@ class _GoalDayAssessmentSheetState
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = context.messages.goalBannerActionFailed;
+          _error = context.messages.saveFailedRetry;
         });
       }
       return;

@@ -1,8 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -366,15 +366,15 @@ class GoalSpecRevisionService {
     for (final nudge in nudges) {
       if (nudge.deletedAt != null) continue;
       const affected = {
-        GoalNudgeStatus.draft,
-        GoalNudgeStatus.ready,
-        GoalNudgeStatus.active,
-        GoalNudgeStatus.retired,
+        NudgeStatus.draft,
+        NudgeStatus.ready,
+        NudgeStatus.active,
+        NudgeStatus.retired,
       };
       if (!affected.contains(nudge.status)) continue;
       await _syncService.upsertEntity(
         nudge.copyWith(
-          status: GoalNudgeStatus.superseded,
+          status: NudgeStatus.superseded,
           supersededAt: now.toUtc(),
           updatedAt: now,
         ),

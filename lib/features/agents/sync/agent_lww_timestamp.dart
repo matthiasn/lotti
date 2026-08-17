@@ -51,6 +51,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     goalSpecHead: (e) => e.updatedAt,
     goalProgress: (e) => e.updatedAt,
     goalNudge: (e) => e.updatedAt,
+    relationshipNudge: (e) => e.updatedAt,
     unknown: (e) => e.createdAt,
   );
 }

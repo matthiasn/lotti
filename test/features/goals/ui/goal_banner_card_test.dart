@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
+import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
+import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,34 +18,35 @@ import '../../../widget_test_utils.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  GoalNudgeEntity nudge({List<GoalNudgeRating> ratings = const []}) =>
-      AgentDomainEntity.goalNudge(
-            id: 'ad-1',
-            agentId: 'goal-1',
-            status: GoalNudgeStatus.active,
-            brief: const GoalNudgeBrief(
-              headline: 'Your shoes filed a missing person report.',
-              tagline: 'Six days of quiet soles.',
-              cta: 'Lace up now',
-              tone: GoalNudgeTone.nudge,
-              animation: GoalBannerAnimation.steady,
-            ),
-            briefDigest: 'd',
-            createdAt: DateTime(2026, 8, 9),
-            updatedAt: DateTime(2026, 8, 9),
-            vectorClock: null,
-            ratings: ratings,
-          )
-          as GoalNudgeEntity;
+  NudgeEntityView nudge({List<NudgeRating> ratings = const []}) =>
+      NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+          id: 'ad-1',
+          agentId: 'goal-1',
+          status: NudgeStatus.active,
+          brief: const NudgeBrief(
+            headline: 'Your shoes filed a missing person report.',
+            tagline: 'Six days of quiet soles.',
+            cta: 'Lace up now',
+            tone: NudgeTone.nudge,
+            animation: NudgeBannerAnimation.steady,
+          ),
+          briefDigest: 'd',
+          createdAt: DateTime(2026, 8, 9),
+          updatedAt: DateTime(2026, 8, 9),
+          vectorClock: null,
+          ratings: ratings,
+        ),
+      )!;
 
-  late MockGoalNudgeInteractions interactions;
+  late MockNudgeInteractions interactions;
 
   List<Override> overrides() => [
-    goalNudgeInteractionsProvider.overrideWithValue(interactions),
+    nudgeInteractionsProvider.overrideWithValue(interactions),
   ];
 
   setUp(() {
-    interactions = MockGoalNudgeInteractions();
+    interactions = MockNudgeInteractions();
     when(
       () => interactions.snooze(
         any(),
@@ -69,7 +72,7 @@ void main() {
 
   Future<void> pumpCard(
     WidgetTester tester, {
-    List<GoalNudgeRating> ratings = const [],
+    List<NudgeRating> ratings = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -77,7 +80,12 @@ void main() {
         // needs a Scaffold to present on.
         Scaffold(
           body: GoalBannerCard(
-            entry: (nudge: nudge(ratings: ratings), goalTitle: 'Move more'),
+            entry: (
+              nudge: nudge(ratings: ratings),
+              subjectTitle: 'Move more',
+              kind: NudgeBannerKind.goal,
+              tapRoute: '/goals/details/goal-1',
+            ),
           ),
         ),
         overrides: overrides(),
@@ -98,7 +106,7 @@ void main() {
     verify(
       () => interactions.snooze(
         'ad-1',
-        duration: GoalBannerSnoozeDuration.sixHours,
+        duration: NudgeBannerSnoozeDuration.sixHours,
         forActivation: 1,
       ),
     ).called(1);
@@ -228,7 +236,7 @@ void main() {
     await pumpCard(
       tester,
       ratings: [
-        GoalNudgeRating(
+        NudgeRating(
           activation: 1,
           ratedAt: DateTime(2026, 8, 9, 12),
           rating: 5,
@@ -260,7 +268,12 @@ void main() {
       makeTestableWidgetNoScroll(
         Scaffold(
           body: GoalBannerCard(
-            entry: (nudge: nudge(), goalTitle: 'Move more'),
+            entry: (
+              nudge: nudge(),
+              subjectTitle: 'Move more',
+              kind: NudgeBannerKind.goal,
+              tapRoute: '/goals/details/goal-1',
+            ),
             onCtaPressed: () => anchored++,
           ),
         ),
@@ -289,14 +302,16 @@ void main() {
             entry: (
               nudge: nudge(
                 ratings: [
-                  GoalNudgeRating(
+                  NudgeRating(
                     activation: 1,
                     ratedAt: DateTime(2026, 8, 9, 12),
                     rating: 4,
                   ),
                 ],
               ),
-              goalTitle: 'Move more',
+              subjectTitle: 'Move more',
+              kind: NudgeBannerKind.goal,
+              tapRoute: '/goals/details/goal-1',
             ),
           ),
         ),
