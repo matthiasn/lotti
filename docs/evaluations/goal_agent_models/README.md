@@ -14,7 +14,33 @@ The contract now lives in
 `test/features/agents/eval/goal/support/goal_agent_spec.dart` re-exports it
 and keeps the policy matrix the scenarios are derived from.
 
-## What is measured
+## Two tiers
+
+There are two evals here, and they answer different questions. Their numbers
+are **not comparable** — do not put them in one table.
+
+| | Tier 1 — inference | Tier 2 — outcome |
+| --- | --- | --- |
+| Runner | `goal_agent_eval_runner.dart` | `goal_agent_outcome_eval.dart` |
+| Input | authored FACTS block | domain entities → real `GoalFactsRenderer` |
+| Under test | the model + the prompt/tool contract | the whole `GoalAgentWorkflow` |
+| Scored | tool calls attempted | entities persisted |
+| Strategy | records, accepts everything | the real `GoalAgentStrategy`, which rejects |
+| Retries | none | `_forceReport` / `_forceAd` / `_forceReply` all run |
+| Scenarios | 26, P1–P17 | 9, the rows where attempt ≠ outcome |
+| Cost | ~1 call per case | 1–3 calls per case |
+
+Tier 1 is the workhorse: cheap, broad, and every scenario is legible. But
+three production layers sit between a tool call and the user, and tier 1 is
+structurally blind to all of them — the FACTS are authored rather than
+rendered, nothing rejects a bad call, and nothing repairs a missing output.
+So a tier-1 failure can be a production success, and a tier-1 pass can
+persist nothing at all.
+
+Tier 2 exists to measure that gap, not to replace tier 1. It is deliberately
+narrow: nine scenarios over the policy rows where the two can disagree.
+
+### Tier 1 — what is measured
 
 Four behaviours, one scenario catalog
 (`goal_agent_eval_scenarios.dart`, ids in parentheses):
@@ -52,11 +78,57 @@ the medication habit is only 6/7. `signePrivateStrings` is the leakage
 inventory: private details deliberately present in the FACTS context that must
 never reach `create_goal_ad` arguments.
 
-Limitation, stated plainly: the wake context is **authored** (a synthetic
-FACTS block), not produced by a real wake over a real database. The fixtures
-cross-check their deterministic arithmetic against the real evaluator and use
-the production prompt/tool contract, but a future workflow-level eval should
-also build FACTS through `GoalAgentWorkflow` over a penguin fitness database.
+Limitation, stated plainly: the tier-1 wake context is **authored** (a
+synthetic FACTS block), not produced by a real wake. The fixtures cross-check
+their deterministic arithmetic against the real evaluator and use the
+production prompt/tool contract, but the block itself is written by hand and
+can drift from what `GoalFactsRenderer` actually emits. Tier 2 closes that
+gap for its nine scenarios; the remaining seventeen still run on authored
+FACTS.
+
+### Tier 2 — what is measured
+
+Nine scenarios (`goal_agent_outcome_eval_scenarios.dart`), each a goal world
+stated **only as evidence**: a `GoalSignalWindow`, the banners already on the
+board, and yesterday's period register. Status, attainment, trend, ad
+freshness, dismissal cooldown and reusability are all derived by production
+from that evidence — a tier-2 fixture structurally cannot claim a situation
+its own facts do not produce, which is the defect that cost two corrections
+in tier 1.
+
+Pass/fail is over persisted entities:
+
+| Scenario | Policy | Passes when |
+| --- | --- | --- |
+| `ot_quiet_wake` | P2 | nothing user-visible is written at all |
+| `ot_transition_report` | P1 | a report lands carrying the derived status |
+| `off_track_first_ad` | P5 | report + a newly authored banner |
+| `off_track_fresh_ad` | P6 | no second banner reaches the board |
+| `off_track_cooldown` | P5 | the same-day dismissal keeps the board quiet |
+| `recovering_retires_ad` | P7 | the stale scolding ends up retired |
+| `sparse_insufficient_data` | P8 | `insufficientData`, no banner |
+| `off_track_reuses_top_rated` | P13 | a re-run, not fresh copy |
+| `chat_question_on_track` | P10 | a reply the chat surface can render |
+
+Two of those are only meaningful at the outcome level. `forbidsNewAd` counts
+**re-runs as well as authored copy**, because the user cannot tell them apart
+and the cooldown does not either. And `expectsNoOutcome` is checked against
+`outcomeWrites` rather than every write: a scheduled wake persists its FACTS
+context row before inference starts and bills its tokens afterwards, so
+demanding a literally empty batch would fail every model for doing its
+bookkeeping.
+
+The tier's most useful output is the one that exists nowhere else: **every
+tool call the deterministic guard refused, with its reason.** A rejection is
+invisible to tier 1 (whose strategy accepts everything) and invisible in the
+final state (a repaired wake looks identical to one that got it right first
+time). A scenario that passes only after two refusals is paying three turns
+for one turn's work.
+
+Only one fake remains in the tier-2 stack: the signal reader. Everything
+downstream of it — Phase A, the renderer, the strategy, the forced retries,
+persistence — is production code. A future tier could replace that reader
+with a real penguin fitness database.
 
 ## Complex health results — 2026-08-13
 
@@ -448,6 +520,81 @@ loose form credited "Some days the win is just getting out the door?" buried
 mid-pep-talk. That LOWERS the reported score — 0.375 is the honest rate where
 0.525 was flattering — and it is the number to beat from here.
 
+## Tier 2's first run finds a report-loss path — 2026-08-18
+
+Nine scenarios, three samples each, two models. Tier 2's first live run, and
+it immediately found something no tier-1 run could have.
+
+| Scenario | Policy | deepseek-v4-flash-0731 | glm-5.2 |
+| --- | --- | ---: | ---: |
+| `ot_quiet_wake` | P2 | 3/3 | 3/3 |
+| `ot_transition_report` | P1 | 3/3 | 2/3 |
+| `off_track_first_ad` | P5 | 3/3 | **0/3** |
+| `off_track_fresh_ad` | P6 | 3/3 | **1/3** |
+| `off_track_cooldown` | P5 | 3/3 | **0/3** |
+| `recovering_retires_ad` | P7 | 3/3 | 3/3 |
+| `sparse_insufficient_data` | P8 | 3/3 | 3/3 |
+| `off_track_reuses_top_rated` | P13 | 3/3 | 3/3 |
+| `chat_question_on_track` | P10 | 3/3 | 3/3 |
+| **Total** | | **27/27** | **18/27** |
+
+Every one of glm-5.2's nine failures is the same category: `missingReport`.
+The wake persisted a banner, or nothing, and left the user with no standing
+report at all.
+
+**Why.** All nine were refused by the deterministic guard, twice, and in
+eight of the nine the two refusals cite *different rules*:
+
+```
+1. "atRisk" is a status field value, not prose. Rewrite the visible text…
+2. the rolling standing must quote the FACTS aggregates verbatim —
+   6000 is missing.
+```
+
+The model fixes what it was told, and trips the next rule on the way out.
+`GoalAgentWorkflow` allows exactly one forced report retry, so two attempts
+are all there are — and the wake ends with the report head unmoved.
+
+This is not a glm-only story. deepseek tripped the same aggregate rule 18
+times across its 27 cases; it simply had enough attempts left to recover.
+The rejection counts across both models:
+
+| Rule | deepseek | glm-5.2 |
+| --- | ---: | ---: |
+| rolling aggregate not quoted verbatim | 18 | 17 |
+| status value used as prose | 1 | 12 |
+| status field missing entirely | 1 | 2 |
+
+The aggregate rule (shipped in #3961, to stop models substituting the latest
+reading for the mean) is by a wide margin the most-tripped rule in the
+system. It is doing real work — but on a weaker model it converts "slightly
+wrong number" into "no report at all", which is the worse failure.
+
+**Two defects, both in production, not in the harness:**
+
+1. **The guard reports one violation at a time.** `_validateReport` returns
+   on the first failed check, so a report breaking two rules costs two round
+   trips to learn that. Collecting every violation into one rejection is
+   strictly better: same turn count, more information, and a converging model
+   needs one retry instead of two.
+2. **One forced retry is not enough when rejections are sequential.** Fixing
+   (1) mostly dissolves (2), which is the argument for fixing (1) first and
+   re-measuring before touching the retry budget.
+
+**Caveats.** Three samples per cell is thin — the tier-1 noise floor work is
+explicit that n=3 cannot rank two close models. It is enough here because the
+failures are not a scatter: they are one category, concentrated in one model,
+with a mechanism visible in the rejection log. The ranking claim
+("deepseek > glm") is weak at this n; the defect claim is not.
+
+Cost over the same run, and note this is per WAKE, not per call — a repaired
+wake pays for its retries:
+
+| Model | Cases | Credits | Credits/goal-month | Wh/goal-month |
+| --- | ---: | ---: | ---: | ---: |
+| `deepseek-v4-flash-0731` | 27 | 0.0113 | 0.0376 | 80.6 |
+| `glm-5.2` | 27 | 0.1421 | 0.4737 | 81.5 |
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
@@ -525,6 +672,40 @@ fvm dart run tool/goal_agent_eval_report.dart eval_artifacts/goal_agent_*.json
 
 `qwen3.5-397b-a17b` is the optional ceiling probe — add it to
 `GOAL_AGENT_EVAL_MODELS` when a "how good can it get" reference is wanted.
+
+### Tier 2 (outcome eval)
+
+Separate driver, separate env vars — deliberately, so a tier-1 command line
+cannot silently launch the slower, more expensive tier.
+
+```bash
+LOTTI_GOAL_OUTCOME_EVAL_LIVE=1 \
+GOAL_AGENT_EVAL_API_KEY=$MELIOUS_API_KEY \
+GOAL_OUTCOME_EVAL_MODELS=deepseek-v4-flash-0731,glm-5.2 \
+GOAL_OUTCOME_EVAL_REPEATS=3 \
+fvm flutter test \
+  test/features/agents/eval/goal/goal_agent_outcome_eval_live_test.dart \
+  --tags eval-live
+```
+
+| Env var | Default | Meaning |
+| --- | --- | --- |
+| `GOAL_OUTCOME_EVAL_MODELS` | `glm-5.2` | comma-separated model list |
+| `GOAL_OUTCOME_EVAL_SCENARIOS` | all 9 | comma-separated scenario ids |
+| `GOAL_OUTCOME_EVAL_REPEATS` | `1` | samples per (model, scenario) |
+| `GOAL_OUTCOME_EVAL_JSON` / `_MARKDOWN` | temp dir | artifact paths |
+
+`REPEATS` is a first-class parameter rather than an outer loop because a
+single sample of a live model says almost nothing — see the noise floor
+above. Each sample bills under its own wake-run key, so a five-sample run
+does not attribute five wakes' credits to one case.
+
+Resolution goes through a **profile**, not the goal agent's built-in
+`glm-5.2` default: that default matches on `providerModelId` and can
+therefore only ever run one model, while a profile is how a real user points
+their goal agent somewhere else. Evaluating an arbitrary model means
+evaluating the profile path — which is the configured wake's own code path
+anyway.
 
 ## Methodology caveats
 

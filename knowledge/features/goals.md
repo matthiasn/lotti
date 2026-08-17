@@ -63,7 +63,7 @@ sources:
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results
-    last_modified: 2026-08-16
+    last_modified: 2026-08-18
   - id: tool-dispatcher
     resource: ../../lib/features/goals/workflow/goal_tool_dispatcher.dart
     title: GoalToolDispatcher — proposal persistence and spec revision routing
@@ -206,10 +206,15 @@ flowchart TD
   `rerun_goal_ad` from the tool list whenever the deterministic tier has already
   ruled a banner out — `automaticGoalAdEligible` false, or a dismissal cooldown
   active. A tool absent from the wire cannot be called, so the prohibition needs
-  no prompt compliance. Interactive wakes keep the full surface, because an
-  explicit request overrides eligibility and cooldown and that judgment happens
-  during the turn; the forced-ad repair path likewise receives every tool, since
-  it runs only where an ad is REQUIRED. The measurement that motivated this is
+  no prompt compliance. The override is keyed on the deterministic request
+  detector (`isExplicitGoalAdReplacementRequest`), not on "a message exists":
+  merely being spoken to is not a request for a banner, and treating it as one
+  left the ad tools on the wire for every dialogue turn — calls persistence
+  discards anyway, since `interactiveAdRequested` gates the write on the same
+  signal. A non-English request that the English heuristic misses is carried
+  instead as data, by `reply_to_user(userAskedForBanner: true)`. The forced-ad
+  repair path receives every tool, since it runs only where an ad is REQUIRED.
+  The measurement that motivated this is
   in `docs/evaluations/goal_agent_models/README.md`: prompt wording could only
   trade ad over-creation against skipping ads policy demands, because the model
   was being asked to re-derive a decision the runtime had already made.
