@@ -919,6 +919,12 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       trackStatus: GoalTrackStatus.atRisk,
       materialChange: false,
       lastReportStatus: GoalTrackStatus.atRisk.name,
+      // Both halves of the override at once: the status blocks automatic ads
+      // AND a dismissal is in force. Testing only the status half would let a
+      // regression that stopped explicit requests from bypassing cooldown
+      // (`cooldownBlocksAds`) pass unnoticed, since the only other cooldown
+      // scenario is a scheduled wake asserting the block holds.
+      dismissalCooldownActive: true,
       unansweredUserMessages: const [_msgBannerRequest],
     ),
     expectedToolCalls: const [

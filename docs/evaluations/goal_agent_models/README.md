@@ -190,8 +190,9 @@ read the reply rather than the bare assistant text.
 Both were tightened again the same day, after review of the merged change:
 the carrier is tolerated only where FACTS carry a pending user message (an
 unsolicited reply on a scheduled status wake is chat nobody asked for), at most
-one reply per exchange is allowed and nothing may precede it ("exactly once
-first", checkable via a per-exchange index on each recorded call), a blank or
+one reply per exchange is allowed (tracked by a per-exchange index on each
+recorded call, since a follow-up turn is a separate wake to the runtime), a
+blank or
 non-string `message` is `invalidToolArguments` as the runtime's `_handleReply`
 would reject it, and the prose checks take the surfaced reply in PRECEDENCE
 over assistant prose rather than concatenating both — mirroring

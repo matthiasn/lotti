@@ -447,8 +447,9 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
       return GoalAgentEvalFailureCategory.invalidToolArguments;
     }
   }
-  // Cardinality only, deliberately: `GoalAgentStrategy` rejects a SECOND
-  // reply per wake and nothing else, so that is what the eval mirrors.
+  // Cardinality only, deliberately. `GoalAgentStrategy` rejects a SECOND
+  // reply and nothing else; a scenario's follow-up turns are separate wakes
+  // to the runtime, so the eval mirrors that as one reply PER EXCHANGE.
   //
   // An earlier revision also required the reply to be the first call of its
   // exchange, reading the contract's "exactly once first" as an ordering
