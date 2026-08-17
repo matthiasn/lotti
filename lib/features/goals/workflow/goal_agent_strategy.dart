@@ -53,6 +53,7 @@ class GoalAgentStrategy extends ConversationStrategy
     Set<String>? activeAdIds,
     this._allowedCurrentActionCriterionIds = const {},
     this.expectedStatus,
+    this.expectedRollingAggregates = const [],
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -84,6 +85,10 @@ class GoalAgentStrategy extends ConversationStrategy
   /// declares it authoritative, so a report claiming any other status is
   /// rejected in-conversation instead of publishing a contradiction.
   final GoalTrackStatus? expectedStatus;
+
+  /// Deterministic aggregate values, pre-rounded exactly as FACTS render them,
+  /// that the report's rolling standing must quote. Empty disables the check.
+  final List<String> expectedRollingAggregates;
 
   GoalTrackStatus? _reportStatus;
   String? _reportOneLiner;
@@ -271,6 +276,29 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    // The rolling standing slot exists to state the deterministic aggregate.
+    // Models substitute the LATEST reading for it — reporting a 7-day mean
+    // weight of 94 kg when FACTS say 95 — or recompute a spurious precision
+    // ("127.85" where FACTS carry 127). Both put a wrong number in front of
+    // the user, and every evaluated model does it, so it is enforced here
+    // rather than asked for in prose. Same authority as trackStatus above.
+    if (structured != null && expectedRollingAggregates.isNotEmpty) {
+      final missing = expectedRollingAggregates
+          .where((value) => !_quotesNumber(structured.rollingWindow, value))
+          .toList();
+      if (missing.isNotEmpty) {
+        await _reject(
+          call: call,
+          manager: manager,
+          error:
+              'Error: the rolling standing must quote the FACTS aggregates '
+              'verbatim — ${missing.join(', ')} '
+              '${missing.length == 1 ? 'is' : 'are'} missing. Use the '
+              'aggregate, never the latest reading, and never recompute it.',
+        );
+        return;
+      }
+    }
     _reportStatus = status;
     _reportOneLiner = oneLiner;
     _reportTldr = tldr;
@@ -296,6 +324,22 @@ class GoalAgentStrategy extends ConversationStrategy
     );
     await _accept(call, manager, 'Goal report updated.');
   }
+
+  /// Whether [text] quotes [value] as a COMPLETE number.
+  ///
+  /// Substring matching passed the exact fabrication this check exists to
+  /// catch: "127.85" contains "127", so a recomputed precision the FACTS
+  /// never carried scored as a faithful quote. Digits and decimal points on
+  /// either side disqualify a match, so 127 matches "127 mmHg" and "127," but
+  /// not "127.85" or "1127".
+  ///
+  /// Known limit: this proves the aggregate APPEARS, not that it is bound to
+  /// the right series. A slot naming 95 as the target while stating 94 as the
+  /// average still passes. Closing that needs the aggregates carried as typed
+  /// per-series fields rather than recovered from prose.
+  static bool _quotesNumber(String text, String value) => RegExp(
+    r'(?<![\d.])' + RegExp.escape(value) + r'(?![\d.])',
+  ).hasMatch(text);
 
   Future<void> _handleReplyToUser(
     ChatCompletionMessageToolCall call,

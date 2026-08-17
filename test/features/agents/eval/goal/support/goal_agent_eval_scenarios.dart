@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 
 import 'goal_agent_eval_fixtures.dart';
 import 'goal_agent_spec.dart';
@@ -75,7 +76,12 @@ class GoalAgentEvalScenario {
     // Interactive wakes keep it too — an explicit request overrides
     // eligibility and cooldown (P5), and whether a message asks for a banner
     // is a judgment made during the turn, not one FACTS can precompute.
-    if (hasPendingUserMessage) return true;
+    // P5 keyed on the SAME deterministic detector the runtime uses, so the
+    // eval cannot drift from it: an explicit request for a banner overrides
+    // eligibility and cooldown, merely being spoken to does not.
+    if (pendingUserMessages.any(isExplicitGoalAdReplacementRequest)) {
+      return true;
+    }
     final json = _decodedFacts;
     if (json == null) return true;
     // `automaticGoalAdEligible` plus the dismissal cooldown — the two halves
@@ -106,9 +112,16 @@ class GoalAgentEvalScenario {
   }
 
   /// Whether the authored FACTS carry a message awaiting an answer.
-  bool get hasPendingUserMessage {
+  bool get hasPendingUserMessage => pendingUserMessages.isNotEmpty;
+
+  /// The messages this wake's FACTS leave unanswered.
+  List<String> get pendingUserMessages {
     final pending = _decodedFacts?['unansweredUserMessages'];
-    return pending is List && pending.isNotEmpty;
+    if (pending is! List) return const [];
+    return [
+      for (final entry in pending)
+        if (entry is String) entry,
+    ];
   }
 
   /// The authored FACTS as JSON, for assertions that need to read what the

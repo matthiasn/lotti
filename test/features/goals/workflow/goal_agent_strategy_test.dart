@@ -379,6 +379,146 @@ void main() {
     expect(gated.reportStatus, GoalTrackStatus.offTrack);
   });
 
+  test('a rolling standing quoting the latest reading instead of the '
+      'aggregate is rejected', () async {
+    // Every evaluated model substitutes the latest weigh-in for the 7-day
+    // mean on the multi-series health goal — 94 kg where FACTS say 95 — which
+    // publishes a wrong number, not a wording variant. Same authority as the
+    // track status: the deterministic aggregate wins.
+    Map<String, Object?> report(String rollingWindow) => {
+      'status': 'offTrack',
+      'oneLiner': 'Behind.',
+      'report': {
+        'tldr': 'Behind on weight.',
+        'currentPeriod': 'Latest weigh-in 94 kg.',
+        'rollingWindow': rollingWindow,
+        'latestChange': '95 to 94 kg.',
+        'coverage': '3 weigh-ins.',
+        'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+      },
+    };
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedRollingAggregates: const ['95'],
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: report('Weight averages 94 kg against a 88 kg target.'),
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.hasReport, isFalse);
+    final refusal = rejection();
+    expect(refusal, contains('95'));
+    expect(refusal, contains('never the latest reading'));
+
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: report('Weight averages 95 kg against a 88 kg target.'),
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.reportStatus, GoalTrackStatus.offTrack);
+  });
+
+  test(
+    'a recomputed precision does not count as quoting the aggregate',
+    () async {
+      // The motivating fabrication: FACTS carry 127, the model wrote "127.85".
+      // Substring matching accepted it, so the check passed exactly the output
+      // it exists to reject.
+      Future<GoalAgentStrategy> attempt(String rollingWindow) async {
+        final gated = GoalAgentStrategy(
+          syncService: syncService,
+          agentId: 'goal-1',
+          threadId: 'thread-1',
+          runKey: 'run-1',
+          knownAdIds: const {},
+          expectedRollingAggregates: const ['127'],
+        );
+        await gated.processToolCalls(
+          toolCalls: [
+            _call(
+              name: GoalAgentToolNames.updateGoalReport,
+              args: {
+                'status': 'offTrack',
+                'oneLiner': 'Behind.',
+                'report': {
+                  'tldr': 'Behind on blood pressure.',
+                  'currentPeriod': 'Latest systolic 125.',
+                  'rollingWindow': rollingWindow,
+                  'latestChange': '129 to 125.',
+                  'coverage': '2 readings.',
+                  'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+                },
+              },
+            ),
+          ],
+          manager: manager,
+        );
+        return gated;
+      }
+
+      expect(
+        (await attempt('Systolic averages 127.85 mmHg.')).hasReport,
+        isFalse,
+      );
+      expect(
+        (await attempt('Systolic averages 1127 mmHg.')).hasReport,
+        isFalse,
+      );
+      // The genuine quote is accepted, punctuation and units included.
+      expect((await attempt('Systolic averages 127 mmHg.')).hasReport, isTrue);
+      expect(
+        (await attempt('Systolic sits at 127, above target.')).hasReport,
+        isTrue,
+      );
+    },
+  );
+
+  test('a report with no aggregates to quote is left alone', () async {
+    // An empty window has no mean, and an insufficientData report names the
+    // gap. Demanding a number there would force the model to invent one.
+    final ungated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+    );
+    await ungated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'insufficientData',
+            'oneLiner': 'No readings yet.',
+            'report': {
+              'tldr': 'No readings yet.',
+              'currentPeriod': 'Nothing logged.',
+              'rollingWindow': 'The window holds no observations.',
+              'latestChange': '',
+              'coverage': 'No coverage.',
+              'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(ungated.reportStatus, GoalTrackStatus.insufficientData);
+  });
+
   test('a status outside the enum is rejected in-conversation, so the '
       'report stays unset for the forced retry', () async {
     await strategy.processToolCalls(
