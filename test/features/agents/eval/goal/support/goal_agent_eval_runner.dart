@@ -28,10 +28,17 @@ class GoalAgentEvalToolCall {
   const GoalAgentEvalToolCall({
     required this.name,
     required this.argumentsJson,
+    this.exchangeIndex = 0,
   });
 
   final String name;
   final String argumentsJson;
+
+  /// Which user turn produced this call. The contract's "exactly once first"
+  /// is a per-wake rule, so cardinality and position are only meaningful
+  /// within one exchange — a flattened list cannot tell a second reply from
+  /// the legitimate reply to a follow-up message.
+  final int exchangeIndex;
 
   Map<String, dynamic>? get jsonObjectArguments {
     try {
@@ -45,6 +52,7 @@ class GoalAgentEvalToolCall {
   Map<String, Object?> toJson() => {
     'name': name,
     'argumentsJson': argumentsJson,
+    'exchangeIndex': exchangeIndex,
   };
 }
 
@@ -309,8 +317,14 @@ class GoalAgentEvalReport {
 /// harness measure something the app never does).
 class GoalAgentEvalStrategy extends ConversationStrategy {
   final _toolCalls = <GoalAgentEvalToolCall>[];
+  var _exchangeIndex = 0;
 
   List<GoalAgentEvalToolCall> get toolCalls => List.unmodifiable(_toolCalls);
+
+  /// Called by the runner before each user turn, so per-wake rules stay
+  /// per-wake across a multi-turn scenario.
+  // ignore: use_setters_to_change_properties
+  void beginExchange(int index) => _exchangeIndex = index;
 
   static final Set<String> _knownToolNames = {
     for (final tool in goalAgentTools) tool.name,
@@ -325,6 +339,7 @@ class GoalAgentEvalStrategy extends ConversationStrategy {
       final recorded = GoalAgentEvalToolCall(
         name: call.function.name,
         argumentsJson: call.function.arguments,
+        exchangeIndex: _exchangeIndex,
       );
       _toolCalls.add(recorded);
       manager.addToolResponse(
@@ -419,6 +434,35 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     return GoalAgentEvalFailureCategory.forbiddenToolCall;
   }
 
+  // The reply carrier's own contract, enforced the way the runtime enforces
+  // it rather than merely tolerated. `GoalAgentStrategy` rejects a blank
+  // message and any second reply in a wake, so a payload the runtime would
+  // refuse must not score as a delivered answer here.
+  final replies = toolCalls
+      .where((call) => call.name == GoalAgentToolNames.replyToUser)
+      .toList();
+  for (final reply in replies) {
+    final message = reply.jsonObjectArguments?['message'];
+    if (message is! String || message.trim().isEmpty) {
+      return GoalAgentEvalFailureCategory.invalidToolArguments;
+    }
+  }
+  final exchangesWithReplies = <int>{};
+  for (final reply in replies) {
+    // "Exactly once first": at most one reply per wake, and nothing may
+    // precede it in that exchange — a proposal authored before the user has
+    // been answered is the tool-discipline failure this measures.
+    if (!exchangesWithReplies.add(reply.exchangeIndex)) {
+      return GoalAgentEvalFailureCategory.toolCallOverBudget;
+    }
+    final firstOfExchange = toolCalls.firstWhere(
+      (call) => call.exchangeIndex == reply.exchangeIndex,
+    );
+    if (firstOfExchange.name != GoalAgentToolNames.replyToUser) {
+      return GoalAgentEvalFailureCategory.unexpectedToolCall;
+    }
+  }
+
   // Tools outside expected ∪ tolerated: reporting and observations are
   // always tolerated unless explicitly forbidden — the policy regulates
   // them by situation, and over-reporting is measured by the no-op and
@@ -427,14 +471,19 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   // `reply_to_user` is tolerated for the same reason it is not optional:
   // the shipped contract orders "unanswered user message → call
   // reply_to_user exactly once first". Scoring the contract-mandated reply
-  // as an unexpected call made every dialogue scenario unpassable. The
-  // no-op scenario forbids every tool by name, so restraint is unaffected.
+  // as an unexpected call made every dialogue scenario unpassable.
+  //
+  // Tolerated only where the contract actually calls for it, though: the
+  // tool description says "call exactly once when FACTS contain a PENDING
+  // USER MESSAGE", and the runtime only arms the reply path for an
+  // interactive wake. An unsolicited reply on a scheduled status wake is
+  // chat the user never asked for, and stays an unexpected call.
   final allowedNames = {
     for (final expected in scenario.expectedToolCalls) expected.name,
     GoalAgentToolNames.updateGoalReport,
     GoalAgentToolNames.recordGoalObservation,
     GoalAgentToolNames.retireGoalAd,
-    GoalAgentToolNames.replyToUser,
+    if (scenario.hasPendingUserMessage) GoalAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {
     return GoalAgentEvalFailureCategory.unexpectedToolCall;
@@ -535,25 +584,25 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   return GoalAgentEvalFailureCategory.none;
 }
 
-/// Everything the user actually reads this turn.
+/// Exactly what the user reads this turn — the SURFACED text, not every
+/// string the model produced.
 ///
-/// Under the shipped contract a dialogue turn answers through
-/// `reply_to_user`, so bare assistant text is empty exactly when the model
-/// obeyed the contract. Asserting prose against assistant text alone
-/// therefore measured the harness; the reply argument is the same surface
-/// to the user and belongs in both the required and forbidden checks.
+/// The runtime persists `strategy.replyToUser ?? strategy.finalResponse`:
+/// when a reply carrier exists it wins outright and the bare assistant prose
+/// stays a hidden thought. Concatenating both let hidden text satisfy a
+/// requirement the visible answer missed — and let a forbidden claim the user
+/// never saw fail an otherwise clean reply. Precedence, not union.
 String _userVisibleText(
   String assistantContent,
   List<GoalAgentEvalToolCall> toolCalls,
 ) {
-  final parts = [
-    if (assistantContent.isNotEmpty) assistantContent,
+  final replies = [
     for (final call in toolCalls)
       if (call.name == GoalAgentToolNames.replyToUser)
         if (call.jsonObjectArguments?['message'] case final String message)
-          if (message.isNotEmpty) message,
+          if (message.trim().isNotEmpty) message,
   ];
-  return parts.join('\n');
+  return replies.isEmpty ? assistantContent : replies.join('\n');
 }
 
 String _argumentsFor(List<GoalAgentEvalToolCall> toolCalls, String name) =>
@@ -714,16 +763,23 @@ class GoalAgentInferenceEvalRunner {
           model: modelId,
           provider: provider,
           inferenceRepo: inferenceRepository,
+          // Mirrors `GoalAgentWorkflow`: a wake whose deterministic tier has
+          // ruled out a banner is never handed the ad-creation tools, so the
+          // eval measures the surface the app actually presents rather than a
+          // harder problem the runtime never poses.
           tools: [
             for (final tool in goalAgentTools)
-              ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: tool.name,
-                  description: tool.description,
-                  parameters: tool.parameters,
+              if (scenario.adToolsOffered ||
+                  (tool.name != GoalAgentToolNames.createGoalAd &&
+                      tool.name != GoalAgentToolNames.rerunGoalAd))
+                ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: tool.name,
+                    description: tool.description,
+                    parameters: tool.parameters,
+                  ),
                 ),
-              ),
           ],
           temperature: temperature,
           strategy: strategy,
@@ -738,8 +794,10 @@ class GoalAgentInferenceEvalRunner {
         }
       }
 
+      strategy.beginExchange(0);
       await exchange(scenario.facts);
-      for (final followUp in scenario.followUpUserMessages) {
+      for (final (index, followUp) in scenario.followUpUserMessages.indexed) {
+        strategy.beginExchange(index + 1);
         await exchange(followUp);
       }
 

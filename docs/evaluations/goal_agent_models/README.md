@@ -185,12 +185,102 @@ exactly when the model answers through the tool, so
 Two changes in `goal_agent_eval_runner.dart`: `reply_to_user` joins the
 tolerated set (the no-op scenario forbids every tool by name, so restraint is
 unaffected), and the prose checks — required terms and forbidden claims alike —
-now read assistant text plus every `reply_to_user.message`, which is the same
-surface to the user.
+read the reply rather than the bare assistant text.
+
+Both were tightened again the same day, after review of the merged change:
+the carrier is tolerated only where FACTS carry a pending user message (an
+unsolicited reply on a scheduled status wake is chat nobody asked for), at most
+one reply per exchange is allowed and nothing may precede it ("exactly once
+first", checkable via a per-exchange index on each recorded call), a blank or
+non-string `message` is `invalidToolArguments` as the runtime's `_handleReply`
+would reject it, and the prose checks take the surfaced reply in PRECEDENCE
+over assistant prose rather than concatenating both — mirroring
+`strategy.replyToUser ?? strategy.finalResponse`, under which assistant text is
+a hidden thought once a reply exists.
 
 **Results above this line predate the correction.** Dialogue and evolution
 scores are not comparable across it; a jump in those rows is the scorer, not
 the model. Cost, latency and the health-scenario rows are unaffected.
+
+## Blocked ad tools are withheld, not forbidden — 2026-08-17
+
+Ad over-creation was the largest failure mode of every model measured against
+this contract: all 73 `forbiddenToolCall` failures in a 10-sample two-model
+baseline involved `create_goal_ad` or `rerun_goal_ad`, 58% of all failures.
+Prompt wording could not fix it. Stating the prohibition as a closed list cut
+those failures 73 → 30 but made both models skip ads policy REQUIRES
+(`missingExpectedToolCall` 15 → 37, `cx_retire_then_rerun` 10/10 → 4/10);
+restoring the obligation swung it straight back. The two halves trade against
+each other and the net was a wash.
+
+The deterministic tier already knows the answer — `automaticGoalAdEligible`
+plus the dismissal cooldown — so `GoalAgentWorkflow` now withholds the ad
+tools on a scheduled wake that has ruled a banner out. A tool that is not on
+the wire cannot be called. The runner mirrors this via
+`GoalAgentEvalScenario.adToolsOffered`, so the eval measures the surface the
+app presents rather than a harder problem the runtime never poses.
+
+Two exceptions, both deliberate: the no-op scenario keeps the full surface
+because choosing silence while tools are available IS the measurement, and
+interactive wakes keep it because an explicit request overrides eligibility
+and cooldown (P5) — a judgment made during the turn, not one FACTS can
+precompute.
+
+| Model | Pre-gate | With gate | `forbiddenToolCall` | Credits/goal-month | Wh/goal-month |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 203/250 | 206/250 | 37 → 27 | 0.376 | 167.0 |
+| `qwen3.5-122b-a10b` | 171/250 | 174/250 | 36 → 22 | 0.057 | 67.4 |
+
+**+3 per model, not the +29 first measured.** The first run of this change
+carried an eval-only bug: `adToolsOffered` dropped the `priors.isEmpty` branch
+of `automaticGoalAdEligible`, so a FIRST at-risk evaluation lost tools the
+runtime offers. That withheld ads on `gp_slightly_off` and `gh_gym_pace` —
+scenarios where over-creation is the very failure under measurement — and
+inflated the result. Two independent reviewers caught it. The rule now mirrors
+production exactly, and a property test asserts every atRisk/no-priors/no-trend
+scenario keeps its ad tools.
+
+The surviving wins are real and mechanical: `cx_dismiss_cooldown_no_ad` 2→10
+and `gp_recovering` 3→10 for qwen3.5-122b-a10b, both cases where the
+deterministic tier had already ruled the banner out.
+
+**The +3 is not a clean measurement of the gate.** That run also carried four
+scorer tightenings (pending-message gating, reply cardinality and ordering,
+payload validation, surfaced-reply precedence), so stricter scoring is mixed
+into the same delta — 122b's `unexpectedToolCall` (7) is the pending-message
+rule biting, and `ad_no_double` moved 10→3 in a scenario whose tool list never
+changed at all. Isolating the gate needs the corrected scorer run WITHOUT it,
+which has not been done.
+
+The case for the change does not rest on the delta: a tool that deterministic
+policy forbids should not be on the wire, and prompt wording provably could not
+achieve the same thing — it only traded ad over-creation against skipping ads
+policy demands.
+
+## Muse Glimmer across the full catalog — 2026-08-17
+
+The health-only runs above rated `muse-glimmer` highly and warned that the
+sample "says nothing about ads, revisions, dialogue, or no-op discipline."
+Measured across all 25 scenarios at 10 samples, it is last:
+
+| Model | Pass | Credits/goal-month | Wh/goal-month | Mean output | Mean latency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 206/250 (0.82) | 0.376 | 167.0 | 840 | 4.86s |
+| `qwen3.5-122b-a10b` | 174/250 (0.70) | 0.057 | 67.4 | 922 | 8.33s |
+| `muse-glimmer` | 151/250 (0.60) | 0.201 | 1921.8 | 1994 | 53.62s |
+
+Its failure mode is one-sided: **77 `missingExpectedToolCall`** — it writes
+prose instead of acting, scoring 0/10 on `ad_create_worsening`,
+`cx_retire_then_rerun`, `evo_adjust_target`, `evo_replace_metric`,
+`cx_gym_done_steps_collapse`, `gp_recovering`, `tone_roast_request` and
+`wk_mixed_musing_question`. Its provider-reported energy is 28x
+qwen3.5-122b-a10b's and 11x GLM's, and a 54-second mean wake is an order of
+magnitude off both. Cheap credits are not cheap resources (ADR 0058), and the
+earlier two-scenario result did not generalise.
+
+Run-to-run variance was never quantified (the same contract was never run
+twice), so single-scenario moves of ±3 in this table are not interpretable;
+the category shifts and the 29-case total are far outside plausible noise.
 
 ## Cost and latency
 

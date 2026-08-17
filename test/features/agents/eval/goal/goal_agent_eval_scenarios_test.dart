@@ -610,6 +610,80 @@ void main() {
       }
     });
 
+    test('a scenario is never asked for an ad tool it is not handed', () {
+      // The runner mirrors the runtime's pre-turn narrowing, so a withheld
+      // tool is unreachable. If a scenario expected one, it would fail on
+      // every model for a reason the model cannot influence — the exact
+      // "measures the harness, not the model" trap this suite warns about.
+      for (final scenario in goalAgentEvalScenarios) {
+        if (scenario.adToolsOffered) continue;
+        expect(
+          scenario.expectedToolCalls.map((call) => call.name),
+          isNot(
+            anyElement(
+              anyOf(
+                GoalAgentToolNames.createGoalAd,
+                GoalAgentToolNames.rerunGoalAd,
+              ),
+            ),
+          ),
+          reason: '${scenario.id} expects an ad tool the wake withholds',
+        );
+      }
+    });
+
+    test('a first at-risk evaluation still earns its welcome banner', () {
+      // `automaticGoalAdEligible` permits an ad for an atRisk goal with no
+      // prior periods even absent a worsening trend. An eval gate that
+      // required the trend would withhold tools the runtime offers — and
+      // would flatter every model on precisely the scenarios where ad
+      // over-creation is the failure under measurement.
+      final firstAtRisk = goalAgentEvalScenarios.where((scenario) {
+        final evaluation = scenario.factsJson?['evaluation'];
+        if (evaluation is! Map) return false;
+        final verdict = evaluation['composite'] is Map
+            ? evaluation['composite'] as Map
+            : evaluation;
+        final priors = verdict['priorPeriodAttainments'];
+        return verdict['trackStatus'] == GoalTrackStatus.atRisk.name &&
+            verdict['trendWorsening3PlusDays'] != true &&
+            (priors is! List || priors.isEmpty);
+      }).toList();
+      expect(
+        firstAtRisk,
+        isNotEmpty,
+        reason: 'no scenario exercises the first-evaluation branch',
+      );
+      for (final scenario in firstAtRisk) {
+        expect(
+          scenario.adToolsOffered,
+          isTrue,
+          reason: '${scenario.id} is eligible under automaticGoalAdEligible',
+        );
+      }
+    });
+
+    test('restraint and interactive wakes keep the whole surface', () {
+      // Withholding must never be what makes the no-op wake quiet: choosing
+      // silence with every tool available IS the measurement.
+      final noOp = goalAgentEvalScenarios.singleWhere((s) => s.id == 'gp_noop');
+      expect(noOp.adToolsOffered, isTrue);
+      // An explicit request overrides eligibility and cooldown (P5), and that
+      // judgment happens during the turn — so pending-message wakes keep the
+      // ad tools even when the deterministic status alone would block them.
+      final cooldownChat = goalAgentEvalScenarios.singleWhere(
+        (s) => s.id == 'tone_roast_request',
+      );
+      expect(cooldownChat.hasPendingUserMessage, isTrue);
+      expect(cooldownChat.adToolsOffered, isTrue);
+      // ...while the same block on a scheduled wake does withhold them.
+      final scheduled = goalAgentEvalScenarios.singleWhere(
+        (s) => s.id == 'cx_dismiss_cooldown_no_ad',
+      );
+      expect(scheduled.hasPendingUserMessage, isFalse);
+      expect(scheduled.adToolsOffered, isFalse);
+    });
+
     test('no-op scenario forbids the entire tool surface', () {
       final noop = goalAgentEvalScenarios.singleWhere(
         (s) => s.expectsNoToolCalls,

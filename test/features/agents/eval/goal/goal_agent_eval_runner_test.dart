@@ -303,6 +303,132 @@ void main() {
       );
     });
 
+    test(
+      'an unsolicited reply on a scheduled wake is chat nobody asked for',
+      () {
+        // The tool description scopes the carrier to a PENDING USER MESSAGE and
+        // the runtime only arms the reply path for an interactive wake, so
+        // tolerating it everywhere would pass a status wake that opened a chat.
+        final scheduled = scenarioById('gp_on_track');
+        expect(scheduled.hasPendingUserMessage, isFalse);
+        expect(
+          classifyGoalAgentResult(
+            scenario: scheduled,
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                '{"status":"onTrack","oneLiner":"Cruising at 11k.", '
+                '"tldr":"Comfortably above target all week."}',
+              ),
+              call(
+                GoalAgentToolNames.replyToUser,
+                '{"message":"Just checking in on your steps!"}',
+              ),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.unexpectedToolCall,
+        );
+      },
+    );
+
+    test('a second reply in one wake is over budget', () {
+      // GoalAgentStrategy rejects it outright with "may be called at most
+      // once per wake"; the eval must not score what the runtime refuses.
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('wk_dialogue_over_report'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Your goal is an average of 10,000 steps per day '
+              'over a rolling 7-day window."}',
+            ),
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Anything else?"}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.toolCallOverBudget,
+      );
+    });
+
+    test('acting before answering breaks "exactly once first"', () {
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenarioById('evo_adjust_target'),
+          toolCalls: [
+            call(
+              GoalAgentToolNames.proposeGoalRevision,
+              '{"changes":{"targetValue":8000},"rationale":"user asked"}',
+            ),
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Your goal is 10,000 steps per day; lowering it."}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.unexpectedToolCall,
+      );
+    });
+
+    test('a reply payload the runtime would refuse is invalid', () {
+      for (final arguments in [
+        '{}',
+        '{"message":7}',
+        '{"message":"   "}',
+      ]) {
+        expect(
+          classifyGoalAgentResult(
+            scenario: scenarioById('tone_roast_request'),
+            toolCalls: [
+              call(GoalAgentToolNames.replyToUser, arguments),
+              call(
+                GoalAgentToolNames.recordGoalObservation,
+                '{"observation":"Wants roast tone in banners."}',
+              ),
+            ],
+            assistantContent: '',
+          ),
+          GoalAgentEvalFailureCategory.invalidToolArguments,
+          reason: 'no visible answer is delivered by $arguments',
+        );
+      }
+    });
+
+    test('the surfaced reply is scored, not the hidden thought', () {
+      final scenario = scenarioById('wk_dialogue_over_report');
+      // Production persists `replyToUser ?? finalResponse`, so assistant prose
+      // is invisible once a reply exists: it must not rescue a reply that
+      // omits the restatement...
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(GoalAgentToolNames.replyToUser, '{"message":"All good!"}'),
+          ],
+          assistantContent:
+              'Your goal is an average of 10,000 steps per day over a '
+              'rolling 7-day window.',
+        ),
+        GoalAgentEvalFailureCategory.missingAssistantContent,
+      );
+      // ...and with no reply at all, bare prose is still what the user reads.
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: const [],
+          assistantContent:
+              'Your goal is an average of 10,000 steps per day over a '
+              'rolling 7-day window.',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('reuse scenario fails a model that regenerates instead', () {
       final category = classifyGoalAgentResult(
         scenario: scenarioById('ad_reuse_top_rated'),

@@ -189,6 +189,18 @@ flowchart TD
   at risk on the initial/worsening path), that expiry re-arms the period's
   escalation so Phase B creates or reuses a replacement. Healthy expiry stays
   a EUR0 maintenance event.
+- **A blocked banner is unofferable, not merely forbidden.** Before the first
+  inference of a scheduled wake, `GoalAgentWorkflow` drops `create_goal_ad` and
+  `rerun_goal_ad` from the tool list whenever the deterministic tier has already
+  ruled a banner out — `automaticGoalAdEligible` false, or a dismissal cooldown
+  active. A tool absent from the wire cannot be called, so the prohibition needs
+  no prompt compliance. Interactive wakes keep the full surface, because an
+  explicit request overrides eligibility and cooldown and that judgment happens
+  during the turn; the forced-ad repair path likewise receives every tool, since
+  it runs only where an ad is REQUIRED. The measurement that motivated this is
+  in `docs/evaluations/goal_agent_models/README.md`: prompt wording could only
+  trade ad over-creation against skipping ads policy demands, because the model
+  was being asked to re-derive a decision the runtime had already made.
 - **Banners are dirty-tracked against their evidence.** Phase B stamps a
   `factsDigest` (coarse status plus each dimension's actual value and
   satisfaction plus a hash of the exact health timestamps and values that the

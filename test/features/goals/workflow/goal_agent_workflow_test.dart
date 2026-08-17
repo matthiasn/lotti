@@ -696,6 +696,98 @@ void main() {
     expect(conversationRepository.sendMessageDelegateCallCount, 2);
   });
 
+  test('a scheduled wake whose ads are deterministically blocked is not even '
+      'offered the ad tools', () async {
+    // Ad over-creation was the largest failure mode of every model evaluated
+    // against this contract, and prompt wording could only trade it against
+    // skipping ads policy requires. The deterministic tier already knows the
+    // answer, so the tools come off the wire: an unofferable tool cannot be
+    // called, whatever the model infers from prose.
+    stubSpec();
+    stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    // Same offTrack evidence as the full-wake test — only the dismissal
+    // differs, so the assertion isolates the cooldown gate rather than the
+    // status.
+    const dismissedBrief = GoalNudgeBrief(
+      headline: 'Dismissed earlier today.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.steady,
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'dismissed-today',
+              agentId: agentId,
+              status: GoalNudgeStatus.dismissed,
+              brief: dismissedBrief,
+              briefDigest: goalBriefDigest(dismissedBrief),
+              createdAt: now.subtract(const Duration(hours: 2)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+              dismissedAt: now.subtract(const Duration(hours: 1)),
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+
+    List<String>? handedOver;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          handedOver ??= [
+            for (final tool in tools ?? const <ChatCompletionTool>[])
+              tool.function.name,
+          ];
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'offTrack',
+                'oneLiner': 'Averaging 6k of 10k steps.',
+                'tldr': 'The rolling week slid well under target.',
+              }, id: 'call-a'),
+            ],
+            manager: conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 900, outputTokens: 120);
+        };
+
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(
+      handedOver,
+      isNot(contains(GoalAgentToolNames.createGoalAd)),
+      reason: 'a dismissal blocks automatic ads for the calendar day',
+    );
+    expect(handedOver, isNot(contains(GoalAgentToolNames.rerunGoalAd)));
+    // Only the two ad tools come off: withholding must not quietly shrink the
+    // surface that makes a wake useful.
+    expect(handedOver, contains(GoalAgentToolNames.updateGoalReport));
+    expect(handedOver, contains(GoalAgentToolNames.retireGoalAd));
+    expect(handedOver, hasLength(goalAgentTools.length - 2));
+  });
+
   test('a full wake persists FACTS, report + head, the new ad, and token '
       'usage — all attributed to glm-5.2', () async {
     stubSpec();
