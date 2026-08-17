@@ -10556,6 +10556,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipContactChannelsLabel => 'Date de contact';
 
   @override
+  String get relationshipContactLinked => 'Datele de contact au fost copiate';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Datele de contact nu au putut fi salvate';
+
+  @override
+  String get relationshipContactMissing =>
+      'Acel contact nu se află pe acest dispozitiv';
+
+  @override
+  String get relationshipContactNoChanges => 'Nu este nimic nou de copiat';
+
+  @override
   String get relationshipCreateTitle => 'Adăugați o persoană';
 
   @override
@@ -10599,6 +10613,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipHealthThriving => 'Înfloritoare';
 
   @override
+  String get relationshipImportAction => 'Importați din contacte';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de persoane adăugate',
+      few: '$count persoane adăugate',
+      one: '1 persoană adăugată',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Amintiți-mi să păstrez legătura';
 
@@ -10606,9 +10635,77 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipImportantLabel => 'Important';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Adăugați $count de persoane',
+      few: 'Adăugați $count persoane',
+      one: 'Adăugați 1 persoană',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Niciun contact pe acest dispozitiv';
+
+  @override
+  String get relationshipImportFailed =>
+      'Nu a putut fi adăugată nicio persoană';
+
+  @override
+  String get relationshipImportGrantButton => 'Permiteți accesul';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Niciun contact nu corespunde căutării dumneavoastră';
+
+  @override
+  String get relationshipImportOpenSettings => 'Deschideți setările';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti vă citește contactele doar cât timp acest selector este deschis și copiază doar persoanele pe care le alegeți.';
+
+  @override
+  String get relationshipImportRetry => 'Încercați din nou';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Verificați $count',
+      few: 'Verificați $count',
+      one: 'Verificați 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Înainte de a le adăuga';
+
+  @override
+  String get relationshipImportSearchHint => 'Căutați contacte';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.';
+
+  @override
+  String get relationshipImportTitle => 'Adăugați persoane';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Importul de contacte este disponibil pe telefoane și tablete. Adăugați aici datele de contact manual.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Ultima înregistrare $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Asociați un contact';
 
   @override
   String get relationshipLinkedTasksLabel => 'Sarcini';
@@ -10654,6 +10751,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relationshipRelinkContact => 'Asociați alt contact';
+
+  @override
   String get relationshipsEmptyState =>
       'Adăugați persoanele de care doriți să rămâneți aproape.';
 
@@ -10676,6 +10776,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Urmărire din $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Actualizați din contact';
 
   @override
   String get saveButton => 'Salvați';

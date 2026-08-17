@@ -10358,6 +10358,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipContactChannelsLabel => 'Contactgegevens';
 
   @override
+  String get relationshipContactLinked => 'Contactgegevens gekopieerd';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kon de contactgegevens niet opslaan';
+
+  @override
+  String get relationshipContactMissing =>
+      'Dat contact staat niet op dit apparaat';
+
+  @override
+  String get relationshipContactNoChanges => 'Niets nieuws om te kopiëren';
+
+  @override
   String get relationshipCreateTitle => 'Persoon toevoegen';
 
   @override
@@ -10401,6 +10415,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipHealthThriving => 'Bloeiend';
 
   @override
+  String get relationshipImportAction => 'Importeren uit contacten';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen toegevoegd',
+      one: '1 persoon toegevoegd',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Herinner me eraan contact te houden';
 
@@ -10408,9 +10436,74 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportantLabel => 'Belangrijk';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen toevoegen',
+      one: '1 persoon toevoegen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Geen contacten op dit apparaat';
+
+  @override
+  String get relationshipImportFailed => 'Kon niemand toevoegen';
+
+  @override
+  String get relationshipImportGrantButton => 'Toegang toestaan';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Geen contacten komen overeen met je zoekopdracht';
+
+  @override
+  String get relationshipImportOpenSettings => 'Instellingen openen';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti leest je contacten alleen zolang deze kiezer open is en kopieert alleen de personen die je kiest.';
+
+  @override
+  String get relationshipImportRetry => 'Opnieuw proberen';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nakijken',
+      one: '1 nakijken',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Voordat je ze toevoegt';
+
+  @override
+  String get relationshipImportSearchHint => 'Contacten zoeken';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.';
+
+  @override
+  String get relationshipImportTitle => 'Personen toevoegen';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Contacten importeren kan op telefoons en tablets. Voer de contactgegevens hier met de hand in.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Laatste check-in $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Contact koppelen';
 
   @override
   String get relationshipLinkedTasksLabel => 'Taken';
@@ -10457,6 +10550,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipRelinkContact => 'Ander contact koppelen';
+
+  @override
   String get relationshipsEmptyState =>
       'Voeg de mensen toe met wie je dichtbij wilt blijven.';
 
@@ -10479,6 +10575,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Gevolgd sinds $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Bijwerken vanuit contact';
 
   @override
   String get saveButton => 'Opslaan';

@@ -15,7 +15,9 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
@@ -165,6 +167,9 @@ class RelationshipDetailsPage extends ConsumerWidget {
                     Icons.star_rounded,
                     color: tokens.colors.interactive.enabled,
                   ),
+                // Renders nothing on desktop, where channels are typed by
+                // hand (plan v2 phase 7 item 2).
+                ContactLinkAction(relationship: relationship),
                 IconButton(
                   tooltip: context.messages.relationshipEditTitle,
                   onPressed: () => showRelationshipEditModal(
@@ -198,10 +203,15 @@ class RelationshipDetailsPage extends ConsumerWidget {
                   SliverList(
                     delegate: SliverChildListDelegate([
                       _RelationshipHeader(data: data),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      // Above the briefing: returning from a call the user
+                      // just placed, the offer to log it is the most
+                      // time-sensitive thing on the page (plan v2 phase 7
+                      // item 5). Renders nothing the rest of the time.
+                      const PostInteractionPrompt(),
                       // The executive briefing directly under the header —
                       // the agent's standing voice on this page (plan v2
                       // phase 5).
-                      SizedBox(height: tokens.spacing.sectionGap),
                       RelationshipBriefingCard(relationship: relationship),
                       if (data.contactChannels.isNotEmpty) ...[
                         SizedBox(height: tokens.spacing.sectionGap),

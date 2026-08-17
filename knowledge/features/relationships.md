@@ -56,6 +56,22 @@ sources:
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
     title: ADR 0039 — Relationship check-in reminders
     last_modified: 2026-08-17
+  - id: contacts
+    resource: ../../lib/features/relationships/service/contacts_service.dart
+    title: ContactsService — the flutter_contacts boundary
+    last_modified: 2026-08-17
+  - id: mapper
+    resource: ../../lib/features/relationships/service/contact_import_mapper.dart
+    title: The only file that knows the plugin's types
+    last_modified: 2026-08-17
+  - id: pending
+    resource: ../../lib/features/relationships/service/pending_interaction_store.dart
+    title: PendingInteractionStore — the device-local post-call marker
+    last_modified: 2026-08-17
+  - id: adr-0041
+    resource: ../../docs/adr/0041-relationship-contact-linking.md
+    title: ADR 0041 — Relationship contact linking
+    last_modified: 2026-08-13
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -606,6 +622,79 @@ or copied from an OS contact, and no inference path reads them. `CheckInSentimen
 is likewise **user-set and never AI-filled** (ADR 0038); the executive briefing
 grounds its health band in those explicit values first and treats prose as
 secondary evidence.
+
+The channel exclusion extends to logs: `UrlLauncherContactLauncher` reports a
+failed quick action by **scheme only**, never the URI, because the URI *is*
+the phone number.
+
+# Contacts, quick actions and the post-call loop
+
+Phase 7 (ADR 0041), Android and iOS only. Three invariants carry it:
+
+- **One plugin boundary.** `contact_import_mapper.dart` is the only file that
+  knows `flutter_contacts` types; everything above it works in
+  `ImportedContact`, a plain record. That is what lets the import screen, the
+  link action and their tests run in the pure-Dart VM. The mapper is also
+  where a phone label becomes a channel *type*: mobile/iPhone/Apple Watch/MMS
+  become `mobile` (call + message), everything else `phone` (call only), so a
+  message composer is never opened onto a landline or a fax machine.
+- **Copying is a union, never a replacement.** `mergeContactChannels` compares
+  on type plus a punctuation- and case-stripped value, so `+1 (555) 010-9999`
+  does not land beside `+15550109999`. A hand-typed handle the address book
+  does not hold survives a re-link, and the person's `title` is never touched —
+  someone renamed to "Mum" stays "Mum".
+- **The two read paths differ in reach, and the wording has to.** "Link
+  contact" calls `pickSingle()`, an OS picker that hands back exactly the one
+  contact the user chose. The multi-select import calls `readAll()` — the
+  whole address book, loaded into the app to render the selection list, with
+  only the selected people persisted. Both are gated behind the runtime
+  permission and neither reads in the background, but user-facing copy must
+  say "reads your address book while the import screen is open" rather than
+  "reads only the contacts you choose", which is true of the picker alone.
+- **`contactRefs` are per-platform and per-device.** The same person carries a
+  different id in each address book, so a ref written on a phone reads as
+  *unlinked* on a tablet rather than resolving to a stranger. Both the link
+  action and `refreshFromContact` key on `contactRefPlatformKey()`.
+
+**The import screen is pushed above the shell, not into the tab.** It docks
+its Import action in a `bottomNavigationBar`, and the mobile shell paints the
+nav pill *over* each tab's page stack — so a plain `Navigator.of(context)`
+push would leave the screen's primary action sitting behind the pill.
+`bottomNavSafeNavigatorOf` is the existing seam for that (it returns the root
+navigator on mobile and the nested one on desktop, where a sidebar drives
+navigation and these pages overlay only their panel).
+
+The post-call loop is a resume heuristic, not telephony (ADR 0041 D4). A
+launched quick action writes one marker to `settings.sqlite` — **device-local
+by construction**, since a call placed on a phone is not something the desktop
+should prompt about, and the marker describes a device's behavior rather than
+anything about the person. Exactly one marker is kept (most recent departure
+wins) and it expires after `pendingInteractionTtl`, so a call from yesterday
+does not greet the user the next morning. `PostInteractionPrompt` re-resolves
+the person through the repository rather than trusting the marker: a person
+deleted, or hidden while private entries are off, produces no prompt, because
+naming them would leak that they exist.
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoMarker
+  NoMarker --> Pending: quick action launched
+  Pending --> Pending: another action (replaces)
+  Pending --> NoMarker: expired on read (TTL)
+  Pending --> NoMarker: unreadable on read (cleared)
+  Pending --> NoMarker: declined
+  Pending --> Capturing: accepted
+  Capturing --> NoMarker: marker cleared before the sheet opens
+```
+
+Two traps this code exists around, both found by test rather than review:
+a provider written from `initState` (Riverpod rejects writes during build —
+the import load is deferred a frame), and a `fullWidth` `DesignSystemButton`
+in a `bottomNavigationBar`, whose content `Center` has no height factor and
+silently fills loose constraints, collapsing the list above it. A `Row` is
+not enough — its cross-axis constraints are merely loose; a vertical `Flex`
+passes unbounded main-axis constraints, under which the same `Center`
+shrink-wraps.
 
 # Related
 
