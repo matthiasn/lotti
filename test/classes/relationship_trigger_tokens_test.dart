@@ -179,7 +179,10 @@ void main() {
           relationshipEscalationBaselineFromTriggerTokens(tokens),
           status.name,
         );
-        expect(relationshipEscalationDueDayFromTriggerTokens(tokens), date.text);
+        expect(
+          relationshipEscalationDueDayFromTriggerTokens(tokens),
+          date.text,
+        );
       },
       tags: 'glados',
     );

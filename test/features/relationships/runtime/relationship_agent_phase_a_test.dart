@@ -648,6 +648,57 @@ void main() {
             )
             as RelationshipNudgeEntity;
 
+    // `important` is the consent switch (ADR 0037/0039). Withdrawing it has
+    // to reach the banner already on the dock: the render side filters on
+    // the agent and the person existing, not on eligibility, so before this
+    // an un-marked person kept nudging until the banner's own staleAt.
+    test('withdrawing eligibility RETIRES the live banner', () async {
+      final ineligible = [
+        relationship(important: false),
+        relationship(
+          status: RelationshipStatus.dormant(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      ];
+
+      for (final entry in ineligible) {
+        upserts.clear();
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => entry);
+        when(
+          () =>
+              repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+        ).thenAnswer((_) async => [nudge(id: 'ad-live')]);
+
+        await withClock(Clock.fixed(now), run);
+
+        final retired = upserts.whereType<RelationshipNudgeEntity>().single;
+        expect(retired.status, NudgeStatus.retired, reason: '$entry');
+        expect(retired.retiredAt, now.toUtc());
+      }
+    });
+
+    test('an ineligible person with no live banner writes nothing', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => relationship(important: false));
+      when(
+        () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+
+      await withClock(Clock.fixed(now), run);
+
+      expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+    });
+
     test('an active banner past its deadline is terminally EXPIRED with '
         'the deterministic deadline timestamp', () async {
       when(

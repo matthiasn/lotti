@@ -107,6 +107,13 @@ class RelationshipAgentPhaseA {
       // proactive behavior, and dormant/archived people are deliberately
       // excluded (ADR 0039 Decision 2). The cadence tick above keeps
       // checking, so flipping the switch needs no re-wiring.
+      //
+      // Withdrawing consent has to reach the banner already on the dock,
+      // though. The render side filters on the agent and the person
+      // existing, not on eligibility, and the sweep below is downstream of
+      // this return — so without this a banner kept nudging about someone
+      // the user had just un-marked, until its own staleAt ran out.
+      await _retireNudgesOnIneligibility(agentId, now);
       return const WakeResult(success: true);
     }
 
@@ -166,6 +173,41 @@ class RelationshipAgentPhaseA {
     });
 
     return const WakeResult(success: true);
+  }
+
+  /// Retires every still-active banner for a person who is no longer
+  /// eligible — un-marked as important, moved to dormant/archived, or
+  /// deleted.
+  ///
+  /// Retire rather than expire: expiry is the clock's verdict on a banner
+  /// that outlived its deadline, and this is the user's verdict on the
+  /// person. Runs in its own transaction because the eligible path's
+  /// transaction is never reached from here.
+  Future<void> _retireNudgesOnIneligibility(
+    String agentId,
+    DateTime now,
+  ) async {
+    final nudges =
+        (await _repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.relationshipNudge,
+        )).whereType<RelationshipNudgeEntity>().where(
+          (nudge) =>
+              nudge.deletedAt == null && nudge.status == NudgeStatus.active,
+        );
+    if (nudges.isEmpty) return;
+
+    await _syncService.runInTransaction(() async {
+      for (final nudge in nudges) {
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: NudgeStatus.retired,
+            retiredAt: now.toUtc(),
+            updatedAt: now,
+          ),
+        );
+      }
+    });
   }
 
   /// Deterministic banner maintenance (the goal Phase A sweep, ADR 0055):
