@@ -68,6 +68,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the quick actions need an address book, so they are absent on desktop, where
   contact details are entered by hand as before.
 
+### Fixed
+- **Automatic transcription and image analysis now honour the profile you
+  chose.** On installs that never received the older seeded skill rows — a
+  fresh install, or a new device — every profile's automated skills resolved
+  to nothing. Automatic capabilities were silently skipped, and audio
+  transcription in particular fell back to a search across every configured
+  model, so a category pinned to one provider could transcribe through a
+  completely different one. Synced audio from another device, which has no
+  such fallback, transcribed nothing at all. Built-in skills are now read
+  from the app itself rather than from the config store, so a profile's
+  choices apply on every install.
+
 ### Changed
 - **Notifications work on Android at all.** Android was missing its
   initialisation settings, which made the notification plugin fail to start

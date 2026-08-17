@@ -105,12 +105,23 @@ class SkillInferenceRunner {
   /// changing the entire profile. A stale or unresolvable override
   /// falls back to the profile slot (with a warning log) — stranding
   /// the user is worse than ignoring a stale id.
+  /// [onError] receives the raw exception when the run fails.
+  ///
+  /// This method deliberately never throws — `_withStatusTracking` catches
+  /// everything, logs it and reports it through
+  /// [inferenceStatusControllerProvider] / [inferenceErrorControllerProvider],
+  /// which is all a fire-and-forget caller needs. A caller that is *waiting*
+  /// on the transcript needs more than that: a failed run writes no
+  /// `entryText`, so silence is indistinguishable from a slow model and the
+  /// caller sits on a spinner until its own timeout. [onError] is that
+  /// signal, and it fires for the same failures the error controller shows.
   Future<void> runTranscription({
     required String audioEntryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
     String? overrideModelId,
     GeminiThinkingMode? geminiThinkingMode,
+    void Function(Object error)? onError,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -143,6 +154,7 @@ class SkillInferenceRunner {
       responseType: skill.skillType.toResponseType,
       subDomain: 'runTranscription',
       linkedTaskId: linkedTaskId,
+      onError: onError,
       body: () async {
         // 1. Fetch the audio entity.
         final entity = await _aiInputRepository.getEntity(audioEntryId);

@@ -677,6 +677,43 @@ void main() {
     });
 
     group('tryTranscribe', () {
+      // The defect a fresh install shipped with. `builtInSkills` are compile
+      // -time constants that nothing ever writes into `ai_config.sqlite`, so
+      // the store answers `null` for them on a device that never got the
+      // legacy seed rows. Resolving assignments through the store alone then
+      // dropped every one of them, the profile matched nothing, and
+      // transcription fell through to the direct fallback — a provider-ranked
+      // search that ignores the subject's profile completely.
+      test(
+        'matches a built-in skill the config store has no row for',
+        () async {
+          const assignment = SkillAssignment(
+            skillId: skillTranscribeContextId,
+            automate: true,
+          );
+          final profile = makeProfile(
+            skillAssignments: [assignment],
+            withTranscription: true,
+          );
+          when(
+            () => mockResolver.resolveForSubject('task-1'),
+          ).thenAnswer((_) async => profile);
+          when(
+            () => mockAiConfig.getConfigById(skillTranscribeContextId),
+          ).thenAnswer((_) async => null);
+
+          final result = await service.tryTranscribe(subjectId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.resolvedProfile, equals(profile));
+          expect(
+            result.skill,
+            equals(findBuiltInSkill(skillTranscribeContextId)),
+          );
+          expect(result.skillAssignment, equals(assignment));
+        },
+      );
+
       test(
         'returns handled when transcription skill with automate found',
         () async {
@@ -1367,7 +1404,9 @@ void main() {
         );
       });
 
-      test('a missing skill config says which assignment broke', () async {
+      // 'skill-gone' is deliberately not a built-in id: the registry cannot
+      // answer for it, so this exercises the store leg of the resolution.
+      test('an unresolvable skill says which assignment broke', () async {
         when(() => mockResolver.resolveForSubject('task-1')).thenAnswer(
           (_) async => makeProfile(
             skillAssignments: const [
@@ -1387,7 +1426,8 @@ void main() {
           contains(
             allOf(
               startsWith('skillMatch:'),
-              contains('config is missing or not a skill'),
+              contains('resolves to nothing'),
+              contains('skill-'),
             ),
           ),
         );

@@ -93,8 +93,14 @@ class CheckInTranscriptionService {
   /// recorder's automatic path will not.
   ///
   /// The wait is started *before* the run so a transcript written between the
-  /// two is not missed. A run that resolves no model cancels the wait rather
-  /// than leaving the caller on a spinner until the timeout.
+  /// two is not missed. A run that resolves no model, or that fails, cancels
+  /// the wait rather than leaving the caller on a spinner until the timeout.
+  ///
+  /// The failure signal only covers the run this service starts. When the
+  /// recorder's automatic path owns the run instead, nothing here observes
+  /// its outcome — the UI watches `inferenceErrorControllerProvider` for the
+  /// audio entry to close that gap, because that controller is set by
+  /// whichever path ran.
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
     required String subjectId,
@@ -112,8 +118,14 @@ class CheckInTranscriptionService {
   }
 
   /// Runs transcription explicitly unless the recorder's automatic path is
-  /// already going to. Never throws: a failed run is indistinguishable from a
-  /// silent one to the caller, and both end as "type it yourself".
+  /// already going to. Never throws: every way this can fail ends the wait
+  /// through [onNothingToRun], and the caller's answer is "type it yourself"
+  /// either way.
+  ///
+  /// The failure hook is not optional decoration. `runTranscription` reports
+  /// an inference failure through its status controllers and returns
+  /// normally, so the `catch` below never sees a provider error — without
+  /// `onError` an HTTP 503 leaves the caller waiting out the full timeout.
   Future<void> _runWhenAutomationWillNot({
     required String audioEntryId,
     required String subjectId,
@@ -138,6 +150,7 @@ class CheckInTranscriptionService {
       await _runner.runTranscription(
         audioEntryId: audioEntryId,
         automationResult: result,
+        onError: (_) => onNothingToRun(),
       );
     } catch (exception, stackTrace) {
       developer.log(
