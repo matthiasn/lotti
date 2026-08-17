@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+import '../../../../../../helpers/chart_tooltip_text.dart';
+
 import '../../../../../../widget_test_utils.dart';
 
 void main() {
@@ -88,11 +90,14 @@ void main() {
       LineBarSpot(averageBar, 1, const FlSpot(2, 7500)),
     ]);
 
-    expect(items[0]!.children!.first.toPlainText(), 'Steps per day\n');
-    expect(items[0]!.children![1].toPlainText(), '9,000 steps\n');
-    expect(items[1]!.children!.first.toPlainText(), '7-day average\n');
-    expect(items[1]!.children![1].toPlainText(), '7,500 steps\n');
-    expect(items[1]!.children!.last.toPlainText(), 'Aug 3');
+    // ONE date for the whole tooltip, as a header above the value rows —
+    // repeating it under each series printed "Aug 3" twice for one reading.
+    expect(lineTooltipText(items[0]!), 'Aug 3\nSteps per day\n9,000 steps');
+    expect(lineTooltipText(items[1]!), '7-day average\n7,500 steps');
+    expect(
+      'Aug 3'.allMatches(items.map((i) => lineTooltipText(i!)).join()).length,
+      1,
+    );
   });
 
   testWidgets('shared overlay tooltip uses the active app locale', (
@@ -111,6 +116,6 @@ void main() {
       LineBarSpot(actualBar, 0, const FlSpot(2, 1234.5)),
     ]);
 
-    expect(items.single!.children![1].toPlainText(), '1.234,5 steps\n');
+    expect(lineTooltipText(items.single!), contains('1.234,5 steps'));
   });
 }

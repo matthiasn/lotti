@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Daily observations as bars with a line series overlaid on the same axes.
@@ -62,6 +60,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
     final lineSpots = _indexedSpots(lineData, start);
     final lineStyle = chartEmphasisLine(lineColor);
     final barRadius = Radius.circular(tokens.radii.xs);
+    final leftAxisWidth = chartLeftAxisWidth(context, axis);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -71,7 +70,7 @@ class TimeSeriesBarLineChart extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final plotWidth = math.max(
-            constraints.maxWidth - kChartLeftAxisWidth,
+            constraints.maxWidth - leftAxisWidth,
             0,
           );
           final barWidth = math.min(
@@ -92,7 +91,11 @@ class TimeSeriesBarLineChart extends StatelessWidget {
                     getDrawingHorizontalLine: (value) => chartGridLine(context),
                   ),
                   barTouchData: const BarTouchData(enabled: false),
-                  titlesData: _axisTitles(axis, showLabels: true),
+                  titlesData: _axisTitles(
+                    axis,
+                    showLabels: true,
+                    leftAxisWidth: leftAxisWidth,
+                  ),
                   borderData: FlBorderData(
                     show: true,
                     border: Border.all(
@@ -134,28 +137,17 @@ class TimeSeriesBarLineChart extends StatelessWidget {
                   gridData: const FlGridData(show: false),
                   clipData: const FlClipData.horizontal(),
                   lineTouchData: LineTouchData(
-                    touchTooltipData: LineTouchTooltipData(
-                      tooltipMargin: isMobile ? 24 : 16,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      getTooltipColor: (_) => tokens.colors.background.level03,
-                      tooltipBorderRadius: BorderRadius.circular(
-                        tokens.radii.s,
-                      ),
-                      getTooltipItems: (spots) => [
-                        for (final spot in spots)
-                          _tooltipItem(
-                            context,
-                            spot,
-                            start: start,
-                            label: spot.barIndex == 0 ? barLabel : lineLabel,
-                          ),
-                      ],
+                    touchTooltipData: chartTouchTooltipData(
+                      context,
+                      getTooltipItems: (spots) =>
+                          _tooltipItems(context, spots, start: start),
                     ),
                   ),
-                  titlesData: _axisTitles(axis, showLabels: false),
+                  titlesData: _axisTitles(
+                    axis,
+                    showLabels: false,
+                    leftAxisWidth: leftAxisWidth,
+                  ),
                   borderData: FlBorderData(show: false),
                   extraLinesData: ExtraLinesData(
                     horizontalLines: horizontalLines,
@@ -190,7 +182,11 @@ class TimeSeriesBarLineChart extends StatelessWidget {
     );
   }
 
-  FlTitlesData _axisTitles(NiceAxis axis, {required bool showLabels}) {
+  FlTitlesData _axisTitles(
+    NiceAxis axis, {
+    required bool showLabels,
+    required double leftAxisWidth,
+  }) {
     return FlTitlesData(
       rightTitles: const AxisTitles(),
       topTitles: const AxisTitles(),
@@ -202,44 +198,38 @@ class TimeSeriesBarLineChart extends StatelessWidget {
           getTitlesWidget: showLabels
               ? leftTitleWidgets
               : (_, _) => const SizedBox.shrink(),
-          reservedSize: kChartLeftAxisWidth,
+          reservedSize: leftAxisWidth,
           minIncluded: false,
         ),
       ),
     );
   }
 
-  LineTooltipItem _tooltipItem(
+  /// One tooltip for the touched day: its date once as a header, then the bar
+  /// value and — where the rolling line has a point that day — the overlay's,
+  /// each under its own quiet label.
+  List<LineTooltipItem> _tooltipItems(
     BuildContext context,
-    LineBarSpot spot, {
+    List<LineBarSpot> spots, {
     required DateTime start,
-    required String label,
   }) {
-    final tokens = context.designTokens;
+    if (spots.isEmpty) return const [];
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final formattedValue = NumberFormat('#,###.##', locale).format(spot.y);
+    final number = NumberFormat('#,###.##', locale);
     final unitSuffix = unit.isEmpty ? '' : ' $unit';
-    final date = start.add(Duration(days: spot.x.round()));
+    final date = start.add(Duration(days: spots.first.x.round()));
     final timestamp = date.millisecondsSinceEpoch.toDouble();
-    return LineTooltipItem(
-      '',
-      TextStyle(
-        fontSize: fontSizeSmall,
-        fontWeight: FontWeight.w300,
-        color: tokens.colors.text.highEmphasis,
-      ),
-      children: [
-        TextSpan(text: '$label\n', style: chartTooltipStyleBold),
-        TextSpan(
-          text: '$formattedValue$unitSuffix\n',
-          style: chartTooltipStyleBold,
-        ),
-        TextSpan(
-          text: dateOnly
-              ? chartDateFormatterDateOnlyUtc(context, timestamp)
-              : chartDateFormatterFull(context, timestamp),
-          style: chartTooltipStyle,
-        ),
+    return chartTooltipItems(
+      context,
+      date: dateOnly
+          ? chartDateFormatterDateOnlyUtc(context, timestamp)
+          : chartDateFormatterFull(context, timestamp),
+      entries: [
+        for (final spot in spots)
+          (
+            label: spot.barIndex == 0 ? barLabel : lineLabel,
+            value: '${number.format(spot.y)}$unitSuffix',
+          ),
       ],
     );
   }

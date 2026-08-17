@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -92,7 +94,7 @@ void main() {
 
   /// A goal spec claiming [habitFlossing] — [habitFlossingDueLater] stays
   /// unclaimed, so it must land in the "not in a goal" group.
-  GoalSpecVersionEntity spec(String agentId) =>
+  GoalSpecVersionEntity spec(String agentId, {GoalCriterion? criteria}) =>
       AgentDomainEntity.goalSpecVersion(
             id: '$agentId:spec-v1',
             agentId: agentId,
@@ -101,23 +103,25 @@ void main() {
             authoredBy: 'user',
             title: 'Fitness',
             statement: 'Stay in motion.',
-            criteria: GoalCriterion.habit(
-              criterionId: 'c1',
-              habitId: habitFlossing.id,
-              window: const GoalWindow.rollingDays(count: 7),
-              targetCount: 4,
-            ),
+            criteria:
+                criteria ??
+                GoalCriterion.habit(
+                  criterionId: 'c1',
+                  habitId: habitFlossing.id,
+                  window: const GoalWindow.rollingDays(count: 7),
+                  targetCount: 4,
+                ),
             createdAt: DateTime(2026),
             vectorClock: null,
           )
           as GoalSpecVersionEntity;
 
-  GoalAgentHealth health(String agentId) => (
+  GoalAgentHealth health(String agentId, {GoalCriterion? criteria}) => (
     trackStatus: GoalTrackStatus.onTrack,
     attainment: null,
     reportOneLiner: null,
     pendingProposals: 0,
-    spec: spec(agentId),
+    spec: spec(agentId, criteria: criteria),
     direction: null,
     deficit: null,
     buffer: null,
@@ -164,6 +168,8 @@ void main() {
     DateTime Function()? now,
     Map<String, int> streaks = const {},
     Size viewport = const Size(800, 2600),
+    GoalCriterion? goalCriteria,
+    List<Override> extraOverrides = const [],
   }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
     // chart cards — builds inside the sliver viewport.
@@ -201,9 +207,9 @@ void main() {
               (ref) async => throw StateError('health unavailable'),
             )
           else
-            goalAgentHealthProvider(
-              'goal-1',
-            ).overrideWith((ref) async => health('goal-1')),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => health('goal-1', criteria: goalCriteria),
+            ),
           goalAgentProgressViewProvider('goal-1').overrideWith(
             (ref) async =>
                 progressOverride != null ? progressOverride() : progress(),
@@ -211,6 +217,7 @@ void main() {
           goalAssessmentHistoryProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
+          ...extraOverrides,
         ],
       ),
     );
@@ -709,5 +716,41 @@ void main() {
     expect(controller.refreshNowCalls, 1);
     expect(_heatmapRefreshes, 1);
     expect(_heatmapBuilds, 1);
+  });
+
+  testWidgets('entering Goals re-imports the health signals its goals watch', (
+    tester,
+  ) async {
+    final healthImport = MockHealthImport();
+    when(
+      () => healthImport.fetchHealthDataDelta(any()),
+    ).thenAnswer((_) async {});
+
+    await pump(
+      tester,
+      HabitsState.initial(now: _now),
+      goalCriteria: const GoalCriterion.metric(
+        criterionId: 'steps',
+        dataType: 'cumulative_step_count',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 10000,
+      ),
+      extraOverrides: [
+        goalHealthRefreshServiceProvider.overrideWithValue(
+          GoalHealthRefreshService(healthImport),
+        ),
+      ],
+    );
+
+    // Nothing on this surface would otherwise import: the goals list can
+    // therefore show a step count the phone stopped agreeing with hours ago.
+    verify(
+      () => healthImport.fetchHealthDataDelta('cumulative_step_count'),
+    ).called(1);
+    // Once per visit — this page rebuilds on every controller tick.
+    await tester.pump();
+    await tester.pumpAndSettle();
+    verifyNoMoreInteractions(healthImport);
   });
 }

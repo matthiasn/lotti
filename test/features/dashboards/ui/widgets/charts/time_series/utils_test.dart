@@ -132,6 +132,65 @@ void main() {
     });
   });
 
+  group('chartLeftAxisWidth', () {
+    Future<double> measure(WidgetTester tester, NiceAxis axis) async {
+      late double width;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              width = chartLeftAxisWidth(context, axis);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      return width;
+    }
+
+    testWidgets('a wider set of tick labels earns a wider gutter', (
+      tester,
+    ) async {
+      final narrow = await measure(
+        tester,
+        const NiceAxis(min: 0, max: 5, interval: 1),
+      );
+      final wide = await measure(
+        tester,
+        const NiceAxis(min: 0, max: 150000, interval: 50000),
+      );
+
+      // The point of measuring: a "0…5" axis must not reserve the room a
+      // "150K" axis needs, which is what a single fixed constant did.
+      expect(narrow, lessThan(wide));
+    });
+
+    testWidgets('stays inside its floor and ceiling', (tester) async {
+      final tiny = await measure(
+        tester,
+        const NiceAxis(min: 0, max: 1, interval: 1),
+      );
+      final huge = await measure(
+        tester,
+        const NiceAxis(min: -123456789, max: 123456789, interval: 12345678),
+      );
+
+      // A one-character axis must not pull the plot flush against the card
+      // edge, and no range may eat the plot.
+      expect(tiny, greaterThanOrEqualTo(28));
+      expect(huge, lessThanOrEqualTo(64));
+    });
+
+    testWidgets('a degenerate interval falls back instead of spinning', (
+      tester,
+    ) async {
+      expect(
+        await measure(tester, const NiceAxis(min: 0, max: 10, interval: 0)),
+        kChartLeftAxisWidth,
+      );
+    });
+  });
+
   group('DashboardChartDateAxis', () {
     final rangeStart = DateTime(2024, 3);
     final rangeEnd = DateTime(2024, 3, 31);

@@ -4,6 +4,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/service/goal_assessment_service.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -23,6 +24,179 @@ void main() {
   });
 
   final day = DateTime(2026, 8, 11);
+
+  testWidgets('a step count is named as one day, beside the average the goal '
+      'is judged on', (tester) async {
+    final today = DateTime(2026, 8, 15);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: GoalDayAssessmentSheet(
+              agentId: 'goal-1',
+              specVersionId: 'goal-1:spec-v1',
+              specVersion: 1,
+              day: today,
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  criterionId: 'steps',
+                  sourceId: GoalHealthDataTypes.steps,
+                  // The criterion is authored as an average because that is
+                  // what it evaluates over a week.
+                  name: 'Average steps per day',
+                  target: 10000,
+                  days: [
+                    for (var offset = 7; offset >= 1; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 10000,
+                      ),
+                    GoalProgressDay(day: today, value: 9950),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(
+            _MockGoalAssessmentService(),
+          ),
+        ],
+      ),
+    );
+
+    // 9,950 is what the user WALKED that day. Printing it under "Average
+    // steps per day" stated something false about the number beside it.
+    expect(find.text('Steps'), findsOneWidget);
+    expect(find.text('Average steps per day'), findsNothing);
+    expect(find.text('9,950'), findsOneWidget);
+    // ...and the average the target is actually compared against, ending that
+    // day, on its own correctly named line.
+    expect(find.text('Steps · 7-day average'), findsOneWidget);
+    // Quantized the way every other goal aggregate is — but never across the
+    // target it is compared against: 9,992.86 must not print as the 10,000 it
+    // has not reached.
+    expect(find.text('9,993'), findsOneWidget);
+  });
+
+  testWidgets('a derived average is evidence, not a criterion to rate', (
+    tester,
+  ) async {
+    final today = DateTime(2026, 8, 15);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: GoalDayAssessmentSheet(
+              agentId: 'goal-1',
+              specVersionId: 'goal-1:spec-v1',
+              specVersion: 1,
+              day: today,
+              progress: GoalProgressView(
+                today: today,
+                metric: GoalMetricProgressView(
+                  criterionId: 'steps',
+                  sourceId: GoalHealthDataTypes.steps,
+                  name: 'Average steps per day',
+                  target: 10000,
+                  days: [
+                    for (var offset = 7; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 10000,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(
+            _MockGoalAssessmentService(),
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Rate individual dimensions (optional)'));
+    await tester.pumpAndSettle();
+
+    // One verdict control, for the one criterion. A toggle against the
+    // derived average would file a judgement under a criterion id the row
+    // above it already owns.
+    expect(find.text('Steps · 7-day average'), findsOneWidget);
+    expect(
+      find.byType(DsSegmentedToggle<GoalAssessmentRating>),
+      // The day's own verdict plus exactly one per-dimension control.
+      findsNWidgets(2),
+    );
+  });
+
+  testWidgets('an expanded dimension row gives its label the full measure', (
+    tester,
+  ) async {
+    final today = DateTime(2026, 8, 15);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 390,
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: GoalDayAssessmentSheet(
+                  agentId: 'goal-1',
+                  specVersionId: 'goal-1:spec-v1',
+                  specVersion: 1,
+                  day: today,
+                  progress: GoalProgressView(
+                    today: today,
+                    habits: [
+                      GoalHabitProgressView(
+                        habitId: 'bp',
+                        criterionId: 'bp',
+                        name: 'Measure Blood Pressure 🫀',
+                        targetCount: 1,
+                        days: [GoalProgressDay(day: today, value: 1)],
+                        successfulWeeks: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          goalAssessmentServiceProvider.overrideWithValue(
+            _MockGoalAssessmentService(),
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Rate individual dimensions (optional)'));
+    await tester.pumpAndSettle();
+
+    final label = find.text('Measure Blood Pressure 🫀').last;
+    final toggle = find.byType(DsSegmentedToggle<GoalAssessmentRating>).last;
+    final labelRect = tester.getRect(label);
+    final toggleRect = tester.getRect(toggle);
+
+    // The toggle used to claim a fixed 480px — wider than the sheet — which
+    // starved the label's Expanded to zero width and rendered the name as a
+    // vertical column of single letters with the control painted across it.
+    expect(labelRect.width, greaterThan(100));
+    expect(labelRect.height, lessThan(40), reason: 'one line, not one column');
+    expect(
+      toggleRect.top,
+      greaterThanOrEqualTo(labelRect.bottom),
+      reason: 'the control sits below its label, never over it',
+    );
+    expect(toggleRect.width, lessThanOrEqualTo(390));
+  });
 
   testWidgets('a failed assessment remains editable and can be retried', (
     tester,

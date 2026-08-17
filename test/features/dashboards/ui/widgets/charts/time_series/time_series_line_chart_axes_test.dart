@@ -41,7 +41,19 @@ void main() {
 
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
         final leftTitles = lineChart.data.titlesData.leftTitles.sideTitles;
-        expect(leftTitles.reservedSize, kChartLeftAxisWidth);
+        // Measured from the ticks this axis actually draws, not a fixed worst
+        // case: the gutter is exactly what its own labels need.
+        expect(
+          leftTitles.reservedSize,
+          chartLeftAxisWidth(
+            tester.element(find.byType(LineChart)),
+            NiceAxis(
+              min: lineChart.data.minY,
+              max: lineChart.data.maxY,
+              interval: lineChart.data.gridData.horizontalInterval!,
+            ),
+          ),
+        );
         // The min tick is suppressed (it overlaps the bottom axis), but the top
         // nice-number bound is labelled so the value scale's ceiling is read.
         expect(leftTitles.minIncluded, isFalse);

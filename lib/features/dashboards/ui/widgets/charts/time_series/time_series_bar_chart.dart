@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Daily bar chart over a date range. Buckets [data] by day and fills every
@@ -59,6 +57,7 @@ class TimeSeriesBarChart extends StatelessWidget {
       (m, o) => max(m, o.value.toDouble()),
     );
     final axis = niceAxis(0, maxVal, zeroBased: true);
+    final leftAxisWidth = chartLeftAxisWidth(context, axis);
     final barRadius = Radius.circular(tokens.radii.xs);
     final observations = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
@@ -78,7 +77,7 @@ class TimeSeriesBarChart extends StatelessWidget {
           // so the fit has to be exact. The gap collapses to zero once the bars
           // get dense (e.g. a year of daily bars).
           final count = observations.length;
-          final plotWidth = constraints.maxWidth - kChartLeftAxisWidth;
+          final plotWidth = constraints.maxWidth - leftAxisWidth;
           final groupsSpace = count > 1 && plotWidth / count > 4 ? 1 : 0;
           final rawWidth = count == 0
               ? plotWidth
@@ -117,24 +116,16 @@ class TimeSeriesBarChart extends StatelessWidget {
                 getDrawingHorizontalLine: (value) => chartGridLine(context),
               ),
               barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  tooltipMargin: isMobile ? 24 : 16,
-                  tooltipPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  getTooltipColor: (_) => tokens.colors.background.level03,
-                  tooltipBorderRadius: BorderRadius.circular(8),
+                touchTooltipData: chartBarTouchTooltipData(
+                  context,
                   getTooltipItem: (groupData, timestamp, rodData, foo) {
                     final formatted = valueInHours
                         ? hoursToHhMm(rodData.toY)
                         : NumberFormat('#,###.##').format(rodData.toY);
-                    return BarTooltipItem(
-                      '$formatted $unit\n'
-                      '${chartDateFormatterYMD(groupData.x)}',
-                      chartTooltipStyleBold.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
+                    return chartBarTooltipItem(
+                      context,
+                      date: chartDateFormatterYMD(groupData.x),
+                      value: unit.isEmpty ? formatted : '$formatted $unit',
                     );
                   },
                 ),
@@ -147,7 +138,7 @@ class TimeSeriesBarChart extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: leftTitleWidgets,
-                    reservedSize: kChartLeftAxisWidth,
+                    reservedSize: leftAxisWidth,
                     interval: axis.interval,
                     // Suppress the bottom tick (it overlaps the date axis) but
                     // keep the top tick so the value scale's ceiling shows.

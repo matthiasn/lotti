@@ -3363,16 +3363,11 @@
   "goalBannerSnoozeThreeHours": "3 hours",
   "goalBannerSnoozeTitle": "Snooze banner",
   "goalChartSevenDayAverage": "7-day average",
-  "goalChartStepsPerDay": "Steps per day",
-  "goalChartTrend": "{trend, select, aboveToward{Current above 7-day average · toward target} aboveAway{Current above 7-day average · away from target} belowToward{Current below 7-day average · toward target} belowAway{Current below 7-day average · away from target} steady{Current matches 7-day average} other{Current matches 7-day average}}",
-  "@goalChartTrend": {
-    "description": "Legend label comparing the latest value with its trailing seven-day average and interpreting the direction against the goal.",
-    "placeholders": {
-      "trend": {
-        "type": "String"
-      }
-    }
+  "goalChartStepsDaily": "Steps",
+  "@goalChartStepsDaily": {
+    "description": "Row label for one day's step count, as opposed to the goal's average-per-day target."
   },
+  "goalChartStepsPerDay": "Steps per day",
   "goalChatEmpty": "Start a conversation with {agentName}.",
   "@goalChatEmpty": {
     "description": "Empty-state invitation in a goal-agent conversation.",
@@ -3619,6 +3614,18 @@
       }
     }
   },
+  "goalDimensionHabitReadingOverTarget": "{currentCount} this window · target {targetCount}",
+  "@goalDimensionHabitReadingOverTarget": {
+    "description": "Habit reading when the window count has passed the target, where an \"X of Y\" fraction would read as broken.",
+    "placeholders": {
+      "currentCount": {
+        "type": "int"
+      },
+      "targetCount": {
+        "type": "int"
+      }
+    }
+  },
   "goalDimensionHabitSource": "Habit completions",
   "goalDimensionHealthSource": "Health data",
   "goalDimensionImprovingNote": "Not there yet, but the last reading moved toward the target.",
@@ -3670,6 +3677,15 @@
         "type": "String"
       },
       "recordedAt": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDimensionRollingAverageRow": "{name} · 7-day average",
+  "@goalDimensionRollingAverageRow": {
+    "description": "Reflection-sheet row naming the trailing seven-day average of a measured dimension.",
+    "placeholders": {
+      "name": {
         "type": "String"
       }
     }
@@ -3958,6 +3974,14 @@
       "target": {}
     }
   },
+  "goalMetricLegendOffTarget": "Off target",
+  "@goalMetricLegendOffTarget": {
+    "description": "Legend entry for a day that was measured but did not meet the goal target."
+  },
+  "goalMetricLegendOnTarget": "On target",
+  "@goalMetricLegendOnTarget": {
+    "description": "Legend entry for a day whose measured value met the goal target."
+  },
   "goalNudgeStatusDismissed": "Dismissed",
   "goalNudgeStatusExpired": "Expired",
   "goalNudgeStatusRetired": "Retired",
@@ -3976,8 +4000,6 @@
     "description": "Chip on a goal card when a revision proposal is pending review."
   },
   "goalProgressAgesOut": "ages out tonight",
-  "goalProgressAtRate": "at rate",
-  "goalProgressCaption": "trailing 7 days · slides at midnight",
   "goalProgressCompactCaption": "slides at midnight",
   "goalProgressCompactSemantics": "{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}",
   "@goalProgressCompactSemantics": {
@@ -4039,7 +4061,6 @@
   "@goalProgressStripLoading": {
     "description": "Screen-reader label for a compact week strip whose data has not resolved yet — a loading state, never a health verdict."
   },
-  "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",
   "goalRecordOfferConflict": "You already logged this measurable on one of these days. Ask what should be kept before recording anything.",
   "goalRecordOfferDeselectRow": "Deselect row",

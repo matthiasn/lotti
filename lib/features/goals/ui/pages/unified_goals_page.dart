@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
@@ -51,6 +52,15 @@ class UnifiedGoalsPage extends ConsumerStatefulWidget {
 
 class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
   final _scrollController = ScrollController();
+
+  /// The health signals already asked for since this page was opened.
+  ///
+  /// A goal that watches steps, weight or blood pressure reads journal rows
+  /// written by the health importer, and nothing on this page would otherwise
+  /// import: opening Goals must therefore pull those signals forward. Keyed so
+  /// the request fires ONCE per surface entry — the specs resolve
+  /// asynchronously and this build runs on every provider tick.
+  final _refreshedHealthRequests = <String>{};
 
   /// Fires just past local midnight so the lifecycle-gated sets
   /// (recordable ids, orphan rows, the scoped summary) recompute the moment
@@ -98,6 +108,26 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
     _midnightTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Queues a delta import for every health signal the listed goals watch,
+  /// skipping anything already requested this visit.
+  ///
+  /// Fire-and-forget and post-frame: the import is a side effect of ARRIVING
+  /// here, not of painting, and the page renders from what is already stored
+  /// while the delta lands.
+  void _refreshHealthSignals(List<GoalCriterion> criteria) {
+    final pending = GoalHealthRefreshService.importRequestsFor(
+      criteria,
+    ).difference(_refreshedHealthRequests);
+    if (pending.isEmpty) return;
+    _refreshedHealthRequests.addAll(pending);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final service = ref.read(goalHealthRefreshServiceProvider);
+      if (service == null) return;
+      unawaited(service.refreshRequests(pending));
+    });
   }
 
   @override
@@ -209,6 +239,9 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         if (health.value?.spec?.criteria case final criteria?)
           ...goalCriterionHabitIds(criteria),
     };
+    _refreshHealthSignals([
+      for (final health in healths) ?health.value?.spec?.criteria,
+    ]);
 
     // The summary's done set mirrors each group's OWN semantics: goal-owned
     // habits count success-only (their rows stay due after a skip or fail),

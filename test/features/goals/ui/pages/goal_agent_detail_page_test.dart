@@ -30,6 +30,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -235,6 +236,92 @@ void main() {
     await tester.tap(find.text('Talk to agent'));
     await tester.pump();
     expect(navigated, ['/goals/details/goal-1/chat']);
+  });
+
+  testWidgets('opening a goal re-imports the health signals it watches', (
+    tester,
+  ) async {
+    final healthImport = MockHealthImport();
+    when(
+      () => healthImport.fetchHealthDataDelta(any()),
+    ).thenAnswer((_) async {});
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Average 10,000 steps per day over a rolling week.',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 0.9,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: spec,
+              direction: GoalHealthDirection.flat,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith((ref) async => null),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalHealthRefreshServiceProvider.overrideWithValue(
+            GoalHealthRefreshService(healthImport),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Health samples reach the journal only through an import, and nothing
+    // else on this page triggers one: without this the card can show
+    // yesterday's steps beside today's date and be entirely correct about the
+    // database while wrong about the user.
+    verify(
+      () => healthImport.fetchHealthDataDelta('cumulative_step_count'),
+    ).called(1);
+
+    // ...and exactly once per visit. This page rebuilds on every provider
+    // tick, and a fetch per rebuild would hammer the health store.
+    await tester.pump();
+    await tester.pumpAndSettle();
+    verifyNoMoreInteractions(healthImport);
   });
 
   group('update-failure feedback on the read card', () {

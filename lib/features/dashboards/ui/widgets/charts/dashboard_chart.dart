@@ -269,10 +269,23 @@ class DashboardChartAddButton extends StatelessWidget {
 
 /// One entry in a [DashboardChartLegend].
 class DashboardLegendEntry {
-  const DashboardLegendEntry({required this.color, required this.label});
+  const DashboardLegendEntry({
+    required this.color,
+    required this.label,
+    this.annotation,
+  });
 
   final Color color;
   final String label;
+
+  /// A qualifier for the series named by [label] — typically the threshold its
+  /// dashed rule marks ("Target ≤ 125").
+  ///
+  /// It rides the series' OWN entry, quietly, rather than claiming a second
+  /// swatch: blood pressure listed "Systolic" and "Systolic · Target ≤ 125" as
+  /// two equal entries in the same hue, so a two-series chart wore a
+  /// four-entry legend in which half the entries named no line at all.
+  final String? annotation;
 }
 
 /// Compact, wrapping series legend rendered in a chart card [DashboardChart.footer].
@@ -310,6 +323,17 @@ class DashboardChartLegend extends StatelessWidget {
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
+              if (entry.annotation case final annotation?) ...[
+                SizedBox(width: tokens.spacing.step2),
+                // Smaller and quieter than the series name it qualifies: the
+                // threshold is context for the line, not a series of its own.
+                Text(
+                  annotation,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
             ],
           ),
       ],

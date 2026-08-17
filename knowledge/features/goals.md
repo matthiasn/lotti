@@ -76,6 +76,18 @@ sources:
     resource: ../../lib/features/goals/ui/pages/unified_goals_page.dart
     title: UnifiedGoalsPage — flag-gated Goals + Habits merge (phase 1)
     last_modified: 2026-08-16
+  - id: health-refresh
+    resource: ../../lib/features/goals/service/goal_health_refresh_service.dart
+    title: GoalHealthRefreshService — pulling health signals forward on entry
+    last_modified: 2026-08-17
+  - id: progress-card
+    resource: ../../lib/features/goals/ui/goal_progress_card.dart
+    title: GoalProgressCard — habit grids, signal series and the day-track grid
+    last_modified: 2026-08-17
+  - id: metric-series
+    resource: ../../lib/features/goals/logic/goal_metric_series.dart
+    title: Goal metric day-series maths, shared by the cards and the sheet
+    last_modified: 2026-08-17
   - id: goal-routes
     resource: ../../lib/features/goals/ui/goal_routes.dart
     title: goal route helpers — every goal page path under /goals
@@ -765,14 +777,19 @@ flowchart TD
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which
   renders the whole-goal strip and every habit and signal day track over
-  the same span ending today. Every extended track is a trailing-anchored
-  (`reverse: true`) scroller joined to one `LinkedScrollGroup`, so a span
-  wider than the viewport opens with today on screen and every track
-  scrolls in unison — the same date stays vertically aligned down the
-  page, chart included. Every non-axis day track reserves the same
-  `kChartLeftAxisWidth` value-label gutter and right inset as the time-series
-  plots, so habit cells, bars, and line charts share one horizontal plot span;
-  narrow seven-day tracks stay trailing-anchored so today remains reachable.
+  the same span ending today. A day track FITS before it scrolls:
+  `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
+  caption inside it, down to a one-letter form — until the whole span fits the
+  width it was given, and only a span that overflows even at the legibility
+  floor becomes a trailing-anchored (`reverse: true`) scroller joined to one
+  `LinkedScrollGroup`, where every track then pans in unison. A fortnight at
+  the authored pitch is wider than a phone card, and the scroller that
+  resulted opened with the first days of the span cut in half off the left
+  edge. A gutter is reserved where a VALUE AXIS is drawn and nowhere else:
+  the time-series plots and the hand-painted metric bars measure their own
+  (`chartLeftAxisWidth`, from the tick labels they will actually render), and
+  the habit grids and the whole-goal strip — which draw no axis — start on the
+  card's own rail with their span caption above them.
   Aggregates never fold the rendered list — the
   evaluator's numbers win — so a longer rendering cannot change a verdict,
   and the ages-out ring anchors at the window's own first day rather than
@@ -795,15 +812,22 @@ flowchart TD
   `dailySumThenAverage` criteria; future calendar days and period-level
   aggregations therefore cannot produce a fabricated per-day trend or target.
   Step cards name the observed series "Steps per day" while retaining "Average
-  steps per day" as the aggregate being judged. Their legends identify actual,
-  average, dashed
-  target, and the latest-value trend; the trend compares the latest observation
-  with its same-day average and interprets above/below through the criterion's
-  `atLeast`/`atMost` direction. Paired systolic and diastolic dimensions render
-  as one dual-line blood-pressure chart with both authored targets, and its
-  legend names the two actual series and two target rules independently;
-  a partial blood-pressure import remains two separate cards so the available
-  component is not hidden. Singleton health series render a visible point until
+  steps per day" as the aggregate being judged, and the reflection sheet names
+  ONE day's figure "Steps" — 9,950 steps printed under the word "Average" is
+  simply false — with the trailing average that day belongs to on its own
+  correctly labelled, unratable line. **A legend has one entry per mark
+  drawn.** Each names a series or a rule and may carry a quiet threshold
+  annotation ("Target ≤ 125"); it never carries a reading of the data. The
+  above/below-average direction line was removed for exactly that reason: it
+  was a sentence wearing a swatch that matched no mark on the chart, in a hue
+  whose meaning contradicted every other hue on the card. Paired systolic and
+  diastolic dimensions render as one dual-line blood-pressure chart with both
+  authored targets under TWO legend entries, each annotated with its own
+  threshold; a partial blood-pressure import remains two separate cards so the
+  available component is not hidden. A dimension with no observation at all
+  renders no plot — an empty full-height frame under a header that already
+  reads "Not enough data" looks like a chart that failed rather than a goal
+  nobody has fed yet. Singleton health series render a visible point until
   a second observation can form a line. These daily health charts format their
   canonical midnight-UTC keys as date-only values, so devices west of UTC do
   not shift a goal day backward in tooltips or the shared date axis. Other
@@ -839,9 +863,13 @@ flowchart TD
   info hue rather than a second green, the ages-out ring is a quiet
   `text.lowEmphasis` outline (never warning orange on an on-track row), and
   the deterministic days-to-healthy countdown is neutral prose — the
-  header's verdict caption alone carries warning ink. ONE legend renders per
-  page after the last habit card, and it is truthful: the today swatch is
-  dashed like the cell, the partial swatch carries the dot. Each day square
+  header's verdict caption alone carries warning ink. ONE day-cell key renders
+  per page, inside the FIRST habit card — where a reader meets the squares it
+  explains rather than four cards past them — and it is truthful: the today
+  swatch is dashed like the cell, the partial swatch carries the dot. The
+  hand-painted metric bars carry their own three-fill key plus the threshold
+  their rule marks, and answer a tap with the day's value in the same tooltip
+  vocabulary the fl_chart series use. Each day square
   shows its concrete date in a hover/long-press tooltip (the same localized
   string as its semantics), and the Success/Skip/Missed/No entry menu opens
   with the selected day's date as a quiet header row. Its edge-to-edge action
@@ -851,7 +879,17 @@ flowchart TD
   `TapTargets.minimum` vertically. Weekday labels render directly above
   their squares inside ONE shared horizontal scroller, so labels and cells
   cannot drift apart; the reliability tail is captioned in weeks ("N / 6
-  weeks"). The composite "whole goal" card labels its strip's time frame
+  weeks") and closes the card on its own row under the days it summarises.
+  A habit card states one thing per row: identity and reading, then what the
+  habit asks for (`7× per 7 days · slides at midnight`) against how far off it
+  is, then the span, the days, and the tail. A quota already passed reads as a
+  count with its target named beside it ("6 this window · target 3"), because
+  "6 of 3" parses as a broken fraction; a habit AT its rate says nothing here
+  at all, since the header's own status already says "On track". Where a
+  sibling dimension recorded matching evidence today, the check-off offer is a
+  tinted, bordered callout with a primary action — it is the one thing the card
+  is asking the user to do, and at caption weight between two other caption
+  rows it read as more fine print. The composite "whole goal" card labels its strip's time frame
   ("Last 7 days") and its summary counts dimensions with an explicit
   "Yesterday:" frame, so the day-dots and the dimension arithmetic stop
   reading as one contradictory statistic. Point-sample health headers (weight, blood pressure — the
@@ -1142,6 +1180,57 @@ flowchart TD
   pages, all under `/goals/...` paths built by the plain helpers in
   `goal_routes.dart` (see [navigation](../architecture/navigation.md)); the
   never-released `/agents` twin tab was removed after this surface landed.
+
+## Health signals are only as fresh as the last import
+
+A goal that watches steps, weight or blood pressure reads `QuantitativeEntry`
+rows, and those rows exist only for samples
+[health import](health_import.md) has already pulled out of Apple Health or
+Health Connect. Nothing else on the goal surfaces triggers an import: the wake
+tiers *evaluate* what is stored, they do not fetch. Left alone, a goal page can
+therefore show yesterday's weight beside today's date and be entirely correct
+about the database while wrong about the user.
+
+`GoalHealthRefreshService` closes that gap at the doorway. Entering the Goals
+list or a goal's detail page resolves the platform-backed data types out of the
+goals' criteria trees (`goalCriterionMetricDataTypes` →
+`GoalHealthDataTypes.isPlatformHealthImported`) and queues one delta import
+each.
+
+```mermaid
+flowchart LR
+  Enter["Goals list / goal detail<br/>first build"] --> Types["importRequestsFor(criteria)"]
+  Types -->|"platform-owned only"| Queue["HealthImport.fetchHealthDataDelta"]
+  Types -->|"habit · measurable · tracked time"| Skip(["skipped — written in Lotti,<br/>current by construction"])
+  Queue --> Journal["QuantitativeEntry rows"]
+  Journal --> Notify["UpdateNotifications"] --> Cards["signal cards repaint"]
+```
+
+Four properties are contract:
+
+- **Once per visit, post-frame.** The pages rebuild on every provider tick; a
+  fetch per rebuild would hammer the health store. The request set is
+  remembered per page state and fired after the frame — the import is a side
+  effect of *arriving*, not of painting.
+- **Fire-and-forget.** `fetchHealthDataDelta` returns as soon as the type is
+  queued. The page paints from what is stored; the delta lands through the
+  ordinary journal notification.
+- **The blood-pressure pair collapses to one request.** One reading is two
+  samples, and asking for the halves separately queues two imports for what
+  the user authorized once.
+- **A failure is contained.** An unavailable sensor must leave the page it was
+  opened from working, showing whatever was already stored.
+
+Only platform-owned types are refreshed. A habit, a measurable, or tracked time
+is written inside Lotti and is current by construction — importing it would be
+meaningless.
+
+**Deliberately not here:** automatically checking off a habit because matching
+health data exists (ticking "Measure Blood Pressure" when a reading arrives, or
+a steps habit when the day clears 10k). That writes habit completions on the
+user's behalf, which is a different decision from keeping evidence fresh, and
+is tracked as its own change. Today the card *offers* the check-off and the
+user takes it.
 
 ## Gotchas
 

@@ -6264,23 +6264,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalChartSevenDayAverage => '7denní průměr';
 
   @override
-  String get goalChartStepsPerDay => 'Kroky za den';
+  String get goalChartStepsDaily => 'Kroky';
 
   @override
-  String goalChartTrend(String trend) {
-    String _temp0 = intl.Intl.selectLogic(
-      trend,
-      {
-        'aboveToward': 'Aktuální hodnota nad 7denním průměrem · směrem k cíli',
-        'aboveAway': 'Aktuální hodnota nad 7denním průměrem · od cíle',
-        'belowToward': 'Aktuální hodnota pod 7denním průměrem · směrem k cíli',
-        'belowAway': 'Aktuální hodnota pod 7denním průměrem · od cíle',
-        'steady': 'Aktuální hodnota odpovídá 7dennímu průměru',
-        'other': 'Aktuální hodnota odpovídá 7dennímu průměru',
-      },
-    );
-    return '$_temp0';
-  }
+  String get goalChartStepsPerDay => 'Kroky za den';
 
   @override
   String goalChatEmpty(String agentName) {
@@ -6475,6 +6462,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTarget(
+    int currentCount,
+    int targetCount,
+  ) {
+    return '$currentCount tohoto okna · cíl $targetCount';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Dokončení návyků';
 
   @override
@@ -6538,6 +6533,11 @@ class AppLocalizationsCs extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Řekl(a) jsi to ty, zaznamenal(a) $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDimensionRollingAverageRow(String name) {
+    return '$name · 7denní průměr';
   }
 
   @override
@@ -6903,6 +6903,12 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalMetricLegendOffTarget => 'Mimo cíl';
+
+  @override
+  String get goalMetricLegendOnTarget => 'V cíli';
+
+  @override
   String get goalNudgeStatusDismissed => 'Odmítnuto';
 
   @override
@@ -6927,12 +6933,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'dnes vypadne';
-
-  @override
-  String get goalProgressAtRate => 'v tempu';
-
-  @override
-  String get goalProgressCaption => 'posledních 7 dní · posouvá se o půlnoci';
 
   @override
   String get goalProgressCompactCaption => 'posouvá se o půlnoci';
@@ -6988,9 +6988,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalProgressStripLoading => 'Denní záznam se ještě načítá';
-
-  @override
-  String get goalProgressTitle => 'Tento klouzavý týden';
 
   @override
   String get goalProgressToday => 'dnes';

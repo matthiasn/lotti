@@ -6205,25 +6205,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalChartSevenDayAverage => '7-dagarsgenomsnitt';
 
   @override
-  String get goalChartStepsPerDay => 'Steg per dag';
+  String get goalChartStepsDaily => 'Steg';
 
   @override
-  String goalChartTrend(String trend) {
-    String _temp0 = intl.Intl.selectLogic(
-      trend,
-      {
-        'aboveToward': 'Aktuellt värde över 7-dagarsgenomsnittet · mot målet',
-        'aboveAway':
-            'Aktuellt värde över 7-dagarsgenomsnittet · bort från målet',
-        'belowToward': 'Aktuellt värde under 7-dagarsgenomsnittet · mot målet',
-        'belowAway':
-            'Aktuellt värde under 7-dagarsgenomsnittet · bort från målet',
-        'steady': 'Aktuellt värde matchar 7-dagarsgenomsnittet',
-        'other': 'Aktuellt värde matchar 7-dagarsgenomsnittet',
-      },
-    );
-    return '$_temp0';
-  }
+  String get goalChartStepsPerDay => 'Steg per dag';
 
   @override
   String goalChatEmpty(String agentName) {
@@ -6417,6 +6402,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTarget(
+    int currentCount,
+    int targetCount,
+  ) {
+    return '$currentCount detta fönster · mål $targetCount';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Vana avslut';
 
   @override
@@ -6481,6 +6474,11 @@ class AppLocalizationsSv extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Sagt av dig, inspelat av $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDimensionRollingAverageRow(String name) {
+    return '$name · 7-dagarsgenomsnitt';
   }
 
   @override
@@ -6838,6 +6836,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalMetricLegendOffTarget => 'Under målet';
+
+  @override
+  String get goalMetricLegendOnTarget => 'På målet';
+
+  @override
   String get goalNudgeStatusDismissed => 'Avfärdad';
 
   @override
@@ -6862,12 +6866,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'faller bort i kväll';
-
-  @override
-  String get goalProgressAtRate => 'i takt';
-
-  @override
-  String get goalProgressCaption => 'senaste 7 dagarna · flyttas vid midnatt';
 
   @override
   String get goalProgressCompactCaption => 'flyttas vid midnatt';
@@ -6921,9 +6919,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalProgressStripLoading => 'Dagsöversikten läses fortfarande in';
-
-  @override
-  String get goalProgressTitle => 'Den här rullande veckan';
 
   @override
   String get goalProgressToday => 'i dag';

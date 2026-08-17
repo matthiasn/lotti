@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
@@ -107,6 +109,35 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     }
   }
 
+  /// The health signals already asked for since this page was opened.
+  ///
+  /// A goal watching steps, weight or blood pressure reads journal rows the
+  /// health importer writes; opening the goal's own page pulls them forward so
+  /// the cards are never a day behind the phone's health store. Keyed so the
+  /// request fires ONCE per visit — this build runs on every provider tick.
+  final _refreshedHealthRequests = <String>{};
+
+  /// Queues a delta import for every health signal [criteria] watch, skipping
+  /// anything already requested this visit.
+  ///
+  /// Post-frame and fire-and-forget: the import is a side effect of ARRIVING
+  /// here, not of painting, and the page renders from what is already stored
+  /// while the delta lands.
+  void _refreshHealthSignals(GoalCriterion? criteria) {
+    if (criteria == null) return;
+    final pending = GoalHealthRefreshService.importRequestsFor([
+      criteria,
+    ]).difference(_refreshedHealthRequests);
+    if (pending.isEmpty) return;
+    _refreshedHealthRequests.addAll(pending);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final service = ref.read(goalHealthRefreshServiceProvider);
+      if (service == null) return;
+      unawaited(service.refreshRequests(pending));
+    });
+  }
+
   /// One tap-region group for the drawer and every control that opens it:
   /// a tap on the Talk-to button or the Ask-why link must not first count
   /// as "outside the drawer" and close what it is about to open.
@@ -156,6 +187,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      // A scroll-controlled sheet can reach the top of the screen, and
+      // `showModalBottomSheet` strips the top padding from its own subtree —
+      // so an inner SafeArea sees nothing and the sheet's first line lands
+      // under the status bar clock.
+      useSafeArea: true,
       builder: (context) => GoalLogTodaySheet(
         agentId: agentId,
         progress: progress,
@@ -267,6 +303,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
+    _refreshHealthSignals(spec?.criteria);
     // The page's ONE time range: the same shared span the completion chart
     // reads, applied to every day track so any date lines up vertically
     // down the page.
@@ -379,6 +416,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                   : (day) => showModalBottomSheet<void>(
                       context: context,
                       isScrollControlled: true,
+                      // Keeps the sheet clear of the status bar: without it the
+                      // big date title collided with the system clock.
+                      useSafeArea: true,
                       builder: (context) => GoalDayAssessmentSheet(
                         agentId: agentId,
                         specVersionId: spec.id,

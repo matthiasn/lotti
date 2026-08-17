@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Multi-series line chart over a date range. Unlike the single-line chart this
@@ -46,6 +44,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final axis = niceAxis(minVal, maxVal);
+    final leftAxisWidth = chartLeftAxisWidth(context, axis);
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return Padding(
@@ -61,50 +60,29 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
             getDrawingHorizontalLine: (value) => chartGridLine(context),
           ),
           lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              tooltipMargin: isMobile ? 24 : 16,
-              tooltipPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 3,
-              ),
-              getTooltipColor: (_) => tokens.colors.background.level03,
-              tooltipBorderRadius: BorderRadius.circular(8),
+            touchTooltipData: chartTouchTooltipData(
+              context,
               getTooltipItems: (List<LineBarSpot> spots) {
-                return spots.map((spot) {
-                  final seriesLabel = spot.barIndex < seriesLabels.length
-                      ? seriesLabels[spot.barIndex]
-                      : '';
-                  final formattedValue = NumberFormat(
-                    '#,###.##',
-                    locale,
-                  ).format(spot.y);
-                  final unitSuffix = unit.isEmpty ? '' : ' $unit';
-                  return LineTooltipItem(
-                    '',
-                    TextStyle(
-                      fontSize: fontSizeSmall,
-                      fontWeight: FontWeight.w300,
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                    children: [
-                      if (seriesLabel.isNotEmpty)
-                        TextSpan(
-                          text: '$seriesLabel\n',
-                          style: chartTooltipStyleBold,
-                        ),
-                      TextSpan(
-                        text: '$formattedValue$unitSuffix\n',
-                        style: chartTooltipStyleBold,
+                if (spots.isEmpty) return const [];
+                final unitSuffix = unit.isEmpty ? '' : ' $unit';
+                final number = NumberFormat('#,###.##', locale);
+                // Every touched spot on a line chart shares one x — so one
+                // date names the whole tooltip, taken from the first spot.
+                return chartTooltipItems(
+                  context,
+                  date: dateOnly
+                      ? chartDateFormatterDateOnlyUtc(context, spots.first.x)
+                      : chartDateFormatterFull(context, spots.first.x),
+                  entries: [
+                    for (final spot in spots)
+                      (
+                        label: spot.barIndex < seriesLabels.length
+                            ? seriesLabels[spot.barIndex]
+                            : null,
+                        value: '${number.format(spot.y)}$unitSuffix',
                       ),
-                      TextSpan(
-                        text: dateOnly
-                            ? chartDateFormatterDateOnlyUtc(context, spot.x)
-                            : chartDateFormatterFull(context, spot.x),
-                        style: chartTooltipStyle,
-                      ),
-                    ],
-                  );
-                }).toList();
+                  ],
+                );
               },
             ),
           ),
@@ -117,7 +95,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                 showTitles: true,
                 interval: axis.interval,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: kChartLeftAxisWidth,
+                reservedSize: leftAxisWidth,
                 // Suppress the bottom tick (it overlaps the date axis) but keep
                 // the top tick so the value scale's ceiling shows — matching
                 // the bar and single-line variants' shared-axis behavior.
