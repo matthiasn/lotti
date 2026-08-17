@@ -145,6 +145,7 @@ void main() {
         linkedTaskId: any(named: 'linkedTaskId'),
         overrideModelId: any(named: 'overrideModelId'),
         geminiThinkingMode: any(named: 'geminiThinkingMode'),
+        onError: any(named: 'onError'),
       ),
     ).thenAnswer((_) async {});
     stubAutomation();
@@ -299,6 +300,7 @@ void main() {
             automationResult: any(named: 'automationResult'),
             // ignore: avoid_redundant_argument_values
             linkedTaskId: null,
+            onError: any(named: 'onError'),
           ),
         ).called(1);
       });
@@ -319,6 +321,7 @@ void main() {
             audioEntryId: any(named: 'audioEntryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            onError: any(named: 'onError'),
           ),
         );
       });
@@ -333,6 +336,7 @@ void main() {
             audioEntryId: any(named: 'audioEntryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: captureAny(named: 'linkedTaskId'),
+            onError: any(named: 'onError'),
           ),
         ).captured;
 
@@ -354,7 +358,7 @@ void main() {
       });
     });
 
-    test('resolves immediately when the run throws', () {
+    test('resolves immediately when resolving the request throws', () {
       when(
         () =>
             automation.requestTranscription(subjectId: any(named: 'subjectId')),
@@ -363,6 +367,63 @@ void main() {
       withRun((run) {
         expect(run.isDone, isTrue);
         expect(run.result, isNull);
+      });
+    });
+
+    // The blocker a real HTTP 503 exposed. `runTranscription` reports an
+    // inference failure through its status controllers and returns
+    // *normally*, so the service's own try/catch never sees it — before the
+    // `onError` hook existed the sheet sat on "Transcribing…" for the full
+    // five minutes over a provider outage that was known in seconds.
+    test('resolves immediately when the run reports a failure', () {
+      when(
+        () => runner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((invocation) async {
+        (invocation.namedArguments[#onError] as void Function(Object)?)?.call(
+          Exception('HTTP 503'),
+        );
+      });
+
+      withRun((run) {
+        expect(run.isDone, isTrue, reason: 'must not wait out the timeout');
+        expect(run.result, isNull);
+        expect(run.hasListener, isFalse);
+      });
+    });
+
+    // A failure arriving after the transcript already landed must not undo
+    // it: `finish` is first-write-wins, and the transcript won that race.
+    test('a late failure cannot discard a transcript already resolved', () {
+      stubEntity(audioWith('We talked about her job search.'));
+      late void Function(Object) reportFailure;
+      when(
+        () => runner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          onError: any(named: 'onError'),
+        ),
+      ).thenAnswer((invocation) async {
+        reportFailure =
+            invocation.namedArguments[#onError] as void Function(Object);
+      });
+
+      withRun((run) {
+        expect(run.result, 'We talked about her job search.');
+
+        reportFailure(Exception('too late'));
+        run.settle();
+
+        expect(run.result, 'We talked about her job search.');
       });
     });
   });

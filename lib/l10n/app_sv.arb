@@ -1566,9 +1566,21 @@
   "checkInAvoidLabel": "Bäst att undvika",
   "checkInDateLabel": "När?",
   "checkInDeleteConfirmMessage": "Ta bort den här avstämningen? Det går inte att ångra.",
+  "checkInDone": "Klart",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Redigera avstämning",
   "checkInErrorCreateFailed": "Avstämningen kunde inte sparas. Försök igen.",
   "checkInErrorDeleteFailed": "Avstämningen kunde inte tas bort. Försök igen.",
+  "checkInHowDidItFeel": "Hur kändes det?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Hur hade ni kontakt?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Samtal",
   "checkInInteractionInPerson": "Personligen",
   "checkInInteractionLabel": "Hur pratade ni?",
@@ -1577,6 +1589,7 @@
   "checkInInteractionVideoCall": "Videosamtal",
   "checkInNarrativeLabel": "Vad pratade ni om?",
   "checkInPayAttentionLabel": "Nästa gång: var uppmärksam på",
+  "checkInPreparedOverline": "✦ LOTTI · FÖRBEREDD I MORSE",
   "checkInSentimentDelightful": "Underbart",
   "checkInSentimentDifficult": "Svårt",
   "checkInSentimentGood": "Bra",
@@ -1589,6 +1602,10 @@
   "checkInTranscribingLabel": "Transkriberar…",
   "checkInTranscriptFailed": "Ingen transkription kom tillbaka. Du kan skriva den själv.",
   "checkInTranscriptUnavailable": "Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.",
+  "checkInWriteInstead": "Skriv istället",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Lägg till ett nytt föremål",
   "checklistAiConfidenceLabel": "Självförtroende: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4511,6 +4528,10 @@
   "relationshipActionFailed": "Inget på den här enheten kan öppna det",
   "relationshipActionMessage": "Meddelande",
   "relationshipAddChannelButton": "Lägg till kontaktuppgift",
+  "relationshipAsk": "Fråga",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Relationsbanner för {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen körs på {provider}. Anteckningar om personen skickas dit för bearbetning.",
   "relationshipBriefingDisclosureConfirm": "Fortsätt",
@@ -4519,16 +4540,36 @@
   "relationshipBriefingRequested": "Briefing begärd — den visas här strax.",
   "relationshipBriefingRequestFailed": "Det gick inte att begära briefingen.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Briefa igen",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Uppdatera mig",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Varje dag} other{Var {days}:e dag}}",
   "relationshipCadenceFortnightly": "Varannan vecka",
   "relationshipCadenceLabel": "Kontaktrytm",
   "relationshipCadenceMonthly": "Varje månad",
   "relationshipCadenceNone": "Ingen rytm",
+  "relationshipCadenceNudgeNote": "Att välja en rytm slår på avstämningspåminnelser.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "i fas",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Varje kvartal",
   "relationshipCadenceWeekly": "Varje vecka",
   "relationshipChatTooltip": "Chatta om den här personen",
   "relationshipChatUnavailable": "Ingen agent än — markera personen som viktig först.",
+  "relationshipCheckedInLabel": "Avstämning {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Ett bra tillfälle att höra av dig.",
   "relationshipCheckInReminderTitle": "Hör av dig till {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4539,6 +4580,18 @@
     }
   },
   "relationshipCheckInsLabel": "Avstämningar",
+  "relationshipCheckInTitle": "Avstämning · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Kontaktkort",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Kontaktuppgifter",
   "relationshipContactLinked": "Kontaktuppgifter kopierade",
   "relationshipContactLinkFailed": "Kunde inte spara kontaktuppgifterna",
@@ -4547,6 +4600,14 @@
   "relationshipCreateTitle": "Lägg till person",
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
+  "relationshipDueDay": "Senast {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Redigera person",
   "relationshipErrorCreateFailed": "Personen kunde inte sparas. Försök igen.",
   "relationshipErrorDeleteFailed": "Personen kunde inte tas bort. Försök igen.",
@@ -4574,17 +4635,45 @@
   "relationshipImportSettingsBody": "Åtkomst till kontakter är avstängd. Slå på den i systeminställningarna för att importera personer.",
   "relationshipImportTitle": "Lägg till personer",
   "relationshipImportUnsupported": "Kontaktimport finns på telefoner och surfplattor. Lägg till kontaktuppgifter för hand här.",
+  "relationshipJustAdded": "Nyss tillagd",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Senaste avstämning {date}",
   "relationshipLinkContact": "Länka kontakt",
   "relationshipLinkedTasksLabel": "Uppgifter",
   "relationshipLinkTaskButton": "Länka uppgift",
   "relationshipLogCheckIn": "Logga avstämning",
+  "relationshipLottisRead": "Lottis bedömning",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "kl. {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Namn",
   "relationshipNameRequired": "Namn krävs",
+  "relationshipNextByDay": "nästa senast {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Smeknamn",
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
   "relationshipNotFound": "Den här personen följs inte längre.",
+  "relationshipNudgesOn": "påminnelser på",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?",
   "relationshipPostCallConfirm": "Logga avstämning",
   "relationshipPostCallDismiss": "Inte nu",
@@ -4597,13 +4686,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "Ingen kontakt {count, plural, =1{på 1 dag} other{på {count} dagar}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Länka en annan kontakt",
+  "relationshipSeeAllCheckIns": "Se alla avstämningar",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",
   "relationshipStatusArchived": "Arkiverad",
   "relationshipStatusDormant": "Vilande",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Hålla kontakten",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Håll kontakten",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Följs sedan {date}",
   "relationshipUpdateFromContact": "Uppdatera från kontakt",
   "saveButton": "Spara",

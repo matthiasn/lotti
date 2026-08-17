@@ -1565,9 +1565,21 @@
   "checkInAvoidLabel": "Beter vermijden",
   "checkInDateLabel": "Wanneer?",
   "checkInDeleteConfirmMessage": "Deze check-in verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "checkInDone": "Klaar",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Check-in bewerken",
   "checkInErrorCreateFailed": "Kon de check-in niet opslaan. Probeer het opnieuw.",
   "checkInErrorDeleteFailed": "Kon de check-in niet verwijderen. Probeer het opnieuw.",
+  "checkInHowDidItFeel": "Hoe voelde het?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Hoe was het contact?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Telefoontje",
   "checkInInteractionInPerson": "In persoon",
   "checkInInteractionLabel": "Hoe hadden jullie contact?",
@@ -1576,6 +1588,7 @@
   "checkInInteractionVideoCall": "Videogesprek",
   "checkInNarrativeLabel": "Waar hebben jullie het over gehad?",
   "checkInPayAttentionLabel": "Let de volgende keer op",
+  "checkInPreparedOverline": "✦ LOTTI · VANOCHTEND VOORBEREID",
   "checkInSentimentDelightful": "Heerlijk",
   "checkInSentimentDifficult": "Moeilijk",
   "checkInSentimentGood": "Goed",
@@ -1588,6 +1601,10 @@
   "checkInTranscribingLabel": "Bezig met transcriberen…",
   "checkInTranscriptFailed": "Er kwam geen transcriptie terug. Je kunt het zelf typen.",
   "checkInTranscriptUnavailable": "Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.",
+  "checkInWriteInstead": "Liever schrijven",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Een nieuw item toevoegen",
   "checklistAiConfidenceLabel": "Vertrouwen: {level}",
   "@checklistAiConfidenceLabel": {
@@ -4510,6 +4527,10 @@
   "relationshipActionFailed": "Niets op dit apparaat kan dat openen",
   "relationshipActionMessage": "Bericht",
   "relationshipAddChannelButton": "Contactgegeven toevoegen",
+  "relationshipAsk": "Vraag",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Relatiebanner voor {personName}",
   "relationshipBriefingDisclosureBody": "De briefing draait op {provider}. Notities over deze persoon worden daarheen gestuurd voor verwerking.",
   "relationshipBriefingDisclosureConfirm": "Doorgaan",
@@ -4518,16 +4539,36 @@
   "relationshipBriefingRequested": "Briefing aangevraagd — verschijnt hier zo.",
   "relationshipBriefingRequestFailed": "Kon de briefing niet aanvragen.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Opnieuw vatten",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBriefMeButton": "Praat me bij",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Elke dag} other{Elke {days} dagen}}",
   "relationshipCadenceFortnightly": "Om de twee weken",
   "relationshipCadenceLabel": "Contactritme",
   "relationshipCadenceMonthly": "Maandelijks",
   "relationshipCadenceNone": "Geen ritme",
+  "relationshipCadenceNudgeNote": "Een cadans zet check-in-herinneringen aan.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "op schema",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Elk kwartaal",
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatTooltip": "Chat over deze persoon",
   "relationshipChatUnavailable": "Nog geen agent — markeer deze persoon eerst als belangrijk.",
+  "relationshipCheckedInLabel": "Check-in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInReminderBody": "Een goed moment om contact op te nemen.",
   "relationshipCheckInReminderTitle": "Even contact met {name}?",
   "@relationshipCheckInReminderTitle": {
@@ -4538,6 +4579,18 @@
     }
   },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check-in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Contactkaart",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Contactgegevens",
   "relationshipContactLinked": "Contactgegevens gekopieerd",
   "relationshipContactLinkFailed": "Kon de contactgegevens niet opslaan",
@@ -4546,6 +4599,14 @@
   "relationshipCreateTitle": "Persoon toevoegen",
   "relationshipDeleteConfirmMessage": "Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "relationshipDeleteConfirmTitle": "{name} verwijderen?",
+  "relationshipDueDay": "Voor {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Persoon bewerken",
   "relationshipErrorCreateFailed": "Kon de persoon niet opslaan. Probeer het opnieuw.",
   "relationshipErrorDeleteFailed": "Kon de persoon niet verwijderen. Probeer het opnieuw.",
@@ -4573,17 +4634,45 @@
   "relationshipImportSettingsBody": "Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.",
   "relationshipImportTitle": "Personen toevoegen",
   "relationshipImportUnsupported": "Contacten importeren kan op telefoons en tablets. Voer de contactgegevens hier met de hand in.",
+  "relationshipJustAdded": "Net toegevoegd",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
   "relationshipLastCheckInLabel": "Laatste check-in {date}",
   "relationshipLinkContact": "Contact koppelen",
   "relationshipLinkedTasksLabel": "Taken",
   "relationshipLinkTaskButton": "Taak koppelen",
   "relationshipLogCheckIn": "Check-in vastleggen",
+  "relationshipLottisRead": "Lotti's inschatting",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "van {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Naam",
   "relationshipNameRequired": "Een naam is verplicht",
+  "relationshipNextByDay": "volgende voor {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Bijnaam",
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
+  "relationshipNudgesOn": "herinneringen aan",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
   "relationshipPostCallBody": "Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?",
   "relationshipPostCallConfirm": "Check-in vastleggen",
   "relationshipPostCallDismiss": "Niet nu",
@@ -4596,13 +4685,33 @@
       }
     }
   },
+  "relationshipQuietForDays": "{count, plural, =1{1 dag} other{{count} dagen}} geen contact",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipRelinkContact": "Ander contact koppelen",
+  "relationshipSeeAllCheckIns": "Alle check-ins bekijken",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsPageTitle": "Mensen",
   "relationshipStatusActive": "Actief",
   "relationshipStatusArchived": "Gearchiveerd",
   "relationshipStatusDormant": "Sluimerend",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Contact houden",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Contact houden",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",
   "relationshipUpdateFromContact": "Bijwerken vanuit contact",
   "saveButton": "Opslaan",

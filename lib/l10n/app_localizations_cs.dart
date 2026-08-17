@@ -3155,6 +3155,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Smazat tento záznam? Tohle nelze vrátit zpět.';
 
   @override
+  String get checkInDone => 'Hotovo';
+
+  @override
   String get checkInEditTitle => 'Upravit záznam';
 
   @override
@@ -3164,6 +3167,12 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Záznam se nepodařilo smazat. Zkus to prosím znovu.';
+
+  @override
+  String get checkInHowDidItFeel => 'Jaké to bylo?';
+
+  @override
+  String get checkInHowDidYouConnect => 'Jak proběhl kontakt?';
 
   @override
   String get checkInInteractionCall => 'Hovor';
@@ -3188,6 +3197,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Příště se zaměřit na';
+
+  @override
+  String get checkInPreparedOverline => '✦ LOTTI · PŘIPRAVENO DNES RÁNO';
 
   @override
   String get checkInSentimentDelightful => 'Skvělé';
@@ -3226,6 +3238,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get checkInTranscriptUnavailable =>
       'Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.';
+
+  @override
+  String get checkInWriteInstead => 'Spíše psát';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';
@@ -10400,6 +10415,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
+  String get relationshipAsk => 'Zeptat';
+
+  @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Banner vztahu s $personName';
   }
@@ -10433,6 +10451,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String get relationshipBriefMeAgain => 'Shrnout znovu';
+
+  @override
   String get relationshipBriefMeButton => 'Shrň mi to';
 
   @override
@@ -10460,6 +10481,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCadenceNone => 'Bez frekvence';
 
   @override
+  String get relationshipCadenceNudgeNote =>
+      'Nastavení rytmu zapne připomínky záznamů.';
+
+  @override
+  String get relationshipCadenceOnTrack => 'v rytmu';
+
+  @override
   String get relationshipCadenceQuarterly => 'Každé čtvrtletí';
 
   @override
@@ -10473,6 +10501,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
 
   @override
+  String relationshipCheckedInLabel(String date) {
+    return 'Záznam $date';
+  }
+
+  @override
   String get relationshipCheckInReminderBody => 'Dobrá chvíle se ozvat.';
 
   @override
@@ -10482,6 +10515,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';
+
+  @override
+  String relationshipCheckInTitle(String name) {
+    return 'Záznam · $name';
+  }
+
+  @override
+  String get relationshipContactCardAction => 'Vizitka';
 
   @override
   String get relationshipContactChannelsLabel => 'Kontaktní údaje';
@@ -10510,6 +10551,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String relationshipDeleteConfirmTitle(String name) {
     return 'Smazat $name?';
+  }
+
+  @override
+  String relationshipDueDay(String day) {
+    return 'Do $day';
   }
 
   @override
@@ -10630,6 +10676,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Import kontaktů je dostupný na telefonech a tabletech. Kontaktní údaje sem zadej ručně.';
 
   @override
+  String get relationshipJustAdded => 'Právě přidáno';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Poslední záznam $date';
   }
@@ -10647,10 +10696,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
 
   @override
+  String get relationshipLottisRead => 'Lottiho odhad';
+
+  @override
+  String relationshipLottisReadAsOf(String time) {
+    return 'k $time';
+  }
+
+  @override
   String get relationshipNameLabel => 'Jméno';
 
   @override
   String get relationshipNameRequired => 'Jméno je povinné';
+
+  @override
+  String relationshipNextByDay(String day) {
+    return 'příští do $day';
+  }
 
   @override
   String get relationshipNicknameLabel => 'Přezdívka';
@@ -10664,6 +10726,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
+
+  @override
+  String get relationshipNudgesOn => 'připomínky zapnuty';
 
   @override
   String get relationshipPostCallBody =>
@@ -10681,7 +10746,22 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipQuietForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní',
+      few: '$count dny',
+      one: '1 den',
+    );
+    return '$_temp0 bez kontaktu';
+  }
+
+  @override
   String get relationshipRelinkContact => 'Propojit jiný kontakt';
+
+  @override
+  String get relationshipSeeAllCheckIns => 'Zobrazit všechny záznamy';
 
   @override
   String get relationshipsEmptyState =>
@@ -10701,6 +10781,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stav';
+
+  @override
+  String get relationshipStayingInTouch => 'Udržovat kontakt';
+
+  @override
+  String get relationshipStayInTouch => 'Udržovat kontakt';
 
   @override
   String relationshipTrackingSinceLabel(String date) {

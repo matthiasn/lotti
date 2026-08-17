@@ -3144,6 +3144,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Excluir este registro? Isso não pode ser desfeito.';
 
   @override
+  String get checkInDone => 'Pronto';
+
+  @override
   String get checkInEditTitle => 'Editar registro';
 
   @override
@@ -3153,6 +3156,12 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Não foi possível excluir o registro. Tente novamente.';
+
+  @override
+  String get checkInHowDidItFeel => 'Como você se sentiu?';
+
+  @override
+  String get checkInHowDidYouConnect => 'Como foi o contato?';
 
   @override
   String get checkInInteractionCall => 'Ligação';
@@ -3177,6 +3186,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Na próxima vez, preste atenção em';
+
+  @override
+  String get checkInPreparedOverline => '✦ LOTTI · PREPARADO ESTA MANHÃ';
 
   @override
   String get checkInSentimentDelightful => 'Maravilhoso';
@@ -3216,6 +3228,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get checkInTranscriptUnavailable =>
       'A transcrição não está configurada para esta pessoa. Adicione um modelo de áudio e ative a inferência automática na categoria dela, ou escreva o registro.';
+
+  @override
+  String get checkInWriteInstead => 'Escrever antes';
 
   @override
   String get checklistAddItem => 'Adicionar um novo item';
@@ -10356,6 +10371,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipAddChannelButton => 'Adicionar meio de contato';
 
   @override
+  String get relationshipAsk => 'Perguntar';
+
+  @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Banner de relacionamento com $personName';
   }
@@ -10389,6 +10407,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String get relationshipBriefMeAgain => 'Atualiza-me de novo';
+
+  @override
   String get relationshipBriefMeButton => 'Atualiza-me';
 
   @override
@@ -10415,6 +10436,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipCadenceNone => 'Sem ritmo';
 
   @override
+  String get relationshipCadenceNudgeNote =>
+      'Escolher um ritmo ativa os lembretes de registro.';
+
+  @override
+  String get relationshipCadenceOnTrack => 'em dia';
+
+  @override
   String get relationshipCadenceQuarterly => 'Trimestral';
 
   @override
@@ -10428,6 +10456,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda sem agente — marca primeiro esta pessoa como importante.';
 
   @override
+  String relationshipCheckedInLabel(String date) {
+    return 'Registro $date';
+  }
+
+  @override
   String get relationshipCheckInReminderBody =>
       'Um bom momento para dar notícias.';
 
@@ -10438,6 +10471,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipCheckInsLabel => 'Registros';
+
+  @override
+  String relationshipCheckInTitle(String name) {
+    return 'Registrar · $name';
+  }
+
+  @override
+  String get relationshipContactCardAction => 'Cartão de contato';
 
   @override
   String get relationshipContactChannelsLabel => 'Dados de contato';
@@ -10466,6 +10507,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String relationshipDeleteConfirmTitle(String name) {
     return 'Excluir $name?';
+  }
+
+  @override
+  String relationshipDueDay(String day) {
+    return 'Até $day';
   }
 
   @override
@@ -10582,6 +10628,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'A importação de contactos está disponível em telemóveis e tablets. Adiciona aqui os dados à mão.';
 
   @override
+  String get relationshipJustAdded => 'Recém-adicionado';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Último registro $date';
   }
@@ -10599,10 +10648,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relationshipLogCheckIn => 'Registrar contato';
 
   @override
+  String get relationshipLottisRead => 'Leitura do Lotti';
+
+  @override
+  String relationshipLottisReadAsOf(String time) {
+    return 'às $time';
+  }
+
+  @override
   String get relationshipNameLabel => 'Nome';
 
   @override
   String get relationshipNameRequired => 'O nome é obrigatório';
+
+  @override
+  String relationshipNextByDay(String day) {
+    return 'próximo até $day';
+  }
 
   @override
   String get relationshipNicknameLabel => 'Apelido';
@@ -10616,6 +10678,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Esta pessoa não está mais na sua lista.';
+
+  @override
+  String get relationshipNudgesOn => 'lembretes ativos';
 
   @override
   String get relationshipPostCallBody =>
@@ -10633,7 +10698,21 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String relationshipQuietForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'há $count dias',
+      one: 'há 1 dia',
+    );
+    return 'Sem contato $_temp0';
+  }
+
+  @override
   String get relationshipRelinkContact => 'Associar outro contacto';
+
+  @override
+  String get relationshipSeeAllCheckIns => 'Ver todos os registros';
 
   @override
   String get relationshipsEmptyState =>
@@ -10653,6 +10732,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String get relationshipStayingInTouch => 'Manter contato';
+
+  @override
+  String get relationshipStayInTouch => 'Manter contato';
 
   @override
   String relationshipTrackingSinceLabel(String date) {

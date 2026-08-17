@@ -11,15 +11,15 @@ sources:
   - id: src
     resource: ../../lib/features/notifications
     title: Synced notifications source
-    last_modified: 2026-08-02
+    last_modified: 2026-08-18
   - id: os-boundary
     resource: ../../lib/services/notification_service.dart
     title: NotificationService — the OS delivery boundary
     last_modified: 2026-08-17
   - id: scheduler
     resource: ../../lib/features/notifications/scheduler/notification_scheduler.dart
-    title: NotificationScheduler — rows to OS alarms, and startup reconcile
-    last_modified: 2026-08-17
+    title: NotificationScheduler — rows to OS alarms, and reconcile
+    last_modified: 2026-08-18
   - id: adr-0039
     resource: ../../docs/adr/0039-relationship-check-in-reminders.md
     title: ADR 0039 — Relationship check-in reminders
@@ -222,10 +222,14 @@ count on the icon until the user happened to write something.
 `setConfigFlagImpl` therefore refreshes the badge when
 `enable_notifications` actually changes, next to the `private` hook it already
 carries. That is also what makes the permission prompt land at the moment the
-user switches notifications on, rather than at some later write. A failure
-there is logged and swallowed: the setting the user asked for is already
-saved, and a badge refresh that cannot reach the platform is not a reason to
-report it as unsaved.
+user switches notifications on, rather than at some later write. Switching
+the flag *on* additionally runs the scheduler's reconcile (below): rows
+written while the flag was off never armed an OS alarm — the platform calls
+are gated on the flag — and the repository's idempotent creates skip existing
+rows on every later tick, so without this only the next app start would arm
+them. A failure in either hook is logged and swallowed: the setting the user
+asked for is already saved, and a badge refresh or re-arm that cannot reach
+the platform is not a reason to report it as unsaved.
 
 Cancelling is the one thing that stays ungated: removing an alert must keep
 working after notifications are switched off.
@@ -281,7 +285,9 @@ app update, a reinstall or an Android reboot, while the row describing it sits
 untouched in `notifications.sqlite`. Nothing reconciled the two, so a reminder
 armed weeks ahead silently stopped existing at the OS level.
 
-`NotificationScheduler.reconcile()` closes that at startup, and the query
+`NotificationScheduler.reconcile()` closes that at startup — and again when
+`enable_notifications` is switched on, which re-arms rows written while the
+flag was off (see the badge section above). The query
 already filters to unseen/unacted/undeleted rows — so a row dealt with on any
 device is never revived. It is called fire-and-forget through
 `reconcileScheduledNotifications`, which swallows and logs: a notification

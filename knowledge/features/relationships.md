@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
-    last_modified: 2026-08-14
+    last_modified: 2026-08-18
   - id: queries
     resource: ../../lib/database/database_relationship_queries.dart
     title: Relationship and check-in queries
@@ -43,7 +43,11 @@ sources:
   - id: transcript-wait
     resource: ../../lib/features/relationships/service/check_in_transcription_service.dart
     title: CheckInTranscriptionService — waiting for a spoken check-in's transcript
-    last_modified: 2026-08-17
+    last_modified: 2026-08-18
+  - id: runner
+    resource: ../../lib/features/ai/services/skill_inference_runner.dart
+    title: SkillInferenceRunner — why a failed transcription never throws
+    last_modified: 2026-08-18
   - id: automation
     resource: ../../lib/features/ai/helpers/profile_automation_resolver.dart
     title: ProfileAutomationResolver — subject-shaped profile resolution
@@ -71,7 +75,7 @@ sources:
   - id: adr-0041
     resource: ../../docs/adr/0041-relationship-contact-linking.md
     title: ADR 0041 — Relationship contact linking
-    last_modified: 2026-08-13
+    last_modified: 2026-08-18
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -493,14 +497,43 @@ bridges the gap by subscribing to `UpdateNotifications.updateStream` *before*
 its first read (a transcript landing between the two is not missed) and
 re-reading the audio entry on every notification carrying its id. An empty
 `entryText` reads as "not yet", because the audio entry's own creation
-notification arrives long before any run finishes. The wait ends three ways:
-the transcript arrives; the run resolves no model or throws, which cancels the
-wait immediately rather than stranding the user on a spinner; or
-`checkInTranscriptTimeout` (5 minutes) expires. `CheckInTranscriptWait.cancel`
-is the fourth exit, called from the sheet's `dispose` so a dismissed sheet
-stops re-reading the database.
+notification arrives long before any run finishes. The wait ends four ways:
+the transcript arrives; the run resolves no model, which cancels the wait
+immediately; the run *fails*; or `checkInTranscriptTimeout` (5 minutes)
+expires. `CheckInTranscriptWait.cancel` is the manual exit, called from the
+sheet's `dispose` so a dismissed sheet stops re-reading the database.
 
-The recording sheet's own **speech-recognition opt-out** is the fourth exit.
+**The failure exit needs two signals, because one run is not always ours.**
+`SkillInferenceRunner.runTranscription` wraps its whole body in
+`_withStatusTracking`, which catches every exception, logs it, publishes it
+on `inferenceStatusControllerProvider` / `inferenceErrorControllerProvider`
+and then **returns normally**. It does not throw, and a failed run writes no
+`entryText` — so to a waiting caller a provider outage is indistinguishable
+from a slow model. An HTTP 503 used to mean five minutes of "Transcribing…"
+followed by a generic "no transcript came back":
+
+* `runTranscription` takes an **`onError` hook**, threaded to the
+  `_withStatusTracking` parameter that already existed. The service passes
+  `onError: (_) => onNothingToRun()`, so the run *it* starts ends the wait the
+  moment it fails. This is the only signal available in pure Dart, and the
+  service's own `catch` is not it — that block only sees failures raised
+  *before* `_withStatusTracking` is entered.
+* When the recorder's automatic path owns the run instead, the service never
+  called it and no hook fires. `CheckInCaptureForm` therefore watches
+  `inferenceErrorControllerProvider` for the audio entry through
+  `ref.listenManual`, cancelling the wait on the first non-empty detail. That
+  controller is set by **whichever path ran**, so it covers both, and it
+  carries the provider's verbatim reason (`HTTP 503 · Melious · …`) into the
+  toast rather than a generic refusal. `listenManual` does not fire for the
+  current value, which is what keeps a stale detail from an earlier recording
+  from aborting the run the user just started.
+
+Task and journal audio never had this problem: `entry_details_page` and
+`task_details_page` mount `AiRunningDecoderBars`, which already listens to the
+same error controller and raises a toast. The check-in sheet is the surface
+that waits on the transcript itself, so it is the surface that has to.
+
+The recording sheet's own **speech-recognition opt-out** is one more exit.
 `tryTranscribe` checks it before anything else, so unchecking it means no run
 at all — and `hasAutomatedSkillType`, the pre-flight probe, cannot see it. The
 sheet therefore re-reads `AudioRecorderState.enableSpeechRecognition` after
@@ -651,10 +684,13 @@ Phase 7 (ADR 0041), Android and iOS only. Three invariants carry it:
   permission and neither reads in the background, but user-facing copy must
   say "reads your address book while the import screen is open" rather than
   "reads only the contacts you choose", which is true of the picker alone.
-- **`contactRefs` are per-platform and per-device.** The same person carries a
-  different id in each address book, so a ref written on a phone reads as
-  *unlinked* on a tablet rather than resolving to a stranger. Both the link
-  action and `refreshFromContact` key on `contactRefPlatformKey()`.
+- **`contactRefs` are per-device.** The same person carries a different id in
+  each address book — even on two phones running the same OS — so a ref
+  written on one device reads as *unlinked* everywhere else rather than
+  resolving to a stranger. The key is the platform plus this device's sync
+  host id (`contactRefKeyForHost`), resolved via `contactRefKeyProvider`;
+  the link action, the import and `refreshFromContact` all go through it,
+  and a device whose host id is not yet provisioned stores no ref at all.
 
 **The import screen is pushed above the shell, not into the tab.** It docks
 its Import action in a `bottomNavigationBar`, and the mobile shell paints the

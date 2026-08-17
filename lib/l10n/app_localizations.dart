@@ -5274,6 +5274,12 @@ abstract class AppLocalizations {
   /// **'Delete this check-in? This cannot be undone.'**
   String get checkInDeleteConfirmMessage;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get checkInDone;
+
   /// No description provided for @checkInEditTitle.
   ///
   /// In en, this message translates to:
@@ -5291,6 +5297,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the check-in. Please try again.'**
   String get checkInErrorDeleteFailed;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'How did it feel?'**
+  String get checkInHowDidItFeel;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'How did you connect?'**
+  String get checkInHowDidYouConnect;
 
   /// No description provided for @checkInInteractionCall.
   ///
@@ -5339,6 +5357,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next time, pay attention to'**
   String get checkInPayAttentionLabel;
+
+  /// No description provided for @checkInPreparedOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ LOTTI · PREPARED THIS MORNING'**
+  String get checkInPreparedOverline;
 
   /// No description provided for @checkInSentimentDelightful.
   ///
@@ -5411,6 +5435,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
   String get checkInTranscriptUnavailable;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Write instead'**
+  String get checkInWriteInstead;
 
   /// No description provided for @checklistAddItem.
   ///
@@ -17275,6 +17305,12 @@ abstract class AppLocalizations {
   /// **'Add channel'**
   String get relationshipAddChannelButton;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get relationshipAsk;
+
   /// Accessibility label of one relationship nudge banner; personName is the person's name.
   ///
   /// In en, this message translates to:
@@ -17323,6 +17359,12 @@ abstract class AppLocalizations {
   /// **'Briefing'**
   String get relationshipBriefingTitle;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief me again'**
+  String get relationshipBriefMeAgain;
+
   /// No description provided for @relationshipBriefMeButton.
   ///
   /// In en, this message translates to:
@@ -17359,6 +17401,18 @@ abstract class AppLocalizations {
   /// **'No cadence'**
   String get relationshipCadenceNone;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing a cadence turns on check-in nudges.'**
+  String get relationshipCadenceNudgeNote;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get relationshipCadenceOnTrack;
+
   /// No description provided for @relationshipCadenceQuarterly.
   ///
   /// In en, this message translates to:
@@ -17383,6 +17437,12 @@ abstract class AppLocalizations {
   /// **'No agent yet — mark this person as important first.'**
   String get relationshipChatUnavailable;
 
+  /// No description provided for @relationshipCheckedInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in {date}'**
+  String relationshipCheckedInLabel(String date);
+
   /// No description provided for @relationshipCheckInReminderBody.
   ///
   /// In en, this message translates to:
@@ -17400,6 +17460,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check-ins'**
   String get relationshipCheckInsLabel;
+
+  /// No description provided for @relationshipCheckInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in · {name}'**
+  String relationshipCheckInTitle(String name);
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact card'**
+  String get relationshipContactCardAction;
 
   /// No description provided for @relationshipContactChannelsLabel.
   ///
@@ -17448,6 +17520,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {name}?'**
   String relationshipDeleteConfirmTitle(String name);
+
+  /// No description provided for @relationshipDueDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {day}'**
+  String relationshipDueDay(String day);
 
   /// No description provided for @relationshipEditTitle.
   ///
@@ -17611,6 +17689,12 @@ abstract class AppLocalizations {
   /// **'Contact import is available on phones and tablets. Add contact details by hand here.'**
   String get relationshipImportUnsupported;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added'**
+  String get relationshipJustAdded;
+
   /// No description provided for @relationshipLastCheckInLabel.
   ///
   /// In en, this message translates to:
@@ -17641,6 +17725,18 @@ abstract class AppLocalizations {
   /// **'Log check-in'**
   String get relationshipLogCheckIn;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti\'s read'**
+  String get relationshipLottisRead;
+
+  /// No description provided for @relationshipLottisReadAsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'as of {time}'**
+  String relationshipLottisReadAsOf(String time);
+
   /// No description provided for @relationshipNameLabel.
   ///
   /// In en, this message translates to:
@@ -17652,6 +17748,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A name is required'**
   String get relationshipNameRequired;
+
+  /// No description provided for @relationshipNextByDay.
+  ///
+  /// In en, this message translates to:
+  /// **'next by {day}'**
+  String relationshipNextByDay(String day);
 
   /// No description provided for @relationshipNicknameLabel.
   ///
@@ -17677,6 +17779,12 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'nudges on'**
+  String get relationshipNudgesOn;
+
   /// Body of the prompt offered after returning from a call or message
   ///
   /// In en, this message translates to:
@@ -17701,11 +17809,23 @@ abstract class AppLocalizations {
   /// **'How did it go with {name}?'**
   String relationshipPostCallTitle(String name);
 
+  /// No description provided for @relationshipQuietForDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet for {count, plural, =1{1 day} other{{count} days}}'**
+  String relationshipQuietForDays(int count);
+
   /// Menu action that replaces the OS contact a person is linked to
   ///
   /// In en, this message translates to:
   /// **'Link a different contact'**
   String get relationshipRelinkContact;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'See all check-ins'**
+  String get relationshipSeeAllCheckIns;
 
   /// No description provided for @relationshipsEmptyState.
   ///
@@ -17742,6 +17862,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Staying in touch'**
+  String get relationshipStayingInTouch;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in touch'**
+  String get relationshipStayInTouch;
 
   /// No description provided for @relationshipTrackingSinceLabel.
   ///

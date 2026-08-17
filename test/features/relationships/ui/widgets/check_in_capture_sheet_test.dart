@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -923,6 +925,98 @@ void main() {
       expect(find.text('Speak check-in'), findsOne);
     });
 
+    // The HTTP 503 case. A failed run writes no transcript, so the wait alone
+    // cannot tell a provider outage from a slow model, and `runTranscription`
+    // reports the failure through its status controllers rather than
+    // throwing. When the recorder's automatic path owns the run the service's
+    // own failure hook never fires either — the error controller is the one
+    // signal set by whichever path ran, which is why the sheet watches it.
+    testWidgets('a reported inference failure ends the wait and names it', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(narrativeField(), 'Typed only.');
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+
+      expect(find.text('Transcribing…'), findsOne, reason: 'wait is open');
+
+      ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
+          .read(
+            inferenceErrorControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )).notifier,
+          )
+          .setError('HTTP 503 · Melious · All Voxtral providers failed');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Transcribing…'),
+        findsNothing,
+        reason: 'must not run out the five-minute timeout',
+      );
+      expect(stubTranscription.cancelCount, 1);
+      expect(
+        find.text('No transcript came back. You can type it instead.'),
+        findsOne,
+      );
+      expect(
+        find.text('HTTP 503 · Melious · All Voxtral providers failed'),
+        findsOne,
+        reason: "the provider's own reason, not a generic failure",
+      );
+      expect(narrativeText(tester), 'Typed only.');
+    });
+
+    // A stale detail from an earlier recording must not abort the run the
+    // user just started: only a failure reported *after* the wait opens is
+    // this recording's.
+    testWidgets('a failure recorded before the wait opened is ignored', (
+      tester,
+    ) async {
+      final gate = Completer<String?>();
+      await tester.pumpWidget(
+        buildSpeakableForm(
+          recordedEntryId: 'audio-1',
+          transcript: null,
+          transcriptGate: gate,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
+          .read(
+            inferenceErrorControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )).notifier,
+          )
+          .setError('a failure from the previous take');
+
+      await tester.ensureVisible(speakButton());
+      await tester.tap(speakButton());
+      await tester.pump();
+
+      expect(find.text('Transcribing…'), findsOne);
+      expect(stubTranscription.cancelCount, 0);
+
+      gate.complete('Arrived at last.');
+      await tester.pumpAndSettle();
+
+      expect(narrativeText(tester), 'Arrived at last.');
+    });
+
     testWidgets('ignores a second tap while a transcript is in flight', (
       tester,
     ) async {
@@ -952,35 +1046,6 @@ void main() {
 
     // Saving mid-wait used to pop the sheet and silently drop the words the
     // user was still waiting for, leaving the check-in with no narrative.
-
-    // The recording sheet has its own speech opt-out. Unchecking it means
-    // "not this one" — before this the sheet held "Transcribing…" for the
-    // whole five-minute timeout to arrive at exactly that answer.
-    testWidgets('does not wait when speech recognition was switched off', (
-      tester,
-    ) async {
-      final gate = Completer<String?>();
-      await tester.pumpWidget(
-        buildSpeakableForm(
-          recordedEntryId: 'audio-1',
-          transcript: null,
-          transcriptGate: gate,
-          enableSpeechRecognition: false,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(speakButton());
-      await tester.tap(speakButton());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Transcribing…'), findsNothing);
-      expect(
-        find.text('No transcript came back. You can type it instead.'),
-        findsOne,
-      );
-      expect(gate.isCompleted, isFalse, reason: 'the wait never started');
-    });
 
     // The recording sheet has its own speech opt-out. Unchecking it means
     // "not this one" — before this the sheet held "Transcribing…" for the
@@ -1094,6 +1159,105 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(speakButton(), findsOne);
+    });
+  });
+
+  // Every other test in this file pumps `CheckInCaptureForm` bare, which is
+  // why the defect below survived: the form is fine, and the modal it lives
+  // in was not. These open the real sheet at a phone's size.
+  group('inside the real modal', () {
+    Future<void> openSheet(WidgetTester tester) async {
+      // iPhone-class viewport: tall content, little room to spare.
+      tester.view
+        ..physicalSize = const Size(1206, 2622)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showCheckInCaptureSheet(
+                context: context,
+                relationshipId: 'rel-001',
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+    }
+
+    // The bug: the form capped itself at 90% of the SCREEN while the modal
+    // page added a top bar, padding and the safe area on top, so the action
+    // row sat below the viewport — and the form's own scroll view consumed
+    // every drag, so the page's scroll never moved and Save could not be
+    // reached at all. Dismissing was the only way out, which discards.
+    testWidgets('dragging over the form reaches the save action', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      final save = find.widgetWithText(DesignSystemButton, 'Save');
+      final viewportBottom =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+      expect(
+        tester.getTopLeft(save).dy,
+        greaterThan(viewportBottom),
+        reason: 'precondition: the action row starts below the fold',
+      );
+
+      // Drag over the form the way a user scrolls the sheet — NOT a
+      // programmatic scroll of a hand-picked Scrollable, which moves the page
+      // even when a real drag cannot reach it. A form owning its own scroll
+      // view consumes these, the page never moves, and Save stays off screen.
+      for (var i = 0; i < 5; i++) {
+        await tester.drag(
+          find.byType(CheckInCaptureForm),
+          const Offset(0, -400),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        tester.getBottomLeft(save).dy,
+        lessThanOrEqualTo(viewportBottom),
+        reason: 'Save is on screen once the user has scrolled to the end',
+      );
+
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+        ),
+      ).called(1);
+    });
+
+    // The shape that caused it: the form adding a second scroll view inside
+    // the page's own. The inner one wins the drag, so the page can never be
+    // scrolled to whatever the form put below it.
+    testWidgets('the form adds no scroll view of its own', (tester) async {
+      await openSheet(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(CheckInCaptureForm),
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsNothing,
+      );
     });
   });
 

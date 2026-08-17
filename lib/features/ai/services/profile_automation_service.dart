@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/skills/skill_lookup.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -400,13 +401,14 @@ class ProfileAutomationService {
     for (final assignment in profile.skillAssignments) {
       if (!assignment.automate) continue;
 
-      final skillConfig = await _aiConfigRepository.getConfigById(
-        assignment.skillId,
+      final skillConfig = await resolveAssignedSkill(
+        skillId: assignment.skillId,
+        aiConfigRepository: _aiConfigRepository,
       );
-      if (skillConfig is! AiConfigSkill) {
+      if (skillConfig == null) {
         _logSkip(
           'skill ${DomainLogger.sanitizeId(assignment.skillId)} is automated '
-          'on the profile but its config is missing or not a skill — '
+          'on the profile but resolves to nothing — '
           'ignoring it for $skillType on subject '
           '${DomainLogger.sanitizeId(subjectId)}',
           subDomain: 'skillMatch',

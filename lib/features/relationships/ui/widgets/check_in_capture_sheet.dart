@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -197,6 +199,13 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   /// of leaving a database listener running out the timeout.
   CheckInTranscriptWait? _transcriptWait;
 
+  /// Watches the inference-error controller for the recording being
+  /// transcribed, so a failed run ends the wait instead of running it out.
+  ///
+  /// Nulled out the moment it is closed, so the sheet being dismissed
+  /// mid-wait cannot close the same subscription twice.
+  ProviderSubscription<String?>? _transcriptFailureSubscription;
+
   bool get _isEditing => widget.initial != null;
 
   @override
@@ -229,6 +238,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
   @override
   void dispose() {
     _transcriptWait?.cancel();
+    _closeTranscriptFailureSubscription();
     _topicsController.dispose();
     _narrativeController.dispose();
     _payAttentionController.dispose();
@@ -338,6 +348,26 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       audioEntryId: audioEntryId,
       subjectId: widget.relationshipId,
     );
+    // A failed run writes no transcript, so the wait alone cannot tell a
+    // provider outage from a slow model — it would hold "Transcribing…" for
+    // the full five minutes and then blame nothing in particular. The error
+    // controller is set by whichever path ran (the service's own request, or
+    // the recorder's automatic one), so watching it covers both and carries
+    // the provider's verbatim reason into the toast.
+    String? failureDetail;
+    _closeTranscriptFailureSubscription();
+    _transcriptFailureSubscription = ref.listenManual<String?>(
+      inferenceErrorControllerProvider((
+        id: audioEntryId,
+        aiResponseType: AiResponseType.audioTranscription,
+      )),
+      (previous, next) {
+        final detail = next?.trim();
+        if (detail == null || detail.isEmpty) return;
+        failureDetail = detail;
+        wait.cancel();
+      },
+    );
     try {
       final transcript = await wait.result;
       if (!mounted) return;
@@ -345,6 +375,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
         context.showToast(
           tone: DesignSystemToastTone.warning,
           title: messages.checkInTranscriptFailed,
+          description: failureDetail,
         );
         return;
       }
@@ -354,10 +385,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       );
     } finally {
       _transcriptWait = null;
+      _closeTranscriptFailureSubscription();
       if (mounted) {
         setState(() => _isTranscribing = false);
       }
     }
+  }
+
+  void _closeTranscriptFailureSubscription() {
+    _transcriptFailureSubscription?.close();
+    _transcriptFailureSubscription = null;
   }
 
   Future<void> _handleSave() async {
@@ -497,149 +534,141 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       ),
     );
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  sectionLabel(messages.checkInInteractionLabel),
-                  Wrap(
-                    spacing: tokens.spacing.step3,
-                    runSpacing: tokens.spacing.step3,
-                    children: [
-                      for (final type in CheckInInteractionType.values)
-                        ChoiceChip(
-                          label: Text(checkInInteractionLabel(context, type)),
-                          selected: _interactionType == type,
-                          onSelected: (_) =>
-                              setState(() => _interactionType = type),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  InkWell(
-                    onTap: _pickDate,
-                    borderRadius: BorderRadius.circular(tokens.radii.s),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: messages.checkInDateLabel,
-                        prefixIcon: const Icon(Icons.calendar_today_rounded),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(tokens.radii.s),
-                        ),
-                      ),
-                      child: Text(
-                        _interactionTime.ymd,
-                        style: tokens.typography.styles.body.bodyLarge.copyWith(
-                          color: tokens.colors.text.highEmphasis,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  sectionLabel(messages.checkInSentimentLabel),
-                  Wrap(
-                    spacing: tokens.spacing.step3,
-                    runSpacing: tokens.spacing.step3,
-                    children: [
-                      for (final sentiment in CheckInSentiment.values)
-                        ChoiceChip(
-                          label: Text(
-                            checkInSentimentLabel(context, sentiment),
-                          ),
-                          selected: _sentiment == sentiment,
-                          // Tapping the selected sentiment clears it again —
-                          // sentiment is optional, never forced.
-                          onSelected: (_) => setState(
-                            () => _sentiment = _sentiment == sentiment
-                                ? null
-                                : sentiment,
-                          ),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  LottiTextField(
-                    controller: _narrativeController,
-                    labelText: messages.checkInNarrativeLabel,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: DesignSystemButton(
-                      key: const Key('check_in_speak_button'),
-                      label: _isTranscribing
-                          ? messages.checkInTranscribingLabel
-                          : messages.checkInSpeakButton,
-                      variant: DesignSystemButtonVariant.outlined,
-                      leadingIcon: Icons.mic_rounded,
-                      isLoading: _isTranscribing,
-                      onPressed: _isSaving || _isTranscribing
-                          ? null
-                          : _handleSpeak,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  LottiTextField(
-                    controller: _topicsController,
-                    labelText: messages.checkInTopicsLabel,
-                    hintText: messages.checkInTopicsHint,
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  LottiTextField(
-                    controller: _payAttentionController,
-                    labelText: messages.checkInPayAttentionLabel,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  LottiTextField(
-                    controller: _avoidController,
-                    labelText: messages.checkInAvoidLabel,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                ],
+    // One scrollable, not two. The modal page already scrolls its child and
+    // adds a top bar, padding and the bottom safe area on top of it, so a
+    // form that also capped itself at `modalMaxHeightFraction` of the SCREEN
+    // overflowed the page — and because the inner `SingleChildScrollView`
+    // consumed the drag, the outer one never moved and the action row below
+    // it could not be reached at all. Let the page own the scrolling.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        sectionLabel(messages.checkInInteractionLabel),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step3,
+          children: [
+            for (final type in CheckInInteractionType.values)
+              ChoiceChip(
+                label: Text(checkInInteractionLabel(context, type)),
+                selected: _interactionType == type,
+                onSelected: (_) => setState(() => _interactionType = type),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        InkWell(
+          onTap: _pickDate,
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: messages.checkInDateLabel,
+              prefixIcon: const Icon(Icons.calendar_today_rounded),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(tokens.radii.s),
+              ),
+            ),
+            child: Text(
+              _interactionTime.ymd,
+              style: tokens.typography.styles.body.bodyLarge.copyWith(
+                color: tokens.colors.text.highEmphasis,
               ),
             ),
           ),
-          SizedBox(height: tokens.spacing.step6),
-          Row(
-            children: [
-              if (_isEditing)
-                IconButton(
-                  tooltip: messages.deleteButton,
-                  onPressed: _isSaving ? null : _handleDelete,
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        sectionLabel(messages.checkInSentimentLabel),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step3,
+          children: [
+            for (final sentiment in CheckInSentiment.values)
+              ChoiceChip(
+                label: Text(
+                  checkInSentimentLabel(context, sentiment),
                 ),
-              const Spacer(),
-              DesignSystemButton(
-                label: messages.cancelButton,
-                variant: DesignSystemButtonVariant.secondary,
-                onPressed: () => Navigator.of(context).pop(),
+                selected: _sentiment == sentiment,
+                // Tapping the selected sentiment clears it again —
+                // sentiment is optional, never forced.
+                onSelected: (_) => setState(
+                  () => _sentiment = _sentiment == sentiment ? null : sentiment,
+                ),
               ),
-              SizedBox(width: tokens.spacing.step4),
-              DesignSystemButton(
-                // Held while a transcript is in flight: saving would pop the
-                // sheet and drop the words the user is waiting for, with the
-                // saved check-in silently missing its narrative.
-                label: messages.saveButton,
-                onPressed: _isSaving || _isTranscribing ? null : _handleSave,
-              ),
-            ],
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        LottiTextField(
+          controller: _narrativeController,
+          labelText: messages.checkInNarrativeLabel,
+          maxLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: DesignSystemButton(
+            key: const Key('check_in_speak_button'),
+            label: _isTranscribing
+                ? messages.checkInTranscribingLabel
+                : messages.checkInSpeakButton,
+            variant: DesignSystemButtonVariant.outlined,
+            leadingIcon: Icons.mic_rounded,
+            isLoading: _isTranscribing,
+            onPressed: _isSaving || _isTranscribing ? null : _handleSpeak,
           ),
-        ],
-      ),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        LottiTextField(
+          controller: _topicsController,
+          labelText: messages.checkInTopicsLabel,
+          hintText: messages.checkInTopicsHint,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        LottiTextField(
+          controller: _payAttentionController,
+          labelText: messages.checkInPayAttentionLabel,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        LottiTextField(
+          controller: _avoidController,
+          labelText: messages.checkInAvoidLabel,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        SizedBox(height: tokens.spacing.step6),
+        Row(
+          children: [
+            if (_isEditing)
+              IconButton(
+                tooltip: messages.deleteButton,
+                onPressed: _isSaving ? null : _handleDelete,
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            const Spacer(),
+            DesignSystemButton(
+              label: messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            DesignSystemButton(
+              // Held while a transcript is in flight: saving would pop the
+              // sheet and drop the words the user is waiting for, with the
+              // saved check-in silently missing its narrative.
+              label: messages.saveButton,
+              onPressed: _isSaving || _isTranscribing ? null : _handleSave,
+            ),
+          ],
+        ),
+        // Breathing room under the action row, so the last control clears the
+        // sheet's bottom edge (and the home indicator) instead of sitting
+        // flush against it once the content has been scrolled to the end.
+        SizedBox(height: tokens.spacing.step6),
+      ],
     );
   }
 }
