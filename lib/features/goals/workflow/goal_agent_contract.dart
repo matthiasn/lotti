@@ -336,6 +336,15 @@ final List<AgentToolDefinition> goalAgentTools = [
           'type': 'string',
           'description': 'The complete concise reply shown to the user.',
         },
+        'userAskedForBanner': {
+          'type': 'boolean',
+          'description':
+              'True only when the pending message explicitly asks for a '
+              'banner or ad — in ANY language. Not for tone or style '
+              'preferences, not for questions about the goal. This is how a '
+              'request overrides the automatic banner rules, so a non-English '
+              'request is honored exactly like an English one.',
+        },
       },
       'required': ['message'],
     },

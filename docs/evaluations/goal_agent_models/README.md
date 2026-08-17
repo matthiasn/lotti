@@ -190,8 +190,9 @@ read the reply rather than the bare assistant text.
 Both were tightened again the same day, after review of the merged change:
 the carrier is tolerated only where FACTS carry a pending user message (an
 unsolicited reply on a scheduled status wake is chat nobody asked for), at most
-one reply per exchange is allowed and nothing may precede it ("exactly once
-first", checkable via a per-exchange index on each recorded call), a blank or
+one reply per exchange is allowed (tracked by a per-exchange index on each
+recorded call, since a follow-up turn is a separate wake to the runtime), a
+blank or
 non-string `message` is `invalidToolArguments` as the runtime's `_handleReply`
 would reject it, and the prose checks take the surfaced reply in PRECEDENCE
 over assistant prose rather than concatenating both — mirroring
@@ -350,6 +351,52 @@ the pass probability is a product of chances rather than a single draw.
   justified by mechanism, not measurement. The muse-glimmer gap (66 cases), the
   11.6x cost gap and the 28x energy gap are far outside it. DeepSeek versus GLM
   at +5 to +10 is about one sd — "at least as good", not "better".
+
+## The interactive ad bucket was mostly a fixture defect — 2026-08-17
+
+`forbiddenToolCall` — creating a banner where policy forbids one — was the
+largest failure class on this suite for every model. The tool-withholding gate
+fixed the scheduled half. The interactive half survived, and the reason was
+not the model.
+
+Six dialogue scenarios (`evo_*`, `wk_*`, `tone_roast_request`) set
+`lastReportStatus` while carrying an EMPTY `priorPeriodAttainments`. A goal
+with a previous report necessarily had previous periods, so those FACTS
+described a state the runtime cannot produce. `automaticGoalAdEligible` reads
+empty priors as a first evaluation, which earns a welcome banner (P4/P5) — so
+the deterministic tier said ads were permitted, the gate correctly offered the
+tools, the model correctly used them, and the scenario then scored it a
+violation.
+
+Giving those fixtures flat (non-declining, so the authored `trendWorsening`
+still holds) priors makes them internally consistent. Measured on
+`deepseek-v4-flash-0731`, ten samples:
+
+| | Baseline (5 runs) | Consistent priors (2 runs) |
+| --- | --- | --- |
+| Pass | 216.8/250 (0.867) | 243 and 244 /260 (0.935, 0.938) |
+| `forbiddenToolCall` | 21, 14, 14, 13, 15 | 0, 0 |
+
+**Read this as a measurement correction, not a model improvement.** Those
+failures were the eval feeding the runtime an impossible state and penalising
+the correct response to it. In production a real ongoing goal carries priors,
+the tier says ineligible, the gate withholds, and none of it arises.
+
+Two things did change for real. `ad_requested_while_ineligible` is new and
+covers P5 — an explicit request for a banner on a wake whose status blocks
+automatic ads — which nothing tested before; the runtime could have started
+refusing users who asked and no scenario would have noticed. And the
+classifier's reply-ORDERING rule is gone: `GoalAgentStrategy` enforces
+at-most-once per wake and says nothing about position, so requiring the reply
+to come first failed sequences production accepts. It had become the largest
+remaining failure category. A harness stricter than the code it measures is
+the same defect as one that is looser.
+
+Remaining failures are ~7-9 `missingAssistantContent` (mostly `evo_ambiguous`,
+where the model answers instead of asking the clarifying question) and ~5-7
+`missingRequiredReportContent` on the complex-health pair. Both are genuine
+model behaviour, and both sit in the high-variance scenarios, so more samples
+beat more fixes from here.
 
 ## Cost and latency
 

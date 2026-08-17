@@ -486,6 +486,59 @@ void main() {
     },
   );
 
+  test('the reply carries a banner request in any language', () async {
+    // The regex detector reads English only, and a wake whose ad tools were
+    // withheld cannot carry the intent through a typed create_goal_ad call.
+    // Without this the German request below would silently get no banner.
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.replyToUser,
+          args: {
+            'message': 'Alles klar — ein neues Banner kommt.',
+            'userAskedForBanner': true,
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.bannerRequested, isTrue);
+    expect(strategy.replyToUser, 'Alles klar — ein neues Banner kommt.');
+  });
+
+  test('an ordinary reply declares no banner request', () async {
+    // Absent and false must both mean "not asked": the flag may only ever
+    // widen what the deterministic tier permits, never by omission.
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'Du liegst diese Woche knapp darunter.'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.bannerRequested, isFalse);
+
+    final explicitFalse = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+    );
+    await explicitFalse.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'Noch nicht.', 'userAskedForBanner': false},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(explicitFalse.bannerRequested, isFalse);
+  });
+
   test('a report with no aggregates to quote is left alone', () async {
     // An empty window has no mean, and an insufficientData report names the
     // gap. Demanding a number there would force the model to invent one.
