@@ -4478,6 +4478,10 @@
   "referenceImageSelectionSubtitle": "Kies maximaal {maxImages} afbeeldingen om de visuele stijl van de AI te begeleiden",
   "referenceImageSelectionTitle": "Selecteer referentieafbeeldingen",
   "referenceImageSkip": "Overslaan",
+  "relationshipActionCall": "Bellen",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Niets op dit apparaat kan dat openen",
+  "relationshipActionMessage": "Bericht",
   "relationshipAddChannelButton": "Contactgegeven toevoegen",
   "relationshipBannerSemanticLabel": "Relatiebanner voor {personName}",
   "relationshipBriefingDisclosureBody": "De briefing draait op {provider}. Notities over deze persoon worden daarheen gestuurd voor verwerking.",
@@ -4523,6 +4527,18 @@
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
+  "relationshipPostCallBody": "Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?",
+  "relationshipPostCallConfirm": "Check-in vastleggen",
+  "relationshipPostCallDismiss": "Niet nu",
+  "relationshipPostCallTitle": "Hoe ging het met {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsPageTitle": "Mensen",
   "relationshipStatusActive": "Actief",

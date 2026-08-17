@@ -5755,6 +5755,22 @@
   },
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
+  "relationshipActionCall": "Call",
+  "@relationshipActionCall": {
+    "description": "Tooltip on the button that dials a contact channel"
+  },
+  "relationshipActionEmail": "Email",
+  "@relationshipActionEmail": {
+    "description": "Tooltip on the button that opens a mail composer"
+  },
+  "relationshipActionFailed": "Nothing on this device can open that",
+  "@relationshipActionFailed": {
+    "description": "Toast shown when no app on the device handles the contact channel"
+  },
+  "relationshipActionMessage": "Message",
+  "@relationshipActionMessage": {
+    "description": "Tooltip on the button that opens a message composer"
+  },
   "relationshipAddChannelButton": "Add channel",
   "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
   "@relationshipBannerSemanticLabel": {
@@ -5845,6 +5861,28 @@
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotFound": "This person is no longer tracked.",
+  "relationshipPostCallBody": "You reached out a moment ago. Log a check-in while it is fresh?",
+  "@relationshipPostCallBody": {
+    "description": "Body of the prompt offered after returning from a call or message"
+  },
+  "relationshipPostCallConfirm": "Log check-in",
+  "@relationshipPostCallConfirm": {
+    "description": "Button that opens a pre-filled check-in from the post-call prompt"
+  },
+  "relationshipPostCallDismiss": "Not now",
+  "@relationshipPostCallDismiss": {
+    "description": "Button that dismisses the post-call prompt without a trace"
+  },
+  "relationshipPostCallTitle": "How did it go with {name}?",
+  "@relationshipPostCallTitle": {
+    "description": "Title of the prompt offered after returning from a call or message",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsPageTitle": "People",
   "relationshipStatusActive": "Active",

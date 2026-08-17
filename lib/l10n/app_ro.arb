@@ -3966,6 +3966,10 @@
   "referenceImageSelectionSubtitle": "Alegeți până la {maxImages} imagini pentru a ghida stilul vizual al IA",
   "referenceImageSelectionTitle": "Selectați imagini de referință",
   "referenceImageSkip": "Săriți peste",
+  "relationshipActionCall": "Apelați",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nimic de pe acest dispozitiv nu poate deschide acest lucru",
+  "relationshipActionMessage": "Mesaj",
   "relationshipAddChannelButton": "Adăugați o modalitate de contact",
   "relationshipBannerSemanticLabel": "Banner de relație pentru {personName}",
   "relationshipBriefingDisclosureBody": "Rezumatul rulează pe {provider}. Notițele despre această persoană vor fi trimise acolo pentru procesare.",
@@ -4011,6 +4015,18 @@
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
+  "relationshipPostCallBody": "Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?",
+  "relationshipPostCallConfirm": "Notați check-in",
+  "relationshipPostCallDismiss": "Nu acum",
+  "relationshipPostCallTitle": "Cum a fost cu {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
   "relationshipsPageTitle": "Persoane",
   "relationshipStatusActive": "Activă",

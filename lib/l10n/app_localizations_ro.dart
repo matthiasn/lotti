@@ -10362,6 +10362,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get referenceImageSkip => 'Săriți peste';
 
   @override
+  String get relationshipActionCall => 'Apelați';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed =>
+      'Nimic de pe acest dispozitiv nu poate deschide acest lucru';
+
+  @override
+  String get relationshipActionMessage => 'Mesaj';
+
+  @override
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
 
   @override
@@ -10525,6 +10538,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Notați check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Nu acum';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Cum a fost cu $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>

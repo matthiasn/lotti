@@ -10097,6 +10097,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get referenceImageSkip => 'Skip';
 
   @override
+  String get relationshipActionCall => 'Call';
+
+  @override
+  String get relationshipActionEmail => 'Email';
+
+  @override
+  String get relationshipActionFailed => 'Nothing on this device can open that';
+
+  @override
+  String get relationshipActionMessage => 'Message';
+
+  @override
   String get relationshipAddChannelButton => 'Add channel';
 
   @override
@@ -10258,6 +10270,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'This person is no longer tracked.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'You reached out a moment ago. Log a check-in while it is fresh?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Log check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Not now';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'How did it go with $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>

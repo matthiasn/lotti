@@ -1342,24 +1342,23 @@ void main() {
   testWidgets("the standing report stays surfaced while the goal's active "
       'banners render uncapped — only its own', (tester) async {
     NudgeBannerEntry entry(String agentId, String headline) => (
-      nudge:
-          NudgeEntityView.of(
-            AgentDomainEntity.goalNudge(
-                id: 'ad-$agentId-$headline',
-                agentId: agentId,
-                status: NudgeStatus.active,
-                brief: NudgeBrief(
-                  headline: headline,
-                  tone: NudgeTone.nudge,
-                  animation: NudgeBannerAnimation.steady,
-                ),
-                briefDigest: 'd',
-                createdAt: DateTime(2026, 8, 10),
-                updatedAt: DateTime(2026, 8, 10),
-                vectorClock: null,
-              )
-              as GoalNudgeEntity,
-        )!,
+      nudge: NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+              id: 'ad-$agentId-$headline',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
+                headline: headline,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity,
+      )!,
       subjectTitle: agentId,
       kind: NudgeBannerKind.goal,
       tapRoute: '/goals/details/$agentId',
@@ -2106,25 +2105,24 @@ void main() {
       'while still active — the fresh sibling still renders', (tester) async {
     final now = DateTime(2026, 8, 10, 12);
     NudgeBannerEntry entry(String id, String headline, DateTime staleAt) => (
-      nudge:
-          NudgeEntityView.of(
-            AgentDomainEntity.goalNudge(
-                id: id,
-                agentId: 'goal-1',
-                status: NudgeStatus.active,
-                brief: NudgeBrief(
-                  headline: headline,
-                  tone: NudgeTone.nudge,
-                  animation: NudgeBannerAnimation.steady,
-                ),
-                briefDigest: 'd-$id',
-                createdAt: DateTime(2026, 8, 9),
-                updatedAt: DateTime(2026, 8, 9),
-                vectorClock: null,
-                staleAt: staleAt,
-              )
-              as GoalNudgeEntity,
-        )!,
+      nudge: NudgeEntityView.of(
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-1',
+              status: NudgeStatus.active,
+              brief: NudgeBrief(
+                headline: headline,
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              staleAt: staleAt,
+            )
+            as GoalNudgeEntity,
+      )!,
       subjectTitle: 'goal-1',
       kind: NudgeBannerKind.goal,
       tapRoute: '/goals/details/goal-1',

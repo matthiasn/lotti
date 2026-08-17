@@ -4479,6 +4479,10 @@
   "referenceImageSelectionSubtitle": "Vælg op til {maxImages} billeder for at styre AI'ens visuelle stil",
   "referenceImageSelectionTitle": "Vælg referencebilleder",
   "referenceImageSkip": "Spring over",
+  "relationshipActionCall": "Ring op",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Intet på denne enhed kan åbne det",
+  "relationshipActionMessage": "Besked",
   "relationshipAddChannelButton": "Tilføj kontaktoplysning",
   "relationshipBannerSemanticLabel": "Relationsbanner for {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen kører på {provider}. Noter om denne person sendes dertil til behandling.",
@@ -4524,6 +4528,18 @@
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
   "relationshipNotFound": "Denne person følges ikke længere.",
+  "relationshipPostCallBody": "Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?",
+  "relationshipPostCallConfirm": "Log tjek-ind",
+  "relationshipPostCallDismiss": "Ikke nu",
+  "relationshipPostCallTitle": "Hvordan gik det med {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",

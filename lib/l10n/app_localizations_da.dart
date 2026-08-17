@@ -10149,6 +10149,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get referenceImageSkip => 'Spring over';
 
   @override
+  String get relationshipActionCall => 'Ring op';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed => 'Intet på denne enhed kan åbne det';
+
+  @override
+  String get relationshipActionMessage => 'Besked';
+
+  @override
   String get relationshipAddChannelButton => 'Tilføj kontaktoplysning';
 
   @override
@@ -10311,6 +10323,21 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Log tjek-ind';
+
+  @override
+  String get relationshipPostCallDismiss => 'Ikke nu';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Hvordan gik det med $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>
