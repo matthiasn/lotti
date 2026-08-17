@@ -1,6 +1,9 @@
 # ADR 0037: Relationship Data Stays On-Device
 
-- Status: Proposed
+- Status: Accepted — implemented by plan v2 phases 1-8. The on-device
+  stance, the `private`-covers-the-whole-person rule and the delete
+  cascade all shipped as specified; the privacy policy states them in
+  §Relationships and check-ins.
 - Date: 2026-07-22
 
 ## Context
