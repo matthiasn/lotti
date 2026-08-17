@@ -4505,6 +4505,10 @@
   "referenceImageSelectionSubtitle": "Escolha até {maxImages} imagens para orientar o estilo visual da IA",
   "referenceImageSelectionTitle": "Selecione imagens de referência",
   "referenceImageSkip": "Pular",
+  "relationshipActionCall": "Ligar",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nada neste dispositivo consegue abrir isso",
+  "relationshipActionMessage": "Mensagem",
   "relationshipAddChannelButton": "Adicionar meio de contato",
   "relationshipBannerSemanticLabel": "Banner de relacionamento com {personName}",
   "relationshipBriefingDisclosureBody": "O briefing corre em {provider}. As notas sobre esta pessoa serão enviadas para lá para processamento.",
@@ -4559,6 +4563,18 @@
   "relationshipNoCheckIns": "Nenhum registro ainda — adicione um após a próxima conversa.",
   "relationshipNoLinkedTasks": "Nenhuma tarefa vinculada ainda.",
   "relationshipNotFound": "Esta pessoa não está mais na sua lista.",
+  "relationshipPostCallBody": "Acabaste de entrar em contacto. Queres registar um check-in enquanto está fresco?",
+  "relationshipPostCallConfirm": "Registar check-in",
+  "relationshipPostCallDismiss": "Agora não",
+  "relationshipPostCallTitle": "Como foi com {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Adicione as pessoas de quem você quer ficar perto.",
   "relationshipsPageTitle": "Pessoas",
   "relationshipStatusActive": "Ativo",

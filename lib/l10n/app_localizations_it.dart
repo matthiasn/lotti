@@ -10379,6 +10379,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get referenceImageSkip => 'Salta!';
 
   @override
+  String get relationshipActionCall => 'Chiama';
+
+  @override
+  String get relationshipActionEmail => 'Email';
+
+  @override
+  String get relationshipActionFailed =>
+      'Niente su questo dispositivo può aprirlo';
+
+  @override
+  String get relationshipActionMessage => 'Messaggio';
+
+  @override
   String get relationshipAddChannelButton => 'Aggiungi recapito';
 
   @override
@@ -10551,6 +10564,21 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get relationshipNotFound =>
       'Questa persona non è più nella tua lista.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Hai appena scritto o chiamato. Vuoi annotare un check-in finché è fresco?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Annota check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Non ora';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Com’è andata con $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>

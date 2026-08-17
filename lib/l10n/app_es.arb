@@ -3993,6 +3993,10 @@
   "referenceImageSelectionSubtitle": "Elige hasta {maxImages} imágenes para guiar el estilo visual de la IA",
   "referenceImageSelectionTitle": "Seleccionar imágenes de referencia",
   "referenceImageSkip": "Omitir",
+  "relationshipActionCall": "Llamar",
+  "relationshipActionEmail": "Correo",
+  "relationshipActionFailed": "Nada en este dispositivo puede abrir eso",
+  "relationshipActionMessage": "Mensaje",
   "relationshipAddChannelButton": "Añadir medio de contacto",
   "relationshipBannerSemanticLabel": "Banner de relación para {personName}",
   "relationshipBriefingDisclosureBody": "El informe se genera en {provider}. Las notas sobre esta persona se enviarán allí para su procesamiento.",
@@ -4047,6 +4051,18 @@
   "relationshipNoCheckIns": "Aún no hay registros: añade uno tras vuestra próxima conversación.",
   "relationshipNoLinkedTasks": "Aún no hay tareas vinculadas.",
   "relationshipNotFound": "Esta persona ya no está en tu lista.",
+  "relationshipPostCallBody": "Acabas de contactar. ¿Anotas un check-in mientras lo recuerdas?",
+  "relationshipPostCallConfirm": "Anotar check-in",
+  "relationshipPostCallDismiss": "Ahora no",
+  "relationshipPostCallTitle": "¿Qué tal fue con {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Añade a las personas de las que quieres estar cerca.",
   "relationshipsPageTitle": "Personas",
   "relationshipStatusActive": "Activa",

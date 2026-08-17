@@ -3993,6 +3993,10 @@
   "referenceImageSelectionSubtitle": "Wähle bis zu {maxImages} Bilder, um den visuellen Stil der KI zu leiten",
   "referenceImageSelectionTitle": "Referenzbilder auswählen",
   "referenceImageSkip": "Überspringen",
+  "relationshipActionCall": "Anrufen",
+  "relationshipActionEmail": "E-Mail",
+  "relationshipActionFailed": "Auf diesem Gerät kann das nichts öffnen",
+  "relationshipActionMessage": "Nachricht",
   "relationshipAddChannelButton": "Kontaktweg hinzufügen",
   "relationshipBannerSemanticLabel": "Beziehungs-Banner für {personName}",
   "relationshipBriefingDisclosureBody": "Das Briefing läuft über {provider}. Notizen zu dieser Person werden dorthin zur Verarbeitung gesendet.",
@@ -4047,6 +4051,18 @@
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
+  "relationshipPostCallBody": "Du hast dich gerade gemeldet. Willst du gleich einen Check-in festhalten?",
+  "relationshipPostCallConfirm": "Check-in festhalten",
+  "relationshipPostCallDismiss": "Jetzt nicht",
+  "relationshipPostCallTitle": "Wie ist es mit {name} gelaufen?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
   "relationshipsPageTitle": "Menschen",
   "relationshipStatusActive": "Aktiv",

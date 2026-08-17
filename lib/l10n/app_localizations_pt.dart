@@ -10340,6 +10340,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get referenceImageSkip => 'Pular';
 
   @override
+  String get relationshipActionCall => 'Ligar';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed =>
+      'Nada neste dispositivo consegue abrir isso';
+
+  @override
+  String get relationshipActionMessage => 'Mensagem';
+
+  @override
   String get relationshipAddChannelButton => 'Adicionar meio de contato';
 
   @override
@@ -10510,6 +10523,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Esta pessoa não está mais na sua lista.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Acabaste de entrar em contacto. Queres registar um check-in enquanto está fresco?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Registar check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Agora não';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Como foi com $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>

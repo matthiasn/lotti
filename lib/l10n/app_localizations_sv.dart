@@ -10249,6 +10249,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get referenceImageSkip => 'Hoppa över';
 
   @override
+  String get relationshipActionCall => 'Ring';
+
+  @override
+  String get relationshipActionEmail => 'E-post';
+
+  @override
+  String get relationshipActionFailed =>
+      'Inget på den här enheten kan öppna det';
+
+  @override
+  String get relationshipActionMessage => 'Meddelande';
+
+  @override
   String get relationshipAddChannelButton => 'Lägg till kontaktuppgift';
 
   @override
@@ -10420,6 +10433,21 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Den här personen följs inte längre.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Logga avstämning';
+
+  @override
+  String get relationshipPostCallDismiss => 'Inte nu';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Hur gick det med $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>
