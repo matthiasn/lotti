@@ -97,6 +97,7 @@ class GoalAgentStrategy extends ConversationStrategy
   Map<String, Object?>? _reportSections;
   String? _finalResponse;
   String? _replyToUser;
+  var _bannerRequested = false;
   final _createdAds = <GoalAdRequest>[];
   final _rerunRequests = <GoalAdAction>[];
   final _retireRequests = <GoalAdAction>[];
@@ -114,6 +115,14 @@ class GoalAgentStrategy extends ConversationStrategy
   Map<String, Object?>? get reportSections => _reportSections;
   String? get finalResponse => _finalResponse;
   String? get replyToUser => _replyToUser;
+
+  /// Whether the reply declared that the pending message asked for a banner.
+  ///
+  /// The language-independent half of P5. The runtime's regex detector reads
+  /// English only, and the typed `create_goal_ad` call cannot carry the intent
+  /// on a wake whose tools were withheld, so the model states it as data and
+  /// the deterministic tier decides what to do with it.
+  bool get bannerRequested => _bannerRequested;
   bool get hasReport => _reportStatus != null;
   List<GoalAdRequest> get createdAds => List.unmodifiable(_createdAds);
   List<GoalAdAction> get rerunRequests => List.unmodifiable(_rerunRequests);
@@ -364,6 +373,7 @@ class GoalAgentStrategy extends ConversationStrategy
       return;
     }
     _replyToUser = message;
+    _bannerRequested = args['userAskedForBanner'] == true;
     await _accept(call, manager, 'Reply delivered.');
   }
 
