@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Daily bar chart over a date range. Buckets [data] by day and fills every
@@ -117,24 +115,16 @@ class TimeSeriesBarChart extends StatelessWidget {
                 getDrawingHorizontalLine: (value) => chartGridLine(context),
               ),
               barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  tooltipMargin: isMobile ? 24 : 16,
-                  tooltipPadding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  getTooltipColor: (_) => tokens.colors.background.level03,
-                  tooltipBorderRadius: BorderRadius.circular(8),
+                touchTooltipData: chartBarTouchTooltipData(
+                  context,
                   getTooltipItem: (groupData, timestamp, rodData, foo) {
                     final formatted = valueInHours
                         ? hoursToHhMm(rodData.toY)
                         : NumberFormat('#,###.##').format(rodData.toY);
-                    return BarTooltipItem(
-                      '$formatted $unit\n'
-                      '${chartDateFormatterYMD(groupData.x)}',
-                      chartTooltipStyleBold.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
+                    return chartBarTooltipItem(
+                      context,
+                      date: chartDateFormatterYMD(groupData.x),
+                      value: unit.isEmpty ? formatted : '$formatted $unit',
                     );
                   },
                 ),

@@ -97,10 +97,13 @@ older same-day completion stack remains intact. Current and past edits wake the
   report updates off, while future calendar cells remain read-only. The detail
   page leads with the standing report and this goal's active
 banners directly under the goal definition, with the habit cards and charts
-below. Rolling-seven-day rows keep their localized weekday labels glued
-directly above the day squares in one shared horizontal scroller; desktop and
-phone use the handoff's compact day-cell rhythm, while the
-phone layout keeps each habit name and cadence together above its strip.
+below. A habit card states one thing per row — identity and reading, then the
+cadence against how far off the habit is, then the span, the days, and the
+six-week reliability tail that closes it. Day tracks narrow their columns to
+FIT the card (weekday captions shortening to one letter when squeezed) and
+only pan when even the narrowest column overflows, so a fortnight no longer
+opens with its first days cut off the left edge. A leading gutter is reserved
+only where a value axis is actually drawn.
 A completed day whose window target was not yet met renders as a lighter
 partial-success wash with a full-strength inner dot (day states wear the
 success family; the interactive teal stays tap-only), each square carries its
@@ -115,6 +118,14 @@ instead of sitting under it.
 Asking the agent in chat to change its report — shorter, sectioned, less
 repetitive — rewrites the standing report itself rather than only answering in
 chat, and an explicit refusal to change it is respected.
+Signal charts carry one legend entry per mark drawn, each with its threshold
+as a quiet annotation, and tooltips name the day once above their values.
+A dimension with no readings shows no plot rather than an empty frame, and the
+hand-painted tracked-time bars have a value axis, a date row, a key, and a
+tap-to-read value. Opening the Goals list or a goal page re-imports the health
+signals that goal watches, so the cards are never a day behind the phone's
+health store (see the health-freshness section of the concept; automatic
+health-linked habit check-off is a separate, deliberate follow-up).
 Blood-pressure and weight headers quote the latest reading while their
 verdicts stay on the rolling-average target. When today's latest sample meets
 its target, the card celebrates that today's logging is on target even if the

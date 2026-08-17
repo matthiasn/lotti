@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 
+import '../../../../../../helpers/chart_tooltip_text.dart';
+
 import 'time_series_multiline_chart_test_helpers.dart';
 
 void main() {
@@ -83,8 +85,9 @@ void main() {
 
       expect(items, hasLength(1));
       final item = items.first!;
-      final valueSpan = item.children!.first;
-      expect(valueSpan.toPlainText(), '1,234.5 kg\n');
+      // Date header, then the value: the value is the second span now.
+      final valueSpan = item.children![1];
+      expect(valueSpan.toPlainText(), '1,234.5 kg');
     });
 
     testWidgets('tooltip values use the active app locale', (tester) async {
@@ -108,7 +111,7 @@ void main() {
         LineBarSpot(barData, 0, const FlSpot(0, 1234.5)),
       ]);
 
-      expect(items.single!.children!.first.toPlainText(), '1.234,5 kg\n');
+      expect(lineTooltipText(items.single!), endsWith('1.234,5 kg'));
     });
 
     testWidgets('series labels identify actual and average tooltip values', (
@@ -133,9 +136,11 @@ void main() {
         LineBarSpot(barData, 1, const FlSpot(0, 94.5)),
       ]);
 
+      // Date header, series label, value — the series name identifies WHICH
+      // of two overlapping lines the value belongs to.
       expect(items.single!.children, hasLength(3));
-      expect(items.single!.children!.first.toPlainText(), '7-day average\n');
-      expect(items.single!.children![1].toPlainText(), '94.5 kg\n');
+      expect(items.single!.children![1].toPlainText(), '7-day average\n');
+      expect(items.single!.children![2].toPlainText(), '94.5 kg');
     });
 
     testWidgets('getTooltipItems second TextSpan contains formatted date', (
@@ -161,7 +166,7 @@ void main() {
       final items = tooltipData.getTooltipItems(spots);
 
       final item = items.first!;
-      final dateSpan = item.children![1];
+      final dateSpan = item.children!.first;
       // chartDateFormatterFull renders the month in the app's language and
       // the clock on the device's setting — this harness is a 12-hour device,
       // where the old hard-wired `HH:mm` would still have said "14:30".
@@ -210,7 +215,9 @@ void main() {
       expect(items.first!.text, '');
     });
 
-    testWidgets('tooltip item has two children TextSpans', (tester) async {
+    testWidgets('tooltip item carries a date header and one value', (
+      tester,
+    ) async {
       final bar = makeBarData([
         (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 42),
       ]);
@@ -231,10 +238,10 @@ void main() {
       final items = tooltipData.getTooltipItems(spots);
 
       final item = items.first!;
-      // children: [value+unit TextSpan, date TextSpan]
+      // children: [date header, value+unit] — no series label was supplied.
       expect(item.children, hasLength(2));
-      expect(item.children!.first.toPlainText(), contains('42'));
-      expect(item.children!.first.toPlainText(), contains('bpm'));
+      expect(item.children![1].toPlainText(), contains('42'));
+      expect(item.children![1].toPlainText(), contains('bpm'));
     });
 
     testWidgets('date-only tooltip preserves a canonical UTC day key', (
@@ -259,7 +266,7 @@ void main() {
         LineBarSpot(barData, 0, spot),
       ]);
 
-      expect(items.single!.children![1].toPlainText(), 'Mar 15');
+      expect(items.single!.children!.first.toPlainText(), 'Mar 15\n');
     });
   });
 

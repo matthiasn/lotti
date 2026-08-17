@@ -312,3 +312,23 @@ Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
       GoalCriterionCategoryTime() ||
       GoalCriterionLabelTime() => const {},
     };
+
+/// Every quantitative data type referenced anywhere in [criterion]'s tree.
+///
+/// The join used to decide which health imports a goal surface should refresh
+/// on entry: a goal reading its own journal entries is current by
+/// construction, while one reading health samples is only as fresh as the last
+/// import.
+Set<String> goalCriterionMetricDataTypes(GoalCriterion criterion) =>
+    switch (criterion) {
+      GoalCriterionMetric(:final dataType) => {dataType},
+      GoalCriterionAllOf(:final criteria) ||
+      GoalCriterionAnyOf(:final criteria) ||
+      GoalCriterionAtLeastCount(:final criteria) => {
+        for (final child in criteria) ...goalCriterionMetricDataTypes(child),
+      },
+      GoalCriterionHabit() ||
+      GoalCriterionMeasurable() ||
+      GoalCriterionCategoryTime() ||
+      GoalCriterionLabelTime() => const {},
+    };

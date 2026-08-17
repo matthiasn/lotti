@@ -1,9 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_line_chart.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+import '../../../../../../helpers/chart_tooltip_text.dart';
 import '../../../../../../widget_test_utils.dart';
 
 void main() {
@@ -15,6 +17,7 @@ void main() {
     List<Observation>? bars,
     List<Observation>? line,
     Locale? locale,
+    bool dateOnly = true,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -38,7 +41,7 @@ void main() {
               barLabel: 'Steps per day',
               lineLabel: '7-day average',
               unit: 'steps',
-              dateOnly: true,
+              dateOnly: dateOnly,
               horizontalLines: [HorizontalLine(y: 10000)],
             ),
           ),
@@ -88,11 +91,14 @@ void main() {
       LineBarSpot(averageBar, 1, const FlSpot(2, 7500)),
     ]);
 
-    expect(items[0]!.children!.first.toPlainText(), 'Steps per day\n');
-    expect(items[0]!.children![1].toPlainText(), '9,000 steps\n');
-    expect(items[1]!.children!.first.toPlainText(), '7-day average\n');
-    expect(items[1]!.children![1].toPlainText(), '7,500 steps\n');
-    expect(items[1]!.children!.last.toPlainText(), 'Aug 3');
+    // ONE date for the whole tooltip, as a header above the value rows —
+    // repeating it under each series printed "Aug 3" twice for one reading.
+    expect(lineTooltipText(items[0]!), 'Aug 3\nSteps per day\n9,000 steps');
+    expect(lineTooltipText(items[1]!), '7-day average\n7,500 steps');
+    expect(
+      'Aug 3'.allMatches(items.map((i) => lineTooltipText(i!)).join()).length,
+      1,
+    );
   });
 
   testWidgets('shared overlay tooltip uses the active app locale', (
@@ -111,6 +117,33 @@ void main() {
       LineBarSpot(actualBar, 0, const FlSpot(2, 1234.5)),
     ]);
 
-    expect(items.single!.children![1].toPlainText(), '1.234,5 steps\n');
+    expect(lineTooltipText(items.single!), contains('1.234,5 steps'));
+  });
+
+  testWidgets('a clock-bearing chart dates its tooltip to the device clock', (
+    tester,
+  ) async {
+    await pumpChart(tester, dateOnly: false);
+
+    final overlay = tester.widget<LineChart>(find.byType(LineChart));
+    final tooltip = overlay.data.lineTouchData.touchTooltipData;
+    final actualBar = LineChartBarData(spots: const [FlSpot(2, 9000)]);
+    final items = tooltip.getTooltipItems([
+      LineBarSpot(actualBar, 0, const FlSpot(2, 9000)),
+    ]);
+
+    // Daily health series pass `dateOnly` so a device west of UTC cannot shift
+    // a goal day backward; everything else keeps the clock, which is the half
+    // of the fork the goal cards never exercise.
+    //
+    // The expected day is derived through the SAME local conversion the
+    // formatter makes, not hard-coded: `chartDateFormatterFull` renders on the
+    // device clock, so a literal "Aug 3" only holds on a machine at or east of
+    // UTC — which is a test that passes in CI and fails on a laptop in Denver.
+    final localDay = DateFormat.MMMd(
+      'en',
+    ).format(DateTime.fromMillisecondsSinceEpoch(end.millisecondsSinceEpoch));
+    expect(lineTooltipText(items.single!), startsWith('$localDay, '));
+    expect(lineTooltipText(items.single!), contains('9,000 steps'));
   });
 }

@@ -6242,27 +6242,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalChartSevenDayAverage => '7-Tage-Durchschnitt';
 
   @override
-  String get goalChartStepsPerDay => 'Schritte pro Tag';
+  String get goalChartStepsDaily => 'Schritte';
 
   @override
-  String goalChartTrend(String trend) {
-    String _temp0 = intl.Intl.selectLogic(
-      trend,
-      {
-        'aboveToward':
-            'Aktueller Wert über dem 7-Tage-Durchschnitt · in Richtung Ziel',
-        'aboveAway':
-            'Aktueller Wert über dem 7-Tage-Durchschnitt · vom Ziel weg',
-        'belowToward':
-            'Aktueller Wert unter dem 7-Tage-Durchschnitt · in Richtung Ziel',
-        'belowAway':
-            'Aktueller Wert unter dem 7-Tage-Durchschnitt · vom Ziel weg',
-        'steady': 'Aktueller Wert entspricht dem 7-Tage-Durchschnitt',
-        'other': 'Trend konnte nicht bestimmt werden',
-      },
-    );
-    return '$_temp0';
-  }
+  String get goalChartStepsPerDay => 'Schritte pro Tag';
 
   @override
   String goalChatEmpty(String agentName) {
@@ -6458,6 +6441,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTarget(
+    int currentCount,
+    int targetCount,
+  ) {
+    return '$currentCount in diesem Zeitraum · Ziel $targetCount';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Gewohnheitsvervollständigungen';
 
   @override
@@ -6522,6 +6513,11 @@ class AppLocalizationsDe extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Von dir gesagt, von $agentName aufgezeichnet, $recordedAt';
+  }
+
+  @override
+  String goalDimensionRollingAverageRow(String name) {
+    return '$name · 7-Tage-Durchschnitt';
   }
 
   @override
@@ -6881,6 +6877,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalMetricLegendOffTarget => 'Nicht im Ziel';
+
+  @override
+  String get goalMetricLegendOnTarget => 'Im Ziel';
+
+  @override
   String get goalNudgeStatusDismissed => 'Verworfen';
 
   @override
@@ -6905,13 +6907,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'fällt heute Abend raus';
-
-  @override
-  String get goalProgressAtRate => 'im Soll';
-
-  @override
-  String get goalProgressCaption =>
-      'letzte 7 Tage · verschiebt sich um Mitternacht';
 
   @override
   String get goalProgressCompactCaption => 'verschiebt sich um Mitternacht';
@@ -6965,9 +6960,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalProgressStripLoading => 'Tagesübersicht wird noch geladen';
-
-  @override
-  String get goalProgressTitle => 'Diese rollierende Woche';
 
   @override
   String get goalProgressToday => 'heute';

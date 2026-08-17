@@ -6300,26 +6300,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalChartSevenDayAverage => 'Media pe 7 zile';
 
   @override
-  String get goalChartStepsPerDay => 'Pași pe zi';
+  String get goalChartStepsDaily => 'Pași';
 
   @override
-  String goalChartTrend(String trend) {
-    String _temp0 = intl.Intl.selectLogic(
-      trend,
-      {
-        'aboveToward':
-            'Valoarea curentă este peste media pe 7 zile · spre țintă',
-        'aboveAway':
-            'Valoarea curentă este peste media pe 7 zile · departe de țintă',
-        'belowToward': 'Valoarea curentă este sub media pe 7 zile · spre țintă',
-        'belowAway':
-            'Valoarea curentă este sub media pe 7 zile · departe de țintă',
-        'steady': 'Valoarea curentă corespunde mediei pe 7 zile',
-        'other': 'Valoarea curentă corespunde mediei pe 7 zile',
-      },
-    );
-    return '$_temp0';
-  }
+  String get goalChartStepsPerDay => 'Pași pe zi';
 
   @override
   String goalChatEmpty(String agentName) {
@@ -6532,6 +6516,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTarget(
+    int currentCount,
+    int targetCount,
+  ) {
+    return '$currentCount această fereastră · țintă $targetCount';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Completari de obiceiuri';
 
   @override
@@ -6596,6 +6588,11 @@ class AppLocalizationsRo extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Spus de dvs., înregistrat de $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDimensionRollingAverageRow(String name) {
+    return '$name · media pe 7 zile';
   }
 
   @override
@@ -6957,6 +6954,12 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalMetricLegendOffTarget => 'În afara țintei';
+
+  @override
+  String get goalMetricLegendOnTarget => 'În țintă';
+
+  @override
   String get goalNudgeStatusDismissed => 'Respins';
 
   @override
@@ -6981,13 +6984,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'iese în această seară';
-
-  @override
-  String get goalProgressAtRate => 'în ritm';
-
-  @override
-  String get goalProgressCaption =>
-      'ultimele 7 zile · glisează la miezul nopții';
 
   @override
   String get goalProgressCompactCaption => 'glisează la miezul nopții';
@@ -7043,9 +7039,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalProgressStripLoading => 'Evidența zilnică se încarcă încă';
-
-  @override
-  String get goalProgressTitle => 'Această săptămână glisantă';
 
   @override
   String get goalProgressToday => 'astăzi';

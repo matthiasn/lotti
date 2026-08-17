@@ -10661,17 +10661,17 @@ abstract class AppLocalizations {
   /// **'7-day average'**
   String get goalChartSevenDayAverage;
 
+  /// Row label for one day's step count, as opposed to the goal's average-per-day target.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get goalChartStepsDaily;
+
   /// No description provided for @goalChartStepsPerDay.
   ///
   /// In en, this message translates to:
   /// **'Steps per day'**
   String get goalChartStepsPerDay;
-
-  /// Legend label comparing the latest value with its trailing seven-day average and interpreting the direction against the goal.
-  ///
-  /// In en, this message translates to:
-  /// **'{trend, select, aboveToward{Current above 7-day average · toward target} aboveAway{Current above 7-day average · away from target} belowToward{Current below 7-day average · toward target} belowAway{Current below 7-day average · away from target} steady{Current matches 7-day average} other{Current matches 7-day average}}'**
-  String goalChartTrend(String trend);
 
   /// Empty-state invitation in a goal-agent conversation.
   ///
@@ -10977,6 +10977,12 @@ abstract class AppLocalizations {
   /// **'{currentCount} of {targetCount} this window'**
   String goalDimensionHabitReading(int currentCount, int targetCount);
 
+  /// Habit reading when the window count has passed the target, where an "X of Y" fraction would read as broken.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentCount} this window · target {targetCount}'**
+  String goalDimensionHabitReadingOverTarget(int currentCount, int targetCount);
+
   /// No description provided for @goalDimensionHabitSource.
   ///
   /// In en, this message translates to:
@@ -11079,6 +11085,12 @@ abstract class AppLocalizations {
     String agentName,
     String recordedAt,
   );
+
+  /// Reflection-sheet row naming the trailing seven-day average of a measured dimension.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · 7-day average'**
+  String goalDimensionRollingAverageRow(String name);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11620,6 +11632,18 @@ abstract class AppLocalizations {
     Object target,
   );
 
+  /// Legend entry for a day that was measured but did not meet the goal target.
+  ///
+  /// In en, this message translates to:
+  /// **'Off target'**
+  String get goalMetricLegendOffTarget;
+
+  /// Legend entry for a day whose measured value met the goal target.
+  ///
+  /// In en, this message translates to:
+  /// **'On target'**
+  String get goalMetricLegendOnTarget;
+
   /// No description provided for @goalNudgeStatusDismissed.
   ///
   /// In en, this message translates to:
@@ -11667,18 +11691,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ages out tonight'**
   String get goalProgressAgesOut;
-
-  /// No description provided for @goalProgressAtRate.
-  ///
-  /// In en, this message translates to:
-  /// **'at rate'**
-  String get goalProgressAtRate;
-
-  /// No description provided for @goalProgressCaption.
-  ///
-  /// In en, this message translates to:
-  /// **'trailing 7 days · slides at midnight'**
-  String get goalProgressCaption;
 
   /// No description provided for @goalProgressCompactCaption.
   ///
@@ -11739,12 +11751,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily record still loading'**
   String get goalProgressStripLoading;
-
-  /// No description provided for @goalProgressTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This rolling week'**
-  String get goalProgressTitle;
 
   /// No description provided for @goalProgressToday.
   ///

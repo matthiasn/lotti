@@ -24,6 +24,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
@@ -72,7 +73,8 @@ class GoalAgentDetailPage extends ConsumerStatefulWidget {
       _GoalAgentDetailPageState();
 }
 
-class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
+class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
+    with GoalHealthRefreshOnEntry {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
   final GlobalKey _progressSectionKey = GlobalKey();
@@ -156,6 +158,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      // A scroll-controlled sheet can reach the top of the screen, and
+      // `showModalBottomSheet` strips the top padding from its own subtree —
+      // so an inner SafeArea sees nothing and the sheet's first line lands
+      // under the status bar clock.
+      useSafeArea: true,
       builder: (context) => GoalLogTodaySheet(
         agentId: agentId,
         progress: progress,
@@ -267,6 +274,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
     final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
+    // Opening a goal pulls the health signals it watches forward, so the
+    // cards are never a day behind the phone's health store.
+    refreshHealthSignals([?spec?.criteria]);
     // The page's ONE time range: the same shared span the completion chart
     // reads, applied to every day track so any date lines up vertically
     // down the page.
@@ -379,6 +389,9 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage> {
                   : (day) => showModalBottomSheet<void>(
                       context: context,
                       isScrollControlled: true,
+                      // Keeps the sheet clear of the status bar: without it the
+                      // big date title collided with the system clock.
+                      useSafeArea: true,
                       builder: (context) => GoalDayAssessmentSheet(
                         agentId: agentId,
                         specVersionId: spec.id,

@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
@@ -49,7 +50,8 @@ class UnifiedGoalsPage extends ConsumerStatefulWidget {
   ConsumerState<UnifiedGoalsPage> createState() => _UnifiedGoalsPageState();
 }
 
-class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
+class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
+    with GoalHealthRefreshOnEntry {
   final _scrollController = ScrollController();
 
   /// Fires just past local midnight so the lifecycle-gated sets
@@ -209,6 +211,12 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage> {
         if (health.value?.spec?.criteria case final criteria?)
           ...goalCriterionHabitIds(criteria),
     };
+    // Opening Goals pulls every goal's health signals forward — nothing else
+    // on this page imports, so the cards would otherwise be as stale as the
+    // last time something else happened to fetch.
+    refreshHealthSignals([
+      for (final health in healths) ?health.value?.spec?.criteria,
+    ]);
 
     // The summary's done set mirrors each group's OWN semantics: goal-owned
     // habits count success-only (their rows stay due after a skip or fail),

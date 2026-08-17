@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 /// Daily observations as bars with a line series overlaid on the same axes.
@@ -134,25 +132,10 @@ class TimeSeriesBarLineChart extends StatelessWidget {
                   gridData: const FlGridData(show: false),
                   clipData: const FlClipData.horizontal(),
                   lineTouchData: LineTouchData(
-                    touchTooltipData: LineTouchTooltipData(
-                      tooltipMargin: isMobile ? 24 : 16,
-                      tooltipPadding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      getTooltipColor: (_) => tokens.colors.background.level03,
-                      tooltipBorderRadius: BorderRadius.circular(
-                        tokens.radii.s,
-                      ),
-                      getTooltipItems: (spots) => [
-                        for (final spot in spots)
-                          _tooltipItem(
-                            context,
-                            spot,
-                            start: start,
-                            label: spot.barIndex == 0 ? barLabel : lineLabel,
-                          ),
-                      ],
+                    touchTooltipData: chartTouchTooltipData(
+                      context,
+                      getTooltipItems: (spots) =>
+                          _tooltipItems(context, spots, start: start),
                     ),
                   ),
                   titlesData: _axisTitles(axis, showLabels: false),
@@ -209,37 +192,31 @@ class TimeSeriesBarLineChart extends StatelessWidget {
     );
   }
 
-  LineTooltipItem _tooltipItem(
+  /// One tooltip for the touched day: its date once as a header, then the bar
+  /// value and — where the rolling line has a point that day — the overlay's,
+  /// each under its own quiet label.
+  List<LineTooltipItem> _tooltipItems(
     BuildContext context,
-    LineBarSpot spot, {
+    List<LineBarSpot> spots, {
     required DateTime start,
-    required String label,
   }) {
-    final tokens = context.designTokens;
+    if (spots.isEmpty) return const [];
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final formattedValue = NumberFormat('#,###.##', locale).format(spot.y);
+    final number = NumberFormat('#,###.##', locale);
     final unitSuffix = unit.isEmpty ? '' : ' $unit';
-    final date = start.add(Duration(days: spot.x.round()));
+    final date = start.add(Duration(days: spots.first.x.round()));
     final timestamp = date.millisecondsSinceEpoch.toDouble();
-    return LineTooltipItem(
-      '',
-      TextStyle(
-        fontSize: fontSizeSmall,
-        fontWeight: FontWeight.w300,
-        color: tokens.colors.text.highEmphasis,
-      ),
-      children: [
-        TextSpan(text: '$label\n', style: chartTooltipStyleBold),
-        TextSpan(
-          text: '$formattedValue$unitSuffix\n',
-          style: chartTooltipStyleBold,
-        ),
-        TextSpan(
-          text: dateOnly
-              ? chartDateFormatterDateOnlyUtc(context, timestamp)
-              : chartDateFormatterFull(context, timestamp),
-          style: chartTooltipStyle,
-        ),
+    return chartTooltipItems(
+      context,
+      date: dateOnly
+          ? chartDateFormatterDateOnlyUtc(context, timestamp)
+          : chartDateFormatterFull(context, timestamp),
+      entries: [
+        for (final spot in spots)
+          (
+            label: spot.barIndex == 0 ? barLabel : lineLabel,
+            value: '${number.format(spot.y)}$unitSuffix',
+          ),
       ],
     );
   }

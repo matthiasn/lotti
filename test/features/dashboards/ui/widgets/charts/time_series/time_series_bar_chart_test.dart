@@ -5,6 +5,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.da
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+import '../../../../../../helpers/chart_tooltip_text.dart';
 import 'time_series_bar_chart_test_helpers.dart';
 
 void main() {
@@ -296,8 +297,8 @@ void main() {
       final item = tooltipData.getTooltipItem(group, 0, rod, 0);
 
       expect(item, isNotNull);
-      expect(item!.text, contains('1,234.5'));
-      expect(item.text, contains('kg'));
+      expect(barTooltipText(item!), contains('1,234.5'));
+      expect(barTooltipText(item), contains('kg'));
     });
 
     testWidgets('getTooltipItem includes formatted date', (tester) async {
@@ -320,8 +321,8 @@ void main() {
 
       expect(item, isNotNull);
       // chartDateFormatterYMD uses DateFormat.yMMMd() → e.g. "Mar 15, 2024"
-      expect(item!.text, contains('Mar'));
-      expect(item.text, contains('15'));
+      expect(barTooltipText(item!), contains('Mar'));
+      expect(barTooltipText(item), contains('15'));
     });
 
     testWidgets(
@@ -351,7 +352,7 @@ void main() {
 
         expect(item, isNotNull);
         // hoursToHhMm(1.5) == "01:30"
-        expect(item!.text, contains('01:30'));
+        expect(barTooltipText(item!), contains('01:30'));
       },
     );
   });

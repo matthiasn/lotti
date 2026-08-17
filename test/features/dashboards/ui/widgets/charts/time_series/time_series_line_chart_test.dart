@@ -5,6 +5,8 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.da
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+import '../../../../../../helpers/chart_tooltip_text.dart';
+
 import 'time_series_line_chart_test_helpers.dart';
 
 void main() {
@@ -305,13 +307,13 @@ void main() {
 
       expect(items, hasLength(1));
       final item = items.first!;
-      // The first child TextSpan contains the formatted value + unit.
-      final valueSpan = item.children!.first;
+      // The value rides UNDER the date header now, so it is the second span.
+      final valueSpan = item.children![1];
       expect(valueSpan.toPlainText(), contains('1,234.5'));
       expect(valueSpan.toPlainText(), contains('kg'));
     });
 
-    testWidgets('getTooltipItems second TextSpan contains formatted date', (
+    testWidgets('getTooltipItems leads with the formatted date header', (
       tester,
     ) async {
       final obsTime = DateTime(2024, 3, 15, 14, 30);
@@ -333,7 +335,7 @@ void main() {
       final items = tooltipData.getTooltipItems(spots);
 
       final item = items.first!;
-      final dateSpan = item.children![1];
+      final dateSpan = item.children!.first;
       // chartDateFormatterFull renders the month in the app's language and
       // the clock on the device's setting — this harness is a 12-hour device,
       // where the old hard-wired `HH:mm` would still have said "14:30".
@@ -379,7 +381,10 @@ void main() {
         LineBarSpot(barData, 0, spot),
       ]);
 
-      expect(items.single!.children![1].toPlainText(), 'Mar 15');
+      // The date is the tooltip's HEADER — one line naming the day, above the
+      // value it frames — not a trailing line under each value.
+      expect(items.single!.children!.first.toPlainText(), 'Mar 15\n');
+      expect(lineTooltipText(items.single!), 'Mar 15\n7');
     });
   });
 }

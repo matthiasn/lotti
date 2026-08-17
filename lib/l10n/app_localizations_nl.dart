@@ -6220,27 +6220,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalChartSevenDayAverage => '7-daags gemiddelde';
 
   @override
-  String get goalChartStepsPerDay => 'Stappen per dag';
+  String get goalChartStepsDaily => 'Stappen';
 
   @override
-  String goalChartTrend(String trend) {
-    String _temp0 = intl.Intl.selectLogic(
-      trend,
-      {
-        'aboveToward':
-            'Huidige waarde boven het 7-daags gemiddelde · richting het doel',
-        'aboveAway':
-            'Huidige waarde boven het 7-daags gemiddelde · weg van het doel',
-        'belowToward':
-            'Huidige waarde onder het 7-daags gemiddelde · richting het doel',
-        'belowAway':
-            'Huidige waarde onder het 7-daags gemiddelde · weg van het doel',
-        'steady': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
-        'other': 'Huidige waarde is gelijk aan het 7-daags gemiddelde',
-      },
-    );
-    return '$_temp0';
-  }
+  String get goalChartStepsPerDay => 'Stappen per dag';
 
   @override
   String goalChatEmpty(String agentName) {
@@ -6435,6 +6418,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalDimensionHabitReadingOverTarget(
+    int currentCount,
+    int targetCount,
+  ) {
+    return '$currentCount in dit venster · doel $targetCount';
+  }
+
+  @override
   String get goalDimensionHabitSource => 'Gewoontevoltooiingen';
 
   @override
@@ -6499,6 +6490,11 @@ class AppLocalizationsNl extends AppLocalizations {
     String recordedAt,
   ) {
     return 'Door jou gezegd, opgenomen door $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDimensionRollingAverageRow(String name) {
+    return '$name · 7-daags gemiddelde';
   }
 
   @override
@@ -6845,6 +6841,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalMetricLegendOffTarget => 'Niet op doel';
+
+  @override
+  String get goalMetricLegendOnTarget => 'Op doel';
+
+  @override
   String get goalNudgeStatusDismissed => 'Weggeveegd';
 
   @override
@@ -6869,12 +6871,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalProgressAgesOut => 'valt vanavond weg';
-
-  @override
-  String get goalProgressAtRate => 'op tempo';
-
-  @override
-  String get goalProgressCaption => 'laatste 7 dagen · schuift om middernacht';
 
   @override
   String get goalProgressCompactCaption => 'schuift om middernacht';
@@ -6928,9 +6924,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalProgressStripLoading => 'Dagoverzicht wordt nog geladen';
-
-  @override
-  String get goalProgressTitle => 'Deze lopende week';
 
   @override
   String get goalProgressToday => 'vandaag';

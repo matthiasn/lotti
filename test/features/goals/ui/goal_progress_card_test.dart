@@ -12,6 +12,8 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_ser
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -32,6 +34,10 @@ void main() {
     day: today.subtract(Duration(days: offset)),
     value: value,
   );
+
+  /// The `yyyy-MM-dd` fragment the day-cell keys are built from.
+  String dayKey(int offset) =>
+      today.subtract(Duration(days: offset)).toIso8601String().substring(0, 10);
 
   testWidgets('habit card renders the rolling-window hierarchy, per-habit '
       'distance and reliability without a percentage', (tester) async {
@@ -62,10 +68,12 @@ void main() {
       ),
     );
 
-    expect(find.text('This rolling week'), findsOneWidget);
-    expect(find.text('trailing 7 days · slides at midnight'), findsOneWidget);
+    // ONE meta line states what the habit asks for and how its window moves —
+    // the card used to carry a title, a caption AND a cadence line, all three
+    // restating the same seven days.
+    expect(find.text('3× per 7 days · slides at midnight'), findsOneWidget);
+    expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Gym'), findsOneWidget);
-    expect(find.text('3× per 7 days'), findsOneWidget);
     expect(find.text('1 day to healthy'), findsOneWidget);
     expect(find.text('4 / 6 weeks'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
@@ -423,8 +431,8 @@ void main() {
     });
   });
 
-  testWidgets('the habit streak rides the label row rather than a row of its '
-      'own', (tester) async {
+  testWidgets('the habit streak closes the card under the days it '
+      'summarises', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalProgressCard(
@@ -446,22 +454,25 @@ void main() {
       ),
     );
 
-    // Alone under the day squares it was an orphan: a two-word stat against
-    // the right edge with a card's width of nothing beside it.
+    // The six-week tail closes the card, under the days it summarises —
+    // crammed onto the trailing edge of a heading three rows up it was one of
+    // six figures competing for the same band, with nothing saying which
+    // qualified which.
     final streak = find.text('4 / 6 weeks');
     expect(streak, findsOneWidget);
-    expect(
-      tester.getCenter(streak).dy,
-      lessThan(
-        tester.getCenter(find.text('This rolling week')).dy +
-            tester.getSize(find.text('This rolling week')).height * 2,
-      ),
-      reason: 'the streak dropped to a row of its own',
+    final squares = find.byKey(
+      ValueKey('goal-habit-day-visual-gym-${dayKey(0)}'),
     );
-    // ...and it terminates on the trailing rail rather than floating.
     expect(
-      tester.getBottomRight(streak).dx,
-      greaterThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
+      tester.getTopLeft(streak).dy,
+      greaterThan(tester.getBottomLeft(squares).dy),
+      reason: 'the streak must close the card, not ride a heading',
+    );
+    // ...and it reads left to right on the card's own rail, like every other
+    // row, rather than right-ragged in a column of its own.
+    expect(
+      tester.getTopLeft(streak).dx,
+      lessThan(tester.getCenter(find.byType(GoalProgressCard)).dx),
     );
   });
 
@@ -645,7 +656,7 @@ void main() {
     expect(find.text('Improving'), findsOneWidget);
   });
 
-  testWidgets('the day-cell legend rides inside the last habit card', (
+  testWidgets('the day-cell legend rides inside the first habit card', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -670,16 +681,23 @@ void main() {
       ),
     );
 
-    // Once per goal, not once per habit — and inside the card whose squares
-    // it keys. On the page background between two cards it was equidistant
-    // from both and read as annotating the chart below, which it does not
+    // Once per goal, not once per habit — and inside the FIRST card, where a
+    // reader meets the squares it explains. Attached to the last card it was
+    // a key printed after everything it keys; on the page background between
+    // two cards it read as annotating the chart below, which it does not
     // explain at all.
     expect(find.text('done · target met'), findsOneWidget);
     final legend = tester.getRect(find.text('done · target met'));
     final cards = find.byType(DesignSystemSectionCard);
-    final lastHabitCard = tester.getRect(cards.at(1));
-    expect(legend.top, greaterThan(lastHabitCard.top));
-    expect(legend.bottom, lessThan(lastHabitCard.bottom));
+    final firstHabitCard = tester.getRect(cards.first);
+    expect(legend.top, greaterThan(firstHabitCard.top));
+    expect(legend.bottom, lessThan(firstHabitCard.bottom));
+    // ...and it precedes the second habit's squares rather than following
+    // them.
+    expect(
+      legend.bottom,
+      lessThan(tester.getRect(cards.at(1)).top),
+    );
   });
 
   testWidgets('a goal with no composite rule still gets a reflectable week', (
@@ -812,12 +830,22 @@ void main() {
   testWidgets('the partial-day dot scales with the square it marks', (
     tester,
   ) async {
-    Future<double> dotWidth(double cellSize) async {
+    // The square's size is derived from the width the track has to fit into,
+    // so a squeezed strip is how a small cell is produced.
+    Future<double> dotWidth({
+      required double width,
+      required int dayCount,
+    }) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          GoalCompactWindowStrip(
-            days: const [GoalCompactDayState.partial],
-            cellSize: cellSize,
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: GoalCompactWindowStrip(
+                days: List.filled(dayCount, GoalCompactDayState.partial),
+              ),
+            ),
           ),
         ),
       );
@@ -834,8 +862,8 @@ void main() {
           .width;
     }
 
-    final compact = await dotWidth(IconSizes.xs);
-    final large = await dotWidth(ControlSizes.iconChipCompact);
+    final compact = await dotWidth(width: 200, dayCount: 30);
+    final large = await dotWidth(width: 760, dayCount: 8);
     // A dot fixed at the compact size vanishes inside the 28px square the
     // detail page uses, and the partial state is the one that has no colour
     // of its own to fall back on.
@@ -1170,10 +1198,15 @@ void main() {
         chart.data.extraLinesData.horizontalLines.map((line) => line.y),
         [125, 85],
       );
+      // TWO legend entries for two lines. Each carries its own threshold as
+      // a quiet annotation; a second, identically coloured entry per series
+      // named no mark on the chart at all.
       expect(find.text('Systolic'), findsOneWidget);
       expect(find.text('Diastolic'), findsOneWidget);
-      expect(find.text('Systolic · Target ≤ 125'), findsOneWidget);
-      expect(find.text('Diastolic · Target ≤ 85'), findsOneWidget);
+      expect(find.text('Target ≤ 125'), findsOneWidget);
+      expect(find.text('Target ≤ 85'), findsOneWidget);
+      expect(find.text('Systolic · Target ≤ 125'), findsNothing);
+      expect(find.text('Diastolic · Target ≤ 85'), findsNothing);
       expect(
         tester
             .widget<TimeSeriesMultiLineChart>(
@@ -1275,11 +1308,17 @@ void main() {
       expect(find.text('Blood Pressure'), findsNothing);
       expect(find.text('Systolic blood pressure'), findsOneWidget);
       expect(find.text('Diastolic blood pressure'), findsOneWidget);
+      // The observed half charts its single sample; the unobserved half says
+      // so in words instead of drawing an empty frame — a full-height blank
+      // plot reads as a chart that failed, not as a goal with no readings.
       final charts = tester.widgetList<LineChart>(find.byType(LineChart));
-      expect(charts, hasLength(2));
-      expect(charts.first.data.lineBarsData.single.spots, hasLength(1));
-      expect(charts.first.data.lineBarsData.single.dotData.show, isTrue);
-      expect(charts.last.data.lineBarsData.single.spots, isEmpty);
+      expect(charts, hasLength(1));
+      expect(charts.single.data.lineBarsData.single.spots, hasLength(1));
+      expect(charts.single.data.lineBarsData.single.dotData.show, isTrue);
+      expect(
+        find.text('There is not enough data to judge this dimension yet.'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -1326,12 +1365,10 @@ void main() {
       find.text('There is not enough data to judge this dimension yet.'),
       findsOneWidget,
     );
-    final chart = tester.widget<LineChart>(find.byType(LineChart));
-    expect(chart.data.lineBarsData, hasLength(2));
-    expect(
-      chart.data.lineBarsData.map((line) => line.spots),
-      everyElement(isEmpty),
-    );
+    // No readings, no plot: two empty lines in a full-height frame said
+    // nothing the note above does not, and looked like a broken chart.
+    expect(find.byType(LineChart), findsNothing);
+    expect(find.text('Systolic'), findsNothing);
   });
 
   testWidgets(
@@ -1369,8 +1406,8 @@ void main() {
 
       expect(find.text('122 / 81 mmHg'), findsOneWidget);
       expect(find.text('On target today'), findsOneWidget);
-      expect(find.text('Systolic · Target ≤ 125'), findsOneWidget);
-      expect(find.text('Diastolic · Target ≤ 85'), findsOneWidget);
+      expect(find.text('Target ≤ 125'), findsOneWidget);
+      expect(find.text('Target ≤ 85'), findsOneWidget);
       expect(
         find.text("Today's latest reading is on target; keep it going."),
         findsOneWidget,
@@ -1444,11 +1481,12 @@ void main() {
     );
     expect(find.text('Weight'), findsNWidgets(2));
     expect(find.text('7-day average'), findsOneWidget);
-    expect(find.text('Target ≤ 88'), findsOneWidget);
-    expect(
-      find.text('Current below 7-day average · toward target'),
-      findsOneWidget,
-    );
+    expect(find.text('Target'), findsOneWidget);
+    expect(find.text('≤ 88'), findsOneWidget);
+    // One legend entry per line drawn, and nothing else: the above/below
+    // sentence was a reading of the data wearing a swatch that matched no
+    // mark on the chart.
+    expect(find.textContaining('7-day average · '), findsNothing);
   });
 
   testWidgets(
@@ -1589,15 +1627,13 @@ void main() {
         8500,
       ]);
       expect(find.text('7-day average'), findsOneWidget);
-      expect(find.text('Target ≥ 10,000'), findsOneWidget);
-      expect(
-        find.text('Current below 7-day average · away from target'),
-        findsOneWidget,
-      );
+      expect(find.text('Target'), findsOneWidget);
+      expect(find.text('≥ 10,000'), findsOneWidget);
+      expect(find.textContaining('7-day average · '), findsNothing);
     },
   );
 
-  testWidgets('habit and line charts reserve the same horizontal plot span', (
+  testWidgets('a habit track starts on the card rail, not a chart gutter', (
     tester,
   ) async {
     final days = [for (var offset = 13; offset >= 0; offset--) day(offset, 90)];
@@ -1633,13 +1669,191 @@ void main() {
     final habitPlot = tester.getRect(
       find.byKey(const ValueKey('goal-habit-plot-weigh-myself')),
     );
+    final cadence = tester.getRect(
+      find.text('7× per 7 days · slides at midnight'),
+    );
+    final period = tester.getRect(find.text('Jul 29 – Aug 11'));
     final lineChart = tester.getRect(find.byType(TimeSeriesMultiLineChart));
-    final tokens = tester
-        .element(find.byType(TimeSeriesMultiLineChart))
-        .designTokens;
 
-    expect(habitPlot.left, lineChart.left + kChartLeftAxisWidth);
-    expect(habitPlot.right, lineChart.right - tokens.spacing.step2);
+    // The habit card draws no plot, so it owes no y-axis gutter: its span
+    // caption and its squares sit on the card's own rail with the cadence
+    // line above them. Inset by a chart's axis width they started 52px right
+    // of everything else on the card, keyed to a plot that is not there.
+    expect(habitPlot.left, cadence.left);
+    expect(period.left, cadence.left);
+    expect(habitPlot.left, lessThan(lineChart.left + kChartLeftAxisWidth));
+  });
+
+  testWidgets('a hand-painted bar series carries an axis, a date row, a key '
+      'and a tappable value', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                criterionId: 'content',
+                name: 'Content Production',
+                kind: GoalDimensionKind.labelTime,
+                target: 60,
+                unitName: 'min',
+                days: [
+                  day(2, 0),
+                  day(1, 45),
+                  GoalProgressDay(day: today, value: 0, isObserved: false),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // A value axis: the card was a wall of bars with no way to read a
+    // magnitude off any of them.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('60'), findsOneWidget);
+    // A date axis on the bars' own grid.
+    expect(
+      find.byKey(ValueKey('goal-habit-weekday-metric-content-${dayKey(1)}')),
+      findsOneWidget,
+    );
+    // A key naming the three fills, and the threshold the rule marks.
+    expect(find.text('On target'), findsOneWidget);
+    expect(find.text('Off target'), findsOneWidget);
+    expect(find.text('No entry'), findsOneWidget);
+    expect(find.text('≥ 60'), findsOneWidget);
+
+    // ...and the value itself, on tap. A 45-minute afternoon was on screen
+    // with no way to find out it was 45.
+    await tester.tap(
+      find.byKey(ValueKey('goal-metric-bar-${dayKey(1)}')),
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('45 min'), findsOneWidget);
+    expect(find.textContaining('Content Production'), findsWidgets);
+  });
+
+  testWidgets('a dimension with no readings shows no plot at all', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              criterionId: 'words',
+              name: 'Content: words written',
+              kind: GoalDimensionKind.measurable,
+              target: 1000,
+              aggregation: GoalAggregation.sum,
+              days: [
+                for (var offset = 13; offset >= 0; offset--)
+                  GoalProgressDay(
+                    day: today.subtract(Duration(days: offset)),
+                    value: 0,
+                    isObserved: false,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('0 of 1,000'), findsOneWidget);
+    expect(find.text('Not enough data'), findsOneWidget);
+    // No bars, no axis, no date range: an empty full-height frame under a
+    // header that already says "Not enough data" reads as a chart that
+    // failed to draw.
+    expect(find.byType(FractionallySizedBox), findsNothing);
+    expect(find.textContaining(' – '), findsNothing);
+    expect(
+      find.text('There is not enough data to judge this dimension yet.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a habit past its target reads as a count, not a broken '
+      'fraction', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  for (var offset = 5; offset >= 0; offset--) day(offset, 1),
+                ],
+                successfulWeeks: 3,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // "6 of 3 this window" parses as a broken fraction; the count with its
+    // target named beside it does not.
+    expect(find.text('6 of 3 this window'), findsNothing);
+    expect(find.text('6 this window · target 3'), findsOneWidget);
+  });
+
+  testWidgets('the check-off suggestion reads as the prompt it is', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'bp',
+                name: 'BP meds',
+                targetCount: 7,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+                suggestedFromDimensionName: 'Blood Pressure',
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async =>
+                  true,
+        ),
+      ),
+    );
+
+    // The design system's own inline callout, not a second callout dialect:
+    // this is the one thing on the card the app is ASKING the user to do, and
+    // as a caption row between two other caption rows it read as fine print.
+    final callout = find.byKey(
+      const ValueKey('goal-habit-checkoff-callout-bp'),
+    );
+    expect(callout, findsOneWidget);
+    expect(
+      tester.widget<DesignSystemInlineCallout>(callout).text,
+      'Blood Pressure recorded today — check off this habit?',
+    );
+    // The action rides the callout's trailing edge, as its primary button.
+    final button = tester.widget<DesignSystemButton>(
+      find.byKey(const ValueKey('goal-habit-checkoff-bp')),
+    );
+    expect(button.variant, DesignSystemButtonVariant.primary);
+    expect(
+      find.descendant(of: callout, matching: find.byWidget(button)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('metric bars expose localized date, value, target, and state', (
@@ -1680,47 +1894,59 @@ void main() {
     );
   });
 
-  testWidgets('short habit and metric tracks share the leading plot origin', (
+  testWidgets('a week that fits renders no scroller and no clipped first day', (
     tester,
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'walk',
-                name: 'Walk',
-                targetCount: 1,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
-              ),
-            ],
-            metric: GoalMetricProgressView(
-              name: 'Meditation',
-              sourceId: 'meditation',
-              target: 10,
-              days: [
-                for (var offset = 6; offset >= 0; offset--) day(offset, 5),
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 1,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
               ],
+              metric: GoalMetricProgressView(
+                name: 'Meditation',
+                sourceId: 'meditation',
+                target: 10,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 5),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
 
-    final shortTracks = tester.widgetList<SingleChildScrollView>(
+    // Nothing to pan: a track that fits its card is laid out in place. It
+    // used to sit in a horizontal scroller regardless, which is what let a
+    // longer span open anchored at its trailing edge with the first days cut
+    // in half off the left.
+    expect(
       find.byWidgetPredicate(
         (widget) =>
             widget is SingleChildScrollView &&
             widget.scrollDirection == Axis.horizontal,
       ),
+      findsNothing,
     );
-    expect(shortTracks, hasLength(2));
-    expect(shortTracks.map((track) => track.reverse), everyElement(isFalse));
+    // Every day of the week is on screen, first one included.
+    for (var offset = 6; offset >= 0; offset--) {
+      expect(
+        find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(offset)}')),
+        findsOneWidget,
+      );
+    }
   });
 
   testWidgets('mixed composite renders habit and every metric series', (
@@ -1771,34 +1997,63 @@ void main() {
     expect(find.byType(FractionallySizedBox), findsNWidgets(14));
   });
 
-  testWidgets('a calendar-month metric shows its actual period and scrolls '
-      'all daily bars', (tester) async {
-    await tester.pumpWidget(
+  testWidgets('a calendar-month metric fits its whole period, and only pans '
+      'when even the narrowest column will not', (tester) async {
+    Future<void> pump(double width) => tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            metric: GoalMetricProgressView(
-              name: 'Daily steps',
-              target: 8000,
-              window: const GoalWindow.calendarMonth(),
-              days: [
-                for (var day = 1; day <= 31; day++)
-                  GoalProgressDay(
-                    day: DateTime.utc(2026, 8, day),
-                    value: 5000,
+        SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: width,
+              child: GoalProgressCard(
+                progress: GoalProgressView(
+                  today: today,
+                  metric: GoalMetricProgressView(
+                    name: 'Daily steps',
+                    target: 8000,
+                    window: const GoalWindow.calendarMonth(),
+                    days: [
+                      for (var day = 1; day <= 31; day++)
+                        GoalProgressDay(
+                          day: DateTime.utc(2026, 8, day),
+                          value: 5000,
+                        ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
 
-    expect(find.text('This rolling week'), findsNothing);
+    await pump(760);
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(31));
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    // A month fits a wide card by narrowing its columns — no pan, so no day
+    // opens cut off the left edge.
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.horizontal,
+      ),
+      findsNothing,
+    );
+
+    // On a phone the columns hit their legibility floor, and only then does
+    // the track pan.
+    await pump(320);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.horizontal,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a calendar metric uses the observed period aggregate', (
@@ -1907,7 +2162,7 @@ void main() {
     expect(find.text('Timing pattern · Late work'), findsOneWidget);
   });
 
-  testWidgets('a calendar-month habit shows and scrolls its authored period', (
+  testWidgets('a calendar-month habit shows its whole authored period', (
     tester,
   ) async {
     final outcomes = <(DateTime, HabitCompletionType)>[];
@@ -1942,11 +2197,23 @@ void main() {
       ),
     );
 
-    expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.text('2× · calendar month'), findsOneWidget);
     expect(find.textContaining('/ 6'), findsNothing);
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    // A month of days narrows its columns to fit rather than panning, so the
+    // first of the month is on screen with the last.
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.horizontal,
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('goal-habit-day-walk-2026-08-01')),
+      findsOneWidget,
+    );
 
     const todayKey = ValueKey('goal-habit-day-walk-2026-08-11');
     const finalDayKey = ValueKey('goal-habit-day-walk-2026-08-31');
@@ -2104,8 +2371,8 @@ void main() {
     expect(zeroBar.heightFactor, greaterThan(0));
   });
 
-  testWidgets('a narrow at-rate habit keeps the grid scrollable and marks both '
-      'the aging success and today', (tester) async {
+  testWidgets('a habit at its rate says nothing where the header already '
+      'does, and still fits its week', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         Center(
@@ -2138,10 +2405,23 @@ void main() {
       ),
     );
 
-    expect(find.text('at rate'), findsOneWidget);
-    // Weekday labels and day cells share ONE horizontal scroller so they
-    // cannot drift apart when the narrow grid scrolls.
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    // "at rate" was a cryptic two-word note printed beside the six-week tail,
+    // repeating what the header's own status already says in plain words.
+    expect(find.text('at rate'), findsNothing);
+    expect(find.text('On track'), findsOneWidget);
+    // And the week fits a 260px card, so nothing pans and no day is clipped.
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is SingleChildScrollView &&
+            widget.scrollDirection == Axis.horizontal,
+      ),
+      findsNothing,
+    );
+    expect(
+      find.byKey(ValueKey('goal-habit-day-visual-walk-${dayKey(6)}')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('tapping a previous habit day records the chosen outcome for '
@@ -2701,46 +2981,47 @@ void main() {
       ),
     );
 
-    final title = find.text('This rolling week');
     final streak = find.text('2 / 6 weeks');
     final name = find.text('Gym');
-    final cadence = find.text('4× per 7 days');
+    final cadence = find.text('4× per 7 days · slides at midnight');
+    final period = find.text('Aug 5 – Aug 11');
     final firstCell = find.byKey(
       const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
     );
 
-    // Narrow, the streak takes the caption's place on the heading line rather
-    // than costing a row of its own below the day squares. The title already
-    // says the window is a rolling week, which is what the caption added;
-    // the streak is data, and marooned on its own row it read as an accident.
-    expect(find.text('slides at midnight'), findsNothing);
-    // Same band as the heading — the streak is a two-part figure (bars over a
-    // label) so its centre sits lower than the title's, but the two overlap
-    // rather than stacking.
-    expect(
-      tester.getTopLeft(streak).dy,
-      lessThan(tester.getBottomLeft(title).dy),
-      reason: 'the compact handoff keeps its card heading on one line',
-    );
+    // One meaning per row, top to bottom: what the habit is, what it asks
+    // for, the span on screen, the days themselves, then the six-week tail.
+    // Every one of these figures used to compete for the same band.
     expect(
       tester.getTopLeft(cadence).dy,
       greaterThan(tester.getBottomLeft(name).dy),
       reason: 'the cadence remains attached to its named dimension',
     );
     expect(
-      tester.getTopLeft(firstCell).dy,
+      tester.getTopLeft(period).dy,
       greaterThan(tester.getBottomLeft(cadence).dy),
+      reason: 'the span labels the squares, so it sits above them',
+    );
+    expect(
+      tester.getTopLeft(firstCell).dy,
+      greaterThan(tester.getBottomLeft(period).dy),
       reason: 'the mobile grid follows the dimension metadata',
     );
-    // Nothing below the squares: the orphan row is gone.
     expect(
       tester.getTopLeft(streak).dy,
-      lessThan(tester.getTopLeft(firstCell).dy),
-      reason: 'the streak dropped back below the grid',
+      greaterThan(tester.getBottomLeft(firstCell).dy),
+      reason: 'the six-week tail closes the card',
     );
+    // The span and the squares share one rail — the caption used to start a
+    // chart gutter to their left, on a card that draws no chart.
+    expect(
+      tester.getTopLeft(period).dx,
+      lessThanOrEqualTo(tester.getTopLeft(firstCell).dx),
+    );
+    expect(tester.getTopLeft(period).dx, tester.getTopLeft(cadence).dx);
   });
 
-  testWidgets('a habit with no streak keeps its caption on the heading line', (
+  testWidgets('the sliding-window caption survives a habit with no streak', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -2770,9 +3051,11 @@ void main() {
       ),
     );
 
-    // Only the streak displaces it. With nothing to show there, the caption
-    // that explains the sliding window stays.
-    expect(find.text('slides at midnight'), findsOneWidget);
+    // The window's behaviour is part of the habit's cadence line, so nothing
+    // can displace it: it used to compete with the streak for one slot and
+    // vanish whenever a streak existed.
+    expect(find.text('4× per 7 days · slides at midnight'), findsOneWidget);
+    expect(find.textContaining('/ 6 weeks'), findsNothing);
   });
 
   testWidgets('a narrow authored cadence moves intact below the habit name', (
@@ -2881,10 +3164,14 @@ void main() {
       );
       expect(
         tester.getCenter(find.text('Walk')).dy,
-        lessThan(tester.getCenter(find.text('1× per 7 days')).dy),
+        lessThan(
+          tester.getCenter(find.text('1× per 7 days · slides at midnight')).dy,
+        ),
         reason: 'the complete cadence moves below when the row cannot fit it',
       );
-      final cadence = tester.widget<Text>(find.text('1× per 7 days'));
+      final cadence = tester.widget<Text>(
+        find.text('1× per 7 days · slides at midnight'),
+      );
       expect(cadence.maxLines, isNull);
       expect(cadence.overflow, isNot(TextOverflow.ellipsis));
 
@@ -3318,11 +3605,15 @@ void main() {
     addTearDown(tester.view.reset);
     final group = LinkedScrollGroup();
     addTearDown(group.dispose);
+    // Sixty days on a phone: far past the point where narrowing the columns
+    // could still fit them, which is the only case that pans at all.
+    const span = 60;
     final progress = GoalProgressView(
       today: today,
+      compactWindowDays: span,
       compositeRule: GoalCompositeRuleKind.all,
       compositeCompactWindow: [
-        for (var i = 0; i < 14; i++)
+        for (var i = 0; i < span; i++)
           if (i.isEven) GoalCompactDayState.full else GoalCompactDayState.none,
       ],
       habits: [
@@ -3331,7 +3622,7 @@ void main() {
           name: 'Gym',
           targetCount: 3,
           days: [
-            for (var offset = 13; offset >= 0; offset--)
+            for (var offset = span - 1; offset >= 0; offset--)
               day(offset, offset.isEven ? 1 : 0),
           ],
           successfulWeeks: 0,
@@ -3341,7 +3632,7 @@ void main() {
         name: 'Steps',
         target: 10000,
         days: [
-          for (var offset = 13; offset >= 0; offset--) day(offset, 8000),
+          for (var offset = span - 1; offset >= 0; offset--) day(offset, 8000),
         ],
       ),
     );
@@ -3369,7 +3660,7 @@ void main() {
         of: find.byType(GoalCompactWindowStrip),
         matching: find.byType(InkWell),
       ),
-      findsNWidgets(14),
+      findsNWidgets(span),
     );
 
     // Every extended track is a trailing-anchored scroller: offset 0 means

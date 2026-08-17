@@ -21,10 +21,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Goal signal charts now show the trend behind the number.** Daily steps use
   bars and weight keeps its filled curve, both with a dashed trailing
-  seven-day average overlaid. Separate legends identify actuals, averages and
-  targets plus an above/below-average direction read in the context of the
-  goal. Habit strips and every signal chart now share the same plot bounds,
-  and the steps card distinguishes daily steps from the average it evaluates.
+  seven-day average overlaid. Legends identify actuals, averages and targets,
+  with each target threshold annotated on the series it belongs to, and the
+  steps card distinguishes daily steps from the average it evaluates.
+- **A pass over the goal detail page.** Charts reserve only the gutter their
+  own axis labels need, so the plot uses the card width; tooltips name the day
+  once as a header above their values, keep the value bold with a quieter
+  label beside it, and can no longer be clipped by the card edge. Habit cards
+  read one thing per row — cadence, span, days, then the six-week tail — and
+  their day strips narrow to fit instead of opening with the first days cut
+  off. A quota already passed reads as "6 this window · target 3" rather than
+  "6 of 3". The day-cell key appears once, on the first habit card. A signal
+  with no readings shows no empty chart frame, tracked-time bars gained a
+  value axis, a date row, a key and a tap-to-read value, and the suggestion to
+  check off a habit is now a proper prompt instead of fine print.
+- **Reflection sheets tell the truth about a day's numbers.** A step count is
+  labelled "Steps", not "Average steps per day", and the trailing seven-day
+  average it belongs to appears on its own line. Rating individual dimensions
+  no longer renders each name as a column of single letters, and the sheet
+  clears the status bar.
+- **Goal health data refreshes when you open Goals.** Entering the Goals list
+  or a goal's page re-imports the health signals that goal watches, so weight,
+  blood pressure and step cards are never a day behind the phone.
 - **The goal page opens with the agent's read, wider, without repeating
   itself.** The AI summary now sits first with the goal-days strip beneath
   it; the "Your goal" label and the statement no longer repeat under a

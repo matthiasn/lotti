@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_day_verdict.dart';
+import 'package:lotti/features/goals/logic/goal_metric_series.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -312,23 +313,28 @@ class _GoalDayAssessmentSheetState
                   style: tokens.typography.styles.body.bodySmall,
                 ),
                 children: [
+                  // Label ABOVE its control, not beside it. Beside it, the
+                  // toggle claimed a fixed 480px — wider than a phone sheet —
+                  // so the label's Expanded resolved to zero width and every
+                  // dimension name rendered as a vertical column of single
+                  // letters with the toggle painted across it. Four verdicts
+                  // need the full measure on their own row anyway.
                   for (final row in measured)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
+                    if (row.ratable)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: _sectionGap(tokens)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
                               row.name,
                               style: tokens.typography.styles.body.bodySmall
                                   .copyWith(
                                     color: tokens.colors.text.highEmphasis,
                                   ),
                             ),
-                          ),
-                          SizedBox(
-                            width: tokens.spacing.step13 * 3,
-                            child: DsSegmentedToggle<GoalAssessmentRating>(
+                            SizedBox(height: _bindGap(tokens)),
+                            DsSegmentedToggle<GoalAssessmentRating>(
                               expand: true,
                               selected:
                                   _dimensionRatings[row.criterionId] ?? _rating,
@@ -338,10 +344,9 @@ class _GoalDayAssessmentSheetState
                               ),
                               segments: _ratingSegments(context),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                 ],
               ),
               SizedBox(height: _sectionGap(tokens)),
@@ -375,8 +380,17 @@ typedef _MeasuredRow = ({
   String name,
   String value,
   bool? met,
+  bool ratable,
 });
 
+/// The evidence rows for one day: what each dimension recorded, and — where a
+/// daily number only means something in context — the trailing average that
+/// number belongs to.
+///
+/// Derived rows carry `ratable: false`. The per-dimension verdict control
+/// below rates CRITERIA, and a rolling average is not one: offering a Met /
+/// Improving / Mixed / Missed toggle against it would file a judgement under
+/// the criterion id its parent row already owns.
 List<_MeasuredRow> _measuredRows(
   BuildContext context,
   GoalProgressView progress,
@@ -399,11 +413,16 @@ List<_MeasuredRow> _measuredRows(
             .where((entry) => DateUtils.isSameDay(entry.day, day))
             .firstOrNull
             ?.hasValue,
+        ratable: true,
       ),
-    for (final metric in progress.metrics)
+    for (final metric in progress.metrics) ...[
       (
         criterionId: metric.criterionId,
-        name: metric.name,
+        // The DAY's own name for the quantity. A steps criterion is authored
+        // as "Average steps per day" because that is what it evaluates over a
+        // week — but the number printed beside it here is one day's total, and
+        // labelling 9,950 steps an average is simply false.
+        name: goalMetricDayRowLabel(context, metric),
         value:
             metric.days
                 .where((entry) => DateUtils.isSameDay(entry.day, day))
@@ -421,7 +440,27 @@ List<_MeasuredRow> _measuredRows(
             // one day's hours cannot be judged against a weekly total.
             .map((entry) => entry.isObserved ? metric.dayMark(entry) : null)
             .firstOrNull,
+        ratable: true,
       ),
+      // The average the goal is actually evaluated on, ending that day — the
+      // figure the day's own number is either pulling up or dragging down, and
+      // the one the criterion's target is compared against.
+      if (goalMetricShowsSevenDayAverage(metric))
+        if (goalMetricSevenDayAverageOn(metric, day: day) case final average?)
+          (
+            criterionId: '${metric.criterionId}:seven-day-average',
+            name: context.messages.goalDimensionRollingAverageRow(
+              goalMetricDayRowLabel(context, metric),
+            ),
+            value: formatGoalAggregate(
+              number,
+              average,
+              against: metric.target,
+            ),
+            met: null,
+            ratable: false,
+          ),
+    ],
   ];
 }
 
