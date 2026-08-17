@@ -284,7 +284,7 @@ class GoalAgentStrategy extends ConversationStrategy
     // rather than asked for in prose. Same authority as trackStatus above.
     if (structured != null && expectedRollingAggregates.isNotEmpty) {
       final missing = expectedRollingAggregates
-          .where((value) => !structured.rollingWindow.contains(value))
+          .where((value) => !_quotesNumber(structured.rollingWindow, value))
           .toList();
       if (missing.isNotEmpty) {
         await _reject(
@@ -324,6 +324,22 @@ class GoalAgentStrategy extends ConversationStrategy
     );
     await _accept(call, manager, 'Goal report updated.');
   }
+
+  /// Whether [text] quotes [value] as a COMPLETE number.
+  ///
+  /// Substring matching passed the exact fabrication this check exists to
+  /// catch: "127.85" contains "127", so a recomputed precision the FACTS
+  /// never carried scored as a faithful quote. Digits and decimal points on
+  /// either side disqualify a match, so 127 matches "127 mmHg" and "127," but
+  /// not "127.85" or "1127".
+  ///
+  /// Known limit: this proves the aggregate APPEARS, not that it is bound to
+  /// the right series. A slot naming 95 as the target while stating 94 as the
+  /// average still passes. Closing that needs the aggregates carried as typed
+  /// per-series fields rather than recovered from prose.
+  static bool _quotesNumber(String text, String value) => RegExp(
+    r'(?<![\d.])' + RegExp.escape(value) + r'(?![\d.])',
+  ).hasMatch(text);
 
   Future<void> _handleReplyToUser(
     ChatCompletionMessageToolCall call,
