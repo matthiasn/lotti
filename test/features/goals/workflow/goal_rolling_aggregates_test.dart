@@ -86,6 +86,7 @@ void main() {
     // A habit's `actual` is a completion count and a composite's is a count of
     // satisfied children. Requiring those would match any stray digit in the
     // sentence rather than prove the aggregate was read.
+    // Every non-metric leaf shape, so a new variant cannot slip in unnoticed.
     final tree = GoalCriterion.allOf(
       criterionId: 'root',
       criteria: [
@@ -95,12 +96,36 @@ void main() {
           window: GoalWindow.calendarWeek(),
           targetCount: 3,
         ),
+        const GoalCriterion.measurable(
+          criterionId: 'mood',
+          dataTypeId: 'mood-scale',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 4,
+        ),
+        const GoalCriterion.categoryTime(
+          criterionId: 'deep-work',
+          categoryId: 'category-1',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          targetHours: 2,
+        ),
+        const GoalCriterion.labelTime(
+          criterionId: 'admin',
+          labelId: 'label-1',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          targetHours: 1,
+        ),
         metric('steps'),
       ],
     );
     expect(
       goalRollingAggregateStrings(tree, {
         'gym': result('gym', actual: 2),
+        'mood': result('mood', actual: 3),
+        'deep-work': result('deep-work', actual: 5),
+        'admin': result('admin', actual: 7),
         'steps': result('steps', actual: 88),
         'root': result('root', actual: 1),
       }),
