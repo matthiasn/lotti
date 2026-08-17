@@ -106,6 +106,7 @@ void _usePlatform(TargetPlatform platform) {
   FlutterLocalNotificationsPlatform.instance = switch (platform) {
     TargetPlatform.iOS => IOSFlutterLocalNotificationsPlugin(),
     TargetPlatform.macOS => MacOSFlutterLocalNotificationsPlugin(),
+    TargetPlatform.android => AndroidFlutterLocalNotificationsPlugin(),
     _ => _FakeNotificationsPlatform(),
   };
 }
@@ -297,6 +298,187 @@ void main() {
           subDomain: 'initialization',
         ),
       ).called(1);
+    });
+  });
+
+  // Android was never actually wired: `InitializationSettings` carried no
+  // `android` entry, and the plugin throws `ArgumentError('Android settings
+  // must be set…')` in exactly that case. Because `_initializePlugin` swallows
+  // its own failures, that left the whole plugin silently uninitialised on
+  // Android — no reminders, no habit alerts, no error the user ever saw.
+  group('Android', () {
+    setUp(() {
+      _usePlatform(TargetPlatform.android);
+      setNotificationsEnabled(enabled: true);
+    });
+
+    test('initialize reaches the platform with the status-bar icon', () async {
+      await buildService();
+
+      // A drawable, not @mipmap/ic_launcher: Android masks the small icon by
+      // its alpha channel and paints the result white, so a full-bleed
+      // launcher icon arrives as a solid white square.
+      expect(channel.argsOf('initialize')['defaultIcon'], 'ic_stat_lotti');
+    });
+
+    test('initialize still asks for no permission', () async {
+      await buildService();
+
+      // The Darwin invariant holds here too: the runtime POST_NOTIFICATIONS
+      // prompt must come from an explicit request after the config flag is
+      // consulted, never as a side effect of the plugin waking up.
+      expect(
+        channel.methods,
+        isNot(contains('requestNotificationsPermission')),
+      );
+      expect(channel.methods, isNot(contains('requestPermissions')));
+    });
+
+    test('an alert carries the localized channel at high importance', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.showNotificationNow(
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        notificationId: 7,
+        showOnMobile: true,
+        showOnDesktop: false,
+      );
+
+      final specifics = channel.platformSpecificsOf('show')!;
+      expect(specifics['channelId'], 'lotti_reminders');
+      // Channel name and description are user-visible in Android's own
+      // settings, so they come from the ARB catalogs.
+      expect(specifics['channelName'], 'Reminders');
+      expect(
+        specifics['channelDescription'],
+        'Check-in reminders, habit reminders and alerts from Lotti.',
+      );
+      // The counterpart of the Darwin timeSensitive interruption level: a
+      // heads-up banner rather than a silent row in the shade.
+      expect(specifics['importance'], Importance.high.value);
+      expect(specifics['priority'], Priority.high.value);
+    });
+
+    test('a desktop-only alert carries no Android presentation', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.showNotificationNow(
+        title: 'title',
+        body: 'body',
+        notificationId: 8,
+        showOnMobile: false,
+        showOnDesktop: true,
+      );
+
+      expect(channel.platformSpecificsOf('show'), isNull);
+    });
+
+    test('scheduling asks for an inexact, doze-surviving alarm', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.scheduleNotificationAt(
+        title: 'title',
+        body: 'body',
+        notifyAt: DateTime(2026, 8, 21, 9),
+        notificationId: 9,
+        showOnMobile: true,
+        showOnDesktop: false,
+      );
+
+      // The exact modes need SCHEDULE_EXACT_ALARM, which Android 13+ does not
+      // grant on install and the Play Store restricts to alarm/calendar apps.
+      // `allowWhileIdle` is the half that matters: without it Doze defers the
+      // reminder on exactly the idle phone it exists for.
+      expect(
+        channel.platformSpecificsOf('zonedSchedule')!['scheduleMode'],
+        AndroidScheduleMode.inexactAllowWhileIdle.name,
+      );
+      expect(channel.methods, isNot(contains('requestExactAlarmsPermission')));
+    });
+
+    test('permission is requested explicitly, once the flag allows', () async {
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.showNotificationNow(
+        title: 'title',
+        body: 'body',
+        notificationId: 10,
+        showOnMobile: true,
+        showOnDesktop: false,
+      );
+
+      expect(channel.countOf('requestNotificationsPermission'), 1);
+    });
+
+    test('nothing crosses the channel while the flag is off', () async {
+      setNotificationsEnabled(enabled: false);
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.showNotificationNow(
+        title: 'title',
+        body: 'body',
+        notificationId: 11,
+        showOnMobile: true,
+        showOnDesktop: false,
+      );
+
+      expect(channel.calls, isEmpty);
+    });
+
+    test(
+      'a failing locale lookup degrades to English, not to no row',
+      () async {
+        // This runs inside NotificationRepository's vector-clock scope, which
+        // commits only when its body returns — so an exception escaping here
+        // would abort the notification row itself.
+        final service = NotificationService(
+          messages: () => throw StateError('no widgets binding'),
+        );
+        await service.initialized;
+        channel.calls.clear();
+
+        await expectLater(
+          service.showNotificationNow(
+            title: 'title',
+            body: 'body',
+            notificationId: 12,
+            showOnMobile: true,
+            showOnDesktop: false,
+          ),
+          completes,
+        );
+
+        final specifics = channel.platformSpecificsOf('show')!;
+        expect(specifics['channelName'], 'Reminders');
+        verify(
+          () => domainLogger.error(
+            LogDomain.notifications,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'resolveChannelMessages',
+          ),
+        ).called(1);
+      },
+    );
+
+    test('updateBadge is a no-op — Android has no icon badge', () async {
+      setWipCount(3);
+      final service = await buildService();
+      channel.calls.clear();
+
+      await service.updateBadge();
+
+      // The badge is a Darwin concept: a number carried by a notification's
+      // own `badge` field and posted with presentAlert false. The same call on
+      // Android posts a visible "3 tasks in progress" notification after every
+      // entry write — and would also prompt for POST_NOTIFICATIONS there.
+      expect(channel.calls, isEmpty);
     });
   });
 

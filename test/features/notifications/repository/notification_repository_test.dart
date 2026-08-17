@@ -675,6 +675,93 @@ void main() {
     });
   });
 
+  // Every write here runs inside `withVcScope(..., commitWhen: ...)`, and the
+  // predicate is what stops a failed write from burning a vector-clock tick.
+  // The shared mock documents that it runs the action and *ignores* the
+  // predicate, so a local subclass is needed to see it at all.
+  group('NotificationRepository vector-clock commit rule', () {
+    late _CommitEvaluatingVectorClockService commitClock;
+    late NotificationRepository commitRepository;
+
+    setUp(() {
+      commitClock = _CommitEvaluatingVectorClockService();
+      when(() => commitClock.getHost()).thenAnswer((_) async => 'host-a');
+      when(
+        () => commitClock.getNextVectorClock(previous: any(named: 'previous')),
+      ).thenAnswer((_) async => const VectorClock({'host-a': 1}));
+      commitRepository = NotificationRepository(
+        notificationsDb: notificationsDb,
+        vectorClockService: commitClock,
+        outboxService: outboxService,
+        updateNotifications: updateNotifications,
+        scheduler: scheduler,
+        now: () => fixedNow,
+      );
+    });
+
+    test('a create that produced a row commits the scope', () async {
+      await commitRepository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-1',
+        dueDayKey: '2026-06-16',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+
+      expect(commitClock.commits, [true]);
+    });
+
+    test('a create with no host yet does not commit', () async {
+      // No host means no vector clock can be attributed, so the row is not
+      // written — and the scope must not commit, or the tick is spent on a
+      // write that never happened.
+      when(() => commitClock.getHost()).thenAnswer((_) async => null);
+
+      final saved = await commitRepository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-1',
+        dueDayKey: '2026-06-16',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+
+      expect(saved, isNull);
+      expect(commitClock.commits, [false]);
+    });
+
+    test('a state transition that changed something commits', () async {
+      final saved = await commitRepository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-1',
+        dueDayKey: '2026-06-16',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+      commitClock.commits.clear();
+
+      await commitRepository.retract(saved!.id);
+
+      expect(commitClock.commits, [true]);
+    });
+
+    test('a state transition with no host does not commit', () async {
+      final saved = await commitRepository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-1',
+        dueDayKey: '2026-06-16',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+      commitClock.commits.clear();
+      when(() => commitClock.getHost()).thenAnswer((_) async => null);
+
+      final result = await commitRepository.markSeen(saved!.id);
+
+      expect(result, isNull);
+      expect(commitClock.commits, [false]);
+    });
+  });
+
   group('NotificationRepository notification IDs', () {
     test(
       'notification id helpers are deterministic and version 5 UUIDs',
@@ -704,6 +791,247 @@ void main() {
         );
       },
     );
+
+    test(
+      'check-in ids are episode-scoped, not relationship-scoped',
+      () {
+        // Two episodes of the same person must be two rows: the lifecycle
+        // marks are monotonic, so reusing one row would mean a dismissal in
+        // August permanently silences September.
+        final august = repository.notificationIdForRelationshipCheckIn(
+          linkedRelationshipId: 'rel-1',
+          dueDayKey: '2026-08-17',
+        );
+        final september = repository.notificationIdForRelationshipCheckIn(
+          linkedRelationshipId: 'rel-1',
+          dueDayKey: '2026-09-16',
+        );
+        final otherPerson = repository.notificationIdForRelationshipCheckIn(
+          linkedRelationshipId: 'rel-2',
+          dueDayKey: '2026-08-17',
+        );
+
+        expect(august, isNot(september));
+        expect(august, isNot(otherPerson));
+        // Deterministic across devices — two phones deriving the same episode
+        // converge on one row instead of double-nudging.
+        expect(
+          august,
+          repository.notificationIdForRelationshipCheckIn(
+            linkedRelationshipId: 'rel-1',
+            dueDayKey: '2026-08-17',
+          ),
+        );
+        expect(
+          august,
+          matches(
+            RegExp(
+              '^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-'
+              r'[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+            ),
+          ),
+        );
+        // Distinct namespace from the task-suggestion helper, so a
+        // relationship id can never collide with a task id.
+        expect(
+          august,
+          isNot(repository.notificationIdForTaskSuggestion('rel-1')),
+        );
+      },
+    );
+  });
+
+  group('NotificationRepository.createRelationshipCheckIn', () {
+    final dueDay = DateTime.utc(2026, 6, 16, 9);
+
+    Future<NotificationEntity?> arm({
+      String relationshipId = 'rel-1',
+      String dueDayKey = '2026-06-16',
+      String title = 'Check in with Anna?',
+      DateTime? scheduledFor,
+    }) => repository.createRelationshipCheckIn(
+      linkedRelationshipId: relationshipId,
+      dueDayKey: dueDayKey,
+      title: title,
+      body: 'A good moment to reach out.',
+      scheduledFor: scheduledFor ?? dueDay,
+      category: 'cat-1',
+    );
+
+    test('writes a schedulable row carrying the person and category', () async {
+      final saved = await arm();
+
+      expect(saved, isA<RelationshipCheckInNotification>());
+      expect(
+        saved!.meta.id,
+        repository.notificationIdForRelationshipCheckIn(
+          linkedRelationshipId: 'rel-1',
+          dueDayKey: '2026-06-16',
+        ),
+      );
+      expect(saved.linkedEntityId, 'rel-1');
+      expect(saved.meta.scheduledFor, dueDay);
+      expect(saved.meta.category, 'cat-1');
+      expect(saved.type, 'relationshipCheckIn');
+      // Handed straight to the scheduler, which is what puts the alarm on the
+      // OS clock while the app is still open.
+      verify(() => scheduler.schedule(saved, now: fixedNow)).called(1);
+    });
+
+    test('a second arm for the same episode writes nothing', () async {
+      await arm();
+      clearInteractions(scheduler);
+      clearInteractions(outboxService);
+
+      final again = await arm();
+
+      // The producer re-derives this on every daily tick and every check-in
+      // write. Upserting would bump updatedAt, enqueue an outbox message and
+      // re-notify listeners every single tick — the €0 no-op property of the
+      // deterministic tier depends on this returning early.
+      expect(again, isNull);
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+      verifyNever(
+        () => outboxService.enqueueNotification(
+          any<NotificationEntity>(),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+    });
+
+    test('never resurrects an episode the user dismissed', () async {
+      final saved = await arm();
+      await repository.retract(saved!.id);
+      clearInteractions(scheduler);
+
+      final again = await arm();
+
+      expect(again, isNull);
+      final stored = await notificationsDb.notificationById(saved.id);
+      expect(stored!.meta.deletedAt, isNotNull);
+      verifyNever(
+        () => scheduler.schedule(
+          any<NotificationEntity>(),
+          now: any(named: 'now'),
+        ),
+      );
+    });
+
+    test('a new episode is armed even while the old one is open', () async {
+      // A check-in logged mid-cadence moves the due day; the new episode must
+      // arm regardless of what happened to the previous one.
+      await arm();
+      final next = await arm(dueDayKey: '2026-07-16');
+
+      expect(next, isNotNull);
+      expect(next!.meta.id, isNot((await arm())?.id));
+    });
+  });
+
+  group('NotificationRepository.retractRelationshipCheckIns', () {
+    Future<NotificationEntity> armEpisode(String dueDayKey) async {
+      final saved = await repository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-1',
+        dueDayKey: dueDayKey,
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+      return saved!;
+    }
+
+    test('retracts every open episode when nothing is spared', () async {
+      final first = await armEpisode('2026-06-16');
+      final second = await armEpisode('2026-07-16');
+
+      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+
+      expect(
+        retracted.map((row) => row.id).toSet(),
+        {first.id, second.id},
+      );
+      for (final id in [first.id, second.id]) {
+        expect(
+          (await notificationsDb.notificationById(id))!.meta.deletedAt,
+          isNotNull,
+        );
+      }
+    });
+
+    test('spares the episode currently armed', () async {
+      final superseded = await armEpisode('2026-06-16');
+      final current = await armEpisode('2026-07-16');
+
+      final retracted = await repository.retractRelationshipCheckIns(
+        'rel-1',
+        exceptId: current.id,
+      );
+
+      expect(retracted.map((row) => row.id), [superseded.id]);
+      expect(
+        (await notificationsDb.notificationById(current.id))!.meta.deletedAt,
+        isNull,
+      );
+    });
+
+    test("leaves another person's reminders alone", () async {
+      final mine = await armEpisode('2026-06-16');
+      final theirs = await repository.createRelationshipCheckIn(
+        linkedRelationshipId: 'rel-2',
+        dueDayKey: '2026-06-16',
+        title: 'Check in with Ben?',
+        body: 'A good moment to reach out.',
+        scheduledFor: DateTime.utc(2026, 6, 16, 9),
+      );
+
+      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+
+      expect(retracted.map((row) => row.id), [mine.id]);
+      expect(
+        (await notificationsDb.notificationById(theirs!.id))!.meta.deletedAt,
+        isNull,
+      );
+    });
+
+    test('is idempotent — a second pass writes nothing', () async {
+      await armEpisode('2026-06-16');
+      await repository.retractRelationshipCheckIns('rel-1');
+      clearInteractions(outboxService);
+
+      final second = await repository.retractRelationshipCheckIns('rel-1');
+
+      expect(second, isEmpty);
+      verifyNever(
+        () => outboxService.enqueueNotificationStateUpdate(
+          id: any(named: 'id'),
+          seenAt: any(named: 'seenAt'),
+          actedOnAt: any(named: 'actedOnAt'),
+          deletedAt: any(named: 'deletedAt'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+        ),
+      );
+    });
+
+    test('ignores task rows linked to the same id', () async {
+      // `forLinkedEntity` is not variant-scoped, so the filter has to be.
+      await repository.createTaskSuggestion(
+        linkedTaskId: 'rel-1',
+        suggestionCount: 1,
+        title: 'Suggestion',
+        body: 'b',
+      );
+      final reminder = await armEpisode('2026-06-16');
+
+      final retracted = await repository.retractRelationshipCheckIns('rel-1');
+
+      expect(retracted.map((row) => row.id), [reminder.id]);
+    });
   });
 }
 
@@ -736,4 +1064,24 @@ NotificationEntity _entityForCreate({
     title: 'Title',
     body: 'Body',
   );
+}
+
+/// [MockVectorClockService] that actually evaluates `commitWhen`.
+///
+/// The shared mock deliberately runs the action and ignores the predicate, so
+/// the commit rule — a write that produced nothing must not commit the scope,
+/// and therefore must not spend a vector-clock tick — is invisible to any test
+/// using it. Overriding one method keeps the rest of the shared stubs.
+class _CommitEvaluatingVectorClockService extends MockVectorClockService {
+  final List<bool> commits = [];
+
+  @override
+  Future<T> withVcScope<T>(
+    Future<T> Function() action, {
+    bool Function(T result)? commitWhen,
+  }) async {
+    final result = await action();
+    if (commitWhen != null) commits.add(commitWhen(result));
+    return result;
+  }
 }

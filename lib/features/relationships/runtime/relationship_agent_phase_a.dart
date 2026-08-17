@@ -40,6 +40,29 @@ typedef RelationshipCadenceDerivation = ({
   String dueDayKey,
 });
 
+/// The OS-reminder seam (ADR 0039, plan v2 phase 8).
+///
+/// Declared here, next to the derivation it consumes, so the dependency runs
+/// one way: `RelationshipReminderService` implements this and imports Phase A,
+/// while Phase A stays unaware of `features/notifications` entirely. Phase A
+/// decides *when* a person is due; what that means for the OS notification
+/// layer is not its concern.
+///
+/// Implementations must be **best-effort and non-throwing** — a wake's job is
+/// the cadence register, and a notification-database hiccup must not fail the
+/// wake into a retry.
+abstract interface class RelationshipReminderSink {
+  /// Arms the reminder for the episode [derivation] describes and drops any
+  /// superseded one. Called only for a person who passed the eligibility gate.
+  Future<void> arm({
+    required RelationshipEntry relationship,
+    required RelationshipCadenceDerivation derivation,
+  });
+
+  /// Drops every open reminder for a person who should no longer be nudged.
+  Future<void> clearFor(String relationshipId);
+}
+
 /// Phase A of the relationship-agent wake (ADR 0059 Decision 2, the
 /// ADR 0054 deterministic tier): model-free, idempotent, €0 — the tier that
 /// runs on every tick, on every device.
@@ -57,11 +80,17 @@ class RelationshipAgentPhaseA {
     required this._syncService,
     required this._relationshipRepository,
     this._onEscalationArmed,
+    this._reminders,
   });
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final RelationshipRepository _relationshipRepository;
+
+  /// The OS-reminder projection of the cadence verdict, or null where
+  /// reminders are not wired (tests, and any host without a notification
+  /// stack). Every call is best-effort by contract.
+  final RelationshipReminderSink? _reminders;
 
   /// Nudges the scheduled-wake manager after an escalation is armed, so a
   /// local transition is processed promptly instead of waiting out the
@@ -98,6 +127,11 @@ class RelationshipAgentPhaseA {
       // proactive behavior, and dormant/archived people are deliberately
       // excluded (ADR 0039 Decision 2). The cadence tick above keeps
       // checking, so flipping the switch needs no re-wiring.
+      //
+      // Withdrawing consent has to reach the OS too: an alarm armed while
+      // the person was important would otherwise still fire days after the
+      // user un-marked or archived them.
+      await _reminders?.clearFor(relationshipId);
       return const WakeResult(success: true);
     }
 
@@ -155,6 +189,15 @@ class RelationshipAgentPhaseA {
         if (armed) _onEscalationArmed?.call();
       }
     });
+
+    // Deliberately AFTER the transaction, not inside it. The reminder row
+    // lives in `notifications.sqlite` behind its own vector-clock scope and
+    // outbox enqueue; running that inside the agent database's transaction
+    // zone would buffer a notification's sync messages against the commit of
+    // an unrelated store. The reminder is a projection of state this
+    // transaction just made durable, so deriving it afterwards is also the
+    // correct ordering.
+    await _reminders?.arm(relationship: relationship, derivation: derivation);
 
     return const WakeResult(success: true);
   }

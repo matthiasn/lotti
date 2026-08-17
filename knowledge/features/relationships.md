@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Relationships
-description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, how the deterministic agent tier tracks cadence at zero inference cost, and how the LLM tier turns a fired escalation into a briefing, a banner and chat without ever seeing a contact channel.
+description: A personal CRM carried by two journal variants — why check-ins are bound to a person twice, how the People list orders by recency without an N+1, what the delete cascade reaches, how the deterministic agent tier tracks cadence at zero inference cost, how the LLM tier turns a fired escalation into a briefing, a banner and chat without ever seeing a contact channel, and how the same verdict is projected onto an OS alarm for the case a banner cannot reach.
 resource: ../../lib/features/relationships
 tags: [relationships, check-ins, journal-entity, privacy]
 status: stable
@@ -36,6 +36,14 @@ sources:
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
     title: ADR 0059 — Relationship agents on the shared runtime
     last_modified: 2026-08-16
+  - id: reminders
+    resource: ../../lib/features/relationships/service/relationship_reminder_service.dart
+    title: RelationshipReminderService — the OS-reminder projection
+    last_modified: 2026-08-17
+  - id: adr-0039
+    resource: ../../docs/adr/0039-relationship-check-in-reminders.md
+    title: ADR 0039 — Relationship check-in reminders
+    last_modified: 2026-08-17
 ---
 
 A person the user deliberately tracks is a `JournalEntity.relationship`; each
@@ -194,6 +202,11 @@ deletion — the page would navigate away from a person who is still there.
   identity for audit, like every destroyed agent. The leg is fire-and-forget
   and contained — a failed teardown never fails the delete the user watched
   succeed, and runtime maintenance repairs the rest.
+- ~~Pending OS reminders.~~ Since plan v2 phase 8 the delete surface also
+  retracts them (ADR 0037 §5). This one cannot be left to the next Phase A
+  tick the way the eligibility cases are, because destroying the agent is
+  precisely what stops those ticks — an alarm armed weeks ago would otherwise
+  still fire, naming someone the user deleted.
 
 # Notifications: no private channel
 
@@ -324,6 +337,82 @@ removed:
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
   model to a provider name; a cloud provider is named in a consent dialog
   first (ADR 0037), and an unresolvable profile is treated as cloud.
+
+# Reaching a user who has not opened the app (plan v2 phase 8)
+
+A banner needs the app running. The case a check-in reminder exists for is the
+opposite one — five weeks of not opening Lotti — so the OS has to be holding
+the alarm before the app closes.
+
+That makes the reminder a **projection of Phase A's verdict, not a second
+producer**. Phase A already derives the cadence on the daily tick, on every
+check-in write and on every relationship save; a separate event-driven service
+(what ADR 0039 Decision 3 originally proposed) would have been a second source
+of truth for "when is this person due", free to disagree with the banner and
+the briefing. `RelationshipReminderSink` is the seam, declared in Phase A's own
+file so the dependency runs one way: the service imports Phase A, and Phase A
+never learns that `features/notifications` exists.
+
+```mermaid
+flowchart TD
+  A[RelationshipAgentPhaseA] --> E{eligible?}
+  E -->|"no — unimportant, dormant,<br/>archived, deleted, unresolvable"| C["clearFor(relationshipId)<br/>retract every open reminder"]
+  E -->|yes| TX["agent transaction:<br/>sweep · register · escalation"]
+  TX --> ARM["arm(relationship, derivation)<br/>AFTER the commit"]
+  ARM --> ID["id = uuid5(relationshipId, dueDayKey)"]
+  ID --> EX{"row for this episode<br/>already exists?"}
+  EX -->|yes| NOOP["no write — the daily tick stays €0,<br/>and a dismissal is never resurrected"]
+  EX -->|no| ROW["durable inbox row,<br/>scheduledFor = due day 09:00 local"]
+  ROW --> OS["NotificationScheduler → zonedSchedule"]
+  ROW --> RET["retract superseded episodes<br/>(the old due day means nothing now)"]
+```
+
+Four properties carry the design:
+
+- **The arm happens after the transaction commits, deliberately.** The row
+  lives in `notifications.sqlite` behind its own vector-clock scope and outbox
+  enqueue; running it inside the agent database's transaction zone would buffer
+  a notification's sync messages against the commit of an unrelated store.
+- **Identity is per episode, not per person.** The three lifecycle marks are
+  monotonic and cannot be cleared, so one row per person would let an August
+  dismissal permanently silence September. A check-in moves the due day, which
+  mints a new episode and retracts the old one — which is also what cancels its
+  OS alarm.
+- **An existing episode is left exactly alone.** The producer runs on every
+  tick; a plain upsert would bump `updatedAt`, enqueue an outbox message and
+  re-notify listeners each time, and would resurrect a row the user dismissed.
+  Everything derived from the episode key is already pinned by it, so an
+  existing row is correct by construction — only the person's display name
+  could drift mid-episode, and the next episode picks that up.
+- **The sink never throws.** By the time it runs, the wake's real work — the
+  cadence register — has already committed. Letting a notification-store
+  failure escape would fail a wake that succeeded and schedule a retry of it,
+  to fix an alarm the next daily tick re-derives anyway.
+
+**One reminder per episode means an ignored person is reminded once.** The
+episode key is the due day, and the due day only moves when a check-in lands —
+so if the user never checks in, no second reminder is ever armed for that
+person. That is the same anti-nag ceiling the banner escalation has, applied to
+the OS channel, and it is deliberate: a reminder that repeats until obeyed is
+the thing that trains people to switch reminders off. It is worth stating
+because "reminder" reads as recurring, and the next person to touch this will
+assume it is. Making it recur would mean rolling the episode key forward on
+elapsed cadences rather than on check-ins.
+
+The due day is a DST-safe *day key* (UTC midnight standing for a local calendar
+day), not an instant, so the reminder hour is rebuilt from its calendar
+components — reading it as an instant would fire the reminder at the user's UTC
+offset instead of in their morning.
+
+Withdrawing consent reaches the OS: un-marking `important`, going dormant or
+archived, or a relationship that no longer resolves all retract the pending
+rows on the next tick. Deletion cannot wait for that tick — destroying the
+agent is what stops the ticks — so `RelationshipDetailsPage` fires the reminder
+leg of the cascade directly, beside the agent leg.
+
+Everything about how those rows then reach the OS — the Android story, startup
+re-arming, why a reminder stays out of the bell until its due day, and why its
+copy is baked at write time — is in [notifications](notifications.md).
 
 # Privacy
 

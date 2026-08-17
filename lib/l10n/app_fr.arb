@@ -3537,6 +3537,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Rappels de prise de nouvelles, rappels d'habitudes et alertes de Lotti.",
+  "notificationChannelRemindersName": "Rappels",
   "notificationInboxDismiss": "Ignorer la notification",
   "notificationInboxEmpty": "Tu es à jour.",
   "notificationInboxError": "Impossible de charger les notifications.",
@@ -3985,6 +3987,15 @@
   "relationshipCadenceWeekly": "Chaque semaine",
   "relationshipChatTooltip": "Discuter de cette personne",
   "relationshipChatUnavailable": "Pas encore d'agent — marque d'abord cette personne comme importante.",
+  "relationshipCheckInReminderBody": "Un bon moment pour reprendre contact.",
+  "relationshipCheckInReminderTitle": "Prendre des nouvelles de {name} ?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Échanges",
   "relationshipContactChannelsLabel": "Coordonnées",
   "relationshipCreateTitle": "Ajouter une personne",

@@ -3946,6 +3946,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Påmindelser om kontakt, vanepåmindelser og beskeder fra Lotti.",
+  "notificationChannelRemindersName": "Påmindelser",
   "notificationInboxDismiss": "Afvisningsmeddelelse",
   "notificationInboxEmpty": "Du er helt ajour.",
   "notificationInboxError": "Kunne ikke indlæse notifikationer.",
@@ -4498,6 +4500,15 @@
   "relationshipCadenceWeekly": "Ugentligt",
   "relationshipChatTooltip": "Chat om denne person",
   "relationshipChatUnavailable": "Ingen agent endnu — markér først personen som vigtig.",
+  "relationshipCheckInReminderBody": "Et godt tidspunkt at tage kontakt.",
+  "relationshipCheckInReminderTitle": "Tag kontakt til {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Kontaktoplysninger",
   "relationshipCreateTitle": "Tilføj person",

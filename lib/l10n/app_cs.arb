@@ -3544,6 +3544,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Připomenutí kontaktu, připomenutí návyků a upozornění z Lotti.",
+  "notificationChannelRemindersName": "Připomenutí",
   "notificationInboxDismiss": "Zavřít oznámení",
   "notificationInboxEmpty": "Máš všechno přečtené.",
   "notificationInboxError": "Oznámení se nepodařilo načíst.",
@@ -3992,6 +3994,15 @@
   "relationshipCadenceWeekly": "Každý týden",
   "relationshipChatTooltip": "Chatovat o této osobě",
   "relationshipChatUnavailable": "Zatím žádný agent — nejprve označ tuto osobu jako důležitou.",
+  "relationshipCheckInReminderBody": "Dobrá chvíle se ozvat.",
+  "relationshipCheckInReminderTitle": "Ozvat se: {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Záznamy kontaktů",
   "relationshipContactChannelsLabel": "Kontaktní údaje",
   "relationshipCreateTitle": "Přidat osobu",

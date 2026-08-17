@@ -16,12 +16,14 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -29,6 +31,20 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
+
+  // `relationshipReminderServiceProvider` resolves the notification repository
+  // from getIt (it is a plain singleton there, not a Riverpod provider), so the
+  // real provider graph cannot be built without it. Registered rather than
+  // overridden so the graph under test stays the production one.
+  setUp(() {
+    getIt.registerSingleton<NotificationRepository>(
+      MockNotificationRepository(),
+    );
+  });
+
+  tearDown(() async {
+    await getIt.reset();
+  });
 
   const agentId = 'relationship_agent:person-1';
 
@@ -293,6 +309,10 @@ void main() {
             relationshipRepository,
           ),
           scheduledWakeManagerProvider.overrideWithValue(wakeManager),
+          // Phase A now also carries the OS-reminder sink, whose service takes
+          // a logger; without this the real graph reaches the unoverridable
+          // loggingServiceProvider.
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       addTearDown(c.dispose);

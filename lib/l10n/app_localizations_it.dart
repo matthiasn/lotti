@@ -9196,6 +9196,13 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Promemoria di contatto, promemoria delle abitudini e avvisi di Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Promemoria';
+
+  @override
   String get notificationInboxDismiss => 'Discorso della notifica';
 
   @override
@@ -10361,6 +10368,15 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Nessun agente ancora: prima segna questa persona come importante.';
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Un buon momento per farsi sentire.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Ti fai sentire con $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Contatti registrati';

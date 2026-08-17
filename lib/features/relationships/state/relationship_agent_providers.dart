@@ -10,12 +10,26 @@ import 'package:lotti/features/ai/helpers/profile_locality.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
+import 'package:lotti/get_it.dart';
+
+/// The OS-reminder projection of the cadence verdict (ADR 0039, plan v2
+/// phase 8) — durable inbox rows first, OS alarms second.
+final relationshipReminderServiceProvider =
+    Provider<RelationshipReminderService>(
+      (ref) => RelationshipReminderService(
+        notificationRepository: getIt<NotificationRepository>(),
+        domainLogger: ref.watch(domainLoggerProvider),
+      ),
+      name: 'relationshipReminderServiceProvider',
+    );
 
 /// The deterministic tier of the relationship agent (ADR 0059 Decision 2).
 final relationshipAgentPhaseAProvider = Provider<RelationshipAgentPhaseA>(
@@ -27,6 +41,7 @@ final relationshipAgentPhaseAProvider = Provider<RelationshipAgentPhaseA>(
     // out the hourly poll (the goal Phase A pattern).
     onEscalationArmed: () =>
         ref.read(scheduledWakeManagerProvider).requestCheck(),
+    reminders: ref.watch(relationshipReminderServiceProvider),
   ),
   name: 'relationshipAgentPhaseAProvider',
 );

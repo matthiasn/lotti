@@ -65,6 +65,24 @@ class RelationshipDetailsPage extends ConsumerWidget {
             // Logged by the service layer where possible; never surfaced.
           }
         }());
+        // The cascade's reminder leg (ADR 0037 §5): an alarm armed weeks
+        // ago would otherwise still fire, naming someone the user deleted.
+        // Destroying the agent stops Phase A from clearing it later, so
+        // this cannot be left to the next tick.
+        //
+        // Guarded like the agent leg, and for the same reason: `ref.read`
+        // itself throws once this widget is disposed, and the await above is
+        // long enough for that to happen. Unguarded it would surface as
+        // "could not delete" for a delete that succeeded.
+        unawaited(() async {
+          try {
+            await ref
+                .read(relationshipReminderServiceProvider)
+                .clearFor(relationship.id);
+          } catch (_) {
+            // clearFor is non-throwing by contract; this guards the read.
+          }
+        }());
       }
       if (!context.mounted) return;
       if (deleted) {

@@ -9078,6 +9078,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Påminnelser om att höra av dig, vanepåminnelser och aviseringar från Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Påminnelser';
+
+  @override
   String get notificationInboxDismiss => 'Avvisande meddelande';
 
   @override
@@ -10231,6 +10238,15 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Ingen agent än — markera personen som viktig först.';
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Ett bra tillfälle att höra av dig.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Hör av dig till $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Avstämningar';

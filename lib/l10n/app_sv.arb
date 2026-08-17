@@ -3946,6 +3946,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Påminnelser om att höra av dig, vanepåminnelser och aviseringar från Lotti.",
+  "notificationChannelRemindersName": "Påminnelser",
   "notificationInboxDismiss": "Avvisande meddelande",
   "notificationInboxEmpty": "Du är helt ikapp.",
   "notificationInboxError": "Kunde inte ladda notiser.",
@@ -4498,6 +4500,15 @@
   "relationshipCadenceWeekly": "Varje vecka",
   "relationshipChatTooltip": "Chatta om den här personen",
   "relationshipChatUnavailable": "Ingen agent än — markera personen som viktig först.",
+  "relationshipCheckInReminderBody": "Ett bra tillfälle att höra av dig.",
+  "relationshipCheckInReminderTitle": "Hör av dig till {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Avstämningar",
   "relationshipContactChannelsLabel": "Kontaktuppgifter",
   "relationshipCreateTitle": "Lägg till person",

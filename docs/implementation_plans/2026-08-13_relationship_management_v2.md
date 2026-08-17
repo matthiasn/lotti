@@ -360,15 +360,38 @@ end-to-end in an integration-style test with a fake transcription backend.
 Exit: import→call→resume→spoken-check-in loop demonstrated on iOS and
 Android; desktop parity via manual channels.
 
-### Phase 8 — OS reminders (deferred ADR 0039, optional for v1)
+### Phase 8 — OS reminders (deferred ADR 0039, optional for v1) — **done**
 
-`NotificationEntity.relationshipCheckIn` variant; producer on check-in/
-relationship save; wire `NotificationScheduler.reconcile()` at startup
-(behavior change for **all** inbox types — own tests; `taskOverdue` rows
-scanned); make the scheduler's `_deepLinkFor` variant-aware (today it
-hardcodes `/tasks/<id>`). Content-minimal lock-screen copy. Gate: only build
-this once banner-channel dogfooding shows closed-app reminders are actually
-missed.
+Built 2026-08-17. Shipped as planned: the
+`NotificationEntity.relationshipCheckIn` variant, a variant-aware
+`_deepLinkFor` (`/people/<id>`), content-minimal lock-screen copy, and
+`NotificationScheduler.reconcile()` at startup.
+
+Four deltas against the sketch above, all recorded in
+[ADR 0039](../adr/0039-relationship-check-in-reminders.md)'s amendments:
+
+1. **No separate producer.** `RelationshipAgentPhaseA` already derives the
+   cadence on the daily tick, on every check-in write and on relationship
+   saves. The reminder is a projection of that one derivation
+   (`RelationshipReminderSink`, implemented by `RelationshipReminderService`),
+   not a second source of truth free to disagree with the banner. It is armed
+   **after** the agent transaction commits — the row lives in
+   `notifications.sqlite` behind its own vector-clock scope.
+2. **`reconcile()` had to be re-implemented, not wired.** It was deleted as
+   dead code in #3748; the plan's "wire it" was written against a stale ADR.
+3. **The inbox had to learn to hold a row back.** `inboxNotificationsProvider`
+   surfaces `upcoming` rows as well as due ones, so a reminder armed a cadence
+   ahead would have sat in the bell the whole time — the ambient nagging the
+   banner channel was chosen over an inbox to avoid. `showsBeforeScheduledTime`
+   is the per-variant gate.
+4. **Android notifications did not work at all** and had to be fixed here —
+   see the ADR consequences. Also fixed en route: the bell routed *every*
+   variant through `openLinkedTaskDetail`.
+
+Not done, deliberately, and still open: **nothing consumes the deep-link
+payload** on any platform (no `onDidReceiveNotificationResponse`, no
+`getNotificationAppLaunchDetails`), so tapping a notification opens the app
+wherever it was. That predates this phase and wants its own change.
 
 ### Phase 9 — Docs, privacy, release readiness
 
