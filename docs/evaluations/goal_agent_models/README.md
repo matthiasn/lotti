@@ -398,6 +398,56 @@ where the model answers instead of asking the clarifying question) and ~5-7
 model behaviour, and both sit in the high-variance scenarios, so more samples
 beat more fixes from here.
 
+## Prompt edits need full-suite confirmation — 2026-08-18
+
+`evo_ambiguous` (vague musing: ask one clarifying question, do not propose)
+sat at 4-6/10. Reading the captured replies showed genuine model behaviour,
+not a harness artifact: warm coaching that never asks anything. The suspected
+cause was structural — "for vague musings, ask one clarifying question" lived
+inside rule 2, *Goal-change requests*, and a user sighing "this feels a bit
+much" never reads as a change request, so the model never reached the clause.
+
+Moving it into rule 1 produced a clean, large, targeted win. Measured on 40
+samples of that scenario alone (a cheap way to buy a real error bar):
+
+| Measure | Before | After | Delta (95% band) |
+| --- | ---: | ---: | --- |
+| any `?` anywhere | 0.525 | 0.900 | +0.375 (+/-0.181) |
+| question in the final quarter | 0.375 | 0.900 | +0.525 (+/-0.177) |
+
+Both cleared their bands, and loose and strict agreed afterwards — the
+questions had moved to the END of the reply, so it was not rhetorical-aside
+inflation.
+
+**The full suite then killed it.** Two runs each side:
+
+| | Before | After |
+| --- | --- | --- |
+| Total | 243, 244 /260 | 236, 231 /260 |
+| `evo_withdrawn` | 10, 10 | 3, 2 |
+| `forbiddenToolCall` | 0 | 15 |
+
+The change was reverted. The target gain did not even hold consistently
+(10 then 6) while `evo_withdrawn` collapsed in both runs and ad over-creation
+returned.
+
+**The lesson is about method, not this rule.** A targeted measurement flatters
+a prompt edit, because it measures the one place the edit was aimed and none
+of the places it leaks. This is the third prompt change in two days with a
+local win and distributed damage; the two structural fixes (withholding tools
+the deterministic tier has ruled out, enforcing the aggregates) had no such
+tail. At 3572 of 3600 characters this prompt is dense enough that moving text
+between precedence rules redistributes attention rather than adding a rule.
+
+**Rule: never accept a prompt edit on a targeted measurement. Confirm on the
+full suite, twice, both sides.**
+
+What was kept is the stricter check. `evo_ambiguous` now requires the question
+in the last sentence (`\?[^?]{0,60}$`) rather than a `?` anywhere, because the
+loose form credited "Some days the win is just getting out the door?" buried
+mid-pep-talk. That LOWERS the reported score — 0.375 is the honest rate where
+0.525 was flattering — and it is the number to beat from here.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:

@@ -432,6 +432,44 @@ void main() {
       );
     });
 
+    test('a rhetorical aside is not a clarifying question', () {
+      // The vague-musing scenario wants the agent to ASK something. A loose
+      // "contains ?" credited pep talk with a rhetorical question buried in
+      // the middle: over 40 samples the loose form scored 0.525 where the
+      // question actually landed at the end only 0.375 of the time.
+      final scenario = scenarioById('evo_ambiguous');
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Some days the win is just getting out the door? '
+              'Totally normal. A short walk after dinner, parking farther '
+              'out, taking the stairs. Small wins stack. You have got this."}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.missingAssistantContent,
+      );
+      // Ending on the question is what the policy asks for.
+      expect(
+        classifyGoalAgentResult(
+          scenario: scenario,
+          toolCalls: [
+            call(
+              GoalAgentToolNames.replyToUser,
+              '{"message":"Totally fair — some weeks it is a lot. '
+              'What is making it feel heavy right now?"}',
+            ),
+          ],
+          assistantContent: '',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('reuse scenario fails a model that regenerates instead', () {
       final category = classifyGoalAgentResult(
         scenario: scenarioById('ad_reuse_top_rated'),
