@@ -379,6 +379,140 @@ void main() {
     expect(gated.reportStatus, GoalTrackStatus.offTrack);
   });
 
+  test('a report breaking several rules is told about all of them', () async {
+    // Sequential rejection cost one round trip per rule: the model fixed
+    // what it was told and tripped the next rule on the way out. A wake gets
+    // exactly ONE forced report retry, so two rules reported one at a time
+    // ended the wake with no standing report at all — which the outcome eval
+    // caught happening on 8 of one model's 9 failures.
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedStatus: GoalTrackStatus.offTrack,
+      expectedRollingAggregates: const ['6000'],
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            // Three rules at once: a status contradicting FACTS, a status
+            // token used as prose, and a rolling standing that never quotes
+            // the deterministic aggregate.
+            'status': 'atRisk',
+            'oneLiner': 'The goal is atRisk this week.',
+            'report': {
+              'tldr': 'Slightly behind.',
+              'currentPeriod': 'Around 6.4k yesterday.',
+              'rollingWindow': 'Averaging about 6.5k steps a day.',
+              'latestChange': 'Down from last week.',
+              'coverage': '7 days.',
+              'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(gated.hasReport, isFalse);
+    final refusal = rejection();
+    expect(refusal, contains('broke 3 rules'));
+    expect(refusal, contains('fix all of them in one call'));
+    // Each rule named, so one retry can satisfy every one of them.
+    expect(refusal, contains('is a status field value, not prose'));
+    expect(refusal, contains('the FACTS trackStatus is "offTrack"'));
+    expect(refusal, contains('6000 is missing'));
+    // Numbered, because an unstructured concatenation of three sentences is
+    // what the model has to act on.
+    expect(refusal, contains('1)'));
+    expect(refusal, contains('3)'));
+
+    // And the corrected report — every rule honoured at once — lands.
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'offTrack',
+            'oneLiner': 'Well under the daily target.',
+            'report': {
+              'tldr': 'Behind on steps.',
+              'currentPeriod': 'Around 6.4k yesterday.',
+              'rollingWindow': 'Averaging 6000 steps a day against 10000.',
+              'latestChange': 'Down from last week.',
+              'coverage': '7 days.',
+              'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.reportStatus, GoalTrackStatus.offTrack);
+  });
+
+  test('a single broken rule reads exactly as it always did', () async {
+    // The envelope is for the multiple case only: one problem must not gain
+    // a "broke 1 rules" preamble.
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedStatus: GoalTrackStatus.offTrack,
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'atRisk',
+            'oneLiner': 'Slightly behind.',
+            'tldr': 'A little under target.',
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(
+      rejection(),
+      'Error: the FACTS trackStatus is "offTrack" and it is authoritative '
+      '— use it verbatim.',
+    );
+  });
+
+  test('a missing status does not also report a status mismatch', () async {
+    // "needs status" and "the status is wrong" are the same defect stated
+    // twice; reporting both would make the model hunt for a second problem
+    // that does not exist.
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedStatus: GoalTrackStatus.offTrack,
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {'oneLiner': 'Behind.', 'tldr': 'Behind on steps.'},
+        ),
+      ],
+      manager: manager,
+    );
+    final refusal = rejection();
+    expect(refusal, contains('needs status'));
+    expect(refusal, isNot(contains('broke')));
+    expect(refusal, isNot(contains('authoritative')));
+  });
+
   test('a rolling standing quoting the latest reading instead of the '
       'aggregate is rejected', () async {
     // Every evaluated model substitutes the latest weigh-in for the 7-day
