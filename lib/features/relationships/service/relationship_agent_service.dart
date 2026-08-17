@@ -40,7 +40,10 @@ class RelationshipAgentService {
   /// Idempotent: an existing identity — whatever its lifecycle — is
   /// returned as-is. Un-marking `important` deliberately does NOT touch
   /// the agent: Phase A gates on eligibility every tick, so the switch is
-  /// instant in both directions with no re-wiring.
+  /// instant in both directions with no re-wiring. Instant includes the
+  /// banner already on the dock — Phase A retires it on the ineligible
+  /// path, since the render side filters on the person existing rather
+  /// than on their consent.
   Future<AgentIdentityEntity> ensureAgentForRelationship(
     RelationshipEntry relationship,
   ) async {
