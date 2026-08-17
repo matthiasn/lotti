@@ -292,9 +292,14 @@ roughly a tenth of the price, reproduced across two independent 10-sample runs:
 | `deepseek-v4-flash-0731` | 216/250 | 215/250 | 0.032 | 115.3 | 3.44s | 5.96s |
 | `glm-5.2` | 206/250 | 210/250 | 0.359 | 137.1 | 4.04s | 7.32s |
 
-**11.2x cheaper, faster at mean and p95, marginally less energy.** The cost and
-latency margins are an order of magnitude clear of the noise; the quality gap
-is not — see below.
+**11.2x cheaper, faster at mean and p95, somewhat less energy.** Each margin
+sits differently against its own noise, measured over the same five identical
+runs (per 250 cases): credits 0.089/0.090/0.087/0.088/0.089 (cv 1.2%), mean
+latency 3.33/3.43/3.24/3.19/3.87s (cv 7.1%), energy 304/310/291/290/353 Wh
+(cv 7.5%). So the 11.2x cost gap is roughly three orders of magnitude clear of
+its noise and is not in doubt; the ~18% latency and ~20% energy gaps are about
+2.5x their noise — real, but not decisive on one run each for GLM. The quality
+gap is the weakest of the four; see below.
 
 Two operational notes. The floating alias `deepseek-v4-flash` was down when
 this ran (five consecutive `HTTP 503`, "the model provider encountered an
@@ -311,8 +316,11 @@ user-visible defect is the complex-health reporting gap, not ad restraint.
 Running the same model on the same code five times is the control this suite
 never had. Totals: **219, 213, 223, 215, 214** — mean 216.8, range 10, sd 3.7.
 
-**A single 10-sample total carries about +/-7 at 95%.** Any delta below that is
-unmeasured, whatever direction it points.
+**Observed range 10 across five runs (sd 3.7, n=5).** A t-based 95% interval
+for a single future run is about +/-11 around the mean, so treat any total
+delta under ~10 cases as unmeasured, whatever direction it points. Five runs
+is itself a small sample for estimating sd, so this bound is indicative, not
+exact.
 
 Per-scenario noise is wildly uneven, and the noisy ones are exactly where
 report quality is judged:
@@ -331,8 +339,11 @@ the pass probability is a product of chances rather than a single draw.
 
 **Rules this imposes:**
 
-- Treat a total delta under ~8 cases as unmeasured. Resolving a 3-case effect
+- Treat a total delta under ~10 cases as unmeasured. Resolving a 3-case effect
   needs roughly 50 samples per cell (~1250 cases per model), not 10.
+- The floor above is for PASS COUNTS. Cost is far steadier (cv 1.2%) and
+  latency and energy noisier in relative terms (cv ~7%); judge each metric
+  against its own spread, not against the pass-count floor.
 - Never read per-scenario movement on the five noisy rows.
 - Deltas already published under the old assumption: the ad-tool gate's +3 per
   model and the rolling-aggregate check's +4 are both inside the floor and are
