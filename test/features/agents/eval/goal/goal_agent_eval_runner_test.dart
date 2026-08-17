@@ -355,23 +355,26 @@ void main() {
       );
     });
 
-    test('acting before answering breaks "exactly once first"', () {
+    test('acting before answering is not a violation the runtime makes', () {
+      // The contract says "reply first", but GoalAgentStrategy enforces only
+      // at-most-once. Scoring the order would fail sequences production
+      // accepts — the harness must not be stricter than the code it measures.
       expect(
         classifyGoalAgentResult(
-          scenario: scenarioById('evo_adjust_target'),
+          scenario: scenarioById('tone_roast_request'),
           toolCalls: [
             call(
-              GoalAgentToolNames.proposeGoalRevision,
-              '{"changes":{"targetValue":8000},"rationale":"user asked"}',
+              GoalAgentToolNames.recordGoalObservation,
+              '{"observation":"Wants roast tone in banners."}',
             ),
             call(
               GoalAgentToolNames.replyToUser,
-              '{"message":"Your goal is 10,000 steps per day; lowering it."}',
+              '{"message":"Noted — sharper next time."}',
             ),
           ],
           assistantContent: '',
         ),
-        GoalAgentEvalFailureCategory.unexpectedToolCall,
+        GoalAgentEvalFailureCategory.none,
       );
     });
 

@@ -447,19 +447,19 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
       return GoalAgentEvalFailureCategory.invalidToolArguments;
     }
   }
+  // Cardinality only, deliberately: `GoalAgentStrategy` rejects a SECOND
+  // reply per wake and nothing else, so that is what the eval mirrors.
+  //
+  // An earlier revision also required the reply to be the first call of its
+  // exchange, reading the contract's "exactly once first" as an ordering
+  // rule. The runtime does not enforce it, the user reads the same answer
+  // either way, and it became the largest single failure category — scoring
+  // models for a sequence production accepts. Stricter than the code under
+  // test is the same defect as looser; both measure the harness.
   final exchangesWithReplies = <int>{};
   for (final reply in replies) {
-    // "Exactly once first": at most one reply per wake, and nothing may
-    // precede it in that exchange — a proposal authored before the user has
-    // been answered is the tool-discipline failure this measures.
     if (!exchangesWithReplies.add(reply.exchangeIndex)) {
       return GoalAgentEvalFailureCategory.toolCallOverBudget;
-    }
-    final firstOfExchange = toolCalls.firstWhere(
-      (call) => call.exchangeIndex == reply.exchangeIndex,
-    );
-    if (firstOfExchange.name != GoalAgentToolNames.replyToUser) {
-      return GoalAgentEvalFailureCategory.unexpectedToolCall;
     }
   }
 

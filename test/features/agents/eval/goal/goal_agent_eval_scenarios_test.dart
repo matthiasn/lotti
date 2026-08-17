@@ -663,20 +663,26 @@ void main() {
       }
     });
 
-    test('restraint and interactive wakes keep the whole surface', () {
+    test('restraint and explicit ad requests keep the whole surface', () {
       // Withholding must never be what makes the no-op wake quiet: choosing
       // silence with every tool available IS the measurement.
       final noOp = goalAgentEvalScenarios.singleWhere((s) => s.id == 'gp_noop');
       expect(noOp.adToolsOffered, isTrue);
-      // An explicit request overrides eligibility and cooldown (P5), and that
-      // judgment happens during the turn — so pending-message wakes keep the
-      // ad tools even when the deterministic status alone would block them.
-      final cooldownChat = goalAgentEvalScenarios.singleWhere(
-        (s) => s.id == 'tone_roast_request',
+      // P5 is keyed on the deterministic request detector, not on "a message
+      // exists" — being spoken to is not asking for a banner. A wake whose
+      // status blocks automatic ads still gets the tools when the user asks.
+      final requested = goalAgentEvalScenarios.singleWhere(
+        (s) => s.id == 'ad_requested_while_ineligible',
       );
-      expect(cooldownChat.hasPendingUserMessage, isTrue);
-      expect(cooldownChat.adToolsOffered, isTrue);
-      // ...while the same block on a scheduled wake does withhold them.
+      expect(requested.hasPendingUserMessage, isTrue);
+      expect(requested.adToolsOffered, isTrue);
+      // ...while an ordinary dialogue turn on the same blocked status does not.
+      final chatting = goalAgentEvalScenarios.singleWhere(
+        (s) => s.id == 'wk_mixed_musing_question',
+      );
+      expect(chatting.hasPendingUserMessage, isTrue);
+      expect(chatting.adToolsOffered, isFalse);
+      // And a scheduled wake in cooldown stays blocked.
       final scheduled = goalAgentEvalScenarios.singleWhere(
         (s) => s.id == 'cx_dismiss_cooldown_no_ad',
       );
