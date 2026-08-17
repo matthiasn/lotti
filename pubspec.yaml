@@ -47,6 +47,10 @@ dependencies:
     sdk: flutter
   flutter_animate: ^4.1.1+1
   flutter_colorpicker: ^1.1.0
+  # Relationship contact linking and multi-select import (ADR 0041). Mobile
+  # only — the picker is never opened on desktop, where contact channels are
+  # entered manually.
+  flutter_contacts: ^2.3.1
   flutter_form_builder: ^10.0.1
   flutter_image_compress: ^2.0.3
   flutter_lame: 1.0.3
