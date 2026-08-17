@@ -418,49 +418,52 @@ void main() {
     );
   });
 
-  test('banner copy is sanitized before persisting — an id the model echoed '
-      'from FACTS never renders on the dock (the goal-workflow rule)', () async {
-    stubGlmResolution();
-    conversationRepository
-      ..maxDelegateCalls = 1
-      ..sendMessageDelegate =
-          ({
-            required conversationId,
-            required message,
-            required model,
-            required provider,
-            required inferenceRepo,
-            tools,
-            toolChoice,
-            temperature = 0,
-            strategy,
-          }) async {
-            await strategy!.processToolCalls(
-              toolCalls: [
-                toolCall(
-                  RelationshipAgentToolNames.createRelationshipAd,
-                  {
-                    ...adArgs(),
-                    'headline':
-                        'Check in with Anna '
-                        '(id: 6af9c4b0-1234-4abc-8def-a1b2c3d4e5f6)',
-                  },
-                ),
-              ],
-              manager: conversationManager,
-            );
-            return null;
-          };
+  test(
+    'banner copy is sanitized before persisting — an id the model echoed '
+    'from FACTS never renders on the dock (the goal-workflow rule)',
+    () async {
+      stubGlmResolution();
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0,
+              strategy,
+            }) async {
+              await strategy!.processToolCalls(
+                toolCalls: [
+                  toolCall(
+                    RelationshipAgentToolNames.createRelationshipAd,
+                    {
+                      ...adArgs(),
+                      'headline':
+                          'Check in with Anna '
+                          '(id: 6af9c4b0-1234-4abc-8def-a1b2c3d4e5f6)',
+                    },
+                  ),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
 
-    final result = await run(
-      tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
-    );
+      final result = await run(
+        tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+      );
 
-    expect(result.success, isTrue);
-    final banner = upserts.whereType<RelationshipNudgeEntity>().single;
-    expect(banner.brief.headline, 'Check in with Anna');
-    expect(banner.brief.headline, isNot(contains('6af9c4b0')));
-  });
+      expect(result.success, isTrue);
+      final banner = upserts.whereType<RelationshipNudgeEntity>().single;
+      expect(banner.brief.headline, 'Check in with Anna');
+      expect(banner.brief.headline, isNot(contains('6af9c4b0')));
+    },
+  );
 
   test('the quiet window binds inside the output transaction: a banner '
       'dismissed today blocks the freshly created one', () async {
