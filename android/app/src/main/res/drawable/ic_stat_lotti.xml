@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android status-bar icon for Lotti notifications.
+
+  Android masks a small icon by its ALPHA channel and paints the result white,
+  so a full-bleed launcher icon renders as a solid white square. This is the
+  ring glyph lifted verbatim from assets/design_system/brand_logo_light.svg
+  (the "o" of the wordmark) — reused, not redrawn, so the notification mark
+  cannot drift from the brand asset it came from.
+
+  The group translates the glyph's own bounding box to the viewport origin;
+  the path data is byte-identical to the SVG's.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="54"
+    android:viewportHeight="54">
+    <group
+        android:translateX="-15"
+        android:translateY="-20">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M41.9149 73.892C36.9076 73.892 32.4078 72.877 28.4154 70.847C24.4231 68.817 21.2766 65.8735 18.9759 62.0165C16.6753 58.1595 15.5249 53.5243 15.5249 48.111V46.487C15.5249 41.0737 16.6753 36.4385 18.9759 32.5815C21.2766 28.7245 24.4231 25.781 28.4154 23.751C32.4078 21.721 36.9076 20.706 41.9149 20.706C46.9223 20.706 51.4221 21.721 55.4144 23.751C59.4068 25.781 62.5533 28.7245 64.8539 32.5815C67.1546 36.4385 68.3049 41.0737 68.3049 46.487V48.111C68.3049 53.5243 67.1546 58.1595 64.8539 62.0165C62.5533 65.8735 59.4068 68.817 55.4144 70.847C51.4221 72.877 46.9223 73.892 41.9149 73.892ZM41.9149 62.524C45.8396 62.524 49.0876 61.2722 51.6589 58.7685C54.2303 56.1972 55.5159 52.5432 55.5159 47.8065V46.7915C55.5159 42.0548 54.2303 38.4347 51.6589 35.931C49.1553 33.3597 45.9073 32.074 41.9149 32.074C37.9903 32.074 34.7423 33.3597 32.1709 35.931C29.5996 38.4347 28.3139 42.0548 28.3139 46.7915V47.8065C28.3139 52.5432 29.5996 56.1972 32.1709 58.7685C34.7423 61.2722 37.9903 62.524 41.9149 62.524Z" />
+    </group>
+</vector>

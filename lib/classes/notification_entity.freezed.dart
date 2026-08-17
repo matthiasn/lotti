@@ -23,6 +23,10 @@ NotificationEntity _$NotificationEntityFromJson(
           return TaskOverdueNotification.fromJson(
             json
           );
+                case 'relationshipCheckIn':
+          return RelationshipCheckInNotification.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -38,7 +42,7 @@ NotificationEntity _$NotificationEntityFromJson(
 /// @nodoc
 mixin _$NotificationEntity {
 
- NotificationMeta get meta; String get linkedTaskId; String get title; String get body;
+ NotificationMeta get meta; String get title; String get body;
 /// Create a copy of NotificationEntity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -51,16 +55,16 @@ $NotificationEntityCopyWith<NotificationEntity> get copyWith => _$NotificationEn
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationEntity&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.linkedTaskId, linkedTaskId) || other.linkedTaskId == linkedTaskId)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationEntity&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,meta,linkedTaskId,title,body);
+int get hashCode => Object.hash(runtimeType,meta,title,body);
 
 @override
 String toString() {
-  return 'NotificationEntity(meta: $meta, linkedTaskId: $linkedTaskId, title: $title, body: $body)';
+  return 'NotificationEntity(meta: $meta, title: $title, body: $body)';
 }
 
 
@@ -71,7 +75,7 @@ abstract mixin class $NotificationEntityCopyWith<$Res>  {
   factory $NotificationEntityCopyWith(NotificationEntity value, $Res Function(NotificationEntity) _then) = _$NotificationEntityCopyWithImpl;
 @useResult
 $Res call({
- NotificationMeta meta, String linkedTaskId, String title, String body
+ NotificationMeta meta, String title, String body
 });
 
 
@@ -88,11 +92,10 @@ class _$NotificationEntityCopyWithImpl<$Res>
 
 /// Create a copy of NotificationEntity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? meta = null,Object? linkedTaskId = null,Object? title = null,Object? body = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? meta = null,Object? title = null,Object? body = null,}) {
   return _then(_self.copyWith(
 meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
-as NotificationMeta,linkedTaskId: null == linkedTaskId ? _self.linkedTaskId : linkedTaskId // ignore: cast_nullable_to_non_nullable
-as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as NotificationMeta,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,
   ));
@@ -124,12 +127,13 @@ extension NotificationEntityPatterns on NotificationEntity {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskSuggestionNotification value)?  taskSuggestion,TResult Function( TaskOverdueNotification value)?  taskOverdue,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskSuggestionNotification value)?  taskSuggestion,TResult Function( TaskOverdueNotification value)?  taskOverdue,TResult Function( RelationshipCheckInNotification value)?  relationshipCheckIn,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that);case TaskOverdueNotification() when taskOverdue != null:
-return taskOverdue(_that);case _:
+return taskOverdue(_that);case RelationshipCheckInNotification() when relationshipCheckIn != null:
+return relationshipCheckIn(_that);case _:
   return orElse();
 
 }
@@ -147,12 +151,13 @@ return taskOverdue(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskSuggestionNotification value)  taskSuggestion,required TResult Function( TaskOverdueNotification value)  taskOverdue,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskSuggestionNotification value)  taskSuggestion,required TResult Function( TaskOverdueNotification value)  taskOverdue,required TResult Function( RelationshipCheckInNotification value)  relationshipCheckIn,}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification():
 return taskSuggestion(_that);case TaskOverdueNotification():
-return taskOverdue(_that);}
+return taskOverdue(_that);case RelationshipCheckInNotification():
+return relationshipCheckIn(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -166,12 +171,13 @@ return taskOverdue(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskSuggestionNotification value)?  taskSuggestion,TResult? Function( TaskOverdueNotification value)?  taskOverdue,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskSuggestionNotification value)?  taskSuggestion,TResult? Function( TaskOverdueNotification value)?  taskOverdue,TResult? Function( RelationshipCheckInNotification value)?  relationshipCheckIn,}){
 final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that);case TaskOverdueNotification() when taskOverdue != null:
-return taskOverdue(_that);case _:
+return taskOverdue(_that);case RelationshipCheckInNotification() when relationshipCheckIn != null:
+return relationshipCheckIn(_that);case _:
   return null;
 
 }
@@ -188,11 +194,12 @@ return taskOverdue(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification() when taskOverdue != null:
-return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case _:
+return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification() when relationshipCheckIn != null:
+return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);case _:
   return orElse();
 
 }
@@ -210,11 +217,12 @@ return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)  taskSuggestion,required TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)  taskOverdue,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)  taskSuggestion,required TResult Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)  taskOverdue,required TResult Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)  relationshipCheckIn,}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification():
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification():
-return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);}
+return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification():
+return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -228,11 +236,12 @@ return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult? Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NotificationMeta meta,  String linkedTaskId,  int suggestionCount,  String title,  String body)?  taskSuggestion,TResult? Function( NotificationMeta meta,  String linkedTaskId,  String title,  String body)?  taskOverdue,TResult? Function( NotificationMeta meta,  String linkedRelationshipId,  String title,  String body)?  relationshipCheckIn,}) {final _that = this;
 switch (_that) {
 case TaskSuggestionNotification() when taskSuggestion != null:
 return taskSuggestion(_that.meta,_that.linkedTaskId,_that.suggestionCount,_that.title,_that.body);case TaskOverdueNotification() when taskOverdue != null:
-return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case _:
+return taskOverdue(_that.meta,_that.linkedTaskId,_that.title,_that.body);case RelationshipCheckInNotification() when relationshipCheckIn != null:
+return relationshipCheckIn(_that.meta,_that.linkedRelationshipId,_that.title,_that.body);case _:
   return null;
 
 }
@@ -248,7 +257,7 @@ class TaskSuggestionNotification implements NotificationEntity {
   factory TaskSuggestionNotification.fromJson(Map<String, dynamic> json) => _$TaskSuggestionNotificationFromJson(json);
 
 @override final  NotificationMeta meta;
-@override final  String linkedTaskId;
+ final  String linkedTaskId;
  final  int suggestionCount;
 @override final  String title;
 @override final  String body;
@@ -338,7 +347,7 @@ class TaskOverdueNotification implements NotificationEntity {
   factory TaskOverdueNotification.fromJson(Map<String, dynamic> json) => _$TaskOverdueNotificationFromJson(json);
 
 @override final  NotificationMeta meta;
-@override final  String linkedTaskId;
+ final  String linkedTaskId;
 @override final  String title;
 @override final  String body;
 
@@ -400,6 +409,94 @@ class _$TaskOverdueNotificationCopyWithImpl<$Res>
   return _then(TaskOverdueNotification(
 meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
 as NotificationMeta,linkedTaskId: null == linkedTaskId ? _self.linkedTaskId : linkedTaskId // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NotificationMetaCopyWith<$Res> get meta {
+  
+  return $NotificationMetaCopyWith<$Res>(_self.meta, (value) {
+    return _then(_self.copyWith(meta: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class RelationshipCheckInNotification implements NotificationEntity {
+  const RelationshipCheckInNotification({required this.meta, required this.linkedRelationshipId, required this.title, required this.body, final  String? $type}): $type = $type ?? 'relationshipCheckIn';
+  factory RelationshipCheckInNotification.fromJson(Map<String, dynamic> json) => _$RelationshipCheckInNotificationFromJson(json);
+
+@override final  NotificationMeta meta;
+ final  String linkedRelationshipId;
+@override final  String title;
+@override final  String body;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RelationshipCheckInNotificationCopyWith<RelationshipCheckInNotification> get copyWith => _$RelationshipCheckInNotificationCopyWithImpl<RelationshipCheckInNotification>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$RelationshipCheckInNotificationToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RelationshipCheckInNotification&&(identical(other.meta, meta) || other.meta == meta)&&(identical(other.linkedRelationshipId, linkedRelationshipId) || other.linkedRelationshipId == linkedRelationshipId)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,meta,linkedRelationshipId,title,body);
+
+@override
+String toString() {
+  return 'NotificationEntity.relationshipCheckIn(meta: $meta, linkedRelationshipId: $linkedRelationshipId, title: $title, body: $body)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RelationshipCheckInNotificationCopyWith<$Res> implements $NotificationEntityCopyWith<$Res> {
+  factory $RelationshipCheckInNotificationCopyWith(RelationshipCheckInNotification value, $Res Function(RelationshipCheckInNotification) _then) = _$RelationshipCheckInNotificationCopyWithImpl;
+@override @useResult
+$Res call({
+ NotificationMeta meta, String linkedRelationshipId, String title, String body
+});
+
+
+@override $NotificationMetaCopyWith<$Res> get meta;
+
+}
+/// @nodoc
+class _$RelationshipCheckInNotificationCopyWithImpl<$Res>
+    implements $RelationshipCheckInNotificationCopyWith<$Res> {
+  _$RelationshipCheckInNotificationCopyWithImpl(this._self, this._then);
+
+  final RelationshipCheckInNotification _self;
+  final $Res Function(RelationshipCheckInNotification) _then;
+
+/// Create a copy of NotificationEntity
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? meta = null,Object? linkedRelationshipId = null,Object? title = null,Object? body = null,}) {
+  return _then(RelationshipCheckInNotification(
+meta: null == meta ? _self.meta : meta // ignore: cast_nullable_to_non_nullable
+as NotificationMeta,linkedRelationshipId: null == linkedRelationshipId ? _self.linkedRelationshipId : linkedRelationshipId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,

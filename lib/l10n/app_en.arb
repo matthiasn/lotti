@@ -5248,6 +5248,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Check-in reminders, habit reminders and alerts from Lotti.",
+  "notificationChannelRemindersName": "Reminders",
   "notificationInboxDismiss": "Dismiss notification",
   "notificationInboxEmpty": "You're all caught up.",
   "notificationInboxError": "Couldn't load notifications.",
@@ -5850,6 +5852,15 @@
   "relationshipCadenceWeekly": "Weekly",
   "relationshipChatTooltip": "Chat about this person",
   "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
+  "relationshipCheckInReminderBody": "A good moment to reach out.",
+  "relationshipCheckInReminderTitle": "Check in with {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contact channels",
   "relationshipCreateTitle": "Add person",

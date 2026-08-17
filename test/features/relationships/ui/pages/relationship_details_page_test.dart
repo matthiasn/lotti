@@ -27,6 +27,7 @@ void main() {
 
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
+  late MockRelationshipReminderService mockReminders;
   late MockUpdateNotifications mockNotifications;
 
   Metadata meta(String id) => Metadata(
@@ -107,6 +108,8 @@ void main() {
     when(
       () => mockAgentService.handleRelationshipDeleted(any()),
     ).thenAnswer((_) async => true);
+    mockReminders = MockRelationshipReminderService();
+    when(() => mockReminders.clearFor(any())).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -118,6 +121,7 @@ void main() {
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
       relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+      relationshipReminderServiceProvider.overrideWithValue(mockReminders),
     ],
   );
 
@@ -335,6 +339,11 @@ void main() {
       verify(
         () => mockAgentService.handleRelationshipDeleted('rel-1'),
       ).called(1);
+      // ...and its reminder leg (ADR 0037 §5). This cannot be left to the
+      // next Phase A tick: destroying the agent is what stops those ticks, so
+      // an alarm armed weeks ago would otherwise still fire, naming someone
+      // the user deleted.
+      verify(() => mockReminders.clearFor('rel-1')).called(1);
       expect(beamedTo, ['/people']);
     },
   );

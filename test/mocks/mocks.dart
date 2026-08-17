@@ -137,6 +137,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
@@ -1267,6 +1268,9 @@ class MockRelationshipAgentWorkflow extends Mock
 
 class MockRelationshipChatService extends Mock
     implements RelationshipChatService {}
+
+class MockRelationshipReminderService extends Mock
+    implements RelationshipReminderService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

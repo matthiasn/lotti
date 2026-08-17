@@ -48,6 +48,26 @@ Map<String, dynamic> _$TaskOverdueNotificationToJson(
   'runtimeType': instance.$type,
 };
 
+RelationshipCheckInNotification _$RelationshipCheckInNotificationFromJson(
+  Map<String, dynamic> json,
+) => RelationshipCheckInNotification(
+  meta: NotificationMeta.fromJson(json['meta'] as Map<String, dynamic>),
+  linkedRelationshipId: json['linkedRelationshipId'] as String,
+  title: json['title'] as String,
+  body: json['body'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$RelationshipCheckInNotificationToJson(
+  RelationshipCheckInNotification instance,
+) => <String, dynamic>{
+  'meta': instance.meta,
+  'linkedRelationshipId': instance.linkedRelationshipId,
+  'title': instance.title,
+  'body': instance.body,
+  'runtimeType': instance.$type,
+};
+
 _NotificationMeta _$NotificationMetaFromJson(Map<String, dynamic> json) =>
     _NotificationMeta(
       id: json['id'] as String,

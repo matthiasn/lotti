@@ -9154,6 +9154,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Påmindelser om kontakt, vanepåmindelser og beskeder fra Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Påmindelser';
+
+  @override
   String get notificationInboxDismiss => 'Afvisningsmeddelelse';
 
   @override
@@ -10306,6 +10313,15 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Ingen agent endnu — markér først personen som vigtig.';
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Et godt tidspunkt at tage kontakt.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Tag kontakt til $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';

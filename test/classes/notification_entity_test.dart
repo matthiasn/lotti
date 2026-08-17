@@ -62,6 +62,45 @@ void main() {
       expect(updated.meta.vectorClock, const VectorClock({'host-b': 5}));
     });
 
+    test('exposes meta-derived getters for relationshipCheckIn', () {
+      final entity = _checkIn(
+        id: 'ci-1',
+        linkedRelationshipId: 'rel-7',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+      );
+
+      expect(entity.id, 'ci-1');
+      expect(entity.title, 'Check in with Anna?');
+      expect(entity.body, 'A good moment to reach out.');
+      expect(entity.type, 'relationshipCheckIn');
+      // The shared getter answers for this variant too — which is exactly why
+      // consumers must switch on the union rather than read it and assume a
+      // task (see NotificationScheduler._deepLinkFor).
+      expect(entity.linkedEntityId, 'rel-7');
+    });
+
+    test('copyWithMeta preserves the relationshipCheckIn variant', () {
+      final entity = _checkIn(
+        id: 'ci-2',
+        linkedRelationshipId: 'rel-8',
+        title: 'Title',
+        body: 'Body',
+      );
+      final replacement = entity.meta.copyWith(
+        deletedAt: DateTime.utc(2026, 5, 17, 16),
+      );
+
+      final updated = entity.copyWithMeta(replacement);
+
+      expect(updated, isA<RelationshipCheckInNotification>());
+      final updatedCheckIn = updated as RelationshipCheckInNotification;
+      expect(updatedCheckIn.linkedRelationshipId, 'rel-8');
+      expect(updatedCheckIn.title, 'Title');
+      expect(updatedCheckIn.body, 'Body');
+      expect(updated.meta.deletedAt, DateTime.utc(2026, 5, 17, 16));
+    });
+
     test('copyWithMeta preserves the overdue variant', () {
       final entity = _overdue(
         id: 'od-2',
@@ -148,6 +187,62 @@ void main() {
       expect(decoded.meta, entity.meta);
     }, tags: 'glados');
   });
+
+  // The union discriminator is the sync wire format. Renaming a variant would
+  // make every already-synced row of that kind undecodable on upgrade, so the
+  // strings are pinned here rather than left to whatever freezed emits.
+  group('NotificationEntity wire compatibility', () {
+    test('discriminators match the persisted type column', () {
+      final rows = <NotificationEntity, String>{
+        _suggestion(
+          id: 'a',
+          linkedTaskId: 't',
+          title: 'x',
+          body: 'y',
+        ): 'taskSuggestion',
+        _overdue(
+          id: 'b',
+          linkedTaskId: 't',
+          title: 'x',
+          body: 'y',
+        ): 'taskOverdue',
+        _checkIn(
+          id: 'c',
+          linkedRelationshipId: 'r',
+          title: 'x',
+          body: 'y',
+        ): 'relationshipCheckIn',
+      };
+
+      for (final row in rows.entries) {
+        expect(row.key.toJson()['runtimeType'], row.value);
+        expect(row.key.type, row.value);
+      }
+    });
+
+    test('a variant this build does not know throws rather than guessing', () {
+      // This is what an older peer does when a newer one syncs a
+      // relationshipCheckIn row. The sync processor turns the throw into
+      // `UnrecoverableSyncPayloadException` and skips the event, so the row is
+      // dropped with a log rather than retried forever — the mixed-fleet
+      // degradation path this variant relies on.
+      final json =
+          jsonDecode(
+                jsonEncode(
+                  _checkIn(
+                    id: 'c',
+                    linkedRelationshipId: 'r',
+                    title: 'x',
+                    body: 'y',
+                  ).toJson(),
+                ),
+              )
+              as Map<String, dynamic>;
+      json['runtimeType'] = 'somethingFromTheFuture';
+
+      expect(() => NotificationEntity.fromJson(json), throwsA(isA<Object>()));
+    });
+  });
 }
 
 class _GeneratedEntity {
@@ -189,20 +284,29 @@ class _GeneratedEntity {
       category: _category(categorySlot),
     );
 
-    return variantSlot.isEven
-        ? NotificationEntity.taskSuggestion(
-            meta: meta,
-            linkedTaskId: 'task-$idSlot',
-            suggestionCount: suggestionCountSlot + 1,
-            title: 'Title $idSlot',
-            body: 'Body $idSlot',
-          )
-        : NotificationEntity.taskOverdue(
-            meta: meta,
-            linkedTaskId: 'task-$idSlot',
-            title: 'Title $idSlot',
-            body: 'Body $idSlot',
-          );
+    // Modulo three, so the generator reaches every variant of the union
+    // rather than only the two it had when it was written.
+    return switch (variantSlot % 3) {
+      0 => NotificationEntity.taskSuggestion(
+        meta: meta,
+        linkedTaskId: 'task-$idSlot',
+        suggestionCount: suggestionCountSlot + 1,
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      1 => NotificationEntity.taskOverdue(
+        meta: meta,
+        linkedTaskId: 'task-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+      _ => NotificationEntity.relationshipCheckIn(
+        meta: meta,
+        linkedRelationshipId: 'rel-$idSlot',
+        title: 'Title $idSlot',
+        body: 'Body $idSlot',
+      ),
+    };
   }
 }
 
@@ -288,6 +392,28 @@ NotificationEntity _overdue({
       originatingHostId: 'host-a',
     ),
     linkedTaskId: linkedTaskId,
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _checkIn({
+  required String id,
+  required String linkedRelationshipId,
+  required String title,
+  required String body,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.relationshipCheckIn(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: const VectorClock({'host-a': 1}),
+      originatingHostId: 'host-a',
+    ),
+    linkedRelationshipId: linkedRelationshipId,
     title: title,
     body: body,
   );

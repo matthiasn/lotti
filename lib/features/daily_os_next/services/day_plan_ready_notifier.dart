@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 
@@ -23,17 +23,8 @@ class DayPlanReadyNotifier {
        // initializing formal isn't valid Dart.
        // ignore: prefer_initializing_formals
        _notificationService = notificationService,
-       _messages = messages ?? _deviceMessages,
+       _messages = messages ?? deviceMessages,
        _isAppInForeground = isAppInForeground ?? _lifecycleForeground;
-
-  /// Resolves the user's locale for the OS banner copy, falling back to
-  /// English for locales the app doesn't ship translations for.
-  static AppLocalizations _deviceMessages() {
-    final locale = WidgetsBinding.instance.platformDispatcher.locale;
-    return AppLocalizations.delegate.isSupported(locale)
-        ? lookupAppLocalizations(locale)
-        : AppLocalizationsEn();
-  }
 
   /// Foreground check via the widgets binding: `resumed` means the UI is
   /// visible and the in-app Activity timeline is the completion surface, so

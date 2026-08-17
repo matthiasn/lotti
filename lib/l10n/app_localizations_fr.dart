@@ -9321,6 +9321,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Rappels de prise de nouvelles, rappels d\'habitudes et alertes de Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Rappels';
+
+  @override
   String get notificationInboxDismiss => 'Ignorer la notification';
 
   @override
@@ -10495,6 +10502,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Pas encore d\'agent — marque d\'abord cette personne comme importante.';
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Un bon moment pour reprendre contact.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Prendre des nouvelles de $name ?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Échanges';

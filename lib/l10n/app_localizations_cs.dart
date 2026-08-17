@@ -9275,6 +9275,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Připomenutí kontaktu, připomenutí návyků a upozornění z Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Připomenutí';
+
+  @override
   String get notificationInboxDismiss => 'Zavřít oznámení';
 
   @override
@@ -10451,6 +10458,14 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
+
+  @override
+  String get relationshipCheckInReminderBody => 'Dobrá chvíle se ozvat.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Ozvat se: $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';

@@ -9338,6 +9338,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Memento-uri pentru contact, memento-uri pentru obiceiuri și notificări de la Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Memento-uri';
+
+  @override
   String get notificationInboxDismiss => 'Închideți notificarea';
 
   @override
@@ -10519,6 +10526,15 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Un moment bun pentru a lua legătura.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Luați legătura cu $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Înregistrări';

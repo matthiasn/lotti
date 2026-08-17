@@ -9,6 +9,7 @@ import 'package:lotti/features/notifications/state/notification_inbox_controller
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Trailing icon in `TabSectionHeader` that opens the synced-notifications
 /// inbox popover.
@@ -95,14 +96,34 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
             ),
           ),
           child: _InboxPanel(
-            onSelectTask: (linkedTaskId, {required focusSuggestions}) {
+            onSelectEntry: (entity) {
               _menu.close();
               if (!bellContext.mounted) return;
-              openLinkedTaskDetail(
-                context: bellContext,
-                taskId: linkedTaskId,
-                focusSuggestions: focusSuggestions,
-              );
+              // Exhaustive over the union rather than routing
+              // `linkedEntityId` into the task detail: every variant answers
+              // that getter, so the task route silently swallowed ids that
+              // were never tasks.
+              switch (entity) {
+                case TaskSuggestionNotification(:final linkedTaskId):
+                  openLinkedTaskDetail(
+                    context: bellContext,
+                    taskId: linkedTaskId,
+                    // Opening from a suggestion row is the one case that
+                    // should land on the suggestions themselves.
+                    focusSuggestions: true,
+                  );
+                case TaskOverdueNotification(:final linkedTaskId):
+                  // No focusSuggestions: an overdue alert is about the task
+                  // itself, and the parameter already defaults to false.
+                  openLinkedTaskDetail(
+                    context: bellContext,
+                    taskId: linkedTaskId,
+                  );
+                case RelationshipCheckInNotification(
+                  :final linkedRelationshipId,
+                ):
+                  beamToNamed('/people/$linkedRelationshipId');
+              }
             },
           ),
         ),
@@ -199,17 +220,14 @@ class _UnseenBadge extends StatelessWidget {
 /// so incremental stream updates preserve widget state across reorders.
 class _InboxPanel extends ConsumerWidget {
   const _InboxPanel({
-    required this.onSelectTask,
+    required this.onSelectEntry,
   });
 
-  /// Called when the user taps a row whose `linkedEntityId` is non-null.
-  /// The callback owns both popover dismissal and the navigation so it can
-  /// run from the bell's stable context — see comment in [NotificationBell].
-  final void Function(
-    String linkedTaskId, {
-    required bool focusSuggestions,
-  })
-  onSelectTask;
+  /// Called when the user taps a row. The callback owns both popover
+  /// dismissal and the navigation so it can run from the bell's stable
+  /// context — see comment in [NotificationBell] — and receives the whole
+  /// entity because where a row leads depends on its variant.
+  final void Function(NotificationEntity entity) onSelectEntry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -255,7 +273,7 @@ class _InboxPanel extends ConsumerWidget {
                         _InboxRow(
                           key: ValueKey(entry.id),
                           entity: entry,
-                          onSelectTask: onSelectTask,
+                          onSelectEntry: onSelectEntry,
                         ),
                     ],
                   ),
@@ -309,34 +327,28 @@ class _InboxEmptyState extends StatelessWidget {
 
 /// A single inbox entry: title, optional body, and a dismiss button.
 ///
-/// Tapping a row whose `linkedEntityId` is set opens the linked task (via
-/// [onSelectTask]) and marks the row seen; rows with no link are inert. A tap
-/// on the close icon or a long-press retracts the row — for a
-/// `TaskSuggestionNotification` that retracts every open suggestion for the
-/// task, otherwise just this row. The inbox stream then removes the row, so
-/// the popover stays open for dismissing several in a row.
+/// Tapping a row opens whatever the row is about (via [onSelectEntry]) and
+/// marks the row seen. A tap on the close icon or a long-press retracts the
+/// row — for a `TaskSuggestionNotification` that retracts every open
+/// suggestion for the task, otherwise just this row. The inbox stream then
+/// removes the row, so the popover stays open for dismissing several in a row.
 class _InboxRow extends StatelessWidget {
   const _InboxRow({
     required this.entity,
-    required this.onSelectTask,
+    required this.onSelectEntry,
     super.key,
   });
 
   final NotificationEntity entity;
-  final void Function(
-    String linkedTaskId, {
-    required bool focusSuggestions,
-  })
-  onSelectTask;
+  final void Function(NotificationEntity entity) onSelectEntry;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final linkedId = entity.linkedEntityId;
 
     return InkWell(
-      onTap: linkedId == null ? null : () => _handleTap(linkedId),
+      onTap: _handleTap,
       onLongPress: _handleRetract,
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -397,18 +409,15 @@ class _InboxRow extends StatelessWidget {
     );
   }
 
-  void _handleTap(String linkedId) {
+  void _handleTap() {
     // Navigation runs against the bell's stable context (captured by
-    // `onSelectTask` in [NotificationBell.build]) — using the row's own
+    // `onSelectEntry` in [NotificationBell.build]) — using the row's own
     // context here would fail mid-flight because closing the menu
     // unmounts the popover overlay first.
-    onSelectTask(
-      linkedId,
-      focusSuggestions: entity is TaskSuggestionNotification,
-    );
-    // Fire markSeen after navigation so the badge clears as the task opens.
-    // Opening the task is not the same as acting on an agent suggestion; the
-    // confirmation/rejection flow owns retraction.
+    onSelectEntry(entity);
+    // Fire markSeen after navigation so the badge clears as the target opens.
+    // Opening the target is not the same as acting on an agent suggestion;
+    // the confirmation/rejection flow owns retraction.
     unawaited(_markSeen());
   }
 
