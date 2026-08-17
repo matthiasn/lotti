@@ -47,6 +47,7 @@ class GoalAgentEvalScenario {
     this.requiredToolArgumentTermGroups = const {},
     this.forbiddenToolArgumentTerms = const {},
     this.requiredAssistantContentTermGroups = const [],
+    this.requiredAssistantContentPatterns = const [],
     this.forbiddenAssistantContentClaims = const [],
     this.maxToolCallCounts = const {},
   });
@@ -176,6 +177,12 @@ class GoalAgentEvalScenario {
 
   /// Term groups that must appear in plain assistant text (dialogue).
   final List<List<String>> requiredAssistantContentTermGroups;
+
+  /// Regexes the visible reply must match. Term groups are substring checks,
+  /// which cannot express WHERE something appears — and for a clarifying
+  /// question that is the whole point: a rhetorical aside mid-pep-talk is not
+  /// the model asking the user anything.
+  final List<String> requiredAssistantContentPatterns;
 
   /// Claims that must not be affirmatively asserted in assistant text.
   final List<String> forbiddenAssistantContentClaims;
@@ -621,9 +628,12 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       GoalAgentToolNames.proposeGoalRevision,
       ..._adCreationToolNames,
     ],
-    requiredAssistantContentTermGroups: const [
-      ['?'],
-    ],
+    // A question at the END of the reply, not any question mark anywhere: the
+    // loose check credited "Some days the win is just getting out the door?"
+    // inside a pep talk. Measured over 40 samples the two differ sharply —
+    // 0.525 loose against 0.375 strict — so the loose form was overstating
+    // how often the agent actually asks.
+    requiredAssistantContentPatterns: const [r'\?[^?]{0,60}$'],
   ),
   GoalAgentEvalScenario(
     id: 'evo_withdrawn',

@@ -576,6 +576,15 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
   )) {
     return GoalAgentEvalFailureCategory.missingAssistantContent;
   }
+  if (scenario.requiredAssistantContentPatterns.any(
+    (pattern) => !RegExp(
+      pattern,
+      caseSensitive: false,
+      multiLine: true,
+    ).hasMatch(userVisibleText.trimRight()),
+  )) {
+    return GoalAgentEvalFailureCategory.missingAssistantContent;
+  }
   if (scenario.forbiddenAssistantContentClaims.any(
     (claim) => containsAffirmativeReportClaim(userVisibleText, claim),
   )) {
