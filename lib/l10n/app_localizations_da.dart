@@ -10272,6 +10272,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipContactChannelsLabel => 'Kontaktoplysninger';
 
   @override
+  String get relationshipContactLinked => 'Kontaktoplysninger kopieret';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kunne ikke gemme kontaktoplysningerne';
+
+  @override
+  String get relationshipContactMissing =>
+      'Den kontakt findes ikke på denne enhed';
+
+  @override
+  String get relationshipContactNoChanges => 'Intet nyt at kopiere';
+
+  @override
   String get relationshipCreateTitle => 'Tilføj person';
 
   @override
@@ -10315,6 +10329,20 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipHealthThriving => 'Blomstrer';
 
   @override
+  String get relationshipImportAction => 'Importer fra kontakter';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personer tilføjet',
+      one: '1 person tilføjet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Mind mig om at holde kontakten';
 
@@ -10322,9 +10350,74 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipImportantLabel => 'Vigtig';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tilføj $count personer',
+      one: 'Tilføj 1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Ingen kontakter på denne enhed';
+
+  @override
+  String get relationshipImportFailed => 'Kunne ikke tilføje nogen';
+
+  @override
+  String get relationshipImportGrantButton => 'Tillad adgang';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Ingen kontakter matcher din søgning';
+
+  @override
+  String get relationshipImportOpenSettings => 'Åbn indstillinger';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti læser kun dine kontakter, mens denne vælger er åben, og kopierer kun de personer, du vælger.';
+
+  @override
+  String get relationshipImportRetry => 'Prøv igen';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gennemse $count',
+      one: 'Gennemse 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Før du tilføjer dem';
+
+  @override
+  String get relationshipImportSearchHint => 'Søg i kontakter';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.';
+
+  @override
+  String get relationshipImportTitle => 'Tilføj personer';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Kontaktimport findes på telefoner og tablets. Tilføj kontaktoplysninger i hånden her.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Seneste check-in $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Tilknyt kontakt';
 
   @override
   String get relationshipLinkedTasksLabel => 'Opgaver';
@@ -10370,6 +10463,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get relationshipRelinkContact => 'Tilknyt en anden kontakt';
+
+  @override
   String get relationshipsEmptyState =>
       'Tilføj de mennesker, du vil holde kontakten med.';
 
@@ -10392,6 +10488,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Fulgt siden $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Opdater fra kontakt';
 
   @override
   String get saveButton => 'Gem';

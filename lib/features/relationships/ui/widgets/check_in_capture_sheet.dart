@@ -112,15 +112,26 @@ String mergeCheckInNarrative({
 
 /// Opens the responsive check-in capture overlay for [relationshipId].
 /// Resolves to the created [CheckInEntry], or `null` when dismissed.
+///
+/// [prefilledInteractionType] and [prefilledTime] let a caller open the form
+/// already describing an interaction that just happened — the post-call
+/// prompt passes what it recorded when the user left to make the call
+/// (plan v2 phase 7 item 5). They are starting values only: everything stays
+/// editable, and nothing is saved until the user says so.
 Future<CheckInEntry?> showCheckInCaptureSheet({
   required BuildContext context,
   required String relationshipId,
+  CheckInInteractionType? prefilledInteractionType,
+  DateTime? prefilledTime,
 }) {
   return ModalUtils.showSinglePageModal<CheckInEntry>(
     context: context,
     title: context.messages.relationshipLogCheckIn,
-    builder: (modalContext) =>
-        CheckInCaptureForm(relationshipId: relationshipId),
+    builder: (modalContext) => CheckInCaptureForm(
+      relationshipId: relationshipId,
+      prefilledInteractionType: prefilledInteractionType,
+      prefilledTime: prefilledTime,
+    ),
   );
 }
 
@@ -148,6 +159,8 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
   const CheckInCaptureForm({
     required this.relationshipId,
     this.initial,
+    this.prefilledInteractionType,
+    this.prefilledTime,
     super.key,
   });
 
@@ -155,6 +168,15 @@ class CheckInCaptureForm extends ConsumerStatefulWidget {
 
   /// When set, the form edits this check-in instead of creating one.
   final CheckInEntry? initial;
+
+  /// Starting interaction type for a new check-in, when the caller already
+  /// knows what happened. Ignored while editing, where [initial] is the
+  /// authority.
+  final CheckInInteractionType? prefilledInteractionType;
+
+  /// Starting interaction time for a new check-in — when the call was
+  /// actually placed, rather than when the user got round to logging it.
+  final DateTime? prefilledTime;
 
   @override
   ConsumerState<CheckInCaptureForm> createState() => _CheckInCaptureFormState();
@@ -192,9 +214,16 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       text: data?.payAttentionTo ?? '',
     );
     _avoidController = TextEditingController(text: data?.avoid ?? '');
-    _interactionType = data?.interactionType ?? CheckInInteractionType.inPerson;
+    _interactionType =
+        data?.interactionType ??
+        widget.prefilledInteractionType ??
+        CheckInInteractionType.inPerson;
+    // Sentiment is never pre-filled, by any caller: it is the user's own
+    // judgment of how it felt, and a default would put words in their mouth
+    // (ADR 0038).
     _sentiment = data?.sentiment;
-    _interactionTime = initial?.meta.dateFrom ?? clock.now();
+    _interactionTime =
+        initial?.meta.dateFrom ?? widget.prefilledTime ?? clock.now();
   }
 
   @override

@@ -10282,6 +10282,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipContactChannelsLabel => 'Kontaktuppgifter';
 
   @override
+  String get relationshipContactLinked => 'Kontaktuppgifter kopierade';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kunde inte spara kontaktuppgifterna';
+
+  @override
+  String get relationshipContactMissing =>
+      'Den kontakten finns inte på den här enheten';
+
+  @override
+  String get relationshipContactNoChanges => 'Inget nytt att kopiera';
+
+  @override
   String get relationshipCreateTitle => 'Lägg till person';
 
   @override
@@ -10325,6 +10339,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipHealthThriving => 'Blomstrar';
 
   @override
+  String get relationshipImportAction => 'Importera från kontakter';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personer tillagda',
+      one: '1 person tillagd',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Påminn mig om att hålla kontakten';
 
@@ -10332,9 +10360,74 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipImportantLabel => 'Viktig';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Lägg till $count personer',
+      one: 'Lägg till 1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Inga kontakter på den här enheten';
+
+  @override
+  String get relationshipImportFailed => 'Kunde inte lägga till någon';
+
+  @override
+  String get relationshipImportGrantButton => 'Tillåt åtkomst';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Inga kontakter matchar din sökning';
+
+  @override
+  String get relationshipImportOpenSettings => 'Öppna inställningar';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti läser dina kontakter bara medan den här väljaren är öppen och kopierar bara de personer du väljer.';
+
+  @override
+  String get relationshipImportRetry => 'Försök igen';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Granska $count',
+      one: 'Granska 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Innan du lägger till dem';
+
+  @override
+  String get relationshipImportSearchHint => 'Sök kontakter';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Åtkomst till kontakter är avstängd. Slå på den i systeminställningarna för att importera personer.';
+
+  @override
+  String get relationshipImportTitle => 'Lägg till personer';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Kontaktimport finns på telefoner och surfplattor. Lägg till kontaktuppgifter för hand här.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Senaste avstämning $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Länka kontakt';
 
   @override
   String get relationshipLinkedTasksLabel => 'Uppgifter';
@@ -10380,6 +10473,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipRelinkContact => 'Länka en annan kontakt';
+
+  @override
   String get relationshipsEmptyState =>
       'Lägg till människorna du vill hålla kontakten med.';
 
@@ -10402,6 +10498,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Följs sedan $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Uppdatera från kontakt';
 
   @override
   String get saveButton => 'Spara';

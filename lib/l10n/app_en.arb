@@ -5850,6 +5850,22 @@
   },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contact channels",
+  "relationshipContactLinked": "Contact details copied",
+  "@relationshipContactLinked": {
+    "description": "Toast confirming contact channels were copied onto the person"
+  },
+  "relationshipContactLinkFailed": "Could not save the contact details",
+  "@relationshipContactLinkFailed": {
+    "description": "Toast shown when saving the copied contact details was rejected"
+  },
+  "relationshipContactMissing": "That contact isn't on this device",
+  "@relationshipContactMissing": {
+    "description": "Toast shown when the stored contact reference resolves to nothing on this device"
+  },
+  "relationshipContactNoChanges": "Nothing new to copy",
+  "@relationshipContactNoChanges": {
+    "description": "Toast shown when the linked contact held nothing the person did not already have"
+  },
   "relationshipCreateTitle": "Add person",
   "relationshipDeleteConfirmMessage": "Their check-ins are deleted too. This cannot be undone.",
   "relationshipDeleteConfirmTitle": "Delete {name}?",
@@ -5869,8 +5885,87 @@
   "relationshipHealthSteady": "Steady",
   "relationshipHealthStrained": "Strained",
   "relationshipHealthThriving": "Thriving",
+  "relationshipImportAction": "Import from contacts",
+  "@relationshipImportAction": {
+    "description": "Opens the multi-select contact import screen from the People list"
+  },
+  "relationshipImportAdded": "{count, plural, =1{1 person added} other{{count} people added}}",
+  "@relationshipImportAdded": {
+    "description": "Toast confirming how many people the import created",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Important",
+  "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
+  "@relationshipImportConfirmButton": {
+    "description": "Creates one person per reviewed contact",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipImportEmpty": "No contacts on this device",
+  "@relationshipImportEmpty": {
+    "description": "Shown when the address book is readable but empty"
+  },
+  "relationshipImportFailed": "Could not add anyone",
+  "@relationshipImportFailed": {
+    "description": "Toast shown when no relationship could be created from the import"
+  },
+  "relationshipImportGrantButton": "Allow access",
+  "@relationshipImportGrantButton": {
+    "description": "Requests contact permission from the import screen"
+  },
+  "relationshipImportNoMatches": "No contacts match your search",
+  "@relationshipImportNoMatches": {
+    "description": "Shown when the contact search matches nothing"
+  },
+  "relationshipImportOpenSettings": "Open settings",
+  "@relationshipImportOpenSettings": {
+    "description": "Opens system settings so contact access can be re-enabled"
+  },
+  "relationshipImportPermissionBody": "Lotti reads your contacts only while this picker is open, and copies only the people you choose.",
+  "@relationshipImportPermissionBody": {
+    "description": "Explains what contact access is used for before it is requested"
+  },
+  "relationshipImportRetry": "Try again",
+  "@relationshipImportRetry": {
+    "description": "Retries the contact permission request"
+  },
+  "relationshipImportReviewButton": "{count, plural, =1{Review 1} other{Review {count}}}",
+  "@relationshipImportReviewButton": {
+    "description": "Advances from contact selection to the review step",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipImportReviewTitle": "Before you add them",
+  "@relationshipImportReviewTitle": {
+    "description": "Title of the import review step, where importance and cadence are set"
+  },
+  "relationshipImportSearchHint": "Search contacts",
+  "@relationshipImportSearchHint": {
+    "description": "Placeholder in the contact import search field"
+  },
+  "relationshipImportSettingsBody": "Contact access is turned off. Turn it on in system settings to import people.",
+  "@relationshipImportSettingsBody": {
+    "description": "Shown when contact access was permanently refused"
+  },
+  "relationshipImportTitle": "Add people",
+  "@relationshipImportTitle": {
+    "description": "Title of the contact import screen"
+  },
+  "relationshipImportUnsupported": "Contact import is available on phones and tablets. Add contact details by hand here.",
+  "@relationshipImportUnsupported": {
+    "description": "Shown on desktop, where there is no address book to import from"
+  },
   "relationshipLastCheckInLabel": "Last check-in {date}",
   "@relationshipLastCheckInLabel": {
     "placeholders": {
@@ -5878,6 +5973,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipLinkContact": "Link contact",
+  "@relationshipLinkContact": {
+    "description": "Action that opens the OS contact picker to copy channels onto a person"
   },
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
@@ -5910,6 +6009,10 @@
       }
     }
   },
+  "relationshipRelinkContact": "Link a different contact",
+  "@relationshipRelinkContact": {
+    "description": "Menu action that replaces the OS contact a person is linked to"
+  },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsPageTitle": "People",
   "relationshipStatusActive": "Active",
@@ -5923,6 +6026,10 @@
         "type": "String"
       }
     }
+  },
+  "relationshipUpdateFromContact": "Update from contact",
+  "@relationshipUpdateFromContact": {
+    "description": "Menu action that re-reads the linked OS contact and copies anything new"
   },
   "saveButton": "Save",
   "saveButtonLabel": "Save",

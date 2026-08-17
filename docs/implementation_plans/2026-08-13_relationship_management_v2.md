@@ -1,7 +1,7 @@
 # Relationship Management — Implementation Plan v2
 
 - Date: 2026-08-13
-- Status: Phases 1-6 and 8 landed; phases 7 and 9 outstanding
+- Status: Phases 1-8 landed; phase 9 (docs, privacy, release readiness) outstanding
 - Supersedes: [2026-07-22_relationship_management.md](2026-07-22_relationship_management.md)
 - ADRs: [0037](../adr/0037-relationship-on-device-storage-and-privacy.md) (holds),
   [0038](../adr/0038-relationship-domain-model.md) (holds, two deltas),
