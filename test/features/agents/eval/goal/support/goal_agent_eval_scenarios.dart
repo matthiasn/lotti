@@ -94,8 +94,15 @@ class GoalAgentEvalScenario {
     final verdict = composite is Map ? composite : evaluation;
     final status = verdict['trackStatus'];
     if (status == GoalTrackStatus.offTrack.name) return true;
-    return status == GoalTrackStatus.atRisk.name &&
-        verdict['trendWorsening3PlusDays'] == true;
+    if (status != GoalTrackStatus.atRisk.name) return false;
+    // `automaticGoalAdEligible` is `atRisk && (priors.isEmpty || worsening)`:
+    // the first evaluation of a new goal earns a welcome banner even without
+    // a worsening trend. Dropping that branch withheld tools the runtime
+    // offers, which would flatter every model on exactly the scenarios where
+    // over-creation is the failure being measured.
+    if (verdict['trendWorsening3PlusDays'] == true) return true;
+    final priors = verdict['priorPeriodAttainments'];
+    return priors is! List || priors.isEmpty;
   }
 
   /// Whether the authored FACTS carry a message awaiting an answer.
@@ -103,6 +110,10 @@ class GoalAgentEvalScenario {
     final pending = _decodedFacts?['unansweredUserMessages'];
     return pending is List && pending.isNotEmpty;
   }
+
+  /// The authored FACTS as JSON, for assertions that need to read what the
+  /// wake actually carries rather than restate it.
+  Map<String, dynamic>? get factsJson => _decodedFacts;
 
   Map<String, dynamic>? get _decodedFacts {
     const prefix = '```json\n';

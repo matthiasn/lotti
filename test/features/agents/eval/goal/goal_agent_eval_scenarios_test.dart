@@ -632,6 +632,37 @@ void main() {
       }
     });
 
+    test('a first at-risk evaluation still earns its welcome banner', () {
+      // `automaticGoalAdEligible` permits an ad for an atRisk goal with no
+      // prior periods even absent a worsening trend. An eval gate that
+      // required the trend would withhold tools the runtime offers — and
+      // would flatter every model on precisely the scenarios where ad
+      // over-creation is the failure under measurement.
+      final firstAtRisk = goalAgentEvalScenarios.where((scenario) {
+        final evaluation = scenario.factsJson?['evaluation'];
+        if (evaluation is! Map) return false;
+        final verdict = evaluation['composite'] is Map
+            ? evaluation['composite'] as Map
+            : evaluation;
+        final priors = verdict['priorPeriodAttainments'];
+        return verdict['trackStatus'] == GoalTrackStatus.atRisk.name &&
+            verdict['trendWorsening3PlusDays'] != true &&
+            (priors is! List || priors.isEmpty);
+      }).toList();
+      expect(
+        firstAtRisk,
+        isNotEmpty,
+        reason: 'no scenario exercises the first-evaluation branch',
+      );
+      for (final scenario in firstAtRisk) {
+        expect(
+          scenario.adToolsOffered,
+          isTrue,
+          reason: '${scenario.id} is eligible under automaticGoalAdEligible',
+        );
+      }
+    });
+
     test('restraint and interactive wakes keep the whole surface', () {
       // Withholding must never be what makes the no-op wake quiet: choosing
       // silence with every tool available IS the measurement.
