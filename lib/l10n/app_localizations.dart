@@ -15421,6 +15421,18 @@ abstract class AppLocalizations {
   /// **'Notifications, {count} unread {count, plural, =1{alert} other{alerts}}'**
   String notificationBellUnseenSemantics(int count);
 
+  /// No description provided for @notificationChannelRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in reminders, habit reminders and alerts from Lotti.'**
+  String get notificationChannelRemindersDescription;
+
+  /// No description provided for @notificationChannelRemindersName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get notificationChannelRemindersName;
+
   /// No description provided for @notificationInboxDismiss.
   ///
   /// In en, this message translates to:
@@ -17220,6 +17232,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No agent yet — mark this person as important first.'**
   String get relationshipChatUnavailable;
+
+  /// No description provided for @relationshipCheckInReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A good moment to reach out.'**
+  String get relationshipCheckInReminderBody;
+
+  /// No description provided for @relationshipCheckInReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in with {name}?'**
+  String relationshipCheckInReminderTitle(String name);
 
   /// No description provided for @relationshipCheckInsLabel.
   ///

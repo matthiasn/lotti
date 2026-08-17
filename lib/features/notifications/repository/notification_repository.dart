@@ -69,6 +69,84 @@ class NotificationRepository {
     return create(placeholder);
   }
 
+  /// Creates a check-in reminder row for a tracked person (ADR 0039
+  /// Decision 1), scheduled for the cadence's due day.
+  ///
+  /// The id is derived from `(relationshipId, dueDayKey)` rather than the
+  /// relationship alone, so each cadence episode is its own row: two devices
+  /// arming the same episode converge on one row, and a check-in that moves
+  /// the due day mints a new one instead of rewriting a row the user may
+  /// already have dismissed (the three lifecycle marks are monotonic and
+  /// cannot be cleared).
+  ///
+  /// Retracting the superseded episodes is the caller's job — see
+  /// [retractRelationshipCheckIns].
+  ///
+  /// **Idempotent by episode**: an existing row for the same episode is left
+  /// exactly as it is and `null` is returned. The producer is the agent's
+  /// deterministic tier, which re-derives this on every daily tick and every
+  /// check-in write, so a plain upsert would bump `updatedAt`, enqueue an
+  /// outbox message and re-notify listeners every single tick — and would
+  /// resurrect the row a user had already dismissed, since a create merges
+  /// content while the three lifecycle marks stay monotonic. Because the
+  /// episode key *is* the due day, everything derived from it is already
+  /// pinned; only [title] would drift, if the person were renamed
+  /// mid-episode, and the next episode picks that up.
+  Future<NotificationEntity?> createRelationshipCheckIn({
+    required String linkedRelationshipId,
+    required String dueDayKey,
+    required String title,
+    required String body,
+    required DateTime scheduledFor,
+    String? category,
+  }) async {
+    final id = notificationIdForRelationshipCheckIn(
+      linkedRelationshipId: linkedRelationshipId,
+      dueDayKey: dueDayKey,
+    );
+    if (await _notificationsDb.notificationById(id) != null) return null;
+
+    final now = _now();
+    return create(
+      NotificationEntity.relationshipCheckIn(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          scheduledFor: scheduledFor,
+          vectorClock: const VectorClock({}),
+          originatingHostId: '',
+          category: category,
+        ),
+        linkedRelationshipId: linkedRelationshipId,
+        title: title,
+        body: body,
+      ),
+    );
+  }
+
+  /// Retracts every still-open check-in reminder for [linkedRelationshipId],
+  /// optionally sparing [exceptId] (the episode currently armed).
+  ///
+  /// Used both to drop superseded episodes — a logged check-in moves the due
+  /// day, so the old alarm is about a date that no longer means anything —
+  /// and to clear the lot when the person stops being eligible or is
+  /// deleted. Retraction is what cancels the OS-level alert: the scheduler
+  /// cancels for any row carrying a lifecycle mark.
+  Future<List<NotificationEntity>> retractRelationshipCheckIns(
+    String linkedRelationshipId, {
+    String? exceptId,
+  }) async {
+    final rows = await _openRelationshipCheckInsFor(linkedRelationshipId);
+    final retracted = <NotificationEntity>[];
+    for (final row in rows) {
+      if (row.id == exceptId) continue;
+      final result = await retract(row.id);
+      if (result != null) retracted.add(result);
+    }
+    return retracted;
+  }
+
   Future<NotificationEntity?> create(NotificationEntity entity) {
     if (entity is TaskSuggestionNotification) {
       return _withTaskSuggestionMutation(
@@ -162,6 +240,20 @@ class NotificationRepository {
     return _uuid.v5(
       Namespace.nil.value,
       jsonEncode(['taskSuggestion', linkedTaskId]),
+    );
+  }
+
+  /// Deterministic id of one relationship's check-in reminder for one cadence
+  /// episode — the same uuid-v5-over-canonical-JSON scheme as
+  /// [notificationIdForTaskSuggestion], so devices converge without
+  /// coordinating.
+  String notificationIdForRelationshipCheckIn({
+    required String linkedRelationshipId,
+    required String dueDayKey,
+  }) {
+    return _uuid.v5(
+      Namespace.nil.value,
+      jsonEncode(['relationshipCheckIn', linkedRelationshipId, dueDayKey]),
     );
   }
 
@@ -277,6 +369,21 @@ class NotificationRepository {
   ) async {
     final rows = await _notificationsDb.forLinkedEntity(linkedTaskId);
     return rows.whereType<TaskSuggestionNotification>().where((row) {
+      final meta = row.meta;
+      return meta.actedOnAt == null && meta.deletedAt == null;
+    }).toList();
+  }
+
+  /// Reminder rows for a person that still have an alarm to cancel.
+  ///
+  /// `seenAt` deliberately does not disqualify a row here the way it does for
+  /// scheduling: a seen row has already had its OS alert cancelled, but it is
+  /// still in the inbox, and a superseded episode must leave it.
+  Future<List<RelationshipCheckInNotification>> _openRelationshipCheckInsFor(
+    String linkedRelationshipId,
+  ) async {
+    final rows = await _notificationsDb.forLinkedEntity(linkedRelationshipId);
+    return rows.whereType<RelationshipCheckInNotification>().where((row) {
       final meta = row.meta;
       return meta.actedOnAt == null && meta.deletedAt == null;
     }).toList();

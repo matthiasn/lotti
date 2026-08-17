@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/notification_service.dart';
 
 /// Raises an OS notification when a *new* sync conflict is detected, so the
@@ -25,18 +24,7 @@ class ConflictNotificationObserver {
        // initializing formal isn't valid Dart.
        // ignore: prefer_initializing_formals
        _notificationService = notificationService,
-       _messages = messages ?? _deviceMessages;
-
-  /// Resolves the user's locale for the OS banner copy, falling back to English
-  /// for locales the app doesn't ship translations for.
-  static AppLocalizations _deviceMessages() {
-    // Read via the binding's dispatcher (not the global `PlatformDispatcher`
-    // singleton) so it follows the recognised, test-overridable locale source.
-    final locale = WidgetsBinding.instance.platformDispatcher.locale;
-    return AppLocalizations.delegate.isSupported(locale)
-        ? lookupAppLocalizations(locale)
-        : AppLocalizationsEn();
-  }
+       _messages = messages ?? deviceMessages;
 
   /// Stable notification id — repeated alerts replace the previous banner
   /// rather than stacking.

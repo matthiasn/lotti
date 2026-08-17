@@ -3949,6 +3949,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Contactherinneringen, gewoonteherinneringen en meldingen van Lotti.",
+  "notificationChannelRemindersName": "Herinneringen",
   "notificationInboxDismiss": "Mededeling verwerpen",
   "notificationInboxEmpty": "Je bent helemaal bij.",
   "notificationInboxError": "Kon notificatieberichten niet laden.",
@@ -4501,6 +4503,15 @@
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatTooltip": "Chat over deze persoon",
   "relationshipChatUnavailable": "Nog geen agent — markeer deze persoon eerst als belangrijk.",
+  "relationshipCheckInReminderBody": "Een goed moment om contact op te nemen.",
+  "relationshipCheckInReminderTitle": "Even contact met {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contactgegevens",
   "relationshipCreateTitle": "Persoon toevoegen",

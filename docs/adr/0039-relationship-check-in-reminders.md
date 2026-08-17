@@ -1,12 +1,46 @@
 # ADR 0039: Relationship Check-In Reminders
 
-- Status: Proposed — superseded in part by
-  [ADR 0059](./0059-relationship-agent-runtime-and-nudge-generalization.md):
-  the primary attention channel is the in-app banner dock; the
-  `relationshipCheckIn` inbox variant and `reconcile()` wiring below are
-  deferred to their own change, and the eligibility rule (Decision 2)
-  survives as deterministic Phase A wake facts.
+- Status: Accepted, with two decisions superseded — see the amendments below.
+  [ADR 0059](./0059-relationship-agent-runtime-and-nudge-generalization.md)
+  made the in-app banner dock the *primary* attention channel; this ADR's
+  reminders shipped afterwards as plan v2 phase 8, covering the case a banner
+  structurally cannot (the app is closed).
 - Date: 2026-07-22
+- Amended: 2026-08-17 (phase 8 implementation)
+
+## Amendments at implementation time
+
+Two decisions below did not survive contact with the code, and one paragraph
+of context was simply stale by the time it was built:
+
+1. **Decision 3's `RelationshipReminderService` producer does not exist, and
+   should not.** It proposed an event-driven producer recomputing the next due
+   date on check-in save, relationship save and startup. By the time reminders
+   were built, `RelationshipAgentPhaseA` already did exactly that — it derives
+   the cadence on the daily tick, on every check-in write (via the
+   relationship's `affectedIds` token) and on relationship saves, and its
+   derivation is the same one the banner and the briefing use. A second
+   producer would have been a second source of truth for "when is this person
+   due", free to disagree with the banner. The reminder is therefore a
+   *projection* of Phase A's verdict: `RelationshipReminderService` implements
+   `RelationshipReminderSink` and owns no cadence logic at all.
+2. **Decision 4's per-due-date identity is per *episode*, and rows are
+   retracted rather than rewritten.** The id derives from
+   `(relationshipId, dueDayKey)` as proposed, but the consequence was not
+   spelled out: because the three lifecycle marks are monotonic and cannot be
+   cleared, a check-in that moves the due day must mint a *new* row and
+   retract the old one. Rewriting one row per person would let an August
+   dismissal permanently silence September.
+3. **The context section's claim that `reconcile()` "is built and tested but
+   currently has no production caller" was stale.** It had been removed
+   entirely as dead code in #3748 (*chore: remove unused feature APIs*), so
+   phase 8 reinstated it rather than wiring it.
+4. **Decision 5 overstated platform support.** It claimed iOS, macOS *and*
+   Android got OS notifications through `zonedSchedule`. Android never did:
+   `InitializationSettings` carried no `android` entry, so the plugin threw
+   `ArgumentError` on `initialize`, that throw was swallowed, and the whole
+   plugin stayed uninitialised. Phase 8 fixed that separately from the
+   relationship feature — see the consequences.
 
 ## Context
 
@@ -75,15 +109,38 @@ notification, rather than a periodic job.
 ## Consequences
 
 - No new dependencies (no workmanager/background_fetch); the reminder
-  machinery is a thin producer over existing, tested infrastructure.
+  machinery is a thin projection over existing, tested infrastructure.
 - On desktop platforms without OS scheduling, reminders appear only when the
   app runs — consistent with the local-only design, and mitigated by the
   synced inbox (a phone will still alert).
-- Wiring `reconcile()` at startup is a behavior change that also revives OS
-  alerts for other inbox notification types; it needs its own tests.
+- Reinstating `reconcile()` at startup is a behavior change that also revives
+  OS alerts for other inbox notification types; it has its own tests.
 - If the app is not opened for a long period on a single-device setup, no
   reminder fires beyond the last scheduled OS notification — an accepted
   cost of having no server (ADR 0037).
+- **The reminder had to fix Android notifications generally.** Adding
+  `AndroidInitializationSettings` revives every path that was silently
+  discarded — habit reminders, the Daily OS plan-ready banner, sync-conflict
+  alerts — which is a much wider behavior change than a relationship feature
+  would normally carry. Two deliberate consequences of that: `updateBadge` is
+  now explicitly Darwin-only (the same call on Android posts a visible "N
+  tasks in progress" notification after every entry write, rather than a
+  silent icon count), and scheduling uses `inexactAllowWhileIdle` so Lotti
+  never requests `SCHEDULE_EXACT_ALARM`, which Play restricts to alarm and
+  calendar apps. A check-in reminder does not need minute precision.
+- **The row's copy is baked at write time in the arming device's locale** and
+  then syncs verbatim, so a two-device/two-locale setup reads the armer's
+  language on both. This knowingly departs from
+  [localization.md](../../knowledge/conventions/localization.md)'s
+  "persist the facts, compose the sentence at render time": the OS holds the
+  alarm for weeks with the app closed, so there is no render moment to compose
+  at. It matches what `taskSuggestion` and `taskOverdue` already do.
+- **Notification taps still do not route anywhere.** `_deepLinkFor` is now
+  variant-aware and emits `/people/<id>`, but nothing consumes the payload:
+  `initialize` is called without `onDidReceiveNotificationResponse` and
+  nothing calls `getNotificationAppLaunchDetails`. Tapping any Lotti
+  notification opens the app at wherever it was. That predates this ADR and is
+  its own change.
 
 ## Related
 

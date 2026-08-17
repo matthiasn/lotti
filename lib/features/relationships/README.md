@@ -76,8 +76,17 @@ and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
   category settings, and applies to every recording in that category — a
   spoken check-in included.
 
+- `service/relationship_reminder_service.dart` — **OS check-in reminders**
+  (plan v2 phase 8, ADR 0039). The banner needs the app open; this covers the
+  case it cannot. The deterministic tier's cadence verdict is projected onto a
+  durable notification row armed *ahead* of the due day, so the OS is already
+  holding the alarm when the app closes. One row per cadence episode, retracted
+  and replaced when a check-in moves the due day, and cleared outright when a
+  person stops being eligible or is deleted. Lock-screen copy carries the
+  person's name and nothing else about them.
+
 Not yet built: OS contact import/linking and call/message quick actions
-(phase 7), OS reminders (phase 8). Relationships
+(phase 7). Relationships
 and check-ins deliberately do not appear in the main journal timeline; the
 People tab is their home.
 

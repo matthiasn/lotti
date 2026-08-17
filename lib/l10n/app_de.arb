@@ -3541,6 +3541,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Check-in-Erinnerungen, Gewohnheits-Erinnerungen und Hinweise von Lotti.",
+  "notificationChannelRemindersName": "Erinnerungen",
   "notificationInboxDismiss": "Mitteilung verwerfen",
   "notificationInboxEmpty": "Du bist auf dem neuesten Stand.",
   "notificationInboxError": "Mitteilungen konnten nicht geladen werden.",
@@ -3989,6 +3991,15 @@
   "relationshipCadenceWeekly": "Wöchentlich",
   "relationshipChatTooltip": "Über diese Person chatten",
   "relationshipChatUnavailable": "Noch kein Agent — markiere diese Person zuerst als wichtig.",
+  "relationshipCheckInReminderBody": "Ein guter Moment, dich zu melden.",
+  "relationshipCheckInReminderTitle": "Bei {name} melden?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Kontaktdaten",
   "relationshipCreateTitle": "Person hinzufügen",

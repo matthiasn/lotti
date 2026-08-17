@@ -3949,6 +3949,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Lembretes de contacto, lembretes de hábitos e avisos do Lotti.",
+  "notificationChannelRemindersName": "Lembretes",
   "notificationInboxDismiss": "Ignorar notificação",
   "notificationInboxEmpty": "Vocês estão todos em dia.",
   "notificationInboxError": "Não foi possível carregar as notificações.",
@@ -4501,6 +4503,15 @@
   "relationshipCadenceWeekly": "Semanal",
   "relationshipChatTooltip": "Conversar sobre esta pessoa",
   "relationshipChatUnavailable": "Ainda sem agente — marca primeiro esta pessoa como importante.",
+  "relationshipCheckInReminderBody": "Um bom momento para dar notícias.",
+  "relationshipCheckInReminderTitle": "Falar com {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Registros",
   "relationshipContactChannelsLabel": "Dados de contato",
   "relationshipCreateTitle": "Adicionar pessoa",

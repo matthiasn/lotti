@@ -36,6 +36,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
+import 'package:lotti/features/notifications/scheduler/notification_startup_reconcile.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -278,10 +279,23 @@ Future<void> registerSingletons({
   // resolving here so sandboxed builds (e.g. flatpak) don't trip the lazy
   // service before anything actually needs it.
   final notificationScheduler = NotificationScheduler(
+    notificationsDb: notificationsDb,
     // ignore: unnecessary_lambdas
     notificationServiceProvider: () => getIt<NotificationService>(),
   );
   getIt.registerSingleton<NotificationScheduler>(notificationScheduler);
+
+  // Re-arm OS alerts for rows whose alarms did not survive an app update,
+  // reinstall or reboot. Fire-and-forget: an empty inbox costs two indexed
+  // queries and does not materialise the lazily registered
+  // NotificationService, and the helper swallows its own failures so a
+  // notification database that cannot be read never takes startup down.
+  unawaited(
+    reconcileScheduledNotifications(
+      scheduler: notificationScheduler,
+      logger: domainLogger,
+    ),
+  );
 
   // Consumption repository has no circular dependency (only ConsumptionDatabase),
   // so — unlike the agent repository, which is wired via Riverpod — it can be

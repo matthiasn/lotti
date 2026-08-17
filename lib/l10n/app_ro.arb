@@ -3541,6 +3541,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Memento-uri pentru contact, memento-uri pentru obiceiuri și notificări de la Lotti.",
+  "notificationChannelRemindersName": "Memento-uri",
   "notificationInboxDismiss": "Închideți notificarea",
   "notificationInboxEmpty": "Sunteți la zi.",
   "notificationInboxError": "Nu s-au putut încărca notificările.",
@@ -3989,6 +3991,15 @@
   "relationshipCadenceWeekly": "Săptămânal",
   "relationshipChatTooltip": "Discutați despre această persoană",
   "relationshipChatUnavailable": "Niciun agent încă — marcați mai întâi această persoană ca importantă.",
+  "relationshipCheckInReminderBody": "Un moment bun pentru a lua legătura.",
+  "relationshipCheckInReminderTitle": "Luați legătura cu {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Înregistrări",
   "relationshipContactChannelsLabel": "Date de contact",
   "relationshipCreateTitle": "Adăugați o persoană",

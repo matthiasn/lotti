@@ -20,17 +20,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contact channels never enter AI context. Cadence nudges and executive
   briefings ship alongside it — see the relationship-agent entry under
   Changed.
-- **Spoken check-ins.** "Speak check-in" on the check-in sheet records the
-  conversation and fills the narrative in with the transcript, ready to edit
-  before you save — nothing is saved for you, and speaking never overwrites
-  what you already typed; it is added underneath. The recording is filed
-  against the person, so it is transcribed with their inference profile (or
-  their category's) and their category's speech dictionary, which is where
-  to list the names you expect to hear. When the transcript lands, the
-  person's briefing refreshes on its own. If no transcript comes back, the
-  sheet says so and leaves the field to you.
+- **Speaking a check-in, and reminders that reach you with the app closed.**
+  Two ways logging a check-in gets easier. "Speak check-in" on the check-in
+  sheet records the conversation and fills the narrative in with the
+  transcript, ready to edit before you save — nothing is saved for you, and
+  speaking never overwrites what you already typed; it is added underneath.
+  The recording is filed against the person, so it is transcribed with their
+  inference profile (or their category's) and their category's speech
+  dictionary, which is where to list the names you expect to hear. If no
+  transcript comes back, the sheet says so and leaves the field to you; when
+  one does, that person's briefing refreshes on its own.
+  And when their check-in interval is coming up, Lotti now arms a real OS
+  notification for that morning, ahead of time, so the reminder still arrives
+  on a phone that has not been opened in weeks — the in-app banner needs the
+  app running, which is exactly the case it cannot cover. The reminder is a
+  synced inbox row first and an OS alert second, so dismissing it on one
+  device clears it everywhere. Lock-screen copy is deliberately sparse: the
+  person's name and nothing else about them. Logging a check-in — spoken or
+  typed — cancels the old reminder and sets the next one; un-marking someone
+  as important, making them dormant, or deleting them cancels theirs
+  immediately. Both sit behind the People flag, and the reminder also needs
+  the global notification setting, which stays off until you turn it on.
 
 ### Changed
+- **Notifications work on Android at all.** Android was missing its
+  initialisation settings, which made the notification plugin fail to start
+  and silently discard everything Lotti scheduled — habit reminders, plan-ready
+  alerts and sync-conflict notices included. Android now has a proper
+  monochrome status-bar icon, a named notification channel in system settings,
+  and reminders that survive a reboot.
+  Notification permission is requested only when you switch notifications on,
+  never at launch. Reminders are scheduled inexactly (accurate to within a few
+  minutes) so Lotti does not have to ask for the restricted exact-alarm
+  permission.
+- **Scheduled alerts survive an app update or reinstall.** Alarms the
+  operating system was still holding for a future date are re-armed at
+  startup from the stored notification rows. Previously they were only ever
+  set when a notification was written, so an update quietly dropped
+  everything pending. Alerts that already came due are not re-announced —
+  they are waiting in the bell on the device you are holding.
+- **Tapping an alert opens the right thing.** A notification about a person
+  opens that person instead of a task page that could never load.
 - **Relationship agents brief, nudge and chat.** Marking a person important
   now quietly creates their dedicated agent (plan v2 phases 4–5, ADR 0059,
   still behind the People flag). A free daily tick recomputes whether the

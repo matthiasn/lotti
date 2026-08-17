@@ -9043,6 +9043,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Check-in reminders, habit reminders and alerts from Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Reminders';
+
+  @override
   String get notificationInboxDismiss => 'Dismiss notification';
 
   @override
@@ -10184,6 +10191,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get relationshipChatUnavailable =>
       'No agent yet — mark this person as important first.';
+
+  @override
+  String get relationshipCheckInReminderBody => 'A good moment to reach out.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Check in with $name?';
+  }
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';

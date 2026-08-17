@@ -3950,6 +3950,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Promemoria di contatto, promemoria delle abitudini e avvisi di Lotti.",
+  "notificationChannelRemindersName": "Promemoria",
   "notificationInboxDismiss": "Discorso della notifica",
   "notificationInboxEmpty": "Siete tutti coinvolti.",
   "notificationInboxError": "Non ho potuto caricare le notifiche.",
@@ -4502,6 +4504,15 @@
   "relationshipCadenceWeekly": "Ogni settimana",
   "relationshipChatTooltip": "Chatta su questa persona",
   "relationshipChatUnavailable": "Nessun agente ancora: prima segna questa persona come importante.",
+  "relationshipCheckInReminderBody": "Un buon momento per farsi sentire.",
+  "relationshipCheckInReminderTitle": "Ti fai sentire con {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Contatti registrati",
   "relationshipContactChannelsLabel": "Recapiti",
   "relationshipCreateTitle": "Aggiungi persona",
