@@ -1582,8 +1582,12 @@
   "checkInSentimentLabel": "Como foi?",
   "checkInSentimentNeutral": "Neutro",
   "checkInSentimentStrained": "Tenso",
+  "checkInSpeakButton": "Ditar o contato",
   "checkInTopicsHint": "Separados por vírgulas, ex.: trabalho, viagens",
   "checkInTopicsLabel": "Assuntos",
+  "checkInTranscribingLabel": "Transcrevendo…",
+  "checkInTranscriptFailed": "Nenhuma transcrição voltou. Você pode escrever você mesmo.",
+  "checkInTranscriptUnavailable": "A transcrição não está configurada para esta pessoa. Adicione um modelo de áudio e ative a inferência automática na categoria dela, ou escreva o registro.",
   "checklistAddItem": "Adicionar um novo item",
   "checklistAiConfidenceLabel": "Confiança: {level}",
   "@checklistAiConfidenceLabel": {

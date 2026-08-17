@@ -1,7 +1,7 @@
 # Relationship Management — Implementation Plan v2
 
 - Date: 2026-08-13
-- Status: Plan (nothing implemented)
+- Status: Phases 1-6 landed; phases 7-9 outstanding
 - Supersedes: [2026-07-22_relationship_management.md](2026-07-22_relationship_management.md)
 - ADRs: [0037](../adr/0037-relationship-on-device-storage-and-privacy.md) (holds),
   [0038](../adr/0038-relationship-domain-model.md) (holds, two deltas),
@@ -318,6 +318,14 @@ a local profile in tests; no inference without a trigger fact; consumption
 events carry the agent id.
 
 ### Phase 6 — Voice check-in and transcription generalization
+
+Landed. The general fix was taken, not the Daily OS fallback: subject-shaped
+resolution throughout (`SubjectAgentResolver`, `subjectProfileIdOf`,
+`tryTranscribe({subjectId})`), `linkedTaskId` withheld from non-task subjects
+so consumption is not misfiled, `CheckInTranscriptionService` bridging the
+fire-and-forget transcription run back to the sheet, and the category
+`speechDictionary` documented as the name-accuracy lever. See
+[knowledge/features/relationships.md](../../knowledge/features/relationships.md#voice-check-ins-plan-v2-phase-6).
 
 1. Generalize automatic transcription to arbitrary subject entities:
    `AutomaticPromptTrigger`/`ProfileAutomationService.tryTranscribe` take a

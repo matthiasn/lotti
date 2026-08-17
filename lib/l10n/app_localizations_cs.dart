@@ -3208,10 +3208,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInSentimentStrained => 'Napjaté';
 
   @override
+  String get checkInSpeakButton => 'Namluvit kontakt';
+
+  @override
   String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
 
   @override
   String get checkInTopicsLabel => 'Témata';
+
+  @override
+  String get checkInTranscribingLabel => 'Přepisuje se…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Přepis nedorazil. Můžeš text napsat sám.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';

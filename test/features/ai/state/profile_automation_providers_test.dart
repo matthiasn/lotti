@@ -3,9 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -14,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -28,7 +30,9 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(
             MockAiConfigRepository(),
           ),
-          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          subjectAgentResolverProvider.overrideWithValue(
+            MockSubjectAgentResolver(),
+          ),
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
@@ -65,7 +69,9 @@ void main() {
         final scoped = ProviderContainer(
           overrides: [
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            subjectAgentResolverProvider.overrideWithValue(
+              MockSubjectAgentResolver(),
+            ),
             agentTemplateServiceProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
@@ -90,7 +96,7 @@ void main() {
       () async {
         final mockAiConfigRepo = MockAiConfigRepository();
         final mockDb = MockJournalDb();
-        final mockTaskAgentService = MockTaskAgentService();
+        final mockSubjectAgentResolver = MockSubjectAgentResolver();
         when(
           () => mockAiConfigRepo.getConfigById(any()),
         ).thenAnswer((_) async => null);
@@ -101,13 +107,15 @@ void main() {
           () => mockDb.journalEntityById(any()),
         ).thenAnswer((_) async => null);
         when(
-          () => mockTaskAgentService.getTaskAgentForTask(any()),
+          () => mockSubjectAgentResolver(any()),
         ).thenAnswer((_) async => null);
 
         final scoped = ProviderContainer(
           overrides: [
             aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+            subjectAgentResolverProvider.overrideWithValue(
+              mockSubjectAgentResolver,
+            ),
             agentTemplateServiceProvider.overrideWithValue(
               MockAgentTemplateService(),
             ),
@@ -119,27 +127,93 @@ void main() {
 
         final service = scoped.read(profileAutomationServiceProvider);
         final hasTranscription = await service.hasAutomatedSkillType(
-          taskId: 'task-1',
+          subjectId: 'task-1',
           skillType: SkillType.transcription,
         );
 
         expect(hasTranscription, isFalse);
         // The category gate denies first — an entry with no category has
         // nobody who opted in — so the agent lookup is never reached.
-        verifyNever(() => mockTaskAgentService.getTaskAgentForTask('task-1'));
+        verifyNever(() => mockSubjectAgentResolver('task-1'));
         verify(() => mockDb.journalEntityById('task-1')).called(1);
       },
     );
   });
 
-  group('taskProfileLookup via resolveForTask', () {
+  // The lookup the resolver hands to every subject kind. Reading only the
+  // task variant is what left a spoken check-in with no profile to
+  // transcribe through, so each kind that stores one gets its own case.
+  group('subjectProfileIdOf', () {
+    Metadata meta(String id) => Metadata(
+      id: id,
+      createdAt: DateTime(2026, 8, 14),
+      updatedAt: DateTime(2026, 8, 14),
+      dateFrom: DateTime(2026, 8, 14),
+      dateTo: DateTime(2026, 8, 14),
+    );
+
+    test("reads a task's own profileId", () {
+      expect(
+        subjectProfileIdOf(
+          testTask.copyWith(data: testTask.data.copyWith(profileId: 'task-p')),
+        ),
+        'task-p',
+      );
+    });
+
+    test("reads a project's own profileId", () {
+      final project = ProjectEntry(
+        meta: meta('project-1'),
+        data: ProjectData(
+          title: 'Kitchen',
+          status: ProjectStatus.active(
+            id: 'p-status',
+            createdAt: DateTime(2026, 8, 14),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2026, 8, 14),
+          dateTo: DateTime(2026, 8, 14),
+          profileId: 'project-p',
+        ),
+      );
+
+      expect(subjectProfileIdOf(project), 'project-p');
+    });
+
+    test("reads a relationship's own profileId", () {
+      expect(
+        subjectProfileIdOf(
+          testRelationship.copyWith(
+            data: testRelationship.data.copyWith(profileId: 'person-p'),
+          ),
+        ),
+        'person-p',
+      );
+    });
+
+    test('is null for a subject kind that stores no profile', () {
+      expect(subjectProfileIdOf(testAudioEntry), isNull);
+    });
+
+    test('is null when the subject carries no profile of its own', () {
+      expect(subjectProfileIdOf(testRelationship), isNull);
+    });
+
+    // A recording whose subject was deleted mid-flight must decline, not
+    // crash the background transcription.
+    test('is null when the entity could not be loaded', () {
+      expect(subjectProfileIdOf(null), isNull);
+    });
+  });
+
+  group('subjectProfileLookup via resolveForSubject', () {
     late MockJournalDb mockDb;
-    late MockTaskAgentService mockTaskAgentService;
+    late MockSubjectAgentResolver mockSubjectAgentResolver;
     late MockAiConfigRepository mockAiConfigRepo;
 
     setUp(() {
       mockDb = MockJournalDb();
-      mockTaskAgentService = MockTaskAgentService();
+      mockSubjectAgentResolver = MockSubjectAgentResolver();
       mockAiConfigRepo = MockAiConfigRepository();
       // Stub getConfigById so it doesn't throw on unstubbed calls.
       when(
@@ -151,7 +225,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+          subjectAgentResolverProvider.overrideWithValue(
+            mockSubjectAgentResolver,
+          ),
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
@@ -163,49 +239,52 @@ void main() {
       return container;
     }
 
-    test('resolveForTask falls back to task profileId when no agent', () async {
-      // No agent for this task — agent path returns null.
-      when(
-        () => mockTaskAgentService.getTaskAgentForTask('task-1'),
-      ).thenAnswer((_) async => null);
+    test(
+      'resolveForSubject falls back to task profileId when no agent',
+      () async {
+        // No agent for this task — agent path returns null.
+        when(
+          () => mockSubjectAgentResolver('task-1'),
+        ).thenAnswer((_) async => null);
 
-      // Task has a profileId.
-      when(() => mockDb.journalEntityById('task-1')).thenAnswer(
-        (_) async => JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime(2024),
-            updatedAt: DateTime(2024),
-            dateFrom: DateTime(2024),
-            dateTo: DateTime(2024),
+        // Task has a profileId.
+        when(() => mockDb.journalEntityById('task-1')).thenAnswer(
+          (_) async => JournalEntity.task(
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+            data: TaskData(
+              status: taskStatusFromString(''),
+              title: 'Test',
+              statusHistory: [],
+              dateTo: DateTime(2024),
+              dateFrom: DateTime(2024),
+              estimate: Duration.zero,
+              profileId: 'profile-abc',
+            ),
           ),
-          data: TaskData(
-            status: taskStatusFromString(''),
-            title: 'Test',
-            statusHistory: [],
-            dateTo: DateTime(2024),
-            dateFrom: DateTime(2024),
-            estimate: Duration.zero,
-            profileId: 'profile-abc',
-          ),
-        ),
-      );
+        );
 
-      final container = createContainer();
-      final resolver = container.read(profileAutomationResolverProvider);
-      // resolveForTask exercises the taskProfileLookup closure.
-      // It will return null because profile-abc is not a real config,
-      // but the lookup itself is executed (covering the provider lines).
-      final result = await resolver.resolveForTask('task-1');
-      // The profile can't be resolved (no real AI config), so result is null.
-      // But we verify the DB was queried for the task.
-      verify(() => mockDb.journalEntityById('task-1')).called(1);
-      expect(result, isNull);
-    });
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        // resolveForSubject exercises the taskProfileLookup closure.
+        // It will return null because profile-abc is not a real config,
+        // but the lookup itself is executed (covering the provider lines).
+        final result = await resolver.resolveForSubject('task-1');
+        // The profile can't be resolved (no real AI config), so result is null.
+        // But we verify the DB was queried for the task.
+        verify(() => mockDb.journalEntityById('task-1')).called(1);
+        expect(result, isNull);
+      },
+    );
 
-    test('resolveForTask returns null when entity is not a Task', () async {
+    test('resolveForSubject returns null when entity is not a Task', () async {
       when(
-        () => mockTaskAgentService.getTaskAgentForTask('entry-1'),
+        () => mockSubjectAgentResolver('entry-1'),
       ).thenAnswer((_) async => null);
 
       when(() => mockDb.journalEntityById('entry-1')).thenAnswer(
@@ -223,13 +302,13 @@ void main() {
 
       final container = createContainer();
       final resolver = container.read(profileAutomationResolverProvider);
-      final result = await resolver.resolveForTask('entry-1');
+      final result = await resolver.resolveForSubject('entry-1');
       expect(result, isNull);
     });
 
-    test('resolveForTask returns null when task has no profileId', () async {
+    test('resolveForSubject returns null when task has no profileId', () async {
       when(
-        () => mockTaskAgentService.getTaskAgentForTask('task-2'),
+        () => mockSubjectAgentResolver('task-2'),
       ).thenAnswer((_) async => null);
 
       when(() => mockDb.journalEntityById('task-2')).thenAnswer(
@@ -254,13 +333,13 @@ void main() {
 
       final container = createContainer();
       final resolver = container.read(profileAutomationResolverProvider);
-      final result = await resolver.resolveForTask('task-2');
+      final result = await resolver.resolveForSubject('task-2');
       expect(result, isNull);
     });
 
-    test('resolveForTask returns null when entity not found', () async {
+    test('resolveForSubject returns null when entity not found', () async {
       when(
-        () => mockTaskAgentService.getTaskAgentForTask('gone'),
+        () => mockSubjectAgentResolver('gone'),
       ).thenAnswer((_) async => null);
 
       when(() => mockDb.journalEntityById('gone')).thenAnswer(
@@ -269,7 +348,7 @@ void main() {
 
       final container = createContainer();
       final resolver = container.read(profileAutomationResolverProvider);
-      final result = await resolver.resolveForTask('gone');
+      final result = await resolver.resolveForSubject('gone');
       expect(result, isNull);
     });
   });
@@ -290,7 +369,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          subjectAgentResolverProvider.overrideWithValue(
+            MockSubjectAgentResolver(),
+          ),
           agentTemplateServiceProvider.overrideWithValue(
             MockAgentTemplateService(),
           ),
@@ -490,7 +571,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => const <AiConfig>[]);
         return service.hasAutomatedSkillType(
-          taskId: 'entry-1',
+          subjectId: 'entry-1',
           skillType: SkillType.imageAnalysis,
         );
       }

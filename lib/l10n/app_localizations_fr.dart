@@ -3213,11 +3213,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checkInSentimentStrained => 'Tendu';
 
   @override
+  String get checkInSpeakButton => 'Dicter l\'échange';
+
+  @override
   String get checkInTopicsHint =>
       'Séparés par des virgules, p. ex. travail, voyages';
 
   @override
   String get checkInTopicsLabel => 'Sujets';
+
+  @override
+  String get checkInTranscribingLabel => 'Transcription en cours…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Aucune transcription n\'est revenue. Tu peux l\'écrire toi-même.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'La transcription n\'est pas configurée pour cette personne. Ajoute un modèle audio et active l\'inférence automatique pour sa catégorie, ou écris l\'échange.';
 
   @override
   String get checklistAddItem => 'Ajouter un nouvel élément';

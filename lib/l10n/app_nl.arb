@@ -1582,8 +1582,12 @@
   "checkInSentimentLabel": "Hoe voelde het?",
   "checkInSentimentNeutral": "Neutraal",
   "checkInSentimentStrained": "Gespannen",
+  "checkInSpeakButton": "Check-in inspreken",
   "checkInTopicsHint": "Kommagescheiden, bijv. werk, reizen",
   "checkInTopicsLabel": "Onderwerpen",
+  "checkInTranscribingLabel": "Bezig met transcriberen…",
+  "checkInTranscriptFailed": "Er kwam geen transcriptie terug. Je kunt het zelf typen.",
+  "checkInTranscriptUnavailable": "Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.",
   "checklistAddItem": "Een nieuw item toevoegen",
   "checklistAiConfidenceLabel": "Vertrouwen: {level}",
   "@checklistAiConfidenceLabel": {

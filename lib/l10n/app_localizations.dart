@@ -5376,6 +5376,12 @@ abstract class AppLocalizations {
   /// **'Strained'**
   String get checkInSentimentStrained;
 
+  /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak check-in'**
+  String get checkInSpeakButton;
+
   /// No description provided for @checkInTopicsHint.
   ///
   /// In en, this message translates to:
@@ -5387,6 +5393,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
+
+  /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get checkInTranscribingLabel;
+
+  /// Message shown when a spoken check-in produced no transcript and the user has to type the narrative.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcript came back. You can type it instead.'**
+  String get checkInTranscriptFailed;
+
+  /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
+  String get checkInTranscriptUnavailable;
 
   /// No description provided for @checklistAddItem.
   ///

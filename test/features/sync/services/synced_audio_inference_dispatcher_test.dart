@@ -128,7 +128,7 @@ class _Bench {
 
     // Profile id resolution.
     when(
-      () => profileAutomationResolver.resolveProfileIdForTask(_kTaskId),
+      () => profileAutomationResolver.resolveProfileIdForSubject(_kTaskId),
     ).thenAnswer((_) async => _kProfileId);
 
     // Raw profile load.
@@ -525,11 +525,11 @@ void main() {
 
   group('profile-id resolution', () {
     test(
-      'skips when resolveProfileIdForTask returns null',
+      'skips when resolveProfileIdForSubject returns null',
       () async {
         bench.stubHappyPath();
         when(
-          () => bench.profileAutomationResolver.resolveProfileIdForTask(
+          () => bench.profileAutomationResolver.resolveProfileIdForSubject(
             _kTaskId,
           ),
         ).thenAnswer((_) async => null);

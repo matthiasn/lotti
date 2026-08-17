@@ -3152,10 +3152,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkInSentimentStrained => 'Strained';
 
   @override
+  String get checkInSpeakButton => 'Speak check-in';
+
+  @override
   String get checkInTopicsHint => 'Comma-separated, e.g. work, travel';
 
   @override
   String get checkInTopicsLabel => 'Topics';
+
+  @override
+  String get checkInTranscribingLabel => 'Transcribing…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'No transcript came back. You can type it instead.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.';
 
   @override
   String get checklistAddItem => 'Add a new item';

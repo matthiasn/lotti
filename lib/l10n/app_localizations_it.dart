@@ -3208,10 +3208,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInSentimentStrained => 'Teso';
 
   @override
+  String get checkInSpeakButton => 'Detta il contatto';
+
+  @override
   String get checkInTopicsHint => 'Separati da virgole, ad es. lavoro, viaggi';
 
   @override
   String get checkInTopicsLabel => 'Argomenti';
+
+  @override
+  String get checkInTranscribingLabel => 'Trascrizione in corso…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Non è arrivata nessuna trascrizione. Puoi scriverlo tu.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'La trascrizione non è configurata per questa persona. Aggiungi un modello audio e attiva l\'inferenza automatica per la sua categoria, oppure scrivi il contatto.';
 
   @override
   String get checklistAddItem => 'Aggiungi un nuovo articolo';

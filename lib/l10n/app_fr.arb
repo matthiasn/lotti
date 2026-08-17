@@ -1405,8 +1405,12 @@
   "checkInSentimentLabel": "C'était comment ?",
   "checkInSentimentNeutral": "Neutre",
   "checkInSentimentStrained": "Tendu",
+  "checkInSpeakButton": "Dicter l'échange",
   "checkInTopicsHint": "Séparés par des virgules, p. ex. travail, voyages",
   "checkInTopicsLabel": "Sujets",
+  "checkInTranscribingLabel": "Transcription en cours…",
+  "checkInTranscriptFailed": "Aucune transcription n'est revenue. Tu peux l'écrire toi-même.",
+  "checkInTranscriptUnavailable": "La transcription n'est pas configurée pour cette personne. Ajoute un modèle audio et active l'inférence automatique pour sa catégorie, ou écris l'échange.",
   "checklistAddItem": "Ajouter un nouvel élément",
   "checklistAiConfidenceLabel": "Confiance : {level}",
   "@checklistAiConfidenceLabel": {

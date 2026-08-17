@@ -1412,8 +1412,12 @@
   "checkInSentimentLabel": "Jaké to bylo?",
   "checkInSentimentNeutral": "Neutrální",
   "checkInSentimentStrained": "Napjaté",
+  "checkInSpeakButton": "Namluvit kontakt",
   "checkInTopicsHint": "Oddělená čárkami, např. práce, cestování",
   "checkInTopicsLabel": "Témata",
+  "checkInTranscribingLabel": "Přepisuje se…",
+  "checkInTranscriptFailed": "Přepis nedorazil. Můžeš text napsat sám.",
+  "checkInTranscriptUnavailable": "Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.",
   "checklistAddItem": "Přidat novou položku",
   "checklistAiConfidenceLabel": "Jistota: {level}",
   "@checklistAiConfidenceLabel": {

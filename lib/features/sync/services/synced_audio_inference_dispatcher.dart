@@ -129,9 +129,10 @@ class SyncedAudioInferenceDispatcher {
     // category.defaultProfileId directly — that skips agent overrides and
     // lets later category edits silently re-route which device claims the
     // entry.
-    final profileId = await _profileAutomationResolver.resolveProfileIdForTask(
-      linkedTaskId,
-    );
+    final profileId = await _profileAutomationResolver
+        .resolveProfileIdForSubject(
+          linkedTaskId,
+        );
     if (profileId == null) {
       _log('skip', id, 'no profile id for task $linkedTaskId');
       return;

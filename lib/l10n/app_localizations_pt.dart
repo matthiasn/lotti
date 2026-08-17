@@ -3197,11 +3197,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInSentimentStrained => 'Tenso';
 
   @override
+  String get checkInSpeakButton => 'Ditar o contato';
+
+  @override
   String get checkInTopicsHint =>
       'Separados por vírgulas, ex.: trabalho, viagens';
 
   @override
   String get checkInTopicsLabel => 'Assuntos';
+
+  @override
+  String get checkInTranscribingLabel => 'Transcrevendo…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Nenhuma transcrição voltou. Você pode escrever você mesmo.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'A transcrição não está configurada para esta pessoa. Adicione um modelo de áudio e ative a inferência automática na categoria dela, ou escreva o registro.';
 
   @override
   String get checklistAddItem => 'Adicionar um novo item';
