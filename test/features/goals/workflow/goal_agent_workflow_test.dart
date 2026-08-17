@@ -716,10 +716,10 @@ void main() {
     // Same offTrack evidence as the full-wake test — only the dismissal
     // differs, so the assertion isolates the cooldown gate rather than the
     // status.
-    const dismissedBrief = GoalNudgeBrief(
+    const dismissedBrief = NudgeBrief(
       headline: 'Dismissed earlier today.',
-      tone: GoalNudgeTone.nudge,
-      animation: GoalBannerAnimation.steady,
+      tone: NudgeTone.nudge,
+      animation: NudgeBannerAnimation.steady,
     );
     when(
       () => repository.getEntitiesByAgentId(
@@ -731,7 +731,7 @@ void main() {
         AgentDomainEntity.goalNudge(
               id: 'dismissed-today',
               agentId: agentId,
-              status: GoalNudgeStatus.dismissed,
+              status: NudgeStatus.dismissed,
               brief: dismissedBrief,
               briefDigest: goalBriefDigest(dismissedBrief),
               createdAt: now.subtract(const Duration(hours: 2)),

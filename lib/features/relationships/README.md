@@ -8,8 +8,8 @@ the user before the next conversation.
 
 This feature is landing in phases; see the
 [implementation plan](../../../docs/implementation_plans/2026-08-13_relationship_management_v2.md)
-and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
-`enable_relationships` flag):
+and ADRs 0037–0041 plus 0059. What exists today (phases 1–5 and 7, behind
+the `enable_relationships` flag):
 
 - **Domain model** in `lib/classes/`: `relationship_data.dart`
   (`RelationshipData`, `RelationshipStatus`, `ContactChannel`) and
@@ -50,10 +50,24 @@ and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
   kind-agnostic channel (`lib/features/nudges/`), tapping through to the
   person.
 
-Not yet built: voice check-ins (phase 6), OS contact import/linking and
-call/message quick actions (phase 7), OS reminders (phase 8). Relationships
-and check-ins deliberately do not appear in the main journal timeline; the
-People tab is their home.
+- `service/` + `state/` + `ui/` — **contacts, quick actions and the
+  post-call loop** (plan v2 phase 7, ADR 0041), on Android and iOS only.
+  `contacts_service.dart` is the sole boundary to `flutter_contacts`, and
+  `contact_import_mapper.dart` the sole file that knows its types; the
+  import screen, the link action and their tests all run without a platform
+  channel. The People tab gains a multi-select import (pick, then set
+  importance and cadence per person before anyone is created), the detail
+  page gains "Link contact" / "Update from contact" — a merge that never
+  discards a hand-typed channel and never overwrites the name — and each
+  contact channel renders call/message/email buttons for the actions the
+  device can actually service. Launching one records a device-local marker
+  in `settings.sqlite` (never synced, never journalled), which the next
+  resume turns into a pre-filled check-in offer.
+
+Not yet built: voice check-ins (phase 6) and OS reminders (phase 8).
+Relationships and check-ins deliberately do not appear in the main journal
+timeline; the People tab is their home. Desktop keeps manual channel entry:
+contact import and the quick actions are absent there, by design.
 
 Privacy stance (ADR 0037): relationship data is the most sensitive class the
 app holds — it describes third parties. It stays on-device, syncs only via

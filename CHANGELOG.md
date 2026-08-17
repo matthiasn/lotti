@@ -20,15 +20,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contact channels never enter AI context. Cadence nudges and executive
   briefings ship alongside it — see the relationship-agent entry under
   Changed.
-- **Groundwork for contact import and one-tap call, message and email** on
-  the People tab. No new screens yet: this is the permission and plugin
-  layer those actions need. Android now lists a Contacts permission, and
-  both mobile platforms can hand a phone number to the dialer or messages
-  app and an address to mail. The permission is requested when you open the
-  contact picker, never at launch, and Lotti only ever reads the contacts
-  you choose — it does not write to your address book, and it does not read
-  it in the background. Desktop is unaffected: contact channels are still
-  entered by hand there.
+- **Contacts, calling and post-call check-ins (People tab, phone and
+  tablet).** Add people straight from your address book: pick as many as you
+  like, then decide per person whether they are important and how often you
+  want to check in before any of them is created — nobody is marked
+  important by default. An individual person can also be linked to a
+  contact, which copies their phone numbers and email across and can be
+  refreshed later; linking never overwrites a detail you typed yourself, and
+  never renames someone you deliberately called "Mum". Contact details on a
+  person's page became buttons: call, message or email them without leaving
+  Lotti. Only the actions your device can actually perform appear, so a
+  landline offers a call but no text message, and a messaging handle offers
+  nothing rather than opening the wrong app. When you come back from a call
+  or message you started here, that person's page offers to log it, already
+  filled in with what happened and when — how it went is still yours to say.
+  Declining leaves no trace, and the offer expires after a few hours rather
+  than greeting you the next morning.
+
+  Lotti reads your contacts only while the picker is open and only the ones
+  you choose; it never writes to your address book and never reads it in the
+  background. Contact details still never enter AI context. Contact import
+  and the quick actions need an address book, so they are absent on desktop,
+  where contact details are entered by hand as before.
 
 ### Changed
 - **Relationship agents brief, nudge and chat.** Marking a person important

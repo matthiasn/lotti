@@ -10401,6 +10401,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipContactChannelsLabel => 'Datos de contacto';
 
   @override
+  String get relationshipContactLinked => 'Datos de contacto copiados';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'No se pudieron guardar los datos de contacto';
+
+  @override
+  String get relationshipContactMissing =>
+      'Ese contacto no está en este dispositivo';
+
+  @override
+  String get relationshipContactNoChanges => 'Nada nuevo que copiar';
+
+  @override
   String get relationshipCreateTitle => 'Añadir persona';
 
   @override
@@ -10444,6 +10458,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipHealthThriving => 'Floreciente';
 
   @override
+  String get relationshipImportAction => 'Importar desde contactos';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personas añadidas',
+      one: '1 persona añadida',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Recuérdame mantener el contacto';
 
@@ -10451,9 +10479,74 @@ class AppLocalizationsEs extends AppLocalizations {
   String get relationshipImportantLabel => 'Importante';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Añadir $count personas',
+      one: 'Añadir 1 persona',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'No hay contactos en este dispositivo';
+
+  @override
+  String get relationshipImportFailed => 'No se pudo añadir a nadie';
+
+  @override
+  String get relationshipImportGrantButton => 'Permitir acceso';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Ningún contacto coincide con tu búsqueda';
+
+  @override
+  String get relationshipImportOpenSettings => 'Abrir ajustes';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti lee tus contactos solo mientras este selector está abierto y copia solo las personas que elijas.';
+
+  @override
+  String get relationshipImportRetry => 'Reintentar';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Revisar $count',
+      one: 'Revisar 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Antes de añadirlas';
+
+  @override
+  String get relationshipImportSearchHint => 'Buscar contactos';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'El acceso a los contactos está desactivado. Actívalo en los ajustes del sistema para importar personas.';
+
+  @override
+  String get relationshipImportTitle => 'Añadir personas';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'La importación de contactos está disponible en teléfonos y tabletas. Añade aquí los datos a mano.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Último registro $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Vincular contacto';
 
   @override
   String get relationshipLinkedTasksLabel => 'Tareas';
@@ -10499,6 +10592,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get relationshipRelinkContact => 'Vincular otro contacto';
+
+  @override
   String get relationshipsEmptyState =>
       'Añade a las personas de las que quieres estar cerca.';
 
@@ -10521,6 +10617,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Seguimiento desde $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Actualizar desde el contacto';
 
   @override
   String get saveButton => 'Guardar';
