@@ -10314,6 +10314,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get referenceImageSkip => 'Přeskočit';
 
   @override
+  String get relationshipActionCall => 'Zavolat';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed =>
+      'Nic v tomto zařízení to nedokáže otevřít';
+
+  @override
+  String get relationshipActionMessage => 'Zpráva';
+
+  @override
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
@@ -10484,6 +10497,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Zapsat check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Teď ne';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Jak to šlo s $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>

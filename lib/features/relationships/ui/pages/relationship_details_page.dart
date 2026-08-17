@@ -15,6 +15,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
@@ -209,7 +210,10 @@ class RelationshipDetailsPage extends ConsumerWidget {
                         ),
                         SizedBox(height: tokens.spacing.step3),
                         for (final channel in data.contactChannels)
-                          _ContactChannelRow(channel: channel),
+                          _ContactChannelRow(
+                            relationshipId: relationshipId,
+                            channel: channel,
+                          ),
                       ],
                       SizedBox(height: tokens.spacing.sectionGap),
                       _LinkedTasksSection(
@@ -305,8 +309,12 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _ContactChannelRow extends StatelessWidget {
-  const _ContactChannelRow({required this.channel});
+  const _ContactChannelRow({
+    required this.relationshipId,
+    required this.channel,
+  });
 
+  final String relationshipId;
   final ContactChannel channel;
 
   @override
@@ -334,6 +342,13 @@ class _ContactChannelRow extends StatelessWidget {
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.lowEmphasis,
         ),
+      ),
+      // Renders nothing until the platform confirms it can service an
+      // action, and nothing at all for a channel with no launchable scheme
+      // (plan v2 phase 7 item 4).
+      trailing: ContactQuickActions(
+        relationshipId: relationshipId,
+        channel: channel,
       ),
     );
   }

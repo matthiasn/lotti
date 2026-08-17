@@ -3972,6 +3972,10 @@
   "referenceImageSelectionSubtitle": "Choisis jusqu'à {maxImages} images pour guider le style visuel de l'IA",
   "referenceImageSelectionTitle": "Sélectionner des images de référence",
   "referenceImageSkip": "Passer",
+  "relationshipActionCall": "Appeler",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Rien sur cet appareil ne peut ouvrir ça",
+  "relationshipActionMessage": "Message",
   "relationshipAddChannelButton": "Ajouter un moyen de contact",
   "relationshipBannerSemanticLabel": "Bannière de relation pour {personName}",
   "relationshipBriefingDisclosureBody": "Le briefing est généré par {provider}. Les notes sur cette personne y seront envoyées pour traitement.",
@@ -4026,6 +4030,18 @@
   "relationshipNoCheckIns": "Aucun échange noté — ajoute le premier après votre prochaine conversation.",
   "relationshipNoLinkedTasks": "Aucune tâche liée pour l'instant.",
   "relationshipNotFound": "Cette personne n'est plus dans ta liste.",
+  "relationshipPostCallBody": "Tu viens de le/la contacter. Tu notes un point tant que c’est frais ?",
+  "relationshipPostCallConfirm": "Noter un point",
+  "relationshipPostCallDismiss": "Pas maintenant",
+  "relationshipPostCallTitle": "Comment ça s’est passé avec {name} ?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Ajoute les personnes dont tu veux rester proche.",
   "relationshipsPageTitle": "Proches",
   "relationshipStatusActive": "Active",

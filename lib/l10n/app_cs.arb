@@ -3979,6 +3979,10 @@
   "referenceImageSelectionSubtitle": "Vyber až {maxImages} obrázků, které pomohou AI určit vizuální styl",
   "referenceImageSelectionTitle": "Vyber referenční obrázky",
   "referenceImageSkip": "Přeskočit",
+  "relationshipActionCall": "Zavolat",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nic v tomto zařízení to nedokáže otevřít",
+  "relationshipActionMessage": "Zpráva",
   "relationshipAddChannelButton": "Přidat kontakt",
   "relationshipBannerSemanticLabel": "Banner vztahu s {personName}",
   "relationshipBriefingDisclosureBody": "Briefing běží na {provider}. Poznámky o této osobě tam budou odeslány ke zpracování.",
@@ -4033,6 +4037,18 @@
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
+  "relationshipPostCallBody": "Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?",
+  "relationshipPostCallConfirm": "Zapsat check-in",
+  "relationshipPostCallDismiss": "Teď ne",
+  "relationshipPostCallTitle": "Jak to šlo s {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsPageTitle": "Lidé",
   "relationshipStatusActive": "Aktivní",

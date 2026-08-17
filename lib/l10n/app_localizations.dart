@@ -17119,6 +17119,30 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get referenceImageSkip;
 
+  /// Tooltip on the button that dials a contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get relationshipActionCall;
+
+  /// Tooltip on the button that opens a mail composer
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get relationshipActionEmail;
+
+  /// Toast shown when no app on the device handles the contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this device can open that'**
+  String get relationshipActionFailed;
+
+  /// Tooltip on the button that opens a message composer
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get relationshipActionMessage;
+
   /// No description provided for @relationshipAddChannelButton.
   ///
   /// In en, this message translates to:
@@ -17400,6 +17424,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
+
+  /// Body of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'You reached out a moment ago. Log a check-in while it is fresh?'**
+  String get relationshipPostCallBody;
+
+  /// Button that opens a pre-filled check-in from the post-call prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Log check-in'**
+  String get relationshipPostCallConfirm;
+
+  /// Button that dismisses the post-call prompt without a trace
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get relationshipPostCallDismiss;
+
+  /// Title of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'How did it go with {name}?'**
+  String relationshipPostCallTitle(String name);
 
   /// No description provided for @relationshipsEmptyState.
   ///

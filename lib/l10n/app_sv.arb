@@ -4485,6 +4485,10 @@
   "referenceImageSelectionSubtitle": "Välj upp till {maxImages} bilder för att styra AI:ns visuella stil",
   "referenceImageSelectionTitle": "Välj referensbilder",
   "referenceImageSkip": "Hoppa över",
+  "relationshipActionCall": "Ring",
+  "relationshipActionEmail": "E-post",
+  "relationshipActionFailed": "Inget på den här enheten kan öppna det",
+  "relationshipActionMessage": "Meddelande",
   "relationshipAddChannelButton": "Lägg till kontaktuppgift",
   "relationshipBannerSemanticLabel": "Relationsbanner för {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen körs på {provider}. Anteckningar om personen skickas dit för bearbetning.",
@@ -4539,6 +4543,18 @@
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
   "relationshipNotFound": "Den här personen följs inte längre.",
+  "relationshipPostCallBody": "Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?",
+  "relationshipPostCallConfirm": "Logga avstämning",
+  "relationshipPostCallDismiss": "Inte nu",
+  "relationshipPostCallTitle": "Hur gick det med {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",

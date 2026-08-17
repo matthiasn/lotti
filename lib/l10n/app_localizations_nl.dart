@@ -10186,6 +10186,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get referenceImageSkip => 'Overslaan';
 
   @override
+  String get relationshipActionCall => 'Bellen';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed => 'Niets op dit apparaat kan dat openen';
+
+  @override
+  String get relationshipActionMessage => 'Bericht';
+
+  @override
   String get relationshipAddChannelButton => 'Contactgegeven toevoegen';
 
   @override
@@ -10358,6 +10370,21 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipNotFound =>
       'Deze persoon staat niet meer in je lijst.';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Check-in vastleggen';
+
+  @override
+  String get relationshipPostCallDismiss => 'Niet nu';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Hoe ging het met $name?';
+  }
 
   @override
   String get relationshipsEmptyState =>
