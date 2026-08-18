@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -27,6 +28,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     required this._syncService,
     required this._goalAgentService,
     this._goalMirrorService,
+    this._checkInNotifier,
     this._domainLogger,
   });
 
@@ -38,6 +40,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   /// Repairs the journal-side goal on every launch. Optional so the runtime
   /// keeps working without it.
   final GoalMirrorService? _goalMirrorService;
+
+  /// Marks a goal's report stale when the user checks in. Optional for the
+  /// same reason the mirror is.
+  final GoalCheckInNotifier? _checkInNotifier;
   final DomainLogger? _domainLogger;
 
   @override
@@ -71,6 +77,9 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }
     }
+    // One subscription for every active goal, resolved once rather than
+    // re-queried per journal notification.
+    _checkInNotifier?.start(agents.map((identity) => identity.agentId));
   }
 
   @override

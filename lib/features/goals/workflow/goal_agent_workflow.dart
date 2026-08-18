@@ -33,8 +33,12 @@ import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_user_voice.dart';
+import 'package:lotti/features/goals/model/goal_checkin_source.dart';
+import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
@@ -98,6 +102,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required this._cloudInferenceRepository,
     required this._aiConfigRepository,
     this._factsRenderer = const GoalFactsRenderer(),
+    this._checkInCompactor,
+    this._checkInSourceReader,
     this._domainLogger,
   });
 
@@ -108,6 +114,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final CloudInferenceRepository _cloudInferenceRepository;
   final AiConfigRepository _aiConfigRepository;
   final GoalFactsRenderer _factsRenderer;
+
+  /// Distills a check-in into the bounded form the agent reads. Optional: the
+  /// deterministic tier and the LLM tier both work without it, and a wake with
+  /// no compactor simply carries no user voice.
+  final GoalCheckInCompactor? _checkInCompactor;
+
+  /// Resolves a goal's check-ins from the journal. Injected rather than
+  /// imported so this headless workflow keeps no dependency on the journal
+  /// stack.
+  final GoalCheckInSourceReader? _checkInSourceReader;
   final DomainLogger? _domainLogger;
 
   @override
@@ -344,7 +360,44 @@ class GoalAgentWorkflow with AgentErrorLogging {
                   _specScopedRow(n, (version! as GoalSpecVersionEntity).id),
             )
             .toList();
+    final resolved = await _resolveModel(agentIdentity);
+    if (resolved == null) {
+      // The escalation record is already consumed and Phase A will not
+      // re-arm this transition — a temporarily unconfigured provider must
+      // not orphan the period. The retry costs €0 until resolution works
+      // (this guard aborts before any inference).
+      if (escalationPeriod != null) {
+        await _rearmEscalation(
+          agentId,
+          derivation.periodKey,
+          triggerTokens,
+          now,
+        );
+      }
+      return const WakeResult(
+        success: false,
+        error: 'no inference provider resolves for the goal agent',
+      );
+    }
+
+    // Compact any check-in whose words have arrived but which the agent has
+    // not seen yet, using the wake's OWN model — the agent reads its user in
+    // the same voice it thinks in. Non-fatal: a check-in that fails to compact
+    // simply is not in this wake's context, and the next wake retries.
+    await _compactPendingCheckIns(
+      agentId: agentId,
+      goalStatement: version.statement,
+      model: resolved.modelId,
+      provider: resolved.provider,
+    );
+
     final observations = await _recentObservationTexts(agentId);
+    // What the user said, compacted. Bounded by tokens rather than by count,
+    // so a talkative fortnight cannot push the deterministic FACTS out of the
+    // wake's budget.
+    final userVoice = goalUserVoiceEntries(
+      await _checkInSummaries(agentId),
+    );
 
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -353,6 +406,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       nudges: nudges,
       evaluationReference: reference,
       observations: observations,
+      userVoice: userVoice,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
@@ -375,26 +429,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
           '$factsBlock\n\nUSER EXPLICITLY REQUESTED A NEW BANNER AD. This '
           'request overrides dismissal cooldown. Create the replacement now; '
           'do not claim that cooldown is system-wide or immutable.';
-    }
-
-    final resolved = await _resolveModel(agentIdentity);
-    if (resolved == null) {
-      // The escalation record is already consumed and Phase A will not
-      // re-arm this transition — a temporarily unconfigured provider must
-      // not orphan the period. The retry costs €0 until resolution works
-      // (this guard aborts before any inference).
-      if (escalationPeriod != null) {
-        await _rearmEscalation(
-          agentId,
-          derivation.periodKey,
-          triggerTokens,
-          now,
-        );
-      }
-      return const WakeResult(
-        success: false,
-        error: 'no inference provider resolves for the goal agent',
-      );
     }
 
     final conversationId = _conversationRepository.createConversation(
@@ -1027,6 +1061,77 @@ class GoalAgentWorkflow with AgentErrorLogging {
       provider: direct.provider,
       geminiThinkingMode: direct.model.geminiThinkingMode,
     );
+  }
+
+  /// Compacts every check-in whose transcript has arrived but which has no
+  /// summary yet.
+  ///
+  /// Idempotent by construction: the summary id is derived from
+  /// `(agentId, entryId)`, so an entry already summarised is skipped and a
+  /// retried compaction overwrites rather than appends. Individually
+  /// contained — one unreadable recording must not cost the wake the rest of
+  /// what the user said.
+  Future<void> _compactPendingCheckIns({
+    required String agentId,
+    required String goalStatement,
+    required String model,
+    required AiConfigInferenceProvider provider,
+  }) async {
+    final compactor = _checkInCompactor;
+    final reader = _checkInSourceReader;
+    if (compactor == null || reader == null) return;
+
+    final List<GoalCheckInSource> pending;
+    try {
+      final existing = (await _checkInSummaries(
+        agentId,
+      )).map((summary) => summary.sourceEntryId).toSet();
+      pending = (await reader(
+        agentId,
+      )).where((source) => !existing.contains(source.entryId)).toList();
+    } on Object {
+      return;
+    }
+
+    for (final source in pending) {
+      await compactor.compact(
+        agentId: agentId,
+        entryId: source.entryId,
+        recordedAt: source.recordedAt,
+        transcript: source.text,
+        goalStatement: goalStatement,
+        model: model,
+        provider: provider,
+      );
+    }
+  }
+
+  /// The compacted check-ins stored for this goal.
+  ///
+  /// Read whole and then token-bounded by `goalUserVoiceEntries`: the
+  /// summaries are small and bounded by construction (~500 tokens each), and
+  /// trimming by row count here would drop a recent check-in whenever an older
+  /// one happened to be long.
+  Future<List<GoalCheckInSummary>> _checkInSummaries(String agentId) async {
+    final messages = await _repository.getEntitiesByAgentIdAndSubtype(
+      agentId,
+      type: AgentEntityTypes.agentMessage,
+      subtype: AgentMessageKind.observation.name,
+    );
+    final summaries = <GoalCheckInSummary>[];
+    for (final message in messages.whereType<AgentMessageEntity>()) {
+      if (message.metadata.toolName != goalCheckInSummaryToolName) continue;
+      final payloadId = message.contentEntryId;
+      if (payloadId == null) continue;
+      final payload = await _repository.getEntity(payloadId);
+      if (payload is! AgentMessagePayloadEntity) continue;
+      final summary = GoalCheckInSummary.fromContent(
+        message.id,
+        payload.content,
+      );
+      if (summary != null) summaries.add(summary);
+    }
+    return summaries;
   }
 
   Future<List<String>> _recentObservationTexts(String agentId) async {

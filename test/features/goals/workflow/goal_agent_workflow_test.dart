@@ -481,6 +481,14 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    // Compacted check-ins: no user voice unless a test supplies some.
+    when(
+      () => repository.getEntitiesByAgentIdAndSubtype(
+        agentId,
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+      ),
+    ).thenAnswer((_) async => []);
     when(
       () => repository.getReportHead(agentId, AgentReportScopes.current),
     ).thenAnswer((_) async => null);

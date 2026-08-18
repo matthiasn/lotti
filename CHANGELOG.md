@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Added
+- **Your goal agent reads your check-ins.** Each check-in is distilled once
+  into a short structured record — what happened, what you said you would do,
+  what was in the way — and it is that, never the raw transcript, that reaches
+  the agent. Recent check-ins ride along with the measured facts, so the agent
+  can finally quote a dated commitment back to you. Your own words never
+  override the measurements: a cheerful check-in cannot turn a missed week
+  into "on track". Checking in marks the standing report out of date rather
+  than triggering an update per recording, so a talkative morning costs one
+  refresh, not three.
 - **Check-ins on a goal.** Say what is actually going on, in your own words,
   whenever it is worth saying — one tap into the recorder from the goal's app
   bar, its Check-ins card, or a banner that asks. Recordings land as dated
