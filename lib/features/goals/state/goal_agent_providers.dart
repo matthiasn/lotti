@@ -47,6 +47,7 @@ import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -178,6 +179,12 @@ goalCheckInTranscriptionTriggerProvider =
       (ref) => GoalCheckInTranscriptionTrigger(
         agentService: ref.watch(agentServiceProvider),
         domainLogger: ref.watch(domainLoggerProvider),
+        recordDecline: (entryId, reason) => recordTranscriptionDecline(
+          ref,
+          entityId: entryId,
+          reason: reason,
+          message: deviceMessages().goalCheckInTranscriptionOff,
+        ),
         runTranscription: (entryId) => ref.read(
           triggerSkillProvider((
             entityId: entryId,

@@ -5,14 +5,19 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 import 'package:mocktail/mocktail.dart';
 
@@ -108,5 +113,55 @@ void main() {
     expect(triggered?.entityId, 'checkin-1');
     expect(triggered?.skillId, skillTranscribeContextId);
     expect(triggered?.linkedTaskId, isNull);
+  });
+
+  test('a goal with automatic updates off records a visible decline', () async {
+    final agentService = MockAgentService();
+    when(() => agentService.getAgent('goal-off')).thenAnswer(
+      (_) async => makeTestIdentity(
+        agentId: 'goal-off',
+        kind: 'goal_agent',
+        config: const AgentConfig(automaticUpdatesEnabled: false),
+      ),
+    );
+    var triggered = false;
+    final c = ProviderContainer(
+      overrides: [
+        agentServiceProvider.overrideWithValue(agentService),
+        loggingServiceProvider.overrideWithValue(MockLoggingService()),
+        triggerSkillProvider.overrideWith((ref, params) async {
+          triggered = true;
+        }),
+      ],
+    );
+    addTearDown(c.dispose);
+    getIt.registerSingleton<DomainLogger>(MockDomainLogger());
+
+    await c
+        .read(goalCheckInTranscriptionTriggerProvider)
+        .transcribe(agentId: 'goal-off', entryId: 'checkin-off');
+
+    // Nothing is spent — that is what the switch is for…
+    expect(triggered, isFalse);
+    // …but the recording is marked as needing the user rather than left
+    // claiming progress it will never make.
+    expect(
+      c.read(
+        inferenceStatusControllerProvider((
+          id: 'checkin-off',
+          aiResponseType: AiResponseType.audioTranscription,
+        )),
+      ),
+      InferenceStatus.error,
+    );
+    expect(
+      c.read(
+        inferenceErrorControllerProvider((
+          id: 'checkin-off',
+          aiResponseType: AiResponseType.audioTranscription,
+        )),
+      ),
+      AppLocalizationsEn().goalCheckInTranscriptionOff,
+    );
   });
 }

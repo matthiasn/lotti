@@ -65,31 +65,40 @@ void main() {
     bool enabled = true,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 2))),
-    () => tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        GoalReflectionVoiceNotes(
-          agentId: 'agent-1',
-          day: day,
-          enabled: enabled,
-          openRecorder: (context, {required goalEntryId, categoryId}) async {
-            recorded.add(goalEntryId);
-            return 'audio-1';
-          },
-        ),
-        overrides: [
-          goalCheckInEntriesProvider('agent-1').overrideWithValue(entries),
-          goalCaptureTargetProvider(
-            'agent-1',
-          ).overrideWith((ref) async => captureTarget),
-          goalCheckInTranscriptionTriggerProvider.overrideWithValue(
-            GoalCheckInTranscriptionTrigger(
-              agentService: agentService,
-              runTranscription: (entryId) async => transcribed.add(entryId),
-            ),
+    // The settle pump belongs INSIDE the fixed clock, not after it. The
+    // capture target resolves a frame late, and that rebuild is the one that
+    // asks `clock.now()` whether the reflected day is today — so leaving it
+    // outside read the wall clock and hid the capture row for every run that
+    // happened on a later calendar day than the fixture.
+    () async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          GoalReflectionVoiceNotes(
+            agentId: 'agent-1',
+            day: day,
+            enabled: enabled,
+            openRecorder: (context, {required goalEntryId, categoryId}) async {
+              recorded.add(goalEntryId);
+              return 'audio-1';
+            },
           ),
-        ],
-      ),
-    ),
+          overrides: [
+            goalCheckInEntriesProvider('agent-1').overrideWithValue(entries),
+            goalCaptureTargetProvider(
+              'agent-1',
+            ).overrideWith((ref) async => captureTarget),
+            goalCheckInTranscriptionTriggerProvider.overrideWithValue(
+              GoalCheckInTranscriptionTrigger(
+                agentService: agentService,
+                runTranscription: (entryId) async => transcribed.add(entryId),
+                recordDecline: (_, _) async {},
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+    },
   );
 
   testWidgets("shows the reflected day's recordings, not today's", (

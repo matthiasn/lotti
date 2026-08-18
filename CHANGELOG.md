@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.11]
+### Fixed
+- **A recording that cannot be transcribed says so.** Asking for a transcript
+  on an entry that belongs to no task and no category used to do nothing at
+  all — no transcript, no error, and a note that looked like it was still
+  being transcribed. Those recordings now transcribe with whichever
+  speech-to-text model you have set up, and when none is set up, the entry
+  says why and offers Retry instead of spinning forever. The same applies to a
+  goal check-in recorded while the goal's automatic updates are switched off:
+  nothing is spent, and Retry is there when you want that one transcribed.
+
 ### Added
 - **A faster, cheaper Melious profile.** "Melious.ai (Flash)" joins the
   existing Melious profile rather than replacing it, so nothing you have set

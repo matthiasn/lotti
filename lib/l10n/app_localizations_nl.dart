@@ -2513,6 +2513,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiSetupWizardTitle => 'AI-instellingsassistent';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Er is geen AI-profiel ingesteld voor dit item, dus er kon niets draaien.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Samenvatting afspelen';
 
   @override
@@ -2532,6 +2536,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Samenvatting van de AI-taak';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Er is nog geen spraak-naar-tekstmodel ingesteld, dus deze opname kon niet worden getranscribeerd. Voeg er een toe bij de AI-instellingen en tik dan op Opnieuw.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Standaard';
@@ -6346,6 +6354,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Automatische updates staan uit voor dit doel, dus je check-in is niet getranscribeerd. Tik op Opnieuw om het nu te transcriberen.';
+
+  @override
   String get goalCheckInWriteInstead => 'Schrijf in plaats daarvan';
 
   @override
@@ -8735,6 +8747,22 @@ class AppLocalizationsNl extends AppLocalizations {
     int failed,
   ) {
     return 'Screenshotherstel voltooid: $repaired hersteld, $missing ontbrekend, $conflicts conflicten, $failed mislukt.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Ontbrekende slaap herstellen';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Vult de lichte slaap van eerdere nachten aan, die een oudere versie wegliet uit de grafiek Slapend.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Slaap hersteld: $created toegevoegd van $scanned gecontroleerd, $failed mislukt.';
   }
 
   @override
@@ -13652,20 +13680,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Ontbrekende slaap herstellen';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Vult de lichte slaap van eerdere nachten aan, die een oudere versie wegliet uit de grafiek Slapend.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Slaap hersteld: $created toegevoegd van $scanned gecontroleerd, $failed mislukt.';
-  }
 }

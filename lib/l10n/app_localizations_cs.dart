@@ -2528,6 +2528,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSetupWizardTitle => 'Průvodce nastavením AI';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Pro tento záznam není nastavený žádný AI profil, takže se nedalo nic spustit.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Přečíst shrnutí';
 
   @override
@@ -2547,6 +2551,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Shrnutí úkolu AI';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Zatím není nastavený žádný model pro převod řeči na text, takže tuhle nahrávku nešlo přepsat. Přidej si ho v nastavení AI a pak klepni na Zkusit znovu.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Výchozí';
@@ -6392,6 +6400,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Automatické aktualizace jsou pro tento cíl vypnuté, takže tvoje ohlášení nebylo přepsáno. Klepni na Zkusit znovu a přepiš ho hned.';
+
+  @override
   String get goalCheckInWriteInstead => 'Napsat místo toho';
 
   @override
@@ -8836,6 +8848,22 @@ class AppLocalizationsCs extends AppLocalizations {
     int failed,
   ) {
     return 'Oprava snímků obrazovky dokončena: opraveno $repaired, chybí $missing, konflikty $conflicts, selhalo $failed.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Obnovit chybějící spánek';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Doplní lehký spánek z minulých nocí, který starší verze vynechávala z grafu Spánek.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Spánek obnoven: $created doplněno z $scanned zkontrolovaných, $failed selhalo.';
   }
 
   @override
@@ -13781,20 +13809,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Obnovit chybějící spánek';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Doplní lehký spánek z minulých nocí, který starší verze vynechávala z grafu Spánek.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Spánek obnoven: $created doplněno z $scanned zkontrolovaných, $failed selhalo.';
-  }
 }

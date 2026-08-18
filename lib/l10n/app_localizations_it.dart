@@ -2539,6 +2539,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mago di configurazione dell\'intelligenza artificiale';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Non c’è nessun profilo IA configurato per questa voce, quindi non è stato possibile eseguire nulla.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Riepilogo del gioco';
 
   @override
@@ -2558,6 +2562,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Riassunto delle attività AI';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Non è ancora configurato nessun modello di riconoscimento vocale, quindi questa registrazione non è stata trascritta. Aggiungine uno nelle impostazioni IA, poi tocca Riprova.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Predefinito';
@@ -6401,6 +6409,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Gli aggiornamenti automatici sono disattivati per questo obiettivo, quindi il tuo check-in non è stato trascritto. Tocca Riprova per trascriverlo ora.';
+
+  @override
   String get goalCheckInWriteInstead => 'Scrivi invece';
 
   @override
@@ -8828,6 +8840,22 @@ class AppLocalizationsIt extends AppLocalizations {
     int failed,
   ) {
     return 'Riparazione degli screenshot completata: $repaired corretti, $missing mancanti, $conflicts conflitti, $failed non riusciti.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Ripristina il sonno mancante';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Ricostruisce il sonno leggero delle notti passate, che una versione precedente ometteva dal grafico Addormentato.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sonno ripristinato: $created aggiunte su $scanned controllate, $failed non riuscite.';
   }
 
   @override
@@ -13798,20 +13826,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Ripristina il sonno mancante';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Ricostruisce il sonno leggero delle notti passate, che una versione precedente ometteva dal grafico Addormentato.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Sonno ripristinato: $created aggiunte su $scanned controllate, $failed non riuscite.';
-  }
 }

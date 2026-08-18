@@ -2527,6 +2527,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiSetupWizardTitle => 'Assistente de configuração de IA';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Não há nenhum perfil de IA configurado para esta entrada, por isso nada pôde ser executado.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Resumo do jogo';
 
   @override
@@ -2547,6 +2551,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Resumo da tarefa de IA';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Ainda não há nenhum modelo de voz para texto configurado, por isso esta gravação não pôde ser transcrita. Adiciona um nas definições de IA e toca em Repetir.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Padrão';
@@ -6386,6 +6394,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'As atualizações automáticas estão desligadas para este objetivo, por isso o teu check-in não foi transcrito. Toca em Repetir para o transcrever agora.';
+
+  @override
   String get goalCheckInWriteInstead => 'Escrever em vez disso';
 
   @override
@@ -8804,6 +8816,22 @@ class AppLocalizationsPt extends AppLocalizations {
     int failed,
   ) {
     return 'Reparação de capturas concluída: $repaired corrigidas, $missing em falta, $conflicts conflitos, $failed falharam.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurar o sono em falta';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstrói o sono leve de noites passadas, que uma versão anterior deixava de fora do gráfico A dormir.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sono restaurado: $created adicionadas de $scanned verificadas, $failed falharam.';
   }
 
   @override
@@ -13745,20 +13773,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Restaurar o sono em falta';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Reconstrói o sono leve de noites passadas, que uma versão anterior deixava de fora do gráfico A dormir.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Sono restaurado: $created adicionadas de $scanned verificadas, $failed falharam.';
-  }
 }

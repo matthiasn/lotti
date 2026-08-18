@@ -22,6 +22,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_re
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 
@@ -218,9 +219,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
             } else if (!isTranscription) {
               await _declineSkill(
                 ref,
-                params: params,
+                entityId: params.entityId,
+                linkedTaskId: params.linkedTaskId,
                 skill: skill,
                 reason: 'no linked task and entry has no category',
+                message: deviceMessages().aiSkillNoProfileConfigured,
                 loggingService: loggingService,
               );
               return;
@@ -245,14 +248,24 @@ final triggerSkillProvider = FutureProvider.autoDispose
             }
           }
 
-          if (resolvedProfile == null) {
+          // A profile that resolves but owns no transcription slot is as
+          // unable to transcribe as no profile at all, and `runTranscription`
+          // returns *before* it starts tracking status — so letting it through
+          // reproduces exactly the invisible stall this change exists to end.
+          final noTranscriptionRoute =
+              isTranscription && resolvedProfile?.transcriptionModelId == null;
+          if (resolvedProfile == null || noTranscriptionRoute) {
             await _declineSkill(
               ref,
-              params: params,
+              entityId: params.entityId,
+              linkedTaskId: linkedTaskId,
               skill: skill,
               reason: isTranscription
                   ? 'no profile and no speech-to-text model could be resolved'
                   : 'no profile configured',
+              message: isTranscription
+                  ? deviceMessages().aiTranscriptionNoModelConfigured
+                  : deviceMessages().aiSkillNoProfileConfigured,
               loggingService: loggingService,
             );
             return;
@@ -333,6 +346,34 @@ final triggerSkillProvider = FutureProvider.autoDispose
       },
     );
 
+/// Records a transcription that will not run, where the user can see it.
+///
+/// The public half of [_declineSkill], for callers that decide *not* to start
+/// a run at all rather than failing to resolve one — a goal whose automatic
+/// updates are switched off is the case that exists today. Without it such a
+/// recording is indistinguishable from one still being transcribed: the
+/// timeline maps "no transcript, nothing running, no durable failure" to
+/// pending, so the beat claims progress forever and never offers the Retry
+/// that would actually transcribe it.
+Future<void> recordTranscriptionDecline(
+  Ref ref, {
+  required String entityId,
+  required String reason,
+  required String message,
+}) async {
+  final skill = findBuiltInSkill(skillTranscribeContextId);
+  if (skill == null) return;
+  await _declineSkill(
+    ref,
+    entityId: entityId,
+    linkedTaskId: null,
+    skill: skill,
+    reason: reason,
+    message: message,
+    loggingService: getIt<DomainLogger>(),
+  );
+}
+
 /// Records a skill run that never started, where the user can see it.
 ///
 /// A decline used to be a log line and nothing else, so the audio beat sat on
@@ -341,16 +382,22 @@ final triggerSkillProvider = FutureProvider.autoDispose
 /// both halves of the failed state: the live status the open surface reads,
 /// and a failed attribution so the failure survives a restart and the entry
 /// still offers Retry on the next launch.
+///
+/// [message] is what the user reads; [reason] is the English diagnostic that
+/// goes to the log, where a support export needs it to be stable rather than
+/// translated.
 Future<void> _declineSkill(
   Ref ref, {
-  required TriggerSkillParams params,
+  required String entityId,
+  required String? linkedTaskId,
   required AiConfigSkill skill,
   required String reason,
+  required String message,
   required DomainLogger loggingService,
 }) async {
   loggingService.log(
     LogDomain.ai,
-    'Skipping ${skill.id} for ${params.entityId}: $reason',
+    'Skipping ${skill.id} for $entityId: $reason',
     subDomain: 'triggerSkillProvider',
   );
 
@@ -358,15 +405,15 @@ Future<void> _declineSkill(
   ref
       .read(
         inferenceErrorControllerProvider((
-          id: params.entityId,
+          id: entityId,
           aiResponseType: responseType,
         )).notifier,
       )
-      .setError(reason);
+      .setError(message);
   ref
       .read(
         inferenceStatusControllerProvider((
-          id: params.entityId,
+          id: entityId,
           aiResponseType: responseType,
         )).notifier,
       )
@@ -394,10 +441,10 @@ Future<void> _declineSkill(
         intendedOutputs: [
           AiArtifactReference(
             type: AiArtifactType.journalAudio,
-            id: params.entityId,
+            id: entityId,
           ),
         ],
-        taskId: params.linkedTaskId,
+        taskId: linkedTaskId,
       ),
     );
     await attributions.finalize(

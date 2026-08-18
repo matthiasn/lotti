@@ -2493,6 +2493,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSetupWizardTitle => 'AI Setup Wizard';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'No AI profile is set up for this entry, so nothing could run.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Play summary';
 
   @override
@@ -2512,6 +2516,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'AI Task Summary';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'No speech-to-text model is set up yet, so this recording could not be transcribed. Add one under AI settings, then tap Retry.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Default';
@@ -6299,6 +6307,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Automatic updates are off for this goal, so your check-in was not transcribed. Tap Retry to transcribe it now.';
+
+  @override
   String get goalCheckInWriteInstead => 'Write instead';
 
   @override
@@ -8682,6 +8694,22 @@ class AppLocalizationsEn extends AppLocalizations {
     int failed,
   ) {
     return 'Screenshot repair complete: $repaired fixed, $missing missing, $conflicts conflicts, $failed failed.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restore missing sleep';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sleep restored: $created added from $scanned checked, $failed failed.';
   }
 
   @override
@@ -13532,22 +13560,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Restore missing sleep';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Sleep restored: $created added from $scanned checked, $failed failed.';
-  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

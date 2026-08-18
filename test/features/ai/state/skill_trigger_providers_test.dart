@@ -30,6 +30,7 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
@@ -42,6 +43,10 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
+
+/// Hands a test a real `Ref`, which is what the public decline entry point
+/// takes — the goals provider passes its own.
+final _refProvider = Provider<Ref>((ref) => ref);
 
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
@@ -1619,6 +1624,9 @@ void main() {
           ),
           InferenceStatus.error,
         );
+        // What the user reads is a label, so it comes from the catalog — the
+        // toast that renders it would otherwise be an English island. The
+        // English diagnostic stays in the log and on the attribution.
         expect(
           declineContainer.read(
             inferenceErrorControllerProvider((
@@ -1626,7 +1634,7 @@ void main() {
               aiResponseType: AiResponseType.audioTranscription,
             )),
           ),
-          contains('speech-to-text'),
+          AppLocalizationsEn().aiTranscriptionNoModelConfigured,
         );
       },
     );
@@ -1794,8 +1802,165 @@ void main() {
         // The fallback belongs to transcription alone.
         verifyNever(() => mockAutomationService.resolveDirectTranscription());
         verifyZeroInteractions(mockRunner);
+
+        // Same for the other way in: a task whose profile does not resolve.
+        // The user reads a localized "nothing is configured" either way; only
+        // the log line distinguishes which lookup came up empty.
+        when(
+          () => mockResolver.resolveForSubject('task-no-profile-image'),
+        ).thenAnswer((_) async => null);
+        final taskContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(taskContainer);
+
+        await taskContainer.read(
+          triggerSkillProvider((
+            entityId: 'image-no-profile',
+            skillId: 'skill-image-nocat',
+            linkedTaskId: 'task-no-profile-image',
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        expect(
+          taskContainer.read(
+            inferenceErrorControllerProvider((
+              id: 'image-no-profile',
+              aiResponseType: AiResponseType.imageAnalysis,
+            )),
+          ),
+          AppLocalizationsEn().aiSkillNoProfileConfigured,
+        );
+        verifyZeroInteractions(mockRunner);
       },
     );
+
+    test(
+      'a profile with no transcription slot declines instead of stalling',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-no-slot',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        final provider =
+            AiConfig.inferenceProvider(
+                  id: 'provider-thinking',
+                  name: 'Thinking only',
+                  inferenceProviderType: InferenceProviderType.openAi,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.openai.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        // A profile that resolves but owns no transcription model: the shape a
+        // hand-picked thinking model produces.
+        when(
+          () => mockResolver.resolveForSubject('task-thinking-only'),
+        ).thenAnswer(
+          (_) async => ResolvedProfile(
+            thinkingModelId: 'gpt-thinking',
+            thinkingProvider: provider,
+          ),
+        );
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'audio-no-slot',
+            skillId: 'skill-no-slot',
+            linkedTaskId: 'task-thinking-only',
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // `runTranscription` returns *before* it starts tracking status when
+        // the slot is empty, so letting this through would reproduce exactly
+        // the invisible stall this change exists to end.
+        verifyZeroInteractions(mockRunner);
+        expect(
+          testContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'audio-no-slot',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+      },
+    );
+
+    test('a decline reaches callers that never start a run at all', () async {
+      final bench = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(bench.unregister);
+      final logger = MockDomainLogger();
+      getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(logger);
+
+      final testContainer = ProviderContainer();
+      containersToDispose.add(testContainer);
+
+      // The goal path: nothing was attempted, because the user switched
+      // automatic updates off — but the recording still must not read as
+      // in-progress forever.
+      await recordTranscriptionDecline(
+        testContainer.read(_refProvider),
+        entityId: 'checkin-off',
+        reason: 'automatic updates are off for goal goal-1',
+        message: AppLocalizationsEn().goalCheckInTranscriptionOff,
+      );
+
+      expect(
+        testContainer.read(
+          inferenceStatusControllerProvider((
+            id: 'checkin-off',
+            aiResponseType: AiResponseType.audioTranscription,
+          )),
+        ),
+        InferenceStatus.error,
+      );
+      final recorded =
+          verify(() => bench.service.finalize(captureAny())).captured.single
+              as AiWorkAttribution;
+      expect(recorded.status, AiWorkStatus.failed);
+      expect(recorded.primaryOutput?.id, 'checkin-off');
+      expect(
+        recorded.errorSummary,
+        'automatic updates are off for goal goal-1',
+      );
+    });
 
     test('successfully routes transcription skill to runner', () async {
       final skill =

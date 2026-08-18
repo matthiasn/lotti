@@ -2541,6 +2541,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSetupWizardTitle => 'Asistent de configurare AI';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Nu este configurat niciun profil AI pentru această intrare, așa că nu s-a putut rula nimic.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Citiți rezumatul';
 
   @override
@@ -2560,6 +2564,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Încă nu este configurat niciun model de transcriere vocală, așa că această înregistrare nu a putut fi transcrisă. Adăugați unul în setările AI, apoi apăsați Reîncercați.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Implicit';
@@ -6428,6 +6436,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Actualizările automate sunt dezactivate pentru acest obiectiv, așa că notificarea dvs. nu a fost transcrisă. Apăsați Reîncercați pentru a o transcrie acum.';
+
+  @override
   String get goalCheckInWriteInstead => 'Scrieți în schimb';
 
   @override
@@ -8900,6 +8912,22 @@ class AppLocalizationsRo extends AppLocalizations {
     int failed,
   ) {
     return 'Repararea capturilor de ecran s-a încheiat: $repaired reparate, $missing lipsă, $conflicts conflicte, $failed eșuate.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurați somnul lipsă';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstituie somnul ușor din nopțile trecute, pe care o versiune mai veche îl omitea din graficul Adormit.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Somn restaurat: $created adăugate din $scanned verificate, $failed eșuate.';
   }
 
   @override
@@ -13887,20 +13915,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Restaurați somnul lipsă';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Reconstituie somnul ușor din nopțile trecute, pe care o versiune mai veche îl omitea din graficul Adormit.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Somn restaurat: $created adăugate din $scanned verificate, $failed eșuate.';
-  }
 }
