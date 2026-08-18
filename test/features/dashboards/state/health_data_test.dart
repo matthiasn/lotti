@@ -158,6 +158,90 @@ void main() {
     });
   });
 
+  group('aggregateDailySumByEndDay', () {
+    // A night that begins before midnight is the whole point. Keyed on the
+    // start day it lands on two dates at once, so no bar is ever one night and
+    // — until the user goes to bed — today's bar is missing the pre-midnight
+    // head of last night entirely.
+    test('keeps a night that crosses midnight on the morning it ended', () {
+      final entities = [
+        // 23:12 → 00:00, the pre-midnight head of the night of the 15th.
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 23, 12),
+          dateTo: DateTime(2024, 3, 16),
+          value: 48,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'head',
+        ),
+        // 00:00 → 06:42, the rest of the same night.
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          dateTo: DateTime(2024, 3, 16, 6, 42),
+          value: 402,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'tail',
+        ),
+      ];
+
+      final result = aggregateDailySumByEndDay(entities);
+
+      expect(result, hasLength(1), reason: 'one night, one observation');
+      expect(result.single.dateTime, DateTime(2024, 3, 16));
+      expect(result.single.value, 450);
+    });
+
+    test('splits the same night across two days when keyed on the start', () {
+      // The defect this function exists to avoid, pinned so the two
+      // aggregations cannot silently converge.
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15, 23, 12),
+          dateTo: DateTime(2024, 3, 16),
+          value: 48,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'head',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          dateTo: DateTime(2024, 3, 16, 6, 42),
+          value: 402,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'tail',
+        ),
+      ];
+
+      final byStart = aggregateDailySum(entities);
+
+      expect(byStart, hasLength(2));
+      expect(
+        byStart.firstWhere((o) => o.dateTime == DateTime(2024, 3, 16)).value,
+        402,
+        reason: 'the night reads 48 minutes short until bedtime',
+      );
+    });
+
+    test('leaves a nap that starts and ends the same day alone', () {
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16, 14),
+          dateTo: DateTime(2024, 3, 16, 14, 40),
+          value: 40,
+          dataType: 'HealthDataType.SLEEP_ASLEEP',
+          id: 'nap',
+        ),
+      ];
+
+      expect(
+        aggregateDailySumByEndDay(entities),
+        aggregateDailySum(entities),
+      );
+    });
+
+    test('returns empty list for empty entities', () {
+      expect(aggregateDailySumByEndDay([]), isEmpty);
+    });
+  });
+
   group('transformToHours', () {
     test('divides each value by 60', () {
       final observations = [
@@ -266,6 +350,39 @@ void main() {
         expect(result[0].value, 2.0);
       },
     );
+
+    // The routing is what makes the end-day rule reach the chart; aggregating
+    // correctly and then routing sleep to the start-day sum would fix nothing.
+    test('routes every sleep type through the end-day sum', () {
+      for (final type in const [
+        'HealthDataType.SLEEP_ASLEEP',
+        'HealthDataType.SLEEP_LIGHT',
+        'HealthDataType.SLEEP_DEEP',
+        'HealthDataType.SLEEP_REM',
+        'HealthDataType.SLEEP_IN_BED',
+        'HealthDataType.SLEEP_AWAKE',
+      ]) {
+        final entities = [
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 15, 23, 30),
+            dateTo: DateTime(2024, 3, 16, 5, 30),
+            value: 360,
+            dataType: type,
+            id: 'n-$type',
+          ),
+        ];
+
+        final result = aggregateByType(entities, type);
+
+        expect(result, hasLength(1), reason: type);
+        expect(
+          result.single.dateTime,
+          DateTime(2024, 3, 16),
+          reason: '$type was attributed to the bedtime day',
+        );
+        expect(result.single.value, 6.0, reason: type);
+      }
+    });
 
     test('returns empty list for unknown data type', () {
       final result = aggregateByType([], 'UNKNOWN_TYPE');

@@ -5,26 +5,33 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:research_package/model.dart';
 
 /// Creates a [QuantitativeEntry] for testing health data aggregation.
+/// A quantitative sample for aggregation tests.
+///
+/// [dateTo] defaults to [dateFrom], which suits an instantaneous reading such
+/// as a weight. Pass it explicitly for a sample that covers a span — a sleep
+/// segment above all, whose end day is what it is aggregated by.
 QuantitativeEntry makeQuantitativeEntry({
   required DateTime dateFrom,
   required num value,
   required String dataType,
+  DateTime? dateTo,
   String unit = 'unit',
   String? id,
 }) {
   final entryId = id ?? 'quant-${dateFrom.toIso8601String()}-$value';
+  final end = dateTo ?? dateFrom;
   return QuantitativeEntry(
     meta: Metadata(
       id: entryId,
       createdAt: dateFrom,
       dateFrom: dateFrom,
-      dateTo: dateFrom,
+      dateTo: end,
       updatedAt: dateFrom,
       starred: false,
     ),
     data: QuantitativeData.discreteQuantityData(
       dateFrom: dateFrom,
-      dateTo: dateFrom,
+      dateTo: end,
       value: value,
       dataType: dataType,
       unit: unit,

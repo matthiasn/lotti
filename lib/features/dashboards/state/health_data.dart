@@ -59,21 +59,47 @@ List<Observation> aggregateDailyMax(List<JournalEntity> entities) {
 /// One observation per calendar day carrying the sum of that day's sample
 /// values (dated at local midnight). Days with no samples produce no
 /// observation.
-List<Observation> aggregateDailySum(List<JournalEntity> entities) {
+///
+/// A sample belongs to the day it **starts**. For a metric accumulated while
+/// awake that is simply the day it happened; for sleep it is the wrong
+/// question, which is what [aggregateDailySumByEndDay] exists to answer.
+List<Observation> aggregateDailySum(List<JournalEntity> entities) =>
+    _aggregateDailySumBy(entities, (entity) => entity.meta.dateFrom);
+
+/// As [aggregateDailySum], but a sample belongs to the day it **ends**.
+///
+/// This is the sleep rule, and it exists because a night crosses midnight.
+/// Keyed on the start day, a bed time of 23:12 puts the first 48 minutes on one
+/// date and the remaining seven hours on the next, so no bar is ever one
+/// night: each is the tail of the night before plus the head of the night
+/// after. Worse, while the user is awake today's bar holds only the
+/// post-midnight portion, so "last night" reads short by however long they were
+/// asleep before midnight — every day, all day.
+///
+/// Keying on the end day attributes a night to the morning it ended, which is
+/// the convention Apple Health uses and the one that matches the question a
+/// sleep chart is read to answer. Daytime samples are unaffected: a nap that
+/// starts and ends the same afternoon lands on that afternoon either way.
+List<Observation> aggregateDailySumByEndDay(List<JournalEntity> entities) =>
+    _aggregateDailySumBy(entities, (entity) => entity.meta.dateTo);
+
+List<Observation> _aggregateDailySumBy(
+  List<JournalEntity> entities,
+  DateTime Function(JournalEntity) dayOf,
+) {
   final sumsByDay = <String, num>{};
 
   for (final entity in entities) {
-    final dayString = entity.meta.dateFrom.ymd;
-    final n = sumsByDay[dayString] ?? 0;
-    if (entity is QuantitativeEntry) {
-      sumsByDay[dayString] = n + entity.data.value;
+    if (entity is! QuantitativeEntry) {
+      continue;
     }
+    final dayString = dayOf(entity).ymd;
+    sumsByDay[dayString] = (sumsByDay[dayString] ?? 0) + entity.data.value;
   }
 
   final aggregated = <Observation>[];
   for (final dayString in sumsByDay.keys) {
     final day = DateTime.parse(dayString);
-    // final midDay = day.add(const Duration(hours: 12));
     aggregated.add(Observation(day, sumsByDay[dayString] ?? 0));
   }
 
@@ -110,7 +136,10 @@ List<Observation> aggregateByType(
     case HealthAggregationType.dailySum:
       return aggregateDailySum(entities);
     case HealthAggregationType.dailyTimeSum:
-      return transformToHours(aggregateDailySum(entities));
+      // `dailyTimeSum` is configured for the six sleep types and nothing else
+      // (see `healthTypes`), so this is the sleep path: attribute a night to
+      // the day it ended rather than splitting it across midnight.
+      return transformToHours(aggregateDailySumByEndDay(entities));
     case null:
       return [];
   }

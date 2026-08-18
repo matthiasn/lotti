@@ -18,7 +18,11 @@ enum HealthChartType {
 /// - [dailySum]: total per calendar day.
 /// - [dailyMax]: highest sample per day (used for cumulative metrics whose
 ///   value already resets daily, e.g. step/distance counters).
-/// - [dailyTimeSum]: daily sum then converted minutes→hours (sleep stages).
+/// - [dailyTimeSum]: daily sum then converted minutes→hours, attributed to the
+///   day a sample *ends* rather than the day it starts. Configured for the six
+///   sleep types and nothing else, because that end-day rule is the sleep rule:
+///   a night crosses midnight, and keying it on the start day means no bar is
+///   ever one night.
 ///
 /// Consumed by `aggregateByType` in `health_data.dart`.
 enum HealthAggregationType {

@@ -12,6 +12,10 @@ sources:
     resource: ../../lib/features/dashboards
     title: Dashboards feature source
     last_modified: 2026-07-26
+  - id: aggregation
+    resource: ../../lib/features/dashboards/state/health_data.dart
+    title: Health aggregations — and which day a sample belongs to
+    last_modified: 2026-08-18
 ---
 
 The dashboards feature reads stored `DashboardDefinition` entities, routes each
@@ -83,6 +87,48 @@ The other three render only: health and workout data arrive from outside the app
 — see [health import](health_import.md) for how, including the background delta
 each health chart schedules on construction — and a habit is completed on its own
 surface.
+
+# Which day a health sample belongs to
+
+`aggregateByType` reduces samples to one observation per day, and the choice of
+*which* day is not uniform — it is a property of the metric.
+
+| Aggregation | Configured for | Day key |
+|---|---|---|
+| `none` | heart rate, weight, BP… | none — one observation per sample |
+| `dailyMax` | cumulative step/distance counters | start |
+| `dailySum` | *(no chart currently uses it)* | start |
+| `dailyTimeSum` | the six sleep types, and only those | **end** |
+
+**Sleep is keyed on the day a sample ends, and this is load-bearing.** A night
+crosses midnight, so on a start-day key a bed time of 23:12 puts the first
+48 minutes on one date and the remaining seven hours on the next. No bar is then
+ever one night — each is the tail of the night before plus the head of the night
+after — and, until the user next goes to bed, today's bar holds only the
+post-midnight portion, so "last night" reads short by exactly the time they were
+asleep before midnight. Every day, all day.
+
+```mermaid
+flowchart LR
+  subgraph Night["one night: 23:12 → 06:42"]
+    H["head 48 min<br/>23:12 → 00:00"]
+    T["tail 402 min<br/>00:00 → 06:42"]
+  end
+  H -->|start day| D15["Mar 15: 48 min"]
+  T -->|start day| D16a["Mar 16: 402 min"]
+  H -->|end day| D16b["Mar 16: 450 min"]
+  T -->|end day| D16b
+```
+
+Attributing to the end day matches Apple Health and the question a sleep chart
+is read to answer. A daytime nap is unaffected — it starts and ends the same
+afternoon either way.
+
+`aggregateDailySumByEndDay` is that rule; `aggregateDailySum` keeps the start-day
+behaviour for everything else, and both share one implementation so the two
+cannot drift. Goal signals reach the same code through `aggregateByType`
+(`goal_signal_reader.dart`), so a sleep goal and the sleep chart agree by
+construction.
 
 # Refresh and caching
 

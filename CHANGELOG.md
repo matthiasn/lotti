@@ -225,6 +225,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the goal wizard now live under the Goals tab.
 
 ### Fixed
+- **A night's sleep counts as one night.** Sleep that began before midnight
+  used to be split across two dates, so no bar was ever a single night and
+  last night always read short by however long you were asleep before
+  midnight. A night now counts towards the morning it ended, the way the
+  Health app reports it. Naps are unchanged, and past days are recalculated.
 - **The Asleep chart keeps itself up to date again.** On iPhone it only ever
   gained nights when you ran a manual import from Settings, so the longer you
   left it the less sleep it appeared to show. Opening the chart now imports the
