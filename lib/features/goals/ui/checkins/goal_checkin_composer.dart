@@ -116,14 +116,18 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
     final text = _text.text.trim();
     if (text.isEmpty || _saving) return;
     setState(() => _saving = true);
-    final created = await widget.saveText(
-      text: text,
-      goalEntryId: goalEntryId,
-      categoryId: widget.categoryId,
-    );
-    if (!mounted) return;
-    setState(() => _saving = false);
-    if (created) Navigator.of(context).pop();
+    try {
+      final created = await widget.saveText(
+        text: text,
+        goalEntryId: goalEntryId,
+        categoryId: widget.categoryId,
+      );
+      if (created && mounted) Navigator.of(context).pop();
+    } finally {
+      // Reset whatever happened: a throw used to leave the button spinning
+      // forever with nothing telling the user the save had failed.
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -198,13 +202,19 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                     child: DesignSystemButton(
                       label: context.messages.goalCheckInDone,
                       isLoading: _saving,
-                      onPressed: () {
-                        if (_writing && goalEntryId != null) {
-                          _saveText(goalEntryId);
-                        } else {
-                          Navigator.of(context).pop();
-                        }
-                      },
+                      // Never pop while there is unsaved text: with no
+                      // capture target resolved, popping discarded what the
+                      // user had just typed without a word — the same silent
+                      // drop the capture gate exists to prevent for audio.
+                      onPressed: _writing && goalEntryId == null
+                          ? null
+                          : () {
+                              if (_writing) {
+                                _saveText(goalEntryId!);
+                              } else {
+                                Navigator.of(context).pop();
+                              }
+                            },
                     ),
                   ),
                 ],

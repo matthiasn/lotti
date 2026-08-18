@@ -3448,6 +3448,14 @@
   "goalCheckInsEmptyInvitation": "Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.",
   "goalCheckInsSeeAll": "See all check-ins",
   "goalCheckInsTitle": "Check-ins",
+  "goalCheckInsTitleWithCount": "Check-ins · {count}",
+  "@goalCheckInsTitleWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goalCheckInWriteInstead": "Write instead",
   "goalCheckInWritePlaceholder": "What is going on?",
   "goalCoarseHealthBehind": "Behind",

@@ -10751,6 +10751,12 @@ abstract class AppLocalizations {
   /// **'Check-ins'**
   String get goalCheckInsTitle;
 
+  /// No description provided for @goalCheckInsTitleWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins · {count}'**
+  String goalCheckInsTitleWithCount(int count);
+
   /// No description provided for @goalCheckInWriteInstead.
   ///
   /// In en, this message translates to:

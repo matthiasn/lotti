@@ -2880,6 +2880,7 @@
   "goalCheckInsEmptyInvitation": "Fortæl din agent, hvad der faktisk sker — tredive sekunder, med dine egne ord, når det er værd at sige.",
   "goalCheckInsSeeAll": "Se alle check-ins",
   "goalCheckInsTitle": "Check-ins",
+  "goalCheckInsTitleWithCount": "Check-ins · {count}",
   "goalCheckInWriteInstead": "Skriv i stedet",
   "goalCheckInWritePlaceholder": "Hvad sker der?",
   "goalCoarseHealthBehind": "Bagud",

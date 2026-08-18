@@ -6336,6 +6336,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInsTitle => 'Hlášení';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Hlášení · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Napsat místo toho';
 
   @override

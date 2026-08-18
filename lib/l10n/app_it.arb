@@ -2880,6 +2880,7 @@
   "goalCheckInsEmptyInvitation": "Racconta al tuo agente cosa sta succedendo davvero: trenta secondi, con parole tue, ogni volta che vale la pena.",
   "goalCheckInsSeeAll": "Vedi tutti i check-in",
   "goalCheckInsTitle": "Check-in",
+  "goalCheckInsTitleWithCount": "Check-in · {count}",
   "goalCheckInWriteInstead": "Scrivi invece",
   "goalCheckInWritePlaceholder": "Cosa sta succedendo?",
   "goalCoarseHealthBehind": "In ritardo",

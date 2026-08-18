@@ -50,9 +50,11 @@ class GoalCheckInsCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
+                  // One localized message rather than a Dart-side join: the
+                  // separator and the word order are translators' business.
                   total == 0
                       ? context.messages.goalCheckInsTitle
-                      : '${context.messages.goalCheckInsTitle} · $total',
+                      : context.messages.goalCheckInsTitleWithCount(total),
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),

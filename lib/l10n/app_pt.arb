@@ -2879,6 +2879,7 @@
   "goalCheckInsEmptyInvitation": "Conta ao teu agente o que se passa mesmo — trinta segundos, nas tuas palavras, sempre que valer a pena.",
   "goalCheckInsSeeAll": "Ver todos os registos",
   "goalCheckInsTitle": "Registos",
+  "goalCheckInsTitleWithCount": "Registos · {count}",
   "goalCheckInWriteInstead": "Escrever em vez disso",
   "goalCheckInWritePlaceholder": "O que se passa?",
   "goalCoarseHealthBehind": "Atrasado",

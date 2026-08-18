@@ -1844,6 +1844,16 @@ void main() {
     );
     expect(appBarTitle().opacity, 0);
 
+    // The mic is the ever-present doorway: the check-ins card can sit below
+    // the fold, so capture must not depend on scrolling to it.
+    await tester.tap(
+      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await tester.pumpAndSettle();
+
     // The banner CTA performs the verb: it opens the one-tap logging
     // sheet instead of navigating to the route the page is already on.
     await tester.ensureVisible(find.text('Log today'));

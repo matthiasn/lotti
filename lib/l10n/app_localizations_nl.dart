@@ -6291,6 +6291,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalCheckInsTitle => 'Check-ins';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Check-ins · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Schrijf in plaats daarvan';
 
   @override

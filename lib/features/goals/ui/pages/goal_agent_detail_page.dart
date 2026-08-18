@@ -420,14 +420,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
         : null;
     final desktopLayout = isDesktopLayout(context);
     final goalTitle = spec?.title ?? goalIdentity.displayName;
-    // The rail is a property of available WIDTH, not merely of "desktop": the
-    // goals tab sits behind a navigation sidebar whose width varies, and below
-    // the fold the rail would squeeze the dashboard into a sliver. Under that
-    // threshold the phone treatment runs inside the single column instead.
-    final showTimelineRail =
+    // The rail is a property of the available PANE width, not the window's:
+    // the goals tab sits behind a navigation sidebar whose width varies, so
+    // measuring the window let the rail appear on a 1280px window whose actual
+    // content pane was only 780px — squeezing the dashboard into a sliver. The
+    // pane width is measured at the layout site below, the way the chat
+    // drawer's fold guard already does it; this is only the "is a rail
+    // possible at all" half.
+    bool railFits(double paneWidth) =>
         desktopLayout &&
-        MediaQuery.sizeOf(context).width >=
-            kGoalTimelineRailFoldWidth + kGoalTimelineRailWidth;
+        paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailWidth;
 
     void openComposer() => _openCheckInComposer(
       goalTitle: goalTitle,
@@ -458,6 +460,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     Widget detailList({
       required bool showChatAction,
       double? contentMaxWidth,
+      bool showRail = false,
     }) {
       final canReflect = isActive && spec != null;
       final thisWeek =
@@ -555,7 +558,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             // are the two halves of "what I've said about this goal", so they
             // belong adjacent. On desktop this same card is hoisted into the
             // rail instead.
-            if (!showTimelineRail) ...[
+            if (!showRail) ...[
               SizedBox(height: tokens.spacing.cardItemSpacing),
               checkInsCard(maxBeats: 3),
             ],
@@ -838,11 +841,34 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // The desktop reading measure is a property of the pane, not of
               // chat: a dormant goal (no chat) must not stretch its cards
               // across the whole window.
-              ? detailList(
-                  showChatAction: !desktop && chatAvailable,
-                  contentMaxWidth: desktop
-                      ? kUnifiedGoalsContentMaxWidth
-                      : null,
+              // The no-chat path measures its pane too: a dormant goal on a
+              // wide desktop still earns the rail, and a narrow pane behind a
+              // wide sidebar still must not get one.
+              ? LayoutBuilder(
+                  builder: (context, constraints) =>
+                      railFits(constraints.maxWidth)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: detailList(
+                                showChatAction: false,
+                                contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                                showRail: true,
+                              ),
+                            ),
+                            SizedBox(
+                              width: kGoalTimelineRailWidth,
+                              child: _CheckInRail(card: checkInsCard()),
+                            ),
+                          ],
+                        )
+                      : detailList(
+                          showChatAction: !desktop && chatAvailable,
+                          contentMaxWidth: desktop
+                              ? kUnifiedGoalsContentMaxWidth
+                              : null,
+                        ),
                 )
               : CallbackShortcuts(
                   bindings: {
@@ -885,7 +911,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                           // and already owns correct focus, escape and
                           // semantics behaviour as an overlay. The glide moves
                           // BOTH columns.
-                          child: showTimelineRail
+                          child: railFits(constraints.maxWidth)
                               ? Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -894,6 +920,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                                         showChatAction: false,
                                         contentMaxWidth:
                                             kUnifiedGoalsContentMaxWidth,
+                                        showRail: true,
                                       ),
                                     ),
                                     SizedBox(

@@ -2623,6 +2623,7 @@
   "goalCheckInsEmptyInvitation": "Dis à ton agent ce qui se passe vraiment — trente secondes, avec tes mots, dès que ça vaut la peine.",
   "goalCheckInsSeeAll": "Voir tous les points",
   "goalCheckInsTitle": "Points",
+  "goalCheckInsTitleWithCount": "Points · {count}",
   "goalCheckInWriteInstead": "Écrire à la place",
   "goalCheckInWritePlaceholder": "Que se passe-t-il ?",
   "goalCoarseHealthBehind": "En retard",

@@ -2623,6 +2623,7 @@
   "goalCheckInsEmptyInvitation": "Spuneți-i agentului ce se întâmplă cu adevărat — treizeci de secunde, cu propriile cuvinte, ori de câte ori merită.",
   "goalCheckInsSeeAll": "Vedeți toate raportările",
   "goalCheckInsTitle": "Raportări",
+  "goalCheckInsTitleWithCount": "Raportări · {count}",
   "goalCheckInWriteInstead": "Scrieți în schimb",
   "goalCheckInWritePlaceholder": "Ce se întâmplă?",
   "goalCoarseHealthBehind": "În urmă",

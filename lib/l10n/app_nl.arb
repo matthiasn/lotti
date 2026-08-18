@@ -2879,6 +2879,7 @@
   "goalCheckInsEmptyInvitation": "Vertel je agent wat er echt speelt — dertig seconden, in je eigen woorden, wanneer het de moeite waard is.",
   "goalCheckInsSeeAll": "Alle check-ins bekijken",
   "goalCheckInsTitle": "Check-ins",
+  "goalCheckInsTitleWithCount": "Check-ins · {count}",
   "goalCheckInWriteInstead": "Schrijf in plaats daarvan",
   "goalCheckInWritePlaceholder": "Wat speelt er?",
   "goalCoarseHealthBehind": "Achterop",

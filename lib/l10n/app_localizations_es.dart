@@ -6352,6 +6352,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalCheckInsTitle => 'Registros';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Registros · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Escribir en su lugar';
 
   @override

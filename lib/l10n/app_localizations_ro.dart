@@ -6372,6 +6372,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCheckInsTitle => 'Raportări';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Raportări · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Scrieți în schimb';
 
   @override

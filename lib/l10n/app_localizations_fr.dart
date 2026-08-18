@@ -6367,6 +6367,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalCheckInsTitle => 'Points';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Points · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Écrire à la place';
 
   @override

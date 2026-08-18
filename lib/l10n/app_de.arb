@@ -2623,6 +2623,7 @@
   "goalCheckInsEmptyInvitation": "Erzähl deinem Agenten, was gerade wirklich los ist — dreißig Sekunden, in deinen eigenen Worten, wann immer es sich lohnt.",
   "goalCheckInsSeeAll": "Alle Check-ins ansehen",
   "goalCheckInsTitle": "Check-ins",
+  "goalCheckInsTitleWithCount": "Check-ins · {count}",
   "goalCheckInWriteInstead": "Stattdessen schreiben",
   "goalCheckInWritePlaceholder": "Was ist gerade los?",
   "goalCoarseHealthBehind": "Im Rückstand",

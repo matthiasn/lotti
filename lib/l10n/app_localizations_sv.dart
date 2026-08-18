@@ -6278,6 +6278,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCheckInsTitle => 'Avstämningar';
 
   @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Avstämningar · $count';
+  }
+
+  @override
   String get goalCheckInWriteInstead => 'Skriv i stället';
 
   @override

@@ -2630,6 +2630,7 @@
   "goalCheckInsEmptyInvitation": "Řekni svému agentovi, co se skutečně děje — třicet sekund, vlastními slovy, kdykoli to stojí za řeč.",
   "goalCheckInsSeeAll": "Zobrazit všechna hlášení",
   "goalCheckInsTitle": "Hlášení",
+  "goalCheckInsTitleWithCount": "Hlášení · {count}",
   "goalCheckInWriteInstead": "Napsat místo toho",
   "goalCheckInWritePlaceholder": "Co se děje?",
   "goalCoarseHealthBehind": "Pozadu",
