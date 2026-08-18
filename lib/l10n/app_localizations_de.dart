@@ -2525,6 +2525,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSetupWizardTitle => 'KI-Einrichtungsassistent';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Für diesen Eintrag ist kein KI-Profil eingerichtet, deshalb konnte nichts laufen.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Zusammenfassung vorlesen';
 
   @override
@@ -2544,6 +2548,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'KI-Aufgabenzusammenfassung';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Es ist noch kein Spracherkennungsmodell eingerichtet, deshalb konnte diese Aufnahme nicht transkribiert werden. Richte eins in den KI-Einstellungen ein und tippe dann auf Wiederholen.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Standard';
@@ -6369,6 +6377,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Automatische Updates sind für dieses Ziel aus, deshalb wurde dein Check-in nicht transkribiert. Tippe auf Wiederholen, um es jetzt zu transkribieren.';
+
+  @override
   String get goalCheckInWriteInstead => 'Stattdessen schreiben';
 
   @override
@@ -8773,6 +8785,23 @@ class AppLocalizationsDe extends AppLocalizations {
     int failed,
   ) {
     return 'Screenshot-Reparatur abgeschlossen: $repaired repariert, $missing fehlen, $conflicts Konflikte, $failed fehlgeschlagen.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep =>
+      'Fehlenden Schlaf wiederherstellen';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Ergänzt den Leichtschlaf vergangener Nächte, den eine ältere Version im Diagramm „Schlafend“ weggelassen hat.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Schlaf wiederhergestellt: $created von $scanned geprüften ergänzt, $failed fehlgeschlagen.';
   }
 
   @override
@@ -13710,21 +13739,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get maintenanceRestoreMissingSleep =>
-      'Fehlenden Schlaf wiederherstellen';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Ergänzt den Leichtschlaf vergangener Nächte, den eine ältere Version im Diagramm „Schlafend“ weggelassen hat.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Schlaf wiederhergestellt: $created von $scanned geprüften ergänzt, $failed fehlgeschlagen.';
-  }
 }

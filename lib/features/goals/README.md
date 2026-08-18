@@ -280,9 +280,11 @@ linked to the goal, so it inherits sync, privacy, categories, export and
 transcription rather than owning any of them, and the recording is saved
 before it is transcribed so nothing is lost waiting for words. The one thing
 this feature does own is asking for the transcript: the app-wide
-post-recording automation fires only for audio linked to a *task*, so a
-check-in calls the shared transcription skill itself once the recorder hands
-back an entry, gated on the goal's automatic-updates switch. Tapping a beat
+post-recording automation gates on the linked subject's category, and a goal
+has none — so a check-in calls the shared transcription skill itself once the
+recorder hands back an entry, gated on the goal's automatic-updates switch.
+When that switch is off the decline is recorded rather than skipped, so the
+beat offers Retry instead of looking like it is still being transcribed. Tapping a beat
 opens the journal entry behind it.
 
 They appear as dated beats on the goal's timeline, which is the shared

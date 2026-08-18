@@ -9,15 +9,18 @@ import '../../agents/test_data/entity_factories.dart';
 void main() {
   late MockAgentService agents;
   late List<String> transcribed;
+  late List<String> declined;
 
   GoalCheckInTranscriptionTrigger build() => GoalCheckInTranscriptionTrigger(
     agentService: agents,
     runTranscription: (entryId) async => transcribed.add(entryId),
+    recordDecline: (entryId, reason) async => declined.add('$entryId: $reason'),
   );
 
   setUp(() {
     agents = MockAgentService();
     transcribed = <String>[];
+    declined = <String>[];
   });
 
   test(
@@ -73,6 +76,12 @@ void main() {
       isFalse,
     );
     expect(transcribed, isEmpty);
+    // Not silently: an unrecorded skip is indistinguishable from a recording
+    // still being transcribed, so the beat would claim progress forever and
+    // never offer the Retry that transcribes it by hand.
+    expect(declined, [
+      'checkin-3: automatic updates are off for goal quiet-goal',
+    ]);
   });
 
   test('an unknown agent transcribes nothing', () async {
@@ -83,6 +92,7 @@ void main() {
       isFalse,
     );
     expect(transcribed, isEmpty);
+    expect(declined, ['checkin-4: no goal agent ghost']);
   });
 
   test('a failing transcription never reaches the recorder', () async {
@@ -96,6 +106,7 @@ void main() {
     final trigger = GoalCheckInTranscriptionTrigger(
       agentService: agents,
       runTranscription: (_) async => throw StateError('inference is down'),
+      recordDecline: (entryId, reason) async => declined.add(entryId),
     );
 
     // Contained, not propagated: the recording is already saved, and losing

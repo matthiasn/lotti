@@ -4266,6 +4266,12 @@ abstract class AppLocalizations {
   /// **'AI Setup Wizard'**
   String get aiSetupWizardTitle;
 
+  /// Shown when an AI skill cannot run because the entry resolves to no inference profile
+  ///
+  /// In en, this message translates to:
+  /// **'No AI profile is set up for this entry, so nothing could run.'**
+  String get aiSkillNoProfileConfigured;
+
   /// No description provided for @aiSummaryPlayTooltip.
   ///
   /// In en, this message translates to:
@@ -4307,6 +4313,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Task Summary'**
   String get aiTaskSummaryTitle;
+
+  /// Shown when a recording cannot be transcribed because no speech-to-text model is configured
+  ///
+  /// In en, this message translates to:
+  /// **'No speech-to-text model is set up yet, so this recording could not be transcribed. Add one under AI settings, then tap Retry.'**
+  String get aiTranscriptionNoModelConfigured;
 
   /// No description provided for @aiTranscriptionPickerDefaultBadge.
   ///
@@ -10835,6 +10847,12 @@ abstract class AppLocalizations {
   /// **'Check-ins · {count}'**
   String goalCheckInsTitleWithCount(int count);
 
+  /// Shown when a goal check-in is not transcribed because the goal's automatic updates are switched off
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates are off for this goal, so your check-in was not transcribed. Tap Retry to transcribe it now.'**
+  String get goalCheckInTranscriptionOff;
+
   /// No description provided for @goalCheckInWriteInstead.
   ///
   /// In en, this message translates to:
@@ -14836,6 +14854,28 @@ abstract class AppLocalizations {
     int repaired,
     int missing,
     int conflicts,
+    int failed,
+  );
+
+  /// No description provided for @maintenanceRestoreMissingSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore missing sleep'**
+  String get maintenanceRestoreMissingSleep;
+
+  /// No description provided for @maintenanceRestoreMissingSleepDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.'**
+  String get maintenanceRestoreMissingSleepDescription;
+
+  /// No description provided for @maintenanceRestoreMissingSleepResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep restored: {created} added from {scanned} checked, {failed} failed.'**
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
     int failed,
   );
 
@@ -22926,28 +22966,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// No description provided for @maintenanceRestoreMissingSleep.
-  ///
-  /// In en, this message translates to:
-  /// **'Restore missing sleep'**
-  String get maintenanceRestoreMissingSleep;
-
-  /// No description provided for @maintenanceRestoreMissingSleepDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.'**
-  String get maintenanceRestoreMissingSleepDescription;
-
-  /// No description provided for @maintenanceRestoreMissingSleepResult.
-  ///
-  /// In en, this message translates to:
-  /// **'Sleep restored: {created} added from {scanned} checked, {failed} failed.'**
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  );
 }
 
 class _AppLocalizationsDelegate

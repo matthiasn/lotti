@@ -74,6 +74,7 @@ void main() {
             GoalCheckInTranscriptionTrigger(
               agentService: agentService,
               runTranscription: (entryId) async => transcribed.add(entryId),
+              recordDecline: (_, _) async {},
             ),
           ),
         ],

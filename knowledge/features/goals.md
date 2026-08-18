@@ -1404,10 +1404,12 @@ Invariants worth not breaking:
   reaching that ceiling emits a dedicated operator-visible log event. It never
   fails the wake or the recording.
 - **A check-in asks for its own transcript.** The app-wide post-recording
-  automation (`AutomaticPromptTrigger`) fires only for audio linked to a
-  **task**, and gates on that task's category — a goal is neither a task nor
-  categorised, so a check-in gets nothing from it. The goals feature therefore
-  calls `triggerSkillProvider` itself after the recorder returns an entry id.
+  automation (`AutomaticPromptTrigger`) runs for any *subject* the recording is
+  linked to, but gates on **that subject's category** — and a goal has none, so
+  the gate reads "nothing opted in" and a check-in gets nothing from it. The
+  goals feature therefore calls `triggerSkillProvider` itself after the
+  recorder returns an entry id, with the goal agent's automatic-updates switch
+  as the consent signal a goal actually has.
   Without that call a check-in saved, played back, and was never transcribed,
   which also left the compactor with nothing to distill: `checkInSources` only
   yields entries that carry text.
@@ -1417,11 +1419,20 @@ Invariants worth not breaking:
   goal check-in has no task and no category, so without that step every
   surface — the AI popup, the timeline's Retry, the trigger above — declined
   it for "no profile configured".
-- **A declined run is a failed run, visibly.** `triggerSkillProvider` writes
-  both halves of the failed state before returning: the live inference status
-  and error text, and a failed `AiWorkAttribution` on the audio entry. A
-  silent decline used to leave the beat on "Transcribing…" forever with no
-  job anywhere and no way to reach Retry.
+- **A declined run is a failed run, visibly — including a run never started.**
+  `triggerSkillProvider` writes both halves of the failed state before
+  returning: the live inference status and a localized message, and a failed
+  `AiWorkAttribution` on the audio entry. `recordTranscriptionDecline` is the
+  same thing for a caller that decides *not* to start — a goal whose automatic
+  updates are switched off records the decline rather than skipping quietly,
+  because on the rail "switched off" and "still transcribing" are otherwise
+  the same picture. A profile that resolves but owns no transcription slot
+  declines here too: `runTranscription` returns before it starts tracking
+  status, so letting it through would stall invisibly all the same.
+  The user-facing message comes from the ARB catalogs via
+  `lib/l10n/device_messages.dart` — it is rendered in a toast, so it is a
+  label; the English reason stays on the log line and the attribution, where a
+  support export needs it stable.
 - **Transcription failure is visible and recoverable.** A failed timeline item
   stops showing progress, announces the failure, and retries the built-in
   transcription skill on request. The timeline combines the live inference

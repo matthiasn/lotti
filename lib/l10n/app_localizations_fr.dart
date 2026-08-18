@@ -2539,6 +2539,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSetupWizardTitle => 'Assistant de configuration IA';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Aucun profil IA n\'est configuré pour cette entrée, donc rien n\'a pu s\'exécuter.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Lire le résumé';
 
   @override
@@ -2559,6 +2563,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'Résumé de la tâche IA';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Aucun modèle de reconnaissance vocale n\'est encore configuré, donc cet enregistrement n\'a pas pu être transcrit. Ajoutes-en un dans les réglages IA, puis touche Réessayer.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Par défaut';
@@ -6422,6 +6430,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Les mises à jour automatiques sont désactivées pour cet objectif, donc ton point n\'a pas été transcrit. Touche Réessayer pour le transcrire maintenant.';
+
+  @override
   String get goalCheckInWriteInstead => 'Écrire à la place';
 
   @override
@@ -8875,6 +8887,22 @@ class AppLocalizationsFr extends AppLocalizations {
     int failed,
   ) {
     return 'Réparation des captures d’écran terminée : $repaired corrigées, $missing manquantes, $conflicts conflits, $failed échecs.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurer le sommeil manquant';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstitue le sommeil léger des nuits passées, qu\'une version plus ancienne omettait du graphique Endormi.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sommeil restauré : $created ajoutées sur $scanned vérifiées, $failed en échec.';
   }
 
   @override
@@ -13858,20 +13886,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Restaurer le sommeil manquant';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Reconstitue le sommeil léger des nuits passées, qu\'une version plus ancienne omettait du graphique Endormi.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Sommeil restauré : $created ajoutées sur $scanned vérifiées, $failed en échec.';
-  }
 }

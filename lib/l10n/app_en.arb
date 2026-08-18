@@ -1636,6 +1636,10 @@
   "aiSetupWizardRunningButton": "Running...",
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardTitle": "AI Setup Wizard",
+  "aiSkillNoProfileConfigured": "No AI profile is set up for this entry, so nothing could run.",
+  "@aiSkillNoProfileConfigured": {
+    "description": "Shown when an AI skill cannot run because the entry resolves to no inference profile"
+  },
   "aiSummaryPlayTooltip": "Play summary",
   "aiSummaryPreparingTooltip": "Preparing audio",
   "aiSummarySpeakTooltip": "Read summary aloud locally",
@@ -1643,6 +1647,10 @@
   "aiSummaryThinkingLabel": "Thinking…",
   "aiSummaryTtsUnavailable": "Text-to-speech isn't available",
   "aiTaskSummaryTitle": "AI Task Summary",
+  "aiTranscriptionNoModelConfigured": "No speech-to-text model is set up yet, so this recording could not be transcribed. Add one under AI settings, then tap Retry.",
+  "@aiTranscriptionNoModelConfigured": {
+    "description": "Shown when a recording cannot be transcribed because no speech-to-text model is configured"
+  },
   "aiTranscriptionPickerDefaultBadge": "Default",
   "aiTranscriptionPickerTitle": "Pick a transcription model",
   "apiKeyAddPageTitle": "Add Provider",
@@ -3489,6 +3497,10 @@
         "type": "int"
       }
     }
+  },
+  "goalCheckInTranscriptionOff": "Automatic updates are off for this goal, so your check-in was not transcribed. Tap Retry to transcribe it now.",
+  "@goalCheckInTranscriptionOff": {
+    "description": "Shown when a goal check-in is not transcribed because the goal's automatic updates are switched off"
   },
   "goalCheckInWriteInstead": "Write instead",
   "goalCheckInWritePlaceholder": "What is going on?",

@@ -2511,6 +2511,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiSetupWizardTitle => 'AI-installationsguide';
 
   @override
+  String get aiSkillNoProfileConfigured =>
+      'Ingen AI-profil är uppsatt för den här posten, så inget kunde köras.';
+
+  @override
   String get aiSummaryPlayTooltip => 'Spelsammanfattning';
 
   @override
@@ -2530,6 +2534,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiTaskSummaryTitle => 'AI-uppgiftssammanfattning';
+
+  @override
+  String get aiTranscriptionNoModelConfigured =>
+      'Ingen tal-till-text-modell är uppsatt än, så den här inspelningen kunde inte transkriberas. Lägg till en under AI-inställningar och tryck sedan på Försök igen.';
 
   @override
   String get aiTranscriptionPickerDefaultBadge => 'Standard';
@@ -6333,6 +6341,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCheckInTranscriptionOff =>
+      'Automatiska uppdateringar är av för det här målet, så din avstämning transkriberades inte. Tryck på Försök igen för att transkribera den nu.';
+
+  @override
   String get goalCheckInWriteInstead => 'Skriv i stället';
 
   @override
@@ -8729,6 +8741,22 @@ class AppLocalizationsSv extends AppLocalizations {
     int failed,
   ) {
     return 'Reparation av skärmbilder klar: $repaired åtgärdade, $missing saknas, $conflicts konflikter, $failed misslyckades.';
+  }
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Återställ saknad sömn';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Bygger upp den lätta sömnen från tidigare nätter, som en äldre version utelämnade ur diagrammet Sover.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sömn återställd: $created tillagda av $scanned kontrollerade, $failed misslyckades.';
   }
 
   @override
@@ -13630,20 +13658,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get maintenanceRestoreMissingSleep => 'Återställ saknad sömn';
-
-  @override
-  String get maintenanceRestoreMissingSleepDescription =>
-      'Bygger upp den lätta sömnen från tidigare nätter, som en äldre version utelämnade ur diagrammet Sover.';
-
-  @override
-  String maintenanceRestoreMissingSleepResult(
-    int created,
-    int scanned,
-    int failed,
-  ) {
-    return 'Sömn återställd: $created tillagda av $scanned kontrollerade, $failed misslyckades.';
-  }
 }

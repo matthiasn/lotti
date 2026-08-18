@@ -25,13 +25,23 @@ class GoalCheckInTranscriptionTrigger {
   GoalCheckInTranscriptionTrigger({
     required AgentService agentService,
     required Future<void> Function(String entryId) runTranscription,
+    required Future<void> Function(String entryId, String reason) recordDecline,
     DomainLogger? domainLogger,
   }) : _agents = agentService,
        _run = runTranscription,
+       _decline = recordDecline,
        _log = domainLogger;
 
   final AgentService _agents;
   final Future<void> Function(String entryId) _run;
+
+  /// Marks a recording that will not be transcribed as needing the user.
+  ///
+  /// Declining silently is what made the original bug invisible: the timeline
+  /// reads "no transcript, nothing running, no durable failure" as still
+  /// transcribing, so a check-in nobody is working on claims progress forever
+  /// and never offers the Retry that would transcribe it by hand.
+  final Future<void> Function(String entryId, String reason) _decline;
   final DomainLogger? _log;
 
   /// Transcribes [entryId], the recording just captured for [agentId].
@@ -49,12 +59,20 @@ class GoalCheckInTranscriptionTrigger {
         _logLine(
           'no goal agent $agentId — not transcribing check-in $entryId',
         );
+        await _decline(entryId, 'no goal agent $agentId');
         return false;
       }
       if (!GoalAgentService.automaticUpdatesEnabled(identity)) {
         _logLine(
           'automatic updates are off for goal $agentId — check-in $entryId '
           'stays untranscribed until it is triggered by hand',
+        );
+        // Switched off is a decision, not a failure — but on the rail the two
+        // look identical unless it is recorded, and Retry is exactly the
+        // affordance a user who wants this one transcribed needs.
+        await _decline(
+          entryId,
+          'automatic updates are off for goal $agentId',
         );
         return false;
       }
