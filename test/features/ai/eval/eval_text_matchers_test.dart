@@ -164,11 +164,13 @@ void main() {
     // and the scenario failed them for naming the options it asked them to
     // weigh.
     test('naming options under an open question is not asserting one', () {
+      const weighingSubmission =
+          "you're weighing whether to submit a talk to the march conference "
+          'or hold for june.';
       for (final text in [
         'undecided on march vs. june conference; pending ines talk next week',
         'weighing march vs june conference submission, gated on the rewrite',
-        "you're weighing whether to submit a talk to the march conference "
-            'or hold for june.',
+        weighingSubmission,
       ]) {
         expect(
           containsAffirmativeReportClaim(text, 'march'),

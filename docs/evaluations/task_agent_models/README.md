@@ -233,6 +233,61 @@ sources, an instruction the context contradicts, a report that must decline to
 conclude. Until then a pass here means "not obviously broken", and a model
 choice should rest on latency and cost, which is all the table above measures.
 
+## 2026-08-18: three scenarios summarising cannot pass
+
+The saturated baseline above measured extraction. Every required term in the
+original fourteen appears somewhere in its own context, so a model that
+summarises well scores 100% without deciding anything. Three scenarios were
+added where echoing produces the WRONG answer:
+
+| Scenario | The question | Why echoing fails |
+| --- | --- | --- |
+| `derived_estimate` | 3 x 45 + 60 = 195 | Every copyable number is wrong: 90 is the estimate the log retires, 45 and 60 are the parts, 135 drops the write-up |
+| `contradicted_instruction` | Two items requested, one already done and ticked | Literal obedience duplicates finished work; blanket caution drops the item that is genuinely new |
+| `undecided_evidence` | Two candidate dates, an option to drop it, "nothing decided" | Any mutation invents a decision the user withheld |
+
+All three models pass all three. **The scenarios do not discriminate at this
+tier** — they are regression protection, not a ranking instrument, and their
+value is in qualifying cheaper candidates (the oMLX profiles) and in catching a
+future model that answers by summarising.
+
+### Six of the first nine failures were the scenarios
+
+The first live run scored 3/9, and verifying each failure against the captured
+report text found the harness at fault six times:
+
+- `derived_estimate` failed all three for calling `add_multiple_checklist_items`
+  alongside the estimate — while every one of them computed 195 correctly.
+  Capturing the scoped work is the agent doing its job; the scenario was
+  grading tool minimalism instead of the arithmetic it exists to measure.
+- `undecided_evidence` forbade the claims `march`, `june` and `submit`. A
+  correct report must name both options to say the choice is open, and all
+  three wrote exactly that — "undecided on March vs. June", "weighing whether
+  to submit to March or hold for June". The scenario failed the sentences it
+  was asking for.
+
+Regraded, the same three models score 9/9 with no change to any model output.
+
+### The method that actually works
+
+Three separate checks written on the same day failed correct answers: a German
+stem (`fertig`) matching the infinitive "fertigstellen", month names a correct
+report has to weigh, and tool minimalism standing in for arithmetic. Each was
+written carefully and each was wrong, which says the fix is not more care.
+
+**Draft a check, then read what models actually write before trusting it.** A
+captured report from one cheap run settles in seconds what imagination gets
+wrong, and every false positive above is now a test carrying the verbatim
+sentence that exposed it, paired with a guard proving the genuine violation
+still fires. The negation matcher gained two whole cue classes this way —
+scope-deferral ("out of scope", "descoped") and open-question ("undecided",
+"whether", "weighing") — neither of which was imaginable in advance and both of
+which were obvious in the output.
+
+A tightened check also converts its own blind spots into visible failures, so
+**the first run after tightening measures the checks, not the models.** Budget
+for it.
+
 ## Findings from 2026-07-10
 
 The corrected production-prompt run contains one sample per scenario at
