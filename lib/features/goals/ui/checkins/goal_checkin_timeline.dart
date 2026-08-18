@@ -143,6 +143,14 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
             aiResponseType: AiResponseType.audioTranscription,
           )),
         );
+        final durableFailure =
+            checkIn.transcript == null &&
+            (ref
+                    .watch(
+                      goalAudioTranscriptionFailedProvider(checkIn.id),
+                    )
+                    .value ??
+                false);
         return TimelineBeat(
           id: checkIn.id,
           entryId: checkIn.id,
@@ -157,7 +165,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
             // first and transcribed after.
             transcriptStatus: checkIn.transcript != null
                 ? TimelineTranscriptStatus.none
-                : inferenceStatus == InferenceStatus.error
+                : inferenceStatus == InferenceStatus.running
+                ? TimelineTranscriptStatus.pending
+                : inferenceStatus == InferenceStatus.error || durableFailure
                 ? TimelineTranscriptStatus.failed
                 : TimelineTranscriptStatus.pending,
           ),

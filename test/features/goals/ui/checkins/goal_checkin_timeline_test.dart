@@ -48,6 +48,7 @@ void main() {
     ValueChanged<DateTime>? onOpenReflection,
     int? maxBeats,
     String? failedAudioId,
+    String? durableFailedAudioId,
     ValueChanged<TriggerSkillParams>? onTrigger,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 3))),
@@ -64,6 +65,10 @@ void main() {
         ),
         overrides: [
           goalTimelineItemsProvider('goal-1').overrideWithValue(items),
+          for (final item in items.whereType<GoalAudioCheckIn>())
+            goalAudioTranscriptionFailedProvider(item.id).overrideWith(
+              (ref) async => item.id == durableFailedAudioId,
+            ),
           if (failedAudioId != null)
             inferenceStatusControllerProvider((
               id: failedAudioId,
@@ -131,6 +136,22 @@ void main() {
 
     expect(triggered?.entityId, 'a1');
     expect(triggered?.skillId, skillTranscribeContextId);
+  });
+
+  testWidgets('a persisted transcription failure survives transient state', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      [GoalAudioCheckIn(audio('a1', today))],
+      durableFailedAudioId: 'a1',
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Transcription failed'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Transcribing…'), findsNothing);
   });
 
   testWidgets('a reflection beat carries its verdict and reopens that day', (

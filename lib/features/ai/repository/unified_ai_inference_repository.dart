@@ -146,6 +146,8 @@ class UnifiedAiInferenceRepository {
     final keepAliveLink = ref.keepAlive();
 
     final start = DateTime.now();
+    var attributionSession = existingAttributionSession;
+    var outputCompleted = false;
 
     try {
       onStatusChange(InferenceStatus.running);
@@ -160,6 +162,39 @@ class UnifiedAiInferenceRepository {
       if (entity == null) {
         throw Exception('Entity not found: $entityId');
       }
+
+      final capture = getIt.isRegistered<AiInteractionCapture>()
+          ? getIt<AiInteractionCapture>()
+          : null;
+      final outputId = existingOutputId ?? const Uuid().v4();
+      // Coding prompts are shown under their resolved parent task. Resolve that
+      // task before starting attribution too, so the provider interaction is
+      // included in the task's lifetime consumption totals rather than merely
+      // linked to the task after the fact. Starting the session before model,
+      // prompt, and media preparation makes those failures durable as well.
+      final attributionTask =
+          promptConfig.aiResponseType == AiResponseType.promptGeneration &&
+              entity is! Task
+          ? await _getTaskForEntity(entity)
+          : entity is Task
+          ? entity
+          : null;
+      attributionSession ??= await capture?.beginSession(
+        workType: _workType(promptConfig.aiResponseType),
+        trigger: AiTriggerSnapshot(
+          type: isRerun ? AiTriggerType.automatic : AiTriggerType.manual,
+          promptId: promptConfig.id,
+        ),
+        intendedOutputs: [
+          _outputReference(
+            responseType: promptConfig.aiResponseType,
+            entityId: entity.id,
+            outputId: outputId,
+          ),
+        ],
+        taskId: attributionTask?.id,
+        categoryId: entity.meta.categoryId,
+      );
 
       // Get the model configuration
       final model =
@@ -220,39 +255,6 @@ class UnifiedAiInferenceRepository {
       // Side-channel for per-call cost/energy impact (Melious non-streaming
       // path populates it; other providers leave it null).
       final impactCollector = InferenceImpactCollector();
-      final capture = getIt.isRegistered<AiInteractionCapture>()
-          ? getIt<AiInteractionCapture>()
-          : null;
-      final outputId = existingOutputId ?? const Uuid().v4();
-      // Coding prompts are shown under their resolved parent task. Resolve that
-      // task before starting attribution too, so the provider interaction is
-      // included in the task's lifetime consumption totals rather than merely
-      // linked to the task after the fact.
-      final attributionTask =
-          promptConfig.aiResponseType == AiResponseType.promptGeneration &&
-              entity is! Task
-          ? await _getTaskForEntity(entity)
-          : entity is Task
-          ? entity
-          : null;
-      final attributionSession =
-          existingAttributionSession ??
-          await capture?.beginSession(
-            workType: _workType(promptConfig.aiResponseType),
-            trigger: AiTriggerSnapshot(
-              type: isRerun ? AiTriggerType.automatic : AiTriggerType.manual,
-              promptId: promptConfig.id,
-            ),
-            intendedOutputs: [
-              _outputReference(
-                responseType: promptConfig.aiResponseType,
-                entityId: entity.id,
-                outputId: outputId,
-              ),
-            ],
-            taskId: attributionTask?.id,
-            categoryId: entity.meta.categoryId,
-          );
 
       final providerStream = await _runCloudInference(
         prompt: prompt,
@@ -300,6 +302,7 @@ class UnifiedAiInferenceRepository {
               ),
               existingSession: attributionSession,
               terminalizeSuccess: false,
+              terminalizeFailure: false,
               taskId: attributionTask?.id,
               categoryId: entity.meta.categoryId,
             );
@@ -364,37 +367,29 @@ class UnifiedAiInferenceRepository {
         );
       }
 
-      // Process the complete response
-      try {
-        await _processCompleteResponse(
-          response: buffer.toString(),
-          promptConfig: promptConfig,
-          model: model,
-          prompt: prompt,
-          provider: provider,
-          entity: entity,
-          start: start,
-          isRerun: isRerun,
-          onProgress: onProgress,
-          onStatusChange: onStatusChange,
-          toolCalls: toolCalls,
-          usage: usage,
-          durationMs: durationMs,
-          temperature: temperature,
-          effectiveSystemMessage: systemMessage,
-          attributionSession: attributionSession,
-          outputId: outputId,
-        );
-      } on Object catch (error, stackTrace) {
-        if (attributionSession != null) {
-          try {
-            await _failOutputAttribution(attributionSession, error);
-          } catch (_) {
-            // Preserve the original output failure.
-          }
-        }
-        Error.throwWithStackTrace(error, stackTrace);
-      }
+      // Process the complete response. It persists the carrier before
+      // finalizing attribution, so a successful terminal record never claims
+      // output that did not save.
+      await _processCompleteResponse(
+        response: buffer.toString(),
+        promptConfig: promptConfig,
+        model: model,
+        prompt: prompt,
+        provider: provider,
+        entity: entity,
+        start: start,
+        isRerun: isRerun,
+        onProgress: onProgress,
+        onStatusChange: onStatusChange,
+        toolCalls: toolCalls,
+        usage: usage,
+        durationMs: durationMs,
+        temperature: temperature,
+        effectiveSystemMessage: systemMessage,
+        attributionSession: attributionSession,
+        outputId: outputId,
+      );
+      outputCompleted = true;
 
       onStatusChange(InferenceStatus.idle);
     } catch (e, stackTrace) {
@@ -409,6 +404,14 @@ class UnifiedAiInferenceRepository {
         error: e,
         stackTrace: stackTrace,
       );
+
+      if (attributionSession != null && !outputCompleted) {
+        try {
+          await _failOutputAttribution(attributionSession, e);
+        } catch (_) {
+          // Preserve the original inference failure.
+        }
+      }
 
       rethrow;
     } finally {

@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -2035,6 +2036,66 @@ void main() {
             verify(() => bench.service.finalize(any())).called(1);
           },
         );
+
+        test('persists transcription failure before provider setup', () async {
+          final audioEntity = JournalAudio(
+            meta: createMetadata(categoryId: 'cat-audio'),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+              audioFile: 'missing.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
+          final promptConfig = createPrompt(
+            id: 'prompt-audio-attributed',
+            name: 'Attributed audio',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+          when(
+            () => mockAiInputRepo.getEntity(audioEntity.id),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => null);
+          final bench = registerInteractionCapture();
+
+          await expectLater(
+            repository.runInference(
+              entityId: audioEntity.id,
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            ),
+            throwsA(isA<Exception>()),
+          );
+
+          final start =
+              verify(() => bench.service.begin(captureAny())).captured.single
+                  as AiAttributionStart;
+          expect(start.workType, AiWorkType.audioTranscription);
+          expect(
+            start.intendedOutputs.single,
+            isA<AiArtifactReference>()
+                .having(
+                  (output) => output.type,
+                  'type',
+                  AiArtifactType.journalAudio,
+                )
+                .having((output) => output.id, 'id', audioEntity.id),
+          );
+          verify(
+            () => bench.service.prepareCompletion(
+              attributionId: any(named: 'attributionId'),
+              outputs: const [],
+              status: AiWorkStatus.failed,
+              errorCode: any(named: 'errorCode'),
+            ),
+          ).called(1);
+          verify(() => bench.service.finalize(any())).called(1);
+        });
       });
 
       test(

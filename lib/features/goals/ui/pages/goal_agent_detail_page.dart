@@ -86,6 +86,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   final GlobalKey _headerKey = GlobalKey();
   GoalProgressView? _lastProgress;
   String? _lastProgressSpecId;
+  int? _lastProgressSpanDays;
+  int? _rangeRecoveryRequestedFor;
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
   /// either way (a slid-out overlay, not a conditional subtree), so the
@@ -356,14 +358,39 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     if (spec == null || _lastProgressSpecId != spec.id) {
       _lastProgress = null;
       _lastProgressSpecId = spec?.id;
+      _lastProgressSpanDays = null;
     }
     if (progressAsync?.hasValue ?? false) {
       _lastProgress = progressAsync?.value;
+      _lastProgressSpanDays = timeSpanDays;
     }
     // A range change selects a different provider-family key. Keep the last
     // settled projection in place while that key loads so 14d → 30d → 90d
-    // behaves as stale-while-revalidate instead of blanking the dashboard.
+    // behaves as stale-while-revalidate instead of blanking the dashboard. If
+    // the replacement fails, snap the shared selector back to the last span;
+    // never leave old evidence under a new range label.
+    final rangeFailed =
+        (progressAsync?.hasError ?? false) &&
+        !(progressAsync?.hasValue ?? false);
+    final fallbackSpanDays = _lastProgressSpanDays;
+    if (rangeFailed &&
+        fallbackSpanDays != null &&
+        fallbackSpanDays != timeSpanDays &&
+        _rangeRecoveryRequestedFor != timeSpanDays) {
+      _rangeRecoveryRequestedFor = timeSpanDays;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(habitsControllerProvider.notifier)
+            .setTimeSpan(fallbackSpanDays);
+      });
+    } else if (!rangeFailed) {
+      _rangeRecoveryRequestedFor = null;
+    }
     final progress = progressAsync?.value ?? _lastProgress;
+    final renderedTimeSpanDays = rangeFailed && fallbackSpanDays != null
+        ? fallbackSpanDays
+        : timeSpanDays;
     final assessments =
         ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
     // Same render-time staleness contract as the strip: retained data
@@ -634,7 +661,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // The page-wide range picker rides the first evidence
               // heading — one control for every day track and the chart.
               habitsHeadingTrailing: TimeSpanSegmentedControl(
-                timeSpanDays: timeSpanDays,
+                timeSpanDays: renderedTimeSpanDays,
                 onValueChanged: ref
                     .read(habitsControllerProvider.notifier)
                     .setTimeSpan,
@@ -673,7 +700,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
         // carry the new spec while the progress deliberately retains the
         // old one, and mixing the two flashed an empty chart scoped by a
         // habit set the visible rows do not show.
-        if (progress != null && progress.habits.isNotEmpty) ...[
+        if (!rangeFailed && progress != null && progress.habits.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           HabitsChartCard(
             habitIds: {for (final habit in progress.habits) habit.habitId},

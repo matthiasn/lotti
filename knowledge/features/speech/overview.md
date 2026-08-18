@@ -152,6 +152,12 @@ that disappears after listing but before its metadata is read is treated as
 already cleaned up; the pass continues and preserves the cache bound without a
 spurious error log.
 
+Goal check-in timelines derive failed transcription UI from the latest durable
+audio-transcription attribution as well as the live inference controller. A
+running retry temporarily outranks the stored failure; a later successful
+transcript supersedes it. This keeps “Transcription failed” and Retry available
+after the short-lived inference provider is disposed or the app restarts.
+
 # Related
 
 * [AI provider routing](../ai/provider-routing.md) - the transcription endpoints and the audio transcoding pipeline.

@@ -815,7 +815,10 @@ flowchart TD
   renders the whole-goal strip and every habit and signal day track over
   the same span ending today. Switching ranges preserves the last rendered
   progress while the replacement span loads, so established content never
-  flashes back to a loading shell. A day track FITS before it scrolls:
+  flashes back to a loading shell. If the replacement span fails, the picker
+  returns to the last settled span and the shared-controller chart stays hidden
+  until that rollback lands; old evidence is never relabelled as the failed
+  range. A day track FITS before it scrolls:
   `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
   caption inside it, down to a one-letter form — until the whole span fits the
   width it was given, and only a span that overflows even at the legibility
@@ -1337,7 +1340,9 @@ Invariants worth not breaking:
   that wake and retried by the next; it never fails the wake or the recording.
 - **Transcription failure is visible and recoverable.** A failed timeline item
   stops showing progress, announces the failure, and retries the built-in
-  transcription skill on request.
+  transcription skill on request. The timeline combines the live inference
+  state with the latest durable audio-transcription attribution, so the failure
+  and Retry action survive provider disposal and app restart.
 
 ## Gotchas
 

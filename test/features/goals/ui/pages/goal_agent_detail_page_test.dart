@@ -3458,6 +3458,7 @@ void main() {
             as GoalSpecVersionEntity;
     final today = DateTime.utc(2026, 8, 11);
     final progress30 = Completer<GoalProgressView?>();
+    final progress90 = Completer<GoalProgressView?>();
     GoalProgressView progressFor(int targetCount) => GoalProgressView(
       today: today,
       habits: [
@@ -3511,6 +3512,10 @@ void main() {
             agentId: 'goal-1',
             historyDays: 30,
           )).overrideWith((ref) => progress30.future),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 90,
+          )).overrideWith((ref) => progress90.future),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
           nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
@@ -3569,6 +3574,41 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('5× per 7 days'), findsOneWidget);
     expect(find.textContaining('3× per 7 days'), findsNothing);
+
+    tester
+        .widget<TimeSpanSegmentedControl>(
+          find.byType(TimeSpanSegmentedControl),
+        )
+        .onValueChanged(90);
+    habitsController.emit(
+      habitsController.state.copyWith(timeSpanDays: 90),
+    );
+    await tester.pump();
+    expect(find.textContaining('5× per 7 days'), findsOneWidget);
+
+    progress90.completeError(StateError('range unavailable'));
+    await tester.pump();
+    await tester.pump();
+
+    // A failed replacement cannot leave 30-day evidence under a 90-day
+    // selector. The page snaps back to the last settled span and suppresses
+    // the controller-backed chart until that rollback lands.
+    expect(habitsController.lastTimeSpan, 30);
+    expect(
+      tester
+          .widget<TimeSpanSegmentedControl>(
+            find.byType(TimeSpanSegmentedControl),
+          )
+          .timeSpanDays,
+      30,
+    );
+    expect(find.textContaining('5× per 7 days'), findsOneWidget);
+    expect(find.byType(HabitCompletionRateChart), findsNothing);
+
+    habitsController.emit(
+      habitsController.state.copyWith(timeSpanDays: 30),
+    );
+    await tester.pump();
 
     // The goal-scoped chart card: same shell as the habits page, its
     // own title, the chart scoped to this goal's criterion habit ids.
