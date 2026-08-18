@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/goals/model/goal_entry_ids.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -120,6 +122,69 @@ void main() {
       // Scoped to the goal: the snapshots ride the subtype index, so an
       // unscoped read would return every goal's history.
       verify(() => mockDb.getSpecSnapshotsForGoal('goal-1')).called(1);
+    });
+  });
+
+  group('checkInSources', () {
+    LinkedDbEntry link(String toId) => LinkedDbEntry(
+      id: 'link-$toId',
+      fromId: 'goal-1',
+      toId: toId,
+      serialized: '{}',
+      type: 'BasicLink',
+      hidden: false,
+    );
+
+    JournalAudio audio(String id, {String? transcript, DateTime? deletedAt}) =>
+        JournalAudio(
+          meta: meta(id).copyWith(deletedAt: deletedAt),
+          data: AudioData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            audioFile: '$id.m4a',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+          entryText: transcript == null
+              ? null
+              : EntryText(plainText: transcript),
+        );
+
+    test('a goal with no links reads nothing', () async {
+      when(
+        () => mockDb.linksFromIds(any()),
+      ).thenReturn(MockSelectable<LinkedDbEntry>([]));
+
+      expect(await repository.checkInSources('agent-1'), isEmpty);
+      verifyNever(() => mockDb.getJournalEntitiesForIds(any()));
+    });
+
+    test('offers only the check-ins that carry words', () async {
+      when(() => mockDb.linksFromIds(any())).thenReturn(
+        MockSelectable<LinkedDbEntry>([
+          link('with-words'),
+          link('still-transcribing'),
+          link('deleted'),
+          link('not-a-checkin'),
+        ]),
+      );
+      when(() => mockDb.getJournalEntitiesForIds(any())).thenAnswer(
+        (_) async => [
+          audio('with-words', transcript: 'Skipped the lunch walk.'),
+          // Saved but not yet transcribed: compacting silence would produce a
+          // summary of nothing.
+          audio('still-transcribing'),
+          audio('deleted', transcript: 'gone', deletedAt: testDate),
+          goalEntry(id: 'not-a-checkin'),
+        ],
+      );
+
+      final sources = await repository.checkInSources('agent-1');
+
+      expect(sources.map((s) => s.entryId), ['with-words']);
+      expect(sources.single.text, 'Skipped the lunch walk.');
+      // The moment the user spoke, not the moment this was read.
+      expect(sources.single.recordedAt, testDate);
     });
   });
 

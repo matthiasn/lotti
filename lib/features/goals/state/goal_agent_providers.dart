@@ -23,11 +23,14 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
+import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
@@ -122,6 +125,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     orchestrator: ref.watch(wakeOrchestratorProvider),
     updateNotifications: getIt<UpdateNotifications>(),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
+    checkInNotifier: ref.watch(goalCheckInNotifierProvider),
   ),
   name: 'goalAgentServiceProvider',
 );
@@ -135,6 +139,27 @@ final goalChatServiceProvider = Provider<GoalChatService>(
   name: 'goalChatServiceProvider',
 );
 
+/// Distills check-ins for the agent. Null where the AI stack is unavailable.
+final Provider<GoalCheckInCompactor?> goalCheckInCompactorProvider =
+    Provider<GoalCheckInCompactor?>(
+      (ref) => GoalCheckInCompactor(
+        inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+        syncService: ref.watch(agentSyncServiceProvider),
+      ),
+      name: 'goalCheckInCompactorProvider',
+    );
+
+/// Reads a goal's check-ins out of the journal for the headless workflow.
+///
+/// A function rather than a repository handle, so the agent tier depends on
+/// the shape of the data and not on the journal stack.
+final Provider<GoalCheckInSourceReader?> goalCheckInSourceReaderProvider =
+    Provider<GoalCheckInSourceReader?>((ref) {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      return repository.checkInSources;
+    }, name: 'goalCheckInSourceReaderProvider');
+
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
   (ref) => GoalAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -143,6 +168,8 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    checkInCompactor: ref.watch(goalCheckInCompactorProvider),
+    checkInSourceReader: ref.watch(goalCheckInSourceReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalAgentWorkflowProvider',
@@ -203,6 +230,17 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
 );
 
 /// The goals contribution to `agentRuntimeMaintenanceProvider`.
+final Provider<GoalCheckInNotifier?> goalCheckInNotifierProvider =
+    Provider<GoalCheckInNotifier?>((ref) {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      return GoalCheckInNotifier(
+        goalRepository: repository,
+        agentService: ref.watch(agentServiceProvider),
+        updateNotifications: getIt<UpdateNotifications>(),
+      );
+    }, name: 'goalCheckInNotifierProvider');
+
 final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
   (ref) => GoalRuntimeMaintenance(
     agentService: ref.watch(agentServiceProvider),
@@ -210,6 +248,7 @@ final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
     syncService: ref.watch(agentSyncServiceProvider),
     goalAgentService: ref.watch(goalAgentServiceProvider),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
+    checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalRuntimeMaintenanceProvider',

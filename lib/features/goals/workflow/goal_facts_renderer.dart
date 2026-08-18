@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -58,6 +59,7 @@ class GoalFactsRenderer {
     required DateTime evaluationReference,
     List<String> observations = const [],
     List<String> unansweredUserMessages = const [],
+    List<Map<String, Object?>> userVoice = const [],
     String? personaTonePreference,
   }) {
     final now = clock.now();
@@ -204,6 +206,14 @@ class GoalFactsRenderer {
       },
       'unansweredUserMessages': unansweredUserMessages,
       'observations': observations,
+      // What the USER said, compacted — never their raw transcripts. Named to
+      // make the distinction unmistakable: `observations` are the agent's own
+      // notes, this is the person talking.
+      if (userVoice.isNotEmpty)
+        'userVoice': {
+          'entries': userVoice,
+          'interpretationPolicy': goalUserVoiceInterpretationPolicy,
+        },
     });
   }
 

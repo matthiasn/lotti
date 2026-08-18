@@ -2,6 +2,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_entry_ids.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
@@ -53,6 +54,36 @@ class GoalRepository {
   /// The immutable spec snapshots of [goalId], newest version first.
   Future<List<GoalEntry>> getSpecSnapshots(String goalId) =>
       _journalDb.getSpecSnapshotsForGoal(goalId);
+
+  /// The check-ins linked to [agentId]'s goal that carry words.
+  ///
+  /// Lives here rather than in a provider closure because this is journal
+  /// access, and the repository is what owns it — a closure reaching into the
+  /// service locator for a query builder cannot be tested at all.
+  ///
+  /// A recording with no transcript yet is deliberately absent: it is saved
+  /// before it is transcribed, and compacting silence would produce a summary
+  /// of nothing.
+  Future<List<GoalCheckInSource>> checkInSources(String agentId) async {
+    final links = await _journalDb.linksFromIds([
+      goalIdForAgent(agentId),
+    ]).get();
+    final ids = links.map((link) => link.toId).toSet();
+    if (ids.isEmpty) return const [];
+    final entities = await _journalDb.getJournalEntitiesForIds(ids);
+    return [
+      for (final entity in entities)
+        if (!entity.isDeleted &&
+            (entity is JournalAudio || entity is JournalEntry))
+          if (entity.entryText?.plainText.trim() ?? '' case final text
+              when text.isNotEmpty)
+            GoalCheckInSource(
+              entryId: entity.meta.id,
+              recordedAt: entity.meta.dateFrom,
+              text: text,
+            ),
+    ];
+  }
 
   /// Writes (or refreshes) the stable goal row for [agentId] and returns it.
   ///

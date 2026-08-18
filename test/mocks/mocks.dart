@@ -110,6 +110,7 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -981,6 +982,9 @@ class FakeJournalImage extends Fake implements JournalImage {}
 class MockGoalRepository extends Mock implements GoalRepository {}
 
 class MockGoalMirrorService extends Mock implements GoalMirrorService {}
+
+class MockGoalCheckInCompactor extends Mock
+    implements GoalCheckInCompactor {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
   @override

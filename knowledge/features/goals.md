@@ -176,7 +176,10 @@ flowchart TD
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
     REFREG --> PB
-    PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
+    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> STALE[mark report stale\nGoalCheckInNotifier — never a wake]
+    STALE --> ROUTE
+    PB --> COMPACT[compact pending check-ins\nwake's own model, ≤500 tokens,\nkeyed by agentId+entryId, non-fatal]
+    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nuserVoice — token-bounded, never transcripts]
     FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 8-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
@@ -1270,6 +1273,65 @@ user's behalf, which is a different decision from keeping evidence fresh, and
 is tracked as its own change. Today the card *offers* the check-off and the
 user takes it.
 
+## Check-ins: the user's own voice
+
+A **check-in** is free-form, anytime, and audio-first — the counterpart to the
+daily reflection, which can only answer honestly in the evening. The two stores
+that hold them are deliberately different, and the split is the point.
+
+```mermaid
+flowchart LR
+  subgraph Journal["journal database — required, durable"]
+    G["GoalEntry"]
+    A["JournalAudio / JournalEntry"]
+    G -- "EntryLink.basic" --> A
+  end
+  subgraph Agent["agent database — optional, disposable"]
+    R["reflections<br/>(agent log)"]
+    S["GoalCheckInSummary<br/>≤500 tokens"]
+    F["userVoice section<br/>in FACTS"]
+  end
+  A -. "transcribe, then compact<br/>with the wake's own model" .-> S
+  S -- "token-bounded by planCompaction" --> F
+  R --> TL["goal timeline"]
+  A --> TL
+  A -. "never" .-> F
+```
+
+**The recording is the user's; the summary is the agent's.** Raw transcripts
+never enter agent context — a daily check-in is ~150 words, so verbatim they
+would cost roughly 100k tokens a year against a wake budgeted at 8k input
+tokens (ADR 0057). The user's words stay in the journal in full and remain
+playable.
+
+Key pieces:
+
+- `lib/features/goals/logic/goal_timeline_projection.dart` — pure merge of
+  linked journal entries and standing reflections, newest first, spec-scoped
+  so a verdict passed on superseded criteria is not shown as a judgement of
+  the current goal.
+- `lib/features/goals/service/goal_checkin_compactor.dart` — one structured
+  summary per check-in, keyed `(agentId, entryId)` so retries and second
+  devices converge instead of appending.
+- `lib/features/goals/logic/goal_user_voice.dart` — selection under a token
+  budget via `planCompaction`; the oldest fall away first and the newest is
+  always kept.
+- `lib/features/goals/service/goal_mirror_service.dart` — keeps the
+  journal-side `GoalEntry` in step with the agent-side spec chain.
+
+Invariants worth not breaking:
+
+- **User voice never outranks measurement.** The `userVoice` block ships with
+  an interpretation policy saying so. A cheerful check-in cannot turn a missed
+  week into on-track.
+- **A check-in marks the report stale; it does not wake the agent.** Three
+  check-ins in a morning are one refresh, not three inference runs.
+- **The date survives compaction.** "You said on Tuesday you would walk after
+  lunch" is only sayable because `recordedAt` is the moment the user spoke,
+  not the moment the summary was written.
+- **Compaction is non-fatal.** A check-in that fails to compact is absent from
+  that wake and retried by the next; it never fails the wake or the recording.
+
 ## Gotchas
 
 - `agent_wiring.dart` silently routes unregistered kinds to the
@@ -1283,6 +1345,13 @@ user takes it.
 - Imported workout rules currently produce metric leaves whose dataTypes
   only match `QuantitativeEntry` rows; workout-entry signals are a
   documented follow-up.
+- The goal's journal entity and its agent identity are two rows in two
+  databases. Creation is agent-first and mirrors afterwards, so a failed
+  mirror leaves a working goal that the next launch's backfill repairs —
+  never an orphaned agent. Do not make the mirror throw at its caller.
+- Goal *lifecycle* (active/paused/retired) still lives only agent-side. The
+  definition was moved to the journal; the lifecycle was not, so losing the
+  agent database still loses which goals were retired.
 
 ## Related
 
