@@ -45,6 +45,23 @@ void main() {
             ),
           ],
         ),
+        // A usage chunk, so the token accounting the pills read is exercised
+        // rather than assumed.
+        const CreateChatCompletionStreamResponse(
+          id: 'usage',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [],
+          usage: CompletionUsage(
+            promptTokens: 120,
+            completionTokens: 40,
+            totalTokens: 160,
+            promptTokensDetails: PromptTokensDetails(cachedTokens: 20),
+            completionTokensDetails: CompletionTokensDetails(
+              reasoningTokens: 8,
+            ),
+          ),
+        ),
       ]);
 
   setUp(() {
@@ -209,6 +226,11 @@ void main() {
     // actually spent.
     expect(event.agentId, 'goal-1');
     expect(event.entryId, 'audio-1');
+    expect(event.inputTokens, 120);
+    expect(event.outputTokens, 40);
+    expect(event.cachedInputTokens, 20);
+    expect(event.thoughtsTokens, 8);
+    expect(event.totalTokens, 160);
   });
 
   test('a failing model never throws at the caller', () async {

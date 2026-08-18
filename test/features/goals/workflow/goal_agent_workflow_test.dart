@@ -19,9 +19,11 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
@@ -794,6 +796,129 @@ void main() {
     expect(handedOver, contains(GoalAgentToolNames.updateGoalReport));
     expect(handedOver, contains(GoalAgentToolNames.retireGoalAd));
     expect(handedOver, hasLength(goalAgentTools.length - 2));
+  });
+
+  test('a wake compacts pending check-ins and carries the user voice into '
+      'FACTS', () async {
+    stubSpec();
+    stubGlmResolution();
+    _stubBadPrior(repository, agentId, now);
+
+    final compactor = MockGoalCheckInCompactor();
+    final compacted = <String>[];
+    when(
+      () => compactor.compact(
+        agentId: any(named: 'agentId'),
+        entryId: any(named: 'entryId'),
+        recordedAt: any(named: 'recordedAt'),
+        transcript: any(named: 'transcript'),
+        goalStatement: any(named: 'goalStatement'),
+        model: any(named: 'model'),
+        provider: any(named: 'provider'),
+      ),
+    ).thenAnswer((invocation) async {
+      compacted.add(invocation.namedArguments[#entryId] as String);
+      return null;
+    });
+
+    // One check-in already compacted, one not: the already-summarised entry
+    // must not be compacted twice, and its summary must reach FACTS.
+    when(
+      () => repository.getEntitiesByAgentIdAndSubtype(
+        agentId,
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.agentMessage(
+          id: 'summary-1',
+          agentId: agentId,
+          threadId: 'summary-1',
+          kind: AgentMessageKind.action,
+          createdAt: DateTime.utc(2026, 8, 10, 9),
+          vectorClock: null,
+          metadata: const AgentMessageMetadata(
+            toolName: goalCheckInSummaryToolName,
+          ),
+          contentEntryId: 'summary-1:payload',
+        ),
+      ],
+    );
+    when(() => repository.getEntity('summary-1:payload')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'summary-1:payload',
+        agentId: agentId,
+        createdAt: DateTime.utc(2026, 8, 10, 9),
+        vectorClock: null,
+        content: <String, Object?>{
+          'sourceEntryId': 'audio-0',
+          'recordedAt': '2026-08-10T09:00:00.000Z',
+          'whatHappened': 'Walked the long way home.',
+          'committedTo': 'walk after lunch tomorrow',
+        },
+      ),
+    );
+
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      checkInCompactor: compactor,
+      checkInSourceReader: (agentId) async => [
+        GoalCheckInSource(
+          entryId: 'audio-0',
+          recordedAt: DateTime.utc(2026, 8, 10, 9),
+          text: 'Walked the long way home.',
+        ),
+        GoalCheckInSource(
+          entryId: 'audio-1',
+          recordedAt: DateTime.utc(2026, 8, 11, 9),
+          text: 'Skipped the lunch walk.',
+        ),
+      ],
+    );
+
+    String? sentFacts;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          sentFacts ??= message;
+          return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+        };
+
+    await workflow.execute(
+      agentIdentity: identity,
+      runKey: 'run-compaction',
+      triggerTokens: const {'goal-escalation:2026-08-11'},
+      threadId: 'thread-compaction',
+    );
+
+    // Only the un-summarised entry is compacted: the keyed summary makes a
+    // re-run converge rather than pay for the same words twice.
+    expect(compacted, ['audio-1']);
+    expect(sentFacts, isNotNull);
+    // The transcript itself never reaches the prompt; the compacted record
+    // does, with its commitment intact.
+    expect(sentFacts, isNot(contains('Skipped the lunch walk.')));
+    expect(sentFacts, contains('userVoice'));
+    expect(sentFacts, contains('walk after lunch tomorrow'));
   });
 
   test('a full wake persists FACTS, report + head, the new ad, and token '

@@ -8,7 +8,6 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -158,24 +157,7 @@ final Provider<GoalCheckInSourceReader?> goalCheckInSourceReaderProvider =
     Provider<GoalCheckInSourceReader?>((ref) {
       final repository = ref.watch(goalRepositoryProvider);
       if (repository == null) return null;
-      return (agentId) async {
-        final goalId = repository.goalIdForAgent(agentId);
-        final links = await getIt<JournalDb>().linksFromIds([goalId]).get();
-        final ids = links.map((link) => link.toId).toSet();
-        if (ids.isEmpty) return const [];
-        final entities = await getIt<JournalDb>().getJournalEntitiesForIds(ids);
-        return [
-          for (final entity in entities)
-            if (entity is JournalAudio || entity is JournalEntry)
-              if (entity.entryText?.plainText.trim() ?? '' case final text
-                  when text.isNotEmpty)
-                GoalCheckInSource(
-                  entryId: entity.meta.id,
-                  recordedAt: entity.meta.dateFrom,
-                  text: text,
-                ),
-        ];
-      };
+      return repository.checkInSources;
     }, name: 'goalCheckInSourceReaderProvider');
 
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
