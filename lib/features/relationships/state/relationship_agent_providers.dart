@@ -144,14 +144,19 @@ final relationshipRuntimeMaintenanceProvider =
 /// Decision 7: the trigger surface names the provider first, and the
 /// locality check fails closed). Routes through the SAME resolution chain
 /// as Phase B (`resolveRelationshipAgentModel`) so the dialog can never
-/// name a provider other than the one inference actually uses.
+/// name a provider other than the one inference actually uses — which is
+/// also why the relationship read is UNFILTERED: Phase B resolves through
+/// the relationship's own profile whatever this device's private-entry
+/// display preference, so the disclosure must see the same row. Throws
+/// when no route resolves at all: unresolved is NOT local, and the
+/// trigger surface must surface the failure rather than proceed silently.
 final FutureProviderFamily<String?, String>
 relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
     .family<String?, String>((ref, relationshipId) async {
       final aiConfigRepository = ref.watch(aiConfigRepositoryProvider);
       final relationship = await ref
           .watch(relationshipRepositoryProvider)
-          .getRelationshipById(relationshipId);
+          .getRelationshipByIdUnfiltered(relationshipId);
       final identity = await ref
           .watch(agentRepositoryProvider)
           .getEntity(relationshipAgentIdFor(relationshipId));
@@ -160,7 +165,11 @@ relationshipBriefingDisclosureProvider = FutureProvider.autoDispose
         agentIdentity: identity is AgentIdentityEntity ? identity : null,
         aiConfigRepository: aiConfigRepository,
       );
-      if (resolved == null) return null;
+      if (resolved == null) {
+        throw StateError(
+          'no inference provider resolves for the relationship agent',
+        );
+      }
       final profileId = resolved.profileId;
       if (profileId != null) {
         final config = await aiConfigRepository.getConfigById(profileId);

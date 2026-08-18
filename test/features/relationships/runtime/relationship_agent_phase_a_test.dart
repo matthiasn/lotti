@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -264,8 +266,8 @@ void main() {
     expect(register.status, RelationshipCadenceStatus.ok);
     expect(register.relationshipId, relationshipId);
     expect(register.cadenceDays, 7);
-    expect(register.referenceAt, lastCheckIn);
-    expect(register.lastCheckInAt, lastCheckIn);
+    expect(register.referenceAt, lastCheckIn.toUtc());
+    expect(register.lastCheckInAt, lastCheckIn.toUtc());
     // 2026-08-14 + 7 days, as a UTC day key.
     expect(register.dueAt, DateTime.utc(2026, 8, 21));
     expect(
@@ -289,7 +291,7 @@ void main() {
       ],
     );
     await withClock(Clock.fixed(now), run);
-    expect(writtenRegister()!.referenceAt, DateTime(2026, 8, 15));
+    expect(writtenRegister()!.referenceAt, DateTime(2026, 8, 15).toUtc());
   });
 
   test('no check-ins yet: the baseline is tracking start and the default '
@@ -307,7 +309,7 @@ void main() {
 
     final register = writtenRegister()!;
     expect(register.lastCheckInAt, isNull);
-    expect(register.referenceAt, DateTime(2026, 8, 10, 15));
+    expect(register.referenceAt, DateTime(2026, 8, 10, 15).toUtc());
     expect(register.cadenceDays, relationshipDefaultCadenceDays);
     expect(register.dueAt, DateTime.utc(2026, 9, 9));
     expect(register.status, RelationshipCadenceStatus.ok);
@@ -368,6 +370,41 @@ void main() {
       );
       expect(escalation.scheduledAt, DateTime.utc(2026, 9, 2));
       expect(writtenRegister()!.dueAt, DateTime.utc(2026, 9, 2));
+    });
+
+    test('the register row round-trips through JSON persistence intact — '
+        'referenceAt and lastCheckInAt are UTC, so they serialize '
+        'zone-suffixed and a peer in any timezone parses the same instants '
+        '(a LOCAL instant serializes without an offset and would shift, '
+        'failing the unchanged-check and rewriting the register on every '
+        'sync)', () async {
+      final lastCheckIn = DateTime(2026, 8, 14, 20);
+      when(
+        () => relationshipRepository.getAllCheckInsForRelationship(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => [checkIn('c-1', lastCheckIn)]);
+      when(
+        () => repository.getLatestReport(any(), any()),
+      ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 15)));
+      await withClock(Clock.fixed(now), run);
+
+      final register = writtenRegister()!;
+      expect(register.referenceAt.isUtc, isTrue);
+      expect(register.lastCheckInAt!.isUtc, isTrue);
+      expect(register.dueAt.isUtc, isTrue);
+
+      final decoded =
+          AgentDomainEntity.fromJson(
+                jsonDecode(jsonEncode(register.toJson()))
+                    as Map<String, dynamic>,
+              )
+              as RelationshipHealthEntity;
+      expect(decoded.referenceAt, register.referenceAt);
+      expect(decoded.referenceAt.isUtc, isTrue);
+      expect(decoded.lastCheckInAt, register.lastCheckInAt);
+      expect(decoded.lastCheckInAt!.isUtc, isTrue);
+      expect(decoded.dueAt, register.dueAt);
     });
   });
 

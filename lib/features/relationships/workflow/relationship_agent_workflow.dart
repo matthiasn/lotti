@@ -305,13 +305,12 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       preTransitionStatus: preTransitionStatus,
     );
     if (interactive) {
-      factsBlock = '$factsBlock\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
+      factsBlock =
+          '$factsBlock\n\n$relationshipPendingUserMessageHeader\n'
+          '$pendingUserMessage';
     }
     if (reportRefresh) {
-      factsBlock =
-          '$factsBlock\n\nUSER EXPLICITLY REQUESTED A FRESH BRIEFING. Call '
-          'update_relationship_report now with the full briefing from the '
-          'authoritative FACTS.';
+      factsBlock = '$factsBlock\n\n$relationshipReportRefreshInstruction';
     }
 
     final resolved = await resolveRelationshipAgentModel(
@@ -506,6 +505,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           derivation: derivation,
           now: now,
           replyToUser: interactive,
+          // Eligibility binds automatic wakes only — the same rule as the
+          // pre-inference gate above: chat and the explicit Brief me stay
+          // answerable after un-marking.
+          enforceEligibility: !interactive && !reportRefresh,
         );
         attributionFinalized = persistence.attributionFinalized;
         reportHeadAdvanced = persistence.reportHeadAdvanced;
@@ -601,6 +604,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
   /// Persists every accumulated output in ONE transaction (the goal
   /// persistOutputs shape): the interactive reply carrier, the briefing
   /// report + head, snoozes onto their rows, and at most one new banner.
+  ///
+  /// [enforceEligibility] extends the in-transaction fence to revoked
+  /// consent: an automatic wake whose relationship was un-marked
+  /// `important` or archived while the model ran publishes NOTHING.
   Future<({bool attributionFinalized, bool reportHeadAdvanced})>
   persistOutputs({
     required String agentId,
@@ -611,6 +618,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required RelationshipCadenceDerivation derivation,
     required DateTime now,
     bool replyToUser = false,
+    bool enforceEligibility = false,
   }) async {
     final reportId = strategy.hasBriefing ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
@@ -629,6 +637,16 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       final subject = await _relationshipRepository
           .getRelationshipByIdUnfiltered(relationshipId);
       if (subject == null || subject.meta.deletedAt != null) return;
+      // Consent may have been REVOKED while the model was thinking:
+      // `important` is the single consent switch for proactive behavior
+      // (ADR 0039), so an automatic wake re-checks eligibility inside the
+      // transaction — un-marking or archiving mid-inference silences this
+      // wake's report and banner, not just the next one.
+      if (enforceEligibility &&
+          (!subject.data.important ||
+              subject.data.status is! RelationshipActive)) {
+        return;
+      }
 
       // RE-READ inside the transaction: the user may have dismissed a
       // banner while the model ran, and that dismissal binds the

@@ -238,7 +238,10 @@ with a **deterministic id** (`relationship_agent:<relationshipId>`), so two
 devices marking the same person converge on one agent instead of duplicates.
 Identity, `agentRelationship` link and the first cadence wake land in one
 transaction; the agent leaves creation subscribed and with one immediate €0
-evaluation queued.
+evaluation queued. Re-entry on an existing agent is a fast path with one
+write-through: a renamed person's title refreshes the identity's
+`displayName` (the chat page titles itself from the stored identity), while
+everything else is returned untouched.
 
 ```mermaid
 flowchart TD
@@ -365,7 +368,12 @@ removed:
   strand the composer disabled.
 - **Disclosure fails closed.** The "Brief me" card resolves the agent's
   model to a provider name; a cloud provider is named in a consent dialog
-  first (ADR 0037), and an unresolvable profile is treated as cloud.
+  first (ADR 0037), and an unresolvable profile is treated as cloud. The
+  relationship read is unfiltered — Phase B resolves through the person's
+  own profile whatever this device's private-entry display preference, so
+  the dialog must see the same row — and a route that resolves to nothing
+  at all throws (the card surfaces the failure) rather than reading as
+  "local, proceed silently".
 
 # Privacy
 

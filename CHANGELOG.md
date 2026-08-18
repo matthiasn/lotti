@@ -49,6 +49,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Contact channels never enter AI context. Cadence nudges and executive
   briefings ship alongside it — see the relationship-agent entry under
   Changed.
+- **Relationship-agent evals, before the agent is trusted.** The
+  relationship agent's prompt/tool contract is now validated by an
+  inference eval suite on the goal-agent chassis — 24 scenarios over a
+  17-row policy matrix (restraint, briefings, banner discipline,
+  sentiment-over-prose health bands, dialogue, privacy leakage traps),
+  scored against a live provider with per-case cost capture and tuned for
+  `deepseek-v4-flash`. Unlike the goal tier, every FACTS block is rendered
+  by the production renderer over the real deterministic tier, so the eval
+  cannot drift from what a wake actually sends. Run book in
+  `docs/evaluations/relationship_agent_models/`.
 
 ### Changed
 - **Goal chat now remembers and reliably answers.** Recent exchanges reach the

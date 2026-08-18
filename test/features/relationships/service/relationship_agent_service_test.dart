@@ -45,7 +45,7 @@ void main() {
           )
           as AgentIdentityEntity;
 
-  RelationshipEntry relationship() => RelationshipEntry(
+  RelationshipEntry relationship({String title = 'Anna'}) => RelationshipEntry(
     meta: Metadata(
       id: relationshipId,
       createdAt: testDate,
@@ -54,7 +54,7 @@ void main() {
       dateTo: testDate,
     ),
     data: RelationshipData(
-      title: 'Anna',
+      title: title,
       important: true,
       status: RelationshipStatus.active(
         id: 'status-1',
@@ -175,6 +175,38 @@ void main() {
           reason: any(named: 'reason'),
         ),
       ).called(1);
+    });
+
+    test('a renamed person is written through to the existing identity — '
+        'the chat page titles itself from the stored displayName, so the '
+        'fast path must not leave it stale', () async {
+      when(
+        () => repository.getEntity(agentId),
+      ).thenAnswer((_) async => identity());
+
+      final returned = await withClock(
+        Clock.fixed(testDate),
+        () => service.ensureAgentForRelationship(
+          relationship(title: 'Anna Schmidt'),
+        ),
+      );
+
+      expect(returned.displayName, 'Anna Schmidt');
+      final renamed = verify(
+        () => syncService.upsertEntity(captureAny()),
+      ).captured.whereType<AgentIdentityEntity>().single;
+      expect(renamed.displayName, 'Anna Schmidt');
+      expect(renamed.updatedAt, testDate);
+      // Still the fast path: no re-creation, no duplicate link or tick.
+      verifyNever(
+        () => agentService.createAgent(
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: any(named: 'agentId'),
+        ),
+      );
+      verifyNever(() => syncService.upsertLink(any()));
     });
   });
 

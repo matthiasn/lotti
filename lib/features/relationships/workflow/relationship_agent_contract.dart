@@ -84,6 +84,19 @@ Act in this order of precedence:
 4. Nothing material changed: call no tools and write nothing.
 ''';
 
+/// Header introducing the pending user message appended to an interactive
+/// wake's FACTS block. Shared with the eval suite's wake-message composer,
+/// so the evals measure the exact message shape the workflow sends.
+const relationshipPendingUserMessageHeader = 'PENDING USER MESSAGE:';
+
+/// Instruction appended to the FACTS block when the user explicitly
+/// requested a fresh briefing. Shared with the eval suite for the same
+/// reason as [relationshipPendingUserMessageHeader].
+const relationshipReportRefreshInstruction =
+    'USER EXPLICITLY REQUESTED A FRESH BRIEFING. Call '
+    'update_relationship_report now with the full briefing from the '
+    'authoritative FACTS.';
+
 /// The tools of the relationship-agent surface (plan v2 phase 5 item 1).
 final List<AgentToolDefinition> relationshipAgentTools = [
   const AgentToolDefinition(

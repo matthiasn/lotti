@@ -190,34 +190,37 @@ void main() {
       expect(ad.brief.tagline, 'Last time: her job search.');
     });
 
-    test('rejects a second create in-conversation — only one banner can '
-        'persist per wake, so a repeat must not be confirmed as queued', () async {
-      await strategy.processToolCalls(
-        toolCalls: [
-          _call(
-            name: RelationshipAgentToolNames.createRelationshipAd,
-            args: {
-              'headline': 'Call Anna.',
-              'tone': 'nudge',
-              'animation': 'steady',
-            },
-          ),
-          _call(
-            name: RelationshipAgentToolNames.createRelationshipAd,
-            args: {
-              'headline': 'A second, silently-dropped banner.',
-              'tone': 'nudge',
-              'animation': 'steady',
-            },
-            id: 'call-2',
-          ),
-        ],
-        manager: manager,
-      );
-      expect(strategy.createdAds, hasLength(1));
-      expect(strategy.createdAds.single.brief.headline, 'Call Anna.');
-      expect(lastResponse(), contains('at most once'));
-    });
+    test(
+      'rejects a second create in-conversation — only one banner can '
+      'persist per wake, so a repeat must not be confirmed as queued',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              name: RelationshipAgentToolNames.createRelationshipAd,
+              args: {
+                'headline': 'Call Anna.',
+                'tone': 'nudge',
+                'animation': 'steady',
+              },
+            ),
+            _call(
+              name: RelationshipAgentToolNames.createRelationshipAd,
+              args: {
+                'headline': 'A second, silently-dropped banner.',
+                'tone': 'nudge',
+                'animation': 'steady',
+              },
+              id: 'call-2',
+            ),
+          ],
+          manager: manager,
+        );
+        expect(strategy.createdAds, hasLength(1));
+        expect(strategy.createdAds.single.brief.headline, 'Call Anna.');
+        expect(lastResponse(), contains('at most once'));
+      },
+    );
 
     test('rejects a missing headline or foreign preset', () async {
       await strategy.processToolCalls(

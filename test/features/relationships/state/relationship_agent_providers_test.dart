@@ -447,11 +447,19 @@ void main() {
 
     test('a fully local profile needs no disclosure', () async {
       when(
-        () => relationshipRepository.getRelationshipById(relationshipId),
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
       ).thenAnswer((_) async => person(withProfileId: profileId));
       when(
         () => aiConfigRepository.getConfigById(profileId),
       ).thenAnswer((_) async => profile('model-local'));
+      // The provider lookup the thinking-slot resolution needs: without it
+      // the profile does not resolve at all, and unresolved now THROWS
+      // instead of masquerading as "local, no disclosure".
+      when(
+        () => aiConfigRepository.getConfigById('ollama-provider'),
+      ).thenAnswer((_) async => ollamaProvider);
       when(
         () => aiConfigRepository.getConfigsByType(AiConfigType.model),
       ).thenAnswer((_) async => [model('model-local', 'ollama-provider')]);
@@ -466,7 +474,9 @@ void main() {
 
     test('a cloud-routed profile names its thinking provider', () async {
       when(
-        () => relationshipRepository.getRelationshipById(relationshipId),
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
       ).thenAnswer((_) async => person(withProfileId: profileId));
       when(
         () => aiConfigRepository.getConfigById(profileId),
@@ -505,7 +515,9 @@ void main() {
               )
               as AiConfigInferenceProvider;
       when(
-        () => relationshipRepository.getRelationshipById(relationshipId),
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
       ).thenAnswer((_) async => person());
       when(
         () => agentRepository.getEntity(
@@ -543,7 +555,9 @@ void main() {
     test('a dangling profile id falls through to the default cloud model '
         'and still disclosures — never silently local', () async {
       when(
-        () => relationshipRepository.getRelationshipById(relationshipId),
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
       ).thenAnswer((_) async => person(withProfileId: 'gone'));
       when(
         () => aiConfigRepository.getConfigsByType(AiConfigType.model),
@@ -555,13 +569,54 @@ void main() {
       expect(await disclosure(), 'Melious');
     });
 
-    test('no profile and no resolvable default yields null — the card '
-        'proceeds without naming anyone', () async {
+    test('no profile and no resolvable default THROWS — unresolved is not '
+        'local, and the card must surface the failure instead of '
+        'proceeding without disclosure', () async {
       when(
-        () => relationshipRepository.getRelationshipById(relationshipId),
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
       ).thenAnswer((_) async => person());
 
-      expect(await disclosure(), isNull);
+      await expectLater(disclosure(), throwsStateError);
+    });
+
+    test('the relationship read is UNFILTERED — a hidden private person '
+        'still resolves through their own cloud profile, so the dialog '
+        'names the provider Phase B actually uses instead of falling back '
+        'past the consent surface', () async {
+      // The filtered read hides the person on this device; the unfiltered
+      // one carries the cloud profile Phase B resolves through.
+      when(
+        () => relationshipRepository.getRelationshipById(relationshipId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => person(withProfileId: profileId));
+      when(
+        () => aiConfigRepository.getConfigById(profileId),
+      ).thenAnswer((_) async => profile('model-glm'));
+      when(
+        () => aiConfigRepository.getConfigById('model-glm'),
+      ).thenAnswer((_) async => model('model-glm', 'melious-provider'));
+      when(
+        () => aiConfigRepository.getConfigById('melious-provider'),
+      ).thenAnswer((_) async => meliousProvider);
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model('model-glm', 'melious-provider')]);
+      when(
+        () => aiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [meliousProvider]);
+
+      expect(await disclosure(), 'Melious');
+      verifyNever(
+        () => relationshipRepository.getRelationshipById(any()),
+      );
     });
   });
 }

@@ -30,7 +30,11 @@ typedef RelationshipCadenceDerivation = ({
   RelationshipCadenceStatus status,
   RelationshipCadenceStatus? previousStatus,
   int cadenceDays,
+
+  /// UTC — see the normalization note in `deriveCadenceFacts`.
   DateTime referenceAt,
+
+  /// UTC — see the normalization note in `deriveCadenceFacts`.
   DateTime? lastCheckInAt,
 
   /// UTC calendar day the cadence lapses, as a midnight-UTC instant.
@@ -271,14 +275,20 @@ class RelationshipAgentPhaseA {
         : RelationshipCadenceStatus.due;
 
     final existing = await _repository.getEntity(relationshipHealthId(agentId));
+    // UTC instants, normalized HERE rather than at the write site: the
+    // register row rides sync, and a local instant serializes without an
+    // offset (`toIso8601String` drops the zone), so a peer would parse a
+    // shifted instant. Normalizing in the derivation keeps `_upsertRegister`'s
+    // unchanged-check comparing like against like — a round-tripped row and a
+    // fresh derivation carry the same isUtc flag.
     return (
       status: status,
       previousStatus: existing is RelationshipHealthEntity
           ? existing.status
           : null,
       cadenceDays: cadenceDays,
-      referenceAt: referenceAt,
-      lastCheckInAt: lastCheckInAt,
+      referenceAt: referenceAt.toUtc(),
+      lastCheckInAt: lastCheckInAt?.toUtc(),
       dueDayUtc: dueDayUtc,
       dueDayKey: const GoalWindow.day().periodKey(dueDayUtc),
     );

@@ -793,6 +793,95 @@ void main() {
     expect(upserts.whereType<AgentReportHeadEntity>(), isEmpty);
   });
 
+  test('the persistence fence honors REVOKED consent: un-marking important '
+      'while the model was thinking silences this very wake — no report, '
+      'no head, no banner, not just quiet from the next tick on', () async {
+    stubGlmResolution();
+    var reads = 0;
+    when(
+      () =>
+          relationshipRepository.getRelationshipByIdUnfiltered(relationshipId),
+    ).thenAnswer((_) async {
+      reads++;
+      // Important for the pre-inference eligibility gate, un-marked for
+      // the in-transaction fence re-read.
+      return reads <= 1 ? relationship() : relationship(important: false);
+    });
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0,
+          strategy,
+        }) async {
+          await strategy!.processToolCalls(
+            toolCalls: [
+              toolCall(
+                RelationshipAgentToolNames.updateRelationshipReport,
+                briefingArgs(),
+              ),
+              toolCall(
+                RelationshipAgentToolNames.createRelationshipAd,
+                adArgs(),
+                id: 'call-2',
+              ),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run(
+      tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+    );
+    expect(result.success, isTrue);
+    expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+    expect(upserts.whereType<AgentReportHeadEntity>(), isEmpty);
+    expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+  });
+
+  test('the consent fence exempts the explicit Brief me — the user asked '
+      'directly, so the briefing publishes even for an un-marked '
+      'person', () async {
+    stubGlmResolution();
+    when(
+      () =>
+          relationshipRepository.getRelationshipByIdUnfiltered(relationshipId),
+    ).thenAnswer((_) async => relationship(important: false));
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0,
+          strategy,
+        }) async {
+          await strategy!.processToolCalls(
+            toolCalls: [
+              toolCall(
+                RelationshipAgentToolNames.updateRelationshipReport,
+                briefingArgs(),
+              ),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run(tokens: {relationshipReportRefreshTriggerToken});
+    expect(result.success, isTrue);
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+  });
+
   test('an interactive turn persists the visible reply under its stable '
       'run-scoped carrier id', () async {
     stubGlmResolution();

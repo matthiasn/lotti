@@ -38,9 +38,12 @@ class RelationshipAgentService {
   /// important after the cadence hour must not wait a day for a register).
   ///
   /// Idempotent: an existing identity — whatever its lifecycle — is
-  /// returned as-is. Un-marking `important` deliberately does NOT touch
-  /// the agent: Phase A gates on eligibility every tick, so the switch is
-  /// instant in both directions with no re-wiring.
+  /// preserved, with one refresh: a renamed person's title is written
+  /// through to `displayName` (the goal revision-service precedent), so
+  /// the chat page never stays labeled with a stale name. Un-marking
+  /// `important` deliberately does NOT touch the agent: Phase A gates on
+  /// eligibility every tick, so the switch is instant in both directions
+  /// with no re-wiring.
   Future<AgentIdentityEntity> ensureAgentForRelationship(
     RelationshipEntry relationship,
   ) async {
@@ -52,7 +55,15 @@ class RelationshipAgentService {
       // Inside the transaction, not a preflight: two concurrent marks must
       // serialize here so the loser sees the winner's identity.
       final existing = await _repository.getEntity(agentId);
-      if (existing is AgentIdentityEntity) return existing;
+      if (existing is AgentIdentityEntity) {
+        if (existing.displayName == relationship.data.title) return existing;
+        final renamed = existing.copyWith(
+          displayName: relationship.data.title,
+          updatedAt: now,
+        );
+        await _syncService.upsertEntity(renamed);
+        return renamed;
+      }
       final created = await _agentService.createAgent(
         kind: AgentKinds.relationshipAgent,
         displayName: relationship.data.title,
