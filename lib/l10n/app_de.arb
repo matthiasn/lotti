@@ -1405,8 +1405,12 @@
   "checkInSentimentLabel": "Wie hat es sich angefühlt?",
   "checkInSentimentNeutral": "Neutral",
   "checkInSentimentStrained": "Angespannt",
+  "checkInSpeakButton": "Check-in sprechen",
   "checkInTopicsHint": "Kommagetrennt, z. B. Arbeit, Reisen",
   "checkInTopicsLabel": "Themen",
+  "checkInTranscribingLabel": "Wird transkribiert…",
+  "checkInTranscriptFailed": "Es kam keine Transkription zurück. Du kannst es auch tippen.",
+  "checkInTranscriptUnavailable": "Transkription ist für diese Person nicht eingerichtet. Füge ein Audiomodell hinzu und aktiviere die automatische Inferenz für ihre Kategorie, oder tippe das Check-in.",
   "checklistAddItem": "Neues Element hinzufügen",
   "checklistAiConfidenceLabel": "Konfidenz: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3574,6 +3578,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Check-in-Erinnerungen, Gewohnheits-Erinnerungen und Hinweise von Lotti.",
+  "notificationChannelRemindersName": "Erinnerungen",
   "notificationInboxDismiss": "Mitteilung verwerfen",
   "notificationInboxEmpty": "Du bist auf dem neuesten Stand.",
   "notificationInboxError": "Mitteilungen konnten nicht geladen werden.",
@@ -4003,6 +4009,10 @@
   "referenceImageSelectionSubtitle": "Wähle bis zu {maxImages} Bilder, um den visuellen Stil der KI zu leiten",
   "referenceImageSelectionTitle": "Referenzbilder auswählen",
   "referenceImageSkip": "Überspringen",
+  "relationshipActionCall": "Anrufen",
+  "relationshipActionEmail": "E-Mail",
+  "relationshipActionFailed": "Auf diesem Gerät kann das nichts öffnen",
+  "relationshipActionMessage": "Nachricht",
   "relationshipAddChannelButton": "Kontaktweg hinzufügen",
   "relationshipBannerSemanticLabel": "Beziehungs-Banner für {personName}",
   "relationshipBriefingDisclosureBody": "Das Briefing läuft über {provider}. Notizen zu dieser Person werden dorthin zur Verarbeitung gesendet.",
@@ -4022,8 +4032,21 @@
   "relationshipCadenceWeekly": "Wöchentlich",
   "relationshipChatTooltip": "Über diese Person chatten",
   "relationshipChatUnavailable": "Noch kein Agent — markiere diese Person zuerst als wichtig.",
+  "relationshipCheckInReminderBody": "Ein guter Moment, dich zu melden.",
+  "relationshipCheckInReminderTitle": "Bei {name} melden?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Kontaktdaten",
+  "relationshipContactLinked": "Kontaktdaten übernommen",
+  "relationshipContactLinkFailed": "Kontaktdaten konnten nicht gespeichert werden",
+  "relationshipContactMissing": "Dieser Kontakt ist nicht auf diesem Gerät",
+  "relationshipContactNoChanges": "Nichts Neues zu übernehmen",
   "relationshipCreateTitle": "Person hinzufügen",
   "relationshipDeleteConfirmMessage": "Auch alle Check-ins werden gelöscht. Das lässt sich nicht rückgängig machen.",
   "relationshipDeleteConfirmTitle": "{name} löschen?",
@@ -4036,9 +4059,26 @@
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Angespannt",
   "relationshipHealthThriving": "Blüht auf",
+  "relationshipImportAction": "Aus Kontakten importieren",
+  "relationshipImportAdded": "{count, plural, =1{1 Person hinzugefügt} other{{count} Personen hinzugefügt}}",
   "relationshipImportantDescription": "Erinnere mich, in Kontakt zu bleiben",
   "relationshipImportantLabel": "Wichtig",
+  "relationshipImportConfirmButton": "{count, plural, =1{1 Person hinzufügen} other{{count} Personen hinzufügen}}",
+  "relationshipImportEmpty": "Keine Kontakte auf diesem Gerät",
+  "relationshipImportFailed": "Es konnte niemand hinzugefügt werden",
+  "relationshipImportGrantButton": "Zugriff erlauben",
+  "relationshipImportNoMatches": "Keine Kontakte passen zu deiner Suche",
+  "relationshipImportOpenSettings": "Einstellungen öffnen",
+  "relationshipImportPermissionBody": "Lotti liest deine Kontakte nur, solange diese Auswahl offen ist, und übernimmt nur die Personen, die du auswählst.",
+  "relationshipImportRetry": "Erneut versuchen",
+  "relationshipImportReviewButton": "{count, plural, =1{1 prüfen} other{{count} prüfen}}",
+  "relationshipImportReviewTitle": "Bevor du sie hinzufügst",
+  "relationshipImportSearchHint": "Kontakte durchsuchen",
+  "relationshipImportSettingsBody": "Der Kontaktzugriff ist deaktiviert. Aktiviere ihn in den Systemeinstellungen, um Personen zu importieren.",
+  "relationshipImportTitle": "Personen hinzufügen",
+  "relationshipImportUnsupported": "Der Kontaktimport ist auf Smartphones und Tablets verfügbar. Trag die Kontaktdaten hier von Hand ein.",
   "relationshipLastCheckInLabel": "Letzter Check-in {date}",
+  "relationshipLinkContact": "Kontakt verknüpfen",
   "relationshipLinkedTasksLabel": "Aufgaben",
   "relationshipLinkTaskButton": "Aufgabe verknüpfen",
   "relationshipLogCheckIn": "Check-in erfassen",
@@ -4048,6 +4088,19 @@
   "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
   "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
+  "relationshipPostCallBody": "Du hast dich gerade gemeldet. Willst du gleich einen Check-in festhalten?",
+  "relationshipPostCallConfirm": "Check-in festhalten",
+  "relationshipPostCallDismiss": "Jetzt nicht",
+  "relationshipPostCallTitle": "Wie ist es mit {name} gelaufen?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Anderen Kontakt verknüpfen",
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
   "relationshipsPageTitle": "Menschen",
   "relationshipStatusActive": "Aktiv",
@@ -4055,6 +4108,7 @@
   "relationshipStatusDormant": "Ruhend",
   "relationshipStatusFieldLabel": "Status",
   "relationshipTrackingSinceLabel": "Erfasst seit {date}",
+  "relationshipUpdateFromContact": "Aus Kontakt aktualisieren",
   "saveButton": "Speichern",
   "saveButtonLabel": "Speichern",
   "saveFailedRetry": "Das wurde nicht gespeichert — bitte versuch es noch einmal.",

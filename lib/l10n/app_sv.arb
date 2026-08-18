@@ -1583,8 +1583,12 @@
   "checkInSentimentLabel": "Hur kändes det?",
   "checkInSentimentNeutral": "Neutralt",
   "checkInSentimentStrained": "Ansträngt",
+  "checkInSpeakButton": "Tala in avstämning",
   "checkInTopicsHint": "Kommaseparerade, t.ex. jobb, resor",
   "checkInTopicsLabel": "Ämnen",
+  "checkInTranscribingLabel": "Transkriberar…",
+  "checkInTranscriptFailed": "Ingen transkription kom tillbaka. Du kan skriva den själv.",
+  "checkInTranscriptUnavailable": "Transkription är inte uppsatt för den här personen. Lägg till en ljudmodell och slå på automatisk inferens för deras kategori, eller skriv avstämningen.",
   "checklistAddItem": "Lägg till ett nytt föremål",
   "checklistAiConfidenceLabel": "Självförtroende: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3983,6 +3987,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Påminnelser om att höra av dig, vanepåminnelser och aviseringar från Lotti.",
+  "notificationChannelRemindersName": "Påminnelser",
   "notificationInboxDismiss": "Avvisande meddelande",
   "notificationInboxEmpty": "Du är helt ikapp.",
   "notificationInboxError": "Kunde inte ladda notiser.",
@@ -4516,6 +4522,10 @@
   "referenceImageSelectionSubtitle": "Välj upp till {maxImages} bilder för att styra AI:ns visuella stil",
   "referenceImageSelectionTitle": "Välj referensbilder",
   "referenceImageSkip": "Hoppa över",
+  "relationshipActionCall": "Ring",
+  "relationshipActionEmail": "E-post",
+  "relationshipActionFailed": "Inget på den här enheten kan öppna det",
+  "relationshipActionMessage": "Meddelande",
   "relationshipAddChannelButton": "Lägg till kontaktuppgift",
   "relationshipBannerSemanticLabel": "Relationsbanner för {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen körs på {provider}. Anteckningar om personen skickas dit för bearbetning.",
@@ -4535,8 +4545,21 @@
   "relationshipCadenceWeekly": "Varje vecka",
   "relationshipChatTooltip": "Chatta om den här personen",
   "relationshipChatUnavailable": "Ingen agent än — markera personen som viktig först.",
+  "relationshipCheckInReminderBody": "Ett bra tillfälle att höra av dig.",
+  "relationshipCheckInReminderTitle": "Hör av dig till {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Avstämningar",
   "relationshipContactChannelsLabel": "Kontaktuppgifter",
+  "relationshipContactLinked": "Kontaktuppgifter kopierade",
+  "relationshipContactLinkFailed": "Kunde inte spara kontaktuppgifterna",
+  "relationshipContactMissing": "Den kontakten finns inte på den här enheten",
+  "relationshipContactNoChanges": "Inget nytt att kopiera",
   "relationshipCreateTitle": "Lägg till person",
   "relationshipDeleteConfirmMessage": "Alla avstämningar tas också bort. Det går inte att ångra.",
   "relationshipDeleteConfirmTitle": "Ta bort {name}?",
@@ -4549,9 +4572,26 @@
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Ansträngd",
   "relationshipHealthThriving": "Blomstrar",
+  "relationshipImportAction": "Importera från kontakter",
+  "relationshipImportAdded": "{count, plural, =1{1 person tillagd} other{{count} personer tillagda}}",
   "relationshipImportantDescription": "Påminn mig om att hålla kontakten",
   "relationshipImportantLabel": "Viktig",
+  "relationshipImportConfirmButton": "{count, plural, =1{Lägg till 1 person} other{Lägg till {count} personer}}",
+  "relationshipImportEmpty": "Inga kontakter på den här enheten",
+  "relationshipImportFailed": "Kunde inte lägga till någon",
+  "relationshipImportGrantButton": "Tillåt åtkomst",
+  "relationshipImportNoMatches": "Inga kontakter matchar din sökning",
+  "relationshipImportOpenSettings": "Öppna inställningar",
+  "relationshipImportPermissionBody": "Lotti läser dina kontakter bara medan den här väljaren är öppen och kopierar bara de personer du väljer.",
+  "relationshipImportRetry": "Försök igen",
+  "relationshipImportReviewButton": "{count, plural, =1{Granska 1} other{Granska {count}}}",
+  "relationshipImportReviewTitle": "Innan du lägger till dem",
+  "relationshipImportSearchHint": "Sök kontakter",
+  "relationshipImportSettingsBody": "Åtkomst till kontakter är avstängd. Slå på den i systeminställningarna för att importera personer.",
+  "relationshipImportTitle": "Lägg till personer",
+  "relationshipImportUnsupported": "Kontaktimport finns på telefoner och surfplattor. Lägg till kontaktuppgifter för hand här.",
   "relationshipLastCheckInLabel": "Senaste avstämning {date}",
+  "relationshipLinkContact": "Länka kontakt",
   "relationshipLinkedTasksLabel": "Uppgifter",
   "relationshipLinkTaskButton": "Länka uppgift",
   "relationshipLogCheckIn": "Logga avstämning",
@@ -4561,6 +4601,19 @@
   "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
   "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
   "relationshipNotFound": "Den här personen följs inte längre.",
+  "relationshipPostCallBody": "Du hörde precis av dig. Vill du logga en avstämning medan det är färskt?",
+  "relationshipPostCallConfirm": "Logga avstämning",
+  "relationshipPostCallDismiss": "Inte nu",
+  "relationshipPostCallTitle": "Hur gick det med {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Länka en annan kontakt",
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",
@@ -4568,6 +4621,7 @@
   "relationshipStatusDormant": "Vilande",
   "relationshipStatusFieldLabel": "Status",
   "relationshipTrackingSinceLabel": "Följs sedan {date}",
+  "relationshipUpdateFromContact": "Uppdatera från kontakt",
   "saveButton": "Spara",
   "saveButtonLabel": "Spara",
   "saveFailedRetry": "Det sparades inte — försök igen.",

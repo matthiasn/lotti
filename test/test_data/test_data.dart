@@ -6,6 +6,7 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -313,6 +314,29 @@ final testTask = Task(
     starred: true,
   ),
   entryText: const EntryText(plainText: '- test task text'),
+);
+
+/// A person the user tracks — the subject kind that carries an agent, a
+/// profile and a category without being a task. Shared so the automation and
+/// speech suites can exercise the non-task branch against a real entity
+/// rather than a hand-rolled double.
+final testRelationship = RelationshipEntry(
+  data: RelationshipData(
+    title: 'Anna',
+    checkInCadenceDays: 14,
+    status: RelationshipStatus.active(
+      id: 'relationship_status_id',
+      createdAt: DateTime(2026, 8, 1, 9),
+      utcOffset: 60,
+    ),
+  ),
+  meta: Metadata(
+    id: 'b2f3d0f8-1d7a-4e1f-9c4a-3f0b8f2a5d61',
+    createdAt: DateTime(2026, 8, 1, 9),
+    dateFrom: DateTime(2026, 8, 1, 9),
+    dateTo: DateTime(2026, 8, 1, 9),
+    updatedAt: DateTime(2026, 8, 1, 9),
+  ),
 );
 
 final testWeightEntry = QuantitativeEntry(

@@ -43,6 +43,7 @@ import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -137,6 +138,7 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/features/relationships/service/relationship_reminder_service.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
@@ -1117,6 +1119,10 @@ class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
 
+/// Stub for the kind-agnostic agent lookup. Stub the call itself:
+/// `when(() => mock('subject-id')).thenAnswer((_) async => identity)`.
+class MockSubjectAgentResolver extends Mock implements SubjectAgentResolver {}
+
 class MockEventAgentService extends Mock implements EventAgentService {}
 
 class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
@@ -1267,6 +1273,9 @@ class MockRelationshipAgentWorkflow extends Mock
 
 class MockRelationshipChatService extends Mock
     implements RelationshipChatService {}
+
+class MockRelationshipReminderService extends Mock
+    implements RelationshipReminderService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

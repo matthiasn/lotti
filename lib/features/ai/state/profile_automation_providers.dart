@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -21,21 +21,33 @@ ProfileResolver profileResolver(Ref ref) {
   );
 }
 
+/// The `profileId` a subject entity carries in its own payload.
+///
+/// Every entity kind that can own an agent also inherits a profile from its
+/// category at creation, and each stores it in its own `data`. Reading only
+/// the task variant is what made a spoken check-in resolve no profile even
+/// when the person had one.
+String? subjectProfileIdOf(JournalEntity? entity) => switch (entity) {
+  final Task task => task.data.profileId,
+  final ProjectEntry project => project.data.profileId,
+  final RelationshipEntry relationship => relationship.data.profileId,
+  _ => null,
+};
+
 final profileAutomationResolverProvider = Provider<ProfileAutomationResolver>(
   profileAutomationResolver,
   name: 'profileAutomationResolverProvider',
 );
 ProfileAutomationResolver profileAutomationResolver(Ref ref) {
   return ProfileAutomationResolver(
-    taskAgentService: ref.watch(taskAgentServiceProvider),
+    subjectAgentLookup: ref.watch(subjectAgentResolverProvider).call,
     templateService: ref.watch(agentTemplateServiceProvider),
     profileResolver: ref.watch(profileResolverProvider),
-    taskProfileLookup: (taskId) async {
+    subjectProfileLookup: (subjectId) async {
       final entity = await ref
           .read(journalDbProvider)
-          .journalEntityById(taskId);
-      if (entity is Task) return entity.data.profileId;
-      return null;
+          .journalEntityById(subjectId);
+      return subjectProfileIdOf(entity);
     },
     categoryProfileLookup: (categoryId) async {
       final category = await ref
@@ -43,10 +55,10 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
           .getCategoryById(categoryId);
       return category?.defaultProfileId;
     },
-    taskCategoryLookup: (taskId) async {
+    subjectCategoryLookup: (subjectId) async {
       final entity = await ref
           .read(journalDbProvider)
-          .journalEntityById(taskId);
+          .journalEntityById(subjectId);
       return entity?.meta.categoryId;
     },
   );
@@ -89,9 +101,9 @@ ProfileAutomationService profileAutomationService(Ref ref) {
   return ProfileAutomationService(
     resolver: ref.watch(profileAutomationResolverProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-    categoryAutomationLookup: (taskId) async {
+    categoryAutomationLookup: (subjectId) async {
       final db = ref.read(journalDbProvider);
-      final entity = await db.journalEntityById(taskId);
+      final entity = await db.journalEntityById(subjectId);
       final categoryId = entity?.meta.categoryId;
       // No entry or no category means nothing opted in — automation stays off
       // rather than defaulting to "run it".

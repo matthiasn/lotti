@@ -1405,8 +1405,12 @@
   "checkInSentimentLabel": "¿Cómo te sentiste?",
   "checkInSentimentNeutral": "Neutral",
   "checkInSentimentStrained": "Tenso",
+  "checkInSpeakButton": "Dictar el contacto",
   "checkInTopicsHint": "Separados por comas, p. ej. trabajo, viajes",
   "checkInTopicsLabel": "Temas",
+  "checkInTranscribingLabel": "Transcribiendo…",
+  "checkInTranscriptFailed": "No llegó ninguna transcripción. Puedes escribirlo tú.",
+  "checkInTranscriptUnavailable": "La transcripción no está configurada para esta persona. Añade un modelo de audio y activa la inferencia automática en su categoría, o escribe el registro.",
   "checklistAddItem": "Agregar un nuevo elemento",
   "checklistAiConfidenceLabel": "Confianza: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3574,6 +3578,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Recordatorios de contacto, recordatorios de hábitos y avisos de Lotti.",
+  "notificationChannelRemindersName": "Recordatorios",
   "notificationInboxDismiss": "Descartar notificación",
   "notificationInboxEmpty": "Estás al día.",
   "notificationInboxError": "No se pudieron cargar las notificaciones.",
@@ -4003,6 +4009,10 @@
   "referenceImageSelectionSubtitle": "Elige hasta {maxImages} imágenes para guiar el estilo visual de la IA",
   "referenceImageSelectionTitle": "Seleccionar imágenes de referencia",
   "referenceImageSkip": "Omitir",
+  "relationshipActionCall": "Llamar",
+  "relationshipActionEmail": "Correo",
+  "relationshipActionFailed": "Nada en este dispositivo puede abrir eso",
+  "relationshipActionMessage": "Mensaje",
   "relationshipAddChannelButton": "Añadir medio de contacto",
   "relationshipBannerSemanticLabel": "Banner de relación para {personName}",
   "relationshipBriefingDisclosureBody": "El informe se genera en {provider}. Las notas sobre esta persona se enviarán allí para su procesamiento.",
@@ -4022,8 +4032,21 @@
   "relationshipCadenceWeekly": "Semanal",
   "relationshipChatTooltip": "Chatear sobre esta persona",
   "relationshipChatUnavailable": "Aún no hay agente: marca primero a esta persona como importante.",
+  "relationshipCheckInReminderBody": "Un buen momento para retomar el contacto.",
+  "relationshipCheckInReminderTitle": "¿Hablas con {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Registros",
   "relationshipContactChannelsLabel": "Datos de contacto",
+  "relationshipContactLinked": "Datos de contacto copiados",
+  "relationshipContactLinkFailed": "No se pudieron guardar los datos de contacto",
+  "relationshipContactMissing": "Ese contacto no está en este dispositivo",
+  "relationshipContactNoChanges": "Nada nuevo que copiar",
   "relationshipCreateTitle": "Añadir persona",
   "relationshipDeleteConfirmMessage": "También se eliminarán todos sus registros. Esta acción no se puede deshacer.",
   "relationshipDeleteConfirmTitle": "¿Eliminar a {name}?",
@@ -4036,9 +4059,26 @@
   "relationshipHealthSteady": "Estable",
   "relationshipHealthStrained": "Tensa",
   "relationshipHealthThriving": "Floreciente",
+  "relationshipImportAction": "Importar desde contactos",
+  "relationshipImportAdded": "{count, plural, =1{1 persona añadida} other{{count} personas añadidas}}",
   "relationshipImportantDescription": "Recuérdame mantener el contacto",
   "relationshipImportantLabel": "Importante",
+  "relationshipImportConfirmButton": "{count, plural, =1{Añadir 1 persona} other{Añadir {count} personas}}",
+  "relationshipImportEmpty": "No hay contactos en este dispositivo",
+  "relationshipImportFailed": "No se pudo añadir a nadie",
+  "relationshipImportGrantButton": "Permitir acceso",
+  "relationshipImportNoMatches": "Ningún contacto coincide con tu búsqueda",
+  "relationshipImportOpenSettings": "Abrir ajustes",
+  "relationshipImportPermissionBody": "Lotti lee tus contactos solo mientras este selector está abierto y copia solo las personas que elijas.",
+  "relationshipImportRetry": "Reintentar",
+  "relationshipImportReviewButton": "{count, plural, =1{Revisar 1} other{Revisar {count}}}",
+  "relationshipImportReviewTitle": "Antes de añadirlas",
+  "relationshipImportSearchHint": "Buscar contactos",
+  "relationshipImportSettingsBody": "El acceso a los contactos está desactivado. Actívalo en los ajustes del sistema para importar personas.",
+  "relationshipImportTitle": "Añadir personas",
+  "relationshipImportUnsupported": "La importación de contactos está disponible en teléfonos y tabletas. Añade aquí los datos a mano.",
   "relationshipLastCheckInLabel": "Último registro {date}",
+  "relationshipLinkContact": "Vincular contacto",
   "relationshipLinkedTasksLabel": "Tareas",
   "relationshipLinkTaskButton": "Vincular tarea",
   "relationshipLogCheckIn": "Registrar contacto",
@@ -4048,6 +4088,19 @@
   "relationshipNoCheckIns": "Aún no hay registros: añade uno tras vuestra próxima conversación.",
   "relationshipNoLinkedTasks": "Aún no hay tareas vinculadas.",
   "relationshipNotFound": "Esta persona ya no está en tu lista.",
+  "relationshipPostCallBody": "Acabas de contactar. ¿Anotas un check-in mientras lo recuerdas?",
+  "relationshipPostCallConfirm": "Anotar check-in",
+  "relationshipPostCallDismiss": "Ahora no",
+  "relationshipPostCallTitle": "¿Qué tal fue con {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Vincular otro contacto",
   "relationshipsEmptyState": "Añade a las personas de las que quieres estar cerca.",
   "relationshipsPageTitle": "Personas",
   "relationshipStatusActive": "Activa",
@@ -4055,6 +4108,7 @@
   "relationshipStatusDormant": "En reposo",
   "relationshipStatusFieldLabel": "Estado",
   "relationshipTrackingSinceLabel": "Seguimiento desde {date}",
+  "relationshipUpdateFromContact": "Actualizar desde el contacto",
   "saveButton": "Guardar",
   "saveButtonLabel": "Guardar",
   "saveFailedRetry": "Eso no se guardó; inténtalo de nuevo.",

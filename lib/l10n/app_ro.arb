@@ -1405,8 +1405,12 @@
   "checkInSentimentLabel": "Cum a fost?",
   "checkInSentimentNeutral": "Neutru",
   "checkInSentimentStrained": "Tensionat",
+  "checkInSpeakButton": "Dictați contactul",
   "checkInTopicsHint": "Separate prin virgulă, de ex. muncă, călătorii",
   "checkInTopicsLabel": "Subiecte",
+  "checkInTranscribingLabel": "Se transcrie…",
+  "checkInTranscriptFailed": "Nu a venit nicio transcriere. O puteți scrie dvs.",
+  "checkInTranscriptUnavailable": "Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.",
   "checklistAddItem": "Adăugați un element nou",
   "checklistAiConfidenceLabel": "Încredere: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3574,6 +3578,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Memento-uri pentru contact, memento-uri pentru obiceiuri și notificări de la Lotti.",
+  "notificationChannelRemindersName": "Memento-uri",
   "notificationInboxDismiss": "Închideți notificarea",
   "notificationInboxEmpty": "Sunteți la zi.",
   "notificationInboxError": "Nu s-au putut încărca notificările.",
@@ -4003,6 +4009,10 @@
   "referenceImageSelectionSubtitle": "Alegeți până la {maxImages} imagini pentru a ghida stilul vizual al IA",
   "referenceImageSelectionTitle": "Selectați imagini de referință",
   "referenceImageSkip": "Săriți peste",
+  "relationshipActionCall": "Apelați",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nimic de pe acest dispozitiv nu poate deschide acest lucru",
+  "relationshipActionMessage": "Mesaj",
   "relationshipAddChannelButton": "Adăugați o modalitate de contact",
   "relationshipBannerSemanticLabel": "Banner de relație pentru {personName}",
   "relationshipBriefingDisclosureBody": "Rezumatul rulează pe {provider}. Notițele despre această persoană vor fi trimise acolo pentru procesare.",
@@ -4022,8 +4032,21 @@
   "relationshipCadenceWeekly": "Săptămânal",
   "relationshipChatTooltip": "Discutați despre această persoană",
   "relationshipChatUnavailable": "Niciun agent încă — marcați mai întâi această persoană ca importantă.",
+  "relationshipCheckInReminderBody": "Un moment bun pentru a lua legătura.",
+  "relationshipCheckInReminderTitle": "Luați legătura cu {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Înregistrări",
   "relationshipContactChannelsLabel": "Date de contact",
+  "relationshipContactLinked": "Datele de contact au fost copiate",
+  "relationshipContactLinkFailed": "Datele de contact nu au putut fi salvate",
+  "relationshipContactMissing": "Acel contact nu se află pe acest dispozitiv",
+  "relationshipContactNoChanges": "Nu este nimic nou de copiat",
   "relationshipCreateTitle": "Adăugați o persoană",
   "relationshipDeleteConfirmMessage": "Se vor șterge și toate înregistrările asociate. Acțiunea nu poate fi anulată.",
   "relationshipDeleteConfirmTitle": "Ștergeți {name}?",
@@ -4036,9 +4059,26 @@
   "relationshipHealthSteady": "Stabilă",
   "relationshipHealthStrained": "Tensionată",
   "relationshipHealthThriving": "Înfloritoare",
+  "relationshipImportAction": "Importați din contacte",
+  "relationshipImportAdded": "{count, plural, =1{1 persoană adăugată} few{{count} persoane adăugate} other{{count} de persoane adăugate}}",
   "relationshipImportantDescription": "Amintiți-mi să păstrez legătura",
   "relationshipImportantLabel": "Important",
+  "relationshipImportConfirmButton": "{count, plural, =1{Adăugați 1 persoană} few{Adăugați {count} persoane} other{Adăugați {count} de persoane}}",
+  "relationshipImportEmpty": "Niciun contact pe acest dispozitiv",
+  "relationshipImportFailed": "Nu a putut fi adăugată nicio persoană",
+  "relationshipImportGrantButton": "Permiteți accesul",
+  "relationshipImportNoMatches": "Niciun contact nu corespunde căutării dumneavoastră",
+  "relationshipImportOpenSettings": "Deschideți setările",
+  "relationshipImportPermissionBody": "Lotti vă citește contactele doar cât timp acest selector este deschis și copiază doar persoanele pe care le alegeți.",
+  "relationshipImportRetry": "Încercați din nou",
+  "relationshipImportReviewButton": "{count, plural, =1{Verificați 1} few{Verificați {count}} other{Verificați {count}}}",
+  "relationshipImportReviewTitle": "Înainte de a le adăuga",
+  "relationshipImportSearchHint": "Căutați contacte",
+  "relationshipImportSettingsBody": "Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.",
+  "relationshipImportTitle": "Adăugați persoane",
+  "relationshipImportUnsupported": "Importul de contacte este disponibil pe telefoane și tablete. Adăugați aici datele de contact manual.",
   "relationshipLastCheckInLabel": "Ultima înregistrare {date}",
+  "relationshipLinkContact": "Asociați un contact",
   "relationshipLinkedTasksLabel": "Sarcini",
   "relationshipLinkTaskButton": "Asociați o sarcină",
   "relationshipLogCheckIn": "Înregistrați un contact",
@@ -4048,6 +4088,19 @@
   "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
   "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
+  "relationshipPostCallBody": "Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?",
+  "relationshipPostCallConfirm": "Notați check-in",
+  "relationshipPostCallDismiss": "Nu acum",
+  "relationshipPostCallTitle": "Cum a fost cu {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Asociați alt contact",
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
   "relationshipsPageTitle": "Persoane",
   "relationshipStatusActive": "Activă",
@@ -4055,6 +4108,7 @@
   "relationshipStatusDormant": "Inactivă",
   "relationshipStatusFieldLabel": "Stare",
   "relationshipTrackingSinceLabel": "Urmărire din {date}",
+  "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",
   "saveButtonLabel": "Salvați",
   "saveFailedRetry": "Nu s-a salvat — vă rugăm să încercați din nou.",

@@ -7,6 +7,40 @@
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Notifications. POST_NOTIFICATIONS is the Android 13+ runtime
+         permission, requested only after the in-app notifications flag is on.
+         RECEIVE_BOOT_COMPLETED lets the receiver below restore reminders a
+         reboot would otherwise silently drop; a check-in reminder can be armed
+         weeks ahead, so surviving a restart is the whole point.
+         SCHEDULE_EXACT_ALARM is deliberately NOT requested — Lotti schedules
+         with an inexact mode (see NotificationService). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Read-only, and requested at picker time rather than at launch: the
+         relationship contact picker and multi-select import copy channels
+         from the contacts the user chooses (ADR 0041). Lotti never writes
+         to the address book, so WRITE_CONTACTS is deliberately absent. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Android 11+ package visibility for the relationship quick actions.
+         The action must be VIEW, not DIAL/SENDTO: url_launcher_android
+         resolves both canLaunchUrl and launchUrl through an ACTION_VIEW
+         intent, so a DIAL/SENDTO declaration would leave canLaunchUrl
+         reporting false and every quick action disabled. The schemes match
+         contactChannelUri exactly — a test pins that correspondence. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="sms" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
    <application
         android:label="Lotti"
         android:requestLegacyExternalStorage="true"
@@ -37,6 +71,24 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- flutter_local_notifications. The first receiver is what actually
+             posts a notification when its scheduled time arrives; without it
+             zonedSchedule accepts the alarm and nothing is ever shown. The
+             second re-registers pending alarms after a reboot or an app
+             update, both of which clear them at the OS level. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -99,6 +99,42 @@ void main() {
     expect(entries.map((e) => e.id).toList(), ['due-row', 'upcoming-row']);
   });
 
+  test(
+    'a check-in reminder stays out of the inbox until its due day',
+    () async {
+      // Reminders are armed a whole cadence ahead so the OS alarm exists
+      // before the app closes. Surfacing them on arrival — the way task rows
+      // are surfaced — would leave "Check in with Anna?" in the bell for the
+      // entire cadence.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await db.upsertNotification(
+        _checkIn(id: 'armed-ahead', scheduledFor: _farFuture),
+      );
+      await db.upsertNotification(
+        _notification(id: 'upcoming-task', scheduledFor: _farFuture),
+      );
+
+      final entries = await container.read(inboxNotificationsProvider.future);
+
+      expect(entries.map((e) => e.id).toList(), ['upcoming-task']);
+    },
+  );
+
+  test('a check-in reminder appears once it is due', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await db.upsertNotification(
+      _checkIn(id: 'now-due', scheduledFor: _farPast),
+    );
+
+    final entries = await container.read(inboxNotificationsProvider.future);
+
+    expect(entries.map((e) => e.id).toList(), ['now-due']);
+  });
+
   test('unseen count collapses duplicate task-suggestion rows', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -406,6 +442,26 @@ void main() {
       },
     );
   });
+}
+
+NotificationEntity _checkIn({
+  required String id,
+  required DateTime scheduledFor,
+}) {
+  final createdAt = DateTime.utc(2026, 5, 17);
+  return NotificationEntity.relationshipCheckIn(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      scheduledFor: scheduledFor,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedRelationshipId: 'rel-$id',
+    title: 'Check in with Anna?',
+    body: 'A good moment to reach out.',
+  );
 }
 
 NotificationEntity _notification({

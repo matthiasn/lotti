@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -14,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -70,6 +75,111 @@ void main() {
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         ],
       );
+
+  // Every other test here pumps `RelationshipForm` bare, which is why the
+  // defect below survived: the form was fine, the modal it lives in was not.
+  // Same shape as the check-in capture sheet — see its sibling group.
+  group('inside the real modal', () {
+    RelationshipEntry person() => RelationshipEntry(
+      meta: Metadata(
+        id: 'rel-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+      data: RelationshipData(
+        title: 'Anna',
+        nickname: 'Sis',
+        important: true,
+        checkInCadenceDays: 14,
+        status: RelationshipStatus.active(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+      ),
+    );
+
+    Future<void> openEditSheet(WidgetTester tester) async {
+      // iPhone-class viewport: tall content, little room to spare.
+      tester.view
+        ..physicalSize = const Size(1206, 2622)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showRelationshipEditModal(
+                context: context,
+                relationship: person(),
+              ),
+              child: const Text('Open'),
+            ),
+          ),
+          overrides: [
+            relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            relationshipAgentServiceProvider.overrideWithValue(
+              mockAgentService,
+            ),
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+    }
+
+    // The form capped itself at 90% of the SCREEN while the modal page added
+    // a top bar, padding and the safe area on top, so the action row sat
+    // below the viewport — and the form's own scroll view consumed every
+    // drag, so the page never moved and Save could not be reached at all.
+    testWidgets('dragging over the form reaches the save action', (
+      tester,
+    ) async {
+      await openEditSheet(tester);
+
+      final save = find.widgetWithText(DesignSystemButton, 'Save');
+      final viewportBottom =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+      expect(
+        tester.getTopLeft(save).dy,
+        greaterThan(viewportBottom),
+        reason: 'precondition: the action row starts below the fold',
+      );
+
+      for (var i = 0; i < 5; i++) {
+        await tester.drag(
+          find.byType(RelationshipForm),
+          const Offset(0, -400),
+          warnIfMissed: false,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      expect(
+        tester.getBottomLeft(save).dy,
+        lessThanOrEqualTo(viewportBottom),
+        reason: 'Save is on screen once the user has scrolled to the end',
+      );
+    });
+
+    testWidgets('the form adds no scroll view of its own', (tester) async {
+      await openEditSheet(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(RelationshipForm),
+          matching: find.byType(SingleChildScrollView),
+        ),
+        findsNothing,
+      );
+    });
+  });
 
   testWidgets('does not persist when the name is empty', (tester) async {
     await tester.pumpWidget(buildForm());
@@ -362,6 +472,94 @@ void main() {
       when(
         () => mockRepository.updateRelationship(any()),
       ).thenAnswer((_) async => true);
+    });
+
+    // Regression: every collaborator was pulled through `ref.read` *after*
+    // awaiting the save. Saving pops the sheet, so on a slow write the element
+    // was already gone and Riverpod threw "Using ref when a widget is about to
+    // or has been unmounted is unsafe" — aborting the save's tail, with the
+    // observed symptom "Failed to save relationship" and the agent (or the
+    // category change) silently never written.
+    testWidgets('finishes the save when the sheet unmounts mid-write', (
+      tester,
+    ) async {
+      final saved = Completer<bool>();
+      when(
+        () => mockRepository.updateRelationship(any()),
+      ).thenAnswer((_) => saved.future);
+      when(
+        () => mockAgentService.ensureAgentForRelationship(any()),
+      ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-1'));
+
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.widgetWithText(DesignSystemButton, 'Save'),
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+      await tester.pump();
+
+      // The sheet disappears while the repository write is still in flight.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      saved.complete(true);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      verify(
+        () => mockAgentService.ensureAgentForRelationship(any()),
+      ).called(1);
+    });
+
+    // The category lives on metadata, not the payload, so it takes a second
+    // write through the journal path. Nothing else in this suite reaches that
+    // branch, and it is the one the unmount crash aborted.
+    testWidgets('routes a changed category through the journal repository', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalRepository.updateCategoryId(
+          any(),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(buildForm(initial: existing()));
+      await tester.pumpAndSettle();
+
+      // Drive the field's callback rather than its picker: the picker is a
+      // nested modal with its own harness, and the branch under test is what
+      // the form does with the chosen category.
+      tester
+          .widget<CategoryField>(find.byType(CategoryField))
+          .onSave(
+            CategoryDefinition(
+              id: 'category-7',
+              name: 'People',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+              private: false,
+              active: true,
+              color: '#FFFFFF',
+            ),
+          );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.widgetWithText(DesignSystemButton, 'Save'),
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockJournalRepository.updateCategoryId(
+          'rel-1',
+          categoryId: 'category-7',
+        ),
+      ).called(1);
     });
 
     testWidgets('prefills the person and saves edited fields', (tester) async {

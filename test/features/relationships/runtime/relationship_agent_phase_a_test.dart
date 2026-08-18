@@ -33,6 +33,12 @@ void main() {
   late MockRelationshipRepository relationshipRepository;
   late List<AgentDomainEntity> upserts;
   late int escalationCallbacks;
+  late _RecordingReminderSink reminders;
+
+  /// Every agent write and every reminder call, in the order they happened.
+  /// The reminder projection must land *after* the transaction commits — it
+  /// writes to a different database behind its own vector-clock scope.
+  late List<String> events;
   late RelationshipAgentPhaseA phaseA;
 
   AgentIdentityEntity identity() =>
@@ -101,15 +107,18 @@ void main() {
 
   setUp(() {
     repository = MockAgentRepository();
-    syncService = MockAgentSyncService();
-    relationshipRepository = MockRelationshipRepository();
     upserts = [];
     escalationCallbacks = 0;
+    events = [];
+    syncService = _TransactionRecordingSyncService(events);
+    relationshipRepository = MockRelationshipRepository();
+    reminders = _RecordingReminderSink(events);
     phaseA = RelationshipAgentPhaseA(
       repository: repository,
       syncService: syncService,
       relationshipRepository: relationshipRepository,
       onEscalationArmed: () => escalationCallbacks++,
+      reminders: reminders,
     );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
@@ -136,7 +145,9 @@ void main() {
       ],
     );
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
-      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+      final entity = invocation.positionalArguments.first as AgentDomainEntity;
+      upserts.add(entity);
+      events.add('upsert:${entity.runtimeType}');
     });
     when(
       () =>
@@ -635,6 +646,58 @@ void main() {
     expect(escalation.scheduledAt, checkInAt.toUtc());
     expect(escalation.scheduledAt.isBefore(now.toUtc()), isTrue);
     expect(escalationCallbacks, 1);
+    // No previous register on a first evaluation, so no baseline token.
+    expect(
+      escalation.triggerTokens.where(
+        (t) => t.startsWith(relationshipEscalationBaselinePrefix),
+      ),
+      isEmpty,
+    );
+  });
+
+  test('a report-refresh escalation carries the baseline token when a '
+      'register already exists — Phase B tells "newly ok" from "still ok" '
+      'from the token, never from storage', () async {
+    final checkInAt = DateTime(2026, 8, 14, 20);
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => [checkIn('c-1', checkInAt)]);
+    when(
+      () => repository.getLatestReport(any(), any()),
+    ).thenAnswer((_) async => freshReport(DateTime(2026, 8, 10)));
+    // A previous register — the case the first-evaluation test above cannot
+    // reach, because Phase A's own register write hides the pre-transition
+    // status from any later re-derivation.
+    when(() => repository.getEntity(relationshipHealthId(agentId))).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.relationshipHealth(
+                id: relationshipHealthId(agentId),
+                agentId: agentId,
+                relationshipId: relationshipId,
+                status: RelationshipCadenceStatus.due,
+                cadenceDays: 7,
+                referenceAt: testDate,
+                dueAt: DateTime.utc(2026, 8, 8),
+                createdAt: testDate,
+                updatedAt: testDate,
+                vectorClock: null,
+              )
+              as RelationshipHealthEntity,
+    );
+
+    await withClock(Clock.fixed(now), run);
+
+    final escalation = writtenWakes().singleWhere(
+      (w) => isRelationshipEscalationWorkspace(w.workspaceKey),
+    );
+    expect(
+      relationshipEscalationBaselineFromTriggerTokens(
+        escalation.triggerTokens.toSet(),
+      ),
+      RelationshipCadenceStatus.due.name,
+    );
   });
 
   test('when the cadence newly lapses AND the briefing is stale, only the '
@@ -684,6 +747,57 @@ void main() {
               staleAt: staleAt,
             )
             as RelationshipNudgeEntity;
+
+    // `important` is the consent switch (ADR 0037/0039). Withdrawing it has
+    // to reach the banner already on the dock: the render side filters on
+    // the agent and the person existing, not on eligibility, so before this
+    // an un-marked person kept nudging until the banner's own staleAt.
+    test('withdrawing eligibility RETIRES the live banner', () async {
+      final ineligible = [
+        relationship(important: false),
+        relationship(
+          status: RelationshipStatus.dormant(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+        ),
+      ];
+
+      for (final entry in ineligible) {
+        upserts.clear();
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => entry);
+        when(
+          () =>
+              repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+        ).thenAnswer((_) async => [nudge(id: 'ad-live')]);
+
+        await withClock(Clock.fixed(now), run);
+
+        final retired = upserts.whereType<RelationshipNudgeEntity>().single;
+        expect(retired.status, NudgeStatus.retired, reason: '$entry');
+        expect(retired.retiredAt, now.toUtc());
+      }
+    });
+
+    test('an ineligible person with no live banner writes nothing', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => relationship(important: false));
+      when(
+        () => repository.getEntitiesByAgentId(any(), type: any(named: 'type')),
+      ).thenAnswer((_) async => []);
+
+      await withClock(Clock.fixed(now), run);
+
+      expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+    });
 
     test('an active banner past its deadline is terminally EXPIRED with '
         'the deterministic deadline timestamp', () async {
@@ -806,4 +920,188 @@ void main() {
       expect(writtenWakes().single.status, ScheduledWakeStatus.pending);
     });
   });
+
+  // The OS-reminder projection (ADR 0039, plan v2 phase 8). Phase A decides
+  // when a person is due; the sink turns that into a durable row and an alarm.
+  group('OS reminder projection', () {
+    test('arms the reminder from the same derivation as the register', () async {
+      await withClock(Clock.fixed(now), run);
+
+      expect(reminders.cleared, isEmpty);
+      final armed = reminders.armed.single;
+      expect(armed.relationshipId, relationshipId);
+      // The register and the alarm must agree about the due day, or the banner
+      // and the notification would nudge on different dates.
+      expect(armed.derivation.dueDayUtc, writtenRegister()!.dueAt);
+      expect(armed.derivation.dueDayKey, '2026-08-08');
+    });
+
+    test('arms only after the agent transaction has committed', () async {
+      await withClock(Clock.fixed(now), run);
+
+      // The reminder row lives in notifications.sqlite behind its own
+      // vector-clock scope and outbox enqueue; running it inside the agent
+      // database's transaction zone would buffer its sync messages against an
+      // unrelated commit.
+      //
+      // Asserting `events.last == 'arm'` would NOT catch that: the shared
+      // mock runs the transaction body inline, so an arm moved inside it
+      // still lands last. The begin/commit markers are what make the two
+      // positions distinguishable.
+      expect(events, contains('tx:commit'));
+      expect(
+        events.indexOf('arm'),
+        greaterThan(events.lastIndexOf('tx:commit')),
+      );
+      // ...and the register really was written inside that transaction, so the
+      // assertion above is comparing against a boundary that means something.
+      final register = events.indexWhere(
+        (e) => e.startsWith('upsert:') && e.contains('RelationshipHealth'),
+      );
+      expect(register, greaterThan(events.indexOf('tx:begin')));
+      expect(register, lessThan(events.lastIndexOf('tx:commit')));
+    });
+
+    test(
+      'a person who stops being eligible has their alarm cancelled',
+      () async {
+        // Un-marking important, going dormant or being deleted all withdraw
+        // consent. An alarm armed weeks ago would otherwise still fire.
+        final ineligible = <String, RelationshipEntry>{
+          'not important': relationship(important: false),
+          'dormant': relationship(
+            status: RelationshipStatus.dormant(
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+          ),
+          'deleted': relationship(deletedAt: testDate),
+        };
+
+        for (final entry in ineligible.entries) {
+          reminders.reset();
+          when(
+            () => relationshipRepository.getRelationshipByIdUnfiltered(
+              relationshipId,
+            ),
+          ).thenAnswer((_) async => entry.value);
+
+          await withClock(Clock.fixed(now), run);
+
+          expect(reminders.cleared, [relationshipId], reason: entry.key);
+          expect(reminders.armed, isEmpty, reason: entry.key);
+        }
+      },
+    );
+
+    test('a relationship that no longer resolves is cleared too', () async {
+      when(
+        () => relationshipRepository.getRelationshipByIdUnfiltered(
+          relationshipId,
+        ),
+      ).thenAnswer((_) async => null);
+
+      await withClock(Clock.fixed(now), run);
+
+      expect(reminders.cleared, [relationshipId]);
+      expect(reminders.armed, isEmpty);
+    });
+
+    test('an agent with no link touches neither path', () async {
+      when(
+        () => repository.getLinksFrom(
+          agentId,
+          type: AgentLinkTypes.agentRelationship,
+        ),
+      ).thenAnswer((_) async => []);
+
+      await withClock(Clock.fixed(now), run);
+
+      expect(reminders.armed, isEmpty);
+      expect(reminders.cleared, isEmpty);
+    });
+
+    test('a wake still succeeds when the sink is not wired at all', () async {
+      // Reminders are optional: hosts without a notification stack, and every
+      // test that does not care, pass null.
+      final bare = RelationshipAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        relationshipRepository: relationshipRepository,
+      );
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => bare.execute(
+          agentIdentity: identity(),
+          runKey: 'run-1',
+          triggerTokens: const {},
+          threadId: 'thread-1',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(writtenRegister(), isNotNull);
+    });
+  });
+}
+
+/// [MockAgentSyncService] with the transaction boundary made observable.
+///
+/// The shared mock runs the transaction body inline, which leaves "inside the
+/// transaction" and "just after it" indistinguishable in a plain call log — an
+/// ordering assertion against it passes whichever side the call is on. These
+/// markers are what give that assertion teeth.
+class _TransactionRecordingSyncService extends MockAgentSyncService {
+  _TransactionRecordingSyncService(this._events);
+
+  final List<String> _events;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    _events.add('tx:begin');
+    try {
+      return await action();
+    } finally {
+      _events.add('tx:commit');
+    }
+  }
+}
+
+/// Records what Phase A projected onto the reminder layer, and when.
+///
+/// A hand-rolled fake rather than a mock: the assertions here are about call
+/// *ordering* relative to the agent transaction, which a shared `events` list
+/// expresses directly.
+class _RecordingReminderSink implements RelationshipReminderSink {
+  _RecordingReminderSink(this._events);
+
+  final List<String> _events;
+  final List<
+    ({String relationshipId, RelationshipCadenceDerivation derivation})
+  >
+  armed = [];
+  final List<String> cleared = [];
+
+  void reset() {
+    armed.clear();
+    cleared.clear();
+    _events.clear();
+  }
+
+  @override
+  Future<void> arm({
+    required RelationshipEntry relationship,
+    required RelationshipCadenceDerivation derivation,
+  }) async {
+    armed.add((relationshipId: relationship.meta.id, derivation: derivation));
+    _events.add('arm');
+  }
+
+  @override
+  Future<void> clearFor(String relationshipId) async {
+    cleared.add(relationshipId);
+    _events.add('clear');
+  }
 }

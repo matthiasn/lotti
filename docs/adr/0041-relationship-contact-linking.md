@@ -1,6 +1,10 @@
 # ADR 0041: Relationship Contact Linking and Communication Actions
 
-- Status: Proposed
+- Status: Accepted — implemented by plan v2 phase 7 on Android and iOS.
+  Contact channels stay out of AI context (§5): nothing in the facts
+  renderer reads them, and its test renders a person whose channels are
+  populated and fails if any reaches the output. Desktop keeps manual entry,
+  as §2 anticipated.
 - Date: 2026-07-22
 
 ## Context

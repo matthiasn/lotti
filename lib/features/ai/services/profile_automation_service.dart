@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/skills/skill_lookup.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -49,12 +50,12 @@ const _SkillMatchOutcome _ambiguousSkillMatch = (match: null, ambiguous: true);
 /// checkbox is visible, and that path logs the same decision.
 enum _CallIntent { run, probe }
 
-/// Whether the category owning [taskId] has automatic inference switched on.
+/// Whether the category owning [subjectId] has automatic inference switched on.
 ///
 /// Wired to `CategoryDefinition.automaticInferenceEnabledEffective`. An
 /// unwired lookup reports `false`: automation is opt-in, so an environment
 /// that cannot answer the question must not run inference on its own.
-typedef CategoryAutomationLookup = Future<bool> Function(String taskId);
+typedef CategoryAutomationLookup = Future<bool> Function(String subjectId);
 
 /// Result of an automation attempt.
 ///
@@ -96,7 +97,8 @@ class AutomationResult {
 /// gesture; picking a profile is not, because seeded profiles arrive with
 /// `automate: true` assignments already set.
 ///
-/// Past the gate it resolves the profile for a task's agent and checks whether
+/// Past the gate it resolves the profile for a subject entity's agent and
+/// checks whether
 /// a matching skill assignment with `automate: true` exists. Returns an
 /// [AutomationResult] that tells the caller whether the profile-driven
 /// path handled the request.
@@ -168,24 +170,24 @@ class ProfileAutomationService {
   /// `automate: true` assignments, so the category switch is the only place
   /// the user actually says yes.
   Future<bool> _categoryAllowsAutomation(
-    String taskId,
+    String subjectId,
     _CallIntent intent,
   ) async {
     final lookup = _categoryAutomationLookup;
     if (lookup == null) {
       _logSkip(
         'no category automation lookup wired — treating automation as off '
-        'for task ${DomainLogger.sanitizeId(taskId)}',
+        'for subject ${DomainLogger.sanitizeId(subjectId)}',
         subDomain: 'categoryGate',
         intent: intent,
       );
       return false;
     }
-    final allowed = await lookup(taskId);
+    final allowed = await lookup(subjectId);
     if (!allowed) {
       _logSkip(
-        'automatic inference is switched off for the category owning task '
-        '${DomainLogger.sanitizeId(taskId)}',
+        'automatic inference is switched off for the category owning subject '
+        '${DomainLogger.sanitizeId(subjectId)}',
         subDomain: 'categoryGate',
         intent: intent,
       );
@@ -193,10 +195,10 @@ class ProfileAutomationService {
     return allowed;
   }
 
-  /// Attempts profile-driven transcription for a task.
+  /// Attempts profile-driven transcription for a subject entity.
   ///
   /// Returns [AutomationResult.handled] = `true` if a transcription skill
-  /// with `automate: true` was found on the task's agent's profile.
+  /// with `automate: true` was found on the subject's agent's profile.
   ///
   /// Respects the user's per-recording opt-out:
   /// - If [enableSpeechRecognition] is `false`, returns not-handled
@@ -204,26 +206,26 @@ class ProfileAutomationService {
   /// - If `null`, defaults to `true` when a profile-driven transcription
   ///   skill is available with `automate: true`.
   Future<AutomationResult> tryTranscribe({
-    required String taskId,
+    required String subjectId,
     bool? enableSpeechRecognition,
   }) async {
     // User explicitly opted out for this recording.
     if (enableSpeechRecognition == false) {
       _logSkip(
-        'speech recognition was switched off for this recording on task '
-        '${DomainLogger.sanitizeId(taskId)}',
+        'speech recognition was switched off for this recording on subject '
+        '${DomainLogger.sanitizeId(subjectId)}',
         subDomain: 'perRecordingOptOut',
         intent: _CallIntent.run,
       );
       return AutomationResult.notHandled;
     }
 
-    if (!await _categoryAllowsAutomation(taskId, _CallIntent.run)) {
+    if (!await _categoryAllowsAutomation(subjectId, _CallIntent.run)) {
       return AutomationResult.notHandled;
     }
 
     final profileResult = await _tryAutomateSkillType(
-      taskId: taskId,
+      subjectId: subjectId,
       skillType: SkillType.transcription,
       intent: _CallIntent.run,
     );
@@ -232,28 +234,72 @@ class ProfileAutomationService {
     return _tryDirectTranscriptionFallback(_CallIntent.run);
   }
 
-  /// Attempts profile-driven image analysis for a task.
+  /// Transcription the user explicitly asked for, by gesture.
+  ///
+  /// Identical resolution to [tryTranscribe] minus [_categoryAllowsAutomation]
+  /// — that switch is the consent gate for spending tokens *without* a user
+  /// gesture, and a button press is the gesture. Applying it here refuses a
+  /// direct request for a reason that has nothing to do with the request: a
+  /// person filed under no category, or a category whose automatic inference
+  /// is off, could never dictate a check-in however their models were set up.
+  ///
+  /// Everything else still holds. A profile must actually own an automated
+  /// transcription skill with the matching model slot, or the direct-model
+  /// fallback must find a usable speech-to-text model; with neither, this
+  /// returns not-handled and the caller tells the user to type instead.
+  Future<AutomationResult> requestTranscription({
+    required String subjectId,
+  }) async {
+    final profileResult = await _tryAutomateSkillType(
+      subjectId: subjectId,
+      skillType: SkillType.transcription,
+      intent: _CallIntent.run,
+    );
+    if (profileResult.handled) return profileResult;
+
+    return _tryDirectTranscriptionFallback(_CallIntent.run);
+  }
+
+  /// Whether [requestTranscription] would resolve anything for [subjectId].
+  ///
+  /// The render-time counterpart, used to decide whether to offer a spoken
+  /// capture at all. Runs as a [_CallIntent.probe] so asking leaves no trace
+  /// in the log — see [hasAutomatedSkillType] for why that matters.
+  Future<bool> canTranscribeOnRequest({required String subjectId}) async {
+    final profileResult = await _tryAutomateSkillType(
+      subjectId: subjectId,
+      skillType: SkillType.transcription,
+      intent: _CallIntent.probe,
+    );
+    if (profileResult.handled) return true;
+
+    final fallback = await _tryDirectTranscriptionFallback(_CallIntent.probe);
+    return fallback.handled;
+  }
+
+  /// Attempts profile-driven image analysis for a subject entity.
   ///
   /// Returns [AutomationResult.handled] = `true` if an image analysis skill
-  /// with `automate: true` was found on the task's agent's profile.
+  /// with `automate: true` was found on the subject's agent's profile.
   Future<AutomationResult> tryAnalyzeImage({
-    required String taskId,
+    required String subjectId,
   }) async {
-    if (!await _categoryAllowsAutomation(taskId, _CallIntent.run)) {
+    if (!await _categoryAllowsAutomation(subjectId, _CallIntent.run)) {
       return AutomationResult.notHandled;
     }
     return _tryAutomateSkillType(
-      taskId: taskId,
+      subjectId: subjectId,
       skillType: SkillType.imageAnalysis,
       intent: _CallIntent.run,
     );
   }
 
-  /// Core resolution: find the profile that automates [skillType] for [taskId]
+  /// Core resolution: find the profile that automates [skillType] for [subjectId]
   /// and the assignment that does it.
   ///
-  /// Walks the task's profiles per capability, most specific first: the
-  /// profile driving the task's agent, then the profiles the task inherits
+  /// Walks the subject's profiles per capability, most specific first: the
+  /// profile driving the subject's agent, then the profiles the subject
+  /// inherits
   /// ([ProfileAutomationResolver.resolveAutomationFallbacks]). The first one
   /// that both automates [skillType] and has the matching model slot
   /// populated wins.
@@ -261,19 +307,19 @@ class ProfileAutomationService {
   /// The walk is what keeps a hand-picked thinking model from switching the
   /// category's automation off: that choice resolves to a bare model route
   /// carrying no capability slots and no skill assignments, so transcription
-  /// and image analysis fall through to the profile the task inherited from
+  /// and image analysis fall through to the profile the subject inherited from
   /// its category instead of silently not running. Automation the agent's own
   /// profile does own is unaffected — it matches on the first candidate and
   /// the fallbacks are never consulted.
   Future<AutomationResult> _tryAutomateSkillType({
-    required String taskId,
+    required String subjectId,
     required SkillType skillType,
     required _CallIntent intent,
   }) async {
-    final primaryProfile = await _resolver.resolveForTask(taskId);
+    final primaryProfile = await _resolver.resolveForSubject(subjectId);
     if (primaryProfile == null) {
       _logSkip(
-        'no profile resolves for task ${DomainLogger.sanitizeId(taskId)} — '
+        'no profile resolves for subject ${DomainLogger.sanitizeId(subjectId)} — '
         'trying the profiles it inherits for $skillType',
         subDomain: 'profileResolution',
         intent: intent,
@@ -282,15 +328,15 @@ class ProfileAutomationService {
       final outcome = await _matchAutomatedSkill(
         profile: primaryProfile,
         skillType: skillType,
-        taskId: taskId,
+        subjectId: subjectId,
         intent: intent,
       );
       if (outcome.ambiguous) return AutomationResult.notHandled;
       final match = outcome.match;
       if (match != null) {
         _logRun(
-          'running $skillType on task ${DomainLogger.sanitizeId(taskId)} '
-          'with skill "${match.skill.name}" from the task-linked profile',
+          'running $skillType on subject ${DomainLogger.sanitizeId(subjectId)} '
+          'with skill "${match.skill.name}" from the subject-linked profile',
           intent: intent,
         );
         return AutomationResult(
@@ -302,12 +348,12 @@ class ProfileAutomationService {
       }
     }
 
-    final fallbacks = await _resolver.resolveAutomationFallbacks(taskId);
+    final fallbacks = await _resolver.resolveAutomationFallbacks(subjectId);
     for (final fallbackProfile in fallbacks) {
       final outcome = await _matchAutomatedSkill(
         profile: fallbackProfile,
         skillType: skillType,
-        taskId: taskId,
+        subjectId: subjectId,
         intent: intent,
       );
       if (outcome.ambiguous) return AutomationResult.notHandled;
@@ -315,7 +361,7 @@ class ProfileAutomationService {
       if (match == null) continue;
 
       _logRun(
-        'task ${DomainLogger.sanitizeId(taskId)} does not own $skillType — '
+        'subject ${DomainLogger.sanitizeId(subjectId)} does not own $skillType — '
         'falling back to the inherited profile, skill "${match.skill.name}"',
         intent: intent,
       );
@@ -328,9 +374,9 @@ class ProfileAutomationService {
     }
 
     _logSkip(
-      'no profile automates $skillType for task '
-      '${DomainLogger.sanitizeId(taskId)} — walked '
-      '${primaryProfile == null ? 0 : 1} task-linked and '
+      'no profile automates $skillType for subject '
+      '${DomainLogger.sanitizeId(subjectId)} — walked '
+      '${primaryProfile == null ? 0 : 1} subject-linked and '
       '${fallbacks.length} inherited profile(s)',
       subDomain: 'profileResolution',
       intent: intent,
@@ -347,7 +393,7 @@ class ProfileAutomationService {
   Future<_SkillMatchOutcome> _matchAutomatedSkill({
     required ResolvedProfile profile,
     required SkillType skillType,
-    required String taskId,
+    required String subjectId,
     required _CallIntent intent,
   }) async {
     final matches = <_AutomatedSkillMatch>[];
@@ -355,15 +401,16 @@ class ProfileAutomationService {
     for (final assignment in profile.skillAssignments) {
       if (!assignment.automate) continue;
 
-      final skillConfig = await _aiConfigRepository.getConfigById(
-        assignment.skillId,
+      final skillConfig = await resolveAssignedSkill(
+        skillId: assignment.skillId,
+        aiConfigRepository: _aiConfigRepository,
       );
-      if (skillConfig is! AiConfigSkill) {
+      if (skillConfig == null) {
         _logSkip(
           'skill ${DomainLogger.sanitizeId(assignment.skillId)} is automated '
-          'on the profile but its config is missing or not a skill — '
-          'ignoring it for $skillType on task '
-          '${DomainLogger.sanitizeId(taskId)}',
+          'on the profile but resolves to nothing — '
+          'ignoring it for $skillType on subject '
+          '${DomainLogger.sanitizeId(subjectId)}',
           subDomain: 'skillMatch',
           intent: intent,
         );
@@ -376,7 +423,7 @@ class ProfileAutomationService {
         _logSkip(
           'profile automates $skillType via "${skillConfig.name}" but its '
           '$skillType model slot is empty or unresolvable — skipping it for '
-          'task ${DomainLogger.sanitizeId(taskId)}',
+          'subject ${DomainLogger.sanitizeId(subjectId)}',
           subDomain: 'skillMatch',
           intent: intent,
         );
@@ -391,7 +438,7 @@ class ProfileAutomationService {
     if (matches.length > 1) {
       _logSkip(
         'ambiguous profile: ${matches.length} automated $skillType skills for '
-        'task ${DomainLogger.sanitizeId(taskId)} — declining rather than '
+        'subject ${DomainLogger.sanitizeId(subjectId)} — declining rather than '
         'guessing which one was meant',
         subDomain: 'skillMatch',
         intent: intent,
@@ -402,7 +449,7 @@ class ProfileAutomationService {
     return (match: matches.first, ambiguous: false);
   }
 
-  /// Checks whether the given task has an automated skill of the given type.
+  /// Checks whether the given subject has an automated skill of the given type.
   ///
   /// Convenience wrapper around [_tryAutomateSkillType] for use by checkbox
   /// visibility providers that only need a boolean answer.
@@ -411,17 +458,17 @@ class ProfileAutomationService {
   /// leaves the log alone rather than fabricating execution records on every
   /// rebuild.
   Future<bool> hasAutomatedSkillType({
-    required String taskId,
+    required String subjectId,
     required SkillType skillType,
   }) async {
     // Mirrors the gate the run paths apply, so an affordance never advertises
     // automation the category has switched off.
-    if (!await _categoryAllowsAutomation(taskId, _CallIntent.probe)) {
+    if (!await _categoryAllowsAutomation(subjectId, _CallIntent.probe)) {
       return false;
     }
 
     final result = await _tryAutomateSkillType(
-      taskId: taskId,
+      subjectId: subjectId,
       skillType: skillType,
       intent: _CallIntent.probe,
     );
@@ -452,7 +499,7 @@ class ProfileAutomationService {
   /// Whether the direct transcription fallback could run at all — some
   /// configured provider owns a usable speech-to-text model.
   ///
-  /// Settings needs this without a task in hand: the fallback transcribes with
+  /// Settings needs this without a subject in hand: the fallback transcribes with
   /// no profile involved, so the category's automation switch has something to
   /// control even when the category has no profile selected.
   ///
@@ -464,7 +511,7 @@ class ProfileAutomationService {
   }
 
   /// Finds a configured audio-to-text model that can run transcription without
-  /// requiring the task to resolve to an inference profile.
+  /// requiring the subject to resolve to an inference profile.
   ///
   /// Declines out loud. The profile walk's own decline only reports that no
   /// profile automates transcription, which is the less interesting half when

@@ -5376,6 +5376,12 @@ abstract class AppLocalizations {
   /// **'Strained'**
   String get checkInSentimentStrained;
 
+  /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak check-in'**
+  String get checkInSpeakButton;
+
   /// No description provided for @checkInTopicsHint.
   ///
   /// In en, this message translates to:
@@ -5387,6 +5393,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
+
+  /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get checkInTranscribingLabel;
+
+  /// Message shown when a spoken check-in produced no transcript and the user has to type the narrative.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcript came back. You can type it instead.'**
+  String get checkInTranscriptFailed;
+
+  /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
+  String get checkInTranscriptUnavailable;
 
   /// No description provided for @checklistAddItem.
   ///
@@ -15523,6 +15547,18 @@ abstract class AppLocalizations {
   /// **'Notifications, {count} unread {count, plural, =1{alert} other{alerts}}'**
   String notificationBellUnseenSemantics(int count);
 
+  /// No description provided for @notificationChannelRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in reminders, habit reminders and alerts from Lotti.'**
+  String get notificationChannelRemindersDescription;
+
+  /// No description provided for @notificationChannelRemindersName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get notificationChannelRemindersName;
+
   /// No description provided for @notificationInboxDismiss.
   ///
   /// In en, this message translates to:
@@ -17209,6 +17245,30 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get referenceImageSkip;
 
+  /// Tooltip on the button that dials a contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get relationshipActionCall;
+
+  /// Tooltip on the button that opens a mail composer
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get relationshipActionEmail;
+
+  /// Toast shown when no app on the device handles the contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this device can open that'**
+  String get relationshipActionFailed;
+
+  /// Tooltip on the button that opens a message composer
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get relationshipActionMessage;
+
   /// No description provided for @relationshipAddChannelButton.
   ///
   /// In en, this message translates to:
@@ -17323,6 +17383,18 @@ abstract class AppLocalizations {
   /// **'No agent yet — mark this person as important first.'**
   String get relationshipChatUnavailable;
 
+  /// No description provided for @relationshipCheckInReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A good moment to reach out.'**
+  String get relationshipCheckInReminderBody;
+
+  /// No description provided for @relationshipCheckInReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in with {name}?'**
+  String relationshipCheckInReminderTitle(String name);
+
   /// No description provided for @relationshipCheckInsLabel.
   ///
   /// In en, this message translates to:
@@ -17334,6 +17406,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Contact channels'**
   String get relationshipContactChannelsLabel;
+
+  /// Toast confirming contact channels were copied onto the person
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details copied'**
+  String get relationshipContactLinked;
+
+  /// Toast shown when saving the copied contact details was rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the contact details'**
+  String get relationshipContactLinkFailed;
+
+  /// Toast shown when the stored contact reference resolves to nothing on this device
+  ///
+  /// In en, this message translates to:
+  /// **'That contact isn\'t on this device'**
+  String get relationshipContactMissing;
+
+  /// Toast shown when the linked contact held nothing the person did not already have
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new to copy'**
+  String get relationshipContactNoChanges;
 
   /// No description provided for @relationshipCreateTitle.
   ///
@@ -17407,6 +17503,18 @@ abstract class AppLocalizations {
   /// **'Thriving'**
   String get relationshipHealthThriving;
 
+  /// Opens the multi-select contact import screen from the People list
+  ///
+  /// In en, this message translates to:
+  /// **'Import from contacts'**
+  String get relationshipImportAction;
+
+  /// Toast confirming how many people the import created
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person added} other{{count} people added}}'**
+  String relationshipImportAdded(int count);
+
   /// No description provided for @relationshipImportantDescription.
   ///
   /// In en, this message translates to:
@@ -17419,11 +17527,101 @@ abstract class AppLocalizations {
   /// **'Important'**
   String get relationshipImportantLabel;
 
+  /// Creates one person per reviewed contact
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1 person} other{Add {count} people}}'**
+  String relationshipImportConfirmButton(int count);
+
+  /// Shown when the address book is readable but empty
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts on this device'**
+  String get relationshipImportEmpty;
+
+  /// Toast shown when no relationship could be created from the import
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add anyone'**
+  String get relationshipImportFailed;
+
+  /// Requests contact permission from the import screen
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access'**
+  String get relationshipImportGrantButton;
+
+  /// Shown when the contact search matches nothing
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts match your search'**
+  String get relationshipImportNoMatches;
+
+  /// Opens system settings so contact access can be re-enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get relationshipImportOpenSettings;
+
+  /// Explains what contact access is used for before it is requested
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti reads your contacts only while this picker is open, and copies only the people you choose.'**
+  String get relationshipImportPermissionBody;
+
+  /// Retries the contact permission request
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get relationshipImportRetry;
+
+  /// Advances from contact selection to the review step
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Review 1} other{Review {count}}}'**
+  String relationshipImportReviewButton(int count);
+
+  /// Title of the import review step, where importance and cadence are set
+  ///
+  /// In en, this message translates to:
+  /// **'Before you add them'**
+  String get relationshipImportReviewTitle;
+
+  /// Placeholder in the contact import search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search contacts'**
+  String get relationshipImportSearchHint;
+
+  /// Shown when contact access was permanently refused
+  ///
+  /// In en, this message translates to:
+  /// **'Contact access is turned off. Turn it on in system settings to import people.'**
+  String get relationshipImportSettingsBody;
+
+  /// Title of the contact import screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add people'**
+  String get relationshipImportTitle;
+
+  /// Shown on desktop, where there is no address book to import from
+  ///
+  /// In en, this message translates to:
+  /// **'Contact import is available on phones and tablets. Add contact details by hand here.'**
+  String get relationshipImportUnsupported;
+
   /// No description provided for @relationshipLastCheckInLabel.
   ///
   /// In en, this message translates to:
   /// **'Last check-in {date}'**
   String relationshipLastCheckInLabel(String date);
+
+  /// Action that opens the OS contact picker to copy channels onto a person
+  ///
+  /// In en, this message translates to:
+  /// **'Link contact'**
+  String get relationshipLinkContact;
 
   /// No description provided for @relationshipLinkedTasksLabel.
   ///
@@ -17479,6 +17677,36 @@ abstract class AppLocalizations {
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
 
+  /// Body of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'You reached out a moment ago. Log a check-in while it is fresh?'**
+  String get relationshipPostCallBody;
+
+  /// Button that opens a pre-filled check-in from the post-call prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Log check-in'**
+  String get relationshipPostCallConfirm;
+
+  /// Button that dismisses the post-call prompt without a trace
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get relationshipPostCallDismiss;
+
+  /// Title of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'How did it go with {name}?'**
+  String relationshipPostCallTitle(String name);
+
+  /// Menu action that replaces the OS contact a person is linked to
+  ///
+  /// In en, this message translates to:
+  /// **'Link a different contact'**
+  String get relationshipRelinkContact;
+
   /// No description provided for @relationshipsEmptyState.
   ///
   /// In en, this message translates to:
@@ -17520,6 +17748,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tracking since {date}'**
   String relationshipTrackingSinceLabel(String date);
+
+  /// Menu action that re-reads the linked OS contact and copies anything new
+  ///
+  /// In en, this message translates to:
+  /// **'Update from contact'**
+  String get relationshipUpdateFromContact;
 
   /// No description provided for @saveButton.
   ///

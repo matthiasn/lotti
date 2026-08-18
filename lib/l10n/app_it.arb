@@ -1583,8 +1583,12 @@
   "checkInSentimentLabel": "Com'è andata?",
   "checkInSentimentNeutral": "Neutro",
   "checkInSentimentStrained": "Teso",
+  "checkInSpeakButton": "Detta il contatto",
   "checkInTopicsHint": "Separati da virgole, ad es. lavoro, viaggi",
   "checkInTopicsLabel": "Argomenti",
+  "checkInTranscribingLabel": "Trascrizione in corso…",
+  "checkInTranscriptFailed": "Non è arrivata nessuna trascrizione. Puoi scriverlo tu.",
+  "checkInTranscriptUnavailable": "La trascrizione non è configurata per questa persona. Aggiungi un modello audio e attiva l'inferenza automatica per la sua categoria, oppure scrivi il contatto.",
   "checklistAddItem": "Aggiungi un nuovo articolo",
   "checklistAiConfidenceLabel": "Confidenza: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3983,6 +3987,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Promemoria di contatto, promemoria delle abitudini e avvisi di Lotti.",
+  "notificationChannelRemindersName": "Promemoria",
   "notificationInboxDismiss": "Discorso della notifica",
   "notificationInboxEmpty": "Siete tutti coinvolti.",
   "notificationInboxError": "Non ho potuto caricare le notifiche.",
@@ -4516,6 +4522,10 @@
   "referenceImageSelectionSubtitle": "Scegli fino a {maxImages} immagini per guidare lo stile visivo dell'AI",
   "referenceImageSelectionTitle": "Seleziona le immagini di riferimento",
   "referenceImageSkip": "Salta!",
+  "relationshipActionCall": "Chiama",
+  "relationshipActionEmail": "Email",
+  "relationshipActionFailed": "Niente su questo dispositivo può aprirlo",
+  "relationshipActionMessage": "Messaggio",
   "relationshipAddChannelButton": "Aggiungi recapito",
   "relationshipBannerSemanticLabel": "Banner della relazione con {personName}",
   "relationshipBriefingDisclosureBody": "Il briefing viene generato su {provider}. Le note su questa persona verranno inviate lì per l’elaborazione.",
@@ -4535,8 +4545,21 @@
   "relationshipCadenceWeekly": "Ogni settimana",
   "relationshipChatTooltip": "Chatta su questa persona",
   "relationshipChatUnavailable": "Nessun agente ancora: prima segna questa persona come importante.",
+  "relationshipCheckInReminderBody": "Un buon momento per farsi sentire.",
+  "relationshipCheckInReminderTitle": "Ti fai sentire con {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Contatti registrati",
   "relationshipContactChannelsLabel": "Recapiti",
+  "relationshipContactLinked": "Recapiti copiati",
+  "relationshipContactLinkFailed": "Impossibile salvare i recapiti",
+  "relationshipContactMissing": "Quel contatto non è su questo dispositivo",
+  "relationshipContactNoChanges": "Niente di nuovo da copiare",
   "relationshipCreateTitle": "Aggiungi persona",
   "relationshipDeleteConfirmMessage": "Verranno eliminati anche tutti i contatti registrati. L'azione non si può annullare.",
   "relationshipDeleteConfirmTitle": "Eliminare {name}?",
@@ -4549,9 +4572,26 @@
   "relationshipHealthSteady": "Stabile",
   "relationshipHealthStrained": "Tesa",
   "relationshipHealthThriving": "Fiorente",
+  "relationshipImportAction": "Importa dai contatti",
+  "relationshipImportAdded": "{count, plural, =1{1 persona aggiunta} other{{count} persone aggiunte}}",
   "relationshipImportantDescription": "Ricordami di restare in contatto",
   "relationshipImportantLabel": "Importante",
+  "relationshipImportConfirmButton": "{count, plural, =1{Aggiungi 1 persona} other{Aggiungi {count} persone}}",
+  "relationshipImportEmpty": "Nessun contatto su questo dispositivo",
+  "relationshipImportFailed": "Non è stato possibile aggiungere nessuno",
+  "relationshipImportGrantButton": "Consenti accesso",
+  "relationshipImportNoMatches": "Nessun contatto corrisponde alla tua ricerca",
+  "relationshipImportOpenSettings": "Apri impostazioni",
+  "relationshipImportPermissionBody": "Lotti legge i tuoi contatti solo mentre questo selettore è aperto e copia solo le persone che scegli.",
+  "relationshipImportRetry": "Riprova",
+  "relationshipImportReviewButton": "{count, plural, =1{Controlla 1} other{Controlla {count}}}",
+  "relationshipImportReviewTitle": "Prima di aggiungerle",
+  "relationshipImportSearchHint": "Cerca contatti",
+  "relationshipImportSettingsBody": "L’accesso ai contatti è disattivato. Attivalo nelle impostazioni di sistema per importare persone.",
+  "relationshipImportTitle": "Aggiungi persone",
+  "relationshipImportUnsupported": "L’importazione dei contatti è disponibile su telefoni e tablet. Inserisci qui i recapiti a mano.",
   "relationshipLastCheckInLabel": "Ultimo contatto {date}",
+  "relationshipLinkContact": "Collega contatto",
   "relationshipLinkedTasksLabel": "Attività",
   "relationshipLinkTaskButton": "Collega attività",
   "relationshipLogCheckIn": "Registra un contatto",
@@ -4561,6 +4601,19 @@
   "relationshipNoCheckIns": "Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.",
   "relationshipNoLinkedTasks": "Nessuna attività collegata.",
   "relationshipNotFound": "Questa persona non è più nella tua lista.",
+  "relationshipPostCallBody": "Hai appena scritto o chiamato. Vuoi annotare un check-in finché è fresco?",
+  "relationshipPostCallConfirm": "Annota check-in",
+  "relationshipPostCallDismiss": "Non ora",
+  "relationshipPostCallTitle": "Com’è andata con {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Collega un altro contatto",
   "relationshipsEmptyState": "Aggiungi le persone a cui vuoi restare vicino.",
   "relationshipsPageTitle": "Persone",
   "relationshipStatusActive": "Attiva",
@@ -4568,6 +4621,7 @@
   "relationshipStatusDormant": "In pausa",
   "relationshipStatusFieldLabel": "Stato",
   "relationshipTrackingSinceLabel": "Monitoraggio dal {date}",
+  "relationshipUpdateFromContact": "Aggiorna dal contatto",
   "saveButton": "Salva",
   "saveButtonLabel": "Salva",
   "saveFailedRetry": "Non è stato salvato: riprova per favore.",

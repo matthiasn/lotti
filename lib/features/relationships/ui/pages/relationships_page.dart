@@ -4,10 +4,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
+import 'package:lotti/features/relationships/ui/pages/contact_import_page.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The People tab: every tracked relationship, most recently interacted-with
@@ -39,6 +42,7 @@ class RelationshipsPage extends ConsumerWidget {
             SliverAppBar(
               pinned: true,
               title: Text(context.messages.relationshipsPageTitle),
+              actions: const [_ImportContactsAction()],
             ),
             SliverPadding(
               // The last row must clear the overlaid bottom navigation plus
@@ -170,6 +174,35 @@ class _RelationshipRow extends StatelessWidget {
             )
           : null,
       onTap: () => beamToNamed('/people/${relationship.id}'),
+    );
+  }
+}
+
+/// Opens the multi-select contact import (plan v2 phase 7 item 3).
+///
+/// Absent on desktop, where there is no address book to import from and
+/// contact details are entered by hand (ADR 0041 §2). Nothing is read until
+/// the import screen itself asks — this is only the door.
+class _ImportContactsAction extends ConsumerWidget {
+  const _ImportContactsAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.read(contactsServiceProvider).isSupported) {
+      return const SizedBox.shrink();
+    }
+
+    return IconButton(
+      tooltip: context.messages.relationshipImportAction,
+      icon: const Icon(Icons.group_add_rounded),
+      // Pushed above the shell on mobile, not onto the tab's own navigator:
+      // the import screen docks its Import action in a `bottomNavigationBar`,
+      // and the floating nav pill is painted over each tab's page stack — so
+      // a nested push would leave the screen's primary action sitting behind
+      // it. See `bottom_nav_safe_navigator.dart`.
+      onPressed: () => bottomNavSafeNavigatorOf(context).push(
+        MaterialPageRoute<int>(builder: (_) => const ContactImportPage()),
+      ),
     );
   }
 }

@@ -1465,6 +1465,111 @@ void main() {
           InferenceStatus.error,
         );
       });
+
+      // A caller *waiting* on the transcript cannot see any of the above:
+      // this method swallows the exception and writes no `entryText`, so a
+      // provider outage is indistinguishable from a slow model until the
+      // caller's own timeout expires. `onError` is that missing signal.
+      test('reports a failed run through onError', () async {
+        final audioEntity = makeAudioEntity();
+        await createStubAudioFile();
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.error(
+            TranscriptionException(
+              'All Voxtral providers failed',
+              provider: 'Melious',
+              statusCode: 503,
+            ),
+          ),
+        );
+        stubLoggingException();
+
+        final errors = <Object>[];
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: makeTranscriptionResult(),
+          onError: errors.add,
+        );
+
+        expect(errors, hasLength(1));
+        expect(errors.single, isA<TranscriptionException>());
+      });
+
+      // The hook is for failures only. A caller that treats it as a
+      // completion signal would abandon a run that is about to succeed.
+      test('leaves onError untouched when the run succeeds', () async {
+        final audioEntity = makeAudioEntity();
+        await createStubAudioFile();
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('We talked about her job search.'),
+          ]),
+        );
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubLoggingEvent();
+
+        final errors = <Object>[];
+        await runner.runTranscription(
+          audioEntryId: 'audio-1',
+          automationResult: makeTranscriptionResult(),
+          onError: errors.add,
+        );
+
+        expect(errors, isEmpty);
+        expect(
+          container.read(
+            inferenceStatusControllerProvider((
+              id: 'audio-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.idle,
+        );
+      });
     });
 
     group('runImageAnalysis', () {

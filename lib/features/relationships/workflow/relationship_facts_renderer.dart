@@ -15,11 +15,16 @@ const relationshipNarrativeExcerptChars = 400;
 /// Renders the deterministic FACTS block of a relationship-agent Phase B
 /// wake (the goal facts-renderer shape).
 ///
-/// The context boundary is ADR 0040 Decision 4, held structurally: the
-/// renderer receives the relationship, its check-ins, linked task
-/// titles/statuses, the previous briefing, and banner state — and NOTHING
-/// else. Contact channels and contact refs are not parameters, so no code
-/// path can leak them into model context (ADR 0041 §5).
+/// The context boundary is ADR 0040 Decision 4: the renderer receives the
+/// relationship, its check-ins, linked task titles/statuses, the previous
+/// briefing, and banner state — and nothing else.
+///
+/// Contact channels and contact refs ride along inside [RelationshipEntry],
+/// so the exclusion is a property of this file rather than of its signature:
+/// nothing here reads `data.contactChannels` or `data.contactRefs`, and the
+/// renderer test renders a person whose channels are populated and fails if
+/// any of them reaches the output (ADR 0041 §5). Keep it that way — the
+/// boundary is one `writeln` away from being lost.
 class RelationshipFactsRenderer {
   const RelationshipFactsRenderer();
 

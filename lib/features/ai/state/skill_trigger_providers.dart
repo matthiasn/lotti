@@ -207,7 +207,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
           final isTranscription = skill.skillType == SkillType.transcription;
           ResolvedProfile? resolvedProfile;
           if (linkedTaskId != null) {
-            resolvedProfile = await resolver.resolveForTask(linkedTaskId);
+            resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
           } else {
             final entity = await ref
                 .read(journalDbProvider)

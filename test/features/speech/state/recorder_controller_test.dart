@@ -316,7 +316,7 @@ void main() {
           () => mockTrigger.triggerAutomaticPrompts(
             any(),
             any(),
-            linkedTaskId: any(named: 'linkedTaskId'),
+            linkedSubjectId: any(named: 'linkedSubjectId'),
           ),
         ).thenAnswer((_) async {});
 
@@ -783,7 +783,7 @@ void main() {
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
               any(),
-              linkedTaskId: any(named: 'linkedTaskId'),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
           ).thenAnswer((_) async {});
 
@@ -805,7 +805,7 @@ void main() {
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
               any(),
-              linkedTaskId: any(named: 'linkedTaskId'),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
           );
         },
@@ -1537,7 +1537,7 @@ void main() {
             () => mockTrigger.triggerAutomaticPrompts(
               any(),
               any(),
-              linkedTaskId: any(named: 'linkedTaskId'),
+              linkedSubjectId: any(named: 'linkedSubjectId'),
             ),
           ).thenAnswer((_) async {
             promptCompleter.complete();
@@ -1604,7 +1604,7 @@ void main() {
             () => mockTrigger.triggerAutomaticPrompts(
               'stop-entry-id',
               any(),
-              linkedTaskId: 'linked-task-id',
+              linkedSubjectId: 'linked-task-id',
             ),
           ).called(1);
         },
@@ -1689,7 +1689,7 @@ void main() {
           () => mockTrigger.triggerAutomaticPrompts(
             any(),
             any(),
-            linkedTaskId: any(named: 'linkedTaskId'),
+            linkedSubjectId: any(named: 'linkedSubjectId'),
           ),
         );
       });
