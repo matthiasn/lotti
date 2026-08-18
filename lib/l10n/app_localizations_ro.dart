@@ -2647,6 +2647,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get apiKeyShowTooltip => 'Afișați cheia API';
 
   @override
+  String get audioPlayerPause => 'Întrerupeți redarea';
+
+  @override
+  String get audioPlayerPlay => 'Redați înregistrarea';
+
+  @override
+  String audioPlayerPosition(String current, String total) {
+    return '$current din $total';
+  }
+
+  @override
+  String get audioPlayerSeekHint =>
+      'Glisați în sus sau în jos pentru derulare; atingeți sau trageți pentru navigare.';
+
+  @override
+  String audioPlayerSpeed(String speed) {
+    return 'Viteza de redare, $speed';
+  }
+
+  @override
+  String get audioPlayerTimeline => 'Cronologie audio';
+
+  @override
+  String get audioPlayerWaveform => 'Formă de undă audio';
+
+  @override
   String get audioRecordingCancel => 'Anulați';
 
   @override
@@ -2663,7 +2689,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Renunțați la înregistrare?';
 
   @override
+  String get audioRecordingLive => 'Înregistrarea a început';
+
+  @override
   String get audioRecordingPause => 'Pauză';
+
+  @override
+  String get audioRecordingRecord => 'Înregistrați';
 
   @override
   String get audioRecordingResume => 'Reluare';
@@ -6171,16 +6203,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
-  String goalAgentLifetimeTimePill(String duration) {
-    return '$duration de gândire';
-  }
-
-  @override
-  String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Timpul total în care modelul acestui agent a lucrat, în $calls apeluri.';
-  }
-
-  @override
   String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
 
   @override
@@ -6331,15 +6353,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCheckInAddVoiceNote => 'Adăugați o notă vocală';
 
   @override
+  String get goalCheckInClose => 'Închideți';
+
+  @override
   String get goalCheckInComposerTitle => 'Raportare';
 
   @override
   String goalCheckInDimensionsRated(int count) {
-    return '$count dimensiuni evaluate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de dimensiuni evaluate',
+      few: '$count dimensiuni evaluate',
+      one: '1 dimensiune evaluată',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get goalCheckInDone => 'Gata';
 
   @override
   String get goalCheckInKindNote => 'NOTĂ';
@@ -6360,6 +6389,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalCheckInRecordCta => 'Înregistrați o raportare';
+
+  @override
+  String get goalCheckInSave => 'Salvați raportarea';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -6386,13 +6418,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCoarseHealthBehind => 'În urmă';
 
   @override
-  String get goalCoarseHealthHealthy => 'Sănătos';
-
-  @override
   String get goalCoarseHealthNotEnoughData => 'Date insuficiente';
-
-  @override
-  String get goalCoarseHealthRestarting => 'Se repornește';
 
   @override
   String get goalCompositeLastSevenDays => 'Ultimele 7 zile';
@@ -6466,9 +6492,9 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count de zile până la revenire',
-      few: '$count zile până la revenire',
-      one: '1 zi până la revenire',
+      other: 'Sunt necesare $count de zile reușite pentru revenire',
+      few: 'Sunt necesare $count zile reușite pentru revenire',
+      one: 'Este necesară 1 zi reușită pentru revenire',
     );
     return '$_temp0';
   }
@@ -7033,18 +7059,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String goalProgressDaysToHealthy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de zile până la sănătos',
-      few: '$count zile până la sănătos',
-      one: '1 zi până la sănătos',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get goalProgressDone => 'făcut · țintă atinsă';
 
   @override
@@ -7313,7 +7327,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get habitsDoneTodayLabel => 'Finalizate azi';
+  String get habitsDoneTodayLabel => 'Obiceiuri finalizate azi';
 
   @override
   String get habitSectionOptionsTitle => 'Opțiuni';
@@ -13518,6 +13532,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String unifiedGoalsArchivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Obiective arhivate · $count',
+      few: 'Obiective arhivate · $count',
+      one: 'Obiectiv arhivat · 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsEmptyInvitation =>
+      'Creați un obiectiv pentru a reuni aici obiceiurile, semnalele și îndrumarea agentului dvs.';
 
   @override
   String get unifiedGoalStatusAtRisk => 'În pericol';

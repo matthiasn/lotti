@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('AudioProgressBar widget', () {
@@ -20,8 +23,8 @@ void main() {
       String? semanticLabel,
     }) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
+        makeTestableWidgetNoScroll(
+          Scaffold(
             body: Center(
               child: SizedBox(
                 width: 400,
@@ -250,6 +253,51 @@ void main() {
       );
     });
 
+    testWidgets('exposes slider position and bounded seek actions', (
+      WidgetTester tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await pumpProgressBar(
+          tester,
+          progress: const Duration(seconds: 30),
+          total: const Duration(seconds: 40),
+        );
+
+        final node = tester.getSemantics(
+          find.bySemanticsLabel('Audio timeline'),
+        );
+        final data = node.getSemanticsData();
+        expect(data.flagsCollection.isSlider, isTrue);
+        expect(data.value, '00:30 of 00:40');
+        expect(data.increasedValue, '00:35 of 00:40');
+        expect(data.decreasedValue, '00:25 of 00:40');
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    test('semantic seek targets clamp at both ends', () {
+      expect(
+        audioSemanticSeekTarget(
+          progress: const Duration(seconds: 2),
+          total: const Duration(seconds: 20),
+          forward: false,
+        ),
+        Duration.zero,
+      );
+      expect(
+        audioSemanticSeekTarget(
+          progress: const Duration(seconds: 18),
+          total: const Duration(seconds: 20),
+          forward: true,
+        ),
+        const Duration(seconds: 20),
+      );
+    });
+
     testWidgets('clamps progress ratio between 0 and 1', (
       WidgetTester tester,
     ) async {
@@ -280,8 +328,8 @@ void main() {
 
     testWidgets('handles zero width gracefully', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
+        makeTestableWidgetNoScroll(
+          Scaffold(
             body: SizedBox(
               width: 0,
               child: AudioProgressBar(
@@ -423,8 +471,8 @@ void main() {
         addTearDown(tester.view.reset);
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
+          makeTestableWidgetNoScroll(
+            Scaffold(
               body: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
@@ -439,6 +487,9 @@ void main() {
                   ),
                 ),
               ),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: Size(viewportWidth, 800),
             ),
           ),
         );

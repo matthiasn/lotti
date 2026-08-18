@@ -36,7 +36,7 @@ import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
-import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
+import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
@@ -84,6 +84,8 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   final ValueNotifier<bool> _appBarTitleVisible = ValueNotifier<bool>(false);
   final GlobalKey _progressSectionKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
+  GoalProgressView? _lastProgress;
+  String? _lastProgressSpecId;
 
   /// Whether the desktop chat drawer is open. The drawer stays MOUNTED
   /// either way (a slid-out overlay, not a conditional subtree), so the
@@ -343,16 +345,25 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final timeSpanDays = ref.watch(
       habitsControllerProvider.select((state) => state.timeSpanDays),
     );
-    final progress = spec == null
+    final progressAsync = spec == null
         ? null
-        : ref
-              .watch(
-                goalAgentProgressViewForSpanProvider((
-                  agentId: agentId,
-                  historyDays: timeSpanDays,
-                )),
-              )
-              .value;
+        : ref.watch(
+            goalAgentProgressViewForSpanProvider((
+              agentId: agentId,
+              historyDays: timeSpanDays,
+            )),
+          );
+    if (spec == null || _lastProgressSpecId != spec.id) {
+      _lastProgress = null;
+      _lastProgressSpecId = spec?.id;
+    }
+    if (progressAsync?.hasValue ?? false) {
+      _lastProgress = progressAsync?.value;
+    }
+    // A range change selects a different provider-family key. Keep the last
+    // settled projection in place while that key loads so 14d → 30d → 90d
+    // behaves as stale-while-revalidate instead of blanking the dashboard.
+    final progress = progressAsync?.value ?? _lastProgress;
     final assessments =
         ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
     // Same render-time staleness contract as the strip: retained data
@@ -833,6 +844,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                         .read(goalHabitCompletionServiceProvider)
                         .requestReportRefresh(agentId)
                   : null,
+              // The switch the AI card's compact footer no longer carries: a
+              // set-once preference belongs behind the kebab, not on the hero
+              // card the user re-reads daily.
+              automaticUpdatesEnabled: isActive
+                  ? GoalAgentService.automaticUpdatesEnabled(goalIdentity)
+                  : null,
             ),
           ],
         ),
@@ -1195,8 +1212,8 @@ class _GoalHeader extends StatelessWidget {
                   // the goal, a green "Trending up" was the most confident
                   // statement in the header and the least supported by the
                   // evidence under it.
-                  if (coarseHealthOf(health?.trackStatus) !=
-                      GoalCoarseHealth.notEnoughData)
+                  if (unifiedGoalStatusOf(health?.trackStatus) !=
+                      UnifiedGoalStatus.noData)
                     if (health?.direction case final direction?)
                       GoalHealthDirectionChip(direction: direction),
                 ],
@@ -1528,6 +1545,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                     // freshness state, countdown, skip-once, Update now and
                     // the automatic-updates switch.
                     AgentAutomationRow(
+                      compact: !isDesktopLayout(context),
                       automaticUpdatesEnabled: automaticUpdatesEnabled,
                       automationBusy: _automationBusy,
                       inferenceAvailable: true,
@@ -1813,7 +1831,13 @@ class _GoalHistorySectionState extends State<_GoalHistorySection> {
   }
 }
 
-enum _GoalDetailMenuAction { edit, updateRead, internals, delete }
+enum _GoalDetailMenuAction {
+  edit,
+  updateRead,
+  automaticUpdates,
+  internals,
+  delete,
+}
 
 class _GoalActionsMenuButton extends ConsumerWidget {
   const _GoalActionsMenuButton({
@@ -1821,6 +1845,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
     required this.agentName,
     required this.canEdit,
     required this.onUpdateRead,
+    required this.automaticUpdatesEnabled,
   });
 
   final String agentId;
@@ -1830,6 +1855,12 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   /// Requests a report refresh (§4b overflow: "Update read"); null while
   /// the goal is not active.
   final VoidCallback? onUpdateRead;
+
+  /// Current automatic-updates preference, or null while the goal is not
+  /// active (the item is then omitted). The AI card's footer deliberately
+  /// carries only freshness + the manual trigger; this menu is where the
+  /// standing preference lives.
+  final bool? automaticUpdatesEnabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1843,6 +1874,18 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             beamToNamed(goalEditPath(agentId));
           case _GoalDetailMenuAction.updateRead:
             onUpdateRead?.call();
+          case _GoalDetailMenuAction.automaticUpdates:
+            final enabled = automaticUpdatesEnabled;
+            if (enabled != null) {
+              unawaited(
+                ref
+                    .read(goalAgentServiceProvider)
+                    .updateAutomaticUpdates(
+                      agentId: agentId,
+                      enabled: !enabled,
+                    ),
+              );
+            }
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -1886,6 +1929,15 @@ class _GoalActionsMenuButton extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        if (automaticUpdatesEnabled != null)
+          CheckedPopupMenuItem<_GoalDetailMenuAction>(
+            value: _GoalDetailMenuAction.automaticUpdates,
+            checked: automaticUpdatesEnabled!,
+            child: Text(
+              context.messages.taskAgentAutomaticUpdatesLabel,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         PopupMenuItem<_GoalDetailMenuAction>(

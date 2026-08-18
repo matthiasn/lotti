@@ -534,6 +534,23 @@ final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
       ];
     }, name: 'activeGoalAgentsProvider');
 
+/// Dormant goal agents, retained as the user's completed/archive history.
+///
+/// Keeping this separate from [activeGoalAgentsProvider] preserves every
+/// active-only runtime consumer while giving the unified Goals page an
+/// explicit archive doorway instead of making completed goals look deleted.
+final FutureProvider<List<AgentIdentityEntity>> dormantGoalAgentsProvider =
+    FutureProvider.autoDispose<List<AgentIdentityEntity>>((ref) async {
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final agents = await ref
+          .watch(agentServiceProvider)
+          .listAgents(lifecycle: AgentLifecycle.dormant);
+      return [
+        for (final identity in agents)
+          if (identity.kind == AgentKinds.goalAgent) identity,
+      ];
+    }, name: 'dormantGoalAgentsProvider');
+
 /// The goal's PAST ads — every terminal nudge, newest outcome first —
 /// for the detail page's durable interaction history (ADR 0055: past
 /// ads and their outcomes remain browsable; only `draft`/`ready`

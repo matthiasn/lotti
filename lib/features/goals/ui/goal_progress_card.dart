@@ -1964,7 +1964,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     // the reliability tail read as part of that figure.
     final note = habit.deficit == 0
         ? null
-        : context.messages.goalProgressDaysToHealthy(habit.deficit);
+        : context.messages.goalDaysToRecover(habit.deficit);
     // What the habit asks for, and how its window moves — one caption
     // instead of a title, a caption and a cadence line all restating the
     // same seven days.
@@ -2074,7 +2074,13 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                     const Spacer(),
                   if (note != null) ...[
                     SizedBox(width: tokens.spacing.step3),
-                    Text(note, style: noteStyle),
+                    Flexible(
+                      child: Text(
+                        note,
+                        textAlign: TextAlign.end,
+                        style: noteStyle,
+                      ),
+                    ),
                   ],
                 ],
               ),

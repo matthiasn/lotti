@@ -75,13 +75,17 @@ void main() {
 
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  AgentIdentityEntity identity(String id, String name) =>
+  AgentIdentityEntity identity(
+    String id,
+    String name, {
+    AgentLifecycle lifecycle = AgentLifecycle.active,
+  }) =>
       AgentDomainEntity.agent(
             id: id,
             agentId: id,
             kind: AgentKinds.goalAgent,
             displayName: name,
-            lifecycle: AgentLifecycle.active,
+            lifecycle: lifecycle,
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: '$id:state',
@@ -169,6 +173,8 @@ void main() {
     Map<String, int> streaks = const {},
     Size viewport = const Size(800, 2600),
     GoalCriterion? goalCriteria,
+    List<AgentIdentityEntity>? activeAgents,
+    List<AgentIdentityEntity> archivedAgents = const [],
     List<Override> extraOverrides = const [],
   }) async {
     // Tall surface so the whole column — down to the aggregate heatmap and
@@ -200,8 +206,11 @@ void main() {
             )
           else
             activeGoalAgentsProvider.overrideWith(
-              (ref) async => [identity('goal-1', 'Fitness')],
+              (ref) async => activeAgents ?? [identity('goal-1', 'Fitness')],
             ),
+          dormantGoalAgentsProvider.overrideWith(
+            (ref) async => archivedAgents,
+          ),
           if (healthFails)
             goalAgentHealthProvider('goal-1').overrideWith(
               (ref) async => throw StateError('health unavailable'),
@@ -245,6 +254,63 @@ void main() {
       if (successOnlyToday.isNotEmpty) '2026-08-15': successOnlyToday,
     },
   );
+
+  testWidgets('zero goals renders a first-run invitation and create action', (
+    tester,
+  ) async {
+    await pump(tester, baseState(), activeAgents: const []);
+
+    expect(
+      find.textContaining('Create a goal to bring habits'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('unified-goals-empty-cta')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('dormant goals remain reachable through the archive doorway', (
+    tester,
+  ) async {
+    final archived = identity(
+      'goal-old',
+      'Old goal',
+      lifecycle: AgentLifecycle.dormant,
+    );
+    await pump(
+      tester,
+      baseState(),
+      activeAgents: const [],
+      archivedAgents: [archived],
+      extraOverrides: [
+        goalAgentHealthProvider(
+          'goal-old',
+        ).overrideWith((ref) async => health('goal-old')),
+        goalAgentProgressViewProvider(
+          'goal-old',
+        ).overrideWith((ref) async => progress()),
+        goalAssessmentHistoryProvider(
+          'goal-old',
+        ).overrideWith((ref) async => []),
+      ],
+    );
+
+    expect(find.text('Archived goal · 1'), findsOneWidget);
+    expect(
+      find.byKey(const Key('unified-archived-goal-card-goal-old')),
+      findsNothing,
+    );
+
+    await tester.ensureVisible(find.text('Archived goal · 1'));
+    await tester.tap(find.text('Archived goal · 1'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('unified-archived-goal-card-goal-old')),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('renders the summary card, the goal card with its habit row, '
       'the orphan group, and the aggregate dashboard cards', (tester) async {
@@ -605,6 +671,7 @@ void main() {
           activeGoalAgentsProvider.overrideWith(
             (ref) async => [identity('goal-1', 'Fitness')],
           ),
+          dormantGoalAgentsProvider.overrideWith((ref) async => []),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => health('goal-1')),

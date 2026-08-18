@@ -2644,6 +2644,32 @@ class AppLocalizationsIt extends AppLocalizations {
   String get apiKeyShowTooltip => 'Mostra la chiave API';
 
   @override
+  String get audioPlayerPause => 'Metti in pausa l’audio';
+
+  @override
+  String get audioPlayerPlay => 'Riproduci audio';
+
+  @override
+  String audioPlayerPosition(String current, String total) {
+    return '$current di $total';
+  }
+
+  @override
+  String get audioPlayerSeekHint =>
+      'Scorri in alto o in basso per avanzare o tornare indietro; tocca o trascina per scorrere.';
+
+  @override
+  String audioPlayerSpeed(String speed) {
+    return 'Velocità di riproduzione, $speed';
+  }
+
+  @override
+  String get audioPlayerTimeline => 'Sequenza temporale audio';
+
+  @override
+  String get audioPlayerWaveform => 'Forma d’onda audio';
+
+  @override
   String get audioRecordingCancel => 'Annulla';
 
   @override
@@ -2661,7 +2687,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Disattivare la registrazione?';
 
   @override
+  String get audioRecordingLive => 'Registrazione avviata';
+
+  @override
   String get audioRecordingPause => 'Pausa';
+
+  @override
+  String get audioRecordingRecord => 'Registra';
 
   @override
   String get audioRecordingResume => 'Riprendi';
@@ -6145,16 +6177,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Crea immagine dalla descrizione vocale';
 
   @override
-  String goalAgentLifetimeTimePill(String duration) {
-    return '$duration di elaborazione';
-  }
-
-  @override
-  String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Tempo totale di lavoro del modello di questo agente, su $calls chiamate.';
-  }
-
-  @override
   String get goalAssessmentHistoryTitle => 'Riflessioni quotidiane';
 
   @override
@@ -6304,15 +6326,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalCheckInAddVoiceNote => 'Aggiungi una nota vocale';
 
   @override
+  String get goalCheckInClose => 'Chiudi';
+
+  @override
   String get goalCheckInComposerTitle => 'Check-in';
 
   @override
   String goalCheckInDimensionsRated(int count) {
-    return '$count dimensioni valutate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dimensioni valutate',
+      one: '1 dimensione valutata',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get goalCheckInDone => 'Fatto';
 
   @override
   String get goalCheckInKindNote => 'NOTA';
@@ -6334,6 +6362,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalCheckInRecordCta => 'Registra un check-in';
+
+  @override
+  String get goalCheckInSave => 'Salva check-in';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -6360,13 +6391,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalCoarseHealthBehind => 'In ritardo';
 
   @override
-  String get goalCoarseHealthHealthy => 'In forma';
-
-  @override
   String get goalCoarseHealthNotEnoughData => 'Dati insufficienti';
-
-  @override
-  String get goalCoarseHealthRestarting => 'Riparte';
 
   @override
   String get goalCompositeLastSevenDays => 'Ultimi 7 giorni';
@@ -6430,8 +6455,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count giorni per recuperare',
-      one: '1 giorno per recuperare',
+      other: 'Servono $count giorni riusciti per recuperare',
+      one: 'Serve 1 giorno riuscito per recuperare',
     );
     return '$_temp0';
   }
@@ -6995,17 +7020,6 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String goalProgressDaysToHealthy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count giorni per essere in forma',
-      one: '1 giorno per essere in forma',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get goalProgressDone => 'fatto · obiettivo raggiunto';
 
   @override
@@ -7266,7 +7280,7 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get habitsDoneTodayLabel => 'Fatto oggi';
+  String get habitsDoneTodayLabel => 'Abitudini completate oggi';
 
   @override
   String get habitSectionOptionsTitle => 'Opzioni';
@@ -13439,6 +13453,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String unifiedGoalsArchivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Obiettivi archiviati · $count',
+      one: 'Obiettivo archiviato · 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsEmptyInvitation =>
+      'Crea un obiettivo per riunire qui abitudini, segnali e indicazioni del tuo agente.';
 
   @override
   String get unifiedGoalStatusAtRisk => 'A rischio';

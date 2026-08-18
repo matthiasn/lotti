@@ -2051,6 +2051,40 @@ void main() {
     expect([for (final a in agents) a.agentId], ['goal-a']);
   });
 
+  test(
+    'dormantGoalAgentsProvider lists archived goal identities only',
+    () async {
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.dormant),
+      ).thenAnswer(
+        (_) async => [
+          goalIdentity('goal-archived').copyWith(
+            lifecycle: AgentLifecycle.dormant,
+          ),
+          AgentDomainEntity.agent(
+                id: 'task-archived',
+                agentId: 'task-archived',
+                kind: AgentKinds.taskAgent,
+                displayName: 'task',
+                lifecycle: AgentLifecycle.dormant,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: 'task-archived:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
+        ],
+      );
+
+      final agents = await container.read(dormantGoalAgentsProvider.future);
+
+      expect([for (final agent in agents) agent.agentId], ['goal-archived']);
+    },
+  );
+
   test('the banner provider returns nothing while the unified Goals flag '
       'is off', () async {
     final gated = ProviderContainer(

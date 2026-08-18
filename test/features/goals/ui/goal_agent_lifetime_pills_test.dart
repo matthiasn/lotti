@@ -7,7 +7,7 @@ import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 
 void main() {
-  testWidgets('shows lifetime Melious impact and compute pills', (
+  testWidgets('shows lifetime Melious impact without thinking duration', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -36,14 +36,14 @@ void main() {
     await tester.pump();
 
     expect(find.text('€0.42 · 12 Wh · 3.4 g'), findsOneWidget);
-    expect(find.text('1h 1m thinking'), findsOneWidget);
+    expect(find.textContaining('thinking'), findsNothing);
     expect(
       find.byKey(const ValueKey('goal-agent-lifetime-pills')),
       findsOneWidget,
     );
   });
 
-  testWidgets('uses the localized sub-minute duration in the lifetime pill', (
+  testWidgets('does not expose thinking duration in another locale', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -61,7 +61,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Unter 1 Min. Denkzeit'), findsOneWidget);
+    expect(find.textContaining('Denkzeit'), findsNothing);
   });
 
   testWidgets('hides governance pills when the agent has no calls', (
@@ -85,7 +85,7 @@ void main() {
     );
   });
 
-  testWidgets('withholds AI time when legacy calls have no duration', (
+  testWidgets('still shows impact when legacy calls have no duration', (
     tester,
   ) async {
     await tester.pumpWidget(

@@ -363,8 +363,12 @@ void main() {
         final node = tester.getSemantics(semanticsFinder);
         final data = node.getSemanticsData();
         expect(data.value, '00:15 of 00:45');
-        expect(data.hint, 'Tap to seek, drag to scrub');
-        expect(data.hasAction(SemanticsAction.tap), isTrue);
+        expect(data.hint, 'Swipe up or down to seek; tap or drag to scrub.');
+        expect(data.flagsCollection.isSlider, isTrue);
+        expect(data.increasedValue, '00:20 of 00:45');
+        expect(data.decreasedValue, '00:10 of 00:45');
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
       } finally {
         handle.dispose();
       }

@@ -25,7 +25,9 @@ class AudioRecordingModal {
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
   /// selects which navigator hosts the sheet.
-  static Future<void> show(
+  /// Shows the recording sheet. Resolves with the created audio entry's id,
+  /// or null when the recording was discarded.
+  static Future<String?> show(
     BuildContext context, {
     String? linkedId,
     String? categoryId,
@@ -69,6 +71,7 @@ class AudioRecordingModal {
     if (linkedId == null && createdId != null) {
       beamToNamed('/journal/$createdId');
     }
+    return createdId;
   }
 }
 
@@ -128,7 +131,15 @@ class _AudioRecordingModalContentState
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildVisualizer(state, recordingStyle, theme),
+            Semantics(
+              liveRegion: true,
+              label: state.status == AudioRecorderStatus.recording
+                  ? context.messages.audioRecordingLive
+                  : '',
+              child: ExcludeSemantics(
+                child: _buildVisualizer(state, recordingStyle, theme),
+              ),
+            ),
 
             // Duration display
             Text(
@@ -471,7 +482,7 @@ class _AudioRecordingModalContentState
         ),
         child: Center(
           child: Text(
-            'RECORD',
+            context.messages.audioRecordingRecord.toUpperCase(),
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize: 14,

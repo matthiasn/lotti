@@ -2633,6 +2633,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get apiKeyShowTooltip => 'Zobrazit API klíč';
 
   @override
+  String get audioPlayerPause => 'Pozastavit zvuk';
+
+  @override
+  String get audioPlayerPlay => 'Přehrát zvuk';
+
+  @override
+  String audioPlayerPosition(String current, String total) {
+    return '$current z $total';
+  }
+
+  @override
+  String get audioPlayerSeekHint =>
+      'Přejetím nahoru nebo dolů posuň přehrávání; klepnutím nebo tažením procházej záznam.';
+
+  @override
+  String audioPlayerSpeed(String speed) {
+    return 'Rychlost přehrávání: $speed';
+  }
+
+  @override
+  String get audioPlayerTimeline => 'Časová osa zvuku';
+
+  @override
+  String get audioPlayerWaveform => 'Zvuková křivka';
+
+  @override
   String get audioRecordingCancel => 'Zrušit';
 
   @override
@@ -2649,7 +2675,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Zahodit nahrávku?';
 
   @override
+  String get audioRecordingLive => 'Nahrávání zahájeno';
+
+  @override
   String get audioRecordingPause => 'Pozastavit';
+
+  @override
+  String get audioRecordingRecord => 'Nahrát';
 
   @override
   String get audioRecordingResume => 'Pokračovat';
@@ -6135,16 +6167,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
-  String goalAgentLifetimeTimePill(String duration) {
-    return '$duration přemýšlení';
-  }
-
-  @override
-  String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Celkový čas, který model tohoto agenta strávil prací, za $calls volání.';
-  }
-
-  @override
   String get goalAssessmentHistoryTitle => 'Denní úvahy';
 
   @override
@@ -6294,15 +6316,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCheckInAddVoiceNote => 'Přidat hlasovou poznámku';
 
   @override
+  String get goalCheckInClose => 'Zavřít';
+
+  @override
   String get goalCheckInComposerTitle => 'Hlášení';
 
   @override
   String goalCheckInDimensionsRated(int count) {
-    return 'Hodnoceno dimenzí: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ohodnoceno $count dimenzí',
+      few: 'Ohodnoceny $count dimenze',
+      one: 'Ohodnocena 1 dimenze',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get goalCheckInDone => 'Hotovo';
 
   @override
   String get goalCheckInKindNote => 'POZNÁMKA';
@@ -6324,6 +6353,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalCheckInRecordCta => 'Nahrát hlášení';
+
+  @override
+  String get goalCheckInSave => 'Uložit hlášení';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -6350,13 +6382,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCoarseHealthBehind => 'Pozadu';
 
   @override
-  String get goalCoarseHealthHealthy => 'V pořádku';
-
-  @override
   String get goalCoarseHealthNotEnoughData => 'Málo dat';
-
-  @override
-  String get goalCoarseHealthRestarting => 'Začíná znovu';
 
   @override
   String get goalCompositeLastSevenDays => 'Posledních 7 dní';
@@ -6414,9 +6440,9 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dní do zotavení',
-      few: '$count dny do zotavení',
-      one: '1 den do zotavení',
+      other: 'K návratu na správnou cestu je potřeba $count úspěšných dní',
+      few: 'K návratu na správnou cestu jsou potřeba $count úspěšné dny',
+      one: 'K návratu na správnou cestu je potřeba 1 úspěšný den',
     );
     return '$_temp0';
   }
@@ -6983,18 +7009,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String goalProgressDaysToHealthy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dní do zdravého stavu',
-      few: '$count dny do zdravého stavu',
-      one: '1 den do zdravého stavu',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get goalProgressDone => 'hotovo · cíl splněn';
 
   @override
@@ -7255,7 +7269,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get habitsDoneTodayLabel => 'Hotovo dnes';
+  String get habitsDoneTodayLabel => 'Dnes splněné návyky';
 
   @override
   String get habitSectionOptionsTitle => 'Možnosti';
@@ -13415,6 +13429,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String unifiedGoalsArchivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Archivovaných cílů · $count',
+      few: 'Archivované cíle · $count',
+      one: 'Archivovaný cíl · 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsEmptyInvitation =>
+      'Vytvoř si cíl a měj tady pohromadě návyky, signály a vedení svého agenta.';
 
   @override
   String get unifiedGoalStatusAtRisk => 'V ohrožení';

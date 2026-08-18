@@ -53,6 +53,7 @@ void main() {
           enabled: enabled,
           openRecorder: (context, {required goalEntryId, categoryId}) async {
             recorded.add(goalEntryId);
+            return 'audio-1';
           },
         ),
         overrides: [

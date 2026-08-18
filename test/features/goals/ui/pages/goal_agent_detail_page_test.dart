@@ -207,6 +207,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Interactions'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('agentAutomationRowCompact')),
+      findsOneWidget,
+    );
+    expect(find.text('Automatic updates'), findsNothing);
 
     // The reload affordances ride the read card itself, exactly like the
     // task agent section — no expander in between.
@@ -227,6 +232,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await tester.pumpAndSettle();
+    expect(find.text('Automatic updates'), findsOneWidget);
     await tester.tap(find.text('Edit goal'));
     expect(navigated, ['/goals/details/goal-1/edit']);
     navigated.clear();
@@ -1160,6 +1166,10 @@ void main() {
 
   testWidgets('a stale goal report uses the shared countdown, skip, toggle, '
       'and manual refresh controls', (tester) async {
+    tester.view
+      ..physicalSize = const Size(1200, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final now = DateTime(2026, 8, 13, 12);
     var stateReads = 0;
     var agentState =
@@ -1193,6 +1203,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const GoalAgentDetailPage(agentId: 'goal-1'),
+          mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
           overrides: [
             habitsControllerProvider.overrideWith(
               () => FakeHabitsController(
@@ -3438,6 +3449,25 @@ void main() {
             )
             as GoalSpecVersionEntity;
     final today = DateTime.utc(2026, 8, 11);
+    final progress30 = Completer<GoalProgressView?>();
+    GoalProgressView progressFor(int targetCount) => GoalProgressView(
+      today: today,
+      habits: [
+        GoalHabitProgressView(
+          habitId: 'walk',
+          name: 'Walk',
+          targetCount: targetCount,
+          days: [
+            for (var offset = 6; offset >= 0; offset--)
+              GoalProgressDay(
+                day: today.subtract(Duration(days: offset)),
+                value: 0,
+              ),
+          ],
+          successfulWeeks: 0,
+        ),
+      ],
+    );
     final habitsController = FakeHabitsController(
       HabitsState.initial(now: DateTime(2026, 8, 11)).copyWith(
         // An ACTIVE definition for the goal's habit: the scoped chart
@@ -3468,26 +3498,11 @@ void main() {
           goalAgentProgressViewForSpanProvider((
             agentId: 'goal-1',
             historyDays: 14,
-          )).overrideWith(
-            (ref) async => GoalProgressView(
-              today: today,
-              habits: [
-                GoalHabitProgressView(
-                  habitId: 'walk',
-                  name: 'Walk',
-                  targetCount: 3,
-                  days: [
-                    for (var offset = 6; offset >= 0; offset--)
-                      GoalProgressDay(
-                        day: today.subtract(Duration(days: offset)),
-                        value: 0,
-                      ),
-                  ],
-                  successfulWeeks: 0,
-                ),
-              ],
-            ),
-          ),
+          )).overrideWith((ref) async => progressFor(3)),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 30,
+          )).overrideWith((ref) => progress30.future),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
           nudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
@@ -3522,12 +3537,30 @@ void main() {
     // track and the chart — the chart card's own picker is hidden here, so
     // the page never renders two controls fighting over one shared span.
     expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+    expect(find.textContaining('3× per 7 days'), findsOneWidget);
     // The full-width hero stack pushes the evidence sections below the fold
     // on the default test surface.
-    await tester.ensureVisible(find.text('30d').first);
-    await tester.tap(find.text('30d').first);
+    tester
+        .widget<TimeSpanSegmentedControl>(
+          find.byType(TimeSpanSegmentedControl),
+        )
+        .onValueChanged(30);
     await tester.pump();
     expect(habitsController.lastTimeSpan, 30);
+    habitsController.emit(
+      habitsController.state.copyWith(timeSpanDays: 30),
+    );
+    await tester.pump();
+
+    // The new provider-family key is unresolved, but established evidence
+    // remains on screen instead of flashing the whole progress section away.
+    expect(find.textContaining('3× per 7 days'), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsOneWidget);
+
+    progress30.complete(progressFor(5));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('5× per 7 days'), findsOneWidget);
+    expect(find.textContaining('3× per 7 days'), findsNothing);
 
     // The goal-scoped chart card: same shell as the habits page, its
     // own title, the chart scoped to this goal's criterion habit ids.
@@ -3755,7 +3788,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     // And it folds the recovery hint into its pill, like the page header.
-    expect(find.text('At risk · 2 days to recover'), findsNWidgets(2));
+    expect(
+      find.text('At risk · 2 successful days needed to recover'),
+      findsNWidgets(2),
+    );
   });
 
   testWidgets('a stale flag with NO displayed read renders no out-of-date '

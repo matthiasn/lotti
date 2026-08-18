@@ -100,8 +100,9 @@ the recorder, **deletes the partial file** and creates no entry — nothing is
 transcribed and no task agent is woken. The modal's discard control asks for
 confirmation first, so the page returns to exactly how it looked before.
 
-`pause()` and `resume()` exist on the controller but are **not surfaced by the
-current modal UI**.
+The modal surfaces `pause()` and `resume()` alongside stop and discard. While
+the microphone is live, its localized recording announcement is exposed as a
+live region so assistive technology receives the transition immediately.
 
 There is no asynchronous recorder initialization state: `build()` returns
 `stopped` immediately. The vestigial `showIndicator` field remains easy to
@@ -142,7 +143,9 @@ letting the two compete for the output device.
 
 Waveforms are extracted by `AudioWaveformService` and exposed through
 `audioWaveformProvider`, which caches them so scrubbing does not re-analyse the
-file. Disk-cache writes queue their prune passes per service instance, so two
+file. The player, speed control, timeline, and waveform expose localized
+semantics; timeline and waveform scrubbing use slider semantics with five-second
+increment and decrement actions. Disk-cache writes queue their prune passes per service instance, so two
 concurrent extractions cannot recursively list and delete the cache tree at the
 same time. Pruning retains the 1,000 newest files by modification time. A file
 that disappears after listing but before its metadata is read is treated as

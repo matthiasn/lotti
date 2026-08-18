@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Formats a [Duration] into `hh:mm:ss` or `mm:ss` for audio playback UI.
 String formatAudioDuration(Duration duration) {
@@ -16,6 +17,22 @@ String formatAudioDuration(Duration duration) {
   }
 
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+}
+
+/// Five-second semantic step used by both custom audio scrubbers.
+///
+/// Pointer users can seek continuously; assistive technologies need bounded
+/// increase/decrease actions so the custom paint behaves like a real slider.
+Duration audioSemanticSeekTarget({
+  required Duration progress,
+  required Duration total,
+  required bool forward,
+}) {
+  const step = Duration(seconds: 5);
+  final target = forward ? progress + step : progress - step;
+  if (target <= Duration.zero) return Duration.zero;
+  if (target >= total) return total;
+  return target;
 }
 
 /// The resolved palette for the audio progress/waveform UI: the unfilled
@@ -246,23 +263,43 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
           _throttleTimer = null;
         }
 
+        String positionLabel(Duration progress) =>
+            context.messages.audioPlayerPosition(
+              formatAudioDuration(progress),
+              formatAudioDuration(widget.total),
+            );
+        final increased = audioSemanticSeekTarget(
+          progress: widget.progress,
+          total: widget.total,
+          forward: true,
+        );
+        final decreased = audioSemanticSeekTarget(
+          progress: widget.progress,
+          total: widget.total,
+          forward: false,
+        );
+
         return Semantics(
-          label: widget.semanticLabel ?? 'Audio timeline',
-          value:
-              '${formatAudioDuration(widget.progress)} of '
-              '${formatAudioDuration(widget.total)}',
-          increasedValue: 'Seek forward',
-          decreasedValue: 'Seek backward',
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTapDown: (details) => handleImmediate(details.localPosition),
-            onHorizontalDragStart: (details) =>
-                handleThrottled(details.localPosition),
-            onHorizontalDragUpdate: (details) =>
-                handleThrottled(details.localPosition),
-            onHorizontalDragEnd: (_) => handleDragEnd(),
-            onHorizontalDragCancel: handleDragEnd,
-            child: bar,
+          slider: true,
+          label: widget.semanticLabel ?? context.messages.audioPlayerTimeline,
+          value: positionLabel(widget.progress),
+          hint: context.messages.audioPlayerSeekHint,
+          increasedValue: positionLabel(increased),
+          decreasedValue: positionLabel(decreased),
+          onIncrease: () => widget.onSeek(increased),
+          onDecrease: () => widget.onSeek(decreased),
+          child: ExcludeSemantics(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTapDown: (details) => handleImmediate(details.localPosition),
+              onHorizontalDragStart: (details) =>
+                  handleThrottled(details.localPosition),
+              onHorizontalDragUpdate: (details) =>
+                  handleThrottled(details.localPosition),
+              onHorizontalDragEnd: (_) => handleDragEnd(),
+              onHorizontalDragCancel: handleDragEnd,
+              child: bar,
+            ),
           ),
         );
       },
