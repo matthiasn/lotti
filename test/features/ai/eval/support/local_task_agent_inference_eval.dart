@@ -1164,6 +1164,15 @@ LocalTaskAgentEvalScenario _derivedEstimateScenario(
         expectedArgumentsSubset: {'minutes': 195},
       ),
     ],
+    // The scoped work is three interviews and a write-up, and turning that
+    // into checklist items is the agent doing its job. All three models did
+    // it on the first live run and the scenario failed them for it, which
+    // graded tool minimalism instead of the arithmetic it exists to measure.
+    allowedExtraToolNames: const {
+      TaskAgentToolNames.updateReport,
+      TaskAgentToolNames.recordObservations,
+      TaskAgentToolNames.addMultipleChecklistItems,
+    },
     promptVariant: variant,
     requiredReportTermGroups: const [
       ['interview'],
@@ -1234,9 +1243,12 @@ LocalTaskAgentEvalScenario _undecidedEvidenceScenario(
       ['ines'],
       ['decid', 'decision', 'undecided'],
     ],
-    // Naming a date to say it is undecided is correct; asserting either as the
-    // plan is the failure, which is why these are claims and not terms.
-    forbiddenReportClaims: const ['march', 'june', 'scheduled', 'submit'],
+    // NOT the month names, and not 'submit'. A correct report has to name both
+    // options in order to say the choice is open — "undecided on March vs.
+    // June", "weighing whether to submit to March or hold for June" — and the
+    // first live run failed all three models for writing exactly that. What
+    // must never appear is language asserting the choice was MADE.
+    forbiddenReportClaims: const ['scheduled', 'confirmed'],
   );
 }
 

@@ -158,4 +158,35 @@ void main() {
       );
     });
   });
+
+  group('open-question markers', () {
+    // Verbatim from a live run: all three models wrote sentences of this shape
+    // and the scenario failed them for naming the options it asked them to
+    // weigh.
+    test('naming options under an open question is not asserting one', () {
+      for (final text in [
+        'undecided on march vs. june conference; pending ines talk next week',
+        'weighing march vs june conference submission, gated on the rewrite',
+        "you're weighing whether to submit a talk to the march conference "
+            'or hold for june.',
+      ]) {
+        expect(
+          containsAffirmativeReportClaim(text, 'march'),
+          isFalse,
+          reason: text,
+        );
+      }
+    });
+
+    test('committing to one of the options still fires', () {
+      // The guard: the cues above must not excuse an actual decision.
+      expect(
+        containsAffirmativeReportClaim(
+          'the talk is scheduled for the march conference.',
+          'scheduled',
+        ),
+        isTrue,
+      );
+    });
+  });
 }
