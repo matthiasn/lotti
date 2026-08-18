@@ -233,6 +233,47 @@ sources, an instruction the context contradicts, a report that must decline to
 conclude. Until then a pass here means "not obviously broken", and a model
 choice should rest on latency and cost, which is all the table above measures.
 
+## 2026-08-18: the suite finally reports a bill
+
+Every cost statement about this suite before now was inferred from token counts,
+because the harness recorded tokens and threw the billing away. The goal suite
+had solved this from day one: mint a wake-run key per case, pass it as
+`consumptionWakeRunKey`, register an `AiInteractionCapture` in the live test —
+which IS the billing pipeline, since `ConversationRepository` records a
+consumption event per turn only when one is registered, and the Melious
+`billing_cost` / `environment_impact` side-channel rides on it. Ported here.
+
+Two rules copied deliberately. A forced report retry bills to the SAME key,
+because it is part of what the case cost and billing it elsewhere would
+understate exactly the models that need the retry most. And a missing bill is
+never zero: `credits` is null rather than 0 and the per-case figure divides by
+BILLED cases, so patchy telemetry widens the uncertainty instead of flattering
+the model that has it.
+
+### The bill contradicts the token estimate
+
+Two scenarios, three models, one sample:
+
+| Model | Credits/case | Wh/case |
+| --- | ---: | ---: |
+| `deepseek-v4-flash-0731` | 0.000793 | 0.53 |
+| `qwen3.5-122b-a10b` | 0.001529 | 6.70 |
+| `glm-5.2` | 0.010711 | 0.77 |
+
+**glm-5.2 costs 13.5x deepseek per case**, which no token-based estimate would
+have found: glm had the *highest* cache-hit rate of the three (94% against
+deepseek's 93%) and near-identical token volumes. Credit pricing is not a
+function of tokens, so a token proxy is not a cheap approximation of cost — it
+is a different quantity that happens to share units.
+
+Energy separates differently again. qwen burns 12.8x deepseek per case while
+its credit cost stays moderate, consistent with it running on different
+infrastructure — `provider_id: regolo` in `IT`, against `melious` in `FI` for
+the other two — where it also reports zero cached tokens on a repeated prompt.
+
+The sample is small and one-shot, but the spread is orders of magnitude, not
+percentages. Read it as "glm is expensive here", not as a precise multiple.
+
 ## 2026-08-18: three scenarios summarising cannot pass
 
 The saturated baseline above measured extraction. Every required term in the

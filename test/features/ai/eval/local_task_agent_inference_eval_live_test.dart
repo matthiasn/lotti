@@ -10,7 +10,10 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/get_it.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../ai_consumption/test_utils.dart';
 import 'support/local_task_agent_inference_eval.dart';
 import 'support/penguin_task_agent_eval_scenarios.dart';
 
@@ -22,6 +25,17 @@ void main() {
       // fails every request with HTTP 400 — clear it so the eval can reach a
       // real provider.
       HttpOverrides.global = null;
+
+      // The capture bench IS the billing pipeline: ConversationRepository
+      // records a consumption event per turn only when an AiInteractionCapture
+      // is registered, and the Melious billing_cost / environment_impact
+      // side-channel rides on it. Without this the run still works and simply
+      // reports no cost at all, which is how every earlier run came back with
+      // token counts and no bill.
+      registerAllFallbackValues();
+      final attribution = AiInteractionCaptureTestBench.create()..register();
+      addTearDown(attribution.unregister);
+      addTearDown(getIt.reset);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -105,6 +119,10 @@ void main() {
         reportEditorMaxAttempts: parseLocalTaskAgentEvalReportEditorAttempts(
           Platform.environment['LOCAL_TASK_AGENT_EVAL_REPORT_EDITOR_ATTEMPTS'],
         ),
+        consumptionForWakeRunKey: (wakeRunKey) => attribution
+            .recordedInteractions
+            .where((event) => event.wakeRunKey == wakeRunKey)
+            .toList(growable: false),
       );
 
       final report = await runner.run(
