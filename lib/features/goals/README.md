@@ -262,6 +262,31 @@ turns, search, and inline nudge cards remain later conversation increments;
 the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
+**Check-ins** are the free-form counterpart to the daily reflection: the user
+telling the goal what is actually going on, in their own words, whenever it is
+worth saying. Audio first — one tap into the shared recorder from the goal's
+app-bar mic, its Check-ins header, or a banner whose CTA asks for one — with
+"write instead" as the typed fallback. A check-in is an ordinary journal entry
+linked to the goal, so it inherits sync, privacy, categories, export and
+transcription rather than owning any of them, and the recording is saved
+before it is transcribed so nothing is lost waiting for words.
+
+They appear as dated beats on the goal's timeline, which is the shared
+`lib/widgets/timeline/` rail that Events uses, merged with the standing daily
+reflections so both halves of "what I've said about this goal" read as one
+story. A wide window renders the rail as a second column beside the dashboard
+(the conversation drawer keeps overlaying both); a phone previews three beats
+in a card after This week, with the full history at
+`/goals/details/<id>/timeline`. The reflection sheet's note gained a voice row,
+whose transcript is deliberately never merged into the typed note.
+
+The agent reads a **compacted** form, never a transcript: each check-in is
+distilled once into what happened, what the user committed to, blockers, mood
+and asks, and the recent ones ride into the wake through the `userVoice` FACTS
+section under a token budget. Those words inform coaching and record
+commitments; they never override deterministic criterion results. Checking in
+marks the standing report stale rather than waking the agent per recording.
+
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs
