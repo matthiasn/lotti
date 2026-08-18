@@ -240,7 +240,7 @@ follow, and both are deliberate:
   counters honour it. Counting attempts instead would tell the user it had
   imported samples it had not.
 
-# Type strings, and the two composites
+# Type strings, and the composites
 
 Dashboards store a health type as a string. Most are the plugin enum's
 `toString()` (`HealthDataType.STEPS`); a few are synthetic.
@@ -249,11 +249,18 @@ Dashboards store a health type as a string. Most are the plugin enum's
   are Lotti's own — written by `addActivityEntries` as one aggregated entry per
   calendar day. Any type containing `cumulative` routes to the activity fetcher
   rather than to a per-sample read.
-- `compositeStorageTypes` expands the two composite chart keys before the store
-  is queried: `BLOOD_PRESSURE` → systolic + diastolic, and `BODY_MASS_INDEX` →
-  **weight**. The second looks wrong and is not: the "Weight vs. Body Mass Index"
-  card plots the weight series (see `DashboardHealthBmiChart`), so BMI samples
-  are never needed.
+- `compositeStorageTypes` expands a chart key into the types actually read
+  before the store is queried: `BLOOD_PRESSURE` → systolic + diastolic,
+  `BODY_MASS_INDEX` → **weight**, and `SLEEP_ASLEEP` → itself plus the three
+  staged types. The weight one looks wrong and is not: the "Weight vs. Body Mass
+  Index" card plots the weight series (see `DashboardHealthBmiChart`), so BMI
+  samples are never needed. The sleep one is explained below — it is the fix for
+  a chart that could never catch itself up.
+
+  Expansion order matters: the delta window is computed from `actualTypes.first`
+  (`latestQuantitativeByType`), so the generic series being caught up has to
+  lead. A stage sorting first would start the window at the stage's newest
+  sample and skip exactly the nights the chart is missing.
 
 `resolveHealthDataTypes` drops names the plugin no longer defines. Resolving to
 an empty list is reported as `noMatchingTypes` and logged as an error, because
@@ -277,6 +284,31 @@ plugin's enum. Deep and REM matched by luck; core — the largest stage of a
 typical night — did not, so the chart showed roughly half of every staged night.
 A membership test against a string is a test nothing type-checks; the test suite
 now asserts every member resolves to a real `HealthDataType`.
+
+**The consequence for the background delta, which is the second bug this
+duplication caused.** HealthKit keeps every stage under one category type, and
+the plugin's iOS reader selects a stage by filtering on the sample's category
+value — so a read of `SLEEP_ASLEEP` matches only `asleepUnspecified` (value 1),
+which an Apple Watch on iOS 16+ never writes. The Asleep card's own delta
+therefore read *nothing*, and the series grew only when a stage card happened to
+be fetched, or from a manual import in Settings, which requests the whole family
+at once. Left alone, the chart froze at the last manual import and drifted
+further behind every night.
+
+```mermaid
+flowchart TD
+  Card["Asleep card opens"] --> Delta["fetchHealthDataDelta<br/>HealthDataType.SLEEP_ASLEEP"]
+  Delta --> Expand{"compositeStorageTypes"}
+  Expand -->|"before: [SLEEP_ASLEEP]"| Filter["iOS reader: value == 1<br/>(asleepUnspecified)"]
+  Filter --> Nothing["Watch writes none → 0 samples"]
+  Expand -->|"after: + LIGHT/DEEP/REM"| Stages["staged samples import"]
+  Stages --> Dup["copied under SLEEP_ASLEEP<br/>(sleepStagesDuplicatedAsAsleep)"]
+  Dup --> Series["Asleep series current"]
+```
+
+The fix is the `SLEEP_ASLEEP` entry in `compositeStorageTypes` rather than a
+change at the call site, and it costs no extra authorization sheet:
+`expandToPermissionFamilies` already widens any sleep type to the whole family.
 
 # Platform gates
 

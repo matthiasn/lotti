@@ -225,6 +225,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the goal wizard now live under the Goals tab.
 
 ### Fixed
+- **The Asleep chart keeps itself up to date again.** On iPhone it only ever
+  gained nights when you ran a manual import from Settings, so the longer you
+  left it the less sleep it appeared to show. Opening the chart now imports the
+  sleep stages it is built from, and it catches up on its own.
 - **DeepSeek V4 Flash works when you choose it.** The model was offered in the
   Melious catalog under an identifier the provider does not serve, so every
   request made with it failed. It now points at the served model.
