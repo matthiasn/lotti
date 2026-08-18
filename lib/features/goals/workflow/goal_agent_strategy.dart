@@ -227,6 +227,14 @@ class GoalAgentStrategy extends ConversationStrategy
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
     final structured = GoalStructuredReport.tryParse(args['report']);
+    // What the RULES read, which is not what gets persisted. A report the
+    // strict parser refused still has text in it, and the rules below are the
+    // model's only warning about that text — skipping them because a slot was
+    // missing spends the one forced retry on the shape and lets the aggregate
+    // rule ambush the retry. Completeness is still judged strictly, from
+    // `structured`, so nothing here can make an incomplete report acceptable.
+    final checkable =
+        structured ?? GoalStructuredReport.lenient(args['report']);
     final tldr = hasStructuredReport
         ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);
@@ -262,13 +270,14 @@ class GoalAgentStrategy extends ConversationStrategy
     final tokenInProse = _statusTokenIn([
       oneLiner,
       tldr,
-      if (structured != null) ...[
-        structured.currentPeriod,
-        structured.rollingWindow,
-        structured.latestChange,
-        structured.coverage,
-        for (final item in structured.now) item.action,
-        ...structured.later,
+      if (checkable != null) ...[
+        checkable.tldr,
+        checkable.currentPeriod,
+        checkable.rollingWindow,
+        checkable.latestChange,
+        checkable.coverage,
+        for (final item in checkable.now) item.action,
+        ...checkable.later,
       ],
       content,
     ]);
@@ -293,9 +302,14 @@ class GoalAgentStrategy extends ConversationStrategy
     // ("127.85" where FACTS carry 127). Both put a wrong number in front of
     // the user, and every evaluated model does it, so it is enforced here
     // rather than asked for in prose. Same authority as trackStatus above.
-    if (structured != null && expectedRollingAggregates.isNotEmpty) {
+    // `isNotEmpty` is free on the strict path — the slot is required there —
+    // and on the lenient one it keeps an absent standing from being reported
+    // twice, once as incomplete and once as missing its aggregate.
+    if (checkable != null &&
+        checkable.rollingWindow.isNotEmpty &&
+        expectedRollingAggregates.isNotEmpty) {
       final missing = expectedRollingAggregates
-          .where((value) => !_quotesNumber(structured.rollingWindow, value))
+          .where((value) => !_quotesNumber(checkable.rollingWindow, value))
           .toList();
       if (missing.isNotEmpty) {
         problems.add(

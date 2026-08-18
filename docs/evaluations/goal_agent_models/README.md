@@ -766,6 +766,48 @@ per-series fields the app renders, instead of prose the model must echo and a
 regex must recover — which would delete this whole class of defect rather than
 repair it. Tracked as `lotti3-lf68`; see "Known gaps".
 
+## The guard stopped applying when the parse failed — 2026-08-18
+
+The last gap of the report-loss story, and the same shape as the matcher bug:
+a rule that could not be satisfied, this time because it was not being asked.
+
+`GoalStructuredReport.tryParse` is all-or-nothing. One absent slot and every
+field is unavailable — including `latestChange` and `coverage`, which may be
+empty but must be *present*, so a model with nothing to report that simply
+omits the key fails the parse. `_handleUpdateReport` then had nothing to read:
+the status-token scan lost the structured slots and the aggregate rule was
+skipped outright behind its `structured != null` guard. The rejection said
+"needs … a complete structured report" and nothing else.
+
+So the model fixed the shape, and met the aggregate rule for the first time on
+the one forced retry a wake gets — ending with no standing report at all. That
+is exactly the sequential-rejection failure batching was built to remove, still
+reachable through the parse path, which is why batching's measured effect was
+smaller than the mechanism suggested it should be.
+
+**The fix** separates what persists from what is checked.
+`GoalStructuredReport.lenient` recovers whatever text is present — missing
+slots read as empty, malformed action entries are dropped — and the two rules
+read that view instead. Completeness is still judged strictly from `tryParse`,
+so nothing lenient can make an incomplete report acceptable, and the lenient
+value is never persisted. One `isNotEmpty` guard keeps an absent standing from
+being reported twice, once as incomplete and once as missing its aggregate.
+
+**Not measured on the matrix.** After the matcher fix the tier-2 baseline sits
+at 53–54/54, so there is no headroom in which to observe this: the residual
+failures are single-digit and the parse path is a fraction of them. It is
+argued from the mechanism and pinned by tests — a report missing `latestChange`
+now collects three rules in one rejection where it previously collected one,
+and reverting the fix turns that test red. Quoting a suite delta here would be
+quoting noise.
+
+**The pattern, third time.** Every defect in this section of the log has been a
+check that was wrong rather than a model that was weak: a rule that punished
+correct prose, a rule reported one at a time, a rule that quietly stopped
+applying. "Would a correct answer pass this?" caught the first. "Is this rule
+even running?" is the same question one level up, and the rejection log is
+where both are cheap to ask.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
@@ -917,20 +959,10 @@ anyway.
 What the runs surfaced and did not close. Where there is a tracker id the
 reasoning still lives here — the id is the task, this is why it matters.
 
-**A report the parser rejects skips most of the guard** (`lotti3-ozt0`, P1).
-`GoalStructuredReport.tryParse` is all-or-nothing over roughly ten shape
-conditions — a missing `rollingWindow`, a `nextActions.later` arriving as a
-string rather than a list, one malformed action item — and returns `null` for
-any of them. `_handleUpdateReport` then adds only the generic "needs … a complete
-structured report" problem: the status-token check no longer sees the
-structured fields (`tldr` is empty and the sections are excluded), and the
-rolling-aggregate check is skipped entirely behind its `structured != null`
-guard. So a model that gets the shape wrong is told about the shape and
-nothing else, fixes it, and meets the aggregate rule for the *first* time on
-the one forced retry it has left. That is precisely the sequential-rules
-failure the batched rejection was written to remove, still reachable through
-the parse path. Automated review raised it on the batching PR; it merged
-without a ruling.
+**A report the parser rejects skips most of the guard** — **closed**
+(`lotti3-ozt0`, P1), by "The guard stopped applying when the parse failed"
+above. Listed rather than deleted so the entry that sent someone here does not
+turn into a dead end.
 
 **The aggregate check proves appearance, not binding** (`lotti3-lf68`, P2).
 Stated in full under "The report loss was a matcher bug" → Still open, where it

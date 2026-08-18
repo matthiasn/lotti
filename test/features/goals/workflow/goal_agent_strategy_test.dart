@@ -455,6 +455,126 @@ void main() {
     expect(gated.reportStatus, GoalTrackStatus.offTrack);
   });
 
+  test(
+    'a report the parser refused is still checked against the rules',
+    () async {
+      // `latestChange` is simply absent — a slot a model with nothing to report
+      // omits, and one `tryParse` requires to be PRESENT even when empty. The
+      // parse therefore fails, and every field it would have exposed used to
+      // become unreadable: the status-token scan lost the structured slots and
+      // the aggregate rule stopped applying altogether. The model was told only
+      // that its report was incomplete, fixed the shape, and met those rules for
+      // the first time on the one forced retry a wake gets — the sequential
+      // rejection batching exists to prevent, reached through the parse path.
+      final gated = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: 'goal-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+        expectedStatus: GoalTrackStatus.offTrack,
+        expectedRollingAggregates: const ['6000'],
+      );
+      await gated.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              // Status agrees with FACTS and `oneLiner` is clean, so the two
+              // violations below can only be found inside the structured slots
+              // the failed parse used to hide.
+              'status': 'offTrack',
+              'oneLiner': 'Well under the daily target.',
+              'report': {
+                'tldr': 'Behind on steps.',
+                'currentPeriod': 'The current period reads offTrack.',
+                'rollingWindow': 'Averaging about 6.5k steps a day.',
+                'coverage': '7 days.',
+                'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(gated.hasReport, isFalse);
+      final refusal = rejection();
+      expect(refusal, contains('broke 3 rules'));
+      expect(refusal, contains('a complete structured report'));
+      // Both of these were unreachable while the parse failure hid the slots.
+      expect(
+        refusal,
+        contains('"offTrack" is a status field value, not prose'),
+      );
+      expect(refusal, contains('6000 is missing'));
+
+      // One retry, every rule honoured, and the report lands.
+      await gated.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'offTrack',
+              'oneLiner': 'Well under the daily target.',
+              'report': {
+                'tldr': 'Behind on steps.',
+                'currentPeriod': 'Around 6.4k yesterday.',
+                'rollingWindow': 'Averaging 6000 steps a day against 10000.',
+                'latestChange': 'Down from last week.',
+                'coverage': '7 days.',
+                'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+      expect(gated.reportStatus, GoalTrackStatus.offTrack);
+    },
+  );
+
+  test('an absent rolling standing is reported once, not twice', () async {
+    // The lenient view reads a missing slot as empty, and an empty standing
+    // trivially fails "quote 6000". Reporting that alongside "incomplete"
+    // would tell the model twice that a section it never wrote is wrong.
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedStatus: GoalTrackStatus.offTrack,
+      expectedRollingAggregates: const ['6000'],
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'offTrack',
+            'oneLiner': 'Well under the daily target.',
+            'report': {
+              'tldr': 'Behind on steps.',
+              'currentPeriod': 'Around 6.4k yesterday.',
+              'latestChange': 'Down from last week.',
+              'coverage': '7 days.',
+              'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(gated.hasReport, isFalse);
+    final refusal = rejection();
+    expect(refusal, contains('a complete structured report'));
+    expect(refusal, isNot(contains('6000 is missing')));
+    // A single problem keeps the plain wording — no "broke N rules" envelope.
+    expect(refusal, isNot(contains('broke')));
+  });
+
   test('a single broken rule reads exactly as it always did', () async {
     // The envelope is for the multiple case only: one problem must not gain
     // a "broke 1 rules" preamble.
