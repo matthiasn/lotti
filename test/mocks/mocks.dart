@@ -108,6 +108,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -975,6 +976,8 @@ class FakeWorkoutData extends Fake implements WorkoutData {}
 class FakeJournalImage extends Fake implements JournalImage {}
 
 // --- Repository mocks (frequently duplicated inline) ---
+
+class MockGoalRepository extends Mock implements GoalRepository {}
 
 class MockAgentRepository extends Mock implements AgentRepository {
   @override

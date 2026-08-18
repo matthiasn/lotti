@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:uuid/uuid.dart';
@@ -52,10 +53,15 @@ class GoalSpecRevisionService {
   GoalSpecRevisionService({
     required this._repository,
     required this._syncService,
+    this._goalMirrorService,
   });
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
+
+  /// Mirrors each accepted revision into the journal. Optional: the agent tier
+  /// is authoritative for evaluation and must not depend on the mirror.
+  final GoalMirrorService? _goalMirrorService;
   static const _uuid = Uuid();
   static const String ownerNoChangesReason =
       'the owner edit does not change the goal';
@@ -346,6 +352,10 @@ class GoalSpecRevisionService {
     await _syncService.upsertEntity(
       head.copyWith(versionId: versionId, updatedAt: now),
     );
+    // The journal keeps every version: this writes the new immutable snapshot
+    // and moves the goal onto it, so the durable record follows the head
+    // rather than drifting a revision behind it.
+    await _goalMirrorService?.mirrorSpec(version: minted);
 
     if (authoredBy == AgentAuthors.user) {
       await _retractPendingRevisionProposals(agentId: agentId, now: now);

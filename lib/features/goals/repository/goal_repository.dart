@@ -32,11 +32,17 @@ class GoalRepository {
   /// backfill, on every device.
   final MetadataService _metadataService;
 
+  /// The journal id of the goal coached by [agentId].
+  ///
+  /// Pure and side-effect free, so callers can address a goal before it
+  /// exists — which is what lets a spec snapshot name its goal in the same
+  /// transaction that creates it.
+  String goalIdForAgent(String agentId) =>
+      _metadataService.generateId(uuidV5Input: goalEntryUuidV5Input(agentId));
+
   /// The goal coached by [agentId], or null when it has no journal entry yet.
   Future<GoalEntry?> getGoalForAgent(String agentId) async {
-    final id = _metadataService.generateId(
-      uuidV5Input: goalEntryUuidV5Input(agentId),
-    );
+    final id = goalIdForAgent(agentId);
     final entity = await _journalDb.journalEntityById(id);
     return entity is GoalEntry && !entity.isDeleted ? entity : null;
   }

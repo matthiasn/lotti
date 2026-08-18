@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Creates and wires goal agents (ADR 0053: one durable identity per goal).
@@ -29,6 +30,7 @@ class GoalAgentService {
     required this._syncService,
     required this._orchestrator,
     this.updateNotifications,
+    this.goalMirrorService,
   });
 
   final AgentService _agentService;
@@ -42,6 +44,11 @@ class GoalAgentService {
   /// every mounted watcher of `agentIdentityProvider` rendering the old value
   /// until the page is rebuilt from scratch.
   final UpdateNotifications? updateNotifications;
+
+  /// Mirrors the goal into the journal. Optional so the agent tier keeps
+  /// working — and stays testable — without it; a goal whose mirror is missing
+  /// is repaired by the startup backfill.
+  final GoalMirrorService? goalMirrorService;
 
   /// Creates a goal agent with its v1 spec — identity, state, spec
   /// version, head and first cadence tick in ONE transaction (nested
@@ -153,6 +160,17 @@ class GoalAgentService {
       agentId: identity.agentId,
       reason: 'goal created',
     );
+    // Journal-first in intent, last in order: the agent transaction above is
+    // what must not be half-written. Mirroring is a separate, idempotent
+    // write, so a failure here leaves a working goal that the next launch's
+    // backfill repairs rather than an orphaned agent.
+    final head = await _repository.getEntity(goalSpecHeadId(identity.agentId));
+    if (head is GoalSpecHeadEntity) {
+      final version = await _repository.getEntity(head.versionId);
+      if (version is GoalSpecVersionEntity) {
+        await goalMirrorService?.mirrorSpec(version: version);
+      }
+    }
     return identity;
   }
 
