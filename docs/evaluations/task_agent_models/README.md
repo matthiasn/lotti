@@ -233,6 +233,57 @@ sources, an instruction the context contradicts, a report that must decline to
 conclude. Until then a pass here means "not obviously broken", and a model
 choice should rest on latency and cost, which is all the table above measures.
 
+## 2026-08-18: the matrix had been running one scenario
+
+The real-wake suite has three scenarios. `scripts/penguin_wake_eval_matrix.sh`
+never set `PENGUIN_WAKE_EVAL_SCENARIO`, so every model in every run of that
+matrix took the live test's default — `requalification` — and the other two
+never executed. The default is also the easy one, which is how the matrix
+reported a clean sweep for a suite that was failing two thirds of its cases.
+
+Fixed: the script now loops scenarios x models x samples, and the summary
+breaks down per scenario, because one weak restraint case is the entire finding
+and a single model total hides it behind the cases that pass. The
+failure-reason regex also missed `INVENTED WORK` and `DUPLICATE PROPOSAL` — the
+two traps that actually fire — so real failures printed "unknown, see log".
+
+Same model, before and after the fix:
+
+| | reported |
+| --- | --- |
+| before | `deepseek-v4-flash-0731  1/1` |
+| after | `deepseek-v4-flash-0731  1/3` — noOp INVENTED WORK, pendingProposal DUPLICATE PROPOSAL |
+
+### The realistic tier disagrees with the synthetic one
+
+Both models, all three scenarios, run 2026-08-18:
+
+| Scenario | deepseek-v4-flash-0731 | glm-5.2 |
+| --- | --- | --- |
+| `requalification` | pass | pass |
+| `noOp` | **INVENTED WORK** | **INVENTED WORK** |
+| `pendingProposal` | **DUPLICATE PROPOSAL** | **DUPLICATE PROPOSAL** |
+
+On the no-op wake deepseek proposed `assign_task_label` with
+`manual-label-waiting-on` at `confidence: high`, on a wake where the prior
+report already described the state — churn, the failure `gp_noop` exists to
+catch on the goal side. Verified against the captured tool calls rather than
+inferred from the category.
+
+**The same models score 41/42 on the inference tier**, and 17/17 on three
+identical runs. The tiers are measuring different things and only one of them
+can see this: the inference tier hand-writes its `userMessage`, so it never
+reaches `TaskAgentContextBuilder` (853 lines, owned by `TaskAgentWorkflow` and
+exercised only when the real workflow runs), and it scores attempted tool calls
+rather than what was persisted.
+
+**Where scenario work belongs.** The cheap tier has seventeen scenarios and
+cannot catch this; the realistic tier has three and can. New scenarios go to
+the real-wake catalog. The inference tier keeps its breadth of *situations* —
+a German transcript, Spanish mixed context, a contradicted instruction — which
+one demo task cannot express, and stays what it is: a cheap first filter that a
+pass in does not mean much.
+
 ## 2026-08-18: the suite finally reports a bill
 
 Every cost statement about this suite before now was inferred from token counts,
