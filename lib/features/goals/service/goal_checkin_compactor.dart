@@ -83,6 +83,8 @@ class GoalCheckInCompactor {
     if (text.isEmpty) return null;
     try {
       final decoded = await _distill(
+        agentId: agentId,
+        entryId: entryId,
         transcript: text,
         goalStatement: goalStatement,
         model: model,
@@ -127,7 +129,12 @@ class GoalCheckInCompactor {
           id: summary.id,
           agentId: agentId,
           threadId: summary.id,
-          kind: AgentMessageKind.observation,
+          // An ACTION, not an observation — the reflection precedent. The
+          // observation lookback takes the newest N rows and only then drops
+          // payloads without `text`, so filing summaries as observations let
+          // a dozen check-ins push every real coaching observation out of
+          // FACTS entirely.
+          kind: AgentMessageKind.action,
           createdAt: summary.recordedAt,
           vectorClock: null,
           metadata: const AgentMessageMetadata(
@@ -140,6 +147,8 @@ class GoalCheckInCompactor {
   }
 
   Future<GoalCheckInSummary?> _distill({
+    required String agentId,
+    required String entryId,
     required String transcript,
     required String goalStatement,
     required String model,
@@ -191,6 +200,13 @@ class GoalCheckInCompactor {
             triggerType: AiTriggerType.automatic,
             automationId: 'automation:goal-check-in-compaction',
             automationDisplayName: 'Goal check-in compaction',
+            // Without the agent id the row lands with a null agent and the
+            // goal's lifetime cost pills — which total by agent — never show
+            // what compaction actually spent.
+            interactionContext: AiCapturedContext(
+              agentId: agentId,
+              entryId: entryId,
+            ),
           )
         : invoke();
 

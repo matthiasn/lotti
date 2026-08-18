@@ -395,9 +395,21 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // What the user said, compacted. Bounded by tokens rather than by count,
     // so a talkative fortnight cannot push the deterministic FACTS out of the
     // wake's budget.
-    final userVoice = goalUserVoiceEntries(
-      await _checkInSummaries(agentId),
-    );
+    //
+    // Contained: user voice is ADDITIVE context. A read that fails must cost
+    // this wake its check-ins, never the wake itself — the deterministic FACTS
+    // are what the agent is actually accountable to, and they are already
+    // assembled.
+    var userVoice = const <Map<String, Object?>>[];
+    try {
+      userVoice = goalUserVoiceEntries(await _checkInSummaries(agentId));
+    } catch (error, stackTrace) {
+      logError(
+        'reading compacted check-ins failed; the wake continues without them',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -1116,7 +1128,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final messages = await _repository.getEntitiesByAgentIdAndSubtype(
       agentId,
       type: AgentEntityTypes.agentMessage,
-      subtype: AgentMessageKind.observation.name,
+      subtype: AgentMessageKind.action.name,
     );
     final summaries = <GoalCheckInSummary>[];
     for (final message in messages.whereType<AgentMessageEntity>()) {

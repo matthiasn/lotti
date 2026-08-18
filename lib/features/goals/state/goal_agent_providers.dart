@@ -126,6 +126,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     orchestrator: ref.watch(wakeOrchestratorProvider),
     updateNotifications: getIt<UpdateNotifications>(),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
+    checkInNotifier: ref.watch(goalCheckInNotifierProvider),
   ),
   name: 'goalAgentServiceProvider',
 );

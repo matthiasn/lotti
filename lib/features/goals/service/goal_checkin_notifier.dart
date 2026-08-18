@@ -30,17 +30,43 @@ class GoalCheckInNotifier {
 
   StreamSubscription<Set<String>>? _subscription;
 
+  final _byGoalId = <String, String>{};
+
   /// Watches [agentIds] — the active goals — for check-in activity.
   ///
   /// Resolving each goal's id up front keeps the hot path a set lookup: the
   /// journal update stream is busy, and this must not query per notification.
   void start(Iterable<String> agentIds) {
     stop();
-    final byGoalId = <String, String>{
-      for (final agentId in agentIds) _goals.goalIdForAgent(agentId): agentId,
-    };
-    if (byGoalId.isEmpty) return;
+    _byGoalId
+      ..clear()
+      ..addEntries(
+        agentIds.map(
+          (agentId) => MapEntry(_goals.goalIdForAgent(agentId), agentId),
+        ),
+      );
+    _listen();
+  }
 
+  /// Adds a goal that appeared after [start] — created here, or synced in
+  /// mid-session.
+  ///
+  /// Without this the watch was a startup snapshot: a goal created while the
+  /// app stayed open produced check-ins that never marked its report stale
+  /// until the next launch.
+  void watch(String agentId) {
+    _byGoalId[_goals.goalIdForAgent(agentId)] = agentId;
+    _listen();
+  }
+
+  /// Stops watching a goal that is no longer active.
+  void unwatch(String agentId) {
+    _byGoalId.remove(_goals.goalIdForAgent(agentId));
+  }
+
+  void _listen() {
+    if (_byGoalId.isEmpty || _subscription != null) return;
+    final byGoalId = _byGoalId;
     _subscription = _updates.updateStream.listen((affectedIds) async {
       // A goal's own id is emitted for its check-ins because the entries are
       // linked to it; a linked write notifies both ends.

@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -31,6 +32,7 @@ class GoalAgentService {
     required this._orchestrator,
     this.updateNotifications,
     this.goalMirrorService,
+    this.checkInNotifier,
   });
 
   final AgentService _agentService;
@@ -49,6 +51,9 @@ class GoalAgentService {
   /// working — and stays testable — without it; a goal whose mirror is missing
   /// is repaired by the startup backfill.
   final GoalMirrorService? goalMirrorService;
+
+  /// Watches a new goal for check-ins. Optional for the same reason.
+  final GoalCheckInNotifier? checkInNotifier;
 
   /// Creates a goal agent with its v1 spec — identity, state, spec
   /// version, head and first cadence tick in ONE transaction (nested
@@ -152,6 +157,9 @@ class GoalAgentService {
     }
 
     registerSignalSubscription(identity.agentId, criteria);
+    // A goal created while the app is open needs its check-in watch now; the
+    // startup sweep is too late for the check-in the user is about to record.
+    checkInNotifier?.watch(identity.agentId);
     // One immediate deterministic evaluation: a goal created after the
     // cadence hour would otherwise show no register or health for up to
     // a day if its signals never change (the subscription only fires on

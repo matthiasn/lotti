@@ -169,6 +169,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
 
       if (identity.lifecycle != AgentLifecycle.active) {
         _goalAgentService.removeSignalSubscriptions(identity.agentId);
+        _checkInNotifier?.unwatch(identity.agentId);
         return;
       }
       final criteria = await _headCriteria(identity.agentId);
@@ -177,6 +178,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         identity.agentId,
         criteria,
       );
+      // The check-in watch is not a startup snapshot: a goal created or
+      // synced while the app stays open must mark its report stale from its
+      // first check-in, not from the next launch.
+      _checkInNotifier?.watch(identity.agentId);
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }
