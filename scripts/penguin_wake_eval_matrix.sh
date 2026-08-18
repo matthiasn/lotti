@@ -50,7 +50,15 @@ LOTTI_PENGUIN_WAKE_EVAL_LIVE= fvm flutter test "$TEST_PATH" >/dev/null 2>&1
 
 # The named traps the scenarios assert, so a failure line says which one bit
 # rather than "a test failed".
-TRAPS='(INVENTED WORK|DUPLICATE PROPOSAL|UNSUPPORTED COMPLETION|NEGATION|RESTRAINT|CHURN|MISSED|HTTP [0-9]+)'
+#
+# Read out of the live test rather than listed here. A hand-kept copy has now
+# drifted twice — it was missing INVENTED WORK and DUPLICATE PROPOSAL, then
+# REPUBLISHED and FABRICATION — and each time the symptom was a real failure
+# printing "unknown, see log", which is worse than no diagnosis because it
+# reads like a harness problem. Deriving it means a trap added to the test
+# cannot go missing here.
+TRAP_NAMES=$(grep -oE "'[A-Z][A-Z ]{4,}:" "$TEST_PATH" | tr -d "':" | sort -u | paste -sd '|')
+TRAPS="(${TRAP_NAMES:-INVENTED WORK|DUPLICATE PROPOSAL}|HTTP [0-9]+)"
 
 run_one() {
   local model="$1" scenario="$2" sample="$3"
