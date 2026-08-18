@@ -5839,6 +5839,7 @@
   "timelineShowMore": "Visa mer",
   "timelineTranscribing": "Transkriberar…",
   "timelineTranscriptionFailed": "Transkriberingen misslyckades",
+  "timelineTranscriptMissing": "Inte transkriberad",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Arkiverat mål · 1} other{Arkiverade mål · {count}}}",
   "unifiedGoalsEmptyInvitation": "Skapa ett mål för att samla vanor, signaler och vägledning från din agent här.",
   "unifiedGoalStatusAtRisk": "I riskzonen",

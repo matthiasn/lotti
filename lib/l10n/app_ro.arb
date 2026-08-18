@@ -5230,6 +5230,7 @@
   "timelineShowMore": "Afișați mai mult",
   "timelineTranscribing": "Se transcrie…",
   "timelineTranscriptionFailed": "Transcrierea a eșuat",
+  "timelineTranscriptMissing": "Netranscris",
   "transcriptLanguageLabel": "Limbă: {language}",
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Obiectiv arhivat · 1} few{Obiective arhivate · {count}} other{Obiective arhivate · {count}}}",

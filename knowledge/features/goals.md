@@ -1433,6 +1433,16 @@ Invariants worth not breaking:
   `lib/l10n/device_messages.dart` — it is rendered in a toast, so it is a
   label; the English reason stays on the log line and the attribution, where a
   support export needs it stable.
+- **A recording nobody picked up is not "in progress".** No transcript, no
+  running job and no failure record is the normal first minutes after a
+  recording — and, past `kGoalCheckInTranscriptGrace` (10 minutes), the
+  signature of a recording that was never handed to the pipeline at all. The
+  rail renders the second case as `TimelineTranscriptStatus.stalled`: "Not
+  transcribed", with the same Retry the failed state offers. It is a separate
+  status from `failed` on purpose — nothing ran, so naming it a failure sends
+  the user looking for a provider error that does not exist. This is what
+  recovers every check-in recorded before transcription was wired, since the
+  retry used to appear only on a failed run.
 - **Transcription failure is visible and recoverable.** A failed timeline item
   stops showing progress, announces the failure, and retries the built-in
   transcription skill on request. The timeline combines the live inference

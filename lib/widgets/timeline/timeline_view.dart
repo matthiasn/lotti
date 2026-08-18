@@ -410,14 +410,18 @@ class _TimelineContent extends StatelessWidget {
             ),
           ),
         ];
+      case TimelineTranscriptStatus.stalled:
       case TimelineTranscriptStatus.failed:
+        final label = a.transcriptStatus == TimelineTranscriptStatus.stalled
+            ? context.messages.timelineTranscriptMissing
+            : context.messages.timelineTranscriptionFailed;
         return [
           SizedBox(height: tokens.spacing.step2),
           Row(
             children: [
               Flexible(
                 child: Text(
-                  context.messages.timelineTranscriptionFailed,
+                  label,
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.lowEmphasis,
                   ),

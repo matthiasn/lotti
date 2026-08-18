@@ -5230,6 +5230,7 @@
   "timelineShowMore": "Voir plus",
   "timelineTranscribing": "Transcription en cours…",
   "timelineTranscriptionFailed": "Échec de la transcription",
+  "timelineTranscriptMissing": "Non transcrit",
   "transcriptLanguageLabel": "Langue : {language}",
   "transcriptModelLabel": "Modèle : {provider}, {model}",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Objectif archivé · 1} other{Objectifs archivés · {count}}}",

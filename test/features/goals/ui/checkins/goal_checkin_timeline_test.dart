@@ -53,37 +53,44 @@ void main() {
     ValueChanged<TriggerSkillParams>? onTrigger,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 3))),
-    () => tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Scaffold(
-          body: SingleChildScrollView(
-            child: GoalCheckInTimeline(
-              agentId: 'goal-1',
-              maxBeats: maxBeats,
-              onOpenReflection: onOpenReflection,
+    // The settle pump belongs INSIDE the fixed clock. The transcription-failure
+    // lookup resolves a frame late, and that rebuild is the one that asks
+    // `clock.now()` how long a recording has been waiting — outside, it would
+    // read the wall clock and call every fixture stalled.
+    () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: GoalCheckInTimeline(
+                agentId: 'goal-1',
+                maxBeats: maxBeats,
+                onOpenReflection: onOpenReflection,
+              ),
             ),
           ),
+          overrides: [
+            goalTimelineItemsProvider('goal-1').overrideWithValue(items),
+            for (final item in items.whereType<GoalAudioCheckIn>())
+              goalAudioTranscriptionFailedProvider(item.id).overrideWith(
+                (ref) async => item.id == durableFailedAudioId,
+              ),
+            if (failedAudioId != null)
+              inferenceStatusControllerProvider((
+                id: failedAudioId,
+                aiResponseType: AiResponseType.audioTranscription,
+              )).overrideWith(
+                () => _TestInferenceStatusController(InferenceStatus.error),
+              ),
+            if (onTrigger != null)
+              triggerSkillProvider.overrideWith((ref, params) async {
+                onTrigger(params);
+              }),
+          ],
         ),
-        overrides: [
-          goalTimelineItemsProvider('goal-1').overrideWithValue(items),
-          for (final item in items.whereType<GoalAudioCheckIn>())
-            goalAudioTranscriptionFailedProvider(item.id).overrideWith(
-              (ref) async => item.id == durableFailedAudioId,
-            ),
-          if (failedAudioId != null)
-            inferenceStatusControllerProvider((
-              id: failedAudioId,
-              aiResponseType: AiResponseType.audioTranscription,
-            )).overrideWith(
-              () => _TestInferenceStatusController(InferenceStatus.error),
-            ),
-          if (onTrigger != null)
-            triggerSkillProvider.overrideWith((ref, params) async {
-              onTrigger(params);
-            }),
-        ],
-      ),
-    ),
+      );
+      await tester.pump();
+    },
   );
 
   testWidgets('an empty rail invites rather than apologises', (tester) async {
@@ -99,7 +106,12 @@ void main() {
   testWidgets('a recording without a transcript still plays, and says why', (
     tester,
   ) async {
-    await pump(tester, [GoalAudioCheckIn(audio('a1', today))]);
+    // Just recorded: the entry exists before its transcript, deliberately.
+    await pump(tester, [
+      GoalAudioCheckIn(
+        audio('a1', today.add(const Duration(hours: 2, minutes: 59))),
+      ),
+    ]);
 
     // The recording is saved before it is transcribed; withholding the beat
     // would hide what the user just made.
@@ -136,6 +148,49 @@ void main() {
     await tester.pump();
 
     expect(triggered?.entityId, 'a1');
+    expect(triggered?.skillId, skillTranscribeContextId);
+  });
+
+  testWidgets('a recording still inside the grace window reads as pending', (
+    tester,
+  ) async {
+    // The normal case for the first minutes after recording: the entry exists
+    // before the transcript, deliberately, so the rail must not accuse a
+    // provider that is simply still working.
+    await pump(tester, [
+      GoalAudioCheckIn(
+        audio('fresh', today.add(const Duration(hours: 2, minutes: 55))),
+      ),
+    ]);
+
+    expect(find.text('Transcribing…'), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets('a recording nothing ever picked up becomes retryable', (
+    tester,
+  ) async {
+    // Past the grace window the same picture means the opposite: nobody picked
+    // the recording up. Every check-in recorded before transcription was wired
+    // is permanently in this state, and the retry only ever appeared on a
+    // *failed* run — so there was no way back to the words.
+    TriggerSkillParams? triggered;
+    await pump(
+      tester,
+      [GoalAudioCheckIn(audio('stale', today))],
+      onTrigger: (params) => triggered = params,
+    );
+
+    expect(find.text('Not transcribed'), findsOneWidget);
+    // Not "failed": nothing ran, and claiming an attempt that never happened
+    // would send the user looking for a provider error that does not exist.
+    expect(find.text('Transcription failed'), findsNothing);
+    expect(find.text('Transcribing…'), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+
+    expect(triggered?.entityId, 'stale');
     expect(triggered?.skillId, skillTranscribeContextId);
   });
 

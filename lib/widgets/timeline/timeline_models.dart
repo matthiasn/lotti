@@ -38,6 +38,16 @@ enum TimelineTranscriptStatus {
 
   /// Transcription failed. The player still works; a retry is offered.
   failed,
+
+  /// No transcript, no job, no failure — the recording was never picked up.
+  ///
+  /// Distinct from [failed] because nothing ran: saying "transcription failed"
+  /// would claim an attempt that never happened. Distinct from [pending]
+  /// because claiming progress that nothing is making is what left recordings
+  /// reading as "Transcribing…" forever, with no way to ask for the words. The
+  /// caller decides when a recording has waited long enough to count as
+  /// stalled; this only renders the state and its retry.
+  stalled,
 }
 
 /// The body of one beat.

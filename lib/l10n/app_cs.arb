@@ -5237,6 +5237,7 @@
   "timelineShowMore": "Zobrazit více",
   "timelineTranscribing": "Přepisuji…",
   "timelineTranscriptionFailed": "Přepis selhal",
+  "timelineTranscriptMissing": "Nepřepsáno",
   "transcriptLanguageLabel": "Jazyk: {language}",
   "transcriptModelLabel": "Model: {provider}, {model}",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Archivovaný cíl · 1} few{Archivované cíle · {count}} other{Archivovaných cílů · {count}}}",

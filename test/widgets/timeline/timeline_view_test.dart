@@ -274,6 +274,37 @@ void main() {
       expect(retried, 'audio-9');
     });
 
+    testWidgets('a stalled transcript says nothing ran, and still retries', (
+      tester,
+    ) async {
+      String? retried;
+      await pump(
+        tester,
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [
+                audioBeat(
+                  status: TimelineTranscriptStatus.stalled,
+                  entryId: 'audio-10',
+                ),
+              ],
+            ),
+          ],
+          onRetryTranscript: (id) => retried = id,
+        ),
+      );
+
+      // The retry is the same, but the claim is not: nothing ran, so calling
+      // it a failure would send the user hunting a provider error that never
+      // happened.
+      expect(find.text('Not transcribed'), findsOneWidget);
+      expect(find.text('Transcription failed'), findsNothing);
+      expect(find.text('PLAYER'), findsOneWidget);
+      await tester.tap(find.text('Retry'));
+      expect(retried, 'audio-10');
+    });
+
     testWidgets('no retry is offered when the caller cannot honour one', (
       tester,
     ) async {

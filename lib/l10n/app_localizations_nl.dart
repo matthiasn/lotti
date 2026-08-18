@@ -13571,6 +13571,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get timelineTranscriptionFailed => 'Transcriptie mislukt';
 
   @override
+  String get timelineTranscriptMissing => 'Niet getranscribeerd';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }

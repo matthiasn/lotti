@@ -54,6 +54,18 @@ class GoalCheckInTimeline extends ConsumerStatefulWidget {
       _GoalCheckInTimelineState();
 }
 
+/// How long a recording may sit without words before the rail stops claiming
+/// it is being transcribed.
+///
+/// Nothing running and nothing failed is normally the first seconds after a
+/// recording is saved — the entry exists before the transcript, deliberately.
+/// Past this window it means the opposite: nobody ever picked the recording
+/// up, which is the state every check-in made before transcription was wired
+/// is permanently in. Those recordings had no way back, because the retry
+/// only ever appeared on a *failed* run. Generous enough that a slow provider
+/// finishing a long recording is not accused of having stalled.
+const Duration kGoalCheckInTranscriptGrace = Duration(minutes: 10);
+
 class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
   static const _pageSize = 20;
 
@@ -175,6 +187,9 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
                 ? TimelineTranscriptStatus.pending
                 : inferenceStatus == InferenceStatus.error || durableFailure
                 ? TimelineTranscriptStatus.failed
+                : clock.now().difference(checkIn.at) >
+                      kGoalCheckInTranscriptGrace
+                ? TimelineTranscriptStatus.stalled
                 : TimelineTranscriptStatus.pending,
           ),
         );
