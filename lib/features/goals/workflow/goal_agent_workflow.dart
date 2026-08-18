@@ -176,10 +176,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       );
     }
     final pendingUserMessage = text.trim();
-    final recentDialogue = await _chatHistoryService.recentDialogue(
-      agentId: agentIdentity.agentId,
-      before: message,
-    );
+    List<GoalChatHistoryEntry> recentDialogue;
+    try {
+      recentDialogue = await _chatHistoryService.recentDialogue(
+        agentId: agentIdentity.agentId,
+        before: message,
+      );
+    } catch (error, stackTrace) {
+      recentDialogue = const [];
+      logError(
+        'goal chat recent dialogue unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     final previousAssistantMessage =
         _isShortGoalAdAffirmation(pendingUserMessage.toLowerCase())
         ? await _previousVisibleAssistantText(
@@ -204,9 +214,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required DateTime before,
   }) async {
     final actions =
-        (await _repository.getMessagesByKind(
+        (await _repository.getMessagesByKindAndToolName(
               agentId,
               AgentMessageKind.action,
+              AgentConversationToolNames.replyToUser,
               limit: 12,
             ))
             .where(
@@ -1140,6 +1151,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final live = {for (final source in sources) source.entryId: source};
 
     if (compactMissing) {
+      var compacted = false;
       for (final source in sources) {
         final existing = byEntryId[source.entryId];
         // Recompact when the words changed. A transcript is not final when it
@@ -1165,18 +1177,19 @@ class GoalAgentWorkflow with AgentErrorLogging {
           model: model,
           provider: provider,
         );
+        compacted = true;
+      }
+      if (compacted) {
+        try {
+          state = await _checkInCompactionState(agentId);
+          stored = state.summaries;
+        } on Object {
+          return const [];
+        }
       }
     }
 
     if (live.isEmpty && stored.isEmpty) return const [];
-    if (compactMissing) {
-      try {
-        state = await _checkInCompactionState(agentId);
-        stored = state.summaries;
-      } on Object {
-        return const [];
-      }
-    }
     // Only summaries whose source is still linked and live. A deleted or
     // unlinked check-in leaves its summary behind, and without this the agent
     // kept quoting words the user had removed — the timeline already hides
@@ -1187,12 +1200,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
     ];
   }
 
-  /// The compacted check-ins stored for this goal.
+  /// The compacted check-ins and retry failures stored for this goal.
   ///
-  /// Read whole and then token-bounded by `goalUserVoiceEntries`: the
-  /// summaries are small and bounded by construction (~500 tokens each), and
-  /// trimming by row count here would drop a recent check-in whenever an older
-  /// one happened to be long.
+  /// Summaries are read whole and then token-bounded by
+  /// `goalUserVoiceEntries`; failure markers stay keyed by source entry so
+  /// reconciliation can apply their durable retry backoff.
   Future<_GoalCheckInCompactionState> _checkInCompactionState(
     String agentId,
   ) async {

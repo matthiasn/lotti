@@ -98,7 +98,7 @@ class GoalFactsRenderer {
       ],
       goalCategorySessionTokenBudget,
     );
-    final categorySummaryRows = _boundedTailByTokens(
+    final categorySummaryRows = _boundedCategorySummariesByTokens(
       _categoryTimeLifetimeSummary(facts.categoryTimeSessionsByCategory),
       goalCategorySummaryTokenBudget,
     );
@@ -716,6 +716,7 @@ List<T> _boundedTailByTokens<T extends Object>(
   List<T> entries,
   int budget,
 ) {
+  // The newest entry remains available even when it alone exceeds the budget.
   final selected = <T>[];
   var used = 0;
   for (final entry in entries.reversed) {
@@ -730,6 +731,28 @@ List<T> _boundedTailByTokens<T extends Object>(
     used += tokens;
   }
   return selected.reversed.toList(growable: false);
+}
+
+List<Map<String, Object>> _boundedCategorySummariesByTokens(
+  List<Map<String, Object>> entries,
+  int budget,
+) {
+  final ranked = [...entries]
+    ..sort((a, b) {
+      final byMinutes = (b['totalMinutes']! as num).compareTo(
+        a['totalMinutes']! as num,
+      );
+      if (byMinutes != 0) return byMinutes;
+      return (a['categoryId']! as String).compareTo(
+        b['categoryId']! as String,
+      );
+    });
+  final selected = _boundedTailByTokens(ranked.reversed.toList(), budget);
+  return selected..sort(
+    (a, b) => (a['categoryId']! as String).compareTo(
+      b['categoryId']! as String,
+    ),
+  );
 }
 
 /// Clips one journal markdown field before it enters the model context.

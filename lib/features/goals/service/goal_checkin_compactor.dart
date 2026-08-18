@@ -190,11 +190,22 @@ class GoalCheckInCompactor {
         stackTrace: stackTrace,
       );
       try {
-        await _persistFailure(
+        final failure = await _persistFailure(
           agentId: agentId,
           entryId: entryId,
           sourceDigest: goalCheckInSourceDigest(text),
         );
+        if (failure.attempts == goalCheckInCompactionMaxAttempts) {
+          _domainLogger?.error(
+            LogDomain.agentWorkflow,
+            error,
+            subDomain: 'goalCheckInCompaction',
+            message:
+                'goal check-in compaction blocked after '
+                '$goalCheckInCompactionMaxAttempts failures for $entryId',
+            stackTrace: stackTrace,
+          );
+        }
       } catch (persistenceError, persistenceStackTrace) {
         _domainLogger?.error(
           LogDomain.agentWorkflow,
@@ -208,7 +219,7 @@ class GoalCheckInCompactor {
     }
   }
 
-  Future<void> _persistFailure({
+  Future<GoalCheckInCompactionFailure> _persistFailure({
     required String agentId,
     required String entryId,
     required String sourceDigest,
@@ -264,6 +275,7 @@ class GoalCheckInCompactor {
         ),
       );
     });
+    return failure;
   }
 
   Future<void> _persist({

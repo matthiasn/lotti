@@ -1220,6 +1220,7 @@ void main() {
     final signals = json['signals'] as Map<String, dynamic>;
     expect(signals['labelTimeEntrySegmentCount'], 205);
     final recent = signals['labelTimeEntries'] as List;
+    expect(recent.length, greaterThan(1));
     expect(recent.length, lessThan(200));
     expect(signals['labelTimeEntrySegmentsOmitted'], 205 - recent.length);
     expect((recent.last as Map<String, dynamic>)['markdown'], 'Entry 204');
@@ -1375,6 +1376,43 @@ void main() {
     expect(minutesByHour[10], 60);
   });
 
+  test('bounded lifetime summaries retain the highest-volume categories', () {
+    final sessions = <String, List<GoalCategoryTimeSession>>{
+      'category-dominant': [
+        GoalCategoryTimeSession(
+          categoryId: 'category-dominant',
+          dateFrom: DateTime(2026, 8, 8, 8),
+          dateTo: DateTime(2026, 8, 8, 18),
+        ),
+      ],
+      for (var index = 0; index < 12; index++)
+        'category-small-$index': [
+          GoalCategoryTimeSession(
+            categoryId: 'category-small-$index',
+            dateFrom: DateTime(2026, 8, 8, 8),
+            dateTo: DateTime(2026, 8, 8, 8, 1),
+          ),
+        ],
+    };
+    final json = renderedJson(
+      wakeFacts: facts(categoryTimeSessions: sessions),
+    );
+
+    final signals = json['signals'] as Map<String, dynamic>;
+    final summaries = signals['categoryTimeLifetimeSummary'] as List;
+    expect(
+      signals['categoryTimeLifetimeSummariesOmitted'],
+      greaterThan(0),
+      reason: 'the fixture must exercise the summary token boundary',
+    );
+    expect(
+      summaries.cast<Map<String, dynamic>>().map(
+        (summary) => summary['categoryId'],
+      ),
+      contains('category-dominant'),
+    );
+  });
+
   test('category summaries preserve seconds across local-hour splits', () {
     final json = renderedJson(
       wakeFacts: facts(
@@ -1427,6 +1465,7 @@ void main() {
 
     expect(signals['categoryTimeSessionCount'], 205);
     final recent = signals['categoryTimeSessions'] as List;
+    expect(recent.length, greaterThan(1));
     expect(recent.length, lessThan(200));
     expect(signals['categoryTimeSessionsOmitted'], 205 - recent.length);
     expect(

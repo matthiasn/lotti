@@ -89,14 +89,17 @@ void main() {
     String agentId = testAgentId,
     String threadId = 'thread-001',
     AgentMessageKind kind = AgentMessageKind.thought,
+    String? toolName,
+    DateTime? createdAt,
   }) => makeTestMessage(
     id: id,
     agentId: agentId,
     threadId: threadId,
     kind: kind,
-    createdAt: testDate,
+    createdAt: createdAt ?? testDate,
     vectorClock: const VectorClock({'node-1': 3}),
     runKey: 'run-001',
+    toolName: toolName,
   );
 
   AgentReportEntity makeReport({
@@ -1236,6 +1239,36 @@ void main() {
           AgentMessageKind.action,
         );
         expect(results, isEmpty);
+      });
+
+      test('filters by tool name before applying the limit', () async {
+        await repo.upsertEntity(
+          makeMessage(
+            id: 'reply-old',
+            kind: AgentMessageKind.action,
+            toolName: AgentConversationToolNames.replyToUser,
+            createdAt: testDate.subtract(const Duration(minutes: 1)),
+          ),
+        );
+        for (var index = 0; index < 3; index++) {
+          await repo.upsertEntity(
+            makeMessage(
+              id: 'compaction-$index',
+              kind: AgentMessageKind.action,
+              toolName: 'goal_compact_check_in',
+              createdAt: testDate.add(Duration(minutes: index)),
+            ),
+          );
+        }
+
+        final results = await repo.getMessagesByKindAndToolName(
+          testAgentId,
+          AgentMessageKind.action,
+          AgentConversationToolNames.replyToUser,
+          limit: 1,
+        );
+
+        expect(results.map((message) => message.id), ['reply-old']);
       });
     });
 

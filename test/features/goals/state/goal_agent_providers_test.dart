@@ -101,9 +101,10 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         any(),
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
@@ -234,9 +235,10 @@ void main() {
         ),
       ).thenAnswer((_) async => [source]);
       when(
-        () => repository.getMessagesByKind(
+        () => repository.getMessagesByKindAndToolName(
           'goal-chat',
           AgentMessageKind.action,
+          AgentConversationToolNames.replyToUser,
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => []);
@@ -292,9 +294,10 @@ void main() {
       ),
     ).thenAnswer((_) async => [source]);
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         'goal-chat',
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => [reply]);

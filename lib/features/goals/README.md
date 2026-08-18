@@ -293,8 +293,9 @@ The agent reads a **compacted** form, never a transcript: on automatic report
 wakes, each check-in is distilled into what happened, what the user committed
 to, blockers, mood and asks. Interactive chat only reads summaries already on
 disk, so a background compaction cannot delay a reply. Failed compactions write
-a durable retry marker with bounded backoff and stop permanently after three
-failed attempts. The recent summaries ride into the wake through the
+a durable retry marker with bounded backoff and stop after three failed
+attempts for the same source digest until the transcript changes. The recent
+summaries ride into the wake through the
 `userVoice` FACTS section under a token budget. Those words inform coaching and record
 commitments; they never override deterministic criterion results. Checking in
 marks the standing report stale rather than waking the agent per recording.

@@ -12,6 +12,7 @@ import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:uuid/uuid.dart';
 
 const _goalChatMessageTokenPrefix = 'goal-chat-message:';
+const _goalChatRecoveryListenerTimeout = Duration(minutes: 5);
 
 String goalChatMessageTriggerToken(String messageId) =>
     '$_goalChatMessageTokenPrefix$messageId';
@@ -154,7 +155,8 @@ class GoalChatService {
   ///
   /// Runtime maintenance calls this at startup and before scheduled scans.
   /// The in-flight set prevents two maintenance passes from queuing the same
-  /// turn concurrently; terminal completion releases it for a later retry.
+  /// turn concurrently; terminal completion or a missing-completion timeout
+  /// releases it for a later retry.
   Future<bool> restoreOldestPendingMessage(String agentId) async {
     final messageId = await _historyService.oldestPendingMessageId(agentId);
     if (messageId == null || !_recoveringMessageIds.add(messageId)) {
@@ -162,13 +164,20 @@ class GoalChatService {
     }
 
     StreamSubscription<WakeRunCompletion>? subscription;
+    Timer? timeout;
     String? runKey;
+    void release() {
+      _recoveringMessageIds.remove(messageId);
+      timeout?.cancel();
+      unawaited(subscription?.cancel());
+    }
+
     try {
       subscription = _orchestrator.runCompletions.listen((event) {
         if (event.runKey != runKey) return;
-        _recoveringMessageIds.remove(messageId);
-        unawaited(subscription?.cancel());
+        release();
       });
+      timeout = Timer(_goalChatRecoveryListenerTimeout, release);
       runKey = _orchestrator.enqueueManualWake(
         agentId: agentId,
         reason: WakeReason.userMessage.name,
@@ -179,6 +188,7 @@ class GoalChatService {
       return true;
     } on Object {
       _recoveringMessageIds.remove(messageId);
+      timeout?.cancel();
       await subscription?.cancel();
       rethrow;
     }

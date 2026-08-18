@@ -259,6 +259,18 @@ class AgentRepository {
     int? limit,
   }) => _queries.getMessagesByKind(agentId, kind, limit: limit);
 
+  Future<List<AgentMessageEntity>> getMessagesByKindAndToolName(
+    String agentId,
+    AgentMessageKind kind,
+    String toolName, {
+    int? limit,
+  }) => _queries.getMessagesByKindAndToolName(
+    agentId,
+    kind,
+    toolName,
+    limit: limit,
+  );
+
   Future<List<DayStatusEventEntity>> getDayStatusEventsSince(
     DateTime since, {
     int? limit,

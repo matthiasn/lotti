@@ -488,6 +488,14 @@ void main() {
         () => repository.getMessagesByKind(agentId, kind, limit: 50),
       ).thenAnswer((_) async => []);
     }
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        agentId,
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
     // Compacted check-ins: no user voice unless a test supplies some.
     when(
       () => repository.getEntitiesByAgentIdAndSubtype(
@@ -658,6 +666,88 @@ void main() {
     expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
   });
 
+  test(
+    'a failed recent-dialogue read does not lose the interactive turn',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      when(() => repository.getEntity('message-chat')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessage(
+          id: 'message-chat',
+          agentId: agentId,
+          threadId: 'chat',
+          kind: AgentMessageKind.user,
+          createdAt: now,
+          vectorClock: null,
+          contentEntryId: 'payload-chat',
+          metadata: const AgentMessageMetadata(),
+        ),
+      );
+      when(() => repository.getEntity('payload-chat')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'payload-chat',
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: const {'text': 'How am I doing?'},
+        ),
+      );
+      when(
+        () => repository.getMessagesByKind(
+          agentId,
+          AgentMessageKind.user,
+          limit: 50,
+        ),
+      ).thenThrow(StateError('history unavailable'));
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            expect(message, isNot(contains('recentDialogue')));
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'Your current numbers are ready.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+      final result = await workflow.executeUserMessage(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {'goal-chat-message:message-chat'},
+        threadId: 'chat',
+        messageId: 'message-chat',
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final replies = upserts.whereType<AgentMessageEntity>().where(
+        (message) =>
+            message.metadata.toolName == AgentConversationToolNames.replyToUser,
+      );
+      expect(
+        replies,
+        isNotEmpty,
+        reason: 'the source turn must still receive a visible reply',
+      );
+      expect(
+        replies.map((message) => message.metadata.operationId),
+        contains('message-chat'),
+      );
+    },
+  );
+
   test('an interactive wake without a visible reply fails instead of silently '
       'acknowledging the source turn', () async {
     stubSpec();
@@ -767,7 +857,7 @@ void main() {
               }),
               toolCall(GoalAgentToolNames.snoozeGoalAd, {
                 'adId': 'ad-active',
-                'until': '2026-08-09T09:00:00Z',
+                'until': '2026-08-08T09:00:00Z',
                 'reason': 'user asked',
               }, id: 'invalid-snooze'),
             ],
@@ -1181,6 +1271,13 @@ void main() {
       final result = await run();
 
       expect(result.success, isTrue);
+      verify(
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).called(1);
       verifyNever(
         () => compactor.compact(
           agentId: any(named: 'agentId'),
@@ -1646,9 +1743,10 @@ void main() {
             )
             as AgentMessageEntity;
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         agentId,
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: 12,
       ),
     ).thenAnswer((_) async => [priorReply]);
@@ -1660,9 +1758,10 @@ void main() {
       ),
     ).thenAnswer((_) async => [priorUser, source]);
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         agentId,
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: 50,
       ),
     ).thenAnswer((_) async => [priorReply]);
@@ -3355,6 +3454,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       knownAdIds: const {'ad-reusable'},
+      activeAdIds: const {},
     );
     await rerunning.processToolCalls(
       toolCalls: [
@@ -3793,6 +3893,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       knownAdIds: const {'ad-retired'},
+      activeAdIds: const {},
     );
     await strategy.processToolCalls(
       toolCalls: [
@@ -4781,6 +4882,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       knownAdIds: const {'ad-lib'},
+      activeAdIds: const {},
     );
     await rerunning.processToolCalls(
       toolCalls: [

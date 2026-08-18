@@ -53,9 +53,10 @@ void main() {
       ),
     ).thenAnswer((_) async => users);
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         'goal-1',
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => replies);
@@ -200,9 +201,10 @@ void main() {
       return limit == null ? newestFirst : newestFirst.take(limit).toList();
     });
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         'goal-1',
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((invocation) async {
@@ -243,9 +245,10 @@ void main() {
       ),
     ).thenAnswer((_) async => [user]);
     when(
-      () => repository.getMessagesByKind(
+      () => repository.getMessagesByKindAndToolName(
         'goal-1',
         AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((invocation) async {
@@ -336,6 +339,49 @@ void main() {
 
     expect(history.map((entry) => entry.id), [recent.id]);
   });
+
+  test(
+    'message pressure loads and keeps only the newest twelve entries',
+    () async {
+      final entries = [
+        for (var index = 1; index <= 15; index++)
+          message(
+            id: index.isOdd ? 'user-$index' : 'reply-$index',
+            kind: index.isOdd ? AgentMessageKind.user : AgentMessageKind.action,
+            minute: index,
+          ),
+      ];
+      final pending = message(
+        id: 'user-pending',
+        kind: AgentMessageKind.user,
+        minute: 16,
+      );
+      stubHistory(
+        users: [
+          pending,
+          ...entries.where((entry) => entry.kind == AgentMessageKind.user),
+        ],
+        replies: entries
+            .where((entry) => entry.kind == AgentMessageKind.action)
+            .toList(),
+        texts: {for (final entry in entries) entry.id: entry.id},
+      );
+
+      final history = await service.recentDialogue(
+        agentId: 'goal-1',
+        before: pending,
+      );
+
+      expect(history, hasLength(goalRecentDialogueMessageLimit));
+      expect(
+        history.map((entry) => entry.id),
+        entries.skip(3).map((entry) => entry.id),
+      );
+      verify(() => repository.getEntity(any())).called(
+        goalRecentDialogueMessageLimit,
+      );
+    },
+  );
 
   test(
     'one oversized newest reply is clipped inside the total budget',

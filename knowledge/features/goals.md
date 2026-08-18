@@ -358,8 +358,10 @@ flowchart TD
   category since the goal agent was created, including sessions outside an
   optional cutoff band. FACTS unions overlaps per category and preserves
   sub-minute precision while summarizing the complete lifetime into bounded
-  local-hour and weekday distributions, then considers at most the 200 most
-  recent raw sessions with category, local start/end and duration before
+  local-hour and weekday distributions. When that summary slice is full, the
+  categories with the most tracked minutes are retained and the selected rows
+  return to stable category-id order. FACTS then considers at most the 200
+  most recent raw sessions with category, local start/end and duration before
   enforcing a serialized token slice. The raw session count
   remains available separately from the unioned duration. The coach can
   therefore notice late-night or clustering patterns without allowing one
@@ -1086,7 +1088,10 @@ flowchart TD
   sanitizer before persistence, so internal ids and annotations cannot leak
   into chat. Draft state is keep-alive per agent, waiting comes from the wake
   completion, and failure keeps the source turn available for retry by
-  re-enqueueing its existing message id rather than duplicating it. A failure
+  re-enqueueing its existing message id rather than duplicating it. Startup
+  recovery fences each orphan while its wake is in flight; a terminal
+  completion or a five-minute missing-completion timeout releases that fence
+  for the next maintenance pass. A failure
   before the durable append returns an id retries by sending the retained draft
   as a new durable turn. The chat service rechecks active goal identity before
   writing that source turn. Payload ownership is checked before inference, chat failures
@@ -1110,7 +1115,12 @@ flowchart TD
   the commit marker and the turn completes without another billed inference.
   Before the current message, FACTS carries at most twelve recent visible
   user/assistant turns under a 900-token budget, keeping the newest context
-  under pressure; the pending source also populates `unansweredUserMessages`.
+  under pressure; only payloads that can enter that tail are loaded. Reply
+  actions are filtered by `reply_to_user` before the database limit, so newer
+  compaction/tool bookkeeping cannot displace visible dialogue. If this
+  additive history read fails, the wake continues without history rather than
+  losing the user's current turn. The pending source also populates
+  `unansweredUserMessages`.
   Thoughts, tool traces and system rows never enter this dialogue context. New
   goal observations carry `recordedAt`; legacy undated observations remain
   readable as text-only objects instead of being assigned invented dates.
@@ -1387,7 +1397,8 @@ Invariants worth not breaking:
   Automatic report wakes omit an unreadable summary, log the failure, and
   persist a deterministic marker. The same source digest retries after 6 and
   12 hours, then the third failure is terminal until the transcript changes;
-  it never fails the wake or the recording.
+  reaching that ceiling emits a dedicated operator-visible log event. It never
+  fails the wake or the recording.
 - **Transcription failure is visible and recoverable.** A failed timeline item
   stops showing progress, announces the failure, and retries the built-in
   transcription skill on request. The timeline combines the live inference

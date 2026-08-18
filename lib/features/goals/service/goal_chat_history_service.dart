@@ -79,8 +79,9 @@ class GoalChatHistoryService {
       agentId,
       limit: 50,
     )).where((message) => _comesBefore(message, before)).toList();
-    final loaded = <GoalChatHistoryEntry>[];
-    for (final message in messages) {
+    final selected = <GoalChatHistoryEntry>[];
+    for (final message in messages.reversed) {
+      if (selected.length >= goalRecentDialogueMessageLimit) break;
       final payloadId = message.contentEntryId;
       if (payloadId == null) continue;
       final payload = await _repository.getEntity(payloadId);
@@ -88,19 +89,14 @@ class GoalChatHistoryService {
           ? payload.content['text']
           : null;
       if (text is! String || text.trim().isEmpty) continue;
-      loaded.add((
+      final entry = (
         id: message.id,
         role: _isUserTurn(message)
             ? GoalChatHistoryRole.user
             : GoalChatHistoryRole.assistant,
         text: text.trim(),
         createdAt: message.createdAt,
-      ));
-    }
-
-    final selected = <GoalChatHistoryEntry>[];
-    for (final entry in loaded.reversed) {
-      if (selected.length >= goalRecentDialogueMessageLimit) break;
+      );
       if (selected.isEmpty) {
         final bounded = _fitEntry(entry, tokenBudget);
         if (bounded == null) break;
@@ -125,9 +121,10 @@ class GoalChatHistoryService {
       AgentMessageKind.user,
       limit: limit,
     );
-    final actions = await _repository.getMessagesByKind(
+    final actions = await _repository.getMessagesByKindAndToolName(
       agentId,
       AgentMessageKind.action,
+      AgentConversationToolNames.replyToUser,
       limit: limit,
     );
     return <AgentMessageEntity>[

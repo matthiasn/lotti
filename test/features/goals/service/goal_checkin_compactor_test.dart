@@ -204,7 +204,13 @@ void main() {
       expect(failure.metadata.toolName, goalCheckInCompactionFailureToolName);
       final payload = written.whereType<AgentMessagePayloadEntity>().single;
       expect(payload.content['attempts'], 1);
-      expect(payload.content['sourceDigest'], isA<String>());
+      expect(
+        payload.content['sourceDigest'],
+        goalCheckInSourceDigest(
+          'Skipped the lunch walk, calls ran over. I will take the long '
+          'route home instead.',
+        ),
+      );
       verify(
         () => logger.error(
           LogDomain.agentWorkflow,
@@ -241,7 +247,7 @@ void main() {
     final previousFailure = GoalCheckInCompactionFailure(
       sourceEntryId: 'audio-1',
       sourceDigest: sourceDigest,
-      attempts: 1,
+      attempts: 2,
       retryAfter: recordedAt,
     );
     final existingPayload = AgentDomainEntity.agentMessagePayload(
@@ -276,11 +282,22 @@ void main() {
     await withClock(Clock.fixed(recordedAt), compact);
 
     final updated = written.whereType<AgentMessagePayloadEntity>().single;
-    expect(updated.content['attempts'], 2);
+    expect(updated.content['attempts'], goalCheckInCompactionMaxAttempts);
     expect(
       updated.content['retryAfter'],
-      recordedAt.add(const Duration(hours: 12)).toIso8601String(),
+      recordedAt.add(const Duration(hours: 24)).toIso8601String(),
     );
+    verify(
+      () => logger.error(
+        LogDomain.agentWorkflow,
+        any(),
+        subDomain: 'goalCheckInCompaction',
+        message:
+            'goal check-in compaction blocked after '
+            '$goalCheckInCompactionMaxAttempts failures for audio-1',
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).called(1);
   });
 
   test('a backoff persistence failure is logged and contained', () async {
@@ -327,17 +344,25 @@ void main() {
     expect(prompts, isEmpty);
   });
 
-  test('malformed durable failure markers are ignored', () {
-    expect(
-      GoalCheckInCompactionFailure.fromContent({
-        'sourceEntryId': 'audio-1',
-        'sourceDigest': 'digest',
-        'attempts': 0,
-        'retryAfter': 42,
-      }),
-      isNull,
-    );
-  });
+  for (final (name, override) in <(String, Map<String, Object>)>[
+    ('non-positive attempts', {'attempts': 0}),
+    ('non-string retryAfter', {'retryAfter': 42}),
+    ('non-string sourceEntryId', {'sourceEntryId': 42}),
+    ('non-string sourceDigest', {'sourceDigest': 42}),
+  ]) {
+    test('a durable failure marker rejects $name', () {
+      expect(
+        GoalCheckInCompactionFailure.fromContent({
+          'sourceEntryId': 'audio-1',
+          'sourceDigest': 'digest',
+          'attempts': 1,
+          'retryAfter': recordedAt.toIso8601String(),
+          ...override,
+        }),
+        isNull,
+      );
+    });
+  }
 
   test('compaction is attributed to the goal that paid for it', () async {
     final attribution = AiInteractionCaptureTestBench.create()..register();
