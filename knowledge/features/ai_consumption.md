@@ -49,6 +49,11 @@ performance problem rather than a data-loss one.
 [sync message family](sync/message-model.md), so per-device AI spend converges
 without a separate reconciliation pass.
 
+The attribution projection indexes both exact output references and the latest
+attempt for an output artifact. The latter follows `(output type, output id,
+completed at DESC, id DESC)`, matching the durable transcription-failure lookup
+without a temporary sort.
+
 See [AI work attribution](ai/attribution.md) for the producing side and
 [agent persistence](agents/persistence-and-sync.md) for how a wake groups its
 calls into one attribution.

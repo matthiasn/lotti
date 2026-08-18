@@ -345,6 +345,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                       // no-flash rule: while loading, render nothing here.
                       if (agents.hasValue &&
                           identities.isEmpty &&
+                          archivedIdentities.isEmpty &&
                           !failedFirstLoad)
                         const _NoGoalsYet(),
                       for (final identity in identities) ...[

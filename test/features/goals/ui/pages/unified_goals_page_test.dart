@@ -320,6 +320,10 @@ void main() {
 
     expect(find.text('Archived goals · 2'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey('unified-goals-empty-cta')),
+      findsNothing,
+    );
+    expect(
       find.byKey(const Key('unified-archived-goal-card-goal-old')),
       findsNothing,
     );

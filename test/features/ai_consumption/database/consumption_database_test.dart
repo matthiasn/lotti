@@ -17,7 +17,7 @@ void main() {
   });
 
   test(
-    'migrates schema v1 through attribution and agent-index schema v3',
+    'migrates schema v1 through latest-attribution index schema v4',
     () async {
       final directory = Directory.systemTemp.createTempSync('consumption-v1-');
       addTearDown(() {
@@ -88,7 +88,7 @@ void main() {
           .get();
       final names = objects.map((row) => row.read<String>('name')).toSet();
 
-      expect(version.read<int>('user_version'), 3);
+      expect(version.read<int>('user_version'), 4);
       expect(
         columns.map((row) => row.read<String>('name')),
         contains('attribution_id'),
@@ -99,11 +99,24 @@ void main() {
           'ai_work_attributions',
           'idx_consumption_attribution',
           'idx_attribution_output',
+          'idx_attribution_output_latest',
           'idx_attribution_task_created',
           'idx_attribution_actor_created',
           'idx_attribution_type_created',
           'idx_consumption_agent_created',
         }),
+      );
+      final latestIndex = await migrated
+          .customSelect(
+            'SELECT sql FROM sqlite_master '
+            "WHERE type = 'index' AND name = 'idx_attribution_output_latest'",
+          )
+          .getSingle();
+      expect(
+        latestIndex.read<String>('sql'),
+        contains(
+          'primary_output_type, primary_output_id, completed_at DESC, id DESC',
+        ),
       );
     },
   );

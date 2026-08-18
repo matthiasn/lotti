@@ -2951,6 +2951,10 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     'idx_attribution_output',
     'CREATE INDEX idx_attribution_output ON ai_work_attributions (primary_output_type, primary_output_id, primary_output_sub_id)',
   );
+  late final Index idxAttributionOutputLatest = Index(
+    'idx_attribution_output_latest',
+    'CREATE INDEX idx_attribution_output_latest ON ai_work_attributions (primary_output_type, primary_output_id, completed_at DESC, id DESC)',
+  );
   late final Index idxAttributionTaskCreated = Index(
     'idx_attribution_task_created',
     'CREATE INDEX idx_attribution_task_created ON ai_work_attributions (task_id, completed_at) WHERE task_id IS NOT NULL',
@@ -3040,6 +3044,7 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     idxConsumptionAttribution,
     aiWorkAttributions,
     idxAttributionOutput,
+    idxAttributionOutputLatest,
     idxAttributionTaskCreated,
     idxAttributionActorCreated,
     idxAttributionTypeCreated,
