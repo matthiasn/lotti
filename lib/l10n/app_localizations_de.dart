@@ -13630,6 +13630,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get timelineTranscriptionFailed => 'Transkription fehlgeschlagen';
 
   @override
+  String get timelineTranscriptMissing => 'Nicht transkribiert';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Sprache: $language';
   }

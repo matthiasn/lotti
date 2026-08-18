@@ -5839,6 +5839,7 @@
   "timelineShowMore": "Mostra di più",
   "timelineTranscribing": "Trascrizione in corso…",
   "timelineTranscriptionFailed": "Trascrizione non riuscita",
+  "timelineTranscriptMissing": "Non trascritto",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Obiettivo archiviato · 1} other{Obiettivi archiviati · {count}}}",
   "unifiedGoalsEmptyInvitation": "Crea un obiettivo per riunire qui abitudini, segnali e indicazioni del tuo agente.",
   "unifiedGoalStatusAtRisk": "A rischio",

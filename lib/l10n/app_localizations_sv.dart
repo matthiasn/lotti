@@ -13549,6 +13549,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get timelineTranscriptionFailed => 'Transkriberingen misslyckades';
 
   @override
+  String get timelineTranscriptMissing => 'Inte transkriberad';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }

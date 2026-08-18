@@ -7434,6 +7434,10 @@
   "timelineShowMore": "Show more",
   "timelineTranscribing": "Transcribing…",
   "timelineTranscriptionFailed": "Transcription failed",
+  "timelineTranscriptMissing": "Not transcribed",
+  "@timelineTranscriptMissing": {
+    "description": "Timeline label for a recording that was never picked up for transcription — no job ran and none failed"
+  },
   "transcriptLanguageLabel": "Language: {language}",
   "@transcriptLanguageLabel": {
     "placeholders": {

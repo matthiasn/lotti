@@ -22829,6 +22829,12 @@ abstract class AppLocalizations {
   /// **'Transcription failed'**
   String get timelineTranscriptionFailed;
 
+  /// Timeline label for a recording that was never picked up for transcription — no job ran and none failed
+  ///
+  /// In en, this message translates to:
+  /// **'Not transcribed'**
+  String get timelineTranscriptMissing;
+
   /// No description provided for @transcriptLanguageLabel.
   ///
   /// In en, this message translates to:

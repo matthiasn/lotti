@@ -5838,6 +5838,7 @@
   "timelineShowMore": "Meer tonen",
   "timelineTranscribing": "Transcriberen…",
   "timelineTranscriptionFailed": "Transcriptie mislukt",
+  "timelineTranscriptMissing": "Niet getranscribeerd",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Gearchiveerd doel · 1} other{Gearchiveerde doelen · {count}}}",
   "unifiedGoalsEmptyInvitation": "Maak een doel om je gewoonten, signalen en de begeleiding van je agent hier samen te brengen.",
   "unifiedGoalStatusAtRisk": "In gevaar",

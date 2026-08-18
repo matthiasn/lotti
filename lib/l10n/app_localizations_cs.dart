@@ -13696,6 +13696,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get timelineTranscriptionFailed => 'Přepis selhal';
 
   @override
+  String get timelineTranscriptMissing => 'Nepřepsáno';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Jazyk: $language';
   }

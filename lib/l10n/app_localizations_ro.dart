@@ -13800,6 +13800,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get timelineTranscriptionFailed => 'Transcrierea a eșuat';
 
   @override
+  String get timelineTranscriptMissing => 'Netranscris';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Limbă: $language';
   }

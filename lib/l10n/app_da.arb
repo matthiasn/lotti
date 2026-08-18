@@ -5839,6 +5839,7 @@
   "timelineShowMore": "Vis mere",
   "timelineTranscribing": "Transskriberer…",
   "timelineTranscriptionFailed": "Transskription mislykkedes",
+  "timelineTranscriptMissing": "Ikke transskriberet",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Arkiveret mål · 1} other{Arkiverede mål · {count}}}",
   "unifiedGoalsEmptyInvitation": "Opret et mål for at samle vaner, signaler og vejledning fra din agent her.",
   "unifiedGoalStatusAtRisk": "I farezonen",

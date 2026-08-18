@@ -5838,6 +5838,7 @@
   "timelineShowMore": "Mostrar mais",
   "timelineTranscribing": "A transcrever…",
   "timelineTranscriptionFailed": "A transcrição falhou",
+  "timelineTranscriptMissing": "Não transcrito",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Objetivo arquivado · 1} other{Objetivos arquivados · {count}}}",
   "unifiedGoalsEmptyInvitation": "Cria uma meta para reunir aqui hábitos, sinais e a orientação do teu agente de meta.",
   "unifiedGoalStatusAtRisk": "Em risco",
