@@ -41,8 +41,11 @@ void main() {
 
       registerAllFallbackValues();
       final attribution = AiInteractionCaptureTestBench.create()..register();
-      addTearDown(attribution.unregister);
+      // Registration order is load-bearing: tear-downs run in reverse, so
+      // `unregister` must be registered LAST to run BEFORE `getIt.reset`
+      // pulls the registrations out from under it.
       addTearDown(getIt.reset);
+      addTearDown(attribution.unregister);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -60,16 +63,28 @@ void main() {
       final providerType = _providerType(
         Platform.environment['GOAL_AGENT_EVAL_PROVIDER_TYPE'],
       );
+      // Fail loudly on a missing key. Falling back to an empty string makes
+      // every case an `inferenceError`, and since the test only asserts the
+      // report is non-empty, a run that authenticated nowhere would still go
+      // green and produce a report full of zeros.
+      final apiKey =
+          Platform.environment['GOAL_AGENT_EVAL_API_KEY'] ??
+          Platform.environment['MELIOUS_API_KEY'] ??
+          '';
+      expect(
+        apiKey,
+        isNotEmpty,
+        reason:
+            'Set GOAL_AGENT_EVAL_API_KEY (or MELIOUS_API_KEY) — an empty key '
+            'produces a full report of authentication failures.',
+      );
       final provider = AiConfigInferenceProvider(
         id: 'goal-outcome-eval-${providerType.name}',
         name: 'Goal Outcome Eval (${providerType.name})',
         baseUrl:
             Platform.environment['GOAL_AGENT_EVAL_BASE_URL'] ??
             ProviderConfig.defaultBaseUrls[providerType]!,
-        apiKey:
-            Platform.environment['GOAL_AGENT_EVAL_API_KEY'] ??
-            Platform.environment['MELIOUS_API_KEY'] ??
-            '',
+        apiKey: apiKey,
         inferenceProviderType: providerType,
         createdAt: DateTime(2026, 8, 8),
       );

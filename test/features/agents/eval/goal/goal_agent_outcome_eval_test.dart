@@ -501,6 +501,38 @@ void main() {
       );
     });
 
+    test('pinning the status also requires the report to exist', () {
+      // The vacuous pass this harness shipped with: the status check ran only
+      // when a report existed, so a wake that persisted NOTHING satisfied a
+      // scenario whose whole point was what the report must say. Six of six
+      // P8 cases per run "passed" that way.
+      expect(
+        classifyGoalAgentOutcome(
+          scenario: withExpectation(
+            const GoalOutcomeExpectation(
+              expectedReportStatus: GoalTrackStatus.insufficientData,
+            ),
+          ),
+          outcome: outcomeWith(),
+        ),
+        GoalOutcomeFailureCategory.missingReport,
+        reason: 'silence cannot satisfy "the report must say X"',
+      );
+      // And a banner alone is still not a report — the exact shape the live
+      // runs produced.
+      expect(
+        classifyGoalAgentOutcome(
+          scenario: withExpectation(
+            const GoalOutcomeExpectation(
+              expectedReportStatus: GoalTrackStatus.offTrack,
+            ),
+          ),
+          outcome: outcomeWith(writes: [ad()]),
+        ),
+        GoalOutcomeFailureCategory.missingReport,
+      );
+    });
+
     test('a report contradicting the deterministic status fails', () {
       expect(
         classifyGoalAgentOutcome(

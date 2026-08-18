@@ -82,9 +82,9 @@ Limitation, stated plainly: the tier-1 wake context is **authored** (a
 synthetic FACTS block), not produced by a real wake. The fixtures cross-check
 their deterministic arithmetic against the real evaluator and use the
 production prompt/tool contract, but the block itself is written by hand and
-can drift from what `GoalFactsRenderer` actually emits. Tier 2 closes that
-gap for its nine scenarios; the remaining seventeen still run on authored
-FACTS.
+can drift from what `GoalFactsRenderer` actually emits. Tier 2 does not
+re-implement any of these — its nine scenarios are new, built from entities —
+so all 26 tier-1 scenarios still run on authored FACTS.
 
 ### Tier 2 — what is measured
 
@@ -105,9 +105,9 @@ Pass/fail is over persisted entities:
 | `off_track_first_ad` | P5 | report + a newly authored banner |
 | `off_track_fresh_ad` | P6 | no second banner reaches the board |
 | `off_track_cooldown` | P5 | the same-day dismissal keeps the board quiet |
-| `recovering_retires_ad` | P7 | the stale scolding ends up retired |
-| `sparse_insufficient_data` | P8 | `insufficientData`, no banner |
-| `off_track_reuses_top_rated` | P13 | a re-run, not fresh copy |
+| `recovering_retires_ad` | P7 | the stale scolding is retired **and** a report lands |
+| `sparse_insufficient_data` | P8 | a report saying `insufficientData`, no banner |
+| `off_track_reuses_top_rated` | P13 | report + a re-run, not fresh copy |
 | `chat_question_on_track` | P10 | a reply the chat surface can render |
 
 Two of those are only meaningful at the outcome level. `forbidsNewAd` counts
@@ -522,30 +522,23 @@ mid-pep-talk. That LOWERS the reported score — 0.375 is the honest rate where
 
 ## Tier 2's first run finds a report-loss path — 2026-08-18
 
+> **Corrected 2026-08-18, later the same day.** The table first published here
+> read `27/27` and `18/27`. Both numbers were inflated by a scoring defect in
+> the harness — see "The first tier-2 table was inflated" below.
+> The corrected baseline is **33/54 and 39/54 across two runs**,
+> and report loss is not a glm-only problem. The mechanism described in this
+> section is unaffected and was confirmed by the corrected runs; only the
+> magnitudes were wrong, and they were wrong in the flattering direction.
+
 Nine scenarios, three samples each, two models. Tier 2's first live run, and
-it immediately found something no tier-1 run could have.
-
-| Scenario | Policy | deepseek-v4-flash-0731 | glm-5.2 |
-| --- | --- | ---: | ---: |
-| `ot_quiet_wake` | P2 | 3/3 | 3/3 |
-| `ot_transition_report` | P1 | 3/3 | 2/3 |
-| `off_track_first_ad` | P5 | 3/3 | **0/3** |
-| `off_track_fresh_ad` | P6 | 3/3 | **1/3** |
-| `off_track_cooldown` | P5 | 3/3 | **0/3** |
-| `recovering_retires_ad` | P7 | 3/3 | 3/3 |
-| `sparse_insufficient_data` | P8 | 3/3 | 3/3 |
-| `off_track_reuses_top_rated` | P13 | 3/3 | 3/3 |
-| `chat_question_on_track` | P10 | 3/3 | 3/3 |
-| **Total** | | **27/27** | **18/27** |
-
-Every one of glm-5.2's nine failures is the same category: `missingReport`.
-The wake persisted a banner, or nothing, and left the user with no standing
-report at all.
+it immediately found something no tier-1 run could have: nine failures, every
+one of them the same category — `missingReport`. The wake persisted a banner,
+or nothing, and left the user with no standing report at all.
 
 **Why.** All nine were refused by the deterministic guard, twice, and in
 eight of the nine the two refusals cite *different rules*:
 
-```
+```text
 1. "atRisk" is a status field value, not prose. Rewrite the visible text…
 2. the rolling standing must quote the FACTS aggregates verbatim —
    6000 is missing.
@@ -582,10 +575,9 @@ wrong number" into "no report at all", which is the worse failure.
    re-measuring before touching the retry budget.
 
 **Caveats.** Three samples per cell is thin — the tier-1 noise floor work is
-explicit that n=3 cannot rank two close models. It is enough here because the
-failures are not a scatter: they are one category, concentrated in one model,
-with a mechanism visible in the rejection log. The ranking claim
-("deepseek > glm") is weak at this n; the defect claim is not.
+explicit that n=3 cannot rank two close models. The defect claim survives that
+because the failures are one category with a mechanism visible in the
+rejection log. The *ranking* claim did not survive: see the correction below.
 
 Cost over the same run, and note this is per WAKE, not per call — a repaired
 wake pays for its retries:
@@ -603,7 +595,11 @@ A single violation reads exactly as it always did; only the multiple case
 gains an envelope.
 
 Measured the way the rule two sections up demands — full suite, twice, both
-sides:
+sides. **The pass columns below are superseded** — they were scored by the
+classifier defect described in the next section, and the fix needs
+re-measuring against the corrected 33/39 baseline. The rejection and
+mechanism columns are unaffected, since they were read from the rejection log
+rather than from pass totals:
 
 | | passes /54 | guard rejections | failures where the retry tripped a NEW rule |
 | --- | ---: | ---: | ---: |
@@ -633,6 +629,67 @@ is missing, and still does not quote it. Worth attacking next, and worth
 attacking as a contract problem (is the `rollingWindow` slot asking for
 something models can reliably produce?) rather than by widening the retry
 budget.
+
+## The first tier-2 table was inflated — 2026-08-18
+
+Review of the tier-2 PR found two scoring defects, and correcting them moves
+the numbers a long way in the unflattering direction. Recording it here at
+length because the failure is instructive: a brand-new harness, built
+specifically to stop fixtures from claiming what their facts do not support,
+shipped with fixtures claiming what their facts did not support.
+
+**Defect 1 — a status expectation that no report satisfied.**
+`classifyGoalAgentOutcome` checked `expectedReportStatus` only when
+`outcome.report != null`. A wake that persisted *no report at all* therefore
+passed a scenario whose entire point was what the report must say. The fix is
+structural rather than per-scenario: pinning the status now *implies*
+requiring the report, because "the report must say `insufficientData`" cannot
+be satisfied by silence.
+
+**Defect 2 — a P8 fixture that never posed its question.**
+`sparse_insufficient_data` gave yesterday's register the *same*
+`insufficientData` status as today. No transition, therefore no forced report,
+therefore a quiet wake was correct restraint (P2) — the scenario was a second
+no-op test wearing P8's label, and all six cases per run "passed" by doing
+nothing. Yesterday is now `onTrack`, so the tracker gap is new and the wake
+owes an explanation.
+
+Two more scenarios were simply missing `requiresReport`: `recovering_retires_ad`
+(P7 is "retire *and* report", and offTrack → recovering is a transition) and
+`off_track_reuses_top_rated` (same evidence as P5, so the same transition and
+the same duty; only the ad decision differs).
+
+**The corrected baseline**, same code, same models, same three samples, run
+twice:
+
+| | deepseek-v4-flash-0731 | glm-5.2 | total |
+| --- | ---: | ---: | ---: |
+| as first published | 27/27 | 18/27 | 45/54 |
+| corrected, run 1 | 19/27 | 14/27 | **33/54** |
+| corrected, run 2 | 22/27 | 17/27 | **39/54** |
+
+**Every** newly-exposed failure is `missingReport`. That changes the finding's
+shape in two ways:
+
+- **Report loss is the dominant goal-agent failure mode, not a glm quirk.**
+  The original "deepseek 27/27" was an artifact of scenarios that never asked
+  for a report. Corrected, deepseek loses the report in 5–8 of 27 wakes.
+- **It is spread across every scenario that owes a report**, worst on P7
+  (4–6 of 6) and P13 (3–4 of 6), not concentrated in the ad rows.
+
+**What this invalidates.** Every tier-2 total published before this correction,
+including the before/after table for the batched-rejection change — that fix
+must be re-measured against the 33/39 baseline. The *mechanism* claims are
+unaffected: rejection counts and the sequential-rules pattern were read from
+the rejection log, not from pass totals.
+
+**The lesson, which is not a new one.** A vacuous pass is invisible in a green
+matrix — 3/3 looks identical whether it was earned or never asked for. The
+existing testing convention says every test must assert something meaningful;
+this is the eval-harness form of that rule, and the harness needed it as much
+as the code it grades. The fixture-honesty tests caught status drift because
+they were written to; nothing was asserting that a passing case had actually
+been *asked* anything.
 
 ## Cost and latency
 
