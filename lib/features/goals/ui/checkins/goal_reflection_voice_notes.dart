@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -76,7 +77,19 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: InkWell(
               key: const ValueKey('goal-reflection-add-voice-note'),
-              onTap: () => openRecorder(context, goalEntryId: goalEntryId),
+              onTap: () async {
+                final createdId = await openRecorder(
+                  context,
+                  goalEntryId: goalEntryId,
+                );
+                if (createdId == null) return;
+                // A voice note on a reflection IS a check-in, so it earns the
+                // same transcript — without this the rail showed it as a
+                // recording that was forever about to be transcribed.
+                await ref
+                    .read(goalCheckInTranscriptionTriggerProvider)
+                    .transcribe(agentId: agentId, entryId: createdId);
+              },
               borderRadius: BorderRadius.circular(tokens.radii.s),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),

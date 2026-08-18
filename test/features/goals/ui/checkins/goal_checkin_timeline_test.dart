@@ -11,6 +11,7 @@ import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -325,6 +326,51 @@ void main() {
     expect(find.text('Gym bag is packed.'), findsOneWidget);
     // A written check-in is not a recording: no player, no pending marker.
     expect(find.text('Transcribing…'), findsNothing);
+  });
+
+  testWidgets('check-ins open their journal entry, reflections do not', (
+    tester,
+  ) async {
+    await pump(tester, [
+      GoalAudioCheckIn(audio('a1', today, transcript: 'Ran 5k.')),
+      GoalTextCheckIn(
+        JournalEntry(
+          meta: meta('n1', today),
+          entryText: const EntryText(plainText: 'Gym bag is packed.'),
+        ),
+      ),
+      GoalReflectionItem(
+        GoalAssessmentRecord(
+          id: 'r1',
+          day: DateTime.utc(today.year, today.month, today.day),
+          specVersionId: 'spec-1',
+          rating: GoalAssessmentRating.met,
+          createdAt: today,
+          // ignore: avoid_redundant_argument_values
+          dimensionRatings: const {},
+          provenance: GoalAssessmentProvenance.ratedByUser,
+        ),
+      ),
+    ]);
+
+    // The rail shows a clamped transcript and a player; the entry itself is
+    // where the words can be read whole. The chevron is the shared timeline's
+    // contract for "this row opens something" — it is drawn only when both an
+    // entry id and an open handler are present, so two of the three beats
+    // carry it and the agent-side reflection, which is no journal entry,
+    // does not.
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+
+    final routes = <String>[];
+    beamToNamedOverride = routes.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.tap(find.text('Gym bag is packed.'));
+    await tester.pump();
+
+    // The logbook route for that entry, not a goal-local surface that would
+    // then have to reimplement editing and deletion.
+    expect(routes, ['/journal/n1']);
   });
 
   testWidgets('an older day carries its date, not a relative word', (

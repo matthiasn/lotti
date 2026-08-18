@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
@@ -118,7 +121,18 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
       goalEntryId: goalEntryId,
       categoryId: widget.categoryId,
     );
-    if (createdId != null && mounted) Navigator.of(context).pop();
+    if (createdId == null) return;
+    // The recording is saved; transcribing it is what turns it into something
+    // the goal agent can read. The shared post-recording automation only fires
+    // for task-linked audio, so a check-in has to ask for its own transcript —
+    // fire-and-forget, because the sheet must close now and the transcript
+    // lands on the timeline whenever it is ready.
+    unawaited(
+      ref
+          .read(goalCheckInTranscriptionTriggerProvider)
+          .transcribe(agentId: widget.agentId, entryId: createdId),
+    );
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _saveText(String goalEntryId) async {

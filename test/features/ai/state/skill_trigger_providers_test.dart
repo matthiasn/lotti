@@ -19,11 +19,13 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -36,8 +38,10 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
@@ -80,6 +84,9 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
+    // The shared registry, not a per-file hand-roll: the decline path drives
+    // the attribution mocks, which need `AiAttributionStart` registered.
+    registerAllFallbackValues();
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(<String, dynamic>{});
@@ -1289,10 +1296,17 @@ void main() {
   group('triggerSkillProvider', () {
     late MockProfileAutomationResolver mockResolver;
     late MockSkillInferenceRunner mockRunner;
+    late MockProfileAutomationService mockAutomationService;
 
     setUp(() {
       mockResolver = MockProfileAutomationResolver();
       mockRunner = MockSkillInferenceRunner();
+      mockAutomationService = MockProfileAutomationService();
+      // Default: nothing to fall back to. Tests that exercise the fallback
+      // stub it to hand back a resolved speech-to-text route.
+      when(
+        () => mockAutomationService.resolveDirectTranscription(),
+      ).thenAnswer((_) async => AutomationResult.notHandled);
     });
 
     test('returns early when skill not found', () async {
@@ -1300,6 +1314,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue(const []),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -1360,6 +1377,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
           ],
@@ -1406,6 +1426,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -1425,6 +1448,354 @@ void main() {
       // Should return early without invoking the runner
       verifyZeroInteractions(mockRunner);
     });
+
+    test(
+      'transcribes a category-less entry via the direct fallback, and '
+      'surfaces a retryable failure when there is none',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-fallback',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        // A goal check-in: audio linked to a goal, so no task and no category.
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'checkin-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'checkin.m4a',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 1),
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById('checkin-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(() => mockJournalDb.getLinkedEntities('checkin-1')).thenAnswer(
+          (_) async => <JournalEntity>[],
+        );
+        when(() => mockJournalDb.getLinkedToEntities('checkin-1')).thenAnswer(
+          (_) async => [],
+        );
+
+        final provider =
+            AiConfig.inferenceProvider(
+                  id: 'provider-stt',
+                  name: 'STT',
+                  inferenceProviderType: InferenceProviderType.openAi,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.openai.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        when(
+          () => mockAutomationService.resolveDirectTranscription(),
+        ).thenAnswer(
+          (_) async => AutomationResult(
+            handled: true,
+            skill: skill,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'whisper-1',
+              thinkingProvider: provider,
+              transcriptionModelId: 'whisper-1',
+              transcriptionProvider: provider,
+            ),
+          ),
+        );
+        when(
+          () => mockRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-1',
+            skillId: 'skill-fallback',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // The recording transcribes with the fallback's speech-to-text route,
+        // not with a profile it does not have.
+        final captured =
+            verify(
+                  () => mockRunner.runTranscription(
+                    audioEntryId: 'checkin-1',
+                    automationResult: captureAny(named: 'automationResult'),
+                    // ignore: avoid_redundant_argument_values
+                    linkedTaskId: null,
+                    // ignore: avoid_redundant_argument_values
+                    overrideModelId: null,
+                    // ignore: avoid_redundant_argument_values
+                    geminiThinkingMode: null,
+                  ),
+                ).captured.single
+                as AutomationResult;
+        expect(
+          captured.resolvedProfile?.transcriptionModelId,
+          'whisper-1',
+        );
+        expect(
+          testContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'checkin-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.idle,
+        );
+
+        // With nothing configured at all the run is declined — and the
+        // decline is now visible, which is what makes the timeline offer
+        // Retry instead of claiming it is still transcribing.
+        when(
+          () => mockAutomationService.resolveDirectTranscription(),
+        ).thenAnswer((_) async => AutomationResult.notHandled);
+        final declineContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(declineContainer);
+
+        await declineContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-1',
+            skillId: 'skill-fallback',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        expect(
+          declineContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'checkin-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+        expect(
+          declineContainer.read(
+            inferenceErrorControllerProvider((
+              id: 'checkin-1',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          contains('speech-to-text'),
+        );
+      },
+    );
+
+    test(
+      'a declined transcription is recorded as failed work, and a broken '
+      'recorder of that failure still declines quietly',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-declined',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        when(
+          () => mockJournalDb.journalEntityById('checkin-fail'),
+        ).thenAnswer((_) async => null);
+
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-fail',
+            skillId: 'skill-declined',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // Durable, not just live: the timeline reads the latest attribution on
+        // the audio entry, which is what makes Retry survive a restart rather
+        // than the beat reverting to "Transcribing…" on the next launch.
+        final recorded =
+            verify(() => bench.service.finalize(captureAny())).captured.single
+                as AiWorkAttribution;
+        expect(recorded.status, AiWorkStatus.failed);
+        expect(recorded.workType, AiWorkType.audioTranscription);
+        expect(recorded.primaryOutput?.type, AiArtifactType.journalAudio);
+        expect(recorded.primaryOutput?.id, 'checkin-fail');
+        expect(recorded.errorCode, 'transcription_not_configured');
+
+        // The failure record is diagnostics. Losing it must not turn a
+        // declined transcription into a thrown one.
+        when(
+          () => bench.service.begin(any()),
+        ).thenThrow(StateError('attribution store is down'));
+        final brokenContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(brokenContainer);
+
+        await brokenContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-fail',
+            skillId: 'skill-declined',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        expect(
+          brokenContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'checkin-fail',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+        verifyZeroInteractions(mockRunner);
+      },
+    );
+
+    test(
+      'a category-less entry declines a non-transcription skill without '
+      'inventing a transcription failure for it',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-image-nocat',
+                  name: 'Image analysis',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: [Modality.image],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        when(
+          () => mockJournalDb.journalEntityById('image-nocat'),
+        ).thenAnswer((_) async => null);
+
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'image-nocat',
+            skillId: 'skill-image-nocat',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // The live failed state is shown for its own response type…
+        expect(
+          testContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'image-nocat',
+              aiResponseType: AiResponseType.imageAnalysis,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+        // …but no audio-transcription attribution is written: that record is
+        // keyed on the audio entry, and inventing one here would make an
+        // unrelated recording look like a failed transcription.
+        verifyNever(() => bench.service.finalize(any()));
+        // The fallback belongs to transcription alone.
+        verifyNever(() => mockAutomationService.resolveDirectTranscription());
+        verifyZeroInteractions(mockRunner);
+      },
+    );
 
     test('successfully routes transcription skill to runner', () async {
       final skill =
@@ -1485,6 +1856,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -1561,6 +1935,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
@@ -1670,6 +2047,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
           ],
@@ -1722,6 +2102,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
           ],
@@ -1804,6 +2187,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -1897,6 +2283,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
@@ -1973,6 +2362,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -2099,6 +2491,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
@@ -2179,6 +2574,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -2261,6 +2659,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
@@ -2345,6 +2746,9 @@ void main() {
         overrides: [
           skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockAutomationService,
+          ),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
       );
@@ -2422,6 +2826,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
@@ -2519,6 +2926,9 @@ void main() {
           overrides: [
             skillRegistryProvider.overrideWithValue([skill]),
             profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
             journalDbProvider.overrideWithValue(mockJournalDb),
           ],

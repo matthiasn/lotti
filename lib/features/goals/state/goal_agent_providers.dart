@@ -22,6 +22,8 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
@@ -32,6 +34,7 @@ import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
+import 'package:lotti/features/goals/service/goal_checkin_transcription_trigger.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
@@ -161,6 +164,32 @@ final Provider<GoalCheckInCompactor> goalCheckInCompactorProvider =
         domainLogger: ref.watch(domainLoggerProvider),
       ),
       name: 'goalCheckInCompactorProvider',
+    );
+
+/// Starts the transcription of a freshly recorded check-in.
+///
+/// Rides `triggerSkillProvider` — the same entry point the AI popup and the
+/// timeline's Retry use — so a check-in transcribes exactly like every other
+/// recording, with one goal-specific question answered here: whether the goal
+/// agent's automatic updates are on.
+final Provider<GoalCheckInTranscriptionTrigger>
+goalCheckInTranscriptionTriggerProvider =
+    Provider<GoalCheckInTranscriptionTrigger>(
+      (ref) => GoalCheckInTranscriptionTrigger(
+        agentService: ref.watch(agentServiceProvider),
+        domainLogger: ref.watch(domainLoggerProvider),
+        runTranscription: (entryId) => ref.read(
+          triggerSkillProvider((
+            entityId: entryId,
+            skillId: skillTranscribeContextId,
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        ),
+      ),
+      name: 'goalCheckInTranscriptionTriggerProvider',
     );
 
 /// Reads a goal's check-ins out of the journal for the headless workflow.

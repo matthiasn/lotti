@@ -17,6 +17,7 @@ import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
@@ -98,6 +99,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
               ),
             )
           : null,
+      // Every check-in beat is a journal entry, so the rail offers what the
+      // event timeline already does: open the entry itself. The rail shows a
+      // clamped transcript and a player; the full entry is where the text can
+      // be read whole, edited, or deleted.
+      onOpenBeat: (entryId) => beamToNamed('/journal/$entryId'),
       onRetryTranscript: (entryId) => unawaited(
         ref.read(
           triggerSkillProvider((
@@ -176,6 +182,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
       case final GoalTextCheckIn checkIn:
         return TimelineBeat(
           id: checkIn.id,
+          entryId: checkIn.id,
           timeLabel: timeLabel,
           kindLabel: context.messages.goalCheckInKindNote,
           glyph: Icons.edit_note_rounded,
