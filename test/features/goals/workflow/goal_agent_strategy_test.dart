@@ -620,6 +620,114 @@ void main() {
     },
   );
 
+  test('a reader-formatted aggregate still counts as quoting it', () async {
+    // FACTS carry a bare Dart number; a report writes the number the way a
+    // reader expects to see it. Digit-exact matching rejected EVERY
+    // four-digit aggregate from every evaluated model — "8,600" against
+    // 8600 — while passing every three-digit one, so the health goals
+    // passed and the step goals lost their reports entirely.
+    Future<bool> accepts(String rollingWindow, String aggregate) async {
+      final gated = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: 'goal-1',
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+        expectedRollingAggregates: [aggregate],
+      );
+      await gated.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.updateGoalReport,
+            args: {
+              'status': 'offTrack',
+              'oneLiner': 'Behind.',
+              'report': {
+                'tldr': 'Behind on steps.',
+                'currentPeriod': 'Yesterday was light.',
+                'rollingWindow': rollingWindow,
+                'latestChange': 'Down on the week.',
+                'coverage': '7 days.',
+                'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+              },
+            },
+          ),
+        ],
+        manager: manager,
+      );
+      return gated.hasReport;
+    }
+
+    // What the models actually write, captured from live runs.
+    for (final written in [
+      'Rolling 7-day average is 8,600 steps against a 10,000 target.',
+      'Rolling 7-day mean is ~8,600 steps (attainment 0.86).',
+      // Locales that group with a period or a space.
+      'Der 7-Tage-Schnitt liegt bei 8.600 Schritten.',
+      'La moyenne sur 7 jours est de 8 600 pas.',
+      // The number ending the sentence: the trailing period is punctuation,
+      // not a decimal point, and rejecting it was a plain bug.
+      'The rolling seven-day average is 8600.',
+    ]) {
+      expect(
+        await accepts(written, '8600'),
+        isTrue,
+        reason: 'must accept: $written',
+      );
+    }
+
+    // And the fabrications this check exists for are still refused — the
+    // normalization must not buy acceptance with accuracy.
+    for (final fabricated in [
+      // A recomputed precision FACTS never carried.
+      'Rolling average 8600.42 steps.',
+      // A different number that merely contains the digits.
+      'Rolling average 18600 steps.',
+      // Grouped, but a different value.
+      'Rolling 7-day average is 8,700 steps.',
+    ]) {
+      expect(
+        await accepts(fabricated, '8600'),
+        isFalse,
+        reason: 'must refuse: $fabricated',
+      );
+    }
+  });
+
+  test('normalizing separators never destroys a raw match', () async {
+    // "weight 95 100" reads as two numbers; collapsing the space would hide
+    // the 95. The raw text is tried first for exactly this reason.
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedRollingAggregates: const ['95'],
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'offTrack',
+            'oneLiner': 'Behind.',
+            'report': {
+              'tldr': 'Behind on weight.',
+              'currentPeriod': 'Weighed in today.',
+              'rollingWindow': 'Rolling weight 95 100 g above target.',
+              'latestChange': 'Down 1 kg.',
+              'coverage': '3 weigh-ins.',
+              'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+            },
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.hasReport, isTrue);
+  });
+
   test('the reply carries a banner request in any language', () async {
     // The regex detector reads English only, and a wake whose ad tools were
     // withheld cannot carry the intent through a typed create_goal_ad call.

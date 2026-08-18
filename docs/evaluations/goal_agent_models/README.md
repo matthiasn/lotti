@@ -691,6 +691,80 @@ as the code it grades. The fixture-honesty tests caught status drift because
 they were written to; nothing was asserting that a passing case had actually
 been *asked* anything.
 
+## The report loss was a matcher bug — 2026-08-18
+
+The aggregate rule was not hard for models to satisfy. It was impossible.
+
+FACTS carry the rolling aggregate as a bare Dart number, `8600`. Dumping what
+models actually write into `rollingWindow` on live runs settles it in one
+look:
+
+```text
+deepseek/gp_on_track    Rolling 7-day average is 11,050 steps against a
+                        10,000 target.
+deepseek/gp_recovering  Rolling 7-day mean is 8,586 steps (86% of the
+                        10,000 target).
+glm-5.2/gp_recovering   Rolling 7-day mean is ~8,586 steps …
+deepseek/gh_complex     … systolic 127 (target ≤125), diastolic 89, weight 95
+```
+
+`_quotesNumber` required a digit-exact token, so **every four-digit aggregate
+failed and every three-digit one passed** — deterministically, both models,
+every sample. That is the whole pattern the tier-2 runs showed: the health
+goals (127, 95, 89) kept their reports and the step goals (6000, 8600, 11000)
+lost theirs. Probing the matcher directly:
+
+| what a report writes | old verdict |
+| --- | --- |
+| `Averaging 6000 steps a day` | pass |
+| `Averaging 6,000 steps a day` | **fail** |
+| `Averaging 6 000 steps a day` | **fail** |
+| `The 7-day average is 6000.` | **fail** |
+
+The last row is a separate plain bug: the lookahead treated a **sentence-ending
+period as a decimal point**, so any sentence ending on the number was refused.
+
+**The fix** tries the text both as written and with digit group separators
+removed (a `,`/`.`/space between a digit and exactly three more digits — two
+after it make it a decimal point, four make it neither), and only treats a
+trailing `.` as decimal when a digit follows. Trying *both* forms matters:
+normalization alone would collapse "weight 95 100" into "95100" and destroy a
+match the raw text already had.
+
+| | passes /54 | guard rejections | of those, the aggregate rule |
+| --- | ---: | ---: | ---: |
+| corrected baseline 1 | 33 | 63 | 45 |
+| corrected baseline 2 | 39 | 57 | 42 |
+| matcher fixed 1 | **53** | 19 | 5 |
+| matcher fixed 2 | **54** | 9 | 1 |
+
+Both models land at 27/27 or 26/27. No metric overlaps between conditions, so
+unlike the batching measurement this one does not need hedging: `+18/54` is
+far outside the noise floor, and the mechanism is directly observable in the
+rejection counts collapsing from 45/42 to 5/1.
+
+**What this reframes.** Most of what the previous two sections diagnosed as
+model failure and "report loss as the dominant failure mode" was self-inflicted
+by the guard added in #3961. The guard's *intent* was right — models really do
+substitute the latest reading for the mean — but its matcher punished correct,
+well-formatted prose, and one forced retry was never going to recover from a
+rule that cannot be satisfied. The batching fix remains correct and cheap, but
+with the matcher repaired its remaining contribution is small.
+
+**The lesson.** Three separate investigations here — a prompt-placement theory,
+a sequential-rejection theory, a retry-budget theory — all pointed at the model
+or the contract. None of them looked at whether the check itself was right. The
+question "would a correct answer pass this?" costs one probe and was never
+asked. It is now the first question, and the rejection log tier 2 records is
+what makes it cheap to ask.
+
+**Still open.** The check proves the aggregate *appears*, not that it is bound
+to the right series: a slot naming 95 as the target while stating 94 as the
+average still passes. Closing that means carrying the aggregates as typed
+per-series fields the app renders, instead of prose the model must echo and a
+regex must recover — which would delete this whole class of defect rather than
+repair it.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
