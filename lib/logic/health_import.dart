@@ -559,12 +559,35 @@ class HealthImport {
   /// `BODY_MASS_INDEX` names the "Weight vs. Body Mass Index" card, which plots
   /// the *weight* series (see `DashboardHealthBmiChart`) — so it resolves to
   /// weight rather than to BMI samples.
+  ///
+  /// `SLEEP_ASLEEP` is the subtle one, and the reason the "Asleep" chart used
+  /// to fall further behind the longer you left it. HealthKit stores all sleep
+  /// under one category type and the plugin's iOS reader selects a stage by
+  /// filtering on the sample's category value — `SLEEP_ASLEEP` matches only
+  /// `asleepUnspecified`, which an Apple Watch on iOS 16+ never writes. Asking
+  /// for `SLEEP_ASLEEP` alone therefore reads nothing, while the rows that
+  /// actually feed that series are the staged samples, copied under the generic
+  /// type as they are imported (see [sleepStagesDuplicatedAsAsleep]). The chart
+  /// only ever gained data when a *stage* card happened to be fetched, or from
+  /// a manual import in Settings — which requests the whole family at once.
+  ///
+  /// Expanding here rather than at the call site keeps that coupling in one
+  /// place, and costs no extra authorization: [expandToPermissionFamilies]
+  /// already widens any sleep type to the whole sleep family.
   static const compositeStorageTypes = <String, List<String>>{
     'BLOOD_PRESSURE': [
       'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
       'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
     ],
     'BODY_MASS_INDEX': ['HealthDataType.WEIGHT'],
+    // SLEEP_ASLEEP stays first: the delta window is computed from
+    // `actualTypes.first`, and it is the generic series being caught up.
+    'HealthDataType.SLEEP_ASLEEP': [
+      'HealthDataType.SLEEP_ASLEEP',
+      'HealthDataType.SLEEP_LIGHT',
+      'HealthDataType.SLEEP_DEEP',
+      'HealthDataType.SLEEP_REM',
+    ],
   };
 
   /// Resolves storage-type strings (`HealthDataType.STEPS`, or a bare enum name)

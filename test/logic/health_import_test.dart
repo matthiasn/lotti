@@ -1247,6 +1247,98 @@ void main() {
       });
     });
 
+    // The "Asleep chart falls behind" regression.
+    //
+    // HealthKit keeps every sleep stage under one category type, and the
+    // plugin's iOS reader picks a stage by filtering on the category value:
+    // SLEEP_ASLEEP matches only `asleepUnspecified`, which an Apple Watch on
+    // iOS 16+ never writes. So the background delta for the Asleep card read
+    // nothing at all, and that series only grew when a *stage* card was
+    // fetched (each staged sample is copied under the generic type) or from a
+    // manual import in Settings, which asks for the whole family at once.
+    test('the Asleep delta fetches the staged types that feed it', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        stubHealthStore();
+
+        mobileImport.fetchHealthDataDelta('HealthDataType.SLEEP_ASLEEP');
+        async.flushMicrotasks();
+
+        final requested =
+            verify(
+                  () => mockHealthService.getHealthDataFromTypes(
+                    types: captureAny(named: 'types'),
+                    startTime: any(named: 'startTime'),
+                    endTime: any(named: 'endTime'),
+                  ),
+                ).captured.single
+                as List<HealthDataType>;
+
+        expect(
+          requested,
+          containsAll(<HealthDataType>[
+            HealthDataType.SLEEP_LIGHT,
+            HealthDataType.SLEEP_DEEP,
+            HealthDataType.SLEEP_REM,
+          ]),
+          reason: 'asking for SLEEP_ASLEEP alone reads nothing on iOS 16+',
+        );
+        expect(requested, contains(HealthDataType.SLEEP_ASLEEP));
+      });
+    });
+
+    // The delta window must come from the generic series being caught up, not
+    // from whichever stage sorts first — a stage imported more recently than
+    // the last duplicated row would start the window too late and skip the
+    // very nights the Asleep chart is missing.
+    test('the Asleep delta window comes from the Asleep series itself', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        final asleepLatest = DateTime(2024, 6, 10);
+
+        when(() => mockJournalDb.latestQuantitativeByType(any())).thenAnswer((
+          invocation,
+        ) async {
+          final type = invocation.positionalArguments.first as String;
+          // A stage imported far more recently than the generic series.
+          final date = type == 'HealthDataType.SLEEP_ASLEEP'
+              ? asleepLatest
+              : DateTime(2024, 8);
+          return QuantitativeEntry(
+            data: DiscreteQuantityData(
+              dateFrom: date,
+              dateTo: date,
+              value: 1,
+              dataType: type,
+              unit: 'MINUTE',
+            ),
+            meta: Metadata(
+              id: 'id-$type',
+              createdAt: date,
+              updatedAt: date,
+              dateFrom: date,
+              dateTo: date,
+            ),
+          );
+        });
+        stubHealthStore();
+
+        mobileImport.fetchHealthDataDelta('HealthDataType.SLEEP_ASLEEP');
+        async.flushMicrotasks();
+
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: asleepLatest,
+            endTime: any(named: 'endTime'),
+          ),
+        ).called(1);
+      });
+    });
+
     test('clears the running flag once the queue drains', () {
       fakeAsync((async) {
         final mobileImport = createMobileHealthImport();
@@ -1561,13 +1653,19 @@ void main() {
       });
     });
 
-    test('the composite map documents exactly these two expansions', () {
+    test('the composite map documents exactly these expansions', () {
       expect(HealthImport.compositeStorageTypes, {
         'BLOOD_PRESSURE': [
           'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
         ],
         'BODY_MASS_INDEX': ['HealthDataType.WEIGHT'],
+        'HealthDataType.SLEEP_ASLEEP': [
+          'HealthDataType.SLEEP_ASLEEP',
+          'HealthDataType.SLEEP_LIGHT',
+          'HealthDataType.SLEEP_DEEP',
+          'HealthDataType.SLEEP_REM',
+        ],
       });
     });
 
