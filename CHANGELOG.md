@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Added
+- **A faster, cheaper Melious profile.** "Melious.ai (Flash)" joins the
+  existing Melious profile rather than replacing it, so nothing you have set
+  up changes. It runs everyday thinking on DeepSeek V4 Flash and keeps Kimi K3
+  for high-end reasoning and image recognition, with the same Whisper
+  transcription and image generation. On our task-agent evaluations it matched
+  the standard profile's results across three full runs while costing an order
+  of magnitude less per agent wake and answering in about a third of the time.
 - **Your goal agent reads your check-ins.** Each check-in is distilled once
   into a short structured record — what happened, what you said you would do,
   what was in the way — and it is that, never the raw transcript, that reaches
@@ -212,6 +219,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the goal wizard now live under the Goals tab.
 
 ### Fixed
+- **DeepSeek V4 Flash works when you choose it.** The model was offered in the
+  Melious catalog under an identifier the provider does not serve, so every
+  request made with it failed. It now points at the served model.
 - **Toast borders follow their rounded corners cleanly.** Countdown and tone
   indicator strips no longer paint over the toast outline at the left corners,
   removing the doubled edge that was most visible at the top-left.

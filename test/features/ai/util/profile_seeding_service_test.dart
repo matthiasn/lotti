@@ -604,7 +604,7 @@ void main() {
       verifyNever(() => mockRepo.saveConfig(any()));
     });
 
-    test('seeds only the profile of the one usable provider type', () async {
+    test('seeds only the profiles of the one usable provider type', () async {
       when(
         () => mockRepo.getConfigsByType(
           AiConfigType.inferenceProvider,
@@ -622,7 +622,13 @@ void main() {
 
       await service.seedDefaults();
 
-      expect(captured.map((c) => c.id), [profileMeliousId]);
+      // Melious is the one provider type that seeds more than one profile:
+      // the standard stack and the cheap-thinking Flash variant. Nothing of
+      // any other provider type may appear.
+      expect(captured.map((c) => c.id), [
+        profileMeliousId,
+        profileMeliousFlashId,
+      ]);
     });
 
     test(
