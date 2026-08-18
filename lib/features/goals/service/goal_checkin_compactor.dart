@@ -1,7 +1,8 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
-
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -14,10 +15,14 @@ import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Tool name marking a stored check-in summary in the agent log.
 const goalCheckInSummaryToolName = 'goal_compact_check_in';
+const goalCheckInCompactionFailureToolName = 'goal_compact_check_in_failure';
+const goalCheckInCompactionMaxAttempts = 3;
+const goalCheckInCompactionRetryBaseDelay = Duration(hours: 6);
 
 /// Fingerprint of the words a summary was distilled from.
 ///
@@ -35,6 +40,60 @@ String goalCheckInSourceDigest(String text) =>
 String goalCheckInSummaryId(String agentId, String entryId) =>
     'goal_checkin_summary:$agentId:$entryId';
 
+String goalCheckInCompactionFailureId(String agentId, String entryId) =>
+    'goal_checkin_failure:$agentId:$entryId';
+
+class GoalCheckInCompactionFailure {
+  const GoalCheckInCompactionFailure({
+    required this.sourceEntryId,
+    required this.sourceDigest,
+    required this.attempts,
+    required this.retryAfter,
+  });
+
+  final String sourceEntryId;
+  final String sourceDigest;
+  final int attempts;
+  final DateTime retryAfter;
+
+  bool blocks(String digest, DateTime now) =>
+      sourceDigest == digest &&
+      (attempts >= goalCheckInCompactionMaxAttempts ||
+          now.isBefore(retryAfter));
+
+  Map<String, Object> toContent() => {
+    'sourceEntryId': sourceEntryId,
+    'sourceDigest': sourceDigest,
+    'attempts': attempts,
+    'retryAfter': retryAfter.toUtc().toIso8601String(),
+  };
+
+  static GoalCheckInCompactionFailure? fromContent(
+    Map<String, Object?> content,
+  ) {
+    final sourceEntryId = content['sourceEntryId'];
+    final sourceDigest = content['sourceDigest'];
+    final attempts = content['attempts'];
+    final retryAfterValue = content['retryAfter'];
+    final retryAfter = retryAfterValue is String
+        ? DateTime.tryParse(retryAfterValue)
+        : null;
+    if (sourceEntryId is! String ||
+        sourceDigest is! String ||
+        attempts is! int ||
+        attempts < 1 ||
+        retryAfter == null) {
+      return null;
+    }
+    return GoalCheckInCompactionFailure(
+      sourceEntryId: sourceEntryId,
+      sourceDigest: sourceDigest,
+      attempts: attempts,
+      retryAfter: retryAfter,
+    );
+  }
+}
+
 /// Distills one check-in into the bounded, structured form the agent reads.
 ///
 /// Raw transcripts never enter agent context. A daily check-in is ~150 words;
@@ -48,12 +107,17 @@ String goalCheckInSummaryId(String agentId, String entryId) =>
 class GoalCheckInCompactor {
   GoalCheckInCompactor({
     required CloudInferenceRepository inferenceRepository,
+    required this._repository,
     required this._syncService,
     this.maxSummaryTokens = 500,
-  }) : _inference = inferenceRepository;
+    this._domainLogger,
+  }) : _inference = inferenceRepository,
+       assert(maxSummaryTokens > 0, 'maxSummaryTokens must be positive');
 
   final CloudInferenceRepository _inference;
+  final AgentRepository _repository;
   final AgentSyncService _syncService;
+  final DomainLogger? _domainLogger;
 
   /// Roughly the handover's ~500-token cap. Generous enough to keep the
   /// commitment slot intact, tight enough that a decade of check-ins stays
@@ -100,7 +164,9 @@ class GoalCheckInCompactor {
         model: model,
         provider: provider,
       );
-      if (decoded == null) return null;
+      if (decoded == null) {
+        throw const FormatException('check-in compaction returned no record');
+      }
 
       final summary = GoalCheckInSummary(
         id: goalCheckInSummaryId(agentId, entryId),
@@ -115,9 +181,101 @@ class GoalCheckInCompactor {
       );
       await _persist(agentId: agentId, summary: summary);
       return summary;
-    } on Object {
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        subDomain: 'goalCheckInCompaction',
+        message: 'goal check-in compaction failed for $entryId',
+        stackTrace: stackTrace,
+      );
+      try {
+        final failure = await _persistFailure(
+          agentId: agentId,
+          entryId: entryId,
+          sourceDigest: goalCheckInSourceDigest(text),
+        );
+        if (failure.attempts == goalCheckInCompactionMaxAttempts) {
+          _domainLogger?.error(
+            LogDomain.agentWorkflow,
+            error,
+            subDomain: 'goalCheckInCompaction',
+            message:
+                'goal check-in compaction blocked after '
+                '$goalCheckInCompactionMaxAttempts failures for $entryId',
+            stackTrace: stackTrace,
+          );
+        }
+      } catch (persistenceError, persistenceStackTrace) {
+        _domainLogger?.error(
+          LogDomain.agentWorkflow,
+          persistenceError,
+          subDomain: 'goalCheckInCompaction',
+          message: 'failed to persist check-in compaction backoff for $entryId',
+          stackTrace: persistenceStackTrace,
+        );
+      }
       return null;
     }
+  }
+
+  Future<GoalCheckInCompactionFailure> _persistFailure({
+    required String agentId,
+    required String entryId,
+    required String sourceDigest,
+  }) async {
+    final id = goalCheckInCompactionFailureId(agentId, entryId);
+    final existingMessage = await _repository.getEntity(id);
+    GoalCheckInCompactionFailure? existing;
+    final existingPayloadId = existingMessage is AgentMessageEntity
+        ? existingMessage.contentEntryId
+        : null;
+    if (existingPayloadId != null) {
+      final payload = await _repository.getEntity(existingPayloadId);
+      if (payload is AgentMessagePayloadEntity) {
+        existing = GoalCheckInCompactionFailure.fromContent(payload.content);
+      }
+    }
+    final attempts = existing?.sourceDigest == sourceDigest
+        ? existing!.attempts + 1
+        : 1;
+    final multiplier = 1 << (attempts - 1).clamp(0, 8);
+    final failedAt = clock.now();
+    final failure = GoalCheckInCompactionFailure(
+      sourceEntryId: entryId,
+      sourceDigest: sourceDigest,
+      attempts: attempts,
+      retryAfter: failedAt.add(
+        goalCheckInCompactionRetryBaseDelay * multiplier,
+      ),
+    );
+    final payloadId = '$id:payload';
+    await _syncService.runInTransaction(() async {
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: payloadId,
+          agentId: agentId,
+          createdAt: failedAt,
+          vectorClock: null,
+          content: failure.toContent(),
+        ),
+      );
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: id,
+          agentId: agentId,
+          threadId: id,
+          kind: AgentMessageKind.action,
+          createdAt: failedAt,
+          vectorClock: null,
+          metadata: const AgentMessageMetadata(
+            toolName: goalCheckInCompactionFailureToolName,
+          ),
+          contentEntryId: payloadId,
+        ),
+      );
+    });
+    return failure;
   }
 
   Future<void> _persist({
@@ -179,6 +337,8 @@ class GoalCheckInCompactor {
       apiKey: provider.apiKey,
       systemMessage: _systemMessage,
       maxCompletionTokens: maxSummaryTokens,
+      geminiThinkingMode: GeminiThinkingMode.minimal,
+      reasoningEffort: ReasoningEffort.minimal,
       provider: provider,
       impactCollector: captureRegistered ? impactCollector : null,
     );

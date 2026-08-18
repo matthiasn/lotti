@@ -38,6 +38,7 @@ import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
@@ -70,6 +71,11 @@ String _goalAgentReplyPayloadId(String agentId, String runKey) =>
 /// How many recent observations feed the FACTS block.
 const goalObservationLookback = 12;
 
+typedef _GoalCheckInCompactionState = ({
+  List<GoalCheckInSummary> summaries,
+  Map<String, GoalCheckInCompactionFailure> failuresByEntryId,
+});
+
 /// Durable outcomes from a goal wake's transactional output batch.
 class GoalOutputPersistenceResult {
   const GoalOutputPersistenceResult({
@@ -101,11 +107,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required this._conversationRepository,
     required this._cloudInferenceRepository,
     required this._aiConfigRepository,
+    GoalChatHistoryService? chatHistoryService,
     this._factsRenderer = const GoalFactsRenderer(),
     this._checkInCompactor,
     this._checkInSourceReader,
     this._domainLogger,
-  });
+  }) : _chatHistoryService =
+           chatHistoryService ?? GoalChatHistoryService(_repository);
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -113,6 +121,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final ConversationRepository _conversationRepository;
   final CloudInferenceRepository _cloudInferenceRepository;
   final AiConfigRepository _aiConfigRepository;
+  final GoalChatHistoryService _chatHistoryService;
   final GoalFactsRenderer _factsRenderer;
 
   /// Distills a check-in into the bounded form the agent reads. Optional: the
@@ -167,6 +176,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       );
     }
     final pendingUserMessage = text.trim();
+    List<GoalChatHistoryEntry> recentDialogue;
+    try {
+      recentDialogue = await _chatHistoryService.recentDialogue(
+        agentId: agentIdentity.agentId,
+        before: message,
+      );
+    } catch (error, stackTrace) {
+      recentDialogue = const [];
+      logError(
+        'goal chat recent dialogue unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
     final previousAssistantMessage =
         _isShortGoalAdAffirmation(pendingUserMessage.toLowerCase())
         ? await _previousVisibleAssistantText(
@@ -182,6 +205,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       pendingUserMessage: pendingUserMessage,
       previousAssistantMessage: previousAssistantMessage,
       chatMessageId: messageId,
+      recentDialogue: recentDialogue,
     );
   }
 
@@ -190,9 +214,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required DateTime before,
   }) async {
     final actions =
-        (await _repository.getMessagesByKind(
+        (await _repository.getMessagesByKindAndToolName(
               agentId,
               AgentMessageKind.action,
+              AgentConversationToolNames.replyToUser,
               limit: 12,
             ))
             .where(
@@ -227,6 +252,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     String? pendingUserMessage,
     String? previousAssistantMessage,
     String? chatMessageId,
+    List<GoalChatHistoryEntry> recentDialogue = const [],
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -390,9 +416,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
       goalStatement: version.statement,
       model: resolved.modelId,
       provider: resolved.provider,
+      compactMissing: pendingUserMessage == null,
     );
 
-    final observations = await _recentObservationTexts(agentId);
+    final observations = await _recentObservationFacts(agentId);
     // What the user said, compacted. Bounded by tokens rather than by count,
     // so a talkative fortnight cannot push the deterministic FACTS out of the
     // wake's budget.
@@ -410,6 +437,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
       nudges: nudges,
       evaluationReference: reference,
       observations: observations,
+      unansweredUserMessages: [?pendingUserMessage],
+      recentDialogue: [
+        for (final entry in recentDialogue)
+          GoalChatHistoryService.toJson(entry),
+      ],
       userVoice: userVoice,
     );
     var factsBlock = pendingUserMessage == null
@@ -634,6 +666,19 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
+      // A batch can contain a plausible reply alongside a rejected mutation.
+      // Persisting that reply would hide the tool error and tell the user the
+      // request succeeded. Fail the interactive wake so the existing retry UI
+      // remains truthful and no accepted mutation from the mixed batch lands.
+      if (pendingUserMessage != null &&
+          strategy.unresolvedRejectedTools.isNotEmpty) {
+        strategy.discardVisibleReply();
+        throw StateError(
+          'interactive goal turn left rejected tools unresolved: '
+          '${strategy.unresolvedRejectedTools.join(', ')}',
+        );
+      }
+
       final manager = _conversationRepository.getConversation(conversationId);
       strategy.recordFinalResponse(
         manager?.messages.reversed
@@ -694,6 +739,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           adCreationDiscriminator: chatMessageId == null
               ? null
               : 'chat:$chatMessageId',
+          replyToMessageId: chatMessageId,
         );
         attributionFinalized = persistence.attributionFinalized;
         reportHeadAdvanced = persistence.reportHeadAdvanced;
@@ -1080,54 +1126,70 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required String goalStatement,
     required String model,
     required AiConfigInferenceProvider provider,
+    required bool compactMissing,
   }) async {
     final compactor = _checkInCompactor;
     final reader = _checkInSourceReader;
     if (compactor == null || reader == null) return const [];
 
     final List<GoalCheckInSource> sources;
-    List<GoalCheckInSummary> stored;
+    _GoalCheckInCompactionState state;
     try {
       // ONE read of each side per wake. Reading the summaries again to render
       // user voice doubled an already-unbounded scan, which is exactly what
       // ADR 0057's bounded-read invariant forbids.
-      stored = await _checkInSummaries(agentId);
+      state = await _checkInCompactionState(agentId);
       sources = await reader(agentId);
     } on Object {
       return const [];
     }
 
+    var stored = state.summaries;
     final byEntryId = {
       for (final summary in stored) summary.sourceEntryId: summary,
     };
     final live = {for (final source in sources) source.entryId: source};
 
-    for (final source in sources) {
-      final existing = byEntryId[source.entryId];
-      // Recompact when the words changed. A transcript is not final when it
-      // first lands — it can be re-transcribed with a better model or edited —
-      // and without this the first summary stood forever while the agent
-      // coached from words that no longer existed. A summary predating the
-      // digest has none, so it is refreshed once and then carries one.
-      final digest = goalCheckInSourceDigest(source.text);
-      if (existing != null && existing.sourceDigest == digest) continue;
-      await compactor.compact(
-        agentId: agentId,
-        entryId: source.entryId,
-        recordedAt: source.recordedAt,
-        transcript: source.text,
-        goalStatement: goalStatement,
-        model: model,
-        provider: provider,
-      );
+    if (compactMissing) {
+      var compacted = false;
+      for (final source in sources) {
+        final existing = byEntryId[source.entryId];
+        // Recompact when the words changed. A transcript is not final when it
+        // first lands — it can be re-transcribed with a better model or edited —
+        // and without this the first summary stood forever while the agent
+        // coached from words that no longer existed. A summary predating the
+        // digest has none, so it is refreshed once and then carries one.
+        final digest = goalCheckInSourceDigest(source.text);
+        if (existing != null && existing.sourceDigest == digest) continue;
+        if (state.failuresByEntryId[source.entryId]?.blocks(
+              digest,
+              clock.now(),
+            ) ??
+            false) {
+          continue;
+        }
+        await compactor.compact(
+          agentId: agentId,
+          entryId: source.entryId,
+          recordedAt: source.recordedAt,
+          transcript: source.text,
+          goalStatement: goalStatement,
+          model: model,
+          provider: provider,
+        );
+        compacted = true;
+      }
+      if (compacted) {
+        try {
+          state = await _checkInCompactionState(agentId);
+          stored = state.summaries;
+        } on Object {
+          return const [];
+        }
+      }
     }
 
     if (live.isEmpty && stored.isEmpty) return const [];
-    try {
-      stored = await _checkInSummaries(agentId);
-    } on Object {
-      return const [];
-    }
     // Only summaries whose source is still linked and live. A deleted or
     // unlinked check-in leaves its summary behind, and without this the agent
     // kept quoting words the user had removed — the timeline already hides
@@ -1138,51 +1200,69 @@ class GoalAgentWorkflow with AgentErrorLogging {
     ];
   }
 
-  /// The compacted check-ins stored for this goal.
+  /// The compacted check-ins and retry failures stored for this goal.
   ///
-  /// Read whole and then token-bounded by `goalUserVoiceEntries`: the
-  /// summaries are small and bounded by construction (~500 tokens each), and
-  /// trimming by row count here would drop a recent check-in whenever an older
-  /// one happened to be long.
-  Future<List<GoalCheckInSummary>> _checkInSummaries(String agentId) async {
+  /// Summaries are read whole and then token-bounded by
+  /// `goalUserVoiceEntries`; failure markers stay keyed by source entry so
+  /// reconciliation can apply their durable retry backoff.
+  Future<_GoalCheckInCompactionState> _checkInCompactionState(
+    String agentId,
+  ) async {
     final messages = await _repository.getEntitiesByAgentIdAndSubtype(
       agentId,
       type: AgentEntityTypes.agentMessage,
       subtype: AgentMessageKind.action.name,
     );
     final summaries = <GoalCheckInSummary>[];
+    final failuresByEntryId = <String, GoalCheckInCompactionFailure>{};
     for (final message in messages.whereType<AgentMessageEntity>()) {
-      if (message.metadata.toolName != goalCheckInSummaryToolName) continue;
       final payloadId = message.contentEntryId;
       if (payloadId == null) continue;
       final payload = await _repository.getEntity(payloadId);
       if (payload is! AgentMessagePayloadEntity) continue;
-      final summary = GoalCheckInSummary.fromContent(
-        message.id,
-        payload.content,
-      );
-      if (summary != null) summaries.add(summary);
+      if (message.metadata.toolName == goalCheckInSummaryToolName) {
+        final summary = GoalCheckInSummary.fromContent(
+          message.id,
+          payload.content,
+        );
+        if (summary != null) summaries.add(summary);
+      } else if (message.metadata.toolName ==
+          goalCheckInCompactionFailureToolName) {
+        final failure = GoalCheckInCompactionFailure.fromContent(
+          payload.content,
+        );
+        if (failure != null) {
+          failuresByEntryId[failure.sourceEntryId] = failure;
+        }
+      }
     }
-    return summaries;
+    return (
+      summaries: summaries,
+      failuresByEntryId: failuresByEntryId,
+    );
   }
 
-  Future<List<String>> _recentObservationTexts(String agentId) async {
+  Future<List<GoalObservationFact>> _recentObservationFacts(
+    String agentId,
+  ) async {
     final messages = await _repository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,
       limit: goalObservationLookback,
     );
-    final texts = <String>[];
+    final facts = <GoalObservationFact>[];
     for (final message in messages) {
       final payloadId = message.contentEntryId;
       if (payloadId == null) continue;
       final payload = await _repository.getEntity(payloadId);
       if (payload is AgentMessagePayloadEntity) {
         final text = payload.content['text'];
-        if (text is String && text.isNotEmpty) texts.add(text);
+        if (text is String && text.isNotEmpty) {
+          facts.add((recordedAt: message.createdAt, text: text));
+        }
       }
     }
-    return texts;
+    return facts;
   }
 
   Future<void> _persistUserMessage({
@@ -1348,6 +1428,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     bool replyToUser = false,
     bool userRequestedAd = false,
     String? adCreationDiscriminator,
+    String? replyToMessageId,
   }) async {
     final factsReference = evaluationReference ?? now;
     final reportId = strategy.hasReport ? _uuid.v4() : null;
@@ -1479,6 +1560,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
               toolName: replyToUser
                   ? AgentConversationToolNames.replyToUser
                   : null,
+              operationId: replyToUser ? replyToMessageId : null,
             ),
           ),
         );

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -340,6 +341,223 @@ void main() {
             ).captured.single
             as Set<String>;
     expect(goalChatMessageIdFromTriggerTokens(tokens), 'message-1');
+  });
+
+  test('startup recovery re-enqueues a durable unanswered turn once', () async {
+    final orphan =
+        AgentDomainEntity.agentMessage(
+              id: 'message-orphan',
+              agentId: 'goal-1',
+              threadId: 'message-orphan',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026, 8, 18, 12),
+              vectorClock: null,
+              contentEntryId: 'payload-orphan',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [orphan]);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        'goal-1',
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenReturn('recovery-run');
+
+    expect(await service.restoreOldestPendingMessage('goal-1'), isTrue);
+    expect(
+      await service.restoreOldestPendingMessage('goal-1'),
+      isFalse,
+      reason: 'the same orphan must not be queued concurrently twice',
+    );
+    final tokens =
+        verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: 'goal-1',
+                reason: WakeReason.userMessage.name,
+                triggerTokens: captureAny(named: 'triggerTokens'),
+                supersede: false,
+                initiator: WakeInitiator.user,
+              ),
+            ).captured.single
+            as Set<String>;
+    expect(goalChatMessageIdFromTriggerTokens(tokens), orphan.id);
+
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'recovery-run',
+        status: WakeRunStatus.failed,
+      ),
+    );
+    await pumpEventQueue();
+    expect(
+      await service.restoreOldestPendingMessage('goal-1'),
+      isTrue,
+      reason: 'a terminal failure releases the durable turn for a later scan',
+    );
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'recovery-run',
+        status: WakeRunStatus.completed,
+      ),
+    );
+    await pumpEventQueue();
+  });
+
+  test('failed recovery enqueue releases the durable turn for retry', () async {
+    final orphan =
+        AgentDomainEntity.agentMessage(
+              id: 'message-orphan',
+              agentId: 'goal-1',
+              threadId: 'message-orphan',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026, 8, 18, 12),
+              vectorClock: null,
+              contentEntryId: 'payload-orphan',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [orphan]);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        'goal-1',
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenThrow(StateError('queue unavailable'));
+
+    await expectLater(
+      service.restoreOldestPendingMessage('goal-1'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      service.restoreOldestPendingMessage('goal-1'),
+      throwsA(isA<StateError>()),
+    );
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).called(2);
+  });
+
+  test('startup recovery releases an orphan when completion is lost', () {
+    final orphan =
+        AgentDomainEntity.agentMessage(
+              id: 'message-orphan',
+              agentId: 'goal-1',
+              threadId: 'message-orphan',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026, 8, 18, 12),
+              vectorClock: null,
+              contentEntryId: 'payload-orphan',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [orphan]);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        'goal-1',
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    var enqueueCount = 0;
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenAnswer((_) => 'recovery-${++enqueueCount}');
+
+    fakeAsync((async) {
+      bool? first;
+      unawaited(
+        service
+            .restoreOldestPendingMessage('goal-1')
+            .then((value) => first = value),
+      );
+      async.flushMicrotasks();
+      expect(first, isTrue);
+
+      bool? duplicate;
+      unawaited(
+        service
+            .restoreOldestPendingMessage('goal-1')
+            .then((value) => duplicate = value),
+      );
+      async.flushMicrotasks();
+      expect(duplicate, isFalse);
+
+      async
+        ..elapse(const Duration(minutes: 5))
+        ..flushMicrotasks();
+
+      bool? recovered;
+      unawaited(
+        service
+            .restoreOldestPendingMessage('goal-1')
+            .then((value) => recovered = value),
+      );
+      async.flushMicrotasks();
+      expect(recovered, isTrue);
+      expect(enqueueCount, 2);
+
+      completions.add(
+        const WakeRunCompletion(
+          runKey: 'recovery-2',
+          status: WakeRunStatus.completed,
+        ),
+      );
+      async.flushMicrotasks();
+    });
   });
 
   test('ignores blank turns and malformed trigger tokens', () async {

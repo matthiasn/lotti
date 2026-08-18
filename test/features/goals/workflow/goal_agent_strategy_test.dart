@@ -1010,6 +1010,172 @@ void main() {
     expect(rejection(), contains('unknown adId'));
   });
 
+  test('rerun rejects an active ad instead of acknowledging a no-op', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'retire-active',
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-known', 'reason': 'replace it'},
+        ),
+        _call(
+          id: 'rerun-active',
+          name: GoalAgentToolNames.rerunGoalAd,
+          args: {'adId': 'ad-known', 'reason': 'run it again'},
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(strategy.retireRequests, hasLength(1));
+    expect(strategy.rerunRequests, isEmpty);
+    expect(rejection(), contains('already active'));
+    expect(
+      strategy.unresolvedRejectedTools,
+      contains(GoalAgentToolNames.rerunGoalAd),
+    );
+  });
+
+  test('retire rejects a known ad that is not currently active', () async {
+    final activeOnly = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-active', 'ad-reusable'},
+      activeAdIds: const {'ad-active'},
+    );
+
+    await activeOnly.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-reusable', 'reason': 'replace it'},
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(activeOnly.retireRequests, isEmpty);
+    expect(rejection(), contains('is not active'));
+  });
+
+  test(
+    'an accepted ad mutation does not erase a different rejection',
+    () async {
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+        () => strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'bad-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-11T10:00:00Z',
+                'reason': 'too late',
+              },
+            ),
+            _call(
+              id: 'valid-create',
+              name: GoalAgentToolNames.createGoalAd,
+              args: {
+                'headline': 'Try again today.',
+                'tone': 'nudge',
+                'animation': 'steady',
+              },
+            ),
+          ],
+          manager: manager,
+        ),
+      );
+
+      expect(strategy.createdAds, hasLength(1));
+      expect(
+        strategy.unresolvedRejectedTools,
+        contains(GoalAgentToolNames.snoozeGoalAd),
+      );
+    },
+  );
+
+  test('a valid same-tool call cannot hide a rejection in its batch', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            id: 'invalid-snooze',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-11T10:00:00Z',
+              'reason': 'too late',
+            },
+          ),
+          _call(
+            id: 'valid-snooze',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T10:00:00Z',
+              'reason': 'tomorrow',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, hasLength(1));
+    expect(
+      strategy.unresolvedRejectedTools,
+      contains(GoalAgentToolNames.snoozeGoalAd),
+    );
+  });
+
+  test('a corrected tool call in the next turn clears its rejection', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'invalid-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-11T10:00:00Z',
+                'reason': 'too late',
+              },
+            ),
+          ],
+          manager: manager,
+        );
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'valid-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-12T10:00:00Z',
+                'reason': 'tomorrow',
+              },
+            ),
+          ],
+          manager: manager,
+        );
+      },
+    );
+
+    expect(
+      strategy.unresolvedRejectedTools,
+      isNot(contains(GoalAgentToolNames.snoozeGoalAd)),
+    );
+  });
+
   test('snooze accepts any requested future instant for a known ad', () async {
     final now = DateTime.utc(2026, 8, 11, 12);
     await withClock(
@@ -1034,6 +1200,25 @@ void main() {
     expect(request.until, DateTime.utc(2026, 8, 12, 6, 30));
     expect(request.returnUtcOffsetMinutes, 120);
     expect(request.reason, 'user asked for tomorrow morning');
+  });
+
+  test('snooze requires both an ad id and a reason', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.snoozeGoalAd,
+          args: {
+            'adId': 'ad-known',
+            'until': '2026-08-12T08:30:00Z',
+            'reason': '   ',
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
+    expect(rejection(), contains('needs both adId and reason'));
   });
 
   test('identical snooze requests are accumulated only once', () async {
@@ -1088,7 +1273,7 @@ void main() {
       );
 
       expect(strategy.snoozeRequests, isEmpty);
-      expect(rejection(), contains('ISO 8601'));
+      expect(rejection(), contains('explicit UTC offset'));
     },
   );
 
@@ -1111,7 +1296,7 @@ void main() {
     );
 
     expect(strategy.snoozeRequests, isEmpty);
-    expect(rejection(), contains('ISO 8601'));
+    expect(rejection(), contains('explicit UTC offset'));
   });
 
   test('snooze rejects past deadlines and unknown ads', () async {
@@ -1143,7 +1328,7 @@ void main() {
     );
 
     expect(strategy.snoozeRequests, isEmpty);
-    expect(rejection(), contains('is not active'));
+    expect(rejection(), contains('unknown adId'));
   });
 
   test('snooze rejects a known reusable ad that is not active', () async {

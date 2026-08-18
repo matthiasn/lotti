@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
@@ -33,11 +35,18 @@ const goalReusableMinMeanRating = 4.0;
 /// Maximum number of raw category sessions included in one model message.
 /// The complete lifetime remains represented by the bounded summaries below.
 const goalCategorySessionEvidenceLimit = 200;
+const int goalFactsTargetTokenBudget = 6000;
+const int goalCategorySessionTokenBudget = 700;
+const int goalCategorySummaryTokenBudget = 700;
+const int goalLabelTimeEvidenceTokenBudget = 1000;
+const int goalLabelTimeMarkdownTokenBudget = 120;
 
 /// Maximum exact samples emitted for one health criterion. The rolling
 /// aggregate and total/omitted counts retain the wider-window context while
 /// keeping imported or unusually dense histories within provider limits.
 const goalHealthObservationEvidenceLimit = 100;
+
+typedef GoalObservationFact = ({DateTime? recordedAt, String text});
 
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
@@ -57,10 +66,10 @@ class GoalFactsRenderer {
     required List<GoalProgressEntity> priorRegisters,
     required List<GoalNudgeEntity> nudges,
     required DateTime evaluationReference,
-    List<String> observations = const [],
+    List<GoalObservationFact> observations = const [],
     List<String> unansweredUserMessages = const [],
+    List<Map<String, Object>> recentDialogue = const [],
     List<Map<String, Object?>> userVoice = const [],
-    String? personaTonePreference,
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -71,18 +80,54 @@ class GoalFactsRenderer {
       for (final sessions in facts.categoryTimeSessionsByCategory.values)
         ...sessions,
     ]..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
-    final recentCategorySessions =
+    final countBoundedCategorySessions =
         categorySessions.length <= goalCategorySessionEvidenceLimit
         ? categorySessions
         : categorySessions.sublist(
             categorySessions.length - goalCategorySessionEvidenceLimit,
           );
+    final categorySessionRows = _boundedTailByTokens(
+      [
+        for (final session in countBoundedCategorySessions)
+          <String, Object?>{
+            'categoryId': session.categoryId,
+            'startedAtLocal': session.dateFrom.toIso8601String(),
+            'endedAtLocal': session.dateTo.toIso8601String(),
+            'durationMinutes': _minutes(session.duration.inSeconds),
+          },
+      ],
+      goalCategorySessionTokenBudget,
+    );
+    final categorySummaryRows = _boundedCategorySummariesByTokens(
+      _categoryTimeLifetimeSummary(facts.categoryTimeSessionsByCategory),
+      goalCategorySummaryTokenBudget,
+    );
     final labelTimeEntryCount = facts.labelTimeEntriesByCriterion.values.fold(
       0,
       (total, entries) => total + entries.length,
     );
-    final recentLabelTimeEntries = goalLabelTimeEvidenceForFacts(
+    final countBoundedLabelTimeEntries = goalLabelTimeEvidenceForFacts(
       facts.labelTimeEntriesByCriterion,
+    );
+    final labelTimeRows = _boundedTailByTokens(
+      [
+        for (final entry in countBoundedLabelTimeEntries)
+          <String, Object?>{
+            'criterionId': entry.criterionId,
+            'entryId': entry.evidence.entryId,
+            'labelId': entry.evidence.labelId,
+            if (entry.evidence.categoryId != null)
+              'categoryId': entry.evidence.categoryId,
+            'countedFromLocal': entry.evidence.dateFrom.toIso8601String(),
+            'countedToLocal': entry.evidence.dateTo.toIso8601String(),
+            'countedMinutes': _minutes(entry.evidence.duration.inSeconds),
+            'markdown': truncateGoalEvidenceText(
+              entry.evidence.markdown,
+              goalLabelTimeMarkdownTokenBudget,
+            ),
+          },
+      ],
+      goalLabelTimeEvidenceTokenBudget,
     );
     final leafCriteria = _leafCriteriaById(version.criteria);
 
@@ -141,19 +186,14 @@ class GoalFactsRenderer {
                 ?.toIso8601String(),
             'categoryTimeSessionCount': categorySessions.length,
             'categoryTimeSessionsOmitted':
-                categorySessions.length - recentCategorySessions.length,
-            'categoryTimeLifetimeSummary': _categoryTimeLifetimeSummary(
-              facts.categoryTimeSessionsByCategory,
-            ),
-            'categoryTimeSessions': [
-              for (final session in recentCategorySessions)
-                {
-                  'categoryId': session.categoryId,
-                  'startedAtLocal': session.dateFrom.toIso8601String(),
-                  'endedAtLocal': session.dateTo.toIso8601String(),
-                  'durationMinutes': _minutes(session.duration.inSeconds),
-                },
-            ],
+                categorySessions.length - categorySessionRows.length,
+            'categoryTimeLifetimeSummaryCount':
+                facts.categoryTimeSessionsByCategory.length,
+            'categoryTimeLifetimeSummariesOmitted':
+                facts.categoryTimeSessionsByCategory.length -
+                categorySummaryRows.length,
+            'categoryTimeLifetimeSummary': categorySummaryRows,
+            'categoryTimeSessions': categorySessionRows,
           },
           if (facts.labelTimeEntriesByCriterion.isNotEmpty) ...{
             'labelTimeEvidenceStart': facts.labelTimeEvidenceStart
@@ -162,23 +202,8 @@ class GoalFactsRenderer {
                 ?.toIso8601String(),
             'labelTimeEntrySegmentCount': labelTimeEntryCount,
             'labelTimeEntrySegmentsOmitted':
-                labelTimeEntryCount - recentLabelTimeEntries.length,
-            'labelTimeEntries': [
-              for (final entry in recentLabelTimeEntries)
-                {
-                  'criterionId': entry.criterionId,
-                  'entryId': entry.evidence.entryId,
-                  'labelId': entry.evidence.labelId,
-                  if (entry.evidence.categoryId != null)
-                    'categoryId': entry.evidence.categoryId,
-                  'countedFromLocal': entry.evidence.dateFrom.toIso8601String(),
-                  'countedToLocal': entry.evidence.dateTo.toIso8601String(),
-                  'countedMinutes': _minutes(
-                    entry.evidence.duration.inSeconds,
-                  ),
-                  'markdown': entry.evidence.markdown,
-                },
-            ],
+                labelTimeEntryCount - labelTimeRows.length,
+            'labelTimeEntries': labelTimeRows,
           },
           'interpretationPolicy':
               'tracked-time summaries and recent entry evidence may inform '
@@ -202,10 +227,17 @@ class GoalFactsRenderer {
       },
       'personaTone': {
         'default': 'gently humorous, never shaming',
-        'userPreference': personaTonePreference,
       },
       'unansweredUserMessages': unansweredUserMessages,
-      'observations': observations,
+      if (recentDialogue.isNotEmpty) 'recentDialogue': recentDialogue,
+      'observations': [
+        for (final observation in observations)
+          {
+            if (observation.recordedAt != null)
+              'recordedAt': observation.recordedAt!.toIso8601String(),
+            'text': observation.text,
+          },
+      ],
       // What the USER said, compacted — never their raw transcripts. Named to
       // make the distinction unmistakable: `observations` are the agent's own
       // notes, this is the person talking.
@@ -678,6 +710,75 @@ class GoalFactsRenderer {
       'timesRun': nudge.activationCount,
     };
   }
+}
+
+List<T> _boundedTailByTokens<T extends Object>(
+  List<T> entries,
+  int budget,
+) {
+  // The newest entry remains available even when it alone exceeds the budget.
+  final selected = <T>[];
+  var used = 0;
+  for (final entry in entries.reversed) {
+    final encoded = jsonEncode(entry);
+    final heuristicTokens = TextChunker.estimateTokens(encoded);
+    final characterTokens = (utf8.encode(encoded).length / 4).ceil();
+    final tokens = heuristicTokens > characterTokens
+        ? heuristicTokens
+        : characterTokens;
+    if (selected.isNotEmpty && used + tokens > budget) break;
+    selected.add(entry);
+    used += tokens;
+  }
+  return selected.reversed.toList(growable: false);
+}
+
+List<Map<String, Object>> _boundedCategorySummariesByTokens(
+  List<Map<String, Object>> entries,
+  int budget,
+) {
+  final ranked = [...entries]
+    ..sort((a, b) {
+      final byMinutes = (b['totalMinutes']! as num).compareTo(
+        a['totalMinutes']! as num,
+      );
+      if (byMinutes != 0) return byMinutes;
+      return (a['categoryId']! as String).compareTo(
+        b['categoryId']! as String,
+      );
+    });
+  final selected = _boundedTailByTokens(ranked.reversed.toList(), budget);
+  return selected..sort(
+    (a, b) => (a['categoryId']! as String).compareTo(
+      b['categoryId']! as String,
+    ),
+  );
+}
+
+/// Clips one journal markdown field before it enters the model context.
+///
+/// The complete text remains in the journal and in the freshness digest. The
+/// model only needs a recent semantic excerpt, and one pathological entry must
+/// not consume the entire wake budget.
+@visibleForTesting
+String truncateGoalEvidenceText(String text, int tokenBudget) {
+  final trimmed = text.trim();
+  if (tokenBudget <= 0 || trimmed.isEmpty) return '';
+  if (TextChunker.estimateTokens(trimmed) <= tokenBudget) return trimmed;
+
+  final runes = trimmed.runes.toList(growable: false);
+  var low = 0;
+  var high = runes.length;
+  while (low < high) {
+    final mid = (low + high + 1) ~/ 2;
+    final candidate = '${String.fromCharCodes(runes.take(mid))}…';
+    if (TextChunker.estimateTokens(candidate) <= tokenBudget) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return '${String.fromCharCodes(runes.take(low)).trimRight()}…';
 }
 
 /// A JSON rendering of the criteria tree, mirroring the eval fixtures'

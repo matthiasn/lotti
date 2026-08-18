@@ -354,10 +354,9 @@ String buildComplexHealthFacts({bool bpMedsBehind = false}) {
     },
     'personaTone': {
       'default': 'gently humorous, never shaming',
-      'userPreference': null,
     },
     'unansweredUserMessages': const <String>[],
-    'observations': const <String>[],
+    'observations': const <Map<String, Object>>[],
   });
 }
 
@@ -424,7 +423,6 @@ String buildStepsFacts({
   bool dismissalCooldownActive = false,
   List<String> unansweredUserMessages = const [],
   List<String> observations = const [],
-  String? personaTonePreference,
 }) {
   assert(dailySteps.length == 7, 'one entry per window day');
   return _factsBlock({
@@ -467,10 +465,11 @@ String buildStepsFacts({
     },
     'personaTone': {
       'default': 'gently humorous, never shaming',
-      'userPreference': personaTonePreference,
     },
     'unansweredUserMessages': unansweredUserMessages,
-    'observations': observations,
+    'observations': [
+      for (final text in observations) {'text': text},
+    ],
   });
 }
 
@@ -495,7 +494,6 @@ String buildCompositeFacts({
   bool dismissalCooldownActive = false,
   List<String> unansweredUserMessages = const [],
   List<String> observations = const [],
-  String? personaTonePreference,
 }) {
   assert(dailySteps.length == 7, 'one entry per window day');
   return _factsBlock({
@@ -561,10 +559,11 @@ String buildCompositeFacts({
     },
     'personaTone': {
       'default': 'gently humorous, never shaming',
-      'userPreference': personaTonePreference,
     },
     'unansweredUserMessages': unansweredUserMessages,
-    'observations': observations,
+    'observations': [
+      for (final text in observations) {'text': text},
+    ],
   });
 }
 
@@ -611,7 +610,9 @@ String buildGymFacts({
       'dismissalCooldownActive': false,
     },
     'unansweredUserMessages': unansweredUserMessages,
-    'observations': observations,
+    'observations': [
+      for (final text in observations) {'text': text},
+    ],
   });
 }
 

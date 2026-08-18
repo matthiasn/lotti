@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
@@ -129,6 +130,9 @@ void main() {
     List<GoalProgressEntity> priors = const [],
     GoalCriterion? criteria,
     DateTime? evaluationReference,
+    List<GoalObservationFact> observations = const [],
+    List<String> unansweredUserMessages = const [],
+    List<Map<String, Object>> recentDialogue = const [],
   }) {
     final text = withClock(
       fixedClock,
@@ -138,6 +142,9 @@ void main() {
         priorRegisters: priors,
         nudges: nudges,
         evaluationReference: evaluationReference ?? now,
+        observations: observations,
+        unansweredUserMessages: unansweredUserMessages,
+        recentDialogue: recentDialogue,
       ),
     );
     expect(
@@ -195,6 +202,39 @@ void main() {
     );
     final evaluation = json['evaluation'] as Map<String, dynamic>;
     expect(evaluation['referenceIsCurrentDay'], isFalse);
+  });
+
+  test('renders dated observations and real pending dialogue context', () {
+    final recordedAt = DateTime(2026, 8, 7, 9, 30);
+    final json = renderedJson(
+      observations: [
+        (recordedAt: recordedAt, text: 'Knee pain limits steep routes.'),
+        (recordedAt: null, text: 'Legacy note without a timestamp.'),
+      ],
+      unansweredUserMessages: const ['What did you mean by easier?'],
+      recentDialogue: const [
+        {'role': 'assistant', 'text': 'Which route feels realistic?'},
+      ],
+    );
+
+    expect(json['unansweredUserMessages'], ['What did you mean by easier?']);
+    expect(json['recentDialogue'], [
+      {'role': 'assistant', 'text': 'Which route feels realistic?'},
+    ]);
+    expect(json['observations'], [
+      {
+        'recordedAt': recordedAt.toIso8601String(),
+        'text': 'Knee pain limits steep routes.',
+      },
+      {'text': 'Legacy note without a timestamp.'},
+    ]);
+    expect(
+      (json['personaTone'] as Map<String, dynamic>).containsKey(
+        'userPreference',
+      ),
+      isFalse,
+      reason: 'production must not claim a preference field it cannot derive',
+    );
   });
 
   test('rolling-window recovery facts reach the authoritative block so the '
@@ -1179,11 +1219,82 @@ void main() {
 
     final signals = json['signals'] as Map<String, dynamic>;
     expect(signals['labelTimeEntrySegmentCount'], 205);
-    expect(signals['labelTimeEntrySegmentsOmitted'], 5);
     final recent = signals['labelTimeEntries'] as List;
-    expect(recent, hasLength(200));
-    expect((recent.first as Map<String, dynamic>)['entryId'], 'entry-5');
+    expect(recent.length, greaterThan(1));
+    expect(recent.length, lessThan(200));
+    expect(signals['labelTimeEntrySegmentsOmitted'], 205 - recent.length);
     expect((recent.last as Map<String, dynamic>)['markdown'], 'Entry 204');
+  });
+
+  test('raw time evidence stays inside its assigned wake-budget slices', () {
+    final longMarkdown = List.filled(500, 'journal-word').join(' ');
+    final entries = [
+      for (var index = 0; index < 200; index++)
+        GoalLabelTimeEntryEvidence(
+          entryId: 'entry-$index',
+          labelId: 'content',
+          dateFrom: DateTime(2026).add(Duration(minutes: index)),
+          dateTo: DateTime(2026).add(Duration(minutes: index + 1)),
+          markdown: longMarkdown,
+        ),
+    ];
+    final sessions = {
+      for (var index = 0; index < 200; index++)
+        'category-$index': [
+          GoalCategoryTimeSession(
+            categoryId: 'category-$index',
+            dateFrom: DateTime(2026).add(Duration(hours: index)),
+            dateTo: DateTime(2026).add(Duration(hours: index + 1)),
+          ),
+        ],
+    };
+    final json = renderedJson(
+      wakeFacts: facts(
+        categoryTimeSessions: sessions,
+        labelTimeEntries: {'daily-content': entries},
+      ),
+    );
+    final fullFacts = withClock(
+      fixedClock,
+      () => renderer.render(
+        version: version(),
+        facts: facts(
+          categoryTimeSessions: sessions,
+          labelTimeEntries: {'daily-content': entries},
+        ),
+        priorRegisters: const [],
+        nudges: const [],
+        evaluationReference: now,
+      ),
+    );
+    final signals = json['signals'] as Map<String, dynamic>;
+    final labelRows = signals['labelTimeEntries'] as List;
+    final categoryRows = signals['categoryTimeSessions'] as List;
+    final categorySummaries = signals['categoryTimeLifetimeSummary'] as List;
+
+    expect(
+      TextChunker.estimateTokens(jsonEncode(labelRows)),
+      lessThanOrEqualTo(goalLabelTimeEvidenceTokenBudget + 20),
+    );
+    expect(
+      TextChunker.estimateTokens(jsonEncode(categoryRows)),
+      lessThanOrEqualTo(goalCategorySessionTokenBudget + 20),
+    );
+    expect(
+      TextChunker.estimateTokens(jsonEncode(categorySummaries)),
+      lessThanOrEqualTo(goalCategorySummaryTokenBudget + 50),
+    );
+    expect(
+      TextChunker.estimateTokens(
+        (labelRows.last as Map<String, dynamic>)['markdown'] as String,
+      ),
+      lessThanOrEqualTo(goalLabelTimeMarkdownTokenBudget),
+    );
+    expect(
+      TextChunker.estimateTokens(fullFacts),
+      lessThanOrEqualTo(goalFactsTargetTokenBudget),
+      reason: 'raw evidence must leave room for the system prompt and tools',
+    );
   });
 
   test(
@@ -1265,6 +1376,43 @@ void main() {
     expect(minutesByHour[10], 60);
   });
 
+  test('bounded lifetime summaries retain the highest-volume categories', () {
+    final sessions = <String, List<GoalCategoryTimeSession>>{
+      'category-dominant': [
+        GoalCategoryTimeSession(
+          categoryId: 'category-dominant',
+          dateFrom: DateTime(2026, 8, 8, 8),
+          dateTo: DateTime(2026, 8, 8, 18),
+        ),
+      ],
+      for (var index = 0; index < 12; index++)
+        'category-small-$index': [
+          GoalCategoryTimeSession(
+            categoryId: 'category-small-$index',
+            dateFrom: DateTime(2026, 8, 8, 8),
+            dateTo: DateTime(2026, 8, 8, 8, 1),
+          ),
+        ],
+    };
+    final json = renderedJson(
+      wakeFacts: facts(categoryTimeSessions: sessions),
+    );
+
+    final signals = json['signals'] as Map<String, dynamic>;
+    final summaries = signals['categoryTimeLifetimeSummary'] as List;
+    expect(
+      signals['categoryTimeLifetimeSummariesOmitted'],
+      greaterThan(0),
+      reason: 'the fixture must exercise the summary token boundary',
+    );
+    expect(
+      summaries.cast<Map<String, dynamic>>().map(
+        (summary) => summary['categoryId'],
+      ),
+      contains('category-dominant'),
+    );
+  });
+
   test('category summaries preserve seconds across local-hour splits', () {
     final json = renderedJson(
       wakeFacts: facts(
@@ -1316,12 +1464,13 @@ void main() {
     final signals = json['signals'] as Map<String, dynamic>;
 
     expect(signals['categoryTimeSessionCount'], 205);
-    expect(signals['categoryTimeSessionsOmitted'], 5);
-    expect(signals['categoryTimeSessions'], hasLength(200));
     final recent = signals['categoryTimeSessions'] as List;
+    expect(recent.length, greaterThan(1));
+    expect(recent.length, lessThan(200));
+    expect(signals['categoryTimeSessionsOmitted'], 205 - recent.length);
     expect(
       (recent.first as Map<String, dynamic>)['startedAtLocal'],
-      sessions[5].dateFrom.toIso8601String(),
+      sessions[205 - recent.length].dateFrom.toIso8601String(),
       reason: 'the bounded sample must retain the most recent raw sessions',
     );
     final summary =

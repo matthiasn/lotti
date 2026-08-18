@@ -90,6 +90,42 @@ class AgentRepoQueries {
         .toList();
   }
 
+  /// Messages of [kind] whose durable tool metadata matches [toolName].
+  ///
+  /// The tool predicate is applied before [limit], so unrelated action rows
+  /// cannot displace the visible replies a bounded caller asked for.
+  Future<List<AgentMessageEntity>> getMessagesByKindAndToolName(
+    String agentId,
+    AgentMessageKind kind,
+    String toolName, {
+    int? limit,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE agent_id = ?1 AND type = ?2 AND subtype = ?3 '
+          'AND deleted_at IS NULL AND json_valid(serialized) '
+          r"AND json_extract(serialized, '$.metadata.toolName') = ?4 "
+          'ORDER BY created_at DESC, id DESC LIMIT ?5',
+          variables: [
+            Variable<String>(agentId),
+            const Variable<String>(AgentEntityTypes.agentMessage),
+            Variable<String>(kind.name),
+            Variable<String>(toolName),
+            Variable<int>(limit ?? -1),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    final messages = <AgentMessageEntity>[];
+    for (final row in rows) {
+      final entityRow = await _db.agentEntities.mapFromRow(row);
+      final entity = AgentDbConversions.fromEntityRow(entityRow);
+      if (entity is AgentMessageEntity) messages.add(entity);
+    }
+    return messages;
+  }
+
   /// Fetch the latest [AgentReportEntity] for [agentId] in [scope], or `null`
   /// if none exists.
   ///

@@ -93,6 +93,21 @@ void main() {
         type: any(named: 'type'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        any(),
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        any(),
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
     when(
@@ -187,20 +202,119 @@ void main() {
   test(
     'a chat-message trigger routes to the durable user-message workflow',
     () async {
+      final source =
+          AgentDomainEntity.agentMessage(
+                id: 'message-1',
+                agentId: 'goal-chat',
+                threadId: 'message-1',
+                kind: AgentMessageKind.user,
+                createdAt: DateTime(2026),
+                vectorClock: null,
+                contentEntryId: 'message-1:payload',
+                metadata: const AgentMessageMetadata(),
+              )
+              as AgentMessageEntity;
+      final payload = AgentDomainEntity.agentMessagePayload(
+        id: 'message-1:payload',
+        agentId: 'goal-chat',
+        createdAt: DateTime(2026),
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      );
+      when(
+        () => repository.getEntity(source.id),
+      ).thenAnswer((_) async => source);
+      when(
+        () => repository.getEntity(source.contentEntryId!),
+      ).thenAnswer((_) async => payload);
+      when(
+        () => repository.getMessagesByKind(
+          'goal-chat',
+          AgentMessageKind.user,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [source]);
+      when(
+        () => repository.getMessagesByKindAndToolName(
+          'goal-chat',
+          AgentMessageKind.action,
+          AgentConversationToolNames.replyToUser,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
       final runner = container.read(
         goalAgentWakeRunnersProvider,
       )[AgentKinds.goalAgent]!;
       final result = await runner(
         agentIdentity: goalIdentity('goal-chat'),
         runKey: 'chat-run',
-        triggerTokens: const {'goal-chat-message:missing'},
+        triggerTokens: const {'goal-chat-message:message-1'},
         threadId: 'chat-run',
       );
 
       expect(result.success, isFalse);
-      expect(result.error, contains('source message is unavailable'));
+      expect(result.error, contains('without a goal spec head'));
     },
   );
+
+  test('an explicit chat wake skips a source already answered by an earlier '
+      'queued wake', () async {
+    final source =
+        AgentDomainEntity.agentMessage(
+              id: 'message-answered',
+              agentId: 'goal-chat',
+              threadId: 'message-answered',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026),
+              vectorClock: null,
+              contentEntryId: 'message-answered:payload',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    final reply =
+        AgentDomainEntity.agentMessage(
+              id: 'reply-answered',
+              agentId: 'goal-chat',
+              threadId: 'reply-answered',
+              kind: AgentMessageKind.action,
+              createdAt: DateTime(2026, 1, 1, 0, 1),
+              vectorClock: null,
+              contentEntryId: 'reply-answered:payload',
+              metadata: const AgentMessageMetadata(
+                toolName: AgentConversationToolNames.replyToUser,
+                operationId: 'message-answered',
+              ),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-chat',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [source]);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        'goal-chat',
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [reply]);
+
+    final runner = container.read(
+      goalAgentWakeRunnersProvider,
+    )[AgentKinds.goalAgent]!;
+    final result = await runner(
+      agentIdentity: goalIdentity('goal-chat'),
+      runKey: 'duplicate-chat-run',
+      triggerTokens: const {'goal-chat-message:message-answered'},
+      threadId: 'duplicate-chat-run',
+    );
+
+    expect(result.success, isTrue);
+    verifyNever(() => repository.getEntity(source.id));
+  });
 
   test('an escalation trigger token routes the wake to Phase B — proven '
       'by it failing on the missing inference provider, which the €0 tier '
