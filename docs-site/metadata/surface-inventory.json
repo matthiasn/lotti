@@ -1261,7 +1261,8 @@
         "/goals/create",
         "/goals/details/:agentId",
         "/goals/details/:agentId/edit",
-        "/goals/details/:agentId/chat"
+        "/goals/details/:agentId/chat",
+        "/goals/details/:agentId/timeline"
       ],
       "page": "ai-and-automation/goal-agents",
       "status": "planned"
