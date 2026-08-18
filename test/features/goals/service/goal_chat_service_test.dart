@@ -412,6 +412,62 @@ void main() {
     );
   });
 
+  test('failed recovery enqueue releases the durable turn for retry', () async {
+    final orphan =
+        AgentDomainEntity.agentMessage(
+              id: 'message-orphan',
+              agentId: 'goal-1',
+              threadId: 'message-orphan',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026, 8, 18, 12),
+              vectorClock: null,
+              contentEntryId: 'payload-orphan',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => [orphan]);
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.action,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenThrow(StateError('queue unavailable'));
+
+    await expectLater(
+      service.restoreOldestPendingMessage('goal-1'),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      service.restoreOldestPendingMessage('goal-1'),
+      throwsA(isA<StateError>()),
+    );
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).called(2);
+  });
+
   test('ignores blank turns and malformed trigger tokens', () async {
     await service.sendMessage(agentId: 'goal-1', text: '   ');
 

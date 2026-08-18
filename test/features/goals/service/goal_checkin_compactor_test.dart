@@ -1,11 +1,15 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -27,6 +31,7 @@ void main() {
   late MockCloudInferenceRepository inference;
   late MockAgentRepository repository;
   late MockAgentSyncService sync;
+  late MockDomainLogger logger;
   late List<String> prompts;
   late List<String> scripted;
   late List<AgentDomainEntity> written;
@@ -70,6 +75,7 @@ void main() {
     inference = MockCloudInferenceRepository();
     repository = MockAgentRepository();
     sync = MockAgentSyncService();
+    logger = MockDomainLogger();
     prompts = [];
     scripted = [];
     written = [];
@@ -103,6 +109,7 @@ void main() {
     inferenceRepository: inference,
     repository: repository,
     syncService: sync,
+    domainLogger: logger,
   );
 
   Future<GoalCheckInSummary?> compact({String entryId = 'audio-1'}) =>
@@ -198,8 +205,100 @@ void main() {
       final payload = written.whereType<AgentMessagePayloadEntity>().single;
       expect(payload.content['attempts'], 1);
       expect(payload.content['sourceDigest'], isA<String>());
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          any(),
+          subDomain: 'goalCheckInCompaction',
+          message: 'goal check-in compaction failed for audio-1',
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
     },
   );
+
+  test('a matching failure blocks only until its retry instant', () {
+    final retryAfter = recordedAt.add(const Duration(hours: 6));
+    final failure = GoalCheckInCompactionFailure(
+      sourceEntryId: 'audio-1',
+      sourceDigest: 'digest',
+      attempts: 1,
+      retryAfter: retryAfter,
+    );
+
+    expect(failure.blocks('digest', recordedAt), isTrue);
+    expect(failure.blocks('digest', retryAfter), isFalse);
+    expect(failure.blocks('changed-digest', recordedAt), isFalse);
+  });
+
+  test('repeated failures retain and increment the durable marker', () async {
+    final sourceDigest = goalCheckInSourceDigest(
+      'Skipped the lunch walk, calls ran over. I will take the long '
+      'route home instead.',
+    );
+    final failureId = goalCheckInCompactionFailureId('goal-1', 'audio-1');
+    final payloadId = '$failureId:payload';
+    final previousFailure = GoalCheckInCompactionFailure(
+      sourceEntryId: 'audio-1',
+      sourceDigest: sourceDigest,
+      attempts: 1,
+      retryAfter: recordedAt,
+    );
+    final existingPayload = AgentDomainEntity.agentMessagePayload(
+      id: payloadId,
+      agentId: 'goal-1',
+      createdAt: recordedAt,
+      vectorClock: null,
+      content: previousFailure.toContent(),
+    );
+    final existingMessage = AgentDomainEntity.agentMessage(
+      id: failureId,
+      agentId: 'goal-1',
+      threadId: failureId,
+      kind: AgentMessageKind.action,
+      createdAt: recordedAt,
+      vectorClock: null,
+      contentEntryId: payloadId,
+      metadata: const AgentMessageMetadata(
+        toolName: goalCheckInCompactionFailureToolName,
+      ),
+    );
+    when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.first as String;
+      return switch (id) {
+        final value when value == failureId => existingMessage,
+        final value when value == payloadId => existingPayload,
+        _ => null,
+      };
+    });
+    scripted = ['not json'];
+
+    await withClock(Clock.fixed(recordedAt), compact);
+
+    final updated = written.whereType<AgentMessagePayloadEntity>().single;
+    expect(updated.content['attempts'], 2);
+    expect(
+      updated.content['retryAfter'],
+      recordedAt.add(const Duration(hours: 12)).toIso8601String(),
+    );
+  });
+
+  test('a backoff persistence failure is logged and contained', () async {
+    scripted = ['not json'];
+    when(() => sync.upsertEntity(any())).thenThrow(StateError('disk full'));
+
+    expect(await compact(), isNull);
+
+    verify(
+      () => logger.error(
+        LogDomain.agentWorkflow,
+        any(),
+        subDomain: 'goalCheckInCompaction',
+        message: 'failed to persist check-in compaction backoff for audio-1',
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).called(1);
+  });
 
   test('a response with no whatHappened is refused', () async {
     scripted = ['{"committedTo":"walk tomorrow"}'];

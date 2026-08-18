@@ -1036,6 +1036,30 @@ void main() {
     );
   });
 
+  test('retire rejects a known ad that is not currently active', () async {
+    final activeOnly = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-active', 'ad-reusable'},
+      activeAdIds: const {'ad-active'},
+    );
+
+    await activeOnly.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-reusable', 'reason': 'replace it'},
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(activeOnly.retireRequests, isEmpty);
+    expect(rejection(), contains('is not active'));
+  });
+
   test(
     'an accepted ad mutation does not erase a different rejection',
     () async {
@@ -1098,6 +1122,25 @@ void main() {
     expect(request.until, DateTime.utc(2026, 8, 12, 6, 30));
     expect(request.returnUtcOffsetMinutes, 120);
     expect(request.reason, 'user asked for tomorrow morning');
+  });
+
+  test('snooze requires both an ad id and a reason', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.snoozeGoalAd,
+          args: {
+            'adId': 'ad-known',
+            'until': '2026-08-12T08:30:00Z',
+            'reason': '   ',
+          },
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
+    expect(rejection(), contains('needs both adId and reason'));
   });
 
   test('identical snooze requests are accumulated only once', () async {

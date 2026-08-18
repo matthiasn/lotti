@@ -117,6 +117,22 @@ void main() {
     },
   );
 
+  test('a legacy reply without a preceding user does not answer one', () async {
+    final reply = message(
+      id: 'reply-first',
+      kind: AgentMessageKind.action,
+      minute: 1,
+    );
+    final orphan = message(
+      id: 'user-later',
+      kind: AgentMessageKind.user,
+      minute: 2,
+    );
+    stubHistory(users: [orphan], replies: [reply]);
+
+    expect(await service.oldestPendingMessageId('goal-1'), orphan.id);
+  });
+
   test('renders a role-correct bounded tail before the pending turn', () async {
     final first = message(
       id: 'user-1',
