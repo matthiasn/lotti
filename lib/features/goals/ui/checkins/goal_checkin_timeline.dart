@@ -71,6 +71,51 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
 
   int _visibleCount = _pageSize;
 
+  /// When the soonest beat still inside its grace window leaves it.
+  ///
+  /// Collected while building the beats, then used to arm [_graceTimer].
+  DateTime? _nextGraceExpiry;
+
+  /// Rebuilds the rail the moment the soonest grace window closes.
+  ///
+  /// Without it the status is only recomputed when something else rebuilds —
+  /// a transcript arriving, an inference status changing, a database
+  /// notification. A user who records a check-in and stays on the page gets
+  /// none of those when the recording is exactly the one nothing picked up, so
+  /// the beat would sit on "Transcribing…" for as long as the page stayed
+  /// open: the one case the stalled state exists to catch is the one case
+  /// nothing would have refreshed.
+  Timer? _graceTimer;
+  DateTime? _armedFor;
+
+  @override
+  void dispose() {
+    _graceTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Arms (or re-arms, or cancels) the rebuild for [deadline].
+  ///
+  /// Idempotent on the deadline, because this is called from `build` and must
+  /// not restart the timer on every unrelated rebuild — that would push the
+  /// wake-up further out each time and never fire.
+  void _armGraceTimer(DateTime? deadline) {
+    if (deadline == _armedFor) return;
+    _graceTimer?.cancel();
+    _armedFor = deadline;
+    if (deadline == null) return;
+    final remaining = deadline.difference(clock.now());
+    _graceTimer = Timer(
+      remaining.isNegative ? Duration.zero : remaining,
+      () {
+        if (!mounted) return;
+        // Cleared so the next build's deadline is never mistaken for the one
+        // just served, which would leave the following beat unarmed.
+        setState(() => _armedFor = null);
+      },
+    );
+  }
+
   @override
   void didUpdateWidget(covariant GoalCheckInTimeline oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -83,6 +128,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
   @override
   Widget build(BuildContext context) {
     final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
+    _nextGraceExpiry = null;
     final cap = widget.maxBeats ?? _visibleCount;
     final visible = items.length <= cap ? items : items.sublist(0, cap);
     final hasOlder = widget.maxBeats == null && visible.length < items.length;
@@ -93,16 +139,19 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
       labelForDay: (day) => _dayLabel(context, day, locale),
     );
 
+    final built = [
+      for (final group in groups)
+        TimelineGroup(
+          label: group.label,
+          beats: [for (final item in group.items) _beat(context, item, locale)],
+        ),
+    ];
+    // After the beats, because building them is what discovers the deadline.
+    // Arming only changes a timer, so it is safe from inside build.
+    _armGraceTimer(_nextGraceExpiry);
+
     return TimelineView(
-      groups: [
-        for (final group in groups)
-          TimelineGroup(
-            label: group.label,
-            beats: [
-              for (final item in group.items) _beat(context, item, locale),
-            ],
-          ),
-      ],
+      groups: built,
       onLoadOlder: hasOlder
           ? () => setState(
               () => _visibleCount = math.min(
@@ -169,6 +218,23 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
                     )
                     .value ??
                 false);
+        // Absent words are normal, not an error: the recording is saved first
+        // and transcribed after. Only once the grace window has closed does
+        // the same picture mean nobody picked the recording up.
+        final graceExpiry = checkIn.at.add(kGoalCheckInTranscriptGrace);
+        final waiting =
+            checkIn.transcript == null &&
+            inferenceStatus == InferenceStatus.idle &&
+            !durableFailure;
+        if (waiting && graceExpiry.isAfter(clock.now())) {
+          // The rail has to wake itself for this one: nothing else is coming.
+          _nextGraceExpiry =
+              _nextGraceExpiry == null ||
+                  graceExpiry.isBefore(_nextGraceExpiry!)
+              ? graceExpiry
+              : _nextGraceExpiry;
+        }
+
         return TimelineBeat(
           id: checkIn.id,
           entryId: checkIn.id,
@@ -179,18 +245,15 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
             transcript: checkIn.transcript,
-            // Absent words are normal, not an error: the recording is saved
-            // first and transcribed after.
             transcriptStatus: checkIn.transcript != null
                 ? TimelineTranscriptStatus.none
                 : inferenceStatus == InferenceStatus.running
                 ? TimelineTranscriptStatus.pending
                 : inferenceStatus == InferenceStatus.error || durableFailure
                 ? TimelineTranscriptStatus.failed
-                : clock.now().difference(checkIn.at) >
-                      kGoalCheckInTranscriptGrace
-                ? TimelineTranscriptStatus.stalled
-                : TimelineTranscriptStatus.pending,
+                : graceExpiry.isAfter(clock.now())
+                ? TimelineTranscriptStatus.pending
+                : TimelineTranscriptStatus.stalled,
           ),
         );
 

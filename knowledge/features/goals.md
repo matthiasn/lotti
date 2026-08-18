@@ -1438,7 +1438,11 @@ Invariants worth not breaking:
   recording — and, past `kGoalCheckInTranscriptGrace` (10 minutes), the
   signature of a recording that was never handed to the pipeline at all. The
   rail renders the second case as `TimelineTranscriptStatus.stalled`: "Not
-  transcribed", with the same Retry the failed state offers. It is a separate
+  transcribed", with the same Retry the failed state offers. The rail arms a
+  timer for the soonest grace expiry among its visible beats and rebuilds
+  itself when it fires — nothing else would, because a recording nobody picked
+  up produces no transcript, no status change and no database notification, so
+  the state exists precisely where no other rebuild is coming. It is a separate
   status from `failed` on purpose — nothing ran, so naming it a failure sends
   the user looking for a provider error that does not exist. This is what
   recovers every check-in recorded before transcription was wired, since the
