@@ -62,6 +62,7 @@ void main() {
   late MockWakeOrchestrator orchestrator;
   late GoalRuntimeMaintenance maintenance;
   late MockGoalMirrorService mirror;
+  late MockGoalCheckInNotifier notifier;
   late List<AgentDomainEntity> upserts;
 
   void stubSpec(String agentId) {
@@ -96,6 +97,10 @@ void main() {
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
     mirror = MockGoalMirrorService();
+    notifier = MockGoalCheckInNotifier();
+    when(() => notifier.watch(any())).thenReturn(null);
+    when(() => notifier.unwatch(any())).thenReturn(null);
+    when(() => notifier.start(any())).thenReturn(null);
     when(
       () => mirror.mirrorHead(any(), categoryId: any(named: 'categoryId')),
     ).thenAnswer((_) async => null);
@@ -110,6 +115,7 @@ void main() {
         orchestrator: orchestrator,
       ),
       goalMirrorService: mirror,
+      checkInNotifier: notifier,
     );
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -195,6 +201,24 @@ void main() {
           ).called(1);
         },
       );
+
+      test('a goal that syncs in before its spec head is still watched', () async {
+        // Identity and spec head arrive as separate synced entities in no
+        // guaranteed order. Watching behind the criteria gate meant an identity
+        // that landed first left the goal unwatched until a restart — the
+        // startup-snapshot bug reintroduced by placement rather than by logic.
+        when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+
+        await maintenance.onIdentityReceived(
+          goal('head-not-here-yet', AgentLifecycle.active),
+        );
+
+        verify(() => mirror.mirrorHead('head-not-here-yet')).called(1);
+        verify(() => notifier.watch('head-not-here-yet')).called(1);
+        // No criteria, so no signal subscription — only the watch survives the
+        // missing head.
+        verifyNever(() => orchestrator.addSubscription(any()));
+      });
 
       test('a non-goal identity is ignored entirely', () async {
         await maintenance.onIdentityReceived(

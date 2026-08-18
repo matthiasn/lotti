@@ -1,6 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 
+extension on GoalCheckInSummary {
+  GoalCheckInSummary copyWithDigest(String digest) => GoalCheckInSummary(
+    id: id,
+    sourceEntryId: sourceEntryId,
+    recordedAt: recordedAt,
+    whatHappened: whatHappened,
+    committedTo: committedTo,
+    blockers: blockers,
+    mood: mood,
+    asks: asks,
+    sourceDigest: digest,
+  );
+}
+
 void main() {
   final recordedAt = DateTime.utc(2026, 8, 18, 14, 20);
 
@@ -93,8 +107,33 @@ void main() {
       expect(GoalCheckInSummary.fromContent('id', content(at: null)), isNull);
     });
 
+    test('a malformed optional slot is ignored, not thrown', () {
+      // These arrive over sync from a peer on a different build. A direct cast
+      // threw, and because the workflow reads every summary in one pass that
+      // single bad value cost the wake ALL of its user voice.
+      final restored = GoalCheckInSummary.fromContent('id', {
+        ...content(),
+        'committedTo': 42,
+        'blockers': <String, Object?>{'unexpected': 'shape'},
+      });
+
+      expect(restored, isNotNull);
+      expect(restored!.whatHappened, 'Walked.');
+      expect(restored.committedTo, isNull);
+      expect(restored.blockers, isNull);
+    });
+
     test('a well-formed payload decodes', () {
       expect(GoalCheckInSummary.fromContent('id', content()), isNotNull);
+    });
+
+    test('the source fingerprint round-trips', () {
+      // It is what tells a re-transcription from a check-in already handled.
+      final restored = GoalCheckInSummary.fromContent(
+        'id',
+        summary().copyWithDigest('abc123').toContent(),
+      );
+      expect(restored!.sourceDigest, 'abc123');
     });
   });
 }

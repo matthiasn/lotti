@@ -380,11 +380,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
       );
     }
 
-    // Compact any check-in whose words have arrived but which the agent has
-    // not seen yet, using the wake's OWN model — the agent reads its user in
-    // the same voice it thinks in. Non-fatal: a check-in that fails to compact
-    // simply is not in this wake's context, and the next wake retries.
-    await _compactPendingCheckIns(
+    // Compact any check-in whose words are new or have changed, using the
+    // wake's OWN model — the agent reads its user in the same voice it thinks
+    // in — and return the summaries whose sources are still live. Non-fatal: a
+    // check-in that fails to compact simply is not in this wake's context, and
+    // the next wake retries.
+    final checkInSummaries = await _reconcileCheckIns(
       agentId: agentId,
       goalStatement: version.statement,
       model: resolved.modelId,
@@ -400,16 +401,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // this wake its check-ins, never the wake itself — the deterministic FACTS
     // are what the agent is actually accountable to, and they are already
     // assembled.
-    var userVoice = const <Map<String, Object?>>[];
-    try {
-      userVoice = goalUserVoiceEntries(await _checkInSummaries(agentId));
-    } catch (error, stackTrace) {
-      logError(
-        'reading compacted check-ins failed; the wake continues without them',
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
+    final userVoice = goalUserVoiceEntries(checkInSummaries);
 
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -1083,7 +1075,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// retried compaction overwrites rather than appends. Individually
   /// contained — one unreadable recording must not cost the wake the rest of
   /// what the user said.
-  Future<void> _compactPendingCheckIns({
+  Future<List<GoalCheckInSummary>> _reconcileCheckIns({
     required String agentId,
     required String goalStatement,
     required String model,
@@ -1091,21 +1083,34 @@ class GoalAgentWorkflow with AgentErrorLogging {
   }) async {
     final compactor = _checkInCompactor;
     final reader = _checkInSourceReader;
-    if (compactor == null || reader == null) return;
+    if (compactor == null || reader == null) return const [];
 
-    final List<GoalCheckInSource> pending;
+    final List<GoalCheckInSource> sources;
+    List<GoalCheckInSummary> stored;
     try {
-      final existing = (await _checkInSummaries(
-        agentId,
-      )).map((summary) => summary.sourceEntryId).toSet();
-      pending = (await reader(
-        agentId,
-      )).where((source) => !existing.contains(source.entryId)).toList();
+      // ONE read of each side per wake. Reading the summaries again to render
+      // user voice doubled an already-unbounded scan, which is exactly what
+      // ADR 0057's bounded-read invariant forbids.
+      stored = await _checkInSummaries(agentId);
+      sources = await reader(agentId);
     } on Object {
-      return;
+      return const [];
     }
 
-    for (final source in pending) {
+    final byEntryId = {
+      for (final summary in stored) summary.sourceEntryId: summary,
+    };
+    final live = {for (final source in sources) source.entryId: source};
+
+    for (final source in sources) {
+      final existing = byEntryId[source.entryId];
+      // Recompact when the words changed. A transcript is not final when it
+      // first lands — it can be re-transcribed with a better model or edited —
+      // and without this the first summary stood forever while the agent
+      // coached from words that no longer existed. A summary predating the
+      // digest has none, so it is refreshed once and then carries one.
+      final digest = goalCheckInSourceDigest(source.text);
+      if (existing != null && existing.sourceDigest == digest) continue;
       await compactor.compact(
         agentId: agentId,
         entryId: source.entryId,
@@ -1116,6 +1121,21 @@ class GoalAgentWorkflow with AgentErrorLogging {
         provider: provider,
       );
     }
+
+    if (live.isEmpty && stored.isEmpty) return const [];
+    try {
+      stored = await _checkInSummaries(agentId);
+    } on Object {
+      return const [];
+    }
+    // Only summaries whose source is still linked and live. A deleted or
+    // unlinked check-in leaves its summary behind, and without this the agent
+    // kept quoting words the user had removed — the timeline already hides
+    // them, and the agent's view must not disagree with what the user sees.
+    return [
+      for (final summary in stored)
+        if (live.containsKey(summary.sourceEntryId)) summary,
+    ];
   }
 
   /// The compacted check-ins stored for this goal.

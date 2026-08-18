@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:lotti/features/agents/projection/compaction_plan.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
@@ -68,11 +70,11 @@ Map<String, Object?> _json(GoalCheckInSummary summary) => <String, Object?>{
   if (summary.asks != null) 'asks': summary.asks,
 };
 
-String _renderForBudget(GoalCheckInSummary summary) => [
-  summary.recordedAt.toIso8601String(),
-  summary.whatHappened,
-  ?summary.committedTo,
-  ?summary.blockers,
-  ?summary.mood,
-  ?summary.asks,
-].join(' ');
+/// Estimates against the JSON actually emitted, keys and all.
+///
+/// Estimating from the values alone under-counted every key and the entry id —
+/// an opaque string longer than several of the values — so the selected set
+/// could exceed the budget it was chosen to fit, by more the more entries were
+/// retained.
+String _renderForBudget(GoalCheckInSummary summary) =>
+    jsonEncode(_json(summary));

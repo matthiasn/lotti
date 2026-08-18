@@ -130,15 +130,28 @@ void main() {
   });
 
   test('is keyed by (agent, entry) so a retry converges', () async {
-    scripted = ['{"whatHappened":"Walked."}'];
-    final summary = await compact();
+    // Actually retry: comparing the id helper with itself held for any
+    // implementation and proved nothing, while the name promised convergence.
+    scripted = ['{"whatHappened":"Walked."}', '{"whatHappened":"Walked."}'];
+    final first = await compact();
+    final second = await compact();
 
-    expect(summary!.id, goalCheckInSummaryId('goal-1', 'audio-1'));
-    // Two devices reacting to the same synced recording must write one row.
+    expect(first!.id, goalCheckInSummaryId('goal-1', 'audio-1'));
+    expect(second!.id, first.id);
+
+    // Both runs wrote the SAME row, so a regression that appended a second
+    // summary of the same words fails here.
+    final messageIds = written
+        .whereType<AgentMessageEntity>()
+        .map((message) => message.id)
+        .toSet();
+    expect(messageIds, hasLength(1));
     expect(
-      goalCheckInSummaryId('goal-1', 'audio-1'),
-      goalCheckInSummaryId('goal-1', 'audio-1'),
+      written.whereType<AgentMessagePayloadEntity>().map((p) => p.id).toSet(),
+      hasLength(1),
     );
+
+    // A different recording is a different row.
     expect(
       goalCheckInSummaryId('goal-1', 'audio-2'),
       isNot(goalCheckInSummaryId('goal-1', 'audio-1')),

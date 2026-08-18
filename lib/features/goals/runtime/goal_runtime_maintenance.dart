@@ -172,16 +172,18 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         _checkInNotifier?.unwatch(identity.agentId);
         return;
       }
+      // Before the criteria gate: a synced identity can arrive ahead of its
+      // spec head, and returning for want of criteria left the goal unwatched
+      // until a restart — reintroducing the startup-snapshot bug by placement
+      // rather than by logic. Watching needs only the agent id.
+      _checkInNotifier?.watch(identity.agentId);
+
       final criteria = await _headCriteria(identity.agentId);
       if (criteria == null) return;
       _goalAgentService.registerSignalSubscription(
         identity.agentId,
         criteria,
       );
-      // The check-in watch is not a startup snapshot: a goal created or
-      // synced while the app stays open must mark its report stale from its
-      // first check-in, not from the next launch.
-      _checkInNotifier?.watch(identity.agentId);
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }
