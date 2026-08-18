@@ -410,14 +410,16 @@ void main() {
       'deepseek-v4-flash-candidate',
       'glm-5.2-reference',
     ]);
-    expect(defaultScenarios, hasLength(14));
+    // 17: the twelve core scenarios, two held-out ones, and the three added
+    // to give the suite cases that summarising well cannot pass.
+    expect(defaultScenarios, hasLength(17));
     expect(
       defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
       {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios,
-      hasLength(14 * LocalTaskAgentEvalPromptVariant.values.length),
+      hasLength(17 * LocalTaskAgentEvalPromptVariant.values.length),
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
@@ -702,8 +704,11 @@ void main() {
       failureCategory: LocalTaskAgentEvalFailureCategory.none,
     );
 
-    expect(result.qualityCheckCount, 11);
-    expect(result.passedQualityCheckCount, 11);
+    // 14, not 11: the scenario gained three premature-completion claims, and
+    // this report earns all of them — it says the steps are CAPTURED, never
+    // that the work is done.
+    expect(result.qualityCheckCount, 14);
+    expect(result.passedQualityCheckCount, 14);
     expect(result.qualityScore, 1);
     expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
   });
@@ -1641,6 +1646,87 @@ void main() {
     expect(
       report.results.single.failureCategory,
       LocalTaskAgentEvalFailureCategory.forbiddenReportContent,
+    );
+  });
+
+  test('runner fails a report asserting work that did not happen', () async {
+    // `user_completed_item_resurfaced` expects NO tool calls, so "did the
+    // model claim the fix was verified?" is the only question it really asks.
+    // Those claims were counted in `qualityScore` and never gated, which made
+    // the scenario pass on the strength of its incidental checks alone.
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Sync issue reappeared',
+                'tldr': 'The sync item resurfaced and needs investigation.',
+                // Every other check is satisfied: the required terms are all
+                // present, no internal id leaks, no forbidden tool. The only
+                // thing wrong is the claim — and it sits in its own sentence,
+                // after one carrying an unrelated negation cue.
+                'content':
+                    'The root cause is not yet known. The sync fix was '
+                    'verified in staging and is applied to production.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.forbiddenReportClaim,
+    );
+  });
+
+  test('runner accepts the same report when the claim is negated', () async {
+    // The other half of the rule, and the reason the matcher is negation-aware
+    // at all: naming unfinished work in order to rule it out is exactly what
+    // this scenario wants, and must not be scored as an overclaim.
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Sync issue reappeared',
+                'tldr': 'The sync item resurfaced and needs investigation.',
+                'content':
+                    'The fix has not been verified and is not yet applied; '
+                    'the root cause is still under investigation.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.none,
     );
   });
 

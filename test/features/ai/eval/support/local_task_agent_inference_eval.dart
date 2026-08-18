@@ -307,6 +307,9 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
       _spanishMixedContextScenario(variant),
       _externalLinkScenario(variant),
       _latestDeadlineWinsScenario(variant),
+      _derivedEstimateScenario(variant),
+      _contradictedInstructionScenario(variant),
+      _undecidedEvidenceScenario(variant),
     ],
   ];
 }
@@ -797,6 +800,23 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
         ['security', 'sicherheit'],
       ],
     },
+    // Everything above is extraction: the names and nouns are all in the
+    // transcript, so a model that summarises well passes without deciding
+    // anything. The transcript is a PLAN, and reporting a plan as work already
+    // delivered is the failure this scenario should catch — the German form of
+    // the check `implicit_workflow_plan` makes in English.
+    //
+    // Claims rather than forbidden terms, deliberately: "der Prototyp ist noch
+    // nicht abgeschlossen" is a correct sentence, and a bare substring
+    // blacklist would fail it for containing the word. The claim matcher is
+    // negation-aware and reads `noch`/`nicht` as the deferral it is.
+    //
+    // NOT `fertig`: it is a stem, and the live run tripped all three models on
+    // "Figma-Prototyp fertigstellen" and "soll bis 30. September fertig sein"
+    // — an infinitive TODO and a future deadline, neither of them a claim that
+    // anything is done. The remaining three are past participles, which cannot
+    // be read as forward-looking the same way.
+    forbiddenReportClaims: const ['erledigt', 'abgeschlossen', 'umgesetzt'],
   );
 }
 
@@ -1041,10 +1061,21 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
       ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
       ['blocked', 'blocker', 'risk', 'root cause', 'investigat'],
     ],
-    forbiddenReportTerms: ['item-sync-fix', 'deployed', 'implemented'],
+    // Only the internal id is a bare term. "the fix as implemented does not
+    // fully resolve the problem" is correct prose about the EXISTING fix, and
+    // a substring blacklist fails it for containing the word — so the two
+    // English participles move to the negation-aware list below.
+    forbiddenReportTerms: ['item-sync-fix'],
     // A correct report says the fix is *not* validated, so these may appear
     // under negation but must never be asserted.
-    forbiddenReportClaims: ['verified', 'validated', 'applied', 'underway'],
+    forbiddenReportClaims: [
+      'verified',
+      'validated',
+      'applied',
+      'underway',
+      'deployed',
+      'implemented',
+    ],
   );
 }
 
@@ -1109,6 +1140,115 @@ LocalTaskAgentEvalScenario _externalLinkScenario(
       ['migration'],
     ],
     forbiddenReportTerms: const ['item-pr', 'task-release-portal'],
+  );
+}
+
+/// The estimate exists nowhere in the context: 3 x 45 + 60 = 195.
+///
+/// Every number a model could copy is wrong. 90 is the stale estimate the log
+/// explicitly retires, 45 and 60 are the parts, and 135 is what dropping the
+/// write-up gives. Only arithmetic over the scoped work produces 195, so
+/// summarising well cannot pass this — which is the property the rest of the
+/// suite's required terms lack.
+LocalTaskAgentEvalScenario _derivedEstimateScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'derived_estimate_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _derivedEstimateUserMessage,
+    currentEstimateMinutes: 90,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.updateTaskEstimate,
+        expectedArgumentsSubset: {'minutes': 195},
+      ),
+    ],
+    // The scoped work is three interviews and a write-up, and turning that
+    // into checklist items is the agent doing its job. All three models did
+    // it on the first live run and the scenario failed them for it, which
+    // graded tool minimalism instead of the arithmetic it exists to measure.
+    allowedExtraToolNames: const {
+      TaskAgentToolNames.updateReport,
+      TaskAgentToolNames.recordObservations,
+      TaskAgentToolNames.addMultipleChecklistItems,
+    },
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['interview'],
+      ['nadia'],
+    ],
+    // The audit is done and its estimate retired; a report that still carries
+    // 90 minutes forward is reporting a number the log withdrew.
+    forbiddenReportClaims: const ['90 minutes', '90 minute'],
+  );
+}
+
+/// An instruction the state contradicts: one of the two requested items is
+/// already on the checklist AND already ticked.
+///
+/// Following the request literally produces a duplicate of completed work,
+/// which is the failure. The credential rotation is genuinely new and must
+/// still be added, so refusing wholesale fails too — the scenario cannot be
+/// passed by either blanket obedience or blanket caution.
+LocalTaskAgentEvalScenario _contradictedInstructionScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'contradicted_instruction_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _contradictedInstructionUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.addMultipleChecklistItems,
+      ),
+    ],
+    promptVariant: variant,
+    requiredToolArgumentTermGroups: const {
+      TaskAgentToolNames.addMultipleChecklistItems: [
+        ['credential', 'api key', 'rotate'],
+      ],
+    },
+    // The duplicate, caught where it would actually be created.
+    forbiddenToolArgumentTerms: const {
+      TaskAgentToolNames.addMultipleChecklistItems: ['sandbox'],
+    },
+    requiredReportTermGroups: const [
+      ['credential', 'rotat'],
+    ],
+  );
+}
+
+/// Evidence that supports no conclusion.
+///
+/// The log offers two dates and the possibility of dropping the task, and
+/// closes with "nothing decided". Any mutation here is the model inventing a
+/// decision the user explicitly withheld, so the correct wake changes nothing
+/// and says so — restraint under maximum temptation to be helpful.
+LocalTaskAgentEvalScenario _undecidedEvidenceScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'undecided_evidence_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _undecidedEvidenceUserMessage,
+    expectedToolCalls: const [],
+    forbiddenToolNames: const {
+      TaskAgentToolNames.updateTaskDueDate,
+      TaskAgentToolNames.updateTaskPriority,
+      TaskAgentToolNames.addMultipleChecklistItems,
+    },
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['ines'],
+      ['decid', 'decision', 'undecided'],
+    ],
+    // NOT the month names, and not 'submit'. A correct report has to name both
+    // options in order to say the choice is open — "undecided on March vs.
+    // June", "weighing whether to submit to March or hold for June" — and the
+    // first live run failed all three models for writing exactly that. What
+    // must never appear is language asserting the choice was MADE.
+    forbiddenReportClaims: const ['scheduled', 'confirmed'],
   );
 }
 
@@ -1659,6 +1799,78 @@ Apply the explicit completion, preserve deployment as pending, and include the
 real pull-request URL in the report without exposing internal IDs.
 ''';
 
+const _derivedEstimateUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-onboarding-revamp",
+  "title": "Revamp partner onboarding",
+  "status": "IN PROGRESS",
+  "estimate": 90,
+  "dueDate": "2026-09-18",
+  "languageCode": "en",
+  "checklist": [
+    {"id": "onb-audit", "title": "Audit the current flow", "isChecked": true}
+  ],
+  "log": [
+    {"timestamp": "2026-08-01T09:00:00Z", "text": "The old 90 minute estimate was for the audit alone, which is done."},
+    {"timestamp": "2026-08-14T10:00:00Z", "text": "Scoped the rest with Nadia: three partner interviews at 45 minutes each, then one hour to write the findings up. Nothing else is left."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Re-estimate the task from the scoped remaining work and publish a report.
+''';
+
+const _contradictedInstructionUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-billing-migration",
+  "title": "Migrate billing to the new provider",
+  "status": "IN PROGRESS",
+  "dueDate": "2026-10-02",
+  "languageCode": "en",
+  "checklist": [
+    {"id": "bill-sandbox", "title": "Verify sandbox charges settle", "isChecked": true},
+    {"id": "bill-webhooks", "title": "Point webhooks at the new endpoint", "isChecked": false}
+  ],
+  "log": [
+    {"timestamp": "2026-08-02T09:00:00Z", "text": "Sandbox charges settled cleanly last week, ticked that off."},
+    {"timestamp": "2026-08-16T15:30:00Z", "text": "Please add checklist items for verifying sandbox charges settle, and for rotating the API credentials before cutover."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Act on the request and publish a report.
+''';
+
+const _undecidedEvidenceUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-conference-talk",
+  "title": "Conference talk",
+  "status": "OPEN",
+  "priority": null,
+  "dueDate": null,
+  "languageCode": "en",
+  "checklist": [],
+  "log": [
+    {"timestamp": "2026-08-15T17:40:00Z", "text": "Thinking out loud here. Could submit to the March conference, or hold for the June one, depends whether the platform rewrite lands. Might not be worth doing at all if we are still firefighting. Nothing decided, I want to sleep on it and talk to Ines next week."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Record where this stands and publish a report.
+''';
+
 const _latestDeadlineWinsUserMessage = '''
 ## Current Task Context
 ```json
@@ -1770,6 +1982,7 @@ enum LocalTaskAgentEvalFailureCategory {
   missingReport,
   missingRequiredContent,
   forbiddenReportContent,
+  forbiddenReportClaim,
   missingReportRevision,
   invalidReportRevision,
   inferenceFailed,
@@ -1968,8 +2181,16 @@ class LocalTaskAgentEvalCaseResult {
     return passed;
   }
 
-  double get qualityScore =>
-      qualityCheckCount == 0 ? 1 : passedQualityCheckCount / qualityCheckCount;
+  /// Null when the scenario declares no quality checks at all.
+  ///
+  /// This used to be 1, which reads in a report exactly like a scenario that
+  /// passed everything it was asked — the vacuous pass the goal suite's
+  /// inflated first table was made of. A scenario with nothing to check has
+  /// no quality score, and the aggregate must skip it rather than average a
+  /// free 1.0 into the total.
+  double? get qualityScore => qualityCheckCount == 0
+      ? null
+      : passedQualityCheckCount / qualityCheckCount;
 
   Map<String, Object?> toJson() {
     return {
@@ -2084,7 +2305,7 @@ class LocalTaskAgentEvalReport {
         '| ${result.profile.name} | `${result.profile.providerModelId}` | '
         '${result.scenario.id} | ${result.scenario.promptVariant.name} | '
         '${result.passed ? 'yes' : 'no'} | '
-        '${(result.qualityScore * 100).round()}% | '
+        '${result.qualityScore == null ? 'n/a' : '${(result.qualityScore! * 100).round()}%'} | '
         '${result.usedForcedReportRetry ? 'yes' : 'no'} | '
         '${result.latencyMs} ms | ${toolNames.isEmpty ? '-' : toolNames} | '
         '${result.failureCategory.name} |',
@@ -2713,6 +2934,18 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
     (term) => reportText.contains(term.toLowerCase()),
   )) {
     return LocalTaskAgentEvalFailureCategory.forbiddenReportContent;
+  }
+  // Separate from the term blacklist above, and separately named, because it
+  // fails for a different reason: the term list catches leaked internal ids,
+  // while this catches a report ASSERTING work that did not happen. It is the
+  // whole point of the scenarios that declare it — `user_completed_item_
+  // resurfaced` expects no tool calls at all, so "did the model claim the fix
+  // was verified?" is the only question it really asks. Until this was gated,
+  // those claims were counted in `qualityScore` and could not fail a run.
+  if (scenario.forbiddenReportClaims.any(
+    (claim) => containsAffirmativeReportClaim(reportText, claim),
+  )) {
+    return LocalTaskAgentEvalFailureCategory.forbiddenReportClaim;
   }
   for (final entry in scenario.requiredToolArgumentTermGroups.entries) {
     final arguments = toolCalls

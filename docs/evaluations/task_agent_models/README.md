@@ -167,6 +167,127 @@ LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT=../lotti-ai-evals/task-agent/runs \
 is required. Durable archived runs must be synthetic or reviewed and sanitized,
 and must include a provenance manifest before they are committed.
 
+## 2026-08-18: two defective checks, and a saturated suite
+
+Audited with the questions the goal suite had to learn the hard way — *is this
+rule running?* and *could a wrong answer fail it?* Both came back badly.
+
+**`forbiddenReportClaims` never gated.** `_classifyResult` checked required
+terms, forbidden terms and tool arguments, but not claims. The eight claims the
+suite declares were counted in `qualityScore` and could not fail a run. It cost
+most in `user_completed_item_resurfaced`, which expects no tool calls at all:
+"did the model claim the fix was verified?" is the only question that scenario
+really asks, and it was the one question not asked.
+
+**`containsAffirmativeReportClaim` could barely fire.** The cue list is broad by
+necessity — `no`, `still`, `yet`, `remains`, `before` — and the plain
+60-character window straddles sentences, so in ordinary markdown some cue lands
+near almost any claim. This scored as fully negated:
+
+> The deployment window has **not yet** been confirmed, so the rollback plan is
+> **still** pending review. The sync fix was verified in staging and is applied
+> to production.
+
+Two outright overclaims excused by a cue from an unrelated sentence. The window
+is now clipped to the claim's own sentence — what its doc comment always said it
+did — and escaped newlines count as breaks, since reports are matched as
+serialized tool arguments. The matcher is shared, so the goal suite tightened
+with it.
+
+Also: `qualityScore` was 1 when a scenario declared no checks, which reads in a
+report exactly like passing everything it was asked. It is now null, rendered
+`n/a`.
+
+### The baseline, and why it is not a comparison
+
+Three models, 14 production-variant scenarios, one sample each, temperature 0,
+judge off. **Not comparable to any earlier table on this page** — the two fixes
+above changed what passing means.
+
+| Model | Pass | Checks | Forced retries | Mean latency | Mean output | Mean input |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `deepseek-v4-flash-0731` | 14/14 | 100% | 0 | 1742 ms | 499 | 18746 |
+| `glm-5.2` | 14/14 | 100% | 0 | 1750 ms | 484 | 17971 |
+| `qwen3.5-122b-a10b` | 14/14 | 100% | 0 | 6669 ms | 882 | 14076 |
+
+**42/42 is a finding about the suite, not about the models.** Every check
+passes for every model on every scenario, with no forced report retry anywhere.
+These fourteen scenarios cannot separate this tier; the caveat about scenarios
+all models pass applies to the whole suite now, not to a row of it.
+
+The claim gate was genuinely exercised rather than passing by default — five of
+nine claim-carrying cases put a claim token in the report and negated it
+correctly: glm-5.2 wrote "fix not yet validated" and "should not be considered
+validated", qwen3.5 wrote "before the fix can be validated", each with its cue
+inside the claim's own sentence. So the tightened matcher discriminates without
+firing on correct deferrals — which is the property that had to hold before the
+gate could be trusted.
+
+What the run does discriminate is cost: deepseek and glm are indistinguishable
+in quality and ~3.8x faster than qwen3.5-122b-a10b, which also spends ~1.8x the
+output tokens.
+
+**What this asks for next.** Harder scenarios, not more models — the suite needs
+cases where a strong model can still be wrong: conflicting evidence across
+sources, an instruction the context contradicts, a report that must decline to
+conclude. Until then a pass here means "not obviously broken", and a model
+choice should rest on latency and cost, which is all the table above measures.
+
+## 2026-08-18: three scenarios summarising cannot pass
+
+The saturated baseline above measured extraction. Every required term in the
+original fourteen appears somewhere in its own context, so a model that
+summarises well scores 100% without deciding anything. Three scenarios were
+added where echoing produces the WRONG answer:
+
+| Scenario | The question | Why echoing fails |
+| --- | --- | --- |
+| `derived_estimate` | 3 x 45 + 60 = 195 | Every copyable number is wrong: 90 is the estimate the log retires, 45 and 60 are the parts, 135 drops the write-up |
+| `contradicted_instruction` | Two items requested, one already done and ticked | Literal obedience duplicates finished work; blanket caution drops the item that is genuinely new |
+| `undecided_evidence` | Two candidate dates, an option to drop it, "nothing decided" | Any mutation invents a decision the user withheld |
+
+All three models pass all three. **The scenarios do not discriminate at this
+tier** — they are regression protection, not a ranking instrument, and their
+value is in qualifying cheaper candidates (the oMLX profiles) and in catching a
+future model that answers by summarising.
+
+### Six of the first nine failures were the scenarios
+
+The first live run scored 3/9, and verifying each failure against the captured
+report text found the harness at fault six times:
+
+- `derived_estimate` failed all three for calling `add_multiple_checklist_items`
+  alongside the estimate — while every one of them computed 195 correctly.
+  Capturing the scoped work is the agent doing its job; the scenario was
+  grading tool minimalism instead of the arithmetic it exists to measure.
+- `undecided_evidence` forbade the claims `march`, `june` and `submit`. A
+  correct report must name both options to say the choice is open, and all
+  three wrote exactly that — "undecided on March vs. June", "weighing whether
+  to submit to March or hold for June". The scenario failed the sentences it
+  was asking for.
+
+Regraded, the same three models score 9/9 with no change to any model output.
+
+### The method that actually works
+
+Three separate checks written on the same day failed correct answers: a German
+stem (`fertig`) matching the infinitive "fertigstellen", month names a correct
+report has to weigh, and tool minimalism standing in for arithmetic. Each was
+written carefully and each was wrong, which says the fix is not more care.
+
+**Draft a check, then read what models actually write before trusting it.** A
+captured report from one cheap run settles in seconds what imagination gets
+wrong, and every false positive above is now a test carrying the verbatim
+sentence that exposed it, paired with a guard proving the genuine violation
+still fires. The negation matcher gained two whole cue classes this way —
+scope-deferral ("out of scope", "descoped") and open-question ("undecided",
+"whether", "weighing") — neither of which was imaginable in advance and both of
+which were obvious in the output.
+
+A tightened check also converts its own blind spots into visible failures, so
+**the first run after tightening measures the checks, not the models.** Budget
+for it.
+
 ## Findings from 2026-07-10
 
 The corrected production-prompt run contains one sample per scenario at
