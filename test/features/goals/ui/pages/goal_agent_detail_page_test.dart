@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -29,10 +31,12 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
@@ -3955,6 +3959,93 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+  });
+
+  testWidgets('the inline check-ins card reaches the full timeline', (
+    tester,
+  ) async {
+    // Phone-sized on purpose: the card previews three beats inline here,
+    // whereas a wide window hoists the whole rail and needs no way through.
+    const phoneSize = Size(390, 1400);
+    setTestSurfaceSize(tester, phoneSize);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    final at = DateTime(2026, 8, 11, 9);
+    GoalAudioCheckIn beat(String id, int minutesAgo) => GoalAudioCheckIn(
+      JournalAudio(
+        meta: Metadata(
+          id: id,
+          createdAt: at.subtract(Duration(minutes: minutesAgo)),
+          updatedAt: at,
+          dateFrom: at.subtract(Duration(minutes: minutesAgo)),
+          dateTo: at,
+        ),
+        data: AudioData(
+          dateFrom: at,
+          dateTo: at,
+          audioFile: '$id.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 10),
+        ),
+        entryText: EntryText(plainText: 'note $id'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: phoneSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+          goalTimelineItemsProvider('goal-1').overrideWithValue([
+            for (var i = 0; i < 5; i++) beat('c$i', i),
+          ]),
+          goalCaptureTargetProvider(
+            'goal-1',
+          ).overrideWith((ref) async => 'goal-entry-1'),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The preview hides two beats, so the way through to the rest is offered
+    // — and it goes to the timeline route, not back to the goals list.
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('goal-checkin-see-all')),
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-see-all')));
+    await tester.pumpAndSettle();
+    expect(navigated, ['/goals/details/goal-1/timeline']);
+
+    // The mic opens the composer with whatever the agent last published as
+    // its prepared line, so opening it costs no inference.
+    await tester.tap(
+      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
   });
 
   testWidgets('desktop still offers the drawer while health is erroring — '

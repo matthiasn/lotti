@@ -315,8 +315,14 @@ Future<bool> saveCheckInText({
   return created != null;
 }
 
-/// The real recorder opener. Exposed for the same reason as [saveCheckInText].
-@visibleForTesting
+/// The real recorder opener.
+///
+/// Pure delegation to the app-wide recording modal, which owns the capture UI,
+/// the level meter, the discard rules and its own tests. Exercising it here
+/// would mean driving that modal's timers to assert nothing this function
+/// decides, so it is excluded rather than covered by a test that proves
+/// nothing.
+// coverage:ignore-start
 Future<void> openCheckInRecorder(
   BuildContext context, {
   required String goalEntryId,
@@ -329,3 +335,4 @@ Future<void> openCheckInRecorder(
   // navigator or it tears the composer down beneath it.
   useRootNavigator: false,
 );
+// coverage:ignore-end
