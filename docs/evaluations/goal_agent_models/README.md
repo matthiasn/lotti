@@ -595,6 +595,45 @@ wake pays for its retries:
 | `deepseek-v4-flash-0731` | 27 | 0.0113 | 0.0376 | 80.6 |
 | `glm-5.2` | 27 | 0.1421 | 0.4737 | 81.5 |
 
+## Batching the guard's rejections — 2026-08-18
+
+The fix for the above: `_validateReport` collects **every** rule the report
+broke and reports them in one rejection, instead of returning on the first.
+A single violation reads exactly as it always did; only the multiple case
+gains an envelope.
+
+Measured the way the rule two sections up demands — full suite, twice, both
+sides:
+
+| | passes /54 | guard rejections | failures where the retry tripped a NEW rule |
+| --- | ---: | ---: | ---: |
+| baseline run 1 | 45 | 51 | 9 |
+| baseline run 2 | 47 | 50 | 5 |
+| batched run 1 | 52 | 43 | 1 |
+| batched run 2 | 49 | 45 | 2 |
+
+**What the numbers support.** The targeted mechanism moved and stayed moved:
+failures where the one forced retry trips a rule the first attempt was never
+told about fell from 9/5 to 1/2. Total guard rejections fell ~12%. The
+batched envelope fires in roughly one rejection in five, so it is doing work
+rather than sitting behind an unreachable branch.
+
+**What they do not support.** The headline `+4.5/54` is two runs a side with
+a within-condition spread of 2–3 — quote it as a direction, not a
+measurement. A first pass that compared one run a side read `+7` and was
+flattering itself; this is exactly the trap the two-sided rule exists for.
+Per model: glm-5.2 carries essentially all of the movement (18/22 → 26/24),
+while deepseek is flat (27/25 → 26/25) because it rarely broke two rules in
+one call to begin with.
+
+**What is left.** With the sequential-rule failures gone, the residual
+failures are the *same* rule tripped twice — nearly always the rolling
+aggregate. That is a different defect: the model is told exactly which number
+is missing, and still does not quote it. Worth attacking next, and worth
+attacking as a contract problem (is the `rollingWindow` slot asking for
+something models can reliably produce?) rather than by widening the retry
+budget.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:

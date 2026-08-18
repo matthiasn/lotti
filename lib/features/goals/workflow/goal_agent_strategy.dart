@@ -230,19 +230,27 @@ class GoalAgentStrategy extends ConversationStrategy
     final tldr = hasStructuredReport
         ? structured?.tldr ?? ''
         : _trimmed(args['tldr']);
+    // Every rule the report broke, not just the first one.
+    //
+    // These checks used to return on the first failure, which cost one round
+    // trip per rule to discover: the model would fix what it was told and
+    // trip the next rule on the way out. A wake gets exactly one forced
+    // report retry, so two sequentially-reported violations were enough to
+    // end it with no standing report at all — the outcome eval found this
+    // happening on 8 of one model's 9 failures, and the same rules were being
+    // tripped (and recovered from) by every other model too. Reporting them
+    // together costs nothing and lets one retry fix everything.
+    final problems = <String>[];
     if (status == null || oneLiner.isEmpty || tldr.isEmpty) {
-      await _reject(
-        call: call,
-        manager: manager,
-        error: hasStructuredReport
-            ? 'Error: update_goal_report needs status (one of '
+      problems.add(
+        hasStructuredReport
+            ? 'update_goal_report needs status (one of '
                   '${goalTrackStatusNames.join('|')}), a non-empty oneLiner '
                   'and a complete structured report.'
-            : 'Error: update_goal_report needs status (one of '
+            : 'update_goal_report needs status (one of '
                   '${goalTrackStatusNames.join('|')}), a non-empty oneLiner '
                   'and a non-empty tldr.',
       );
-      return;
     }
     // The prompt tells the model that status names are field values, never
     // prose. That instruction is the only thing standing between a weaker
@@ -265,25 +273,19 @@ class GoalAgentStrategy extends ConversationStrategy
       content,
     ]);
     if (tokenInProse != null) {
-      await _reject(
-        call: call,
-        manager: manager,
-        error:
-            'Error: "$tokenInProse" is a status field value, not prose. '
-            "Rewrite the visible text in the user's language and call "
-            'update_goal_report again.',
+      problems.add(
+        '"$tokenInProse" is a status field value, not prose. '
+        "Rewrite the visible text in the user's language and call "
+        'update_goal_report again.',
       );
-      return;
     }
-    if (expectedStatus != null && status != expectedStatus) {
-      await _reject(
-        call: call,
-        manager: manager,
-        error:
-            'Error: the FACTS trackStatus is "${expectedStatus!.name}" and '
-            'it is authoritative — use it verbatim.',
+    // Only meaningful once a status parsed at all; otherwise the missing-field
+    // problem above already says everything there is to say.
+    if (status != null && expectedStatus != null && status != expectedStatus) {
+      problems.add(
+        'the FACTS trackStatus is "${expectedStatus!.name}" and '
+        'it is authoritative — use it verbatim.',
       );
-      return;
     }
     // The rolling standing slot exists to state the deterministic aggregate.
     // Models substitute the LATEST reading for it — reporting a 7-day mean
@@ -296,17 +298,28 @@ class GoalAgentStrategy extends ConversationStrategy
           .where((value) => !_quotesNumber(structured.rollingWindow, value))
           .toList();
       if (missing.isNotEmpty) {
-        await _reject(
-          call: call,
-          manager: manager,
-          error:
-              'Error: the rolling standing must quote the FACTS aggregates '
-              'verbatim — ${missing.join(', ')} '
-              '${missing.length == 1 ? 'is' : 'are'} missing. Use the '
-              'aggregate, never the latest reading, and never recompute it.',
+        problems.add(
+          'the rolling standing must quote the FACTS aggregates '
+          'verbatim — ${missing.join(', ')} '
+          '${missing.length == 1 ? 'is' : 'are'} missing. Use the '
+          'aggregate, never the latest reading, and never recompute it.',
         );
-        return;
       }
+    }
+    if (problems.isNotEmpty) {
+      await _reject(
+        call: call,
+        manager: manager,
+        // A single problem reads exactly as it always did; only the multiple
+        // case gains an envelope, and it says "all of them" because a retry
+        // that fixes one is what put us here.
+        error: problems.length == 1
+            ? 'Error: ${problems.single}'
+            : 'Error: update_goal_report broke ${problems.length} rules — '
+                  'fix all of them in one call. '
+                  '${[for (final (i, p) in problems.indexed) '${i + 1}) $p'].join(' ')}',
+      );
+      return;
     }
     _reportStatus = status;
     _reportOneLiner = oneLiner;
