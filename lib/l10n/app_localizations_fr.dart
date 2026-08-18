@@ -13614,4 +13614,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurer le sommeil manquant';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstitue le sommeil léger des nuits passées, qu\'une version plus ancienne omettait du graphique Endormi.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sommeil restauré : $created ajoutées sur $scanned vérifiées, $failed en échec.';
+  }
 }

@@ -13409,4 +13409,20 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Ontbrekende slaap herstellen';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Vult de lichte slaap van eerdere nachten aan, die een oudere versie wegliet uit de grafiek Slapend.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Slaap hersteld: $created toegevoegd van $scanned gecontroleerd, $failed mislukt.';
+  }
 }

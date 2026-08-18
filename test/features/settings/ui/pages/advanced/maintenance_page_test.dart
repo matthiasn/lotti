@@ -17,6 +17,7 @@ import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart'
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -335,6 +336,51 @@ void main() {
         findsOneWidget,
       );
       verify(mockImagePathMigrationService.migrateAll).called(1);
+    });
+
+    testWidgets(
+      'hides the restore-sleep row when health import is not registered',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Restore missing sleep'), findsNothing);
+      },
+    );
+
+    testWidgets('restores missing sleep once and reports the counts', (
+      tester,
+    ) async {
+      final mockBackfill = MockSleepAsleepBackfillService();
+      when(mockBackfill.backfill).thenAnswer(
+        (_) async => SleepAsleepBackfillReport(const [
+          SleepAsleepBackfillStatus.created,
+          SleepAsleepBackfillStatus.created,
+          SleepAsleepBackfillStatus.alreadyPresent,
+        ]),
+      );
+      getIt.registerSingleton<SleepAsleepBackfillService>(mockBackfill);
+
+      await tester.pumpWidget(
+        makeTestableWidget(_constrainedMaintenancePage()),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final row = find.text('Restore missing sleep');
+      await tester.ensureVisible(row);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(row);
+      await tester.pump();
+
+      expect(
+        find.text('Sleep restored: 2 added from 3 checked, 0 failed.'),
+        findsOneWidget,
+      );
+      verify(mockBackfill.backfill).called(1);
     });
 
     testWidgets('delete editor database button shows confirmation dialog', (

@@ -3767,6 +3767,22 @@
   "maintenanceRepairScreenshotPaths": "Reparera lagring av skärmbilder",
   "maintenanceRepairScreenshotPathsDescription": "Flytta skärmbilder som äldre versioner sparade till rätt mapp så att AI-bildanalys kan läsa dem.",
   "maintenanceRepairScreenshotPathsResult": "Reparation av skärmbilder klar: {repaired} åtgärdade, {missing} saknas, {conflicts} konflikter, {failed} misslyckades.",
+  "maintenanceRestoreMissingSleep": "Återställ saknad sömn",
+  "maintenanceRestoreMissingSleepDescription": "Bygger upp den lätta sömnen från tidigare nätter, som en äldre version utelämnade ur diagrammet Sover.",
+  "maintenanceRestoreMissingSleepResult": "Sömn återställd: {created} tillagda av {scanned} kontrollerade, {failed} misslyckades.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Meddelandehistorik",
   "maintenanceReSyncAgentEntities": "Agententiteter",
   "maintenanceReSyncAgentLinks": "Agentlänkar",

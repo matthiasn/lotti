@@ -13639,4 +13639,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurați somnul lipsă';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstituie somnul ușor din nopțile trecute, pe care o versiune mai veche îl omitea din graficul Adormit.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Somn restaurat: $created adăugate din $scanned verificate, $failed eșuate.';
+  }
 }

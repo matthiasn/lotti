@@ -3766,6 +3766,22 @@
   "maintenanceRepairScreenshotPaths": "Screenshotopslag herstellen",
   "maintenanceRepairScreenshotPathsDescription": "Verplaats screenshots die door oudere versies zijn opgeslagen naar de juiste map, zodat AI-beeldanalyse ze kan lezen.",
   "maintenanceRepairScreenshotPathsResult": "Screenshotherstel voltooid: {repaired} hersteld, {missing} ontbrekend, {conflicts} conflicten, {failed} mislukt.",
+  "maintenanceRestoreMissingSleep": "Ontbrekende slaap herstellen",
+  "maintenanceRestoreMissingSleepDescription": "Vult de lichte slaap van eerdere nachten aan, die een oudere versie wegliet uit de grafiek Slapend.",
+  "maintenanceRestoreMissingSleepResult": "Slaap hersteld: {created} toegevoegd van {scanned} gecontroleerd, {failed} mislukt.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Berichtgeschiedenis",
   "maintenanceReSyncAgentEntities": "Agententiteiten",
   "maintenanceReSyncAgentLinks": "Agentkoppelingen",

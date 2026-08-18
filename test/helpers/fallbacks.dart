@@ -9,6 +9,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
@@ -197,6 +198,17 @@ final SurveyData fallbackSurveyData = SurveyData(
   calculatedScores: const {},
 );
 
+/// Stand-in for a health sample, for `any()` matchers on the quantitative
+/// create/update paths.
+final QuantitativeData fallbackQuantitativeData =
+    QuantitativeData.discreteQuantityData(
+      dateFrom: DateTime(2024),
+      dateTo: DateTime(2024),
+      value: 0,
+      dataType: 'HealthDataType.STEPS',
+      unit: 'COUNT',
+    );
+
 final Checklist fallbackChecklist = Checklist(
   meta: Metadata(
     id: 'fallback-checklist',
@@ -250,6 +262,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
   registerFallbackValue(fallbackSurveyData);
+  registerFallbackValue(fallbackQuantitativeData);
   registerFallbackValue(FakeLaunchOptions());
   registerFallbackValue(EntryLinkType.basic);
   registerFallbackValue(const Locale('en'));

@@ -22554,6 +22554,28 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// No description provided for @maintenanceRestoreMissingSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore missing sleep'**
+  String get maintenanceRestoreMissingSleep;
+
+  /// No description provided for @maintenanceRestoreMissingSleepDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.'**
+  String get maintenanceRestoreMissingSleepDescription;
+
+  /// No description provided for @maintenanceRestoreMissingSleepResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep restored: {created} added from {scanned} checked, {failed} failed.'**
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  );
 }
 
 class _AppLocalizationsDelegate

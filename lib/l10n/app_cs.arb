@@ -3386,6 +3386,22 @@
   "maintenanceRepairScreenshotPaths": "Opravit úložiště snímků obrazovky",
   "maintenanceRepairScreenshotPathsDescription": "Přesune snímky obrazovky uložené staršími verzemi do správné složky, aby je analýza obrázků pomocí AI mohla načíst.",
   "maintenanceRepairScreenshotPathsResult": "Oprava snímků obrazovky dokončena: opraveno {repaired}, chybí {missing}, konflikty {conflicts}, selhalo {failed}.",
+  "maintenanceRestoreMissingSleep": "Obnovit chybějící spánek",
+  "maintenanceRestoreMissingSleepDescription": "Doplní lehký spánek z minulých nocí, který starší verze vynechávala z grafu Spánek.",
+  "maintenanceRestoreMissingSleepResult": "Spánek obnoven: {created} doplněno z {scanned} zkontrolovaných, {failed} selhalo.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Historie zpráv",
   "maintenanceReSyncAgentEntities": "Entity agentů",
   "maintenanceReSyncAgentLinks": "Vazby agentů",

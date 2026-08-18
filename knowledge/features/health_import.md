@@ -36,6 +36,10 @@ sources:
     resource: ../../lib/features/dashboards/state/health_chart_controller.dart
     title: HealthObservationsController — the dashboard trigger for background deltas
     last_modified: 2026-06-26
+  - id: backfill
+    resource: ../../lib/logic/sleep_asleep_backfill_service.dart
+    title: SleepAsleepBackfillService — restoring copies the broken set never made
+    last_modified: 2026-08-19
 ---
 
 Health data is the one journal source Lotti does not author. Samples are read out
@@ -284,6 +288,27 @@ plugin's enum. Deep and REM matched by luck; core — the largest stage of a
 typical night — did not, so the chart showed roughly half of every staged night.
 A membership test against a string is a test nothing type-checks; the test suite
 now asserts every member resolves to a real `HealthDataType`.
+
+**Correcting the set repaired new imports and nothing else, which is the second
+half of the story.** The copy is made at import time, and a delta import only
+looks forward from the newest stored sample — so every staged row written during
+the broken window is still sitting in the database with no generic twin, and
+nothing would ever give it one. For roughly fourteen months the Asleep series
+therefore holds deep and REM alone: about 40% of a real night.
+
+`SleepAsleepBackfillService` closes that, and is reached from
+*Settings → Advanced → Maintenance → Restore missing sleep*. Two properties are
+contract:
+
+- **It adds rows and never rewrites one.** Each missing copy is rebuilt by
+  putting the stored stage row's own data back through
+  `createQuantitativeEntry` with the type swapped — the same call the import
+  makes, with the same argument.
+- **Idempotence comes from the id, not from bookkeeping.** Health entries carry
+  deterministic uuidV5 ids over their content, and `createDbEntity` writes with
+  `overwrite: false`, so a copy that already exists is rejected rather than
+  duplicated. Running the backfill twice, or re-importing the range afterwards,
+  is a no-op instead of a source of double-counted nights.
 
 **The consequence for the background delta, which is the second bug this
 duplication caused.** HealthKit keeps every stage under one category type, and

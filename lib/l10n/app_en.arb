@@ -4988,6 +4988,22 @@
       }
     }
   },
+  "maintenanceRestoreMissingSleep": "Restore missing sleep",
+  "maintenanceRestoreMissingSleepDescription": "Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.",
+  "maintenanceRestoreMissingSleepResult": "Sleep restored: {created} added from {scanned} checked, {failed} failed.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Message history",
   "maintenanceReSyncAgentEntities": "Agent entities",
   "maintenanceReSyncAgentLinks": "Agent links",

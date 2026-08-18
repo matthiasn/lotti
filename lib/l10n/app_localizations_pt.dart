@@ -13501,4 +13501,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restaurar o sono em falta';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Reconstrói o sono leve de noites passadas, que uma versão anterior deixava de fora do gráfico A dormir.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sono restaurado: $created adicionadas de $scanned verificadas, $failed falharam.';
+  }
 }

@@ -13375,4 +13375,20 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Gendan manglende søvn';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Genskaber den lette søvn fra tidligere nætter, som en ældre version udelod fra diagrammet Sover.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Søvn gendannet: $created tilføjet ud af $scanned kontrolleret, $failed mislykkedes.';
+  }
 }

@@ -13292,6 +13292,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Restore missing sleep';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Rebuild the light-sleep part of past nights, which an older version left out of the Asleep chart.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sleep restored: $created added from $scanned checked, $failed failed.';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
