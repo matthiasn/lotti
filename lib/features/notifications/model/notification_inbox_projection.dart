@@ -33,6 +33,28 @@ int countUnseenInboxNotifications(List<NotificationEntity> entries) {
   return deduplicateInboxNotifications(unseen).length;
 }
 
+/// Whether a row whose `scheduledFor` is still in the future belongs in the
+/// inbox already.
+///
+/// The two task variants are written with `scheduledFor` = now, so they are
+/// due on arrival and only land in the upcoming set through clock skew
+/// between devices — where hiding them would make a suggestion disappear
+/// until the local clock caught up. A check-in reminder is the opposite case
+/// by design: it is armed days or weeks ahead precisely so the OS alarm
+/// exists before the app closes, and surfacing it on arrival would put
+/// "Check in with Anna?" in the bell for the entire cadence — turning a
+/// once-per-episode nudge into permanent ambient noise, which is exactly what
+/// the banner channel was chosen over an inbox to avoid (ADR 0059
+/// Decision 4).
+///
+/// Exhaustive over the union on purpose: a new variant has to make this
+/// choice rather than inherit one.
+bool showsBeforeScheduledTime(NotificationEntity entity) => switch (entity) {
+  TaskSuggestionNotification() => true,
+  TaskOverdueNotification() => true,
+  RelationshipCheckInNotification() => false,
+};
+
 String _inboxIdentityKey(NotificationEntity entity) {
   return switch (entity) {
     TaskSuggestionNotification(:final linkedTaskId) =>

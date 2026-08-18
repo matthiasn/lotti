@@ -276,6 +276,7 @@ void main() {
         '/journal',
         '/settings',
         '/goals',
+        '/people',
       ]) {
         delegates[path] = await createEmptyDelegate(path);
       }
@@ -291,6 +292,9 @@ void main() {
       when(() => nav.journalDelegate).thenReturn(delegates['/journal']!);
       when(() => nav.settingsDelegate).thenReturn(delegates['/settings']!);
       when(() => nav.goalsDelegate).thenReturn(delegates['/goals']!);
+      when(
+        () => nav.relationshipsDelegate,
+      ).thenReturn(delegates['/people']!);
       when(() => nav.isProjectsPageEnabled).thenReturn(false);
       when(() => nav.isDailyOsPageEnabled).thenReturn(false);
       when(() => nav.isHabitsPageEnabled).thenReturn(false);

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,18 +10,28 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  late NotificationsDb notificationsDb;
   late MockNotificationService notificationService;
   late NotificationScheduler scheduler;
 
   setUpAll(registerAllFallbackValues);
 
   setUp(() {
+    notificationsDb = NotificationsDb(
+      inMemoryDatabase: true,
+      background: false,
+    );
     notificationService = MockNotificationService();
     scheduler = NotificationScheduler(
+      notificationsDb: notificationsDb,
       notificationServiceProvider: () => notificationService,
     );
 
     _stubNotificationService(notificationService);
+  });
+
+  tearDown(() async {
+    await notificationsDb.close();
   });
 
   group('NotificationScheduler', () {
@@ -239,6 +250,229 @@ void main() {
       },
     );
   });
+
+  // Routing is a switch over the union rather than a read of the shared
+  // `linkedEntityId` getter, because every variant answers that getter — which
+  // is how a relationship id used to be handed to the `/tasks/` route.
+  group('NotificationScheduler deep links', () {
+    final now = DateTime.utc(2026, 5, 17, 10);
+
+    /// Schedules [entity] in the past and returns the deep link it carried.
+    Future<String?> deepLinkOf(NotificationEntity entity) async {
+      clearInteractions(notificationService);
+      await scheduler.schedule(entity, now: now);
+      final captured = verify(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: captureAny(named: 'deepLink'),
+        ),
+      ).captured;
+      return captured.single as String?;
+    }
+
+    final past = now.subtract(const Duration(minutes: 1));
+
+    test('a task suggestion points at its task', () async {
+      expect(
+        await deepLinkOf(
+          _suggestion(id: 's', linkedTaskId: 't-1', scheduledFor: past),
+        ),
+        '/tasks/t-1',
+      );
+    });
+
+    test('an overdue task points at its task', () async {
+      expect(
+        await deepLinkOf(
+          _notification(id: 'o', linkedTaskId: 't-2', scheduledFor: past),
+        ),
+        '/tasks/t-2',
+      );
+    });
+
+    test('a check-in reminder points at the person, not a task', () async {
+      expect(
+        await deepLinkOf(
+          _checkIn(id: 'c', linkedRelationshipId: 'rel-9', scheduledFor: past),
+        ),
+        '/people/rel-9',
+      );
+    });
+  });
+
+  // OS-level alarms do not survive an app update, a reinstall or an Android
+  // reboot, while the rows describing them do. Nothing else re-arms them:
+  // `schedule` only ever runs on a write.
+  group('NotificationScheduler.reconcile', () {
+    final now = DateTime.utc(2026, 5, 17, 10);
+
+    test('re-arms a future row with its original instant', () async {
+      await notificationsDb.upsertNotification(
+        _checkIn(
+          id: 'upcoming-row',
+          linkedRelationshipId: 'rel-1',
+          scheduledFor: now.add(const Duration(days: 20)),
+        ),
+      );
+
+      await scheduler.reconcile(now: now);
+
+      // This is the case that matters: that alarm is the only thing standing
+      // between a closed app and a missed check-in, and the OS dropped it.
+      verify(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: now.add(const Duration(days: 20)),
+          notificationId: NotificationScheduler.notificationIdFor(
+            'upcoming-row',
+          ),
+          showOnMobile: true,
+          showOnDesktop: true,
+          deepLink: '/people/rel-1',
+        ),
+      ).called(1);
+    });
+
+    test('never re-announces a row that is already due', () async {
+      // Showing a notification does not mark the row, and with no tap handler
+      // wired the only way to clear one is the in-app bell — so re-posting due
+      // rows here would fire an OS banner on every single launch, forever.
+      // The row is already in the inbox on the device the user is holding.
+      await notificationsDb.upsertNotification(
+        _notification(
+          id: 'due-task',
+          scheduledFor: now.subtract(const Duration(minutes: 5)),
+        ),
+      );
+      await notificationsDb.upsertNotification(
+        _checkIn(
+          id: 'due-reminder',
+          scheduledFor: now.subtract(const Duration(days: 2)),
+        ),
+      );
+
+      await scheduler.reconcile(now: now);
+
+      verifyNever(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+    });
+
+    test('never revives a row the user already dealt with', () async {
+      // Seen, acted-on and deleted rows are excluded by the SQL predicate
+      // itself, so a dismissal on any device stays dismissed on all of them.
+      await notificationsDb.upsertNotification(
+        _checkIn(
+          id: 'seen-row',
+          scheduledFor: now.add(const Duration(days: 3)),
+          seenAt: now,
+        ),
+      );
+      await notificationsDb.upsertNotification(
+        _notification(
+          id: 'deleted-row',
+          scheduledFor: now.add(const Duration(days: 3)),
+          deletedAt: now,
+        ),
+      );
+      await notificationsDb.upsertNotification(
+        _notification(
+          id: 'acted-row',
+          scheduledFor: now.add(const Duration(days: 3)),
+          actedOnAt: now,
+        ),
+      );
+
+      await scheduler.reconcile(now: now);
+
+      verifyNever(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(() => notificationService.cancelNotification(any()));
+    });
+
+    test(
+      'an empty inbox never resolves the notification service at all',
+      () async {
+        // The service is registered lazily so a sandboxed build does not
+        // instantiate the platform plugin at startup, and reconcile runs
+        // during startup. Resolving it here would undo that.
+        var resolutions = 0;
+        final lazyScheduler = NotificationScheduler(
+          notificationsDb: notificationsDb,
+          notificationServiceProvider: () {
+            resolutions++;
+            return notificationService;
+          },
+        );
+
+        await lazyScheduler.reconcile(now: now);
+
+        expect(resolutions, 0);
+      },
+    );
+
+    test('falls back to wall-clock now when the caller omits it', () async {
+      await notificationsDb.upsertNotification(
+        _notification(id: 'future-row', scheduledFor: DateTime.utc(2099)),
+      );
+
+      await scheduler.reconcile();
+
+      verify(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: DateTime.utc(2099),
+          notificationId: NotificationScheduler.notificationIdFor('future-row'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      ).called(1);
+    });
+  });
 }
 
 void _stubNotificationService(MockNotificationService service) {
@@ -268,6 +502,27 @@ void _stubNotificationService(MockNotificationService service) {
   ).thenAnswer((_) async {});
 }
 
+NotificationMeta _meta({
+  required String id,
+  DateTime? scheduledFor,
+  DateTime? seenAt,
+  DateTime? actedOnAt,
+  DateTime? deletedAt,
+}) {
+  final createdAt = DateTime.utc(2026, 5, 17, 8);
+  return NotificationMeta(
+    id: id,
+    createdAt: createdAt,
+    updatedAt: createdAt,
+    scheduledFor: scheduledFor ?? DateTime.utc(2026, 5, 17, 12),
+    seenAt: seenAt,
+    actedOnAt: actedOnAt,
+    deletedAt: deletedAt,
+    vectorClock: const VectorClock({'host': 1}),
+    originatingHostId: 'host',
+  );
+}
+
 NotificationEntity _notification({
   required String id,
   String linkedTaskId = 'task-id',
@@ -276,20 +531,43 @@ NotificationEntity _notification({
   DateTime? actedOnAt,
   DateTime? deletedAt,
 }) {
-  final createdAt = DateTime.utc(2026, 5, 17, 8);
   return NotificationEntity.taskOverdue(
-    meta: NotificationMeta(
+    meta: _meta(
       id: id,
-      createdAt: createdAt,
-      updatedAt: createdAt,
-      scheduledFor: scheduledFor ?? DateTime.utc(2026, 5, 17, 12),
+      scheduledFor: scheduledFor,
       seenAt: seenAt,
       actedOnAt: actedOnAt,
       deletedAt: deletedAt,
-      vectorClock: const VectorClock({'host': 1}),
-      originatingHostId: 'host',
     ),
     linkedTaskId: linkedTaskId,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _suggestion({
+  required String id,
+  String linkedTaskId = 'task-id',
+  DateTime? scheduledFor,
+}) {
+  return NotificationEntity.taskSuggestion(
+    meta: _meta(id: id, scheduledFor: scheduledFor),
+    linkedTaskId: linkedTaskId,
+    suggestionCount: 2,
+    title: 'Due title',
+    body: 'Due body',
+  );
+}
+
+NotificationEntity _checkIn({
+  required String id,
+  String linkedRelationshipId = 'rel-id',
+  DateTime? scheduledFor,
+  DateTime? seenAt,
+}) {
+  return NotificationEntity.relationshipCheckIn(
+    meta: _meta(id: id, scheduledFor: scheduledFor, seenAt: seenAt),
+    linkedRelationshipId: linkedRelationshipId,
     title: 'Due title',
     body: 'Due body',
   );

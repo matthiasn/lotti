@@ -3208,10 +3208,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInSentimentStrained => 'Napjaté';
 
   @override
+  String get checkInSpeakButton => 'Namluvit kontakt';
+
+  @override
   String get checkInTopicsHint => 'Oddělená čárkami, např. práce, cestování';
 
   @override
   String get checkInTopicsLabel => 'Témata';
+
+  @override
+  String get checkInTranscribingLabel => 'Přepisuje se…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Přepis nedorazil. Můžeš text napsat sám.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.';
 
   @override
   String get checklistAddItem => 'Přidat novou položku';
@@ -9261,6 +9275,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Připomenutí kontaktu, připomenutí návyků a upozornění z Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Připomenutí';
+
+  @override
   String get notificationInboxDismiss => 'Zavřít oznámení';
 
   @override
@@ -10363,6 +10384,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get referenceImageSkip => 'Přeskočit';
 
   @override
+  String get relationshipActionCall => 'Zavolat';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed =>
+      'Nic v tomto zařízení to nedokáže otevřít';
+
+  @override
+  String get relationshipActionMessage => 'Zpráva';
+
+  @override
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
@@ -10439,10 +10473,32 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
 
   @override
+  String get relationshipCheckInReminderBody => 'Dobrá chvíle se ozvat.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Ozvat se: $name?';
+  }
+
+  @override
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';
 
   @override
   String get relationshipContactChannelsLabel => 'Kontaktní údaje';
+
+  @override
+  String get relationshipContactLinked => 'Kontaktní údaje zkopírovány';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kontaktní údaje se nepodařilo uložit';
+
+  @override
+  String get relationshipContactMissing =>
+      'Tento kontakt v tomto zařízení není';
+
+  @override
+  String get relationshipContactNoChanges => 'Není co nového zkopírovat';
 
   @override
   String get relationshipCreateTitle => 'Přidat osobu';
@@ -10488,15 +10544,98 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipHealthThriving => 'Vzkvétá';
 
   @override
+  String get relationshipImportAction => 'Importovat z kontaktů';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Přidáno $count osob',
+      few: 'Přidány $count osoby',
+      one: 'Přidána 1 osoba',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
   String get relationshipImportantLabel => 'Důležité';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Přidat $count osob',
+      few: 'Přidat $count osoby',
+      one: 'Přidat 1 osobu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty =>
+      'V tomto zařízení nejsou žádné kontakty';
+
+  @override
+  String get relationshipImportFailed => 'Nepodařilo se přidat nikoho';
+
+  @override
+  String get relationshipImportGrantButton => 'Povolit přístup';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Tvému hledání neodpovídají žádné kontakty';
+
+  @override
+  String get relationshipImportOpenSettings => 'Otevřít nastavení';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti čte tvé kontakty jen po dobu, kdy je tento výběr otevřený, a zkopíruje jen lidi, které vybereš.';
+
+  @override
+  String get relationshipImportRetry => 'Zkusit znovu';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zkontrolovat $count',
+      few: 'Zkontrolovat $count',
+      one: 'Zkontrolovat 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Než je přidáš';
+
+  @override
+  String get relationshipImportSearchHint => 'Hledat kontakty';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.';
+
+  @override
+  String get relationshipImportTitle => 'Přidat lidi';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Import kontaktů je dostupný na telefonech a tabletech. Kontaktní údaje sem zadej ručně.';
+
+  @override
   String relationshipLastCheckInLabel(String date) {
     return 'Poslední záznam $date';
   }
+
+  @override
+  String get relationshipLinkContact => 'Propojit kontakt';
 
   @override
   String get relationshipLinkedTasksLabel => 'Úkoly';
@@ -10527,6 +10666,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
 
   @override
+  String get relationshipPostCallBody =>
+      'Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Zapsat check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Teď ne';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Jak to šlo s $name?';
+  }
+
+  @override
+  String get relationshipRelinkContact => 'Propojit jiný kontakt';
+
+  @override
   String get relationshipsEmptyState =>
       'Přidej lidi, se kterými chceš zůstat v kontaktu.';
 
@@ -10549,6 +10706,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipTrackingSinceLabel(String date) {
     return 'Sledováno od $date';
   }
+
+  @override
+  String get relationshipUpdateFromContact => 'Aktualizovat z kontaktu';
 
   @override
   String get saveButton => 'Uložit';

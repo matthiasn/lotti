@@ -1583,8 +1583,12 @@
   "checkInSentimentLabel": "Hvordan føltes det?",
   "checkInSentimentNeutral": "Neutralt",
   "checkInSentimentStrained": "Anstrengt",
+  "checkInSpeakButton": "Indtal check-in",
   "checkInTopicsHint": "Kommasepareret, f.eks. arbejde, rejser",
   "checkInTopicsLabel": "Emner",
+  "checkInTranscribingLabel": "Transskriberer…",
+  "checkInTranscriptFailed": "Der kom ingen udskrift. Du kan skrive den selv.",
+  "checkInTranscriptUnavailable": "Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.",
   "checklistAddItem": "Tilføj en ny genstand",
   "checklistAiConfidenceLabel": "Selvtillid: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3967,6 +3971,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Påmindelser om kontakt, vanepåmindelser og beskeder fra Lotti.",
+  "notificationChannelRemindersName": "Påmindelser",
   "notificationInboxDismiss": "Afvisningsmeddelelse",
   "notificationInboxEmpty": "Du er helt ajour.",
   "notificationInboxError": "Kunne ikke indlæse notifikationer.",
@@ -4500,6 +4506,10 @@
   "referenceImageSelectionSubtitle": "Vælg op til {maxImages} billeder for at styre AI'ens visuelle stil",
   "referenceImageSelectionTitle": "Vælg referencebilleder",
   "referenceImageSkip": "Spring over",
+  "relationshipActionCall": "Ring op",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Intet på denne enhed kan åbne det",
+  "relationshipActionMessage": "Besked",
   "relationshipAddChannelButton": "Tilføj kontaktoplysning",
   "relationshipBannerSemanticLabel": "Relationsbanner for {personName}",
   "relationshipBriefingDisclosureBody": "Briefingen kører på {provider}. Noter om denne person sendes dertil til behandling.",
@@ -4519,8 +4529,21 @@
   "relationshipCadenceWeekly": "Ugentligt",
   "relationshipChatTooltip": "Chat om denne person",
   "relationshipChatUnavailable": "Ingen agent endnu — markér først personen som vigtig.",
+  "relationshipCheckInReminderBody": "Et godt tidspunkt at tage kontakt.",
+  "relationshipCheckInReminderTitle": "Tag kontakt til {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Kontaktoplysninger",
+  "relationshipContactLinked": "Kontaktoplysninger kopieret",
+  "relationshipContactLinkFailed": "Kunne ikke gemme kontaktoplysningerne",
+  "relationshipContactMissing": "Den kontakt findes ikke på denne enhed",
+  "relationshipContactNoChanges": "Intet nyt at kopiere",
   "relationshipCreateTitle": "Tilføj person",
   "relationshipDeleteConfirmMessage": "Deres check-ins slettes også. Det kan ikke fortrydes.",
   "relationshipDeleteConfirmTitle": "Slet {name}?",
@@ -4533,9 +4556,26 @@
   "relationshipHealthSteady": "Stabil",
   "relationshipHealthStrained": "Anstrengt",
   "relationshipHealthThriving": "Blomstrer",
+  "relationshipImportAction": "Importer fra kontakter",
+  "relationshipImportAdded": "{count, plural, =1{1 person tilføjet} other{{count} personer tilføjet}}",
   "relationshipImportantDescription": "Mind mig om at holde kontakten",
   "relationshipImportantLabel": "Vigtig",
+  "relationshipImportConfirmButton": "{count, plural, =1{Tilføj 1 person} other{Tilføj {count} personer}}",
+  "relationshipImportEmpty": "Ingen kontakter på denne enhed",
+  "relationshipImportFailed": "Kunne ikke tilføje nogen",
+  "relationshipImportGrantButton": "Tillad adgang",
+  "relationshipImportNoMatches": "Ingen kontakter matcher din søgning",
+  "relationshipImportOpenSettings": "Åbn indstillinger",
+  "relationshipImportPermissionBody": "Lotti læser kun dine kontakter, mens denne vælger er åben, og kopierer kun de personer, du vælger.",
+  "relationshipImportRetry": "Prøv igen",
+  "relationshipImportReviewButton": "{count, plural, =1{Gennemse 1} other{Gennemse {count}}}",
+  "relationshipImportReviewTitle": "Før du tilføjer dem",
+  "relationshipImportSearchHint": "Søg i kontakter",
+  "relationshipImportSettingsBody": "Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.",
+  "relationshipImportTitle": "Tilføj personer",
+  "relationshipImportUnsupported": "Kontaktimport findes på telefoner og tablets. Tilføj kontaktoplysninger i hånden her.",
   "relationshipLastCheckInLabel": "Seneste check-in {date}",
+  "relationshipLinkContact": "Tilknyt kontakt",
   "relationshipLinkedTasksLabel": "Opgaver",
   "relationshipLinkTaskButton": "Link opgave",
   "relationshipLogCheckIn": "Registrér check-in",
@@ -4545,6 +4585,19 @@
   "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
   "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
   "relationshipNotFound": "Denne person følges ikke længere.",
+  "relationshipPostCallBody": "Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?",
+  "relationshipPostCallConfirm": "Log tjek-ind",
+  "relationshipPostCallDismiss": "Ikke nu",
+  "relationshipPostCallTitle": "Hvordan gik det med {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Tilknyt en anden kontakt",
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
   "relationshipsPageTitle": "Personer",
   "relationshipStatusActive": "Aktiv",
@@ -4552,6 +4605,7 @@
   "relationshipStatusDormant": "Hvilende",
   "relationshipStatusFieldLabel": "Status",
   "relationshipTrackingSinceLabel": "Fulgt siden {date}",
+  "relationshipUpdateFromContact": "Opdater fra kontakt",
   "saveButton": "Gem",
   "saveButtonLabel": "Gem",
   "saveFailedRetry": "Det blev ikke gemt — prøv venligst igen.",

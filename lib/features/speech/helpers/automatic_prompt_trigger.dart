@@ -1,18 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 
 /// Helper class to handle automatic prompt triggering after audio recording.
 ///
-/// Uses the profile-driven automation path exclusively. When a task has an
-/// agent with a profile that includes a transcription skill, the skill is
-/// invoked via [SkillInferenceRunner]. Otherwise, nothing happens.
+/// Uses the profile-driven automation path exclusively. When the recording's
+/// subject entity has an agent whose profile includes a transcription skill,
+/// the skill is invoked via [SkillInferenceRunner]. Otherwise, nothing
+/// happens.
+///
+/// The subject is whatever the recording was linked to — a task, a project, an
+/// event, or a person. Everything here is kind-agnostic except the task
+/// context handed to the transcription prompt, which only a task can supply.
 class AutomaticPromptTrigger {
   AutomaticPromptTrigger({
     required this.ref,
@@ -24,18 +31,19 @@ class AutomaticPromptTrigger {
 
   /// Triggers automatic transcription via profile-driven automation.
   ///
-  /// Requires a [linkedTaskId] whose agent has a profile with a transcription
-  /// skill assigned. If no profile handles it, logs and returns silently.
+  /// Requires a [linkedSubjectId] whose agent has a profile with a
+  /// transcription skill assigned. If no profile handles it, logs and returns
+  /// silently.
   Future<void> triggerAutomaticPrompts(
     String entryId,
     AudioRecorderState state, {
-    String? linkedTaskId,
+    String? linkedSubjectId,
   }) async {
     try {
-      if (linkedTaskId == null) {
+      if (linkedSubjectId == null) {
         loggingService.log(
           LogDomain.ai,
-          'No linked task for entry $entryId — skipping automatic '
+          'No linked subject for entry $entryId — skipping automatic '
           'transcription',
           subDomain: 'triggerAutomaticPrompts',
         );
@@ -44,7 +52,7 @@ class AutomaticPromptTrigger {
 
       final automationService = ref.read(profileAutomationServiceProvider);
       final result = await automationService.tryTranscribe(
-        taskId: linkedTaskId,
+        subjectId: linkedSubjectId,
         enableSpeechRecognition: state.enableSpeechRecognition,
       );
 
@@ -52,7 +60,7 @@ class AutomaticPromptTrigger {
         loggingService.log(
           LogDomain.ai,
           'Profile automation did not handle transcription for '
-          'task $linkedTaskId (handled=${result.handled})',
+          'subject $linkedSubjectId (handled=${result.handled})',
           subDomain: 'triggerAutomaticPrompts',
         );
         return;
@@ -60,7 +68,7 @@ class AutomaticPromptTrigger {
 
       loggingService.log(
         LogDomain.ai,
-        'Profile-driven transcription for task $linkedTaskId '
+        'Profile-driven transcription for subject $linkedSubjectId '
         'using skill "${result.skill!.id}"',
         subDomain: 'triggerAutomaticPrompts',
       );
@@ -69,17 +77,17 @@ class AutomaticPromptTrigger {
       await runner.runTranscription(
         audioEntryId: entryId,
         automationResult: result,
-        linkedTaskId: linkedTaskId,
+        linkedTaskId: await _taskIdIfTask(linkedSubjectId),
       );
 
-      // Transcription added real content to the task — nudge the task agent
+      // Transcription added real content to the subject — nudge its agent
       // immediately so it processes the new transcript without waiting out
       // the standard 2-minute throttle. The manual wake clears any pending
       // throttle deadline (and its UI countdown) and supersedes any queued
       // subscription job.
-      await _nudgeTaskAgent(
+      await _nudgeSubjectAgent(
         entryId: entryId,
-        linkedTaskId: linkedTaskId,
+        linkedSubjectId: linkedSubjectId,
       );
     } catch (exception, stackTrace) {
       loggingService.error(
@@ -91,44 +99,58 @@ class AutomaticPromptTrigger {
     }
   }
 
-  /// Nudge the task's agent so a freshly-completed transcription is
+  /// [subjectId] when it names a task, `null` for every other subject kind.
+  ///
+  /// `runTranscription`'s `linkedTaskId` feeds `buildTaskDetailsJson` *and*
+  /// the consumption record's `taskId` field. Passing a person's id there
+  /// files the spend under a task that does not exist, so the task context is
+  /// withheld rather than faked for non-task subjects.
+  Future<String?> _taskIdIfTask(String subjectId) async {
+    final entity = await ref
+        .read(journalDbProvider)
+        .journalEntityById(subjectId);
+    return entity is Task ? subjectId : null;
+  }
+
+  /// Nudge the subject's agent so a freshly-completed transcription is
   /// processed immediately, bypassing the 2-minute subscription throttle.
   ///
   /// Honors the automatic-updates opt-in: when the user has switched
   /// automatic updates off, the report is only marked stale (surfacing the
   /// manual "Wake agent" CTA) and no inference is enqueued.
   ///
-  /// No-op when no task agent is registered for [linkedTaskId]. Failures
+  /// No-op when no agent is registered for [linkedSubjectId]. Failures
   /// are logged but never propagate — a missed nudge is recoverable via
   /// the standard subscription path; throwing here would abort the caller.
-  Future<void> _nudgeTaskAgent({
+  Future<void> _nudgeSubjectAgent({
     required String entryId,
-    required String linkedTaskId,
+    required String linkedSubjectId,
   }) async {
     try {
-      final taskAgentService = ref.read(taskAgentServiceProvider);
-      final agent = await taskAgentService.getTaskAgentForTask(linkedTaskId);
+      final agent = await ref.read(subjectAgentResolverProvider)(
+        linkedSubjectId,
+      );
       if (agent == null) return;
       final woken = ref
           .read(wakeOrchestratorProvider)
           .requestContentWake(
             agentId: agent.agentId,
             reason: WakeReason.transcriptionComplete.name,
-            triggerTokens: {linkedTaskId, entryId},
+            triggerTokens: {linkedSubjectId, entryId},
           );
       loggingService.log(
         LogDomain.ai,
-        '${woken ? 'Nudged' : 'Marked report stale for'} task agent '
+        '${woken ? 'Nudged' : 'Marked report stale for'} agent '
         '${agent.agentId} after transcription completion '
-        '(task $linkedTaskId, entry $entryId)',
-        subDomain: 'nudgeTaskAgent',
+        '(subject $linkedSubjectId, entry $entryId)',
+        subDomain: 'nudgeSubjectAgent',
       );
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.ai,
         exception,
         stackTrace: stackTrace,
-        subDomain: 'nudgeTaskAgent',
+        subDomain: 'nudgeSubjectAgent',
       );
     }
   }

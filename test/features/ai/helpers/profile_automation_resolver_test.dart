@@ -26,7 +26,7 @@ void main() {
     mockTemplateService = MockAgentTemplateService();
     mockProfileResolver = MockProfileResolver();
     resolver = ProfileAutomationResolver(
-      taskAgentService: mockTaskAgentService,
+      subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
       templateService: mockTemplateService,
       profileResolver: mockProfileResolver,
     );
@@ -65,7 +65,7 @@ void main() {
         ),
       ).thenAnswer((_) async => resolvedProfile);
 
-      final result = await resolver.resolveForTask('task-1');
+      final result = await resolver.resolveForSubject('task-1');
 
       expect(result, equals(resolvedProfile));
       verify(
@@ -84,7 +84,7 @@ void main() {
         () => mockTaskAgentService.getTaskAgentForTask('task-orphan'),
       ).thenAnswer((_) async => null);
 
-      final result = await resolver.resolveForTask('task-orphan');
+      final result = await resolver.resolveForSubject('task-orphan');
 
       expect(result, isNull);
       verifyNever(
@@ -102,7 +102,7 @@ void main() {
         () => mockTemplateService.getTemplateForAgent(agent.agentId),
       ).thenAnswer((_) async => null);
 
-      final result = await resolver.resolveForTask('task-1');
+      final result = await resolver.resolveForSubject('task-1');
 
       expect(result, isNull);
       verifyNever(
@@ -124,7 +124,7 @@ void main() {
         () => mockTemplateService.getActiveVersion(template.id),
       ).thenAnswer((_) async => null);
 
-      final result = await resolver.resolveForTask('task-1');
+      final result = await resolver.resolveForSubject('task-1');
 
       expect(result, isNull);
       verifyNever(
@@ -158,7 +158,7 @@ void main() {
         ),
       ).thenAnswer((_) async => null);
 
-      final result = await resolver.resolveForTask('task-1');
+      final result = await resolver.resolveForSubject('task-1');
 
       expect(result, isNull);
     });
@@ -187,7 +187,7 @@ void main() {
         ),
       ).thenAnswer((_) async => resolvedProfile);
 
-      final result = await resolver.resolveForTask('task-1');
+      final result = await resolver.resolveForSubject('task-1');
 
       expect(result, isNotNull);
       // Verify the exact agentConfig was forwarded.
@@ -206,10 +206,10 @@ void main() {
 
     setUp(() {
       resolverWithLookup = ProfileAutomationResolver(
-        taskAgentService: mockTaskAgentService,
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
-        taskProfileLookup: (taskId) async {
+        subjectProfileLookup: (taskId) async {
           if (taskId == 'task-with-profile') return 'inherited-profile-1';
           return null;
         },
@@ -226,7 +226,7 @@ void main() {
         () => mockProfileResolver.resolveByProfileId('inherited-profile-1'),
       ).thenAnswer((_) async => resolvedProfile);
 
-      final result = await resolverWithLookup.resolveForTask(
+      final result = await resolverWithLookup.resolveForSubject(
         'task-with-profile',
       );
 
@@ -261,7 +261,7 @@ void main() {
         ),
       ).thenAnswer((_) async => resolvedProfile);
 
-      final result = await resolverWithLookup.resolveForTask(
+      final result = await resolverWithLookup.resolveForSubject(
         'task-with-profile',
       );
 
@@ -277,7 +277,9 @@ void main() {
         () => mockTaskAgentService.getTaskAgentForTask('task-no-profile'),
       ).thenAnswer((_) async => null);
 
-      final result = await resolverWithLookup.resolveForTask('task-no-profile');
+      final result = await resolverWithLookup.resolveForSubject(
+        'task-no-profile',
+      );
 
       expect(result, isNull);
       verifyNever(
@@ -293,7 +295,7 @@ void main() {
         () => mockProfileResolver.resolveByProfileId('inherited-profile-1'),
       ).thenAnswer((_) async => null);
 
-      final result = await resolverWithLookup.resolveForTask(
+      final result = await resolverWithLookup.resolveForSubject(
         'task-with-profile',
       );
 
@@ -371,17 +373,17 @@ void main() {
         }
 
         final generatedResolver = ProfileAutomationResolver(
-          taskAgentService: generatedTaskAgentService,
+          subjectAgentLookup: generatedTaskAgentService.getTaskAgentForTask,
           templateService: generatedTemplateService,
           profileResolver: generatedProfileResolver,
-          taskProfileLookup: (lookupTaskId) async {
+          subjectProfileLookup: (lookupTaskId) async {
             taskProfileLookupCount++;
             expect(lookupTaskId, taskId, reason: '$scenario');
             return scenario.hasTaskProfileId ? taskProfileId : null;
           },
         );
 
-        final result = await generatedResolver.resolveForTask(taskId);
+        final result = await generatedResolver.resolveForSubject(taskId);
 
         if (scenario.resolvesViaAgent) {
           expect(result, same(agentProfile), reason: '$scenario');
@@ -452,23 +454,23 @@ void main() {
     );
   });
 
-  // `resolveForTask` answers which profile drives the task's agent. Once a
+  // `resolveForSubject` answers which profile drives the task's agent. Once a
   // thinking model is picked by hand that answer is a bare model route with no
   // capability slots and no skill assignments, so automation needs the
   // profiles the task inherits as well.
   group('resolveAutomationFallbacks', () {
     ProfileAutomationResolver makeResolver({
-      TaskProfileLookup? taskProfileLookup,
+      SubjectProfileLookup? subjectProfileLookup,
       CategoryProfileLookup? categoryProfileLookup,
-      TaskCategoryLookup? taskCategoryLookup,
+      SubjectCategoryLookup? subjectCategoryLookup,
     }) {
       return ProfileAutomationResolver(
-        taskAgentService: mockTaskAgentService,
+        subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
         templateService: mockTemplateService,
         profileResolver: mockProfileResolver,
-        taskProfileLookup: taskProfileLookup,
+        subjectProfileLookup: subjectProfileLookup,
         categoryProfileLookup: categoryProfileLookup,
-        taskCategoryLookup: taskCategoryLookup,
+        subjectCategoryLookup: subjectCategoryLookup,
       );
     }
 
@@ -481,8 +483,8 @@ void main() {
           thinkingProvider: testInferenceProvider(id: 'p-category'),
         );
         final fallbackResolver = makeResolver(
-          taskProfileLookup: (_) async => 'task-profile',
-          taskCategoryLookup: (_) async => 'cat-1',
+          subjectProfileLookup: (_) async => 'task-profile',
+          subjectCategoryLookup: (_) async => 'cat-1',
           categoryProfileLookup: (categoryId) async =>
               categoryId == 'cat-1' ? 'category-profile' : null,
         );
@@ -498,7 +500,7 @@ void main() {
         );
 
         expect(result, [taskProfile, categoryProfile]);
-        // The agent path belongs to `resolveForTask`; the fallback walk must
+        // The agent path belongs to `resolveForSubject`; the fallback walk must
         // not re-run it.
         verifyNever(() => mockTaskAgentService.getTaskAgentForTask(any()));
       },
@@ -507,8 +509,8 @@ void main() {
     test('resolves a shared profile id only once', () async {
       final profile = makeResolvedProfile();
       final fallbackResolver = makeResolver(
-        taskProfileLookup: (_) async => 'shared-profile',
-        taskCategoryLookup: (_) async => 'cat-1',
+        subjectProfileLookup: (_) async => 'shared-profile',
+        subjectCategoryLookup: (_) async => 'cat-1',
         categoryProfileLookup: (_) async => 'shared-profile',
       );
       when(
@@ -533,8 +535,8 @@ void main() {
       () async {
         final categoryProfile = makeResolvedProfile();
         final fallbackResolver = makeResolver(
-          taskProfileLookup: (_) async => null,
-          taskCategoryLookup: (_) async => 'cat-1',
+          subjectProfileLookup: (_) async => null,
+          subjectCategoryLookup: (_) async => 'cat-1',
           categoryProfileLookup: (_) async => 'category-profile',
         );
         when(
@@ -555,8 +557,8 @@ void main() {
       () async {
         final categoryProfile = makeResolvedProfile();
         final fallbackResolver = makeResolver(
-          taskProfileLookup: (_) async => 'deleted-profile',
-          taskCategoryLookup: (_) async => 'cat-1',
+          subjectProfileLookup: (_) async => 'deleted-profile',
+          subjectCategoryLookup: (_) async => 'cat-1',
           categoryProfileLookup: (_) async => 'category-profile',
         );
         when(
@@ -576,8 +578,8 @@ void main() {
 
     test('returns nothing when the entry has no category', () async {
       final fallbackResolver = makeResolver(
-        taskProfileLookup: (_) async => null,
-        taskCategoryLookup: (_) async => null,
+        subjectProfileLookup: (_) async => null,
+        subjectCategoryLookup: (_) async => null,
         categoryProfileLookup: (_) async =>
             fail('category profile must not be read without a category'),
       );

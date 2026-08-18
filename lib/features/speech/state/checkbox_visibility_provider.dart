@@ -24,7 +24,7 @@ Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
 
   final service = ref.watch(profileAutomationServiceProvider);
   return service.hasAutomatedSkillType(
-    taskId: taskId,
+    subjectId: taskId,
     skillType: SkillType.transcription,
   );
 }

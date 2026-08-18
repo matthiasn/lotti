@@ -9,6 +9,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
@@ -27,7 +28,12 @@ void main() {
 
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
+  late MockRelationshipReminderService mockReminders;
   late MockUpdateNotifications mockNotifications;
+  // The post-interaction prompt mounted on this page reads the device-local
+  // marker, which lives in settings. A real in-memory db is simpler than a
+  // mock here and keeps the prompt's "no marker → renders nothing" default.
+  late SettingsDb settingsDb;
 
   Metadata meta(String id) => Metadata(
     id: id,
@@ -98,7 +104,10 @@ void main() {
   setUp(() {
     mockRepository = MockRelationshipRepository();
     mockNotifications = MockUpdateNotifications();
-    getIt.registerSingleton<UpdateNotifications>(mockNotifications);
+    settingsDb = SettingsDb(inMemoryDatabase: true);
+    getIt
+      ..registerSingleton<UpdateNotifications>(mockNotifications)
+      ..registerSingleton<SettingsDb>(settingsDb);
     // Most tests exercise other sections; linked tasks default to empty.
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
@@ -107,10 +116,14 @@ void main() {
     when(
       () => mockAgentService.handleRelationshipDeleted(any()),
     ).thenAnswer((_) async => true);
+    mockReminders = MockRelationshipReminderService();
+    when(() => mockReminders.clearFor(any())).thenAnswer((_) async {});
   });
 
   tearDown(() async {
     await getIt.unregister<UpdateNotifications>();
+    await getIt.unregister<SettingsDb>();
+    await settingsDb.close();
   });
 
   Widget buildPage() => makeTestableWidgetNoScroll(
@@ -118,6 +131,7 @@ void main() {
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
       relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
+      relationshipReminderServiceProvider.overrideWithValue(mockReminders),
     ],
   );
 
@@ -335,6 +349,11 @@ void main() {
       verify(
         () => mockAgentService.handleRelationshipDeleted('rel-1'),
       ).called(1);
+      // ...and its reminder leg (ADR 0037 §5). This cannot be left to the
+      // next Phase A tick: destroying the agent is what stops those ticks, so
+      // an alarm armed weeks ago would otherwise still fire, naming someone
+      // the user deleted.
+      verify(() => mockReminders.clearFor('rel-1')).called(1);
       expect(beamedTo, ['/people']);
     },
   );

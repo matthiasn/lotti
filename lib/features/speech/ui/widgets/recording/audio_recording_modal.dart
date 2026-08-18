@@ -25,8 +25,12 @@ class AudioRecordingModal {
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
   /// selects which navigator hosts the sheet.
-  /// Shows the recording sheet. Resolves with the created audio entry's id,
-  /// or null when the recording was discarded.
+  ///
+  /// Returns the id of the audio entry the recording created, or `null` when
+  /// the sheet was dismissed or the recording cancelled. Callers that want to
+  /// do something with the recording — the check-in sheet waits for its
+  /// transcript — need the id; the ones that only wanted the side effect can
+  /// keep ignoring it.
   static Future<String?> show(
     BuildContext context, {
     String? linkedId,

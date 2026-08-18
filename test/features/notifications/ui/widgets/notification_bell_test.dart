@@ -420,6 +420,86 @@ void main() {
   );
 
   testWidgets(
+    'tapping a check-in reminder opens the person, never a task detail',
+    (tester) async {
+      // Every variant answers `linkedEntityId`, so the row used to hand a
+      // relationship id to `openLinkedTaskDetail` and land on a dead task
+      // route. Routing switches on the union instead.
+      final navService = _registerNavService();
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      final entity = _makeCheckInNotification(
+        id: 'anna',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Check in with Anna?'));
+      await tester.pump();
+
+      expect(beamedTo, ['/people/rel-anna']);
+      verifyNever(() => navService.pushDesktopTaskDetail(any()));
+      // Opening the person still clears the badge, like every other row.
+      verify(() => repository.markSeen('anna')).called(1);
+    },
+  );
+
+  testWidgets(
+    'dismissing a check-in reminder retracts only that row',
+    (tester) async {
+      // The suggestion path retracts every open row for the task; a reminder
+      // has no such fan-out and must not borrow it.
+      final entity = _makeCheckInNotification(
+        id: 'anna',
+        title: 'Check in with Anna?',
+        body: 'A good moment to reach out.',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const NotificationBell(),
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          overrides: [
+            unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+            inboxNotificationsProvider.overrideWith(
+              () => _StaticInbox([entity]),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+
+      verify(() => repository.retract('anna')).called(1);
+      verifyNever(() => repository.retractTaskSuggestionsForTask(any()));
+    },
+  );
+
+  testWidgets(
     'markSeen failure is reported and navigation still proceeds',
     (tester) async {
       final navService = _registerNavService();
@@ -556,6 +636,27 @@ NotificationEntity _makeNotification({
     ),
     linkedTaskId: 'task-$id',
     suggestionCount: 1,
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _makeCheckInNotification({
+  required String id,
+  required String title,
+  required String body,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.relationshipCheckIn(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedRelationshipId: 'rel-$id',
     title: title,
     body: body,
   );

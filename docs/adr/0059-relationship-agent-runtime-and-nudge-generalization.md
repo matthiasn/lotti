@@ -1,6 +1,10 @@
 # ADR 0059: Relationship Agents on the Shared Runtime and the Kind-Agnostic Nudge Substrate
 
-- Status: Proposed
+- Status: Accepted — implemented by plan v2 phases 3-5. The nudge
+  substrate is kind-agnostic (`lib/features/nudges/`), the relationship
+  agent is a registered runtime kind on deterministic-first two-tier
+  wakes, and the open question on banner surfaces resolved to "the same
+  surfaces as goal nudges, plus the People pages".
 - Date: 2026-08-16
 
 ## Context

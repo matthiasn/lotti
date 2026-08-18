@@ -1582,8 +1582,12 @@
   "checkInSentimentLabel": "Hoe voelde het?",
   "checkInSentimentNeutral": "Neutraal",
   "checkInSentimentStrained": "Gespannen",
+  "checkInSpeakButton": "Check-in inspreken",
   "checkInTopicsHint": "Kommagescheiden, bijv. werk, reizen",
   "checkInTopicsLabel": "Onderwerpen",
+  "checkInTranscribingLabel": "Bezig met transcriberen…",
+  "checkInTranscriptFailed": "Er kwam geen transcriptie terug. Je kunt het zelf typen.",
+  "checkInTranscriptUnavailable": "Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.",
   "checklistAddItem": "Een nieuw item toevoegen",
   "checklistAiConfidenceLabel": "Vertrouwen: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3966,6 +3970,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Contactherinneringen, gewoonteherinneringen en meldingen van Lotti.",
+  "notificationChannelRemindersName": "Herinneringen",
   "notificationInboxDismiss": "Mededeling verwerpen",
   "notificationInboxEmpty": "Je bent helemaal bij.",
   "notificationInboxError": "Kon notificatieberichten niet laden.",
@@ -4499,6 +4505,10 @@
   "referenceImageSelectionSubtitle": "Kies maximaal {maxImages} afbeeldingen om de visuele stijl van de AI te begeleiden",
   "referenceImageSelectionTitle": "Selecteer referentieafbeeldingen",
   "referenceImageSkip": "Overslaan",
+  "relationshipActionCall": "Bellen",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Niets op dit apparaat kan dat openen",
+  "relationshipActionMessage": "Bericht",
   "relationshipAddChannelButton": "Contactgegeven toevoegen",
   "relationshipBannerSemanticLabel": "Relatiebanner voor {personName}",
   "relationshipBriefingDisclosureBody": "De briefing draait op {provider}. Notities over deze persoon worden daarheen gestuurd voor verwerking.",
@@ -4518,8 +4528,21 @@
   "relationshipCadenceWeekly": "Wekelijks",
   "relationshipChatTooltip": "Chat over deze persoon",
   "relationshipChatUnavailable": "Nog geen agent — markeer deze persoon eerst als belangrijk.",
+  "relationshipCheckInReminderBody": "Een goed moment om contact op te nemen.",
+  "relationshipCheckInReminderTitle": "Even contact met {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contactgegevens",
+  "relationshipContactLinked": "Contactgegevens gekopieerd",
+  "relationshipContactLinkFailed": "Kon de contactgegevens niet opslaan",
+  "relationshipContactMissing": "Dat contact staat niet op dit apparaat",
+  "relationshipContactNoChanges": "Niets nieuws om te kopiëren",
   "relationshipCreateTitle": "Persoon toevoegen",
   "relationshipDeleteConfirmMessage": "Ook alle check-ins worden verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "relationshipDeleteConfirmTitle": "{name} verwijderen?",
@@ -4532,9 +4555,26 @@
   "relationshipHealthSteady": "Stabiel",
   "relationshipHealthStrained": "Gespannen",
   "relationshipHealthThriving": "Bloeiend",
+  "relationshipImportAction": "Importeren uit contacten",
+  "relationshipImportAdded": "{count, plural, =1{1 persoon toegevoegd} other{{count} personen toegevoegd}}",
   "relationshipImportantDescription": "Herinner me eraan contact te houden",
   "relationshipImportantLabel": "Belangrijk",
+  "relationshipImportConfirmButton": "{count, plural, =1{1 persoon toevoegen} other{{count} personen toevoegen}}",
+  "relationshipImportEmpty": "Geen contacten op dit apparaat",
+  "relationshipImportFailed": "Kon niemand toevoegen",
+  "relationshipImportGrantButton": "Toegang toestaan",
+  "relationshipImportNoMatches": "Geen contacten komen overeen met je zoekopdracht",
+  "relationshipImportOpenSettings": "Instellingen openen",
+  "relationshipImportPermissionBody": "Lotti leest je contacten alleen zolang deze kiezer open is en kopieert alleen de personen die je kiest.",
+  "relationshipImportRetry": "Opnieuw proberen",
+  "relationshipImportReviewButton": "{count, plural, =1{1 nakijken} other{{count} nakijken}}",
+  "relationshipImportReviewTitle": "Voordat je ze toevoegt",
+  "relationshipImportSearchHint": "Contacten zoeken",
+  "relationshipImportSettingsBody": "Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.",
+  "relationshipImportTitle": "Personen toevoegen",
+  "relationshipImportUnsupported": "Contacten importeren kan op telefoons en tablets. Voer de contactgegevens hier met de hand in.",
   "relationshipLastCheckInLabel": "Laatste check-in {date}",
+  "relationshipLinkContact": "Contact koppelen",
   "relationshipLinkedTasksLabel": "Taken",
   "relationshipLinkTaskButton": "Taak koppelen",
   "relationshipLogCheckIn": "Check-in vastleggen",
@@ -4544,6 +4584,19 @@
   "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
   "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
+  "relationshipPostCallBody": "Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?",
+  "relationshipPostCallConfirm": "Check-in vastleggen",
+  "relationshipPostCallDismiss": "Niet nu",
+  "relationshipPostCallTitle": "Hoe ging het met {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Ander contact koppelen",
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsPageTitle": "Mensen",
   "relationshipStatusActive": "Actief",
@@ -4551,6 +4604,7 @@
   "relationshipStatusDormant": "Sluimerend",
   "relationshipStatusFieldLabel": "Status",
   "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",
+  "relationshipUpdateFromContact": "Bijwerken vanuit contact",
   "saveButton": "Opslaan",
   "saveButtonLabel": "Opslaan",
   "saveFailedRetry": "Dat is niet opgeslagen — probeer het opnieuw.",

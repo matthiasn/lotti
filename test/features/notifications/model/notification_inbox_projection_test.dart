@@ -234,6 +234,50 @@ void main() {
       );
     }, tags: 'glados');
   });
+
+  // The inbox shows not-yet-due rows so a suggestion whose `scheduledFor`
+  // landed a few seconds ahead (clock skew between synced devices) is not
+  // invisible until the local clock catches up. A check-in reminder is armed
+  // deliberately far ahead, so the same leniency would park it in the bell for
+  // the whole cadence.
+  group('showsBeforeScheduledTime', () {
+    test('task rows may surface before their scheduled time', () {
+      expect(
+        showsBeforeScheduledTime(
+          _suggestion(id: 's', taskId: 't'),
+        ),
+        isTrue,
+      );
+      expect(
+        showsBeforeScheduledTime(
+          _overdue(id: 'o', taskId: 't'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a check-in reminder waits for its due day', () {
+      expect(showsBeforeScheduledTime(_checkInRow(id: 'c')), isFalse);
+    });
+  });
+}
+
+RelationshipCheckInNotification _checkInRow({required String id}) {
+  final base = DateTime.utc(2026, 5, 17, 8);
+  return NotificationEntity.relationshipCheckIn(
+        meta: NotificationMeta(
+          id: id,
+          createdAt: base,
+          updatedAt: base,
+          scheduledFor: base.add(const Duration(days: 30)),
+          vectorClock: const VectorClock({'host': 1}),
+          originatingHostId: 'host',
+        ),
+        linkedRelationshipId: 'rel-1',
+        title: 'Check in',
+        body: 'Anna',
+      )
+      as RelationshipCheckInNotification;
 }
 
 TaskSuggestionNotification _suggestionFromSpec(

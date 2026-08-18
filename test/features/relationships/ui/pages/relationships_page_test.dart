@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -16,6 +18,40 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+/// Counts pushes so a test can tell which navigator a route landed on.
+class _RecordingNavigatorObserver extends NavigatorObserver {
+  int pushes = 0;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // The observer sees the host route itself; only later pushes count.
+    if (previousRoute != null) pushes++;
+  }
+}
+
+/// A contacts service that reports the platform as supported, so the import
+/// action renders, and refuses everything else — the import screen under it
+/// is not what these tests are about.
+class _SupportedContactsService implements ContactsService {
+  @override
+  bool get isSupported => true;
+
+  @override
+  Future<ContactsAccess> requestReadAccess() async => ContactsAccess.denied;
+
+  @override
+  Future<ImportedContact?> pickSingle() async => null;
+
+  @override
+  Future<List<ImportedContact>> readAll() async => const [];
+
+  @override
+  Future<ImportedContact?> readById(String id) async => null;
+
+  @override
+  Future<void> openSystemSettings() async {}
+}
 
 void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
@@ -287,6 +323,46 @@ void main() {
     ]);
     await tester.pumpAndSettle();
     expect(find.text('Ben'), findsOneWidget);
+  });
+
+  // The import screen docks its Import action in a `bottomNavigationBar`, and
+  // the mobile shell paints the nav pill over each tab's page stack — so a
+  // push onto the tab's own navigator leaves that action behind the pill.
+  // `bottomNavSafeNavigatorOf` is what lifts it above the shell.
+  testWidgets('opens contact import above the shell, not inside the tab', (
+    tester,
+  ) async {
+    when(
+      () => mockRepository.getRelationshipsByRecency(),
+    ).thenAnswer((_) async => []);
+
+    final rootObserver = _RecordingNavigatorObserver();
+    final nestedObserver = _RecordingNavigatorObserver();
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Navigator(
+          observers: [nestedObserver],
+          onGenerateRoute: (_) => MaterialPageRoute<void>(
+            builder: (_) => const RelationshipsPage(),
+          ),
+        ),
+        overrides: [
+          relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          contactsServiceProvider.overrideWithValue(
+            _SupportedContactsService(),
+          ),
+        ],
+        navigatorObservers: [rootObserver],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.group_add_rounded));
+    await tester.pump();
+
+    expect(rootObserver.pushes, 1, reason: 'pushed above the shell');
+    expect(nestedObserver.pushes, 0, reason: 'never onto the tab navigator');
   });
 }
 

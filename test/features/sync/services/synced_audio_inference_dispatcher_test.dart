@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -128,7 +129,7 @@ class _Bench {
 
     // Profile id resolution.
     when(
-      () => profileAutomationResolver.resolveProfileIdForTask(_kTaskId),
+      () => profileAutomationResolver.resolveProfileIdForSubject(_kTaskId),
     ).thenAnswer((_) async => _kProfileId);
 
     // Raw profile load.
@@ -525,11 +526,11 @@ void main() {
 
   group('profile-id resolution', () {
     test(
-      'skips when resolveProfileIdForTask returns null',
+      'skips when resolveProfileIdForSubject returns null',
       () async {
         bench.stubHappyPath();
         when(
-          () => bench.profileAutomationResolver.resolveProfileIdForTask(
+          () => bench.profileAutomationResolver.resolveProfileIdForSubject(
             _kTaskId,
           ),
         ).thenAnswer((_) async => null);
@@ -639,6 +640,52 @@ void main() {
         when(
           () => bench.aiConfigRepository.getConfigById(otherSkillId),
         ).thenAnswer((_) async => promptSkill);
+
+        await bench.dispatcher.maybeDispatch(_kAudioId);
+
+        verify(
+          () => bench.skillInferenceRunner.runTranscription(
+            audioEntryId: _kAudioId,
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: _kTaskId,
+          ),
+        ).called(1);
+      },
+    );
+
+    // Built-in skills are compile-time constants that nothing writes into
+    // `ai_config.sqlite`, so on an install without the legacy seed rows the
+    // store answers `null` for them. Resolving the assignment through the
+    // store alone dropped it, and synced audio — which deliberately has no
+    // direct fallback — silently transcribed nothing at all.
+    test(
+      'dispatches on a built-in skill the config store has no row for',
+      () async {
+        bench.stubHappyPath();
+
+        final profile =
+            AiConfig.inferenceProfile(
+                  id: _kProfileId,
+                  name: 'Built-in only',
+                  createdAt: _kCreatedAt,
+                  thinkingModelId: 'm-thinking',
+                  transcriptionModelId: 'm-transcribe',
+                  pinnedHostId: _kLocalHost,
+                  skillAssignments: const [
+                    SkillAssignment(
+                      skillId: skillTranscribeContextId,
+                      automate: true,
+                    ),
+                  ],
+                )
+                as AiConfigInferenceProfile;
+        when(
+          () => bench.aiConfigRepository.getConfigById(_kProfileId),
+        ).thenAnswer((_) async => profile);
+        when(
+          () =>
+              bench.aiConfigRepository.getConfigById(skillTranscribeContextId),
+        ).thenAnswer((_) async => null);
 
         await bench.dispatcher.maybeDispatch(_kAudioId);
 

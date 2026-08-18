@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
     title: AiConfigRepository — soft and hard delete
     last_modified: 2026-07-25
+  - id: skill-lookup
+    resource: ../../../lib/features/ai/skills/skill_lookup.dart
+    title: resolveAssignedSkill — why skills resolve from code, not the store
+    last_modified: 2026-08-18
 ---
 
 # Seeds are gated on a usable provider
@@ -59,6 +63,32 @@ Operational details of the seeded definitions:
   and Whisper Large v3 Turbo are offered as one-dropdown alternatives.
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill
   assignments.
+
+# Skills are never seeded
+
+Everything above seeds **profiles**, **providers** and **models**. It does not
+seed **skills**, and nothing else does either: `builtInSkills` is a compile-time
+list, and a profile's `SkillAssignment` holds only the skill's id.
+
+That makes the registry the sole source of truth for a built-in id, and
+`resolveAssignedSkill` the only correct way to resolve one — registry first,
+the config store second for ids the registry does not know (demo seeds, and
+the per-user layer the skill-management UI will add).
+
+**Resolving an assignment through the store alone is a bug, and a silent one.**
+Installs that carry `skill-*` rows in `ai_config.sqlite` got them from a release
+that seeded them; a fresh install has none. Every assignment on every profile
+then resolves to `null`, so each automated capability is skipped without
+failing:
+
+- `ProfileAutomationService` matches nothing and transcription falls through to
+  its **direct fallback** — a rank-ordered search across every configured audio
+  model that never reads the subject's category or profile. A category pinned
+  to one provider transcribes through whichever provider wins that ranking.
+- `SyncedAudioInferenceDispatcher` has no fallback by design, so synced audio
+  transcribes nothing at all.
+
+Both symptoms look like a provider problem and are not.
 
 # The retroactive counterpart
 

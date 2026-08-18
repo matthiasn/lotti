@@ -1419,7 +1419,7 @@ void main() {
               as AiConfigSkill;
 
       when(
-        () => mockResolver.resolveForTask('task-no-profile'),
+        () => mockResolver.resolveForSubject('task-no-profile'),
       ).thenAnswer((_) async => null);
 
       final testContainer = ProviderContainer(
@@ -1839,7 +1839,7 @@ void main() {
       );
 
       when(
-        () => mockResolver.resolveForTask('task-1'),
+        () => mockResolver.resolveForSubject('task-1'),
       ).thenAnswer((_) async => resolvedProfile);
 
       when(
@@ -1919,7 +1919,7 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-1'),
+          () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => resolvedProfile);
         when(
           () => mockRunner.runTranscription(
@@ -2070,7 +2070,7 @@ void main() {
         verify(
           () => mockResolver.resolveForCategory('cat-journal'),
         ).called(1);
-        verifyNever(() => mockResolver.resolveForTask(any()));
+        verifyNever(() => mockResolver.resolveForSubject(any()));
         verify(
           () => mockRunner.runTranscription(
             audioEntryId: 'standalone-audio-1',
@@ -2123,7 +2123,7 @@ void main() {
         );
 
         verifyZeroInteractions(mockRunner);
-        verifyNever(() => mockResolver.resolveForTask(any()));
+        verifyNever(() => mockResolver.resolveForSubject(any()));
         verifyNever(() => mockResolver.resolveForCategory(any()));
       },
     );
@@ -2170,7 +2170,7 @@ void main() {
       );
 
       when(
-        () => mockResolver.resolveForTask('task-img'),
+        () => mockResolver.resolveForSubject('task-img'),
       ).thenAnswer((_) async => resolvedProfile);
 
       when(
@@ -2266,7 +2266,7 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-img'),
+          () => mockResolver.resolveForSubject('task-img'),
         ).thenAnswer((_) async => resolvedProfile);
 
         when(
@@ -2344,7 +2344,7 @@ void main() {
       );
 
       when(
-        () => mockResolver.resolveForTask('task-prompt'),
+        () => mockResolver.resolveForSubject('task-prompt'),
       ).thenAnswer((_) async => resolvedProfile);
 
       when(
@@ -2474,7 +2474,7 @@ void main() {
           () => mockJournalDb.getLinkedToEntities(audioEntity.id),
         ).thenAnswer((_) async => [toDbEntity(linkedTask)]);
         when(
-          () => mockResolver.resolveForTask(linkedTask.id),
+          () => mockResolver.resolveForSubject(linkedTask.id),
         ).thenAnswer((_) async => resolvedProfile);
         when(
           () => mockRunner.runPromptGeneration(
@@ -2510,7 +2510,7 @@ void main() {
           )).future,
         );
 
-        verify(() => mockResolver.resolveForTask(linkedTask.id)).called(1);
+        verify(() => mockResolver.resolveForSubject(linkedTask.id)).called(1);
         verifyNever(() => mockResolver.resolveForCategory(any()));
         verify(
           () => mockRunner.runPromptGeneration(
@@ -2558,7 +2558,7 @@ void main() {
       );
 
       when(
-        () => mockResolver.resolveForTask('task-imggen'),
+        () => mockResolver.resolveForSubject('task-imggen'),
       ).thenAnswer((_) async => resolvedProfile);
 
       when(
@@ -2642,7 +2642,7 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-imggen-override'),
+          () => mockResolver.resolveForSubject('task-imggen-override'),
         ).thenAnswer((_) async => resolvedProfile);
 
         when(
@@ -2723,7 +2723,7 @@ void main() {
       );
 
       when(
-        () => mockResolver.resolveForTask('task-imggen2'),
+        () => mockResolver.resolveForSubject('task-imggen2'),
       ).thenAnswer((_) async => resolvedProfile);
 
       when(
@@ -2808,7 +2808,7 @@ void main() {
         );
 
         when(
-          () => mockResolver.resolveForTask('task-img-prompt'),
+          () => mockResolver.resolveForSubject('task-img-prompt'),
         ).thenAnswer((_) async => resolvedProfile);
 
         when(

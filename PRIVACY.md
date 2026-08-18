@@ -58,6 +58,45 @@ Lotti has no inference backend of its own. Every AI call goes to a provider you 
 - You choose which applies, per category
 - Audio files stay on your device regardless of which you use
 
+## Relationships and Check-Ins
+
+The People tab stores observations about people who are not you. That makes it
+the most sensitive class of data Lotti holds, because **the people it describes
+never agreed to be in it**. It is off by default and lives behind the
+*Enable People page* flag in *Settings → Flags*.
+
+- **It stays on your devices.** A person and their check-ins are ordinary
+  journal entries: stored in your local database, synced only through the
+  end-to-end encrypted Matrix rooms you set up, and never sent to Lotti — there
+  is no Lotti server to send them to.
+- **Marking a person private hides all of them.** A check-in inherits the
+  person's private flag when it is created, and while private entries are
+  hidden the person's own page resolves to "no longer tracked" rather than
+  staying reachable by its address. Deleting a person deletes their check-ins
+  with them, including hidden ones.
+- **Contact details never reach an AI provider.** Phone numbers, email
+  addresses and messaging handles are left out of every inference request —
+  briefings, banners and chat alike. The single piece of code that assembles
+  what the AI sees never reads those fields, and a test feeds it a person with
+  channels filled in and fails if any of them appears in the output.
+- **What the AI does see, when you enable it for that category**: the person's
+  name, your check-in notes, and the titles and statuses of tasks you linked to
+  them. That reaches the provider you configured for that category, on the same
+  terms as any other entry — see *AI Integration & Privacy* above.
+- **How a conversation went is yours to say.** Sentiment on a check-in is only
+  ever what you selected. Nothing infers it, including when you dictate a
+  check-in and edit the transcript before saving.
+- **Reminders say as little as possible.** A check-in reminder on your lock
+  screen carries the person's name and nothing else about them.
+- **Your address book is read, never written.** Linking one person opens the
+  system contact picker, which hands back only the contact you chose.
+  Importing several reads your address book to show you the list — that read
+  happens only while the import screen is open, and only the people you
+  select are kept; the rest are never stored, sent anywhere, or read again.
+  Lotti never modifies your address book and never reads it in the
+  background. Contact import is available on Android and iOS; on desktop you
+  enter contact details by hand.
+
 ## Device Permissions
 
 Lotti requests only the permissions it actually uses. What each one captures stays on-device unless it reaches a destination you configured — an AI provider set for that category, or Matrix sync you enabled. Once configured, those transfers can happen without a further prompt, including automatically: an agent waking on a change, or a recording being transcribed.
@@ -69,6 +108,7 @@ Lotti requests only the permissions it actually uses. What each one captures sta
 - **Storage / media (`READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `ACCESS_MEDIA_LOCATION`)**: used to attach photos and files to journal entries and to read media you select. Lotti only touches files you pick.
 - **Foreground service (`FOREGROUND_SERVICE`)**: used to keep long-running audio recording and sync work alive while the app is in the background, with a system notification visible the whole time. No background data collection happens outside these explicit user actions.
 - **Notifications (`POST_NOTIFICATIONS`)**: used for reminders and habit prompts you've set up yourself, and to display the foreground-service notification.
+- **Contacts (`READ_CONTACTS` / iOS contacts)**: requested the moment you open the contact picker on the People tab, never at launch, and only on Android and iOS. Lotti reads your address book while the picker or import screen is open, in order to copy the phone numbers and email addresses of the people you select onto the people you track; it does not read your address book in the background and never writes to it. Declining leaves the rest of the feature working — contact details can always be typed by hand.
 - **Network (`INTERNET`, `ACCESS_NETWORK_STATE`)**: used to talk to the AI providers and Matrix homeserver you configure, and to detect connectivity. Lotti makes no other network calls.
 
 ## What Lotti Does Not Do

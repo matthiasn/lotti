@@ -1412,8 +1412,12 @@
   "checkInSentimentLabel": "Jaké to bylo?",
   "checkInSentimentNeutral": "Neutrální",
   "checkInSentimentStrained": "Napjaté",
+  "checkInSpeakButton": "Namluvit kontakt",
   "checkInTopicsHint": "Oddělená čárkami, např. práce, cestování",
   "checkInTopicsLabel": "Témata",
+  "checkInTranscribingLabel": "Přepisuje se…",
+  "checkInTranscriptFailed": "Přepis nedorazil. Můžeš text napsat sám.",
+  "checkInTranscriptUnavailable": "Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.",
   "checklistAddItem": "Přidat novou položku",
   "checklistAiConfidenceLabel": "Jistota: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3565,6 +3569,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Připomenutí kontaktu, připomenutí návyků a upozornění z Lotti.",
+  "notificationChannelRemindersName": "Připomenutí",
   "notificationInboxDismiss": "Zavřít oznámení",
   "notificationInboxEmpty": "Máš všechno přečtené.",
   "notificationInboxError": "Oznámení se nepodařilo načíst.",
@@ -3994,6 +4000,10 @@
   "referenceImageSelectionSubtitle": "Vyber až {maxImages} obrázků, které pomohou AI určit vizuální styl",
   "referenceImageSelectionTitle": "Vyber referenční obrázky",
   "referenceImageSkip": "Přeskočit",
+  "relationshipActionCall": "Zavolat",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nic v tomto zařízení to nedokáže otevřít",
+  "relationshipActionMessage": "Zpráva",
   "relationshipAddChannelButton": "Přidat kontakt",
   "relationshipBannerSemanticLabel": "Banner vztahu s {personName}",
   "relationshipBriefingDisclosureBody": "Briefing běží na {provider}. Poznámky o této osobě tam budou odeslány ke zpracování.",
@@ -4013,8 +4023,21 @@
   "relationshipCadenceWeekly": "Každý týden",
   "relationshipChatTooltip": "Chatovat o této osobě",
   "relationshipChatUnavailable": "Zatím žádný agent — nejprve označ tuto osobu jako důležitou.",
+  "relationshipCheckInReminderBody": "Dobrá chvíle se ozvat.",
+  "relationshipCheckInReminderTitle": "Ozvat se: {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Záznamy kontaktů",
   "relationshipContactChannelsLabel": "Kontaktní údaje",
+  "relationshipContactLinked": "Kontaktní údaje zkopírovány",
+  "relationshipContactLinkFailed": "Kontaktní údaje se nepodařilo uložit",
+  "relationshipContactMissing": "Tento kontakt v tomto zařízení není",
+  "relationshipContactNoChanges": "Není co nového zkopírovat",
   "relationshipCreateTitle": "Přidat osobu",
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
@@ -4027,9 +4050,26 @@
   "relationshipHealthSteady": "Stabilní",
   "relationshipHealthStrained": "Napjatý",
   "relationshipHealthThriving": "Vzkvétá",
+  "relationshipImportAction": "Importovat z kontaktů",
+  "relationshipImportAdded": "{count, plural, =1{Přidána 1 osoba} few{Přidány {count} osoby} other{Přidáno {count} osob}}",
   "relationshipImportantDescription": "Připomínej mi, ať se ozvu",
   "relationshipImportantLabel": "Důležité",
+  "relationshipImportConfirmButton": "{count, plural, =1{Přidat 1 osobu} few{Přidat {count} osoby} other{Přidat {count} osob}}",
+  "relationshipImportEmpty": "V tomto zařízení nejsou žádné kontakty",
+  "relationshipImportFailed": "Nepodařilo se přidat nikoho",
+  "relationshipImportGrantButton": "Povolit přístup",
+  "relationshipImportNoMatches": "Tvému hledání neodpovídají žádné kontakty",
+  "relationshipImportOpenSettings": "Otevřít nastavení",
+  "relationshipImportPermissionBody": "Lotti čte tvé kontakty jen po dobu, kdy je tento výběr otevřený, a zkopíruje jen lidi, které vybereš.",
+  "relationshipImportRetry": "Zkusit znovu",
+  "relationshipImportReviewButton": "{count, plural, =1{Zkontrolovat 1} few{Zkontrolovat {count}} other{Zkontrolovat {count}}}",
+  "relationshipImportReviewTitle": "Než je přidáš",
+  "relationshipImportSearchHint": "Hledat kontakty",
+  "relationshipImportSettingsBody": "Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.",
+  "relationshipImportTitle": "Přidat lidi",
+  "relationshipImportUnsupported": "Import kontaktů je dostupný na telefonech a tabletech. Kontaktní údaje sem zadej ručně.",
   "relationshipLastCheckInLabel": "Poslední záznam {date}",
+  "relationshipLinkContact": "Propojit kontakt",
   "relationshipLinkedTasksLabel": "Úkoly",
   "relationshipLinkTaskButton": "Propojit úkol",
   "relationshipLogCheckIn": "Zaznamenat kontakt",
@@ -4039,6 +4079,19 @@
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
+  "relationshipPostCallBody": "Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?",
+  "relationshipPostCallConfirm": "Zapsat check-in",
+  "relationshipPostCallDismiss": "Teď ne",
+  "relationshipPostCallTitle": "Jak to šlo s {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Propojit jiný kontakt",
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsPageTitle": "Lidé",
   "relationshipStatusActive": "Aktivní",
@@ -4046,6 +4099,7 @@
   "relationshipStatusDormant": "Spící",
   "relationshipStatusFieldLabel": "Stav",
   "relationshipTrackingSinceLabel": "Sledováno od {date}",
+  "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",
   "saveButtonLabel": "Uložit",
   "saveFailedRetry": "To se neuložilo — zkus to prosím znovu.",

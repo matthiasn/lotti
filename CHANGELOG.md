@@ -61,6 +61,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cannot drift from what a wake actually sends. Run book in
   `docs/evaluations/relationship_agent_models/`.
 
+- **Check-ins get easier: speak them, be reminded of them, and start them
+  from your address book.** Three additions to the People tab, all behind the
+  same flag.
+
+  **Speak a check-in.** "Speak check-in" on the check-in sheet records the
+  conversation and fills the narrative in with the transcript, ready to edit
+  before you save — nothing is saved for you, and speaking never overwrites
+  what you already typed; it is added underneath. The recording is filed
+  against the person, so it is transcribed with their inference profile (or
+  their category's) and their category's speech dictionary, which is where to
+  list the names you expect to hear. If no transcript comes back, the sheet
+  says so and leaves the field to you; when one does, that person's briefing
+  refreshes on its own.
+
+  **Reminders that reach you with the app closed.** When someone's check-in
+  interval is coming up, Lotti now arms a real OS notification for that
+  morning, ahead of time, so the reminder still arrives on a phone that has
+  not been opened in weeks — the in-app banner needs the app running, which is
+  exactly the case it cannot cover. The reminder is a synced inbox row first
+  and an OS alert second, so dismissing it on one device clears it everywhere.
+  Lock-screen copy is deliberately sparse: the person's name and nothing else
+  about them. Logging a check-in — spoken or typed — cancels the old reminder
+  and sets the next one; un-marking someone as important, making them dormant,
+  or deleting them cancels theirs immediately. Reminders also need the global
+  notification setting, which stays off until you turn it on.
+
+  **Contacts, calling and post-call check-ins** (phone and tablet). Add people
+  straight from your address book: pick as many as you like, then decide per
+  person whether they are important and how often you want to check in before
+  any of them is created — nobody is marked important by default. An
+  individual person can also be linked to a contact, which copies their phone
+  numbers and email across and can be refreshed later; linking never
+  overwrites a detail you typed yourself, and never renames someone you
+  deliberately called "Mum". Contact details on a person's page became
+  buttons: call, message or email them without leaving Lotti. Only the actions
+  your device can actually perform appear, so a landline offers a call but no
+  text message, and a messaging handle offers nothing rather than opening the
+  wrong app. When you come back from a call or message you started here, that
+  person's page offers to log it, already filled in with what happened and
+  when — how it went is still yours to say. Declining leaves no trace, and the
+  offer expires after a few hours rather than greeting you the next morning.
+
+  Lotti reads your address book only while you have the picker or the import
+  screen open, keeps only the people you select, and never reads it in the
+  background; it never writes to your address book. Contact details still never enter AI context. Contact import and
+  the quick actions need an address book, so they are absent on desktop, where
+  contact details are entered by hand as before.
+
 ### Changed
 - **Goal chat now remembers and reliably answers.** Recent exchanges reach the
   agent with each message, and a question saved just before a restart is
@@ -77,6 +125,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first-run Goals page explains how to begin, completed goals remain available
   in an archive, phone agent controls take less space, and switching 14/30/90
   day ranges keeps the previous view visible while the new range loads.
+- **Notifications work on Android at all.** Android was missing its
+  initialisation settings, which made the notification plugin fail to start
+  and silently discard everything Lotti scheduled — habit reminders, plan-ready
+  alerts and sync-conflict notices included. Android now has a proper
+  monochrome status-bar icon, a named notification channel in system settings,
+  and reminders that survive a reboot.
+  Notification permission is requested only when you switch notifications on,
+  never at launch. Reminders are scheduled inexactly (accurate to within a few
+  minutes) so Lotti does not have to ask for the restricted exact-alarm
+  permission.
+- **Scheduled alerts survive an app update or reinstall.** Alarms the
+  operating system was still holding for a future date are re-armed at
+  startup from the stored notification rows. Previously they were only ever
+  set when a notification was written, so an update quietly dropped
+  everything pending. Alerts that already came due are not re-announced —
+  they are waiting in the bell on the device you are holding.
+- **Tapping an alert opens the right thing.** A notification about a person
+  opens that person instead of a task page that could never load.
 - **Relationship agents brief, nudge and chat.** Marking a person important
   now quietly creates their dedicated agent (plan v2 phases 4–5, ADR 0059,
   still behind the People flag). A free daily tick recomputes whether the
@@ -90,6 +156,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rules — and a chat about that person. Dismissing a banner keeps the
   agent quiet for the rest of the day; contact channels remain structurally
   invisible to the AI. Deleting a person also retires their agent.
+- **Recordings attached to a project or an event now transcribe too.**
+  Automatic transcription used to resolve an inference profile only through a
+  task, so a recording made against anything else was quietly left
+  untranscribed and its agent never woken. It now resolves whichever entity
+  the recording belongs to — task, project, event or person.
 - **Goal signal charts now show the trend behind the number.** Daily steps use
   bars and weight keeps its filled curve, both with a dashed trailing
   seven-day average overlaid. Legends identify actuals, averages and targets,
@@ -122,6 +193,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   widened to what the Habits page renders — the 700px column was
   needlessly narrow on desktop — while keeping their gutters on small
   screens.
+
+### Fixed
+- **Automatic transcription and image analysis now honour the profile you
+  chose.** On installs that never received the older seeded skill rows — a
+  fresh install, or a new device — every profile's automated skills resolved
+  to nothing. Automatic capabilities were silently skipped, and audio
+  transcription in particular fell back to a search across every configured
+  model, so a category pinned to one provider could transcribe through a
+  completely different one. Synced audio from another device, which has no
+  such fallback, transcribed nothing at all. Built-in skills are now read
+  from the app itself rather than from the config store, so a profile's
+  choices apply on every install.
 
 ## [1.0.10]
 ### Added

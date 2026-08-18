@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -180,6 +181,40 @@ class _TestProjectsLocation extends ProjectsLocation {
         key: ValueKey('test-projects-${state.uri.path}'),
         child: const SizedBox.shrink(),
       ),
+    ];
+  }
+}
+
+/// A [RelationshipsLocation] whose pages are inert stubs: route matching (and
+/// therefore [peopleRouteHidesBottomNav]) behaves exactly like production,
+/// but none of the People pages — with their provider and getIt dependency
+/// fan-out — is ever built.
+class _TestRelationshipsLocation extends RelationshipsLocation {
+  _TestRelationshipsLocation(super.routeInformation);
+
+  /// Mirrors production's *stack* — list, then detail, then chat — with inert
+  /// children. The shape matters: the back arrow pops a page rather than
+  /// beaming, so a single-page stub could not exercise that path at all.
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    final relationshipId = state.pathParameters['relationshipId'];
+    return [
+      const BeamPage(
+        key: ValueKey('test-people'),
+        child: SizedBox.shrink(),
+      ),
+      if (relationshipId != null)
+        BeamPage(
+          key: ValueKey('test-people-details-$relationshipId'),
+          child: const SizedBox.shrink(),
+        ),
+      if (relationshipId != null &&
+          state.uri.pathSegments.length == 3 &&
+          state.uri.pathSegments[2] == 'chat')
+        BeamPage(
+          key: ValueKey('test-people-chat-$relationshipId'),
+          child: const SizedBox.shrink(),
+        ),
     ];
   }
 }
@@ -2432,6 +2467,70 @@ void main() {
     });
   });
 
+  group('peopleRouteHidesBottomNav', () {
+    RelationshipsLocation peopleLocationFor(String path) =>
+        RelationshipsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('a null location keeps the bar', () {
+      expect(peopleRouteHidesBottomNav(null), isFalse);
+    });
+
+    test('a non-people location keeps the bar even at a people-like path', () {
+      expect(
+        peopleRouteHidesBottomNav(
+          GoalsLocation(RouteInformation(uri: Uri.parse('/people/anna'))),
+        ),
+        isFalse,
+      );
+    });
+
+    // The list root is the only way back to the other tabs from here.
+    test('the /people list root keeps the bar', () {
+      expect(peopleRouteHidesBottomNav(peopleLocationFor('/people')), isFalse);
+    });
+
+    test('a RelationshipsLocation outside /people keeps the bar', () {
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/elsewhere/deep')),
+        isFalse,
+      );
+    });
+
+    test("a person's detail page hides the bar", () {
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people/anna')),
+        isTrue,
+      );
+    });
+
+    // The pointed case: the chat composer owns the bottom edge.
+    test("a person's chat hides the bar", () {
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people/anna/chat')),
+        isTrue,
+      );
+    });
+
+    // Malformed shapes render the list, and the list must keep its tab bar.
+    test('unknown sub-routes and deeper paths keep the bar', () {
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people/anna/edit')),
+        isFalse,
+      );
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people/anna/chat/deep')),
+        isFalse,
+      );
+    });
+
+    test('an empty person id keeps the bar', () {
+      expect(
+        peopleRouteHidesBottomNav(peopleLocationFor('/people//chat')),
+        isFalse,
+      );
+    });
+  });
+
   group('goalsRouteHidesBottomNav', () {
     GoalsLocation goalsLocationFor(String path) =>
         GoalsLocation(RouteInformation(uri: Uri.parse(path)));
@@ -2682,6 +2781,145 @@ void main() {
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
+        await tester.pump(const Duration(milliseconds: 450));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    // The back arrow pops the BeamPage rather than beaming to the list.
+    // Nothing else in this suite covers that path, and it is the one users
+    // actually take out of a person's page.
+    testWidgets(
+      'brings the bar back when the back arrow pops off a person',
+      (tester) async {
+        final mockNavService = MockNavService()
+          ..relationshipsPageEnabled = true;
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final relationshipsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/people',
+          locationBuilder: (routeInformation, _) =>
+              _TestRelationshipsLocation(routeInformation),
+        );
+        addTearDown(relationshipsDelegate.dispose);
+        await relationshipsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/people')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          relationshipsDelegate: relationshipsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        indexController.add(1);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+
+        relationshipsDelegate.beamToNamed('/people/anna');
+        await tester.pump();
+        expect(slide().offset, const Offset(0, 1));
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // What the back arrow actually does: pop the BeamPage, not beam.
+        relationshipsDelegate.navigatorKey.currentState!.pop();
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          slide().offset,
+          Offset.zero,
+          reason: 'popping back to the list must restore the bar',
+        );
+        await tester.pump(const Duration(milliseconds: 450));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      "slides the bar away on a person's pages and back on the People list",
+      (tester) async {
+        final mockNavService = MockNavService()
+          ..relationshipsPageEnabled = true;
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final relationshipsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/people',
+          locationBuilder: (routeInformation, _) =>
+              _TestRelationshipsLocation(routeInformation),
+        );
+        addTearDown(relationshipsDelegate.dispose);
+        await relationshipsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/people')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          relationshipsDelegate: relationshipsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Destinations: Tasks, People, Journal, Settings.
+        indexController.add(1);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+
+        // A person's own page owns its bottom edge. The bar stays mounted
+        // but slides down, exactly like a goal's pages.
+        relationshipsDelegate.beamToNamed('/people/anna');
+        await tester.pump();
+        expect(slide().offset, const Offset(0, 1));
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // The chat is the pointed case: its composer owns the bottom edge.
+        relationshipsDelegate.beamToNamed('/people/anna/chat');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 450));
+
+        // Popping back to the list slides the bar into place.
+        relationshipsDelegate.beamToNamed('/people');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
         await tester.pump(const Duration(milliseconds: 450));
 
         await tester.pumpWidget(const SizedBox.shrink());
