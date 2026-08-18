@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Added
+- **Voice memos play on an event's timeline.** A recording linked to an event
+  used to show only its duration; it now carries the full player — play,
+  scrub, speed — where it sits, with its transcript beneath.
 - **Relationships (People tab).** A personal CRM for a deliberately
   curated set of people. One relationship entity per person, plus structured
   check-ins (interaction type, sentiment, topics, narrative) linked to it.

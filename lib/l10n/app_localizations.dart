@@ -22243,6 +22243,42 @@ abstract class AppLocalizations {
   /// **'Start'**
   String get timeEntryItemStart;
 
+  /// No description provided for @timelineLoadOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Load older'**
+  String get timelineLoadOlder;
+
+  /// No description provided for @timelineRetryTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get timelineRetryTranscription;
+
+  /// No description provided for @timelineShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get timelineShowLess;
+
+  /// No description provided for @timelineShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get timelineShowMore;
+
+  /// No description provided for @timelineTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get timelineTranscribing;
+
+  /// No description provided for @timelineTranscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription failed'**
+  String get timelineTranscriptionFailed;
+
   /// No description provided for @transcriptLanguageLabel.
   ///
   /// In en, this message translates to:

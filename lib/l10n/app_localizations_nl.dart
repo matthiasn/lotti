@@ -13206,6 +13206,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get timeEntryItemStart => 'Begin';
 
   @override
+  String get timelineLoadOlder => 'Oudere laden';
+
+  @override
+  String get timelineRetryTranscription => 'Opnieuw proberen';
+
+  @override
+  String get timelineShowLess => 'Minder tonen';
+
+  @override
+  String get timelineShowMore => 'Meer tonen';
+
+  @override
+  String get timelineTranscribing => 'Transcriberen…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Transcriptie mislukt';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }

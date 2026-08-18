@@ -8,11 +8,13 @@ import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
-import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
+import 'package:lotti/features/events/ui/widgets/event_timeline_beat.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
+import 'package:lotti/widgets/timeline/timeline_models.dart';
+import 'package:lotti/widgets/timeline/timeline_view.dart';
 
 /// The redesigned event detail surface: a photographic hero header carrying the
 /// event's identity (cover, title, when/where, status, rating), followed by an
@@ -207,7 +209,17 @@ class EventDetailView extends StatelessWidget {
           onTap: onAddToTimeline,
         )
       else
-        _Timeline(entries: data.timeline, onOpenEntry: onOpenTimelineEntry),
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [
+                for (final entry in data.timeline)
+                  eventTimelineBeat(context, entry),
+              ],
+            ),
+          ],
+          onOpenBeat: onOpenTimelineEntry,
+        ),
     ];
   }
 
@@ -901,273 +913,6 @@ class _EmptyHint extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _Timeline extends StatelessWidget {
-  const _Timeline({required this.entries, this.onOpenEntry});
-
-  final List<EventTimelineEntry> entries;
-  final ValueChanged<String>? onOpenEntry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var i = 0; i < entries.length; i++)
-          _TimelineTile(
-            entry: entries[i],
-            isLast: i == entries.length - 1,
-            onOpenEntry: onOpenEntry,
-          ),
-      ],
-    );
-  }
-}
-
-class _TimelineTile extends StatelessWidget {
-  const _TimelineTile({
-    required this.entry,
-    required this.isLast,
-    this.onOpenEntry,
-  });
-
-  final EventTimelineEntry entry;
-  final bool isLast;
-  final ValueChanged<String>? onOpenEntry;
-
-  static const double _railWidth = 28;
-  static const double _dotSize = 12;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    // Only interactive — and only carrying the "open" chevron — when there's a
-    // navigable source entry and a handler to open it.
-    final entryId = entry.entryId;
-    final canOpen = onOpenEntry != null && entryId != null;
-
-    final row = IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: _railWidth,
-            child: Column(
-              children: [
-                SizedBox(height: tokens.spacing.step1),
-                Container(
-                  width: _dotSize,
-                  height: _dotSize,
-                  decoration: BoxDecoration(
-                    color: cs.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Center(
-                      child: Container(width: 2, color: cs.outline),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.step5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.timeLabel,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step2),
-                  _TimelineContent(entry: entry),
-                ],
-              ),
-            ),
-          ),
-          // Trailing chevron signals the row opens its source entry. Pinned to
-          // the top (timestamp line) so it reads as a row-level "open"
-          // affordance, not horizontal paging of the photo cluster below.
-          if (canOpen)
-            Padding(
-              padding: EdgeInsets.only(left: tokens.spacing.step2),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Icon(Icons.chevron_right, size: 20, color: cs.outline),
-              ),
-            ),
-        ],
-      ),
-    );
-
-    if (!canOpen) return row;
-    return InkWell(
-      onTap: () => onOpenEntry!(entryId),
-      borderRadius: BorderRadius.circular(tokens.radii.s),
-      child: row,
-    );
-  }
-}
-
-class _TimelineContent extends StatelessWidget {
-  const _TimelineContent({required this.entry});
-
-  final EventTimelineEntry entry;
-
-  static const double _leadHeight = 196;
-  static const double _thumbSize = 72;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    final styles = tokens.typography.styles;
-
-    switch (entry.kind) {
-      case EventTimelineKind.photo:
-        // A hero "lead" frame plus a small supporting cluster, with the caption
-        // anchored beneath — a curated moment, not a flat contact strip.
-        final photos = entry.photos;
-        // Degrade to the caption (or nothing) rather than crashing on a photo
-        // beat that arrived without any images.
-        if (photos.isEmpty) {
-          return Text(
-            entry.text ?? '',
-            style: styles.body.bodyMedium.copyWith(
-              color: cs.onSurfaceVariant,
-            ),
-          );
-        }
-        final lead = photos.first;
-        final rest = photos.length > 1
-            ? photos.sublist(1)
-            : const <EventPhoto>[];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-              child: SizedBox(
-                height: _leadHeight,
-                width: double.infinity,
-                child: EventCoverImage(
-                  image: lead.image,
-                  fallbackColor: cs.surfaceContainerHighest,
-                  cropX: lead.cropX,
-                  scrim: EventCoverScrim.none,
-                ),
-              ),
-            ),
-            if (rest.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step2),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final photo in rest) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(tokens.radii.s),
-                        child: SizedBox(
-                          width: _thumbSize,
-                          height: _thumbSize,
-                          child: EventCoverImage(
-                            image: photo.image,
-                            fallbackColor: cs.surfaceContainerHighest,
-                            cropX: photo.cropX,
-                            scrim: EventCoverScrim.none,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-            if (entry.text != null) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Text(
-                entry.text!,
-                style: styles.body.bodyMedium.copyWith(
-                  color: cs.onSurface,
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ],
-        );
-      case EventTimelineKind.note:
-        return Text(
-          entry.text ?? '',
-          style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
-        );
-      case EventTimelineKind.timeRecording:
-        final endLabel = entry.endTimeLabel;
-        final durationLabel = entry.durationLabel;
-        // A well-formed time recording carries both span labels; without them
-        // fall back to a plain note rather than a broken, blank span bar.
-        if (endLabel == null ||
-            endLabel.isEmpty ||
-            durationLabel == null ||
-            durationLabel.isEmpty) {
-          return Text(
-            entry.text ?? '',
-            style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
-          );
-        }
-        // A time recording reads as a span (start → end · elapsed), with its
-        // note beneath, rather than a bare observation.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TimeSpanBar(
-              startLabel: entry.timeLabel,
-              endLabel: endLabel,
-              durationLabel: durationLabel,
-            ),
-            if (entry.text != null) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Text(
-                entry.text!,
-                style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
-              ),
-            ],
-          ],
-        );
-      case EventTimelineKind.audio:
-        return Row(
-          children: [
-            Icon(Icons.play_circle_outline, size: 22, color: cs.primary),
-            SizedBox(width: tokens.spacing.step2),
-            Text(
-              entry.durationLabel ?? context.messages.eventsVoiceNote,
-              style: styles.body.bodyMedium.copyWith(color: cs.onSurface),
-            ),
-            if (entry.text != null) ...[
-              SizedBox(width: tokens.spacing.step2),
-              Flexible(
-                child: Text(
-                  entry.text!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: styles.body.bodyMedium.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-    }
   }
 }
 

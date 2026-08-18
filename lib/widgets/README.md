@@ -19,6 +19,7 @@ lib/widgets/
 ├── picker/      # EntityPickerSheet, shared by categories, labels and task links
 ├── nav_bar/     # bottom navigation shell and FAB clearance
 ├── media/       # full-screen image-viewer orientation lifecycle
+├── timeline/    # the one vertical timeline rail, shared by events and goals
 └── misc/        # sidebar activity summary and similar cross-feature pieces
 ```
 

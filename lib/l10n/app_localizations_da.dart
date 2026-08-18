@@ -13171,6 +13171,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get timeEntryItemStart => 'Start';
 
   @override
+  String get timelineLoadOlder => 'Indlæs ældre';
+
+  @override
+  String get timelineRetryTranscription => 'Prøv igen';
+
+  @override
+  String get timelineShowLess => 'Vis mindre';
+
+  @override
+  String get timelineShowMore => 'Vis mere';
+
+  @override
+  String get timelineTranscribing => 'Transskriberer…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Transskription mislykkedes';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }

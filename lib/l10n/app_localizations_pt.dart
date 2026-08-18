@@ -13297,6 +13297,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get timeEntryItemStart => 'Começar';
 
   @override
+  String get timelineLoadOlder => 'Carregar anteriores';
+
+  @override
+  String get timelineRetryTranscription => 'Tentar de novo';
+
+  @override
+  String get timelineShowLess => 'Mostrar menos';
+
+  @override
+  String get timelineShowMore => 'Mostrar mais';
+
+  @override
+  String get timelineTranscribing => 'A transcrever…';
+
+  @override
+  String get timelineTranscriptionFailed => 'A transcrição falhou';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }
