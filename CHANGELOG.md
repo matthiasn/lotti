@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.11]
 ### Added
+- **Check-ins on a goal.** Say what is actually going on, in your own words,
+  whenever it is worth saying — one tap into the recorder from the goal's app
+  bar, its Check-ins card, or a banner that asks. Recordings land as dated
+  beats on the goal's timeline and play where they sit, with their transcript
+  beneath; a recording is saved before it is transcribed, so it is never lost
+  waiting for words. Daily reflections join the same timeline, and tapping one
+  reopens that day. On a wide window the timeline is a column beside the
+  dashboard; on a phone it previews in a card with a full history behind it.
+  The reflection sheet's note gained a second way to answer: a voice note,
+  kept separate from anything you typed.
 - **Voice memos play on an event's timeline.** A recording linked to an event
   used to show only its duration; it now carries the full player — play,
   scrub, speed — where it sits, with its transcript beneath.

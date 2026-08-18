@@ -6328,6 +6328,56 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalChatYou => 'Dvs.';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Adăugați o notă vocală';
+
+  @override
+  String get goalCheckInComposerTitle => 'Raportare';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensiuni evaluate';
+  }
+
+  @override
+  String get goalCheckInDone => 'Gata';
+
+  @override
+  String get goalCheckInKindNote => 'NOTĂ';
+
+  @override
+  String get goalCheckInKindReflection => 'REFLECȚIE ZILNICĂ';
+
+  @override
+  String get goalCheckInKindVoice => 'RAPORTARE VOCALĂ';
+
+  @override
+  String get goalCheckInNoteKeptSeparate => 'Păstrată separat de nota scrisă';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · pregătit pentru dvs.';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Înregistrați o raportare';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Spuneți-i agentului ce se întâmplă cu adevărat — treizeci de secunde, cu propriile cuvinte, ori de câte ori merită.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Vedeți toate raportările';
+
+  @override
+  String get goalCheckInsTitle => 'Raportări';
+
+  @override
+  String get goalCheckInWriteInstead => 'Scrieți în schimb';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'Ce se întâmplă?';
+
+  @override
   String get goalCoarseHealthBehind => 'În urmă';
 
   @override
@@ -13429,6 +13479,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Început';
+
+  @override
+  String get timelineDayToday => 'Astăzi';
+
+  @override
+  String get timelineDayYesterday => 'Ieri';
 
   @override
   String get timelineLoadOlder => 'Încărcați mai vechi';

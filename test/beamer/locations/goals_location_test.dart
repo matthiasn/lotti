@@ -38,7 +38,7 @@ void main() {
       );
     }
 
-    test('pathPatterns cover list, create, detail, edit and chat', () {
+    test('pathPatterns cover list, create, detail, edit, chat and timeline', () {
       final location = GoalsLocation(
         RouteInformation(uri: Uri.parse('/goals')),
       );
@@ -48,6 +48,7 @@ void main() {
         '/goals/details/:agentId',
         '/goals/details/:agentId/edit',
         '/goals/details/:agentId/chat',
+        '/goals/details/:agentId/timeline',
       ]);
     });
 

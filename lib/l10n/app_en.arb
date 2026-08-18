@@ -3421,6 +3421,35 @@
     }
   },
   "goalChatYou": "You",
+  "goalCheckInAddVoiceNote": "Add a voice note",
+  "goalCheckInComposerTitle": "Check in",
+  "goalCheckInDimensionsRated": "{count} dimensions rated",
+  "@goalCheckInDimensionsRated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCheckInDone": "Done",
+  "goalCheckInKindNote": "NOTE",
+  "goalCheckInKindReflection": "DAILY REFLECTION",
+  "goalCheckInKindVoice": "VOICE CHECK-IN",
+  "goalCheckInNoteKeptSeparate": "Kept separate from your typed note",
+  "goalCheckInPreparedBy": "{name} · prepared for you",
+  "@goalCheckInPreparedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCheckInRecordCta": "Record a check-in",
+  "goalCheckInsEmptyInvitation": "Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.",
+  "goalCheckInsSeeAll": "See all check-ins",
+  "goalCheckInsTitle": "Check-ins",
+  "goalCheckInWriteInstead": "Write instead",
+  "goalCheckInWritePlaceholder": "What is going on?",
   "goalCoarseHealthBehind": "Behind",
   "@goalCoarseHealthBehind": {
     "description": "Coarse goal-health chip label: behind and every remaining day matters"
@@ -7126,6 +7155,8 @@
   "timeEntryItemEnd": "End",
   "timeEntryItemRunning": "Running",
   "timeEntryItemStart": "Start",
+  "timelineDayToday": "Today",
+  "timelineDayYesterday": "Yesterday",
   "timelineLoadOlder": "Load older",
   "timelineRetryTranscription": "Retry",
   "timelineShowLess": "Show less",

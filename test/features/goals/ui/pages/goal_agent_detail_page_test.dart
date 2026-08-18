@@ -34,11 +34,13 @@ import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -1844,6 +1846,8 @@ void main() {
 
     // The banner CTA performs the verb: it opens the one-tap logging
     // sheet instead of navigating to the route the page is already on.
+    await tester.ensureVisible(find.text('Log today'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Log today'));
     await tester.pumpAndSettle();
     expect(navigated, isEmpty);
@@ -1981,22 +1985,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No habit dimensions: the CTA anchors to the evidence instead of
-    // opening the logging sheet — and never navigates.
-    final scrollable = tester.state<ScrollableState>(
-      find
-          .descendant(
-            of: find.byType(SingleChildScrollView).first,
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(scrollable.position.pixels, 0);
+    // No habit dimensions, so there is nothing to tick off: the CTA opens the
+    // check-in composer — "can't do it right now? say when you will" — rather
+    // than the logging sheet, and never navigates to the route it is already
+    // on.
+    await tester.ensureVisible(find.text('Log today'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Log today'));
     await tester.pumpAndSettle();
     expect(find.byType(GoalLogTodaySheet), findsNothing);
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
     expect(navigated, isEmpty);
-    expect(scrollable.position.pixels, greaterThan(0));
+
+    // Dismiss the composer before continuing.
+    Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await tester.pumpAndSettle();
 
     // The reflect row opens the day assessment sheet for today.
     await tester.scrollUntilVisible(
@@ -2564,11 +2567,16 @@ void main() {
       tester.getSize(find.byType(GoalProgressCard)).width,
       lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
     );
-    // Closed drawer: the column centers in the WHOLE window — a fixed
-    // left-aligned measure left the right half of wide windows dead.
+    // Closed drawer: the column centers in what the check-in rail leaves —
+    // a fixed left-aligned measure left the right half of wide windows dead,
+    // and centering in the whole window would now slide the cards under the
+    // rail.
     expect(
       tester.getCenter(find.byType(GoalProgressCard)).dx,
-      moreOrLessEquals(desktopSize.width / 2, epsilon: 1),
+      moreOrLessEquals(
+        (desktopSize.width - kGoalTimelineRailWidth) / 2,
+        epsilon: 1,
+      ),
     );
 
     // The drawer opens from the named app-bar doorway and closes from its
@@ -2580,7 +2588,7 @@ void main() {
     expect(
       tester.getCenter(find.byType(GoalProgressCard)).dx,
       moreOrLessEquals(
-        (desktopSize.width - kGoalChatDrawerWidth) / 2,
+        (desktopSize.width - kGoalChatDrawerWidth - kGoalTimelineRailWidth) / 2,
         epsilon: 1,
       ),
     );

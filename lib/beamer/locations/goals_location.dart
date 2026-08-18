@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -21,6 +22,7 @@ class GoalsLocation extends BeamLocation<BeamState> {
     '/goals/details/:agentId',
     '/goals/details/:agentId/edit',
     '/goals/details/:agentId/chat',
+    '/goals/details/:agentId/timeline',
   ];
 
   @override
@@ -50,6 +52,12 @@ class GoalsLocation extends BeamLocation<BeamState> {
           key: ValueKey('goals-details-$agentId-chat'),
           title: messages.goalChatPageTitle,
           child: GoalAgentChatPage(agentId: agentId),
+        ),
+      if (agentId != null && state.uri.path.endsWith('/timeline'))
+        BeamPage(
+          key: ValueKey('goals-details-$agentId-timeline'),
+          title: messages.goalCheckInsTitle,
+          child: GoalTimelinePage(agentId: agentId),
         ),
       if (agentId != null && state.uri.path.endsWith('/edit'))
         BeamPage(

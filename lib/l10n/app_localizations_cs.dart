@@ -6291,6 +6291,57 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalChatYou => 'Ty';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Přidat hlasovou poznámku';
+
+  @override
+  String get goalCheckInComposerTitle => 'Hlášení';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return 'Hodnoceno dimenzí: $count';
+  }
+
+  @override
+  String get goalCheckInDone => 'Hotovo';
+
+  @override
+  String get goalCheckInKindNote => 'POZNÁMKA';
+
+  @override
+  String get goalCheckInKindReflection => 'DENNÍ OHLÉDNUTÍ';
+
+  @override
+  String get goalCheckInKindVoice => 'HLASOVÉ HLÁŠENÍ';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Uchováno odděleně od napsané poznámky';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · připraveno pro tebe';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Nahrát hlášení';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Řekni svému agentovi, co se skutečně děje — třicet sekund, vlastními slovy, kdykoli to stojí za řeč.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Zobrazit všechna hlášení';
+
+  @override
+  String get goalCheckInsTitle => 'Hlášení';
+
+  @override
+  String get goalCheckInWriteInstead => 'Napsat místo toho';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'Co se děje?';
+
+  @override
   String get goalCoarseHealthBehind => 'Pozadu';
 
   @override
@@ -13325,6 +13376,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Začátek';
+
+  @override
+  String get timelineDayToday => 'Dnes';
+
+  @override
+  String get timelineDayYesterday => 'Včera';
 
   @override
   String get timelineLoadOlder => 'Načíst starší';

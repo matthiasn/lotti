@@ -6199,6 +6199,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalChatYou => 'You';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Add a voice note';
+
+  @override
+  String get goalCheckInComposerTitle => 'Check in';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensions rated';
+  }
+
+  @override
+  String get goalCheckInDone => 'Done';
+
+  @override
+  String get goalCheckInKindNote => 'NOTE';
+
+  @override
+  String get goalCheckInKindReflection => 'DAILY REFLECTION';
+
+  @override
+  String get goalCheckInKindVoice => 'VOICE CHECK-IN';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Kept separate from your typed note';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · prepared for you';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Record a check-in';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.';
+
+  @override
+  String get goalCheckInsSeeAll => 'See all check-ins';
+
+  @override
+  String get goalCheckInsTitle => 'Check-ins';
+
+  @override
+  String get goalCheckInWriteInstead => 'Write instead';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'What is going on?';
+
+  @override
   String get goalCoarseHealthBehind => 'Behind';
 
   @override
@@ -13088,6 +13139,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Start';
+
+  @override
+  String get timelineDayToday => 'Today';
+
+  @override
+  String get timelineDayYesterday => 'Yesterday';
 
   @override
   String get timelineLoadOlder => 'Load older';

@@ -6226,6 +6226,57 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalChatYou => 'Dig';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Tilføj en stemmenote';
+
+  @override
+  String get goalCheckInComposerTitle => 'Check-in';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensioner vurderet';
+  }
+
+  @override
+  String get goalCheckInDone => 'Færdig';
+
+  @override
+  String get goalCheckInKindNote => 'NOTE';
+
+  @override
+  String get goalCheckInKindReflection => 'DAGLIG REFLEKSION';
+
+  @override
+  String get goalCheckInKindVoice => 'STEMME-CHECK-IN';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Holdes adskilt fra din skrevne note';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · forberedt til dig';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Optag et check-in';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Fortæl din agent, hvad der faktisk sker — tredive sekunder, med dine egne ord, når det er værd at sige.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Se alle check-ins';
+
+  @override
+  String get goalCheckInsTitle => 'Check-ins';
+
+  @override
+  String get goalCheckInWriteInstead => 'Skriv i stedet';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'Hvad sker der?';
+
+  @override
   String get goalCoarseHealthBehind => 'Bagud';
 
   @override
@@ -13169,6 +13220,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Start';
+
+  @override
+  String get timelineDayToday => 'I dag';
+
+  @override
+  String get timelineDayYesterday => 'I går';
 
   @override
   String get timelineLoadOlder => 'Indlæs ældre';
