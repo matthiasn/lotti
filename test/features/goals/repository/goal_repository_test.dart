@@ -101,6 +101,28 @@ void main() {
     });
   });
 
+  group('list reads', () {
+    test('getGoals delegates to the indexed goal query', () async {
+      final entry = goalEntry(id: 'goal-1');
+      when(() => mockDb.getGoals()).thenAnswer((_) async => [entry]);
+
+      expect(await repository.getGoals(), [entry]);
+      verify(() => mockDb.getGoals()).called(1);
+    });
+
+    test('getSpecSnapshots reads the version history of one goal', () async {
+      final snapshot = goalEntry(id: 'snap-1', snapshotOf: 'goal-1');
+      when(
+        () => mockDb.getSpecSnapshotsForGoal('goal-1'),
+      ).thenAnswer((_) async => [snapshot]);
+
+      expect(await repository.getSpecSnapshots('goal-1'), [snapshot]);
+      // Scoped to the goal: the snapshots ride the subtype index, so an
+      // unscoped read would return every goal's history.
+      verify(() => mockDb.getSpecSnapshotsForGoal('goal-1')).called(1);
+    });
+  });
+
   group('upsertGoal', () {
     test('creates the goal when no row exists yet', () async {
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);

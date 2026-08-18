@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -29,16 +31,20 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/goal_routes.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -1842,8 +1848,20 @@ void main() {
     );
     expect(appBarTitle().opacity, 0);
 
+    // The mic is the ever-present doorway: the check-ins card can sit below
+    // the fold, so capture must not depend on scrolling to it.
+    await tester.tap(
+      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await tester.pumpAndSettle();
+
     // The banner CTA performs the verb: it opens the one-tap logging
     // sheet instead of navigating to the route the page is already on.
+    await tester.ensureVisible(find.text('Log today'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Log today'));
     await tester.pumpAndSettle();
     expect(navigated, isEmpty);
@@ -1981,22 +1999,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // No habit dimensions: the CTA anchors to the evidence instead of
-    // opening the logging sheet — and never navigates.
-    final scrollable = tester.state<ScrollableState>(
-      find
-          .descendant(
-            of: find.byType(SingleChildScrollView).first,
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    expect(scrollable.position.pixels, 0);
+    // No habit dimensions, so there is nothing to tick off: the CTA opens the
+    // check-in composer — "can't do it right now? say when you will" — rather
+    // than the logging sheet, and never navigates to the route it is already
+    // on.
+    await tester.ensureVisible(find.text('Log today'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Log today'));
     await tester.pumpAndSettle();
     expect(find.byType(GoalLogTodaySheet), findsNothing);
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
     expect(navigated, isEmpty);
-    expect(scrollable.position.pixels, greaterThan(0));
+
+    // Dismiss the composer before continuing.
+    Navigator.of(tester.element(find.byType(GoalCheckInComposer))).pop();
+    await tester.pumpAndSettle();
 
     // The reflect row opens the day assessment sheet for today.
     await tester.scrollUntilVisible(
@@ -2564,11 +2581,16 @@ void main() {
       tester.getSize(find.byType(GoalProgressCard)).width,
       lessThanOrEqualTo(kUnifiedGoalsContentMaxWidth),
     );
-    // Closed drawer: the column centers in the WHOLE window — a fixed
-    // left-aligned measure left the right half of wide windows dead.
+    // Closed drawer: the column centers in what the check-in rail leaves —
+    // a fixed left-aligned measure left the right half of wide windows dead,
+    // and centering in the whole window would now slide the cards under the
+    // rail.
     expect(
       tester.getCenter(find.byType(GoalProgressCard)).dx,
-      moreOrLessEquals(desktopSize.width / 2, epsilon: 1),
+      moreOrLessEquals(
+        (desktopSize.width - kGoalTimelineRailWidth) / 2,
+        epsilon: 1,
+      ),
     );
 
     // The drawer opens from the named app-bar doorway and closes from its
@@ -2580,7 +2602,7 @@ void main() {
     expect(
       tester.getCenter(find.byType(GoalProgressCard)).dx,
       moreOrLessEquals(
-        (desktopSize.width - kGoalChatDrawerWidth) / 2,
+        (desktopSize.width - kGoalChatDrawerWidth - kGoalTimelineRailWidth) / 2,
         epsilon: 1,
       ),
     );
@@ -3937,6 +3959,93 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+  });
+
+  testWidgets('the inline check-ins card reaches the full timeline', (
+    tester,
+  ) async {
+    // Phone-sized on purpose: the card previews three beats inline here,
+    // whereas a wide window hoists the whole rail and needs no way through.
+    const phoneSize = Size(390, 1400);
+    setTestSurfaceSize(tester, phoneSize);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    final at = DateTime(2026, 8, 11, 9);
+    GoalAudioCheckIn beat(String id, int minutesAgo) => GoalAudioCheckIn(
+      JournalAudio(
+        meta: Metadata(
+          id: id,
+          createdAt: at.subtract(Duration(minutes: minutesAgo)),
+          updatedAt: at,
+          dateFrom: at.subtract(Duration(minutes: minutesAgo)),
+          dateTo: at,
+        ),
+        data: AudioData(
+          dateFrom: at,
+          dateTo: at,
+          audioFile: '$id.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 10),
+        ),
+        entryText: EntryText(plainText: 'note $id'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: phoneSize),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+          goalTimelineItemsProvider('goal-1').overrideWithValue([
+            for (var i = 0; i < 5; i++) beat('c$i', i),
+          ]),
+          goalCaptureTargetProvider(
+            'goal-1',
+          ).overrideWith((ref) async => 'goal-entry-1'),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The preview hides two beats, so the way through to the rest is offered
+    // — and it goes to the timeline route, not back to the goals list.
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('goal-checkin-see-all')),
+    );
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-see-all')));
+    await tester.pumpAndSettle();
+    expect(navigated, ['/goals/details/goal-1/timeline']);
+
+    // The mic opens the composer with whatever the agent last published as
+    // its prepared line, so opening it costs no inference.
+    await tester.tap(
+      find.byKey(const ValueKey('goal-detail-checkin-action')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
   });
 
   testWidgets('desktop still offers the drawer while health is erroring — '

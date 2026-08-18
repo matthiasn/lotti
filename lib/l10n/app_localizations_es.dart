@@ -6307,6 +6307,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalChatYou => 'Tú';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Añadir una nota de voz';
+
+  @override
+  String get goalCheckInComposerTitle => 'Registro';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensiones valoradas';
+  }
+
+  @override
+  String get goalCheckInDone => 'Listo';
+
+  @override
+  String get goalCheckInKindNote => 'NOTA';
+
+  @override
+  String get goalCheckInKindReflection => 'REFLEXIÓN DIARIA';
+
+  @override
+  String get goalCheckInKindVoice => 'REGISTRO DE VOZ';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Se guarda aparte de tu nota escrita';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · preparado para ti';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Grabar un registro';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Cuéntale a tu agente qué está pasando de verdad: treinta segundos, con tus palabras, cuando merezca la pena.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Ver todos los registros';
+
+  @override
+  String get goalCheckInsTitle => 'Registros';
+
+  @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Registros · $count';
+  }
+
+  @override
+  String get goalCheckInWriteInstead => 'Escribir en su lugar';
+
+  @override
+  String get goalCheckInWritePlaceholder => '¿Qué está pasando?';
+
+  @override
   String get goalCoarseHealthBehind => 'Con retraso';
 
   @override
@@ -13363,6 +13419,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Inicio';
+
+  @override
+  String get timelineDayToday => 'Hoy';
+
+  @override
+  String get timelineDayYesterday => 'Ayer';
 
   @override
   String get timelineLoadOlder => 'Cargar anteriores';

@@ -11,6 +11,7 @@ import 'package:lotti/features/goals/logic/goal_metric_series.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_reflection_voice_notes.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -45,6 +46,7 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
     required this.day,
     required this.progress,
     this.existing,
+    this.canRecord = true,
     super.key,
   });
 
@@ -62,6 +64,10 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   /// reflection with that default — losing the note and the per-dimension
   /// verdicts along with it.
   final GoalAssessmentRecord? existing;
+
+  /// Whether a voice note can be attached. False on a goal that cannot be
+  /// reflected on, mirroring how the rest of the sheet gates itself.
+  final bool canRecord;
 
   @override
   ConsumerState<GoalDayAssessmentSheet> createState() =>
@@ -295,6 +301,16 @@ class _GoalDayAssessmentSheetState
                 label: context.messages.goalAssessmentNote,
                 minLines: 2,
                 growWithContent: true,
+              ),
+              // A second way to answer the same question. The transcript is
+              // never pasted into the textarea above: typed words and spoken
+              // words are two contributions, and merging them makes it
+              // impossible to tell which the user actually wrote.
+              SizedBox(height: _bindGap(tokens)),
+              GoalReflectionVoiceNotes(
+                agentId: widget.agentId,
+                day: widget.day,
+                enabled: widget.canRecord,
               ),
               SizedBox(height: _sectionGap(tokens)),
               // Material's own tile chrome, removed: its default vertical

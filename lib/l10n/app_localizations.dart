@@ -10673,6 +10673,102 @@ abstract class AppLocalizations {
   /// **'You'**
   String get goalChatYou;
 
+  /// No description provided for @goalCheckInAddVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a voice note'**
+  String get goalCheckInAddVoiceNote;
+
+  /// No description provided for @goalCheckInComposerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in'**
+  String get goalCheckInComposerTitle;
+
+  /// No description provided for @goalCheckInDimensionsRated.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} dimensions rated'**
+  String goalCheckInDimensionsRated(int count);
+
+  /// No description provided for @goalCheckInDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get goalCheckInDone;
+
+  /// No description provided for @goalCheckInKindNote.
+  ///
+  /// In en, this message translates to:
+  /// **'NOTE'**
+  String get goalCheckInKindNote;
+
+  /// No description provided for @goalCheckInKindReflection.
+  ///
+  /// In en, this message translates to:
+  /// **'DAILY REFLECTION'**
+  String get goalCheckInKindReflection;
+
+  /// No description provided for @goalCheckInKindVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'VOICE CHECK-IN'**
+  String get goalCheckInKindVoice;
+
+  /// No description provided for @goalCheckInNoteKeptSeparate.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept separate from your typed note'**
+  String get goalCheckInNoteKeptSeparate;
+
+  /// No description provided for @goalCheckInPreparedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · prepared for you'**
+  String goalCheckInPreparedBy(String name);
+
+  /// No description provided for @goalCheckInRecordCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a check-in'**
+  String get goalCheckInRecordCta;
+
+  /// No description provided for @goalCheckInsEmptyInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.'**
+  String get goalCheckInsEmptyInvitation;
+
+  /// No description provided for @goalCheckInsSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all check-ins'**
+  String get goalCheckInsSeeAll;
+
+  /// No description provided for @goalCheckInsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins'**
+  String get goalCheckInsTitle;
+
+  /// No description provided for @goalCheckInsTitleWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-ins · {count}'**
+  String goalCheckInsTitleWithCount(int count);
+
+  /// No description provided for @goalCheckInWriteInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Write instead'**
+  String get goalCheckInWriteInstead;
+
+  /// No description provided for @goalCheckInWritePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'What is going on?'**
+  String get goalCheckInWritePlaceholder;
+
   /// Coarse goal-health chip label: behind and every remaining day matters
   ///
   /// In en, this message translates to:
@@ -22242,6 +22338,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start'**
   String get timeEntryItemStart;
+
+  /// No description provided for @timelineDayToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get timelineDayToday;
+
+  /// No description provided for @timelineDayYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get timelineDayYesterday;
 
   /// No description provided for @timelineLoadOlder.
   ///

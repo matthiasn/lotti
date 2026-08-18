@@ -61,6 +61,7 @@ void main() {
   late MockAgentSyncService syncService;
   late MockWakeOrchestrator orchestrator;
   late GoalRuntimeMaintenance maintenance;
+  late MockGoalMirrorService mirror;
   late List<AgentDomainEntity> upserts;
 
   void stubSpec(String agentId) {
@@ -94,6 +95,10 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
+    mirror = MockGoalMirrorService();
+    when(
+      () => mirror.mirrorHead(any(), categoryId: any(named: 'categoryId')),
+    ).thenAnswer((_) async => null);
     maintenance = GoalRuntimeMaintenance(
       agentService: agentService,
       repository: repository,
@@ -104,6 +109,7 @@ void main() {
         syncService: syncService,
         orchestrator: orchestrator,
       ),
+      goalMirrorService: mirror,
     );
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
@@ -112,6 +118,107 @@ void main() {
     });
     when(() => orchestrator.addSubscription(any())).thenReturn(null);
   });
+
+  group(
+    'the journal-side backfill covers every goal, not just active ones',
+    () {
+      AgentIdentityEntity goal(String id, AgentLifecycle lifecycle) =>
+          AgentDomainEntity.agent(
+                id: id,
+                agentId: id,
+                kind: AgentKinds.goalAgent,
+                displayName: id,
+                lifecycle: lifecycle,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: '$id:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity;
+
+      test('a dormant or destroyed goal still gets its durable row', () async {
+        // These are exactly the goals a restore without the agent database
+        // would lose, so gating the mirror on "should this be subscribed"
+        // stranded precisely the ones that most needed it.
+        when(() => agentService.listAgents()).thenAnswer(
+          (_) async => [
+            goal('active-goal', AgentLifecycle.active),
+            goal('dormant-goal', AgentLifecycle.dormant),
+            goal('destroyed-goal', AgentLifecycle.destroyed),
+          ],
+        );
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goal('active-goal', AgentLifecycle.active)]);
+        stubSpec('active-goal');
+
+        await maintenance.restoreSubscriptions();
+
+        verify(() => mirror.mirrorHead('active-goal')).called(1);
+        verify(() => mirror.mirrorHead('dormant-goal')).called(1);
+        verify(() => mirror.mirrorHead('destroyed-goal')).called(1);
+      });
+
+      test('one goal failing to mirror does not strand the others', () async {
+        when(() => agentService.listAgents()).thenAnswer(
+          (_) async => [
+            goal('broken-goal', AgentLifecycle.active),
+            goal('fine-goal', AgentLifecycle.active),
+          ],
+        );
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mirror.mirrorHead('broken-goal'),
+        ).thenThrow(Exception('journal is unavailable'));
+
+        await maintenance.restoreSubscriptions();
+
+        verify(() => mirror.mirrorHead('fine-goal')).called(1);
+      });
+
+      test(
+        'a synced dormant goal is mirrored before the lifecycle gate',
+        () async {
+          await maintenance.onIdentityReceived(
+            goal('synced-dormant', AgentLifecycle.dormant),
+          );
+
+          // The mirror runs first; only the SUBSCRIPTION is gated on lifecycle.
+          verify(() => mirror.mirrorHead('synced-dormant')).called(1);
+          verify(
+            () => orchestrator.removeSubscriptions('synced-dormant'),
+          ).called(1);
+        },
+      );
+
+      test('a non-goal identity is ignored entirely', () async {
+        await maintenance.onIdentityReceived(
+          AgentDomainEntity.agent(
+                id: 'task-1',
+                agentId: 'task-1',
+                kind: AgentKinds.taskAgent,
+                displayName: 'task',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: 'task-1:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
+        );
+
+        verifyNever(() => mirror.mirrorHead(any()));
+      });
+    },
+  );
 
   test('restoreSubscriptions re-registers every active goal agent, and one '
       'broken goal does not take the others down', () async {

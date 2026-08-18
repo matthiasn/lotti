@@ -6246,6 +6246,62 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalChatYou => 'Jij';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Spraaknotitie toevoegen';
+
+  @override
+  String get goalCheckInComposerTitle => 'Check-in';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensies beoordeeld';
+  }
+
+  @override
+  String get goalCheckInDone => 'Klaar';
+
+  @override
+  String get goalCheckInKindNote => 'NOTITIE';
+
+  @override
+  String get goalCheckInKindReflection => 'DAGELIJKSE REFLECTIE';
+
+  @override
+  String get goalCheckInKindVoice => 'SPRAAK-CHECK-IN';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Los van je getypte notitie bewaard';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · voor je voorbereid';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Check-in opnemen';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Vertel je agent wat er echt speelt — dertig seconden, in je eigen woorden, wanneer het de moeite waard is.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Alle check-ins bekijken';
+
+  @override
+  String get goalCheckInsTitle => 'Check-ins';
+
+  @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Check-ins · $count';
+  }
+
+  @override
+  String get goalCheckInWriteInstead => 'Schrijf in plaats daarvan';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'Wat speelt er?';
+
+  @override
   String get goalCoarseHealthBehind => 'Achterop';
 
   @override
@@ -13204,6 +13260,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Begin';
+
+  @override
+  String get timelineDayToday => 'Vandaag';
+
+  @override
+  String get timelineDayYesterday => 'Gisteren';
 
   @override
   String get timelineLoadOlder => 'Oudere laden';

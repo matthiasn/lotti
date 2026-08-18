@@ -21,3 +21,15 @@ String goalChatPath(String agentId) => '${goalDetailPath(agentId)}/chat';
 
 /// The edit-wizard route for [agentId].
 String goalEditPath(String agentId) => '${goalDetailPath(agentId)}/edit';
+
+/// The full check-in timeline for [agentId] — the phone's "see all" route.
+String goalTimelinePath(String agentId) =>
+    '${goalDetailPath(agentId)}/timeline';
+
+/// Width of the desktop check-in rail.
+const double kGoalTimelineRailWidth = 360;
+
+/// Below this much room for the DASHBOARD beside it, the rail is dropped and
+/// the phone treatment runs inside the single column instead — the same fold
+/// guard the chat drawer applies.
+const double kGoalTimelineRailFoldWidth = 640;

@@ -22,6 +22,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
@@ -29,6 +30,8 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkins_card.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
@@ -152,6 +155,61 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
   /// The banner CTA performs the verb it names: a goal with loggable habit
   /// dimensions opens the one-tap capture sheet; otherwise the CTA anchors
   /// to the evidence — never a navigation to the route the user is on.
+  /// Opens a day's reflection sheet.
+  ///
+  /// Shared by the day strip and the check-in timeline: a reflection beat has
+  /// to reopen exactly what the strip does, and two call sites building the
+  /// same sheet is how they stop agreeing.
+  void _openReflection({
+    required GoalSpecVersionEntity spec,
+    required GoalProgressView progress,
+    required List<GoalAssessmentRecord> assessments,
+    required DateTime day,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      // Keeps the sheet clear of the status bar: without it the big date
+      // title collided with the system clock.
+      useSafeArea: true,
+      builder: (context) => GoalDayAssessmentSheet(
+        agentId: agentId,
+        specVersionId: spec.id,
+        specVersion: spec.version,
+        day: day,
+        progress: progress,
+        // Reopening a judged day shows what was recorded. Arriving blank
+        // offered Met with an empty note, and saving replaced the real
+        // reflection with that default — note and dimension verdicts included.
+        existing: latestAssessmentsByDay(
+          assessments,
+          specVersionId: spec.id,
+        )[DateTime.utc(day.year, day.month, day.day)],
+      ),
+    );
+  }
+
+  /// Opens the anytime check-in composer.
+  ///
+  /// The ever-present affordance: reachable from the app bar, the check-ins
+  /// header and any banner whose CTA asks for one, so "say what is going on"
+  /// is never more than one tap away.
+  void _openCheckInComposer({
+    required String goalTitle,
+    String? personaName,
+    String? categoryId,
+    String? preparedLine,
+  }) {
+    GoalCheckInComposer.show(
+      context,
+      agentId: agentId,
+      goalTitle: goalTitle,
+      personaName: personaName,
+      categoryId: categoryId,
+      preparedLine: preparedLine,
+    );
+  }
+
   void _logToday(GoalProgressView progress) {
     if (progress.habits.isEmpty) {
       _scrollToProgress();
@@ -360,9 +418,49 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final unifiedStatus = healthAsync.hasValue
         ? unifiedGoalStatusOf(health?.trackStatus)
         : null;
+    final desktopLayout = isDesktopLayout(context);
+    final goalTitle = spec?.title ?? goalIdentity.displayName;
+    // The rail is a property of the available PANE width, not the window's:
+    // the goals tab sits behind a navigation sidebar whose width varies, so
+    // measuring the window let the rail appear on a 1280px window whose actual
+    // content pane was only 780px — squeezing the dashboard into a sliver. The
+    // pane width is measured at the layout site below, the way the chat
+    // drawer's fold guard already does it; this is only the "is a rail
+    // possible at all" half.
+    bool railFits(double paneWidth) =>
+        desktopLayout &&
+        paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailWidth;
+
+    void openComposer() => _openCheckInComposer(
+      goalTitle: goalTitle,
+      personaName: goalIdentity.displayName,
+      categoryId: spec == null
+          ? null
+          : goalIdentity.allowedCategoryIds.firstOrNull,
+      preparedLine: latestReport?.tldr,
+    );
+
+    Widget checkInsCard({int? maxBeats}) => GoalCheckInsCard(
+      agentId: agentId,
+      maxBeats: maxBeats,
+      onCreate: isActive ? openComposer : null,
+      onSeeAll: maxBeats == null
+          ? null
+          : () => beamToNamed(goalTimelinePath(agentId)),
+      onOpenReflection: !(isActive && spec != null && progress != null)
+          ? null
+          : (day) => _openReflection(
+              spec: spec,
+              progress: progress,
+              assessments: assessments,
+              day: day,
+            ),
+    );
+
     Widget detailList({
       required bool showChatAction,
       double? contentMaxWidth,
+      bool showRail = false,
     }) {
       final canReflect = isActive && spec != null;
       final thisWeek =
@@ -388,27 +486,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                     ),
               onReflectDay: !canReflect
                   ? null
-                  : (day) => showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      // Keeps the sheet clear of the status bar: without it the
-                      // big date title collided with the system clock.
-                      useSafeArea: true,
-                      builder: (context) => GoalDayAssessmentSheet(
-                        agentId: agentId,
-                        specVersionId: spec.id,
-                        specVersion: spec.version,
-                        day: day,
-                        progress: progress,
-                        // Reopening a judged day shows what was recorded.
-                        // Arriving blank offered Met with an empty note, and
-                        // saving replaced the real reflection with that
-                        // default — note and dimension verdicts included.
-                        existing: latestAssessmentsByDay(
-                          assessments,
-                          specVersionId: spec.id,
-                        )[DateTime.utc(day.year, day.month, day.day)],
-                      ),
+                  : (day) => _openReflection(
+                      spec: spec,
+                      progress: progress,
+                      assessments: assessments,
+                      day: day,
                     ),
             )
           : null;
@@ -472,6 +554,14 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               SizedBox(height: tokens.spacing.cardItemSpacing),
               thisWeek,
             ],
+            // Directly after the week: the reflect row and the check-in list
+            // are the two halves of "what I've said about this goal", so they
+            // belong adjacent. On desktop this same card is hoisted into the
+            // rail instead.
+            if (!showRail) ...[
+              SizedBox(height: tokens.spacing.cardItemSpacing),
+              checkInsCard(maxBeats: 3),
+            ],
           ],
         ),
         // Every active banner remains reachable here, uncapped. The shell
@@ -490,10 +580,17 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // card's default navigate-to-detail — a self-navigation no-op
               // on this page. While the evidence is still resolving the CTA
               // anchors (or quietly no-ops) and heals when progress lands.
+              // Answer the banner with the verb it names. A nudge about a
+              // habit still opens the one-tap capture sheet; when there is
+              // nothing to tick off, the useful answer is to say something —
+              // "can't do it right now? Say when you will" — so the CTA opens
+              // the check-in composer instead of doing nothing.
               onCtaPressed: () {
                 final resolved = progress;
-                if (resolved != null) {
+                if (resolved != null && resolved.habits.isNotEmpty) {
                   _logToday(resolved);
+                } else if (isActive) {
+                  openComposer();
                 } else {
                   _scrollToProgress();
                 }
@@ -678,6 +775,16 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             // The conversation is the feature's second half — phones get a
             // persistent doorway beside the overflow instead of a button
             // buried below every card.
+            // The mic is the feature's ever-present doorway: on a phone the
+            // check-ins card can be below the fold, so "say what is going on"
+            // must not depend on scrolling to it.
+            if (isActive)
+              IconButton(
+                key: const ValueKey('goal-detail-checkin-action'),
+                icon: const Icon(Icons.mic_none_rounded),
+                tooltip: context.messages.goalCheckInRecordCta,
+                onPressed: openComposer,
+              ),
             if (!desktop && chatAvailable)
               IconButton(
                 key: const ValueKey('goal-detail-chat-action'),
@@ -734,11 +841,34 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               // The desktop reading measure is a property of the pane, not of
               // chat: a dormant goal (no chat) must not stretch its cards
               // across the whole window.
-              ? detailList(
-                  showChatAction: !desktop && chatAvailable,
-                  contentMaxWidth: desktop
-                      ? kUnifiedGoalsContentMaxWidth
-                      : null,
+              // The no-chat path measures its pane too: a dormant goal on a
+              // wide desktop still earns the rail, and a narrow pane behind a
+              // wide sidebar still must not get one.
+              ? LayoutBuilder(
+                  builder: (context, constraints) =>
+                      railFits(constraints.maxWidth)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: detailList(
+                                showChatAction: false,
+                                contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                                showRail: true,
+                              ),
+                            ),
+                            SizedBox(
+                              width: kGoalTimelineRailWidth,
+                              child: _CheckInRail(card: checkInsCard()),
+                            ),
+                          ],
+                        )
+                      : detailList(
+                          showChatAction: !desktop && chatAvailable,
+                          contentMaxWidth: desktop
+                              ? kUnifiedGoalsContentMaxWidth
+                              : null,
+                        ),
                 )
               : CallbackShortcuts(
                   bindings: {
@@ -776,10 +906,35 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
                                 ? kGoalChatDrawerWidth
                                 : 0,
                           ),
-                          child: detailList(
-                            showChatAction: false,
-                            contentMaxWidth: kUnifiedGoalsContentMaxWidth,
-                          ),
+                          // Two columns, and the drawer still overlays rather
+                          // than becoming a third: a conversation is transient
+                          // and already owns correct focus, escape and
+                          // semantics behaviour as an overlay. The glide moves
+                          // BOTH columns.
+                          child: railFits(constraints.maxWidth)
+                              ? Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: detailList(
+                                        showChatAction: false,
+                                        contentMaxWidth:
+                                            kUnifiedGoalsContentMaxWidth,
+                                        showRail: true,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: kGoalTimelineRailWidth,
+                                      child: _CheckInRail(
+                                        card: checkInsCard(),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : detailList(
+                                  showChatAction: false,
+                                  contentMaxWidth: kUnifiedGoalsContentMaxWidth,
+                                ),
                         ),
                         PositionedDirectional(
                           top: 0,
@@ -1975,6 +2130,28 @@ class _GoalBannerShellReturnCountdownState
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The desktop check-in rail: its own scroll axis beside the dashboard, so a
+/// long history never drags the cards with it.
+class _CheckInRail extends StatelessWidget {
+  const _CheckInRail({required this.card});
+
+  final Widget card;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        0,
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+      ),
+      child: card,
     );
   }
 }

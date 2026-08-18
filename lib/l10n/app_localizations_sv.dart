@@ -6233,6 +6233,62 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalChatYou => 'Du';
 
   @override
+  String get goalCheckInAddVoiceNote => 'Lägg till en röstanteckning';
+
+  @override
+  String get goalCheckInComposerTitle => 'Avstämning';
+
+  @override
+  String goalCheckInDimensionsRated(int count) {
+    return '$count dimensioner betygsatta';
+  }
+
+  @override
+  String get goalCheckInDone => 'Klar';
+
+  @override
+  String get goalCheckInKindNote => 'ANTECKNING';
+
+  @override
+  String get goalCheckInKindReflection => 'DAGLIG REFLEKTION';
+
+  @override
+  String get goalCheckInKindVoice => 'RÖSTAVSTÄMNING';
+
+  @override
+  String get goalCheckInNoteKeptSeparate =>
+      'Hålls skild från din skrivna anteckning';
+
+  @override
+  String goalCheckInPreparedBy(String name) {
+    return '$name · förberett åt dig';
+  }
+
+  @override
+  String get goalCheckInRecordCta => 'Spela in en avstämning';
+
+  @override
+  String get goalCheckInsEmptyInvitation =>
+      'Berätta för din agent vad som faktiskt pågår — trettio sekunder, med dina egna ord, när det känns värt det.';
+
+  @override
+  String get goalCheckInsSeeAll => 'Visa alla avstämningar';
+
+  @override
+  String get goalCheckInsTitle => 'Avstämningar';
+
+  @override
+  String goalCheckInsTitleWithCount(int count) {
+    return 'Avstämningar · $count';
+  }
+
+  @override
+  String get goalCheckInWriteInstead => 'Skriv i stället';
+
+  @override
+  String get goalCheckInWritePlaceholder => 'Vad pågår?';
+
+  @override
   String get goalCoarseHealthBehind => 'Ligger efter';
 
   @override
@@ -13181,6 +13237,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get timeEntryItemStart => 'Start';
+
+  @override
+  String get timelineDayToday => 'I dag';
+
+  @override
+  String get timelineDayYesterday => 'I går';
 
   @override
   String get timelineLoadOlder => 'Ladda äldre';
