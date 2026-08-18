@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/manual.yml'
       - 'docs-site/**'
+      # The validator discovers routes and settings leaves from these
+      # sources, so a new one must re-run the check that inventories it.
+      - 'lib/beamer/locations/**'
+      - 'lib/features/settings_v2/domain/settings_tree_data.dart'
       - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
       - 'Makefile'
       - 'pubspec.yaml'
@@ -20,6 +24,10 @@ on:
     paths:
       - '.github/workflows/manual.yml'
       - 'docs-site/**'
+      # The validator discovers routes and settings leaves from these
+      # sources, so a new one must re-run the check that inventories it.
+      - 'lib/beamer/locations/**'
+      - 'lib/features/settings_v2/domain/settings_tree_data.dart'
       - 'docs/implementation_plans/2026-07-17_automated_manual_system.md'
       - 'Makefile'
       - 'pubspec.yaml'
