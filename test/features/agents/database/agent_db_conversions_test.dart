@@ -1008,6 +1008,41 @@ void main() {
       expect(result.softDeleted(updatedAt).deletedAt, updatedAt);
     });
 
+    test('fromLinkRow roundtrips agentGoal links', () {
+      final link = model.AgentLink.agentGoal(
+        id: 'link-agent-goal',
+        fromId: 'agent-001',
+        toId: 'goal-entry-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toLinkCompanion(link);
+
+      // The type column is what `getLinksFrom(agentId, type:)` filters on, so
+      // a wrong discriminator would silently return no goal for an agent that
+      // has one.
+      expect(companion.type.value, AgentLinkTypes.agentGoal);
+
+      final row = AgentLink(
+        id: 'link-agent-goal',
+        fromId: 'agent-001',
+        toId: 'goal-entry-001',
+        type: AgentLinkTypes.agentGoal,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromLinkRow(row);
+
+      expect(result, isA<model.AgentGoalLink>());
+      expect(result.fromId, 'agent-001');
+      expect(result.toId, 'goal-entry-001');
+      expect(result.softDeleted(updatedAt).deletedAt, updatedAt);
+    });
+
     test('fromLinkRow roundtrips captureToPlan link', () {
       final link = model.AgentLink.captureToPlan(
         id: 'link-capture-plan',

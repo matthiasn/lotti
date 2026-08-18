@@ -44,6 +44,7 @@ abstract final class AgentLinkTypes {
   static const agentProject = 'agent_project';
   static const agentDay = 'agent_day';
   static const agentEvent = 'agent_event';
+  static const agentGoal = 'agent_goal';
   static const soulAssignment = 'soul_assignment';
 }
 
