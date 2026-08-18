@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -24,6 +25,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late MockCloudInferenceRepository inference;
+  late MockAgentRepository repository;
   late MockAgentSyncService sync;
   late List<String> prompts;
   late List<String> scripted;
@@ -66,6 +68,7 @@ void main() {
 
   setUp(() {
     inference = MockCloudInferenceRepository();
+    repository = MockAgentRepository();
     sync = MockAgentSyncService();
     prompts = [];
     scripted = [];
@@ -81,6 +84,8 @@ void main() {
         systemMessage: any(named: 'systemMessage'),
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         provider: any(named: 'provider'),
+        geminiThinkingMode: GeminiThinkingMode.minimal,
+        reasoningEffort: ReasoningEffort.minimal,
         impactCollector: any(named: 'impactCollector'),
       ),
     ).thenAnswer((invocation) {
@@ -91,10 +96,12 @@ void main() {
     when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
       written.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
+    when(() => repository.getEntity(any())).thenAnswer((_) async => null);
   });
 
   GoalCheckInCompactor compactor() => GoalCheckInCompactor(
     inferenceRepository: inference,
+    repository: repository,
     syncService: sync,
   );
 
@@ -180,12 +187,19 @@ void main() {
     expect(summary!.whatHappened, 'Walked the long way.');
   });
 
-  test('an unreadable response writes nothing rather than guessing', () async {
-    scripted = ['I think they went for a walk?'];
+  test(
+    'an unreadable response writes a durable backoff, not a guess',
+    () async {
+      scripted = ['I think they went for a walk?'];
 
-    expect(await compact(), isNull);
-    expect(written, isEmpty);
-  });
+      expect(await compact(), isNull);
+      final failure = written.whereType<AgentMessageEntity>().single;
+      expect(failure.metadata.toolName, goalCheckInCompactionFailureToolName);
+      final payload = written.whereType<AgentMessagePayloadEntity>().single;
+      expect(payload.content['attempts'], 1);
+      expect(payload.content['sourceDigest'], isA<String>());
+    },
+  );
 
   test('a response with no whatHappened is refused', () async {
     scripted = ['{"committedTo":"walk tomorrow"}'];
@@ -193,7 +207,10 @@ void main() {
     // The slot is the record; a summary without it is not a record of
     // anything.
     expect(await compact(), isNull);
-    expect(written, isEmpty);
+    expect(
+      written.whereType<AgentMessageEntity>().single.metadata.toolName,
+      goalCheckInCompactionFailureToolName,
+    );
   });
 
   test('an empty transcript is never sent for inference', () async {
@@ -209,6 +226,18 @@ void main() {
 
     expect(summary, isNull);
     expect(prompts, isEmpty);
+  });
+
+  test('malformed durable failure markers are ignored', () {
+    expect(
+      GoalCheckInCompactionFailure.fromContent({
+        'sourceEntryId': 'audio-1',
+        'sourceDigest': 'digest',
+        'attempts': 0,
+        'retryAfter': 42,
+      }),
+      isNull,
+    );
   });
 
   test('compaction is attributed to the goal that paid for it', () async {
@@ -257,6 +286,8 @@ void main() {
         systemMessage: any(named: 'systemMessage'),
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         provider: any(named: 'provider'),
+        geminiThinkingMode: GeminiThinkingMode.minimal,
+        reasoningEffort: ReasoningEffort.minimal,
         impactCollector: any(named: 'impactCollector'),
       ),
     ).thenThrow(Exception('provider is down'));
@@ -264,6 +295,7 @@ void main() {
     // A check-in that failed to compact is still a check-in the user can play
     // back; the failure must not take the wake down with it.
     expect(await compact(), isNull);
-    expect(written, isEmpty);
+    final payload = written.whereType<AgentMessagePayloadEntity>().single;
+    expect(payload.content['attempts'], 1);
   });
 }

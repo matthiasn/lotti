@@ -959,9 +959,6 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       priorPeriodAttainments: gBadlyOffPriorAttainments,
       lastReportStatus: GoalTrackStatus.atRisk.name,
       observations: const [_obsRoastPreference],
-      personaTonePreference:
-          'roast requested: sharp humor about the streak welcome; never '
-          'about body or character',
     ),
     expectedToolCalls: const [
       GoalAgentExpectedToolCall(

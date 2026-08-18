@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -27,6 +28,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     required this._repository,
     required this._syncService,
     required this._goalAgentService,
+    required this._goalChatService,
     this._goalMirrorService,
     this._checkInNotifier,
     this._domainLogger,
@@ -36,6 +38,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final GoalAgentService _goalAgentService;
+  final GoalChatService _goalChatService;
 
   /// Repairs the journal-side goal on every launch. Optional so the runtime
   /// keeps working without it.
@@ -63,6 +66,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     }
     for (final identity in agents) {
       try {
+        // Recovery is independent of the goal specification. A damaged or
+        // temporarily unavailable head must not leave a durable user message
+        // unanswered until some unrelated future wake happens to arrive.
+        await _goalChatService.restoreOldestPendingMessage(identity.agentId);
         final criteria = await _headCriteria(identity.agentId);
         if (criteria == null) continue;
         _goalAgentService.registerSignalSubscription(
@@ -109,6 +116,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
             goalCadenceWake(identity.agentId, now),
           );
         }
+        await _goalChatService.restoreOldestPendingMessage(identity.agentId);
       } catch (error, stackTrace) {
         _log('beforeWakeScan', identity.agentId, error, stackTrace);
       }
@@ -177,6 +185,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
       // until a restart — reintroducing the startup-snapshot bug by placement
       // rather than by logic. Watching needs only the agent id.
       _checkInNotifier?.watch(identity.agentId);
+      await _goalChatService.restoreOldestPendingMessage(identity.agentId);
 
       final criteria = await _headCriteria(identity.agentId);
       if (criteria == null) return;

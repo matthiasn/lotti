@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channels never enter AI context.
 
 ### Changed
+- **Goal chat now remembers and reliably answers.** Recent exchanges reach the
+  agent with each message, and a question saved just before a restart is
+  recovered instead of appearing ignored. Invalid banner actions can no longer
+  hide behind a success reply. Large tracked-time histories stay within the
+  wake budget, while failed check-in summaries back off instead of being
+  retried and billed on every update.
 - **Goals now use one trustworthy status language everywhere.** The Goals list,
   detail page, and agent chat agree on On track, At risk, Behind, and No data;
   recovery hints say how many successful days are needed instead of reading

@@ -59,7 +59,15 @@ sources:
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes
-    last_modified: 2026-08-16
+    last_modified: 2026-08-18
+  - id: chat-history
+    resource: ../../lib/features/goals/service/goal_chat_history_service.dart
+    title: GoalChatHistoryService — bounded dialogue and orphan recovery
+    last_modified: 2026-08-18
+  - id: checkin-compactor
+    resource: ../../lib/features/goals/service/goal_checkin_compactor.dart
+    title: GoalCheckInCompactor — bounded user-voice distillation
+    last_modified: 2026-08-18
   - id: goal-agent-evals
     resource: ../../docs/evaluations/goal_agent_models/README.md
     title: Goal-agent model evaluation run book and results
@@ -177,8 +185,8 @@ flowchart TD
     USERWAKE --> PB
     REFREG --> PB
     CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — never a wake,\nconsumed by the next cadence tick]
-    PB --> COMPACT[compact pending check-ins\nwake's own model, ≤500 tokens,\nkeyed by agentId+entryId, non-fatal]
-    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nuserVoice — token-bounded, never transcripts]
+    PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
+    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 8-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
@@ -350,8 +358,9 @@ flowchart TD
   category since the goal agent was created, including sessions outside an
   optional cutoff band. FACTS unions overlaps per category and preserves
   sub-minute precision while summarizing the complete lifetime into bounded
-  local-hour and weekday distributions, then adds the 200 most recent raw
-  sessions with category, local start/end and duration. The raw session count
+  local-hour and weekday distributions, then considers at most the 200 most
+  recent raw sessions with category, local start/end and duration before
+  enforcing a serialized token slice. The raw session count
   remains available separately from the unioned duration. The coach can
   therefore notice late-night or clustering patterns without allowing one
   current model message to grow forever. Those signals are evidence only: the
@@ -361,8 +370,13 @@ flowchart TD
   `GoalSignalWindow.labelTimeEntriesByCriterion` carries counted entry
   segments with entry id, label id, resolved category, local start/end, and
   `entryText.markdown` (falling back to plain text for legacy entries).
-  `GoalFactsRenderer` publishes the newest 200 segments with total/omitted
-  counts. Their markdown is model-facing semantic evidence, so content changes
+  `GoalFactsRenderer` considers at most the newest 200 segments, then enforces
+  a token slice over the serialized tail and clips each markdown field to its
+  own allowance. Category raw sessions and lifetime summaries have separate
+  slices, and the complete known high-volume FACTS payload targets 6,000 input
+  tokens so the system prompt, tools and dialogue retain room in the wake
+  budget. Total/omitted counts disclose the wider evidence. Their markdown is
+  model-facing semantic evidence, so content changes
   participate in the facts digest even when the aggregate duration is
   unchanged.
 - **Subjective assessment is a separate governance layer.** Deterministic
@@ -420,7 +434,14 @@ flowchart TD
   catch-up when the standing report is absent or stale. A durable source chat
   turn instead carries a `goal-chat-message:<messageId>` trigger on a manual
   `userMessage` wake. The source exists before enqueue, the wake bypasses
-  throttling, and no chat UI owns an inference loop. Update now uses a manual
+  throttling, and no chat UI owns an inference loop. Visible reply rows name
+  that source through `AgentMessageMetadata.operationId`. On startup, sync
+  arrival and every pre-wake scan, runtime maintenance re-enqueues the oldest
+  source turn without a linked reply; the router also checks for one before it
+  dispatches any otherwise unrelated goal wake. That recovery state is durable
+  even though the original waiter and queue were in memory. Legacy reply rows
+  are paired to the nearest preceding unmatched user turn so upgrading does
+  not replay already-answered messages. Update now uses a manual
   wake in the same report-refresh workspace, supersedes the pending countdown,
   persists the deterministic register from the prose snapshot, and routes to
   Phase B immediately even when the coarse status did not change.
@@ -467,6 +488,11 @@ flowchart TD
   over a refusal destroys the report the user asked to keep. A first evaluation that lands at risk is
   also ad-eligible, so a newly created goal does not wait for a three-day trend
   before receiving its initial banner.
+  Interactive batches have a stricter publication fence: if any tool call is
+  rejected, the wake fails before `persistOutputs`, including when the same
+  model turn also supplied a plausible `reply_to_user`. This keeps the retry
+  state visible and prevents an accepted sentence from claiming that a
+  rejected mutation succeeded.
 - **Report freshness follows the durable standing head.** Producing report
   material or writing a historical report row is insufficient: the shared
   drain clears the stale watermark only when this wake actually advances the
@@ -1075,6 +1101,12 @@ flowchart TD
   ids are deterministic per `(agentId, runKey)`; if the output transaction
   committed and only the deferred outbox flush failed, the reply is re-read as
   the commit marker and the turn completes without another billed inference.
+  Before the current message, FACTS carries at most twelve recent visible
+  user/assistant turns under a 900-token budget, keeping the newest context
+  under pressure; the pending source also populates `unansweredUserMessages`.
+  Thoughts, tool traces and system rows never enter this dialogue context. New
+  goal observations carry `recordedAt`; legacy undated observations remain
+  readable as text-only objects instead of being assigned invented dates.
   Creation and owner editing share one route through the same controls.
   Creation is a three-stage intention → mapping → confirmation flow; owner
   editing skips the intention stage — the statement is a single-line field
@@ -1304,7 +1336,7 @@ flowchart LR
     S["GoalCheckInSummary<br/>≤500 tokens"]
     F["userVoice section<br/>in FACTS"]
   end
-  A -. "transcribe, then compact<br/>with the wake's own model" .-> S
+  A -. "automatic report wake:<br/>transcribe, then compact<br/>with minimal reasoning" .-> S
   S -- "token-bounded by planCompaction" --> F
   R --> TL["goal timeline"]
   A --> TL
@@ -1326,7 +1358,8 @@ Key pieces:
   mounting every audio player; the inline card remains a short preview.
 - `lib/features/goals/service/goal_checkin_compactor.dart` — one structured
   summary per check-in, keyed `(agentId, entryId)` so retries and second
-  devices converge instead of appending.
+  devices converge instead of appending; deterministic failure rows carry the
+  source digest, attempt count and next retry time.
 - `lib/features/goals/logic/goal_user_voice.dart` — selection under a token
   budget via `planCompaction`; the oldest fall away first and the newest is
   always kept.
@@ -1343,8 +1376,11 @@ Invariants worth not breaking:
 - **The date survives compaction.** "You said on Tuesday you would walk after
   lunch" is only sayable because `recordedAt` is the moment the user spoke,
   not the moment the summary was written.
-- **Compaction is non-fatal.** A check-in that fails to compact is absent from
-  that wake and retried by the next; it never fails the wake or the recording.
+- **Compaction is non-fatal and bounded.** Interactive turns never run it.
+  Automatic report wakes omit an unreadable summary, log the failure, and
+  persist a deterministic marker. The same source digest retries after 6 and
+  12 hours, then the third failure is terminal until the transcript changes;
+  it never fails the wake or the recording.
 - **Transcription failure is visible and recoverable.** A failed timeline item
   stops showing progress, announces the failure, and retries the built-in
   transcription skill on request. The timeline combines the live inference

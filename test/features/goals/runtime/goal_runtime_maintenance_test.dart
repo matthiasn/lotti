@@ -60,6 +60,7 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockWakeOrchestrator orchestrator;
+  late MockGoalChatService chatService;
   late GoalRuntimeMaintenance maintenance;
   late MockGoalMirrorService mirror;
   late MockGoalCheckInNotifier notifier;
@@ -96,11 +97,15 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
+    chatService = MockGoalChatService();
     mirror = MockGoalMirrorService();
     notifier = MockGoalCheckInNotifier();
     when(() => notifier.watch(any())).thenReturn(null);
     when(() => notifier.unwatch(any())).thenReturn(null);
     when(() => notifier.start(any())).thenReturn(null);
+    when(
+      () => chatService.restoreOldestPendingMessage(any()),
+    ).thenAnswer((_) async => false);
     when(
       () => mirror.mirrorHead(any(), categoryId: any(named: 'categoryId')),
     ).thenAnswer((_) async => null);
@@ -114,6 +119,7 @@ void main() {
         syncService: syncService,
         orchestrator: orchestrator,
       ),
+      goalChatService: chatService,
       goalMirrorService: mirror,
       checkInNotifier: notifier,
     );
@@ -267,6 +273,9 @@ void main() {
       (captured.single as AgentSubscription).id,
       goalSignalSubscriptionId('goal-b'),
     );
+    verify(
+      () => chatService.restoreOldestPendingMessage('goal-b'),
+    ).called(1);
   });
 
   test(
@@ -292,6 +301,7 @@ void main() {
           syncService: syncService,
           orchestrator: orchestrator,
         ),
+        goalChatService: chatService,
         domainLogger: logger,
       );
       when(

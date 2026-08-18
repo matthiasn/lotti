@@ -1010,6 +1010,70 @@ void main() {
     expect(rejection(), contains('unknown adId'));
   });
 
+  test('rerun rejects an active ad instead of acknowledging a no-op', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'retire-active',
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-known', 'reason': 'replace it'},
+        ),
+        _call(
+          id: 'rerun-active',
+          name: GoalAgentToolNames.rerunGoalAd,
+          args: {'adId': 'ad-known', 'reason': 'run it again'},
+        ),
+      ],
+      manager: manager,
+    );
+
+    expect(strategy.retireRequests, hasLength(1));
+    expect(strategy.rerunRequests, isEmpty);
+    expect(rejection(), contains('already active'));
+    expect(
+      strategy.unresolvedRejectedTools,
+      contains(GoalAgentToolNames.rerunGoalAd),
+    );
+  });
+
+  test(
+    'an accepted ad mutation does not erase a different rejection',
+    () async {
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+        () => strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'bad-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-11T10:00:00Z',
+                'reason': 'too late',
+              },
+            ),
+            _call(
+              id: 'valid-create',
+              name: GoalAgentToolNames.createGoalAd,
+              args: {
+                'headline': 'Try again today.',
+                'tone': 'nudge',
+                'animation': 'steady',
+              },
+            ),
+          ],
+          manager: manager,
+        ),
+      );
+
+      expect(strategy.createdAds, hasLength(1));
+      expect(
+        strategy.unresolvedRejectedTools,
+        contains(GoalAgentToolNames.snoozeGoalAd),
+      );
+    },
+  );
+
   test('snooze accepts any requested future instant for a known ad', () async {
     final now = DateTime.utc(2026, 8, 11, 12);
     await withClock(
@@ -1088,7 +1152,7 @@ void main() {
       );
 
       expect(strategy.snoozeRequests, isEmpty);
-      expect(rejection(), contains('ISO 8601'));
+      expect(rejection(), contains('explicit UTC offset'));
     },
   );
 
@@ -1111,7 +1175,7 @@ void main() {
     );
 
     expect(strategy.snoozeRequests, isEmpty);
-    expect(rejection(), contains('ISO 8601'));
+    expect(rejection(), contains('explicit UTC offset'));
   });
 
   test('snooze rejects past deadlines and unknown ads', () async {
@@ -1143,7 +1207,7 @@ void main() {
     );
 
     expect(strategy.snoozeRequests, isEmpty);
-    expect(rejection(), contains('is not active'));
+    expect(rejection(), contains('unknown adId'));
   });
 
   test('snooze rejects a known reusable ad that is not active', () async {

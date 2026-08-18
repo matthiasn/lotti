@@ -104,6 +104,7 @@ class GoalAgentStrategy extends ConversationStrategy
   final _snoozeRequests = <GoalAdSnooze>[];
   final _revisionProposals = <GoalRevisionProposal>[];
   final _observations = <ObservationRecord>[];
+  final _unresolvedRejectedTools = <String>{};
 
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
@@ -131,6 +132,8 @@ class GoalAgentStrategy extends ConversationStrategy
   List<GoalRevisionProposal> get revisionProposals =>
       List.unmodifiable(_revisionProposals);
   List<ObservationRecord> get observations => List.unmodifiable(_observations);
+  Set<String> get unresolvedRejectedTools =>
+      Set.unmodifiable(_unresolvedRejectedTools);
 
   /// Called by the workflow after the loop with the last assistant text.
   void recordFinalResponse(String? content) {
@@ -499,6 +502,26 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    if (verb == 'rerun' && _activeAdIds.contains(adId)) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: adId "$adId" is already active — rerun requires a '
+            'retired reusable adId from the FACTS block.',
+      );
+      return;
+    }
+    if (verb == 'retire' && !_activeAdIds.contains(adId)) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: adId "$adId" is not active — retire an active adId '
+            'from the FACTS block.',
+      );
+      return;
+    }
     sink.add((adId: adId, reason: reason));
     await _accept(call, manager, 'Ad $verb recorded.');
   }
@@ -520,17 +543,21 @@ class GoalAgentStrategy extends ConversationStrategy
     final returnUtcOffsetMinutes = hasExplicitOffset
         ? _iso8601UtcOffsetMinutes(untilText)
         : null;
-    if (adId.isEmpty ||
-        reason.isEmpty ||
-        until == null ||
-        returnUtcOffsetMinutes == null ||
-        !until.isAfter(clock.now().toUtc())) {
+    if (adId.isEmpty || reason.isEmpty) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: snooze needs both adId and reason.',
+      );
+      return;
+    }
+    if (!_knownAdIds.contains(adId)) {
       await _reject(
         call: call,
         manager: manager,
         error:
-            'Error: snooze needs a known active adId, a future ISO 8601 '
-            'until instant, and a reason.',
+            'Error: unknown adId "$adId" — use an active adId from the '
+            'FACTS block exactly as given.',
       );
       return;
     }
@@ -541,6 +568,24 @@ class GoalAgentStrategy extends ConversationStrategy
         error:
             'Error: adId "$adId" is not active — snooze an active adId '
             'from the FACTS block exactly as given.',
+      );
+      return;
+    }
+    if (until == null || returnUtcOffsetMinutes == null) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: snooze until must be an ISO 8601 instant with an '
+            'explicit UTC offset.',
+      );
+      return;
+    }
+    if (!until.isAfter(clock.now().toUtc())) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: snooze until must be in the future.',
       );
       return;
     }
@@ -650,6 +695,7 @@ class GoalAgentStrategy extends ConversationStrategy
     ConversationManager manager,
     String response,
   ) async {
+    _unresolvedRejectedTools.remove(call.function.name);
     manager.addToolResponse(toolCallId: call.id, response: response);
     await recordToolResultMessage(toolName: call.function.name);
   }
@@ -659,6 +705,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required ConversationManager manager,
     required String error,
   }) async {
+    _unresolvedRejectedTools.add(call.function.name);
     manager.addToolResponse(toolCallId: call.id, response: error);
     await recordToolResultMessage(
       toolName: call.function.name,

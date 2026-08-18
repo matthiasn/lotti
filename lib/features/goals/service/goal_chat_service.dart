@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:uuid/uuid.dart';
 
 const _goalChatMessageTokenPrefix = 'goal-chat-message:';
@@ -32,13 +33,26 @@ class GoalChatService {
     required AgentRepository repository,
     required AgentSyncService syncService,
     required WakeOrchestrator orchestrator,
-  }) : this._(repository, syncService, orchestrator);
+    GoalChatHistoryService? historyService,
+  }) : this._(
+         repository,
+         syncService,
+         orchestrator,
+         historyService ?? GoalChatHistoryService(repository),
+       );
 
-  GoalChatService._(this._repository, this._syncService, this._orchestrator);
+  GoalChatService._(
+    this._repository,
+    this._syncService,
+    this._orchestrator,
+    this._historyService,
+  );
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
+  final GoalChatHistoryService _historyService;
+  final Set<String> _recoveringMessageIds = {};
 
   static const _uuid = Uuid();
 
@@ -132,6 +146,41 @@ class GoalChatService {
       }
     } finally {
       await subscription.cancel();
+    }
+  }
+
+  /// Re-enqueues the oldest durable user turn left unanswered by a process
+  /// death or an outbox failure.
+  ///
+  /// Runtime maintenance calls this at startup and before scheduled scans.
+  /// The in-flight set prevents two maintenance passes from queuing the same
+  /// turn concurrently; terminal completion releases it for a later retry.
+  Future<bool> restoreOldestPendingMessage(String agentId) async {
+    final messageId = await _historyService.oldestPendingMessageId(agentId);
+    if (messageId == null || !_recoveringMessageIds.add(messageId)) {
+      return false;
+    }
+
+    StreamSubscription<WakeRunCompletion>? subscription;
+    String? runKey;
+    try {
+      subscription = _orchestrator.runCompletions.listen((event) {
+        if (event.runKey != runKey) return;
+        _recoveringMessageIds.remove(messageId);
+        unawaited(subscription?.cancel());
+      });
+      runKey = _orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: WakeReason.userMessage.name,
+        triggerTokens: {goalChatMessageTriggerToken(messageId)},
+        supersede: false,
+        initiator: WakeInitiator.user,
+      );
+      return true;
+    } on Object {
+      _recoveringMessageIds.remove(messageId);
+      await subscription?.cancel();
+      rethrow;
     }
   }
 }

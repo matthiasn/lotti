@@ -483,6 +483,11 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    for (final kind in [AgentMessageKind.user, AgentMessageKind.action]) {
+      when(
+        () => repository.getMessagesByKind(agentId, kind, limit: 50),
+      ).thenAnswer((_) async => []);
+    }
     // Compacted check-ins: no user voice unless a test supplies some.
     when(
       () => repository.getEntitiesByAgentIdAndSubtype(
@@ -530,7 +535,7 @@ void main() {
 
   test('a goal without a spec head is a clean no-op — no inference', () async {
     final result = await run();
-    expect(result.success, isTrue);
+    expect(result.success, isTrue, reason: result.error);
     expect(conversationRepository.sendMessageDelegateCallCount, 0);
     expect(upserts, isEmpty);
   });
@@ -704,6 +709,103 @@ void main() {
     expect(result.success, isFalse);
     expect(result.error, contains('no visible reply'));
     expect(conversationRepository.sendMessageDelegateCallCount, 2);
+  });
+
+  test('an accepted reply cannot hide a rejected tool mutation', () async {
+    stubSpec();
+    stubGlmResolution();
+    _stubBadPrior(repository, agentId, now);
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    final active =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-active',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Walk today.',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'active-digest',
+              createdAt: now.subtract(const Duration(hours: 1)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [active]);
+    when(
+      () => repository.getEntity('ad-active'),
+    ).thenAnswer((_) async => active);
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          final goalStrategy = strategy! as GoalAgentStrategy;
+          await goalStrategy.processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.replyToUser, {
+                'message': 'Done, it is hidden.',
+              }),
+              toolCall(GoalAgentToolNames.snoozeGoalAd, {
+                'adId': 'ad-active',
+                'until': '2026-08-09T09:00:00Z',
+                'reason': 'user asked',
+              }, id: 'invalid-snooze'),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'repair-run',
+        triggerTokens: const {},
+        threadId: 'repair-run',
+        pendingUserMessage: 'Hide that banner until tomorrow afternoon.',
+        chatMessageId: 'source-message',
+      ),
+    );
+
+    expect(result.success, isFalse);
+    expect(
+      result.error,
+      contains('rejected tools unresolved: snooze_goal_ad'),
+    );
+    expect(
+      upserts.whereType<AgentMessageEntity>(),
+      isNot(
+        contains(
+          isA<AgentMessageEntity>().having(
+            (message) => message.id,
+            'id',
+            goalAgentReplyMessageId(agentId, 'repair-run'),
+          ),
+        ),
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
   test('a scheduled wake whose ads are deterministically blocked is not even '
@@ -923,6 +1025,175 @@ void main() {
     expect(sentFacts, contains('userVoice'));
     expect(sentFacts, contains('walk after lunch tomorrow'));
   });
+
+  test(
+    'interactive chat reads stored check-ins without running compaction',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      final compactor = MockGoalCheckInCompactor();
+      workflow = GoalAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        checkInCompactor: compactor,
+        checkInSourceReader: (_) async => [
+          GoalCheckInSource(
+            entryId: 'audio-new',
+            recordedAt: now,
+            text: 'This transcript still needs compaction.',
+          ),
+        ],
+      );
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'The current numbers are in the report.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+      final result = await workflow.execute(
+        agentIdentity: identity,
+        runKey: 'interactive-with-check-in',
+        triggerTokens: const {},
+        threadId: 'interactive-with-check-in',
+        pendingUserMessage: 'How am I doing?',
+        chatMessageId: 'chat-source',
+      );
+
+      expect(result.success, isTrue);
+      verifyNever(
+        () => compactor.compact(
+          agentId: any(named: 'agentId'),
+          entryId: any(named: 'entryId'),
+          recordedAt: any(named: 'recordedAt'),
+          transcript: any(named: 'transcript'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'a durable terminal compaction failure prevents another billed retry',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      final compactor = MockGoalCheckInCompactor();
+      const transcript = 'The provider could not compact these words.';
+      final failureId = goalCheckInCompactionFailureId(agentId, 'audio-failed');
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.agentMessage(
+            id: failureId,
+            agentId: agentId,
+            threadId: failureId,
+            kind: AgentMessageKind.action,
+            createdAt: now,
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(
+              toolName: goalCheckInCompactionFailureToolName,
+            ),
+            contentEntryId: '$failureId:payload',
+          ),
+        ],
+      );
+      when(() => repository.getEntity('$failureId:payload')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: '$failureId:payload',
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: GoalCheckInCompactionFailure(
+            sourceEntryId: 'audio-failed',
+            sourceDigest: goalCheckInSourceDigest(transcript),
+            attempts: goalCheckInCompactionMaxAttempts,
+            retryAfter: now.subtract(const Duration(days: 1)),
+          ).toContent(),
+        ),
+      );
+      workflow = GoalAgentWorkflow(
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        checkInCompactor: compactor,
+        checkInSourceReader: (_) async => [
+          GoalCheckInSource(
+            entryId: 'audio-failed',
+            recordedAt: now,
+            text: transcript,
+          ),
+        ],
+      );
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      verifyNever(
+        () => compactor.compact(
+          agentId: any(named: 'agentId'),
+          entryId: any(named: 'entryId'),
+          recordedAt: any(named: 'recordedAt'),
+          transcript: any(named: 'transcript'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+        ),
+      );
+    },
+  );
 
   test('a check-in whose words changed is recompacted, and a deleted one '
       'stops reaching the agent', () async {
@@ -1323,16 +1594,18 @@ void main() {
         type: AgentEntityTypes.goalNudge,
       ),
     ).thenAnswer((_) async => [dismissedTransitionBanner]);
-    final source = AgentDomainEntity.agentMessage(
-      id: 'message-1',
-      agentId: agentId,
-      threadId: 'message-1',
-      kind: AgentMessageKind.user,
-      createdAt: now,
-      vectorClock: null,
-      contentEntryId: 'payload-1',
-      metadata: const AgentMessageMetadata(),
-    );
+    final source =
+        AgentDomainEntity.agentMessage(
+              id: 'message-1',
+              agentId: agentId,
+              threadId: 'message-1',
+              kind: AgentMessageKind.user,
+              createdAt: now,
+              vectorClock: null,
+              contentEntryId: 'payload-1',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
     when(
       () => repository.getEntity('message-1'),
     ).thenAnswer((_) async => source);
@@ -1345,6 +1618,18 @@ void main() {
         content: const {'text': 'yes now'},
       ),
     );
+    final priorUser =
+        AgentDomainEntity.agentMessage(
+              id: 'prior-user',
+              agentId: agentId,
+              threadId: 'prior-thread',
+              kind: AgentMessageKind.user,
+              createdAt: now.subtract(const Duration(minutes: 2)),
+              vectorClock: null,
+              contentEntryId: 'prior-user-payload',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
     final priorReply =
         AgentDomainEntity.agentMessage(
               id: 'prior-reply',
@@ -1356,6 +1641,7 @@ void main() {
               contentEntryId: 'prior-reply-payload',
               metadata: const AgentMessageMetadata(
                 toolName: AgentConversationToolNames.replyToUser,
+                operationId: 'prior-user',
               ),
             )
             as AgentMessageEntity;
@@ -1366,6 +1652,29 @@ void main() {
         limit: 12,
       ),
     ).thenAnswer((_) async => [priorReply]);
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.user,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => [priorUser, source]);
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.action,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => [priorReply]);
+    when(() => repository.getEntity('prior-user-payload')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'prior-user-payload',
+        agentId: agentId,
+        createdAt: now.subtract(const Duration(minutes: 2)),
+        vectorClock: null,
+        content: const {'text': 'Could you make the reminder more direct?'},
+      ),
+    );
     when(() => repository.getEntity('prior-reply-payload')).thenAnswer(
       (_) async => AgentDomainEntity.agentMessagePayload(
         id: 'prior-reply-payload',
@@ -1400,6 +1709,12 @@ void main() {
               message,
               contains('PENDING USER MESSAGE:\nyes now'),
             );
+            expect(message, contains('"recentDialogue"'));
+            expect(
+              message,
+              contains('Could you make the reminder more direct?'),
+            );
+            expect(message, contains('"role": "assistant"'));
             expect(message, contains('overrides dismissal cooldown'));
             // The primary turn answers and reports, but refuses/forgets the
             // requested ad. Deterministic policy must force the tool next.
@@ -1500,6 +1815,14 @@ void main() {
         (payload) => payload.content['text'] == 'Your new banner is live.',
       ),
       isTrue,
+    );
+    final visibleReply = upserts.whereType<AgentMessageEntity>().singleWhere(
+      (message) => message.id == goalAgentReplyMessageId(agentId, 'chat-run'),
+    );
+    expect(
+      visibleReply.metadata.operationId,
+      'message-1',
+      reason: 'restart recovery must know which durable turn was answered',
     );
     final replacement = upserts.whereType<GoalNudgeEntity>().single;
     expect(replacement.status, NudgeStatus.active);
@@ -1834,6 +2157,13 @@ void main() {
       knownAdIds: {
         'ad-dismissed',
         'ad-retired',
+        'ad-active',
+        'ad-snooze',
+        'ad-snooze-long',
+        'ad-gone',
+      },
+      activeAdIds: const {
+        'ad-dismissed',
         'ad-active',
         'ad-snooze',
         'ad-snooze-long',

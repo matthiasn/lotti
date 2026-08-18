@@ -93,6 +93,20 @@ void main() {
         type: any(named: 'type'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        any(),
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        any(),
+        AgentMessageKind.action,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
     when(

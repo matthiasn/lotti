@@ -342,6 +342,76 @@ void main() {
     expect(goalChatMessageIdFromTriggerTokens(tokens), 'message-1');
   });
 
+  test('startup recovery re-enqueues a durable unanswered turn once', () async {
+    final orphan =
+        AgentDomainEntity.agentMessage(
+              id: 'message-orphan',
+              agentId: 'goal-1',
+              threadId: 'message-orphan',
+              kind: AgentMessageKind.user,
+              createdAt: DateTime(2026, 8, 18, 12),
+              vectorClock: null,
+              contentEntryId: 'payload-orphan',
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => [orphan]);
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.action,
+        limit: 50,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenReturn('recovery-run');
+
+    expect(await service.restoreOldestPendingMessage('goal-1'), isTrue);
+    expect(
+      await service.restoreOldestPendingMessage('goal-1'),
+      isFalse,
+      reason: 'the same orphan must not be queued concurrently twice',
+    );
+    final tokens =
+        verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: 'goal-1',
+                reason: WakeReason.userMessage.name,
+                triggerTokens: captureAny(named: 'triggerTokens'),
+                supersede: false,
+                initiator: WakeInitiator.user,
+              ),
+            ).captured.single
+            as Set<String>;
+    expect(goalChatMessageIdFromTriggerTokens(tokens), orphan.id);
+
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'recovery-run',
+        status: WakeRunStatus.failed,
+      ),
+    );
+    await pumpEventQueue();
+    expect(
+      await service.restoreOldestPendingMessage('goal-1'),
+      isTrue,
+      reason: 'a terminal failure releases the durable turn for a later scan',
+    );
+  });
+
   test('ignores blank turns and malformed trigger tokens', () async {
     await service.sendMessage(agentId: 'goal-1', text: '   ');
 

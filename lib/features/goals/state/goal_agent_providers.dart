@@ -28,6 +28,7 @@ import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
@@ -130,11 +131,17 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
   name: 'goalAgentServiceProvider',
 );
 
+final goalChatHistoryServiceProvider = Provider<GoalChatHistoryService>(
+  (ref) => GoalChatHistoryService(ref.watch(agentRepositoryProvider)),
+  name: 'goalChatHistoryServiceProvider',
+);
+
 final goalChatServiceProvider = Provider<GoalChatService>(
   (ref) => GoalChatService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    historyService: ref.watch(goalChatHistoryServiceProvider),
   ),
   name: 'goalChatServiceProvider',
 );
@@ -149,7 +156,9 @@ final Provider<GoalCheckInCompactor> goalCheckInCompactorProvider =
     Provider<GoalCheckInCompactor>(
       (ref) => GoalCheckInCompactor(
         inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+        repository: ref.watch(agentRepositoryProvider),
         syncService: ref.watch(agentSyncServiceProvider),
+        domainLogger: ref.watch(domainLoggerProvider),
       ),
       name: 'goalCheckInCompactorProvider',
     );
@@ -173,6 +182,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
     cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    chatHistoryService: ref.watch(goalChatHistoryServiceProvider),
     checkInCompactor: ref.watch(goalCheckInCompactorProvider),
     checkInSourceReader: ref.watch(goalCheckInSourceReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
@@ -196,10 +206,12 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
           required runKey,
           required triggerTokens,
           required threadId,
-        }) {
-          final chatMessageId = goalChatMessageIdFromTriggerTokens(
-            triggerTokens,
-          );
+        }) async {
+          final chatMessageId =
+              goalChatMessageIdFromTriggerTokens(triggerTokens) ??
+              await ref
+                  .read(goalChatHistoryServiceProvider)
+                  .oldestPendingMessageId(agentIdentity.agentId);
           if (chatMessageId != null) {
             return ref
                 .read(goalAgentWorkflowProvider)
@@ -252,6 +264,7 @@ final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     goalAgentService: ref.watch(goalAgentServiceProvider),
+    goalChatService: ref.watch(goalChatServiceProvider),
     goalMirrorService: ref.watch(goalMirrorServiceProvider),
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     domainLogger: ref.watch(domainLoggerProvider),
