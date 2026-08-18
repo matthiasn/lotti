@@ -565,7 +565,7 @@ wrong number" into "no report at all", which is the worse failure.
 
 **Two defects, both in production, not in the harness:**
 
-1. **The guard reports one violation at a time.** `_validateReport` returns
+1. **The guard reports one violation at a time.** `_handleUpdateReport` returns
    on the first failed check, so a report breaking two rules costs two round
    trips to learn that. Collecting every violation into one rejection is
    strictly better: same turn count, more information, and a converging model
@@ -589,15 +589,16 @@ wake pays for its retries:
 
 ## Batching the guard's rejections — 2026-08-18
 
-The fix for the above: `_validateReport` collects **every** rule the report
+The fix for the above: `_handleUpdateReport` collects **every** rule the report
 broke and reports them in one rejection, instead of returning on the first.
 A single violation reads exactly as it always did; only the multiple case
 gains an envelope.
 
 Measured the way the rule two sections up demands — full suite, twice, both
 sides. **The pass columns below are superseded** — they were scored by the
-classifier defect described in the next section, and the fix needs
-re-measuring against the corrected 33/39 baseline. The rejection and
+classifier defect described in the next section, and the re-measurement
+against the corrected 33/39 baseline never happened before the matcher fix
+changed the ground under it (see "Known gaps"). The rejection and
 mechanism columns are unaffected, since they were read from the rejection log
 rather than from pass totals:
 
@@ -763,7 +764,7 @@ to the right series: a slot naming 95 as the target while stating 94 as the
 average still passes. Closing that means carrying the aggregates as typed
 per-series fields the app renders, instead of prose the model must echo and a
 regex must recover — which would delete this whole class of defect rather than
-repair it.
+repair it. Tracked as `lotti3-lf68`; see "Known gaps".
 
 ## Cost and latency
 
@@ -796,6 +797,40 @@ task-agent evals lack credits).
 ## Run book
 
 Everything is manual — no CI runs these.
+
+**Probe the model before launching a matrix.** `GET /v1/models` on Melious
+lists models the chat endpoint refuses. `qwen3.8-27b`, `qwen3.8-max` and
+`qwen3.6-35b-a3b` return `HTTP 400 "The request was rejected as malformed.
+Check the message format, tools schema, or response_format"` on a bare
+`{model, messages}` call — no tools, no params — while `glm-5.2` returns 200
+on a byte-identical payload. Request shape changes nothing: system message,
+`max_completion_tokens`, no token limit, temperature and `stream: true` all
+behave the same, and streaming merely delivers the identical error inside the
+SSE body under a 200 status. The unservable set is an arbitrary subset rather
+than a version boundary — `qwen3.6-27b`, `qwen3.5-9b`, `qwen3.5-122b-a10b`
+and `qwen3.5-397b-a17b` all serve — so a listing is never evidence of
+availability, and the error text points at the request rather than at the
+model. Inside a matrix run this surfaces only as per-case `inferenceError`,
+after the run has been paid for. One curl per model settles it — probe the list
+you are about to run, and keep a known-good model in it as a control, since a
+400 proves nothing unless the same payload succeeds somewhere:
+
+```bash
+for m in $(echo "${GOAL_AGENT_EVAL_MODELS:-glm-5.2}" | tr ',' ' '); do
+  printf '%s -> ' "$m"
+  curl -sS -w '%{http_code}\n' \
+    https://api.melious.ai/v1/chat/completions \
+    -H "Authorization: Bearer $MELIOUS_API_KEY" \
+    -H 'Content-Type: application/json' \
+    -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"say ready\"}],\"max_tokens\":600}"
+done
+```
+
+Give the probe at least ~600 `max_tokens`. These are thinking models: at 32
+the reasoning consumes the whole budget, so a *working* model returns empty
+content with `finish_reason: length` and looks exactly like a broken one. A 401
+here is an authentication failure — missing, invalid, revoked or (the case
+seen so far) expired — and never throttling, which arrives as a 429.
 
 Single model, all scenarios:
 
@@ -876,6 +911,49 @@ therefore only ever run one model, while a profile is how a real user points
 their goal agent somewhere else. Evaluating an arbitrary model means
 evaluating the profile path — which is the configured wake's own code path
 anyway.
+
+## Known gaps
+
+What the runs surfaced and did not close. Where there is a tracker id the
+reasoning still lives here — the id is the task, this is why it matters.
+
+**A report the parser rejects skips most of the guard** (`lotti3-ozt0`, P1).
+`GoalStructuredReport.tryParse` is all-or-nothing over roughly ten shape
+conditions — a missing `rollingWindow`, a `nextActions.later` arriving as a
+string rather than a list, one malformed action item — and returns `null` for
+any of them. `_handleUpdateReport` then adds only the generic "needs … a complete
+structured report" problem: the status-token check no longer sees the
+structured fields (`tldr` is empty and the sections are excluded), and the
+rolling-aggregate check is skipped entirely behind its `structured != null`
+guard. So a model that gets the shape wrong is told about the shape and
+nothing else, fixes it, and meets the aggregate rule for the *first* time on
+the one forced retry it has left. That is precisely the sequential-rules
+failure the batched rejection was written to remove, still reachable through
+the parse path. Automated review raised it on the batching PR; it merged
+without a ruling.
+
+**The aggregate check proves appearance, not binding** (`lotti3-lf68`, P2).
+Stated in full under "The report loss was a matcher bug" → Still open, where it
+belongs as the end of that story; listed here so the open set is complete in one
+place.
+
+**`snooze_goal_ad` has only negative coverage** (`lotti3-uc9n`, P3). An
+unsolicited snooze *is* caught: the runner rejects any tool a scenario did not
+expect, and `gp_noop` forbids all eight tools by name. What no scenario does is
+*require* one — so the verb is scored for restraint and never for judgement,
+while create, re-run and retire are each scored both ways at both tiers. The
+asymmetry matters because a wrongly snoozed banner is silent by definition: the
+board simply stays quiet, and nothing in the matrix distinguishes that from
+correct restraint.
+
+**The batched-rejection table was never re-measured.** Its pass columns were
+scored by the classifier defect corrected the same day, and the matcher fix
+landed before the re-run happened. Treat it as superseded rather than wrong:
+the mechanism columns (rejection counts, sequential-rule failures) came from
+the rejection log and stand, while the headline `+4.5/54` was measuring a
+population of failures the matcher fix has since removed. Re-running it now
+would price a small residual, which is not worth a matrix run — but nothing
+here should be quoted as the batching change's effect size.
 
 ## Methodology caveats
 
