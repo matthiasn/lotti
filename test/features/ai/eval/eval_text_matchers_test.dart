@@ -115,4 +115,47 @@ void main() {
       );
     });
   });
+
+  group('phrase-level deferral cues', () {
+    // Each of these came from a live run that failed a model for reporting
+    // correctly. A single-word cue list could not see any of them.
+    test('"out of scope" reads as a deferral', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'the administrator analytics dashboard idea was mentioned but is '
+              'out of scope for this task.',
+          'dashboard',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'the analytics work is descoped for now.',
+          'analytics',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a genuine assertion in the same shape still fires', () {
+      // The guard against fixing a false positive by disabling the check.
+      expect(
+        containsAffirmativeReportClaim(
+          'the administrator analytics dashboard was delivered this sprint.',
+          'dashboard',
+        ),
+        isTrue,
+      );
+    });
+
+    test('describing an existing artefact is not claiming to have made it', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'the fix as implemented does not fully resolve the problem.',
+          'implemented',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

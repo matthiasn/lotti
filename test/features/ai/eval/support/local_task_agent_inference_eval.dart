@@ -807,12 +807,13 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
     // nicht abgeschlossen" is a correct sentence, and a bare substring
     // blacklist would fail it for containing the word. The claim matcher is
     // negation-aware and reads `noch`/`nicht` as the deferral it is.
-    forbiddenReportClaims: const [
-      'erledigt',
-      'abgeschlossen',
-      'umgesetzt',
-      'fertig',
-    ],
+    //
+    // NOT `fertig`: it is a stem, and the live run tripped all three models on
+    // "Figma-Prototyp fertigstellen" and "soll bis 30. September fertig sein"
+    // — an infinitive TODO and a future deadline, neither of them a claim that
+    // anything is done. The remaining three are past participles, which cannot
+    // be read as forward-looking the same way.
+    forbiddenReportClaims: const ['erledigt', 'abgeschlossen', 'umgesetzt'],
   );
 }
 
@@ -1057,10 +1058,21 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
       ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
       ['blocked', 'blocker', 'risk', 'root cause', 'investigat'],
     ],
-    forbiddenReportTerms: ['item-sync-fix', 'deployed', 'implemented'],
+    // Only the internal id is a bare term. "the fix as implemented does not
+    // fully resolve the problem" is correct prose about the EXISTING fix, and
+    // a substring blacklist fails it for containing the word — so the two
+    // English participles move to the negation-aware list below.
+    forbiddenReportTerms: ['item-sync-fix'],
     // A correct report says the fix is *not* validated, so these may appear
     // under negation but must never be asserted.
-    forbiddenReportClaims: ['verified', 'validated', 'applied', 'underway'],
+    forbiddenReportClaims: [
+      'verified',
+      'validated',
+      'applied',
+      'underway',
+      'deployed',
+      'implemented',
+    ],
   );
 }
 

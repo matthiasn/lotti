@@ -24,10 +24,15 @@ bool containsAnyEvalTerm(String text, List<String> terms) {
 /// correct behaviour as a violation. Every candidate model failed such a
 /// scenario for this reason alone before negation awareness was added.
 const _claimNegationCues = [
-  // English negation and deferral.
+  // English negation and deferral. The multi-word entries are matched as
+  // phrases: "the analytics dashboard idea is out of scope" is a textbook
+  // correct deferral that every single-word cue missed, and it only surfaced
+  // once the window was clipped to the sentence — before that an unrelated
+  // cue nearby happened to excuse it.
   'not', 'no', 'never', 'cannot', "can't", "won't", "isn't", "doesn't",
   "didn't", 'without', 'before', 'until', 'unless', 'pending', 'remains',
   'remain', 'still', 'yet', 'future', 'later', 'deferred', 'excluded',
+  'out of scope', 'outside the scope', 'descoped', 'not in scope',
   // German.
   'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
   'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
