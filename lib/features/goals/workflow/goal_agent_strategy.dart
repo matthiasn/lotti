@@ -351,17 +351,41 @@ class GoalAgentStrategy extends ConversationStrategy
   ///
   /// Substring matching passed the exact fabrication this check exists to
   /// catch: "127.85" contains "127", so a recomputed precision the FACTS
-  /// never carried scored as a faithful quote. Digits and decimal points on
-  /// either side disqualify a match, so 127 matches "127 mmHg" and "127," but
-  /// not "127.85" or "1127".
+  /// never carried scored as a faithful quote. A digit, or a decimal point
+  /// carrying digits, on either side disqualifies a match — so 127 matches
+  /// "127 mmHg" and "127," but not "127.85" or "1127".
+  ///
+  /// FACTS carry the aggregate as a bare Dart number (`8600`), while a report
+  /// writes it the way a reader expects to see it (`8,600`, or `8.600` in
+  /// German). Digit-exact matching therefore rejected every four-digit
+  /// aggregate from every evaluated model while passing every three-digit
+  /// one: the health goals passed and the step goals lost their reports
+  /// entirely. That is a matcher failure, not a model one, so the text is
+  /// tried BOTH as written and with digit group separators removed. Trying
+  /// both — rather than only the normalized form — means normalization can
+  /// never destroy a match the raw text already had ("weight 95 100" still
+  /// quotes 95).
   ///
   /// Known limit: this proves the aggregate APPEARS, not that it is bound to
   /// the right series. A slot naming 95 as the target while stating 94 as the
   /// average still passes. Closing that needs the aggregates carried as typed
   /// per-series fields rather than recovered from prose.
-  static bool _quotesNumber(String text, String value) => RegExp(
-    r'(?<![\d.])' + RegExp.escape(value) + r'(?![\d.])',
-  ).hasMatch(text);
+  static bool _quotesNumber(String text, String value) {
+    // A trailing `.` is sentence punctuation unless a digit follows: "the
+    // average is 8600." quotes 8600, "8600.5" does not.
+    final pattern = RegExp(
+      r'(?<!\d)(?<!\d\.)' + RegExp.escape(value) + r'(?!\d)(?!\.\d)',
+    );
+    return pattern.hasMatch(text) ||
+        pattern.hasMatch(text.replaceAll(_digitGroupSeparator, ''));
+  }
+
+  /// A digit group separator: a `,`, `.`, space or narrow/non-breaking space
+  /// between a digit and exactly three more digits. Two digits after it make
+  /// it a decimal point (`127.85`); four make it neither.
+  static final _digitGroupSeparator = RegExp(
+    '(?<=\\d)[,.\u00a0\u202f\u2009 ](?=\\d{3}(?!\\d))',
+  );
 
   Future<void> _handleReplyToUser(
     ChatCompletionMessageToolCall call,
