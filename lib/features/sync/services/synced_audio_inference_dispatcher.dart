@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/skill_lookup.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -129,9 +130,10 @@ class SyncedAudioInferenceDispatcher {
     // category.defaultProfileId directly — that skips agent overrides and
     // lets later category edits silently re-route which device claims the
     // entry.
-    final profileId = await _profileAutomationResolver.resolveProfileIdForTask(
-      linkedTaskId,
-    );
+    final profileId = await _profileAutomationResolver
+        .resolveProfileIdForSubject(
+          linkedTaskId,
+        );
     if (profileId == null) {
       _log('skip', id, 'no profile id for task $linkedTaskId');
       return;
@@ -183,10 +185,11 @@ class SyncedAudioInferenceDispatcher {
     AiConfigSkill? matchedSkill;
     for (final assignment in profileConfig.skillAssignments) {
       if (!assignment.automate) continue;
-      final skillConfig = await _aiConfigRepository.getConfigById(
-        assignment.skillId,
+      final skillConfig = await resolveAssignedSkill(
+        skillId: assignment.skillId,
+        aiConfigRepository: _aiConfigRepository,
       );
-      if (skillConfig is! AiConfigSkill) continue;
+      if (skillConfig == null) continue;
       if (skillConfig.skillType != SkillType.transcription) continue;
       // Reject ambiguous profiles (multiple automated transcription skills):
       // their context policies could differ silently. Mirrors

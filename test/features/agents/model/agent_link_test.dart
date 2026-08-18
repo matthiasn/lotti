@@ -460,6 +460,26 @@ void main() {
       });
     });
 
+    group('AgentRelationshipLink (agentRelationship variant)', () {
+      test('roundtrips all fields and soft-deletes like its siblings', () {
+        final original = AgentLink.agentRelationship(
+          id: 'agent_relationship:relationship_agent:person-1',
+          fromId: 'relationship_agent:person-1',
+          toId: 'person-1',
+          createdAt: DateTime(2026, 8, 16),
+          updatedAt: DateTime(2026, 8, 16),
+          vectorClock: null,
+        );
+        final decoded = AgentLink.fromJson(original.toJson());
+        expect(decoded, equals(original));
+        expect(original.toJson()['runtimeType'], equals('agentRelationship'));
+
+        final deleted = original.softDeleted(DateTime(2026, 8, 17));
+        expect(deleted.deletedAt, DateTime(2026, 8, 17));
+        expect(deleted.updatedAt, DateTime(2026, 8, 17));
+      });
+    });
+
     group('BasicAgentLink fallback for unknown runtimeType', () {
       test('deserializes unknown runtimeType to BasicAgentLink', () {
         // AgentLink uses fallbackUnion: 'basic', so unknown types map to BasicAgentLink.

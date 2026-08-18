@@ -1395,9 +1395,21 @@
   "checkInAvoidLabel": "Raději se vyhnout",
   "checkInDateLabel": "Kdy?",
   "checkInDeleteConfirmMessage": "Smazat tento záznam? Tohle nelze vrátit zpět.",
+  "checkInDone": "Hotovo",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Upravit záznam",
   "checkInErrorCreateFailed": "Záznam se nepodařilo uložit. Zkus to prosím znovu.",
   "checkInErrorDeleteFailed": "Záznam se nepodařilo smazat. Zkus to prosím znovu.",
+  "checkInHowDidItFeel": "Jaké to bylo?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "Jak proběhl kontakt?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Hovor",
   "checkInInteractionInPerson": "Osobně",
   "checkInInteractionLabel": "Jak jste se spojili?",
@@ -1406,14 +1418,23 @@
   "checkInInteractionVideoCall": "Videohovor",
   "checkInNarrativeLabel": "O čem jste mluvili?",
   "checkInPayAttentionLabel": "Příště se zaměřit na",
+  "checkInPreparedOverline": "✦ LOTTI · PŘIPRAVENO DNES RÁNO",
   "checkInSentimentDelightful": "Skvělé",
   "checkInSentimentDifficult": "Těžké",
   "checkInSentimentGood": "Dobré",
   "checkInSentimentLabel": "Jaké to bylo?",
   "checkInSentimentNeutral": "Neutrální",
   "checkInSentimentStrained": "Napjaté",
+  "checkInSpeakButton": "Namluvit kontakt",
   "checkInTopicsHint": "Oddělená čárkami, např. práce, cestování",
   "checkInTopicsLabel": "Témata",
+  "checkInTranscribingLabel": "Přepisuje se…",
+  "checkInTranscriptFailed": "Přepis nedorazil. Můžeš text napsat sám.",
+  "checkInTranscriptUnavailable": "Přepis pro tuto osobu není nastavený. Přidej zvukový model a zapni automatické odvozování pro její kategorii, nebo napiš záznam ručně.",
+  "checkInWriteInstead": "Spíše psát",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Přidat novou položku",
   "checklistAiConfidenceLabel": "Jistota: {level}",
   "@checklistAiConfidenceLabel": {
@@ -2621,6 +2642,7 @@
   "goalChatPageTitle": "Konverzace",
   "goalChatPlaceholder": "Promluv si s agentem {agentName}…",
   "goalChatResponding": "{agentName} odpovídá…",
+  "goalChatTalkTo": "Promluvit si s agentem {agentName}",
   "goalChatTalkToAgent": "Mluvit s agentem",
   "goalChatWhyPrefill": "Proč je tento cíl teď {status}?",
   "goalChatYou": "Ty",
@@ -2645,6 +2667,7 @@
   "goalCoarseHealthNotEnoughData": "Málo dat",
   "goalCompositeLastSevenDays": "Posledních 7 dní",
   "goalCompositeProgressSummary": "Včera: {metCount} z {dimensionCount} dimenzí · potřeba: {requiredCount}.",
+  "goalCompositeProgressTitle": "Celý cíl",
   "goalCreateFailed": "Cíl se nepodařilo uložit — zkus to znovu.",
   "goalCreateHabitCountLabel": "Kolikrát za 7 dní (u každého návyku)",
   "goalCreateHabitCountRange": "Počet musí být mezi 1 a 7.",
@@ -2670,12 +2693,15 @@
   "goalDetailNoReport": "Zatím žádná zpráva — agent se ozve po první podstatné změně.",
   "goalDetailNotFound": "Tento agent cíle už neexistuje.",
   "goalDetailReadAsOf": "aktualizováno {ago}",
+  "goalDetailSayingTitle": "Co říká tvůj agent",
   "goalDetailSignalsTitle": "Signály",
+  "goalDetailStatementLabel": "Tvůj cíl",
   "goalDetailThisWeekTitle": "Tento týden",
   "goalDetailTimelineTitle": "Interakce",
   "goalDetailUpdateFailed": "Poslední aktualizace se nezdařila",
   "goalDetailUpdateFailedWithReason": "Poslední aktualizace se nezdařila — {reason}",
   "goalDetailWatchingSignals": "Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.",
+  "goalDetailWatchingTitle": "Sleduje",
   "goalDimensionCategoryTimeSource": "Čas sledované kategorie",
   "goalDimensionHabitReading": "{currentCount} z {targetCount} tohoto okna",
   "goalDimensionHabitReadingOverTarget": "{currentCount} tohoto okna · cíl {targetCount}",
@@ -2696,6 +2722,7 @@
   "goalDimensionRecordedByAgent": "Řekl(a) jsi to ty a po tvém schválení to bylo zaznamenáno.",
   "goalDimensionRecordedByAgentDetails": "Řekl(a) jsi to ty, zaznamenal(a) {agentName}, {recordedAt}",
   "goalDimensionRollingAverageRow": "{name} · 7denní průměr",
+  "goalDominantIssueBadge": "{dimensionName} vyžaduje pozornost",
   "goalFormAddDimension": "Přidat rozměr",
   "goalFormAddSignal": "Přidat signál",
   "goalFormBloodPressureSource": "Systolický a diastolický · mmHg · 7denní průměr",
@@ -2827,6 +2854,7 @@
   "goalStatusOffTrack": "Mimo kurz",
   "goalStatusOnTrack": "Na dobré cestě",
   "goalStatusRecovering": "Zotavuje se",
+  "goalWatchingMetric": "Aktualizace z propojeného zdroje · {windowLabel}",
   "goalWindowCalendarMonth": "kalendářní měsíc",
   "goalWindowCalendarWeek": "kalendářní týden",
   "goalWindowRollingDays": "posledních {count} dní",
@@ -2870,7 +2898,7 @@
   "habitsFilterCompleted": "hotovo",
   "habitsFilterOpenNow": "nyní",
   "habitsFilterPendingLater": "později",
-  "habitsGoalLineLabel": "Cílová hodnota",
+  "habitsGoalLineLabel": "Cíl",
   "habitsHeatmapEmpty": "Přidej návyk a začni budovat svou důslednost",
   "habitsHeatmapLess": "Méně",
   "habitsHeatmapMore": "Více",
@@ -2879,7 +2907,7 @@
   "habitsLaggardHint": "{habit} — splněno {kept} z {active}",
   "habitsOpenHeader": "K splnění",
   "habitsPendingLaterHeader": "Později dnes",
-  "habitsPointsToGoal": "{points} b. k cílové hodnotě",
+  "habitsPointsToGoal": "{points} b. k cíli",
   "habitsRecordButton": "Zaznamenat",
   "habitsRollingAverageLabel": "7denní průměr",
   "habitsStartStreakToday": "Začni sérii ještě dnes",
@@ -3558,6 +3586,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Připomenutí kontaktu, připomenutí návyků a upozornění z Lotti.",
+  "notificationChannelRemindersName": "Připomenutí",
   "notificationInboxDismiss": "Zavřít oznámení",
   "notificationInboxEmpty": "Máš všechno přečtené.",
   "notificationInboxError": "Oznámení se nepodařilo načíst.",
@@ -3987,42 +4017,198 @@
   "referenceImageSelectionSubtitle": "Vyber až {maxImages} obrázků, které pomohou AI určit vizuální styl",
   "referenceImageSelectionTitle": "Vyber referenční obrázky",
   "referenceImageSkip": "Přeskočit",
+  "relationshipActionCall": "Zavolat",
+  "relationshipActionEmail": "E-mail",
+  "relationshipActionFailed": "Nic v tomto zařízení to nedokáže otevřít",
+  "relationshipActionMessage": "Zpráva",
   "relationshipAddChannelButton": "Přidat kontakt",
+  "relationshipAsk": "Zeptat",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Banner vztahu s {personName}",
+  "relationshipBriefingDisclosureBody": "Briefing běží na {provider}. Poznámky o této osobě tam budou odeslány ke zpracování.",
+  "relationshipBriefingDisclosureConfirm": "Pokračovat",
+  "relationshipBriefingDisclosureTitle": "Odeslat do {provider}?",
+  "relationshipBriefingEmpty": "Zatím žádný briefing — Shrň mi to ho připraví z tvých check-inů.",
+  "relationshipBriefingRequested": "Briefing vyžádán — za chvíli se tu objeví.",
+  "relationshipBriefingRequestFailed": "Briefing se nepodařilo vyžádat.",
+  "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Shrnout znovu",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipBriefMeButton": "Shrň mi to",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Každý den} few{Každé {days} dny} other{Každých {days} dní}}",
   "relationshipCadenceFortnightly": "Každé dva týdny",
   "relationshipCadenceLabel": "Frekvence kontaktu",
   "relationshipCadenceMonthly": "Každý měsíc",
   "relationshipCadenceNone": "Bez frekvence",
+  "relationshipCadenceNudgeNote": "Nastavení rytmu zapne připomínky záznamů.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "v rytmu",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Každé čtvrtletí",
   "relationshipCadenceWeekly": "Každý týden",
+  "relationshipChatTooltip": "Chatovat o této osobě",
+  "relationshipChatUnavailable": "Zatím žádný agent — nejprve označ tuto osobu jako důležitou.",
+  "relationshipCheckedInLabel": "Záznam {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCheckInReminderBody": "Dobrá chvíle se ozvat.",
+  "relationshipCheckInReminderTitle": "Ozvat se: {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Záznamy kontaktů",
+  "relationshipCheckInTitle": "Záznam · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Vizitka",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Kontaktní údaje",
+  "relationshipContactLinked": "Kontaktní údaje zkopírovány",
+  "relationshipContactLinkFailed": "Kontaktní údaje se nepodařilo uložit",
+  "relationshipContactMissing": "Tento kontakt v tomto zařízení není",
+  "relationshipContactNoChanges": "Není co nového zkopírovat",
   "relationshipCreateTitle": "Přidat osobu",
   "relationshipDeleteConfirmMessage": "Smažou se i všechny záznamy kontaktů. Tohle nelze vrátit zpět.",
   "relationshipDeleteConfirmTitle": "Smazat {name}?",
+  "relationshipDueDay": "Do {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Upravit osobu",
   "relationshipErrorCreateFailed": "Osobu se nepodařilo uložit. Zkus to prosím znovu.",
   "relationshipErrorDeleteFailed": "Osobu se nepodařilo smazat. Zkus to prosím znovu.",
   "relationshipErrorLinkTaskFailed": "Úkol se nepodařilo propojit. Zkus to prosím znovu.",
   "relationshipErrorUpdateFailed": "Změny se nepodařilo uložit. Zkus to prosím znovu.",
+  "relationshipHealthNeedsAttention": "Vyžaduje pozornost",
+  "relationshipHealthSteady": "Stabilní",
+  "relationshipHealthStrained": "Napjatý",
+  "relationshipHealthThriving": "Vzkvétá",
+  "relationshipImportAction": "Importovat z kontaktů",
+  "relationshipImportAdded": "{count, plural, =1{Přidána 1 osoba} few{Přidány {count} osoby} other{Přidáno {count} osob}}",
   "relationshipImportantDescription": "Připomínej mi, ať se ozvu",
   "relationshipImportantLabel": "Důležité",
-  "relationshipLinkedTasksLabel": "Propojené úkoly",
+  "relationshipImportConfirmButton": "{count, plural, =1{Přidat 1 osobu} few{Přidat {count} osoby} other{Přidat {count} osob}}",
+  "relationshipImportEmpty": "V tomto zařízení nejsou žádné kontakty",
+  "relationshipImportFailed": "Nepodařilo se přidat nikoho",
+  "relationshipImportGrantButton": "Povolit přístup",
+  "relationshipImportNoMatches": "Tvému hledání neodpovídají žádné kontakty",
+  "relationshipImportOpenSettings": "Otevřít nastavení",
+  "relationshipImportPermissionBody": "Lotti čte tvé kontakty jen po dobu, kdy je tento výběr otevřený, a zkopíruje jen lidi, které vybereš.",
+  "relationshipImportRetry": "Zkusit znovu",
+  "relationshipImportReviewButton": "{count, plural, =1{Zkontrolovat 1} few{Zkontrolovat {count}} other{Zkontrolovat {count}}}",
+  "relationshipImportReviewTitle": "Než je přidáš",
+  "relationshipImportSearchHint": "Hledat kontakty",
+  "relationshipImportSettingsBody": "Přístup ke kontaktům je vypnutý. Zapni ho v nastavení systému, abys mohl lidi importovat.",
+  "relationshipImportTitle": "Přidat lidi",
+  "relationshipImportUnsupported": "Import kontaktů je dostupný na telefonech a tabletech. Kontaktní údaje sem zadej ručně.",
+  "relationshipJustAdded": "Právě přidáno",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLastCheckInLabel": "Poslední záznam {date}",
+  "relationshipLinkContact": "Propojit kontakt",
+  "relationshipLinkedTasksLabel": "Úkoly",
   "relationshipLinkTaskButton": "Propojit úkol",
   "relationshipLogCheckIn": "Zaznamenat kontakt",
+  "relationshipLottisRead": "Lottiho odhad",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "k {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Jméno",
   "relationshipNameRequired": "Jméno je povinné",
+  "relationshipNextByDay": "příští do {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Přezdívka",
   "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
   "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
+  "relationshipNudgesOn": "připomínky zapnuty",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipPostCallBody": "Právě jsi se ozval. Chceš si zapsat check-in, dokud je to čerstvé?",
+  "relationshipPostCallConfirm": "Zapsat check-in",
+  "relationshipPostCallDismiss": "Teď ne",
+  "relationshipPostCallTitle": "Jak to šlo s {name}?",
+  "@relationshipPostCallTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipQuietForDays": "{count, plural, =1{1 den} few{{count} dny} other{{count} dní}} bez kontaktu",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Propojit jiný kontakt",
+  "relationshipSeeAllCheckIns": "Zobrazit všechny záznamy",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsPageTitle": "Lidé",
   "relationshipStatusActive": "Aktivní",
   "relationshipStatusArchived": "Archivované",
   "relationshipStatusDormant": "Spící",
   "relationshipStatusFieldLabel": "Stav",
+  "relationshipStayingInTouch": "Udržovat kontakt",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Udržovat kontakt",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipTrackingSinceLabel": "Sledováno od {date}",
+  "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",
   "saveButtonLabel": "Uložit",
   "saveFailedRetry": "To se neuložilo — zkus to prosím znovu.",

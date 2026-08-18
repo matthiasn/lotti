@@ -67,8 +67,10 @@ class UnseenNotificationCount extends AsyncNotifier<int> {
 ///
 /// "Inbox-worthy" means the same predicate `dueNotificationRows` /
 /// `upcomingNotificationRows` apply at the SQL layer: still unseen, unacted,
-/// and not deleted. The two streams are concatenated due-first then upcoming,
-/// matching the visual ordering users expect (overdue alerts on top).
+/// and not deleted — minus the variants that must not be shown before their
+/// scheduled time at all (see `showsBeforeScheduledTime`). The two streams are
+/// concatenated due-first then upcoming, matching the visual ordering users
+/// expect (overdue alerts on top).
 ///
 /// `_refresh` uses the same epoch + try/catch guard as
 /// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
@@ -98,7 +100,10 @@ class InboxNotifications extends AsyncNotifier<List<NotificationEntity>> {
     final now = DateTime.now();
     final due = await db.dueNow(now);
     final upcoming = await db.upcoming(now);
-    return deduplicateInboxNotifications([...due, ...upcoming]);
+    return deduplicateInboxNotifications([
+      ...due,
+      ...upcoming.where(showsBeforeScheduledTime),
+    ]);
   }
 
   Future<void> _refresh() async {

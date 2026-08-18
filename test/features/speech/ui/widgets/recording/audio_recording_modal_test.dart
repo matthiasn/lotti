@@ -543,6 +543,42 @@ void main() {
       );
     }
 
+    /// Opens the sheet through the static entry point and records what it
+    /// resolved to, so the caller-visible contract can be asserted.
+    Future<List<String?>> pumpShowModalCapturingResult(
+      WidgetTester tester, {
+      String? linkedId,
+      List<Override> extraOverrides = const [],
+    }) async {
+      final results = <String?>[];
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [...baseOverrides(), ...extraOverrides],
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    results.add(
+                      await AudioRecordingModal.show(
+                        context,
+                        linkedId: linkedId,
+                      ),
+                    );
+                  },
+                  child: const Text('Show Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      return results;
+    }
+
     Future<void> pumpShowModalTrigger(
       WidgetTester tester, {
       String? categoryId,
@@ -586,6 +622,74 @@ void main() {
         (_) => Stream.value(category ?? FakeCategoryDefinition()),
       );
     }
+
+    // The check-in sheet needs the audio entry's id to wait for its
+    // transcript; before this the id was created and dropped on the floor.
+    group('AudioRecordingModal.show() returns the created entry id', () {
+      void sizeViewport(WidgetTester tester) {
+        tester.view
+          ..physicalSize = const Size(1000, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+      }
+
+      testWidgets('resolves to the id the recorder created', (tester) async {
+        sizeViewport(tester);
+        final results = await pumpShowModalCapturingResult(
+          tester,
+          linkedId: 'relationship-1',
+          extraOverrides: [
+            audioRecorderControllerProvider.overrideWith(
+              () => _CallbackTrackingController(
+                fixedState: AudioRecorderState(
+                  status: AudioRecorderStatus.recording,
+                  progress: const Duration(seconds: 3),
+                  vu: 1,
+                  dBFS: -24,
+                  showIndicator: false,
+                  modalVisible: true,
+                ),
+                createdId: 'audio-entry-42',
+              ),
+            ),
+          ],
+        );
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Stop'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(results, ['audio-entry-42']);
+      });
+
+      testWidgets('resolves to null when the sheet is dismissed', (
+        tester,
+      ) async {
+        sizeViewport(tester);
+        final results = await pumpShowModalCapturingResult(
+          tester,
+          linkedId: 'relationship-1',
+        );
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        Navigator.of(
+          tester.element(find.byType(ElevatedButton)),
+          rootNavigator: true,
+        ).pop();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(results, [null]);
+      });
+    });
 
     group('AudioRecordingModal.show() - Static Method Coverage', () {
       testWidgets(

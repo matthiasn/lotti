@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -10,8 +12,13 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/contact_link_action.dart';
+import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
+import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -48,6 +55,38 @@ class RelationshipDetailsPage extends ConsumerWidget {
       final deleted = await ref
           .read(relationshipRepositoryProvider)
           .deleteRelationship(relationship.id);
+      if (deleted) {
+        // The cascade's agent leg (ADR 0059 Decision 7): contained —
+        // the person is gone either way, and a failed agent teardown is
+        // repaired by runtime maintenance, not by failing this delete.
+        unawaited(() async {
+          try {
+            await ref
+                .read(relationshipAgentServiceProvider)
+                .handleRelationshipDeleted(relationship.id);
+          } catch (_) {
+            // Logged by the service layer where possible; never surfaced.
+          }
+        }());
+        // The cascade's reminder leg (ADR 0037 §5): an alarm armed weeks
+        // ago would otherwise still fire, naming someone the user deleted.
+        // Destroying the agent stops Phase A from clearing it later, so
+        // this cannot be left to the next tick.
+        //
+        // Guarded like the agent leg, and for the same reason: `ref.read`
+        // itself throws once this widget is disposed, and the await above is
+        // long enough for that to happen. Unguarded it would surface as
+        // "could not delete" for a delete that succeeded.
+        unawaited(() async {
+          try {
+            await ref
+                .read(relationshipReminderServiceProvider)
+                .clearFor(relationship.id);
+          } catch (_) {
+            // clearFor is non-throwing by contract; this guards the read.
+          }
+        }());
+      }
       if (!context.mounted) return;
       if (deleted) {
         beamToNamed('/people');
@@ -128,6 +167,9 @@ class RelationshipDetailsPage extends ConsumerWidget {
                     Icons.star_rounded,
                     color: tokens.colors.interactive.enabled,
                   ),
+                // Renders nothing on desktop, where channels are typed by
+                // hand (plan v2 phase 7 item 2).
+                ContactLinkAction(relationship: relationship),
                 IconButton(
                   tooltip: context.messages.relationshipEditTitle,
                   onPressed: () => showRelationshipEditModal(
@@ -152,41 +194,66 @@ class RelationshipDetailsPage extends ConsumerWidget {
                     DesignSystemBottomNavigationBar.occupiedHeight(context) +
                     tokens.spacing.step12,
               ),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _RelationshipHeader(data: data),
-                  if (data.contactChannels.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.sectionGap),
-                    _SectionHeading(
-                      context.messages.relationshipContactChannelsLabel,
-                    ),
-                    SizedBox(height: tokens.spacing.step3),
-                    for (final channel in data.contactChannels)
-                      _ContactChannelRow(channel: channel),
-                  ],
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _LinkedTasksSection(
-                    relationshipId: relationshipId,
-                    tasks: detail.linkedTasks,
-                  ),
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _SectionHeading(
-                    context.messages.relationshipCheckInsLabel,
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  if (checkIns.isEmpty)
-                    Text(
-                      context.messages.relationshipNoCheckIns,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+              // The fixed sections stay in a list delegate; the check-in log
+              // grows without bound and renders lazily in its own builder
+              // sliver (the project-detail split: fixed sections + a builder
+              // list for the unbounded part).
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverList(
+                    delegate: SliverChildListDelegate([
+                      _RelationshipHeader(data: data),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      // Above the briefing: returning from a call the user
+                      // just placed, the offer to log it is the most
+                      // time-sensitive thing on the page (plan v2 phase 7
+                      // item 5). Renders nothing the rest of the time.
+                      const PostInteractionPrompt(),
+                      // The executive briefing directly under the header —
+                      // the agent's standing voice on this page (plan v2
+                      // phase 5).
+                      RelationshipBriefingCard(relationship: relationship),
+                      if (data.contactChannels.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        _SectionHeading(
+                          context.messages.relationshipContactChannelsLabel,
+                        ),
+                        SizedBox(height: tokens.spacing.step3),
+                        for (final channel in data.contactChannels)
+                          _ContactChannelRow(
+                            relationshipId: relationshipId,
+                            channel: channel,
+                          ),
+                      ],
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _LinkedTasksSection(
+                        relationshipId: relationshipId,
+                        tasks: detail.linkedTasks,
                       ),
-                    )
-                  else
-                    for (final checkIn in checkIns) ...[
-                      _CheckInRow(checkIn: checkIn),
-                      SizedBox(height: tokens.spacing.cardItemSpacing),
-                    ],
-                ]),
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _SectionHeading(
+                        context.messages.relationshipCheckInsLabel,
+                      ),
+                      SizedBox(height: tokens.spacing.step3),
+                      if (checkIns.isEmpty)
+                        Text(
+                          context.messages.relationshipNoCheckIns,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                    ]),
+                  ),
+                  if (checkIns.isNotEmpty)
+                    SliverList.separated(
+                      itemCount: checkIns.length,
+                      separatorBuilder: (_, _) =>
+                          SizedBox(height: tokens.spacing.cardItemSpacing),
+                      itemBuilder: (context, index) =>
+                          _CheckInRow(checkIn: checkIns[index]),
+                    ),
+                ],
               ),
             ),
           ],
@@ -252,8 +319,12 @@ class _SectionHeading extends StatelessWidget {
 }
 
 class _ContactChannelRow extends StatelessWidget {
-  const _ContactChannelRow({required this.channel});
+  const _ContactChannelRow({
+    required this.relationshipId,
+    required this.channel,
+  });
 
+  final String relationshipId;
   final ContactChannel channel;
 
   @override
@@ -281,6 +352,13 @@ class _ContactChannelRow extends StatelessWidget {
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: tokens.colors.text.lowEmphasis,
         ),
+      ),
+      // Renders nothing until the platform confirms it can service an
+      // action, and nothing at all for a channel with no launchable scheme
+      // (plan v2 phase 7 item 4).
+      trailing: ContactQuickActions(
+        relationshipId: relationshipId,
+        channel: channel,
       ),
     );
   }

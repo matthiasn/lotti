@@ -1,6 +1,6 @@
 # ADR 0040: Relationship Executive Briefing
 
-- Status: Proposed — amended by
+- Status: Accepted — implemented by plan v2 phase 5; amended by
   [ADR 0059](./0059-relationship-agent-runtime-and-nudge-generalization.md):
   the agent is a registered runtime kind on deterministic-first two-tier
   wakes, and Decision 1's `AgentTemplateKind.relationshipAgent` is dropped

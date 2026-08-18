@@ -3,10 +3,12 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -256,7 +258,9 @@ void main() {
         verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
       });
 
-      test('handles exceptions gracefully', () async {
+      test('a thrown exception is logged and reported as a failed write — '
+          'callers act on this boolean, so a swallowed failure would have '
+          'them report success on an entity that never moved', () async {
         // Arrange
         const journalEntityId = 'test-id';
         const categoryId = 'category-id';
@@ -273,10 +277,7 @@ void main() {
         );
 
         // Assert
-        expect(
-          result,
-          isTrue,
-        ); // The method catches the exception and returns true
+        expect(result, isFalse);
         verify(
           () => mockDomainLogger.error(
             LogDomain.persistence,
@@ -286,9 +287,106 @@ void main() {
           ),
         ).called(1);
       });
+
+      test('a rejected write is reported as a failure — updateDbEntity '
+          'answers false when the vector-clock comparison loses to a '
+          'concurrent sync, and null when it swallowed an exception', () async {
+        const journalEntityId = 'test-id';
+        const categoryId = 'category-id';
+        final testEntity = testJournalEntry();
+
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            testEntity.meta,
+            categoryId: categoryId,
+            clearCategoryId: false,
+          ),
+        ).thenAnswer(
+          (_) async => testEntity.meta.copyWith(categoryId: categoryId),
+        );
+
+        for (final rejected in <bool?>[false, null]) {
+          when(
+            () => mockPersistenceLogic.updateDbEntity(any()),
+          ).thenAnswer((_) async => rejected);
+
+          expect(
+            await repository.updateCategoryId(
+              journalEntityId,
+              categoryId: categoryId,
+            ),
+            isFalse,
+            reason: 'updateDbEntity returned $rejected',
+          );
+        }
+      });
     });
 
     group('deleteJournalEntity', () {
+      test('routes a RelationshipEntry through the check-in cascade — the '
+          'ADR 0037 §5 invariant holds on the generic delete path too '
+          '(deep links included), not only on the People pages', () async {
+        final relationship = JournalEntity.relationship(
+          meta: testMeta(id: 'rel-1'),
+          data: RelationshipData(
+            title: 'Anna',
+            status: RelationshipStatus.active(
+              id: 'status-1',
+              createdAt: DateTime(2023),
+              utcOffset: 0,
+            ),
+          ),
+        );
+        final checkIn =
+            JournalEntity.checkIn(
+                  meta: testMeta(id: 'check-1'),
+                  data: const CheckInData(
+                    relationshipId: 'rel-1',
+                    interactionType: CheckInInteractionType.call,
+                  ),
+                )
+                as CheckInEntry;
+        when(
+          () => mockJournalDb.journalEntityById('rel-1'),
+        ).thenAnswer((_) async => relationship);
+        when(
+          () => mockJournalDb.getAllCheckInsForRelationship('rel-1'),
+        ).thenAnswer((_) async => [checkIn]);
+        when(
+          () => mockPersistenceLogic.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              (invocation.positionalArguments.first as Metadata).copyWith(
+                deletedAt: DateTime(2024, 3, 15, 11),
+              ),
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await repository.deleteJournalEntity('rel-1');
+
+        expect(result, isTrue);
+        final tombstoned = verify(
+          () => mockPersistenceLogic.updateDbEntity(captureAny()),
+        ).captured.cast<JournalEntity>();
+        // Relationship first (a half-finished cascade reads as "gone"),
+        // then its check-in — never the relationship alone.
+        expect(tombstoned, hasLength(2));
+        expect(tombstoned.first, isA<RelationshipEntry>());
+        expect(tombstoned.last, isA<CheckInEntry>());
+        expect(
+          tombstoned.every((e) => e.meta.deletedAt != null),
+          isTrue,
+        );
+      });
+
       test(
         'logs to DomainLogger and returns true when the lookup throws',
         () async {

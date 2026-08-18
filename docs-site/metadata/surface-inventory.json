@@ -1276,7 +1276,8 @@
       "locator": "/people",
       "routes": [
         "/people",
-        "/people/:relationshipId"
+        "/people/:relationshipId",
+        "/people/:relationshipId/chat"
       ],
       "page": "organize-and-reflect/people",
       "status": "planned"

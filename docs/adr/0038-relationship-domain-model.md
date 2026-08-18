@@ -1,6 +1,10 @@
 # ADR 0038: Relationship Domain Model
 
-- Status: Proposed
+- Status: Accepted — implemented by plan v2 phase 1, with the D1 delta
+  from the implementation plan: `CheckInData` carries a denormalized
+  `relationshipId` so `affectedIds` emits a precise agent wake token.
+  User-set sentiment is never AI-filled, including for spoken check-ins
+  (phase 6).
 - Date: 2026-07-22
 
 ## Context

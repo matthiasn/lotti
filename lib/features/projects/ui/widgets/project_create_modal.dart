@@ -28,14 +28,6 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Upper bound on the form's height as a fraction of the viewport.
-///
-/// The form fields live in a scroll view so a soft keyboard, landscape phone,
-/// or large accessibility text size shrinks the scroll area instead of
-/// overflowing the sheet. Mirrors the established create-modal sizing used by
-/// `CategoryCreateModal`.
-const double _modalMaxHeightFraction = 0.9;
-
 /// Opens the responsive project-creation overlay.
 ///
 /// Reuses [ModalUtils.showSinglePageModal], which renders a draggable bottom
@@ -280,8 +272,7 @@ class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
       },
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight:
-              MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+          maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -1,22 +1,24 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-
-/// Upper bound on the form's height as a fraction of the viewport — the
-/// create-modal sizing shared with `ProjectCreateForm`.
-const double _modalMaxHeightFraction = 0.9;
 
 /// Cadence presets offered in the form (plan v2 D1: presets over a free
 /// integer field). `null` means no cadence.
@@ -157,6 +159,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late bool _important;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
+  String? _categoryId;
   final List<_ChannelDraft> _channels = [];
   bool _isSaving = false;
 
@@ -171,6 +174,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     _important = data?.important ?? false;
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
+    _categoryId = widget.initial?.meta.categoryId;
     _channels.addAll(
       (data?.contactChannels ?? const []).map(_ChannelDraft.fromChannel),
     );
@@ -192,7 +196,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       _channels.map((draft) => draft.toChannel()).nonNulls.toList();
 
   RelationshipStatus _mintStatus(_StatusKind kind) {
-    final now = DateTime.now();
+    final now = clock.now();
     final id = uuid.v1();
     final utcOffset = now.timeZoneOffset.inMinutes;
     return switch (kind) {
@@ -227,7 +231,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
 
     setState(() => _isSaving = true);
+    // Every provider is read before the first `await`. Saving pops the sheet,
+    // and the category write, the agent hand-off and any retry that follows
+    // all run past that point — reading through `ref` once the element is
+    // unmounted throws and aborts the save mid-way.
     final repository = ref.read(relationshipRepositoryProvider);
+    final journalRepository = ref.read(journalRepositoryProvider);
+    // Only resolved when it will actually be used — `_important` is form
+    // state, known before any await, so this stays ahead of the unmount.
+    final agentService = _important
+        ? ref.read(relationshipAgentServiceProvider)
+        : null;
     final nickname = _nicknameController.text.trim();
 
     try {
@@ -249,7 +263,24 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           );
         }
         final updated = initial.copyWith(data: data);
-        final success = await repository.updateRelationship(updated);
+        final saved = await repository.updateRelationship(updated);
+        // Category lives on the metadata, not the payload: route the change
+        // through the dedicated journal path, which handles clearing (a
+        // freezed copyWith cannot null a field) plus vector clock and sync.
+        // Its result is part of the save's verdict: a swallowed category
+        // write would otherwise pop the modal on a half-saved person, and
+        // the user would see the old category with nothing to retry.
+        var success = saved;
+        if (saved && _categoryId != initial.meta.categoryId) {
+          success = await journalRepository.updateCategoryId(
+            initial.meta.id,
+            categoryId: _categoryId,
+          );
+        }
+        // Keyed on the payload write, not the verdict: `important` and the
+        // cadence are already persisted, so the agent must be wired even
+        // when the category leg failed.
+        if (saved) _ensureAgentIfImportant(agentService, updated);
         if (!mounted) return;
         if (success) {
           Navigator.of(context).pop(updated);
@@ -269,7 +300,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             contactChannels: _editedChannels,
             status: _mintStatus(_StatusKind.active),
           ),
+          categoryId: _categoryId,
         );
+        if (created != null) _ensureAgentIfImportant(agentService, created);
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -302,6 +335,33 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
   }
 
+  /// The lazy-create trigger (ADR 0059 Decision 2): marking a person
+  /// important is what mints their agent; an existing agent makes this an
+  /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
+  /// takes effect immediately). Fire-and-forget with contained failure —
+  /// agent wiring must never fail the save the user just watched succeed.
+  /// Takes the service rather than reading it: this outlives the sheet by
+  /// design — the agent is created after the modal has popped — so it must
+  /// not touch `ref`.
+  void _ensureAgentIfImportant(
+    RelationshipAgentService? agentService,
+    RelationshipEntry relationship,
+  ) {
+    if (!relationship.data.important || agentService == null) return;
+    unawaited(() async {
+      try {
+        await agentService.ensureAgentForRelationship(relationship);
+      } catch (e, s) {
+        developer.log(
+          'Failed to ensure relationship agent',
+          name: 'RelationshipForm',
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }());
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
@@ -314,130 +374,131 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       ),
     );
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  LottiTextField(
-                    controller: _nameController,
-                    labelText: messages.relationshipNameLabel,
-                    autofocus: !_isEditing,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  LottiTextField(
-                    controller: _nicknameController,
-                    labelText: messages.relationshipNicknameLabel,
-                    textCapitalization: TextCapitalization.words,
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _important,
-                    onChanged: (value) => setState(() => _important = value),
-                    title: Text(
-                      messages.relationshipImportantLabel,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
-                    ),
-                    subtitle: Text(
-                      messages.relationshipImportantDescription,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  sectionLabel(messages.relationshipCadenceLabel),
-                  SizedBox(height: tokens.spacing.step3),
-                  Wrap(
-                    spacing: tokens.spacing.step3,
-                    runSpacing: tokens.spacing.step3,
-                    children: [
-                      for (final preset in relationshipCadencePresets)
-                        ChoiceChip(
-                          label: Text(
-                            relationshipCadenceLabel(context, preset),
-                          ),
-                          selected: _cadenceDays == preset,
-                          onSelected: (_) =>
-                              setState(() => _cadenceDays = preset),
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step5),
-                  sectionLabel(messages.relationshipContactChannelsLabel),
-                  SizedBox(height: tokens.spacing.step3),
-                  for (final (index, draft) in _channels.indexed) ...[
-                    _ChannelEditorRow(
-                      key: ObjectKey(draft),
-                      draft: draft,
-                      onTypeChanged: (type) =>
-                          setState(() => draft.type = type),
-                      onRemoved: () => setState(() {
-                        _channels.removeAt(index).dispose();
-                      }),
-                    ),
-                    SizedBox(height: tokens.spacing.step4),
-                  ],
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: () =>
-                          setState(() => _channels.add(_ChannelDraft())),
-                      icon: const Icon(Icons.add_rounded),
-                      label: Text(messages.relationshipAddChannelButton),
-                    ),
-                  ),
-                  if (_isEditing) ...[
-                    SizedBox(height: tokens.spacing.step5),
-                    sectionLabel(messages.relationshipStatusFieldLabel),
-                    SizedBox(height: tokens.spacing.step3),
-                    Wrap(
-                      spacing: tokens.spacing.step3,
-                      runSpacing: tokens.spacing.step3,
-                      children: [
-                        for (final kind in _StatusKind.values)
-                          ChoiceChip(
-                            label: Text(_statusKindLabel(context, kind)),
-                            selected: _statusKind == kind,
-                            onSelected: (_) =>
-                                setState(() => _statusKind = kind),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+    // One scrollable, not two — see the same note on the check-in capture
+    // sheet. The modal page already scrolls its child and stacks a top bar,
+    // padding and the bottom safe area on top of it, so a form that also
+    // capped itself at `modalMaxHeightFraction` of the SCREEN overflowed the
+    // page, and the inner scroll view ate the drag that would have reached
+    // the action row.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        LottiTextField(
+          controller: _nameController,
+          labelText: messages.relationshipNameLabel,
+          autofocus: !_isEditing,
+          textCapitalization: TextCapitalization.words,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        LottiTextField(
+          controller: _nicknameController,
+          labelText: messages.relationshipNicknameLabel,
+          textCapitalization: TextCapitalization.words,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        // Category scoping (the ProjectCreateForm precedent): the
+        // relationship's category also seeds every check-in
+        // created under it.
+        CategoryField(
+          categoryId: _categoryId,
+          onSave: (category) => setState(() => _categoryId = category?.id),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _important,
+          onChanged: (value) => setState(() => _important = value),
+          title: Text(
+            messages.relationshipImportantLabel,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
-          SizedBox(height: tokens.spacing.step6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          subtitle: Text(
+            messages.relationshipImportantDescription,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        sectionLabel(messages.relationshipCadenceLabel),
+        SizedBox(height: tokens.spacing.step3),
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step3,
+          children: [
+            for (final preset in relationshipCadencePresets)
+              ChoiceChip(
+                label: Text(
+                  relationshipCadenceLabel(context, preset),
+                ),
+                selected: _cadenceDays == preset,
+                onSelected: (_) => setState(() => _cadenceDays = preset),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        sectionLabel(messages.relationshipContactChannelsLabel),
+        SizedBox(height: tokens.spacing.step3),
+        for (final (index, draft) in _channels.indexed) ...[
+          _ChannelEditorRow(
+            key: ObjectKey(draft),
+            draft: draft,
+            onTypeChanged: (type) => setState(() => draft.type = type),
+            onRemoved: () => setState(() {
+              _channels.removeAt(index).dispose();
+            }),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+        ],
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _channels.add(_ChannelDraft())),
+            icon: const Icon(Icons.add_rounded),
+            label: Text(messages.relationshipAddChannelButton),
+          ),
+        ),
+        if (_isEditing) ...[
+          SizedBox(height: tokens.spacing.step5),
+          sectionLabel(messages.relationshipStatusFieldLabel),
+          SizedBox(height: tokens.spacing.step3),
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
             children: [
-              DesignSystemButton(
-                label: messages.cancelButton,
-                variant: DesignSystemButtonVariant.secondary,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              DesignSystemButton(
-                label: _isEditing ? messages.saveButton : messages.createButton,
-                onPressed: _isSaving ? null : _handleSave,
-              ),
+              for (final kind in _StatusKind.values)
+                ChoiceChip(
+                  label: Text(_statusKindLabel(context, kind)),
+                  selected: _statusKind == kind,
+                  onSelected: (_) => setState(() => _statusKind = kind),
+                ),
             ],
           ),
         ],
-      ),
+        SizedBox(height: tokens.spacing.step6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            DesignSystemButton(
+              label: messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            DesignSystemButton(
+              label: _isEditing ? messages.saveButton : messages.createButton,
+              onPressed: _isSaving ? null : _handleSave,
+            ),
+          ],
+        ),
+        // Breathing room under the action row, so the last control clears the
+        // sheet's bottom edge instead of sitting flush against it once the
+        // content has been scrolled to the end.
+        SizedBox(height: tokens.spacing.step6),
+      ],
     );
   }
 }

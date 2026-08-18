@@ -9,6 +9,23 @@
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorised.",
   "categoryFavoriteDescription": "Mark this category as a favourite",
+  "checkInDone": "Done",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidItFeel": "How did it feel?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "How did you connect?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
+  "checkInPreparedOverline": "✦ LOTTI · PREPARED THIS MORNING",
+  "checkInWriteInstead": "Write instead",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "colorLabel": "Colour",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
@@ -143,6 +160,98 @@
   "outboxMonitorNoAttachment": "no attachment",
   "outboxMonitorRetries": "retries",
   "outboxMonitorRetry": "retry",
+  "relationshipAsk": "Ask",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipBriefMeAgain": "Brief me again",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceNudgeNote": "Choosing a cadence turns on check-in nudges.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "On track",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCheckedInLabel": "Checked in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCheckInTitle": "Check in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Contact card",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipDueDay": "Due {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipJustAdded": "Just added",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisRead": "Lotti's read",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "as of {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNextByDay": "next by {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNudgesOn": "nudges on",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipQuietForDays": "Quiet for {count, plural, =1{1 day} other{{count} days}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipSeeAllCheckIns": "See all check-ins",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayingInTouch": "Staying in touch",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Stay in touch",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
   "saveLabel": "Save",
   "searchHint": "Search…",
   "selectColor": "Select a colour",

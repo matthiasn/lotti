@@ -3,6 +3,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/timezone.dart';
@@ -24,6 +27,45 @@ final JournalDb _db = getIt<JournalDb>();
 bool get _skipNotificationsOnCurrentPlatform =>
     defaultTargetPlatform == TargetPlatform.windows ||
     defaultTargetPlatform == TargetPlatform.linux;
+
+/// Whether the platform has an app-icon badge Lotti drives.
+///
+/// Darwin only, and the distinction is load-bearing rather than cosmetic. The
+/// badge is a *number on the icon*, carried by a notification's `badge` field
+/// and presented with `presentAlert: false`. Android has no equivalent: the
+/// same call there posts a visible "3 tasks in progress" notification, turning
+/// a silent icon count into a real interruption after every entry write.
+bool get _supportsIconBadge =>
+    defaultTargetPlatform == TargetPlatform.iOS ||
+    defaultTargetPlatform == TargetPlatform.macOS;
+
+/// Android notification channel for everything Lotti schedules.
+///
+/// One channel, deliberately: the user-facing control that matters is
+/// [enableNotificationsFlag] plus the per-feature switches inside the app, and
+/// splitting reminders across several system channels would offer a second,
+/// competing set of toggles that Lotti's own settings then disagree with.
+const _androidChannelId = 'lotti_reminders';
+
+/// How Android is asked to hold a scheduled notification.
+///
+/// **Inexact, on purpose.** The exact modes need `SCHEDULE_EXACT_ALARM`, which
+/// Android 13+ does not grant on install and the Play Store only accepts from
+/// apps whose core function is alarms or calendars. Nothing Lotti schedules is
+/// that: a check-in reminder for a monthly cadence and a habit reminder are
+/// both "some time that morning" affordances, and trading a few minutes of
+/// precision for not requesting a restricted permission is the right side of
+/// that deal. `allowWhileIdle` is the half that matters — without it, Doze
+/// defers the reminder on exactly the idle phone the reminder exists for.
+const AndroidScheduleMode _androidScheduleMode =
+    AndroidScheduleMode.inexactAllowWhileIdle;
+
+/// The Android status-bar icon.
+///
+/// A drawable, not `@mipmap/ic_launcher`: Android masks the small icon by its
+/// alpha channel and paints the result white, so a full-bleed launcher icon
+/// arrives as a solid white square.
+const _androidNotificationIcon = 'ic_stat_lotti';
 
 /// Darwin initialization settings that ask the OS for **nothing**.
 ///
@@ -75,7 +117,8 @@ class NotificationLocationResolver {
 }
 
 class NotificationService {
-  NotificationService() {
+  NotificationService({AppLocalizations Function()? messages})
+    : _messages = messages ?? deviceMessages {
     initialized = _initializePlugin();
   }
 
@@ -84,6 +127,18 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   final NotificationLocationResolver _locationResolver =
       NotificationLocationResolver();
+
+  /// Localized copy for the Android notification channel, which is
+  /// user-visible in system settings.
+  ///
+  /// **Fixed at first channel creation, not per notification.**
+  /// `AndroidNotificationDetails.channelAction` defaults to
+  /// `createIfNotExists`, so Android stores the name and description the first
+  /// time a notification creates the channel and ignores what later posts
+  /// carry. Switching the app's language therefore does *not* rename the
+  /// channel; only `AndroidNotificationChannelAction.update` would, and even
+  /// then some channel properties are immutable once created.
+  final AppLocalizations Function() _messages;
 
   /// Completes when the constructor's fire-and-forget plugin initialization
   /// has finished.
@@ -122,6 +177,12 @@ class NotificationService {
     try {
       await flutterLocalNotificationsPlugin.initialize(
         settings: const InitializationSettings(
+          // Android settings are not optional: `initialize` throws
+          // `ArgumentError('Android settings must be set…')` without them, and
+          // because that throw is swallowed below, omitting them left the
+          // whole plugin silently uninitialised on Android — no reminders, no
+          // habit alerts, no plan-ready banners, and no error the user saw.
+          android: AndroidInitializationSettings(_androidNotificationIcon),
           linux: LinuxInitializationSettings(
             defaultActionName: NotificationConstants.defaultActionName,
           ),
@@ -197,7 +258,7 @@ class NotificationService {
 
   Future<void> _requestPermissionsOnce() async {
     try {
-      await _requestDarwinPermissions();
+      await _requestPlatformPermissions();
     } catch (exception, stackTrace) {
       _permissionRequest = null;
       getIt<DomainLogger>().error(
@@ -210,9 +271,15 @@ class NotificationService {
   }
 
   /// `resolvePlatformSpecificImplementation` returns null off its matching
-  /// platform, so at most one of these two does anything on any given device,
-  /// and neither does on Linux or Windows.
-  Future<void> _requestDarwinPermissions() async {
+  /// platform, so at most one of these does anything on any given device, and
+  /// none do on Linux or Windows.
+  ///
+  /// Android's `POST_NOTIFICATIONS` is requested here rather than at
+  /// `initialize` for the same reason as Darwin's: the runtime prompt must
+  /// come after [_notificationsAllowed] has confirmed the user wants
+  /// notifications, never as a side effect of the plugin waking up. Exact
+  /// alarms are deliberately *not* requested — see [scheduleNotificationAt].
+  Future<void> _requestPlatformPermissions() async {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin
@@ -224,6 +291,12 @@ class NotificationService {
           MacOSFlutterLocalNotificationsPlugin
         >()
         ?.requestPermissions(alert: true, badge: true);
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
   }
 
   /// Badge presentation. iOS never alerts for the badge — the number on the
@@ -243,6 +316,58 @@ class NotificationService {
         ),
       );
 
+  /// Android presentation, or null where it would be discarded.
+  ///
+  /// Built only on Android and only for a caller that opted into mobile — the
+  /// channel name and description are user-visible in system settings, so they
+  /// come from the ARB catalogs, and resolving the device locale is not worth
+  /// doing for a value iOS and macOS will ignore.
+  ///
+  /// `high` importance is the Android counterpart of the Darwin
+  /// `timeSensitive` interruption level the two branches below use: it is what
+  /// makes the notification a heads-up banner rather than a silent row in the
+  /// shade.
+  /// The channel copy, degrading to English rather than throwing.
+  ///
+  /// This runs deep inside a notification write: `NotificationRepository`
+  /// schedules from within a vector-clock scope that commits only when its
+  /// body returns, so an exception escaping here would abort the notification
+  /// row itself — the same trap [_requestPermissions] documents and guards
+  /// against. Resolving a locale needs the widgets binding, which is one more
+  /// thing that can be absent, and a channel labelled in the wrong language is
+  /// an incomparably smaller failure than a reminder that is never written.
+  AppLocalizations _resolveMessages() {
+    try {
+      return _messages();
+    } catch (exception, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.notifications,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'resolveChannelMessages',
+        );
+      }
+      return AppLocalizationsEn();
+    }
+  }
+
+  AndroidNotificationDetails? _androidAlertDetails({
+    required bool showOnMobile,
+  }) {
+    if (!showOnMobile || defaultTargetPlatform != TargetPlatform.android) {
+      return null;
+    }
+    final messages = _resolveMessages();
+    return AndroidNotificationDetails(
+      _androidChannelId,
+      messages.notificationChannelRemindersName,
+      channelDescription: messages.notificationChannelRemindersDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+  }
+
   /// Presentation shared by the three entry points that raise a real alert.
   ///
   /// A platform the caller did not opt into gets null details, which is what
@@ -252,6 +377,7 @@ class NotificationService {
     required bool showOnMobile,
     required bool showOnDesktop,
   }) => NotificationDetails(
+    android: _androidAlertDetails(showOnMobile: showOnMobile),
     iOS: showOnMobile
         ? const DarwinNotificationDetails(
             presentAlert: true,
@@ -276,6 +402,12 @@ class NotificationService {
   /// the lazily registered service — and therefore the first thing that could
   /// prompt for permission. It must not, while notifications are off.
   Future<void> updateBadge() async {
+    // Before the flag check, because this is not a "notifications are off"
+    // path: there is simply nothing to reflect a count on. Falling through
+    // would post the badge notification as a visible alert on Android.
+    if (!_supportsIconBadge) {
+      return;
+    }
     if (!await _notificationsAllowed()) {
       await _clearBadge();
       return;
@@ -438,7 +570,7 @@ class NotificationService {
       ),
       matchDateTimeComponents: repeat ? DateTimeComponents.time : null,
       payload: deepLink,
-      androidScheduleMode: AndroidScheduleMode.exact,
+      androidScheduleMode: _androidScheduleMode,
     );
   }
 
@@ -471,7 +603,7 @@ class NotificationService {
         showOnDesktop: showOnDesktop,
       ),
       payload: deepLink,
-      androidScheduleMode: AndroidScheduleMode.exact,
+      androidScheduleMode: _androidScheduleMode,
     );
   }
 

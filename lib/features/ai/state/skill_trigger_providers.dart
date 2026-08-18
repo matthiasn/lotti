@@ -201,7 +201,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
           final resolver = ref.read(profileAutomationResolverProvider);
           ResolvedProfile? resolvedProfile;
           if (linkedTaskId != null) {
-            resolvedProfile = await resolver.resolveForTask(linkedTaskId);
+            resolvedProfile = await resolver.resolveForSubject(linkedTaskId);
           } else {
             final entity = await ref
                 .read(journalDbProvider)

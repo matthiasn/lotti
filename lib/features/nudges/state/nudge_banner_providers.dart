@@ -29,30 +29,27 @@ nudgeBannerSourcesProvider =
       name: 'nudgeBannerSourcesProvider',
     );
 
-/// Every kind's active banners, merged. Single-source containers (the
-/// current fleet: goals only) pass their source's order through untouched;
-/// a multi-kind merge re-sorts newest-first, matching the per-source
-/// contract. Each source's retained value survives its own background
+/// Every kind's active banners, merged. A single-source container passes
+/// its source's order through untouched; the multi-kind merge (the current
+/// fleet: goals and relationships) re-sorts newest-first, matching the
+/// per-source contract. Each source's retained value survives its own background
 /// refresh (`.value` on a reloading FutureProvider), so the dock never
 /// flashes empty on sync.
 final Provider<List<NudgeBannerEntry>> activeNudgeBannersProvider =
-    Provider.autoDispose<List<NudgeBannerEntry>>(
-      (ref) {
-        final sources = ref.watch(nudgeBannerSourcesProvider);
-        final entries = [
-          for (final source in sources) ...?ref.watch(source).value,
-        ];
-        if (sources.length > 1) {
-          entries.sort(
-            (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
-              a.nudge.activatedAt ?? a.nudge.createdAt,
-            ),
-          );
-        }
-        return entries;
-      },
-      name: 'activeNudgeBannersProvider',
-    );
+    Provider.autoDispose<List<NudgeBannerEntry>>((ref) {
+      final sources = ref.watch(nudgeBannerSourcesProvider);
+      final entries = [
+        for (final source in sources) ...?ref.watch(source).value,
+      ];
+      if (sources.length > 1) {
+        entries.sort(
+          (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
+            a.nudge.activatedAt ?? a.nudge.createdAt,
+          ),
+        );
+      }
+      return entries;
+    }, name: 'activeNudgeBannersProvider');
 
 /// Invalidates every registered banner source — the post-interaction
 /// refresh. Interaction writes go through the sync service (which
@@ -122,29 +119,30 @@ locallySnoozedNudgeDeadlinesProvider =
 /// Fire-and-forget exposure flush, captured by the banner's tracker
 /// while its element is live and safe to call from `dispose`.
 typedef NudgeInteractionsFlush =
-    void Function(String nudgeId, Duration visibleFor);
+    void Function(
+      String nudgeId,
+      Duration visibleFor,
+    );
 
-final nudgeExposureFlushProvider = Provider<NudgeInteractionsFlush>(
-  (ref) {
-    final interactions = ref.watch(nudgeInteractionsProvider);
-    final logger = ref.watch(domainLoggerProvider);
-    return (nudgeId, visibleFor) {
-      // The dispose path cannot await this, so a persistence failure must
-      // be contained here — logged, never an uncaught async error.
-      unawaited(
-        interactions.recordExposure(nudgeId, visibleFor: visibleFor).catchError(
-          (Object e, StackTrace st) {
-            logger.error(
-              LogDomain.agentRuntime,
-              e,
-              stackTrace: st,
-              subDomain: 'nudgeExposure',
-              message: 'exposure flush for $nudgeId was not persisted',
-            );
-          },
-        ),
-      );
-    };
-  },
-  name: 'nudgeExposureFlushProvider',
-);
+final nudgeExposureFlushProvider = Provider<NudgeInteractionsFlush>((ref) {
+  final interactions = ref.watch(nudgeInteractionsProvider);
+  final logger = ref.watch(domainLoggerProvider);
+  return (nudgeId, visibleFor) {
+    // The dispose path cannot await this, so a persistence failure must
+    // be contained here — logged, never an uncaught async error.
+    unawaited(
+      interactions.recordExposure(nudgeId, visibleFor: visibleFor).catchError((
+        Object e,
+        StackTrace st,
+      ) {
+        logger.error(
+          LogDomain.agentRuntime,
+          e,
+          stackTrace: st,
+          subDomain: 'nudgeExposure',
+          message: 'exposure flush for $nudgeId was not persisted',
+        );
+      }),
+    );
+  };
+}, name: 'nudgeExposureFlushProvider');

@@ -10,10 +10,11 @@ import 'package:lotti/themes/theme.dart';
 /// Renders the "Linked from" section: the entries that link *to* `item`
 /// (incoming links), watched via [linkedFromEntriesControllerProvider].
 ///
-/// Projects are always filtered out (a project links many tasks but is not
-/// useful context here), and tasks are dropped too when `hideTaskEntries` is
-/// set. Images render as [ModernJournalImageCard]; everything else as a
-/// [ModernJournalCard]. The section hides entirely when nothing remains.
+/// Container entities — projects and relationships — are always filtered out
+/// (each links many tasks but is not useful context here), and tasks are
+/// dropped too when `hideTaskEntries` is set. Images render as
+/// [ModernJournalImageCard]; everything else as a [ModernJournalCard]. The
+/// section hides entirely when nothing remains.
 class LinkedFromEntriesWidget extends ConsumerWidget {
   const LinkedFromEntriesWidget(
     this.item, {
@@ -32,10 +33,13 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     final provider = linkedFromEntriesControllerProvider(item.id);
     var items = ref.watch(provider).value ?? [];
 
-    // Projects link many tasks but are never useful surfacing as
-    // "linked from" context on a task-detail view, so they are
-    // filtered out unconditionally.
-    items = items.where((e) => e is! ProjectEntry).toList();
+    // Projects and relationships link many tasks but are never useful
+    // surfacing as "linked from" context on a task-detail view, so they are
+    // filtered out unconditionally. A relationship additionally has its own
+    // page (`/people/<id>`), which the generic card here cannot route to.
+    items = items
+        .where((e) => e is! ProjectEntry && e is! RelationshipEntry)
+        .toList();
 
     if (hideTaskEntries) {
       items = items.where((e) => e is! Task).toList();

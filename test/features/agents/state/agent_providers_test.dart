@@ -2383,6 +2383,23 @@ void main() {
         manager.requiresLease!(recordOn(coordinatorDigestWorkspaceKey)),
         isTrue,
       );
+      // Both escalation families are lease-elected: exactly one device runs
+      // the LLM tier for a given episode (ADR 0054 / ADR 0059).
+      expect(
+        manager.requiresLease!(recordOn('goal-escalation:2026-05-20')),
+        isTrue,
+      );
+      expect(
+        manager.requiresLease!(
+          recordOn('relationship-escalation:2026-05-20'),
+        ),
+        isTrue,
+      );
+      expect(
+        manager.requiresLease!(recordOn('relationship-cadence')),
+        isFalse,
+        reason: 'the deterministic tick runs on every device by design',
+      );
       // Everything else is device-local, where each device firing is correct.
       expect(
         manager.requiresLease!(recordOn('day:dayplan-2026-05-20')),

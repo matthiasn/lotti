@@ -3124,6 +3124,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze check-in verwijderen? Dit kan niet ongedaan worden gemaakt.';
 
   @override
+  String get checkInDone => 'Klaar';
+
+  @override
   String get checkInEditTitle => 'Check-in bewerken';
 
   @override
@@ -3133,6 +3136,12 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get checkInErrorDeleteFailed =>
       'Kon de check-in niet verwijderen. Probeer het opnieuw.';
+
+  @override
+  String get checkInHowDidItFeel => 'Hoe voelde het?';
+
+  @override
+  String get checkInHowDidYouConnect => 'Hoe was het contact?';
 
   @override
   String get checkInInteractionCall => 'Telefoontje';
@@ -3159,6 +3168,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInPayAttentionLabel => 'Let de volgende keer op';
 
   @override
+  String get checkInPreparedOverline => '✦ LOTTI · VANOCHTEND VOORBEREID';
+
+  @override
   String get checkInSentimentDelightful => 'Heerlijk';
 
   @override
@@ -3177,10 +3189,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInSentimentStrained => 'Gespannen';
 
   @override
+  String get checkInSpeakButton => 'Check-in inspreken';
+
+  @override
   String get checkInTopicsHint => 'Kommagescheiden, bijv. werk, reizen';
 
   @override
   String get checkInTopicsLabel => 'Onderwerpen';
+
+  @override
+  String get checkInTranscribingLabel => 'Bezig met transcriberen…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Er kwam geen transcriptie terug. Je kunt het zelf typen.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transcriptie is niet ingesteld voor deze persoon. Voeg een audiomodel toe en zet automatische inferentie aan voor hun categorie, of typ de check-in.';
+
+  @override
+  String get checkInWriteInstead => 'Liever schrijven';
 
   @override
   String get checklistAddItem => 'Een nieuw item toevoegen';
@@ -3483,7 +3512,7 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count u geleden',
+      other: '$count h geleden',
       one: '1 uur geleden',
     );
     return '$_temp0';
@@ -6257,6 +6286,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Praat met $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Praat met de agent';
 
   @override
@@ -6349,6 +6383,9 @@ class AppLocalizationsNl extends AppLocalizations {
   ) {
     return 'Gisteren: $metCount van $dimensionCount dimensies · $requiredCount vereist.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Het hele doel';
 
   @override
   String get goalCreateFailed =>
@@ -6445,7 +6482,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Wat je agent zegt';
+
+  @override
   String get goalDetailSignalsTitle => 'Signalen';
+
+  @override
+  String get goalDetailStatementLabel => 'Jouw doel';
 
   @override
   String get goalDetailThisWeekTitle => 'Deze week';
@@ -6464,6 +6507,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Volgt';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Bijgehouden categorietijd';
@@ -6551,6 +6597,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-daags gemiddelde';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName heeft aandacht nodig';
   }
 
   @override
@@ -7073,6 +7124,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalStatusRecovering => 'Herstellend';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Updates van de gekoppelde bron · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermaand';
 
   @override
@@ -7224,7 +7280,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsFilterPendingLater => 'later';
 
   @override
-  String get habitsGoalLineLabel => 'Streefwaarde';
+  String get habitsGoalLineLabel => 'Doel';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7258,8 +7314,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points punten tot de streefwaarde',
-      one: '1 punt tot de streefwaarde',
+      other: '$points pts to goal',
+      one: '1 pt tot doel',
     );
     return '$_temp0';
   }
@@ -9129,6 +9185,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Contactherinneringen, gewoonteherinneringen en meldingen van Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Herinneringen';
+
+  @override
   String get notificationInboxDismiss => 'Mededeling verwerpen';
 
   @override
@@ -10208,12 +10271,61 @@ class AppLocalizationsNl extends AppLocalizations {
   String get referenceImageSkip => 'Overslaan';
 
   @override
+  String get relationshipActionCall => 'Bellen';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed => 'Niets op dit apparaat kan dat openen';
+
+  @override
+  String get relationshipActionMessage => 'Bericht';
+
+  @override
   String get relationshipAddChannelButton => 'Contactgegeven toevoegen';
+
+  @override
+  String get relationshipAsk => 'Vraag';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Relatiebanner voor $personName';
   }
+
+  @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'De briefing draait op $provider. Notities over deze persoon worden daarheen gestuurd voor verwerking.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Doorgaan';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Naar $provider sturen?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Nog geen briefing — Praat me bij maakt er een van je check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing aangevraagd — verschijnt hier zo.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Kon de briefing niet aanvragen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeAgain => 'Opnieuw vatten';
+
+  @override
+  String get relationshipBriefMeButton => 'Praat me bij';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10239,16 +10351,66 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCadenceNone => 'Geen ritme';
 
   @override
+  String get relationshipCadenceNudgeNote =>
+      'Een cadans zet check-in-herinneringen aan.';
+
+  @override
+  String get relationshipCadenceOnTrack => 'op schema';
+
+  @override
   String get relationshipCadenceQuarterly => 'Elk kwartaal';
 
   @override
   String get relationshipCadenceWeekly => 'Wekelijks';
 
   @override
+  String get relationshipChatTooltip => 'Chat over deze persoon';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Nog geen agent — markeer deze persoon eerst als belangrijk.';
+
+  @override
+  String relationshipCheckedInLabel(String date) {
+    return 'Check-in $date';
+  }
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Een goed moment om contact op te nemen.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Even contact met $name?';
+  }
+
+  @override
   String get relationshipCheckInsLabel => 'Check-ins';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Check-in · $name';
+  }
+
+  @override
+  String get relationshipContactCardAction => 'Contactkaart';
+
+  @override
   String get relationshipContactChannelsLabel => 'Contactgegevens';
+
+  @override
+  String get relationshipContactLinked => 'Contactgegevens gekopieerd';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kon de contactgegevens niet opslaan';
+
+  @override
+  String get relationshipContactMissing =>
+      'Dat contact staat niet op dit apparaat';
+
+  @override
+  String get relationshipContactNoChanges => 'Niets nieuws om te kopiëren';
 
   @override
   String get relationshipCreateTitle => 'Persoon toevoegen';
@@ -10260,6 +10422,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipDeleteConfirmTitle(String name) {
     return '$name verwijderen?';
+  }
+
+  @override
+  String relationshipDueDay(String day) {
+    return 'Voor $day';
   }
 
   @override
@@ -10282,6 +10449,32 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Vraagt aandacht';
+
+  @override
+  String get relationshipHealthSteady => 'Stabiel';
+
+  @override
+  String get relationshipHealthStrained => 'Gespannen';
+
+  @override
+  String get relationshipHealthThriving => 'Bloeiend';
+
+  @override
+  String get relationshipImportAction => 'Importeren uit contacten';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen toegevoegd',
+      one: '1 persoon toegevoegd',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Herinner me eraan contact te houden';
 
@@ -10289,7 +10482,80 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportantLabel => 'Belangrijk';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Gekoppelde taken';
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personen toevoegen',
+      one: '1 persoon toevoegen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Geen contacten op dit apparaat';
+
+  @override
+  String get relationshipImportFailed => 'Kon niemand toevoegen';
+
+  @override
+  String get relationshipImportGrantButton => 'Toegang toestaan';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Geen contacten komen overeen met je zoekopdracht';
+
+  @override
+  String get relationshipImportOpenSettings => 'Instellingen openen';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti leest je contacten alleen zolang deze kiezer open is en kopieert alleen de personen die je kiest.';
+
+  @override
+  String get relationshipImportRetry => 'Opnieuw proberen';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nakijken',
+      one: '1 nakijken',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Voordat je ze toevoegt';
+
+  @override
+  String get relationshipImportSearchHint => 'Contacten zoeken';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Toegang tot contacten staat uit. Zet het aan in de systeeminstellingen om personen te importeren.';
+
+  @override
+  String get relationshipImportTitle => 'Personen toevoegen';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Contacten importeren kan op telefoons en tablets. Voer de contactgegevens hier met de hand in.';
+
+  @override
+  String get relationshipJustAdded => 'Net toegevoegd';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Laatste check-in $date';
+  }
+
+  @override
+  String get relationshipLinkContact => 'Contact koppelen';
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Taken';
 
   @override
   String get relationshipLinkTaskButton => 'Taak koppelen';
@@ -10298,10 +10564,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipLogCheckIn => 'Check-in vastleggen';
 
   @override
+  String get relationshipLottisRead => 'Lotti\'s inschatting';
+
+  @override
+  String relationshipLottisReadAsOf(String time) {
+    return 'van $time';
+  }
+
+  @override
   String get relationshipNameLabel => 'Naam';
 
   @override
   String get relationshipNameRequired => 'Een naam is verplicht';
+
+  @override
+  String relationshipNextByDay(String day) {
+    return 'volgende voor $day';
+  }
 
   @override
   String get relationshipNicknameLabel => 'Bijnaam';
@@ -10316,6 +10595,41 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get relationshipNotFound =>
       'Deze persoon staat niet meer in je lijst.';
+
+  @override
+  String get relationshipNudgesOn => 'herinneringen aan';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Je hebt net contact gehad. Wil je een check-in vastleggen nu het nog vers is?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Check-in vastleggen';
+
+  @override
+  String get relationshipPostCallDismiss => 'Niet nu';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Hoe ging het met $name?';
+  }
+
+  @override
+  String relationshipQuietForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen',
+      one: '1 dag',
+    );
+    return '$_temp0 geen contact';
+  }
+
+  @override
+  String get relationshipRelinkContact => 'Ander contact koppelen';
+
+  @override
+  String get relationshipSeeAllCheckIns => 'Alle check-ins bekijken';
 
   @override
   String get relationshipsEmptyState =>
@@ -10335,6 +10649,20 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String get relationshipStayingInTouch => 'Contact houden';
+
+  @override
+  String get relationshipStayInTouch => 'Contact houden';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Gevolgd sinds $date';
+  }
+
+  @override
+  String get relationshipUpdateFromContact => 'Bijwerken vanuit contact';
 
   @override
   String get saveButton => 'Opslaan';

@@ -3166,6 +3166,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți această înregistrare? Acțiunea nu poate fi anulată.';
 
   @override
+  String get checkInDone => 'Gata';
+
+  @override
   String get checkInEditTitle => 'Editați înregistrarea';
 
   @override
@@ -3177,13 +3180,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Înregistrarea nu a putut fi ștearsă. Încercați din nou.';
 
   @override
+  String get checkInHowDidItFeel => 'Cum a fost?';
+
+  @override
+  String get checkInHowDidYouConnect => 'Cum a fost contactul?';
+
+  @override
   String get checkInInteractionCall => 'Apel';
 
   @override
   String get checkInInteractionInPerson => 'În persoană';
 
   @override
-  String get checkInInteractionLabel => 'Cum ați luat legătura?';
+  String get checkInInteractionLabel => 'Cum ați vorbit?';
 
   @override
   String get checkInInteractionMessage => 'Mesaj';
@@ -3199,6 +3208,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Data viitoare, acordați atenție la';
+
+  @override
+  String get checkInPreparedOverline => '✦ LOTTI · PREGĂTIT AZI-DIMINEAȚĂ';
 
   @override
   String get checkInSentimentDelightful => 'Minunat';
@@ -3219,11 +3231,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInSentimentStrained => 'Tensionat';
 
   @override
+  String get checkInSpeakButton => 'Dictați contactul';
+
+  @override
   String get checkInTopicsHint =>
       'Separate prin virgulă, de ex. muncă, călătorii';
 
   @override
   String get checkInTopicsLabel => 'Subiecte';
+
+  @override
+  String get checkInTranscribingLabel => 'Se transcrie…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Nu a venit nicio transcriere. O puteți scrie dvs.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transcrierea nu este configurată pentru această persoană. Adăugați un model audio și activați inferența automată pentru categoria sa, sau scrieți contactul.';
+
+  @override
+  String get checkInWriteInstead => 'Scrie în schimb';
 
   @override
   String get checklistAddItem => 'Adăugați un element nou';
@@ -6339,6 +6368,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Vorbiți cu $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Vorbiți cu agentul';
 
   @override
@@ -6447,6 +6481,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Tot scopul';
+
+  @override
   String get goalCreateFailed =>
       'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
 
@@ -6544,7 +6581,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Ce spune agentul dvs.';
+
+  @override
   String get goalDetailSignalsTitle => 'Semnale';
+
+  @override
+  String get goalDetailStatementLabel => 'Obiectivul dvs.';
 
   @override
   String get goalDetailThisWeekTitle => 'Săptămâna aceasta';
@@ -6563,6 +6606,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Timp de categorie urmărit';
@@ -6650,6 +6696,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · media pe 7 zile';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName are nevoie de atenție';
   }
 
   @override
@@ -7188,6 +7239,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalStatusRecovering => 'În revenire';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Actualizări din sursa conectată · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'lună calendaristică';
 
   @override
@@ -7348,7 +7404,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsFilterPendingLater => 'mai târziu';
 
   @override
-  String get habitsGoalLineLabel => 'Țintă';
+  String get habitsGoalLineLabel => 'Obiectiv';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7379,7 +7435,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points pct. până la țintă';
+    return '$points pct. până la obiectiv';
   }
 
   @override
@@ -9297,6 +9353,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Memento-uri pentru contact, memento-uri pentru obiceiuri și notificări de la Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Memento-uri';
+
+  @override
   String get notificationInboxDismiss => 'Închideți notificarea';
 
   @override
@@ -10404,12 +10467,62 @@ class AppLocalizationsRo extends AppLocalizations {
   String get referenceImageSkip => 'Săriți peste';
 
   @override
+  String get relationshipActionCall => 'Apelați';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed =>
+      'Nimic de pe acest dispozitiv nu poate deschide acest lucru';
+
+  @override
+  String get relationshipActionMessage => 'Mesaj';
+
+  @override
   String get relationshipAddChannelButton => 'Adăugați o modalitate de contact';
+
+  @override
+  String get relationshipAsk => 'Întreabă';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Banner de relație pentru $personName';
   }
+
+  @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Rezumatul rulează pe $provider. Notițele despre această persoană vor fi trimise acolo pentru procesare.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Continuați';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Trimiteți la $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Niciun rezumat încă — Pune-mă la curent pregătește unul din check-inurile dvs.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Rezumat solicitat — va apărea aici în curând.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Rezumatul nu a putut fi solicitat.';
+
+  @override
+  String get relationshipBriefingTitle => 'Rezumat';
+
+  @override
+  String get relationshipBriefMeAgain => 'Pune-mă la curent din nou';
+
+  @override
+  String get relationshipBriefMeButton => 'Pune-mă la curent';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10436,16 +10549,66 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipCadenceNone => 'Fără ritm';
 
   @override
+  String get relationshipCadenceNudgeNote =>
+      'Alegerea unui ritm activează memento-urile de înregistrare.';
+
+  @override
+  String get relationshipCadenceOnTrack => 'la zi';
+
+  @override
   String get relationshipCadenceQuarterly => 'Trimestrial';
 
   @override
   String get relationshipCadenceWeekly => 'Săptămânal';
 
   @override
+  String get relationshipChatTooltip => 'Discutați despre această persoană';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Niciun agent încă — marcați mai întâi această persoană ca importantă.';
+
+  @override
+  String relationshipCheckedInLabel(String date) {
+    return 'Înregistrare $date';
+  }
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Un moment bun pentru a lua legătura.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Luați legătura cu $name?';
+  }
+
+  @override
   String get relationshipCheckInsLabel => 'Înregistrări';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Înregistrare · $name';
+  }
+
+  @override
+  String get relationshipContactCardAction => 'Card de contact';
+
+  @override
   String get relationshipContactChannelsLabel => 'Date de contact';
+
+  @override
+  String get relationshipContactLinked => 'Datele de contact au fost copiate';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Datele de contact nu au putut fi salvate';
+
+  @override
+  String get relationshipContactMissing =>
+      'Acel contact nu se află pe acest dispozitiv';
+
+  @override
+  String get relationshipContactNoChanges => 'Nu este nimic nou de copiat';
 
   @override
   String get relationshipCreateTitle => 'Adăugați o persoană';
@@ -10457,6 +10620,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String relationshipDeleteConfirmTitle(String name) {
     return 'Ștergeți $name?';
+  }
+
+  @override
+  String relationshipDueDay(String day) {
+    return 'Până $day';
   }
 
   @override
@@ -10479,11 +10647,114 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modificările nu au putut fi salvate. Încercați din nou.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Necesită atenție';
+
+  @override
+  String get relationshipHealthSteady => 'Stabilă';
+
+  @override
+  String get relationshipHealthStrained => 'Tensionată';
+
+  @override
+  String get relationshipHealthThriving => 'Înfloritoare';
+
+  @override
+  String get relationshipImportAction => 'Importați din contacte';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de persoane adăugate',
+      few: '$count persoane adăugate',
+      one: '1 persoană adăugată',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Amintiți-mi să păstrez legătura';
 
   @override
   String get relationshipImportantLabel => 'Important';
+
+  @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Adăugați $count de persoane',
+      few: 'Adăugați $count persoane',
+      one: 'Adăugați 1 persoană',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Niciun contact pe acest dispozitiv';
+
+  @override
+  String get relationshipImportFailed =>
+      'Nu a putut fi adăugată nicio persoană';
+
+  @override
+  String get relationshipImportGrantButton => 'Permiteți accesul';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Niciun contact nu corespunde căutării dumneavoastră';
+
+  @override
+  String get relationshipImportOpenSettings => 'Deschideți setările';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti vă citește contactele doar cât timp acest selector este deschis și copiază doar persoanele pe care le alegeți.';
+
+  @override
+  String get relationshipImportRetry => 'Încercați din nou';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Verificați $count',
+      few: 'Verificați $count',
+      one: 'Verificați 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Înainte de a le adăuga';
+
+  @override
+  String get relationshipImportSearchHint => 'Căutați contacte';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Accesul la contacte este dezactivat. Activați-l din setările sistemului pentru a importa persoane.';
+
+  @override
+  String get relationshipImportTitle => 'Adăugați persoane';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Importul de contacte este disponibil pe telefoane și tablete. Adăugați aici datele de contact manual.';
+
+  @override
+  String get relationshipJustAdded => 'Adăugat recent';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Ultima înregistrare $date';
+  }
+
+  @override
+  String get relationshipLinkContact => 'Asociați un contact';
 
   @override
   String get relationshipLinkedTasksLabel => 'Sarcini';
@@ -10495,10 +10766,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipLogCheckIn => 'Înregistrați un contact';
 
   @override
+  String get relationshipLottisRead => 'Părerea Lotti';
+
+  @override
+  String relationshipLottisReadAsOf(String time) {
+    return 'la $time';
+  }
+
+  @override
   String get relationshipNameLabel => 'Nume';
 
   @override
   String get relationshipNameRequired => 'Numele este obligatoriu';
+
+  @override
+  String relationshipNextByDay(String day) {
+    return 'următorul până $day';
+  }
 
   @override
   String get relationshipNicknameLabel => 'Poreclă';
@@ -10512,6 +10796,41 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipNotFound => 'Această persoană nu mai este urmărită.';
+
+  @override
+  String get relationshipNudgesOn => 'memento-uri active';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Tocmai ați luat legătura. Doriți să notați un check-in cât este proaspăt?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Notați check-in';
+
+  @override
+  String get relationshipPostCallDismiss => 'Nu acum';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Cum a fost cu $name?';
+  }
+
+  @override
+  String relationshipQuietForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'de $count zile',
+      one: 'de 1 zi',
+    );
+    return 'Fără contact $_temp0';
+  }
+
+  @override
+  String get relationshipRelinkContact => 'Asociați alt contact';
+
+  @override
+  String get relationshipSeeAllCheckIns => 'Vezi toate înregistrările';
 
   @override
   String get relationshipsEmptyState =>
@@ -10531,6 +10850,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stare';
+
+  @override
+  String get relationshipStayingInTouch => 'Menținerea contactului';
+
+  @override
+  String get relationshipStayInTouch => 'Menține contactul';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Urmărire din $date';
+  }
+
+  @override
+  String get relationshipUpdateFromContact => 'Actualizați din contact';
 
   @override
   String get saveButton => 'Salvați';

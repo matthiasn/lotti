@@ -57,6 +57,7 @@ class AgentDbConversions {
       goalProgress: (e) => e.deletedAt,
       goalNudge: (e) => e.deletedAt,
       relationshipNudge: (e) => e.deletedAt,
+      relationshipHealth: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -215,6 +216,7 @@ class AgentDbConversions {
       agentEvent: (l) => l.deletedAt,
       agentGoal: (l) => l.deletedAt,
       agentDay: (l) => l.deletedAt,
+      agentRelationship: (l) => l.deletedAt,
       soulAssignment: (l) => l.deletedAt,
     );
 
@@ -280,6 +282,7 @@ class AgentDbConversions {
       goalProgress: (_) => AgentEntityTypes.goalProgress,
       goalNudge: (_) => AgentEntityTypes.goalNudge,
       relationshipNudge: (_) => AgentEntityTypes.relationshipNudge,
+      relationshipHealth: (_) => AgentEntityTypes.relationshipHealth,
       unknown: (_) => 'unknown',
     );
   }
@@ -330,6 +333,9 @@ class AgentDbConversions {
       goalProgress: (progress) => progress.trackStatus.name,
       goalNudge: (nudge) => nudge.status.name,
       relationshipNudge: (nudge) => nudge.status.name,
+      // The cadence verdict: what makes "every due relationship" an
+      // indexed scan.
+      relationshipHealth: (health) => health.status.name,
     );
   }
 
@@ -377,6 +383,7 @@ class AgentDbConversions {
       goalProgress: (e) => e.createdAt,
       goalNudge: (e) => e.createdAt,
       relationshipNudge: (e) => e.createdAt,
+      relationshipHealth: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -425,6 +432,7 @@ class AgentDbConversions {
       goalProgress: (e) => e.updatedAt,
       goalNudge: (e) => e.updatedAt,
       relationshipNudge: (e) => e.updatedAt,
+      relationshipHealth: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -450,6 +458,7 @@ class AgentDbConversions {
       agentEvent: (_) => AgentLinkTypes.agentEvent,
       agentGoal: (_) => AgentLinkTypes.agentGoal,
       agentDay: (_) => AgentLinkTypes.agentDay,
+      agentRelationship: (_) => AgentLinkTypes.agentRelationship,
       soulAssignment: (_) => AgentLinkTypes.soulAssignment,
     );
   }

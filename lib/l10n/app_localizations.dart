@@ -5274,6 +5274,12 @@ abstract class AppLocalizations {
   /// **'Delete this check-in? This cannot be undone.'**
   String get checkInDeleteConfirmMessage;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get checkInDone;
+
   /// No description provided for @checkInEditTitle.
   ///
   /// In en, this message translates to:
@@ -5291,6 +5297,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not delete the check-in. Please try again.'**
   String get checkInErrorDeleteFailed;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'How did it feel?'**
+  String get checkInHowDidItFeel;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'How did you connect?'**
+  String get checkInHowDidYouConnect;
 
   /// No description provided for @checkInInteractionCall.
   ///
@@ -5340,6 +5358,12 @@ abstract class AppLocalizations {
   /// **'Next time, pay attention to'**
   String get checkInPayAttentionLabel;
 
+  /// No description provided for @checkInPreparedOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'✦ LOTTI · PREPARED THIS MORNING'**
+  String get checkInPreparedOverline;
+
   /// No description provided for @checkInSentimentDelightful.
   ///
   /// In en, this message translates to:
@@ -5376,6 +5400,12 @@ abstract class AppLocalizations {
   /// **'Strained'**
   String get checkInSentimentStrained;
 
+  /// Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak check-in'**
+  String get checkInSpeakButton;
+
   /// No description provided for @checkInTopicsHint.
   ///
   /// In en, this message translates to:
@@ -5387,6 +5417,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
+
+  /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get checkInTranscribingLabel;
+
+  /// Message shown when a spoken check-in produced no transcript and the user has to type the narrative.
+  ///
+  /// In en, this message translates to:
+  /// **'No transcript came back. You can type it instead.'**
+  String get checkInTranscriptFailed;
+
+  /// Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.'**
+  String get checkInTranscriptUnavailable;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Write instead'**
+  String get checkInWriteInstead;
 
   /// No description provided for @checklistAddItem.
   ///
@@ -10697,6 +10751,12 @@ abstract class AppLocalizations {
   /// **'{agentName} is replying…'**
   String goalChatResponding(String agentName);
 
+  /// Button that opens a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to {agentName}'**
+  String goalChatTalkTo(String agentName);
+
   /// Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)
   ///
   /// In en, this message translates to:
@@ -10844,6 +10904,12 @@ abstract class AppLocalizations {
     int dimensionCount,
     int requiredCount,
   );
+
+  /// No description provided for @goalCompositeProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole goal'**
+  String get goalCompositeProgressTitle;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///
@@ -10995,11 +11061,23 @@ abstract class AppLocalizations {
   /// **'as of {ago}'**
   String goalDetailReadAsOf(String ago);
 
+  /// No description provided for @goalDetailSayingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What your agent is saying'**
+  String get goalDetailSayingTitle;
+
   /// Section heading over the data-signal dimension cards on goal detail.
   ///
   /// In en, this message translates to:
   /// **'Signals'**
   String get goalDetailSignalsTitle;
+
+  /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalDetailStatementLabel;
 
   /// Title of the goal detail hero card holding the whole-goal 7-day strip.
   ///
@@ -11030,6 +11108,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
+
+  /// No description provided for @goalDetailWatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching'**
+  String get goalDetailWatchingTitle;
 
   /// No description provided for @goalDimensionCategoryTimeSource.
   ///
@@ -11157,6 +11241,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} · 7-day average'**
   String goalDimensionRollingAverageRow(String name);
+
+  /// No description provided for @goalDominantIssueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimensionName} needs attention'**
+  String goalDominantIssueBadge(Object dimensionName);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11746,7 +11836,7 @@ abstract class AppLocalizations {
   /// **'Timing pattern'**
   String get goalPatternTitle;
 
-  /// Chip on a goal card when a revision proposal is pending review.
+  /// Badge on an agent card when a revision proposal is pending.
   ///
   /// In en, this message translates to:
   /// **'Proposal awaiting review'**
@@ -11961,6 +12051,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recovering'**
   String get goalStatusRecovering;
+
+  /// No description provided for @goalWatchingMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates from its linked source · {windowLabel}'**
+  String goalWatchingMetric(String windowLabel);
 
   /// No description provided for @goalWindowCalendarMonth.
   ///
@@ -12223,7 +12319,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsGoalLineLabel.
   ///
   /// In en, this message translates to:
-  /// **'Target'**
+  /// **'Goal'**
   String get habitsGoalLineLabel;
 
   /// No description provided for @habitsHeatmapEmpty.
@@ -12277,7 +12373,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points, plural, one{1 pt to target} other{{points} pts to target}}'**
+  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
   String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.
@@ -15481,6 +15577,18 @@ abstract class AppLocalizations {
   /// **'Notifications, {count} unread {count, plural, =1{alert} other{alerts}}'**
   String notificationBellUnseenSemantics(int count);
 
+  /// No description provided for @notificationChannelRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in reminders, habit reminders and alerts from Lotti.'**
+  String get notificationChannelRemindersDescription;
+
+  /// No description provided for @notificationChannelRemindersName.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get notificationChannelRemindersName;
+
   /// No description provided for @notificationInboxDismiss.
   ///
   /// In en, this message translates to:
@@ -17167,17 +17275,101 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get referenceImageSkip;
 
+  /// Tooltip on the button that dials a contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get relationshipActionCall;
+
+  /// Tooltip on the button that opens a mail composer
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get relationshipActionEmail;
+
+  /// Toast shown when no app on the device handles the contact channel
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this device can open that'**
+  String get relationshipActionFailed;
+
+  /// Tooltip on the button that opens a message composer
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get relationshipActionMessage;
+
   /// No description provided for @relationshipAddChannelButton.
   ///
   /// In en, this message translates to:
   /// **'Add channel'**
   String get relationshipAddChannelButton;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get relationshipAsk;
+
   /// Accessibility label of one relationship nudge banner; personName is the person's name.
   ///
   /// In en, this message translates to:
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
+
+  /// Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'The briefing runs on {provider}. Notes about this person will be sent there for processing.'**
+  String relationshipBriefingDisclosureBody(String provider);
+
+  /// No description provided for @relationshipBriefingDisclosureConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get relationshipBriefingDisclosureConfirm;
+
+  /// Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {provider}?'**
+  String relationshipBriefingDisclosureTitle(String provider);
+
+  /// No description provided for @relationshipBriefingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No briefing yet — Brief me prepares one from your check-ins.'**
+  String get relationshipBriefingEmpty;
+
+  /// No description provided for @relationshipBriefingRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing requested — it will appear here shortly.'**
+  String get relationshipBriefingRequested;
+
+  /// No description provided for @relationshipBriefingRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not request the briefing.'**
+  String get relationshipBriefingRequestFailed;
+
+  /// No description provided for @relationshipBriefingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing'**
+  String get relationshipBriefingTitle;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief me again'**
+  String get relationshipBriefMeAgain;
+
+  /// No description provided for @relationshipBriefMeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief me'**
+  String get relationshipBriefMeButton;
 
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
@@ -17209,6 +17401,18 @@ abstract class AppLocalizations {
   /// **'No cadence'**
   String get relationshipCadenceNone;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing a cadence turns on check-in nudges.'**
+  String get relationshipCadenceNudgeNote;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get relationshipCadenceOnTrack;
+
   /// No description provided for @relationshipCadenceQuarterly.
   ///
   /// In en, this message translates to:
@@ -17221,17 +17425,83 @@ abstract class AppLocalizations {
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
 
+  /// No description provided for @relationshipChatTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat about this person'**
+  String get relationshipChatTooltip;
+
+  /// No description provided for @relationshipChatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent yet — mark this person as important first.'**
+  String get relationshipChatUnavailable;
+
+  /// No description provided for @relationshipCheckedInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked in {date}'**
+  String relationshipCheckedInLabel(String date);
+
+  /// No description provided for @relationshipCheckInReminderBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A good moment to reach out.'**
+  String get relationshipCheckInReminderBody;
+
+  /// No description provided for @relationshipCheckInReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in with {name}?'**
+  String relationshipCheckInReminderTitle(String name);
+
   /// No description provided for @relationshipCheckInsLabel.
   ///
   /// In en, this message translates to:
   /// **'Check-ins'**
   String get relationshipCheckInsLabel;
 
+  /// No description provided for @relationshipCheckInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in · {name}'**
+  String relationshipCheckInTitle(String name);
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact card'**
+  String get relationshipContactCardAction;
+
   /// No description provided for @relationshipContactChannelsLabel.
   ///
   /// In en, this message translates to:
   /// **'Contact channels'**
   String get relationshipContactChannelsLabel;
+
+  /// Toast confirming contact channels were copied onto the person
+  ///
+  /// In en, this message translates to:
+  /// **'Contact details copied'**
+  String get relationshipContactLinked;
+
+  /// Toast shown when saving the copied contact details was rejected
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the contact details'**
+  String get relationshipContactLinkFailed;
+
+  /// Toast shown when the stored contact reference resolves to nothing on this device
+  ///
+  /// In en, this message translates to:
+  /// **'That contact isn\'t on this device'**
+  String get relationshipContactMissing;
+
+  /// Toast shown when the linked contact held nothing the person did not already have
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new to copy'**
+  String get relationshipContactNoChanges;
 
   /// No description provided for @relationshipCreateTitle.
   ///
@@ -17250,6 +17520,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {name}?'**
   String relationshipDeleteConfirmTitle(String name);
+
+  /// No description provided for @relationshipDueDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {day}'**
+  String relationshipDueDay(String day);
 
   /// No description provided for @relationshipEditTitle.
   ///
@@ -17281,6 +17557,42 @@ abstract class AppLocalizations {
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
 
+  /// No description provided for @relationshipHealthNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get relationshipHealthNeedsAttention;
+
+  /// No description provided for @relationshipHealthSteady.
+  ///
+  /// In en, this message translates to:
+  /// **'Steady'**
+  String get relationshipHealthSteady;
+
+  /// No description provided for @relationshipHealthStrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Strained'**
+  String get relationshipHealthStrained;
+
+  /// No description provided for @relationshipHealthThriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Thriving'**
+  String get relationshipHealthThriving;
+
+  /// Opens the multi-select contact import screen from the People list
+  ///
+  /// In en, this message translates to:
+  /// **'Import from contacts'**
+  String get relationshipImportAction;
+
+  /// Toast confirming how many people the import created
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person added} other{{count} people added}}'**
+  String relationshipImportAdded(int count);
+
   /// No description provided for @relationshipImportantDescription.
   ///
   /// In en, this message translates to:
@@ -17292,6 +17604,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Important'**
   String get relationshipImportantLabel;
+
+  /// Creates one person per reviewed contact
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Add 1 person} other{Add {count} people}}'**
+  String relationshipImportConfirmButton(int count);
+
+  /// Shown when the address book is readable but empty
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts on this device'**
+  String get relationshipImportEmpty;
+
+  /// Toast shown when no relationship could be created from the import
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add anyone'**
+  String get relationshipImportFailed;
+
+  /// Requests contact permission from the import screen
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access'**
+  String get relationshipImportGrantButton;
+
+  /// Shown when the contact search matches nothing
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts match your search'**
+  String get relationshipImportNoMatches;
+
+  /// Opens system settings so contact access can be re-enabled
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get relationshipImportOpenSettings;
+
+  /// Explains what contact access is used for before it is requested
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti reads your contacts only while this picker is open, and copies only the people you choose.'**
+  String get relationshipImportPermissionBody;
+
+  /// Retries the contact permission request
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get relationshipImportRetry;
+
+  /// Advances from contact selection to the review step
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Review 1} other{Review {count}}}'**
+  String relationshipImportReviewButton(int count);
+
+  /// Title of the import review step, where importance and cadence are set
+  ///
+  /// In en, this message translates to:
+  /// **'Before you add them'**
+  String get relationshipImportReviewTitle;
+
+  /// Placeholder in the contact import search field
+  ///
+  /// In en, this message translates to:
+  /// **'Search contacts'**
+  String get relationshipImportSearchHint;
+
+  /// Shown when contact access was permanently refused
+  ///
+  /// In en, this message translates to:
+  /// **'Contact access is turned off. Turn it on in system settings to import people.'**
+  String get relationshipImportSettingsBody;
+
+  /// Title of the contact import screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add people'**
+  String get relationshipImportTitle;
+
+  /// Shown on desktop, where there is no address book to import from
+  ///
+  /// In en, this message translates to:
+  /// **'Contact import is available on phones and tablets. Add contact details by hand here.'**
+  String get relationshipImportUnsupported;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Just added'**
+  String get relationshipJustAdded;
+
+  /// No description provided for @relationshipLastCheckInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last check-in {date}'**
+  String relationshipLastCheckInLabel(String date);
+
+  /// Action that opens the OS contact picker to copy channels onto a person
+  ///
+  /// In en, this message translates to:
+  /// **'Link contact'**
+  String get relationshipLinkContact;
 
   /// No description provided for @relationshipLinkedTasksLabel.
   ///
@@ -17311,6 +17725,18 @@ abstract class AppLocalizations {
   /// **'Log check-in'**
   String get relationshipLogCheckIn;
 
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti\'s read'**
+  String get relationshipLottisRead;
+
+  /// No description provided for @relationshipLottisReadAsOf.
+  ///
+  /// In en, this message translates to:
+  /// **'as of {time}'**
+  String relationshipLottisReadAsOf(String time);
+
   /// No description provided for @relationshipNameLabel.
   ///
   /// In en, this message translates to:
@@ -17322,6 +17748,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A name is required'**
   String get relationshipNameRequired;
+
+  /// No description provided for @relationshipNextByDay.
+  ///
+  /// In en, this message translates to:
+  /// **'next by {day}'**
+  String relationshipNextByDay(String day);
 
   /// No description provided for @relationshipNicknameLabel.
   ///
@@ -17346,6 +17778,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This person is no longer tracked.'**
   String get relationshipNotFound;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'nudges on'**
+  String get relationshipNudgesOn;
+
+  /// Body of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'You reached out a moment ago. Log a check-in while it is fresh?'**
+  String get relationshipPostCallBody;
+
+  /// Button that opens a pre-filled check-in from the post-call prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Log check-in'**
+  String get relationshipPostCallConfirm;
+
+  /// Button that dismisses the post-call prompt without a trace
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get relationshipPostCallDismiss;
+
+  /// Title of the prompt offered after returning from a call or message
+  ///
+  /// In en, this message translates to:
+  /// **'How did it go with {name}?'**
+  String relationshipPostCallTitle(String name);
+
+  /// No description provided for @relationshipQuietForDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet for {count, plural, =1{1 day} other{{count} days}}'**
+  String relationshipQuietForDays(int count);
+
+  /// Menu action that replaces the OS contact a person is linked to
+  ///
+  /// In en, this message translates to:
+  /// **'Link a different contact'**
+  String get relationshipRelinkContact;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'See all check-ins'**
+  String get relationshipSeeAllCheckIns;
 
   /// No description provided for @relationshipsEmptyState.
   ///
@@ -17382,6 +17862,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Staying in touch'**
+  String get relationshipStayingInTouch;
+
+  /// Relationships redesign label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in touch'**
+  String get relationshipStayInTouch;
+
+  /// No description provided for @relationshipTrackingSinceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking since {date}'**
+  String relationshipTrackingSinceLabel(String date);
+
+  /// Menu action that re-reads the linked OS contact and copies anything new
+  ///
+  /// In en, this message translates to:
+  /// **'Update from contact'**
+  String get relationshipUpdateFromContact;
 
   /// No description provided for @saveButton.
   ///

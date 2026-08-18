@@ -17,6 +17,8 @@ void main() {
         AgentKinds.dayAgent,
         AgentKinds.templateImprover,
         AgentKinds.projectAgent,
+        AgentKinds.goalAgent,
+        AgentKinds.relationshipAgent,
       ];
       expect(kinds.toSet().length, equals(kinds.length));
     });
@@ -57,9 +59,28 @@ void main() {
         AgentLinkTypes.templateAssignment,
         AgentLinkTypes.improverTarget,
         AgentLinkTypes.agentProject,
+        AgentLinkTypes.agentRelationship,
         AgentLinkTypes.soulAssignment,
       ];
       expect(types.toSet().length, equals(types.length));
+    });
+  });
+
+  group('relationship agent deterministic ids (ADR 0059 Decision 2)', () {
+    test('agent, link, and register ids derive from the relationship — '
+        'two devices marking the same person converge on one agent', () {
+      expect(
+        relationshipAgentIdFor('person-1'),
+        'relationship_agent:person-1',
+      );
+      expect(
+        relationshipAgentLinkId(relationshipAgentIdFor('person-1')),
+        'agent_relationship:relationship_agent:person-1',
+      );
+      expect(
+        relationshipHealthId(relationshipAgentIdFor('person-1')),
+        'relationship_health:relationship_agent:person-1',
+      );
     });
   });
 

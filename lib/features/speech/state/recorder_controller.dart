@@ -167,7 +167,7 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
 
     _terminalActionInProgress = true;
     final note = _audioNote;
-    final linkedTaskId = _linkedId;
+    final linkedSubjectId = _linkedId;
     final categoryId = _categoryId;
     final duration = state.progress;
     _audioNote = null;
@@ -194,18 +194,18 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
       if (note != null) {
         final journalAudio = await SpeechRepository.createAudioEntry(
           note.copyWith(duration: duration),
-          linkedId: linkedTaskId,
+          linkedId: linkedSubjectId,
           categoryId: categoryId,
         );
         final entryId = journalAudio?.meta.id;
 
         // Trigger automatic prompts in the background via profile-driven automation
-        if (entryId != null && linkedTaskId != null) {
+        if (entryId != null && linkedSubjectId != null) {
           // Don't await - let it run in the background so the modal can close immediately
           unawaited(
             _triggerAutomaticPrompts(
               entryId,
-              linkedTaskId: linkedTaskId,
+              linkedSubjectId: linkedSubjectId,
             ),
           );
         }
@@ -365,13 +365,13 @@ class AudioRecorderController extends Notifier<AudioRecorderState> {
   /// Triggers automatic prompts based on category settings and user preferences
   Future<void> _triggerAutomaticPrompts(
     String entryId, {
-    String? linkedTaskId,
+    String? linkedSubjectId,
   }) async {
     final trigger = ref.read(automaticPromptTriggerProvider);
     await trigger.triggerAutomaticPrompts(
       entryId,
       state,
-      linkedTaskId: linkedTaskId,
+      linkedSubjectId: linkedSubjectId,
     );
   }
 }

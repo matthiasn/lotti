@@ -34,6 +34,13 @@ class GoalBannerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The card hard-codes goal semantics (the semantic label below); the
+    // dock switches on kind before reaching it, and a misrouted entry must
+    // fail loudly in debug rather than announce "Goal banner" for a person.
+    assert(
+      entry.kind == NudgeBannerKind.goal,
+      'GoalBannerCard renders goal entries only',
+    );
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
     final style = nudgeBannerStyle(

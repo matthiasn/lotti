@@ -1898,9 +1898,21 @@
   "checkInAvoidLabel": "Better to avoid",
   "checkInDateLabel": "When?",
   "checkInDeleteConfirmMessage": "Delete this check-in? This cannot be undone.",
+  "checkInDone": "Done",
+  "@checkInDone": {
+    "description": "Relationships redesign label."
+  },
   "checkInEditTitle": "Edit check-in",
   "checkInErrorCreateFailed": "Could not save the check-in. Please try again.",
   "checkInErrorDeleteFailed": "Could not delete the check-in. Please try again.",
+  "checkInHowDidItFeel": "How did it feel?",
+  "@checkInHowDidItFeel": {
+    "description": "Relationships redesign label."
+  },
+  "checkInHowDidYouConnect": "How did you connect?",
+  "@checkInHowDidYouConnect": {
+    "description": "Relationships redesign label."
+  },
   "checkInInteractionCall": "Call",
   "checkInInteractionInPerson": "In person",
   "checkInInteractionLabel": "How did you connect?",
@@ -1909,14 +1921,35 @@
   "checkInInteractionVideoCall": "Video call",
   "checkInNarrativeLabel": "What did you talk about?",
   "checkInPayAttentionLabel": "Next time, pay attention to",
+  "checkInPreparedOverline": "✦ LOTTI · PREPARED THIS MORNING",
   "checkInSentimentDelightful": "Delightful",
   "checkInSentimentDifficult": "Difficult",
   "checkInSentimentGood": "Good",
   "checkInSentimentLabel": "How did it feel?",
   "checkInSentimentNeutral": "Neutral",
   "checkInSentimentStrained": "Strained",
+  "checkInSpeakButton": "Speak check-in",
+  "@checkInSpeakButton": {
+    "description": "Button on the check-in sheet that records a spoken check-in and prefills the narrative with its transcript."
+  },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
+  "checkInTranscribingLabel": "Transcribing…",
+  "@checkInTranscribingLabel": {
+    "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
+  },
+  "checkInTranscriptFailed": "No transcript came back. You can type it instead.",
+  "@checkInTranscriptFailed": {
+    "description": "Message shown when a spoken check-in produced no transcript and the user has to type the narrative."
+  },
+  "checkInTranscriptUnavailable": "Transcription is not set up for this person. Add an audio model and turn on automatic inference for their category, or type the check-in.",
+  "@checkInTranscriptUnavailable": {
+    "description": "Shown when a spoken check-in cannot run at all because no transcription is configured for the person or their category."
+  },
+  "checkInWriteInstead": "Write instead",
+  "@checkInWriteInstead": {
+    "description": "Relationships redesign label."
+  },
   "checklistAddItem": "Add a new item",
   "checklistAiConfidenceLabel": "Confidence: {level}",
   "@checklistAiConfidenceLabel": {
@@ -3414,6 +3447,15 @@
       }
     }
   },
+  "goalChatTalkTo": "Talk to {agentName}",
+  "@goalChatTalkTo": {
+    "description": "Button that opens a goal-agent conversation.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
   "goalChatTalkToAgent": "Talk to agent",
   "@goalChatTalkToAgent": {
     "description": "Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)"
@@ -3493,6 +3535,7 @@
       }
     }
   },
+  "goalCompositeProgressTitle": "The whole goal",
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
@@ -3598,9 +3641,14 @@
       }
     }
   },
+  "goalDetailSayingTitle": "What your agent is saying",
   "goalDetailSignalsTitle": "Signals",
   "@goalDetailSignalsTitle": {
     "description": "Section heading over the data-signal dimension cards on goal detail."
+  },
+  "goalDetailStatementLabel": "Your goal",
+  "@goalDetailStatementLabel": {
+    "description": "Caption above the goal statement on the detail page, marking it as the aspiration rather than current status."
   },
   "goalDetailThisWeekTitle": "This week",
   "@goalDetailThisWeekTitle": {
@@ -3625,6 +3673,7 @@
     }
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
+  "goalDetailWatchingTitle": "Watching",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",
   "@goalDimensionHabitReading": {
@@ -3713,6 +3762,7 @@
       }
     }
   },
+  "goalDominantIssueBadge": "{dimensionName} needs attention",
   "goalFormAddDimension": "Add dimension",
   "goalFormAddSignal": "Add a signal",
   "@goalFormAddSignal": {
@@ -4020,7 +4070,7 @@
   "goalPatternTitle": "Timing pattern",
   "goalPendingProposalBadge": "Proposal awaiting review",
   "@goalPendingProposalBadge": {
-    "description": "Chip on a goal card when a revision proposal is pending review."
+    "description": "Badge on an agent card when a revision proposal is pending."
   },
   "goalProgressAgesOut": "ages out tonight",
   "goalProgressCompactCaption": "slides at midnight",
@@ -4160,6 +4210,14 @@
   "@goalStatusRecovering": {
     "description": "Goal track status chip: climbing back after being behind."
   },
+  "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
+  "@goalWatchingMetric": {
+    "placeholders": {
+      "windowLabel": {
+        "type": "String"
+      }
+    }
+  },
   "goalWindowCalendarMonth": "calendar month",
   "goalWindowCalendarWeek": "calendar week",
   "goalWindowRollingDays": "rolling {count} days",
@@ -4268,7 +4326,7 @@
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
-  "habitsGoalLineLabel": "Target",
+  "habitsGoalLineLabel": "Goal",
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
@@ -4290,7 +4348,7 @@
   },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "habitsPointsToGoal": "{points, plural, one{1 pt to target} other{{points} pts to target}}",
+  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
@@ -5207,6 +5265,8 @@
       }
     }
   },
+  "notificationChannelRemindersDescription": "Check-in reminders, habit reminders and alerts from Lotti.",
+  "notificationChannelRemindersName": "Reminders",
   "notificationInboxDismiss": "Dismiss notification",
   "notificationInboxEmpty": "You're all caught up.",
   "notificationInboxError": "Couldn't load notifications.",
@@ -5759,7 +5819,27 @@
   },
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
+  "relationshipActionCall": "Call",
+  "@relationshipActionCall": {
+    "description": "Tooltip on the button that dials a contact channel"
+  },
+  "relationshipActionEmail": "Email",
+  "@relationshipActionEmail": {
+    "description": "Tooltip on the button that opens a mail composer"
+  },
+  "relationshipActionFailed": "Nothing on this device can open that",
+  "@relationshipActionFailed": {
+    "description": "Toast shown when no app on the device handles the contact channel"
+  },
+  "relationshipActionMessage": "Message",
+  "@relationshipActionMessage": {
+    "description": "Tooltip on the button that opens a message composer"
+  },
   "relationshipAddChannelButton": "Add channel",
+  "relationshipAsk": "Ask",
+  "@relationshipAsk": {
+    "description": "Relationships redesign label."
+  },
   "relationshipBannerSemanticLabel": "Relationship banner for {personName}",
   "@relationshipBannerSemanticLabel": {
     "description": "Accessibility label of one relationship nudge banner; personName is the person's name.",
@@ -5769,6 +5849,34 @@
       }
     }
   },
+  "relationshipBriefingDisclosureBody": "The briefing runs on {provider}. Notes about this person will be sent there for processing.",
+  "@relationshipBriefingDisclosureBody": {
+    "description": "Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingDisclosureConfirm": "Continue",
+  "relationshipBriefingDisclosureTitle": "Send to {provider}?",
+  "@relationshipBriefingDisclosureTitle": {
+    "description": "Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingEmpty": "No briefing yet — Brief me prepares one from your check-ins.",
+  "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
+  "relationshipBriefingRequestFailed": "Could not request the briefing.",
+  "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeAgain": "Brief me again",
+  "@relationshipBriefMeAgain": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipBriefMeButton": "Brief me",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -5781,10 +5889,65 @@
   "relationshipCadenceLabel": "Check-in cadence",
   "relationshipCadenceMonthly": "Monthly",
   "relationshipCadenceNone": "No cadence",
+  "relationshipCadenceNudgeNote": "Choosing a cadence turns on check-in nudges.",
+  "@relationshipCadenceNudgeNote": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipCadenceOnTrack": "On track",
+  "@relationshipCadenceOnTrack": {
+    "description": "Relationships redesign label."
+  },
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipChatTooltip": "Chat about this person",
+  "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
+  "relationshipCheckedInLabel": "Checked in {date}",
+  "@relationshipCheckedInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCheckInReminderBody": "A good moment to reach out.",
+  "relationshipCheckInReminderTitle": "Check in with {name}?",
+  "@relationshipCheckInReminderTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCheckInsLabel": "Check-ins",
+  "relationshipCheckInTitle": "Check in · {name}",
+  "@relationshipCheckInTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipContactCardAction": "Contact card",
+  "@relationshipContactCardAction": {
+    "description": "Relationships redesign label."
+  },
   "relationshipContactChannelsLabel": "Contact channels",
+  "relationshipContactLinked": "Contact details copied",
+  "@relationshipContactLinked": {
+    "description": "Toast confirming contact channels were copied onto the person"
+  },
+  "relationshipContactLinkFailed": "Could not save the contact details",
+  "@relationshipContactLinkFailed": {
+    "description": "Toast shown when saving the copied contact details was rejected"
+  },
+  "relationshipContactMissing": "That contact isn't on this device",
+  "@relationshipContactMissing": {
+    "description": "Toast shown when the stored contact reference resolves to nothing on this device"
+  },
+  "relationshipContactNoChanges": "Nothing new to copy",
+  "@relationshipContactNoChanges": {
+    "description": "Toast shown when the linked contact held nothing the person did not already have"
+  },
   "relationshipCreateTitle": "Add person",
   "relationshipDeleteConfirmMessage": "Their check-ins are deleted too. This cannot be undone.",
   "relationshipDeleteConfirmTitle": "Delete {name}?",
@@ -5795,28 +5958,217 @@
       }
     }
   },
+  "relationshipDueDay": "Due {day}",
+  "@relationshipDueDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipEditTitle": "Edit person",
   "relationshipErrorCreateFailed": "Could not save this person. Please try again.",
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipHealthNeedsAttention": "Needs attention",
+  "relationshipHealthSteady": "Steady",
+  "relationshipHealthStrained": "Strained",
+  "relationshipHealthThriving": "Thriving",
+  "relationshipImportAction": "Import from contacts",
+  "@relationshipImportAction": {
+    "description": "Opens the multi-select contact import screen from the People list"
+  },
+  "relationshipImportAdded": "{count, plural, =1{1 person added} other{{count} people added}}",
+  "@relationshipImportAdded": {
+    "description": "Toast confirming how many people the import created",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Important",
+  "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
+  "@relationshipImportConfirmButton": {
+    "description": "Creates one person per reviewed contact",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipImportEmpty": "No contacts on this device",
+  "@relationshipImportEmpty": {
+    "description": "Shown when the address book is readable but empty"
+  },
+  "relationshipImportFailed": "Could not add anyone",
+  "@relationshipImportFailed": {
+    "description": "Toast shown when no relationship could be created from the import"
+  },
+  "relationshipImportGrantButton": "Allow access",
+  "@relationshipImportGrantButton": {
+    "description": "Requests contact permission from the import screen"
+  },
+  "relationshipImportNoMatches": "No contacts match your search",
+  "@relationshipImportNoMatches": {
+    "description": "Shown when the contact search matches nothing"
+  },
+  "relationshipImportOpenSettings": "Open settings",
+  "@relationshipImportOpenSettings": {
+    "description": "Opens system settings so contact access can be re-enabled"
+  },
+  "relationshipImportPermissionBody": "Lotti reads your contacts only while this picker is open, and copies only the people you choose.",
+  "@relationshipImportPermissionBody": {
+    "description": "Explains what contact access is used for before it is requested"
+  },
+  "relationshipImportRetry": "Try again",
+  "@relationshipImportRetry": {
+    "description": "Retries the contact permission request"
+  },
+  "relationshipImportReviewButton": "{count, plural, =1{Review 1} other{Review {count}}}",
+  "@relationshipImportReviewButton": {
+    "description": "Advances from contact selection to the review step",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipImportReviewTitle": "Before you add them",
+  "@relationshipImportReviewTitle": {
+    "description": "Title of the import review step, where importance and cadence are set"
+  },
+  "relationshipImportSearchHint": "Search contacts",
+  "@relationshipImportSearchHint": {
+    "description": "Placeholder in the contact import search field"
+  },
+  "relationshipImportSettingsBody": "Contact access is turned off. Turn it on in system settings to import people.",
+  "@relationshipImportSettingsBody": {
+    "description": "Shown when contact access was permanently refused"
+  },
+  "relationshipImportTitle": "Add people",
+  "@relationshipImportTitle": {
+    "description": "Title of the contact import screen"
+  },
+  "relationshipImportUnsupported": "Contact import is available on phones and tablets. Add contact details by hand here.",
+  "@relationshipImportUnsupported": {
+    "description": "Shown on desktop, where there is no address book to import from"
+  },
+  "relationshipJustAdded": "Just added",
+  "@relationshipJustAdded": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLastCheckInLabel": "Last check-in {date}",
+  "@relationshipLastCheckInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipLinkContact": "Link contact",
+  "@relationshipLinkContact": {
+    "description": "Action that opens the OS contact picker to copy channels onto a person"
+  },
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
+  "relationshipLottisRead": "Lotti's read",
+  "@relationshipLottisRead": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipLottisReadAsOf": "as of {time}",
+  "@relationshipLottisReadAsOf": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNameLabel": "Name",
   "relationshipNameRequired": "A name is required",
+  "relationshipNextByDay": "next by {day}",
+  "@relationshipNextByDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
   "relationshipNoLinkedTasks": "No tasks linked yet.",
   "relationshipNotFound": "This person is no longer tracked.",
+  "relationshipNudgesOn": "nudges on",
+  "@relationshipNudgesOn": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipPostCallBody": "You reached out a moment ago. Log a check-in while it is fresh?",
+  "@relationshipPostCallBody": {
+    "description": "Body of the prompt offered after returning from a call or message"
+  },
+  "relationshipPostCallConfirm": "Log check-in",
+  "@relationshipPostCallConfirm": {
+    "description": "Button that opens a pre-filled check-in from the post-call prompt"
+  },
+  "relationshipPostCallDismiss": "Not now",
+  "@relationshipPostCallDismiss": {
+    "description": "Button that dismisses the post-call prompt without a trace"
+  },
+  "relationshipPostCallTitle": "How did it go with {name}?",
+  "@relationshipPostCallTitle": {
+    "description": "Title of the prompt offered after returning from a call or message",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Anna"
+      }
+    }
+  },
+  "relationshipQuietForDays": "Quiet for {count, plural, =1{1 day} other{{count} days}}",
+  "@relationshipQuietForDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipRelinkContact": "Link a different contact",
+  "@relationshipRelinkContact": {
+    "description": "Menu action that replaces the OS contact a person is linked to"
+  },
+  "relationshipSeeAllCheckIns": "See all check-ins",
+  "@relationshipSeeAllCheckIns": {
+    "description": "Relationships redesign label."
+  },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsPageTitle": "People",
   "relationshipStatusActive": "Active",
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipStayingInTouch": "Staying in touch",
+  "@relationshipStayingInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipStayInTouch": "Stay in touch",
+  "@relationshipStayInTouch": {
+    "description": "Relationships redesign label."
+  },
+  "relationshipTrackingSinceLabel": "Tracking since {date}",
+  "@relationshipTrackingSinceLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipUpdateFromContact": "Update from contact",
+  "@relationshipUpdateFromContact": {
+    "description": "Menu action that re-reads the linked OS contact and copies anything new"
+  },
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveFailedRetry": "That didn't save — please try again.",

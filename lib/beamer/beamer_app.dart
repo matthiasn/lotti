@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/beamer/locations/relationships_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -242,6 +243,34 @@ bool goalsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   };
 }
 
+/// True when the PEOPLE beamer location points at one person's own pages —
+/// their detail page (`/people/<id>`) or their agent chat
+/// (`/people/<id>/chat`).
+///
+/// Both are terminal pages you navigate *to*, so they slide the bar away for
+/// the same reason as [goalsRouteHidesBottomNav]. The chat is the pointed
+/// case: `AgentChatView` docks its message composer on the bottom edge, and
+/// the blurred nav pill would sit on top of the field the page exists for.
+/// Pure function of router state.
+///
+/// The `/people` list root keeps the bar — it is a tab you navigate *from*,
+/// and it is the only way back to the other tabs from here.
+///
+/// Shapes are matched exactly rather than by prefix, matching
+/// [goalsRouteHidesBottomNav]: [RelationshipsLocation] renders the list for
+/// anything malformed, and that list must keep its tab bar. An empty id is
+/// malformed — `/people//chat` must not pass as a chat route.
+bool peopleRouteHidesBottomNav(BeamLocation<dynamic>? location) {
+  if (location is! RelationshipsLocation) return false;
+  final segments = location.state.uri.pathSegments;
+  if (segments.isEmpty || segments.first != 'people') return false;
+  return switch (segments.length) {
+    2 => segments[1].isNotEmpty,
+    3 => segments[1].isNotEmpty && segments[2] == 'chat',
+    _ => false,
+  };
+}
+
 /// Clamps a raw navigation index into `[0, itemCount - 1]` so a stale index
 /// from the nav stream cannot go out of bounds when feature flags shrink the
 /// destinations list.
@@ -359,6 +388,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     navService.projectsDelegate,
     navService.settingsDelegate,
     navService.goalsDelegate,
+    navService.relationshipsDelegate,
   ]);
 
   bool _notLoggedInToastShown = false;
@@ -633,12 +663,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        // Listen to the tasks, projects, settings and goals delegates so
-        // the mobile shell rebuilds when their routes change (push to / pop
-        // from task, project or goal details, into / out of settings
-        // entity editors). That's how we know whether to hide the mobile
-        // bottom nav. See [_isTaskDetailRoute], [projectsRouteHidesBottomNav],
-        // [settingsRouteHidesBottomNav] and [goalsRouteHidesBottomNav].
+        // Listen to the tasks, projects, settings, goals and relationships
+        // delegates so the mobile shell rebuilds when their routes change
+        // (push to / pop from task, project, goal or person details, into /
+        // out of settings entity editors). That's how we know whether to
+        // hide the mobile bottom nav. See [_isTaskDetailRoute],
+        // [projectsRouteHidesBottomNav], [settingsRouteHidesBottomNav],
+        // [goalsRouteHidesBottomNav] and [peopleRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => isWide
@@ -841,8 +872,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // instead of removing it: nothing replaces the bar there, so an instant
     // unmount would read as a jumpy glitch rather than a handoff to a
     // page-owned surface. Project details (`/projects/<id>`) are the same
-    // kind of terminal page and share the motion. See
-    // [settingsRouteHidesBottomNav] and [projectsRouteHidesBottomNav].
+    // kind of terminal page and share the motion, as do a goal's own pages
+    // and a person's. See [settingsRouteHidesBottomNav],
+    // [projectsRouteHidesBottomNav], [goalsRouteHidesBottomNav] and
+    // [peopleRouteHidesBottomNav].
     final slideNavAway =
         (destinations[index].kind == _AppNavigationDestinationKind.settings &&
             settingsRouteHidesBottomNav(
@@ -855,6 +888,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         (destinations[index].kind == _AppNavigationDestinationKind.goals &&
             goalsRouteHidesBottomNav(
               navService.goalsDelegate.currentBeamLocation,
+            )) ||
+        (destinations[index].kind == _AppNavigationDestinationKind.people &&
+            peopleRouteHidesBottomNav(
+              navService.relationshipsDelegate.currentBeamLocation,
             ));
 
     // The bar fills with as many destinations as fit comfortably at the

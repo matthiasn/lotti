@@ -1,6 +1,10 @@
 # ADR 0041: Relationship Contact Linking and Communication Actions
 
-- Status: Proposed
+- Status: Accepted — implemented by plan v2 phase 7 on Android and iOS.
+  Contact channels stay out of AI context (§5): nothing in the facts
+  renderer reads them, and its test renders a person whose channels are
+  populated and fails if any reaches the output. Desktop keeps manual entry,
+  as §2 anticipated.
 - Date: 2026-07-22
 
 ## Context
@@ -19,8 +23,9 @@ would create hundreds of dormant relationship entities and destroy the
 signal the reminders and briefings depend on. Second, platform reality:
 OS contact pickers are well supported on iOS and Android, weakly on macOS,
 and effectively unavailable on Linux/Windows; contact identifiers are
-platform-local, so a contact reference cannot resolve on a synced peer
-device. `url_launcher` (already a dependency) covers `tel:`, `sms:`, and
+device-local — every address book assigns its own, so even two phones on
+the same OS hold unrelated ids — and a contact reference therefore cannot
+resolve on any synced peer device. `url_launcher` (already a dependency) covers `tel:`, `sms:`, and
 `mailto:` launching; no contacts plugin is currently in the dependency set.
 
 ## Decision
@@ -35,8 +40,11 @@ device. `url_launcher` (already a dependency) covers `tel:`, `sms:`, and
    `RelationshipData` gains `contactChannels`
    (`List<ContactChannel>` — `type` enum `phone`/`mobile`/`email`/
    `messaging`, optional `label`, `value`) and `contactRefs`
-   (per-platform map of contact identifiers, used only for an explicit
-   "Update from contact" refresh on the device that owns the contact).
+   (per-device map of contact identifiers, keyed by platform plus the
+   device's sync host id, used only for an explicit "Update from contact"
+   refresh on the device that owns the contact — a key scoped merely
+   per-platform would let two same-OS devices overwrite each other's ref
+   and resolve a peer's id against the wrong address book).
    Channels are manually editable on every platform, so Linux/Windows get
    full feature parity through manual entry; the picker is a convenience,
    not a requirement. Snapshot data syncs and cascades like everything else
@@ -65,8 +73,8 @@ device. `url_launcher` (already a dependency) covers `tel:`, `sms:`, and
 - The curated-relationship model survives contact integration: the address
   book never drives entity creation, only enriches entities the user
   already chose to create.
-- Per-platform `contactRefs` mean "Update from contact" works only on a
-  device that has the contact — synced peers still see the channel values,
+- Per-device `contactRefs` mean "Update from contact" works only on the
+  device that wrote the ref — synced peers still see the channel values,
   which is what the quick actions need.
 - The post-interaction prompt is a resume heuristic, not call detection: it
   can fire when no conversation happened (unanswered call) and misses

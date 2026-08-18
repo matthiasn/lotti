@@ -263,7 +263,7 @@ class UnifiedAiModal {
     String? overrideModelId;
     if (imageModels.length > 1) {
       final resolver = ref.read(profileAutomationResolverProvider);
-      final resolvedProfile = await resolver.resolveForTask(linkedTask.id);
+      final resolvedProfile = await resolver.resolveForSubject(linkedTask.id);
       final providerConfigs = await repo.getConfigsByType(
         AiConfigType.inferenceProvider,
       );
@@ -337,7 +337,7 @@ class UnifiedAiModal {
   }) async {
     final resolver = ref.read(profileAutomationResolverProvider);
     final resolvedProfile = linkedTaskId != null
-        ? await resolver.resolveForTask(linkedTaskId)
+        ? await resolver.resolveForSubject(linkedTaskId)
         : (journalEntity.meta.categoryId != null
               ? await resolver.resolveForCategory(
                   journalEntity.meta.categoryId!,

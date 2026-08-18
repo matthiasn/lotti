@@ -3114,6 +3114,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Slet dette check-in? Det kan ikke fortrydes.';
 
   @override
+  String get checkInDone => 'Færdig';
+
+  @override
   String get checkInEditTitle => 'Redigér check-in';
 
   @override
@@ -3125,13 +3128,19 @@ class AppLocalizationsDa extends AppLocalizations {
       'Check-in kunne ikke slettes. Prøv igen.';
 
   @override
+  String get checkInHowDidItFeel => 'Hvordan føltes det?';
+
+  @override
+  String get checkInHowDidYouConnect => 'Hvordan havde I kontakt?';
+
+  @override
   String get checkInInteractionCall => 'Opkald';
 
   @override
   String get checkInInteractionInPerson => 'Personligt';
 
   @override
-  String get checkInInteractionLabel => 'Hvordan havde I kontakt?';
+  String get checkInInteractionLabel => 'Hvordan talte I sammen?';
 
   @override
   String get checkInInteractionMessage => 'Besked';
@@ -3147,6 +3156,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInPayAttentionLabel => 'Næste gang: vær opmærksom på';
+
+  @override
+  String get checkInPreparedOverline => '✦ LOTTI · FORBEREDT I MORGES';
 
   @override
   String get checkInSentimentDelightful => 'Skønt';
@@ -3167,10 +3179,27 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInSentimentStrained => 'Anstrengt';
 
   @override
+  String get checkInSpeakButton => 'Indtal check-in';
+
+  @override
   String get checkInTopicsHint => 'Kommasepareret, f.eks. arbejde, rejser';
 
   @override
   String get checkInTopicsLabel => 'Emner';
+
+  @override
+  String get checkInTranscribingLabel => 'Transskriberer…';
+
+  @override
+  String get checkInTranscriptFailed =>
+      'Der kom ingen udskrift. Du kan skrive den selv.';
+
+  @override
+  String get checkInTranscriptUnavailable =>
+      'Transskription er ikke sat op for denne person. Tilføj en lydmodel og slå automatisk inferens til for deres kategori, eller skriv check-in selv.';
+
+  @override
+  String get checkInWriteInstead => 'Skriv i stedet';
 
   @override
   String get checklistAddItem => 'Tilføj en ny genstand';
@@ -3469,7 +3498,7 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count timer siden',
+      other: '$count h ago',
       one: '1 time siden',
     );
     return '$_temp0';
@@ -6237,6 +6266,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Tal med $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Tal med agenten';
 
   @override
@@ -6331,6 +6365,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Hele målet';
+
+  @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 
   @override
@@ -6423,7 +6460,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Det siger din agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signaler';
+
+  @override
+  String get goalDetailStatementLabel => 'Dit mål';
 
   @override
   String get goalDetailThisWeekTitle => 'Denne uge';
@@ -6442,6 +6485,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Følger';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Sporet kategoritid';
@@ -6529,6 +6575,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-dages gennemsnit';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName har brug for opmærksomhed';
   }
 
   @override
@@ -7060,6 +7111,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalStatusRecovering => 'På vej tilbage';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Opdateringer fra dens linkede kilde · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermåned';
 
   @override
@@ -7211,7 +7267,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitsFilterPendingLater => 'Senere';
 
   @override
-  String get habitsGoalLineLabel => 'Målværdi';
+  String get habitsGoalLineLabel => 'Mål';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7245,8 +7301,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points point til målværdien',
-      one: '1 point til målværdien',
+      other: '$points point til mål',
+      one: '1 point til mål',
     );
     return '$_temp0';
   }
@@ -9113,6 +9169,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get notificationChannelRemindersDescription =>
+      'Påmindelser om kontakt, vanepåmindelser og beskeder fra Lotti.';
+
+  @override
+  String get notificationChannelRemindersName => 'Påmindelser';
+
+  @override
   String get notificationInboxDismiss => 'Afvisningsmeddelelse';
 
   @override
@@ -10192,12 +10255,61 @@ class AppLocalizationsDa extends AppLocalizations {
   String get referenceImageSkip => 'Spring over';
 
   @override
+  String get relationshipActionCall => 'Ring op';
+
+  @override
+  String get relationshipActionEmail => 'E-mail';
+
+  @override
+  String get relationshipActionFailed => 'Intet på denne enhed kan åbne det';
+
+  @override
+  String get relationshipActionMessage => 'Besked';
+
+  @override
   String get relationshipAddChannelButton => 'Tilføj kontaktoplysning';
+
+  @override
+  String get relationshipAsk => 'Spørg';
 
   @override
   String relationshipBannerSemanticLabel(String personName) {
     return 'Relationsbanner for $personName';
   }
+
+  @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Briefingen kører på $provider. Noter om denne person sendes dertil til behandling.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Fortsæt';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Send til $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Ingen briefing endnu — Opdater mig laver en ud fra dine check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing bestilt — den vises her om lidt.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Kunne ikke bestille briefingen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeAgain => 'Brief igen';
+
+  @override
+  String get relationshipBriefMeButton => 'Opdater mig';
 
   @override
   String relationshipCadenceEveryNDays(int days) {
@@ -10223,16 +10335,66 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCadenceNone => 'Ingen rytme';
 
   @override
+  String get relationshipCadenceNudgeNote =>
+      'At vælge et tempo slår check-in-påmindelser til.';
+
+  @override
+  String get relationshipCadenceOnTrack => 'på sporet';
+
+  @override
   String get relationshipCadenceQuarterly => 'Hvert kvartal';
 
   @override
   String get relationshipCadenceWeekly => 'Ugentligt';
 
   @override
+  String get relationshipChatTooltip => 'Chat om denne person';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Ingen agent endnu — markér først personen som vigtig.';
+
+  @override
+  String relationshipCheckedInLabel(String date) {
+    return 'Check-in $date';
+  }
+
+  @override
+  String get relationshipCheckInReminderBody =>
+      'Et godt tidspunkt at tage kontakt.';
+
+  @override
+  String relationshipCheckInReminderTitle(String name) {
+    return 'Tag kontakt til $name?';
+  }
+
+  @override
   String get relationshipCheckInsLabel => 'Check-ins';
 
   @override
+  String relationshipCheckInTitle(String name) {
+    return 'Check-in · $name';
+  }
+
+  @override
+  String get relationshipContactCardAction => 'Kontaktkort';
+
+  @override
   String get relationshipContactChannelsLabel => 'Kontaktoplysninger';
+
+  @override
+  String get relationshipContactLinked => 'Kontaktoplysninger kopieret';
+
+  @override
+  String get relationshipContactLinkFailed =>
+      'Kunne ikke gemme kontaktoplysningerne';
+
+  @override
+  String get relationshipContactMissing =>
+      'Den kontakt findes ikke på denne enhed';
+
+  @override
+  String get relationshipContactNoChanges => 'Intet nyt at kopiere';
 
   @override
   String get relationshipCreateTitle => 'Tilføj person';
@@ -10244,6 +10406,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String relationshipDeleteConfirmTitle(String name) {
     return 'Slet $name?';
+  }
+
+  @override
+  String relationshipDueDay(String day) {
+    return 'Senest $day';
   }
 
   @override
@@ -10266,6 +10433,32 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ændringerne kunne ikke gemmes. Prøv igen.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Kræver opmærksomhed';
+
+  @override
+  String get relationshipHealthSteady => 'Stabil';
+
+  @override
+  String get relationshipHealthStrained => 'Anstrengt';
+
+  @override
+  String get relationshipHealthThriving => 'Blomstrer';
+
+  @override
+  String get relationshipImportAction => 'Importer fra kontakter';
+
+  @override
+  String relationshipImportAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personer tilføjet',
+      one: '1 person tilføjet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get relationshipImportantDescription =>
       'Mind mig om at holde kontakten';
 
@@ -10273,19 +10466,105 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipImportantLabel => 'Vigtig';
 
   @override
+  String relationshipImportConfirmButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tilføj $count personer',
+      one: 'Tilføj 1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportEmpty => 'Ingen kontakter på denne enhed';
+
+  @override
+  String get relationshipImportFailed => 'Kunne ikke tilføje nogen';
+
+  @override
+  String get relationshipImportGrantButton => 'Tillad adgang';
+
+  @override
+  String get relationshipImportNoMatches =>
+      'Ingen kontakter matcher din søgning';
+
+  @override
+  String get relationshipImportOpenSettings => 'Åbn indstillinger';
+
+  @override
+  String get relationshipImportPermissionBody =>
+      'Lotti læser kun dine kontakter, mens denne vælger er åben, og kopierer kun de personer, du vælger.';
+
+  @override
+  String get relationshipImportRetry => 'Prøv igen';
+
+  @override
+  String relationshipImportReviewButton(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gennemse $count',
+      one: 'Gennemse 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipImportReviewTitle => 'Før du tilføjer dem';
+
+  @override
+  String get relationshipImportSearchHint => 'Søg i kontakter';
+
+  @override
+  String get relationshipImportSettingsBody =>
+      'Adgang til kontakter er slået fra. Slå den til i systemindstillingerne for at importere personer.';
+
+  @override
+  String get relationshipImportTitle => 'Tilføj personer';
+
+  @override
+  String get relationshipImportUnsupported =>
+      'Kontaktimport findes på telefoner og tablets. Tilføj kontaktoplysninger i hånden her.';
+
+  @override
+  String get relationshipJustAdded => 'Netop tilføjet';
+
+  @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Seneste check-in $date';
+  }
+
+  @override
+  String get relationshipLinkContact => 'Tilknyt kontakt';
+
+  @override
   String get relationshipLinkedTasksLabel => 'Opgaver';
 
   @override
-  String get relationshipLinkTaskButton => 'Tilknyt opgave';
+  String get relationshipLinkTaskButton => 'Link opgave';
 
   @override
   String get relationshipLogCheckIn => 'Registrér check-in';
+
+  @override
+  String get relationshipLottisRead => 'Lottis vurdering';
+
+  @override
+  String relationshipLottisReadAsOf(String time) {
+    return 'kl. $time';
+  }
 
   @override
   String get relationshipNameLabel => 'Navn';
 
   @override
   String get relationshipNameRequired => 'Navn er påkrævet';
+
+  @override
+  String relationshipNextByDay(String day) {
+    return 'næste senest $day';
+  }
 
   @override
   String get relationshipNicknameLabel => 'Kaldenavn';
@@ -10295,10 +10574,45 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen check-ins endnu — registrér et efter jeres næste snak.';
 
   @override
-  String get relationshipNoLinkedTasks => 'Ingen opgaver er tilknyttet endnu.';
+  String get relationshipNoLinkedTasks => 'Ingen opgaver linket endnu.';
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
+
+  @override
+  String get relationshipNudgesOn => 'påmindelser til';
+
+  @override
+  String get relationshipPostCallBody =>
+      'Du tog lige kontakt. Vil du logge et tjek-ind, mens det er friskt?';
+
+  @override
+  String get relationshipPostCallConfirm => 'Log tjek-ind';
+
+  @override
+  String get relationshipPostCallDismiss => 'Ikke nu';
+
+  @override
+  String relationshipPostCallTitle(String name) {
+    return 'Hvordan gik det med $name?';
+  }
+
+  @override
+  String relationshipQuietForDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'i $count dage',
+      one: 'i 1 dag',
+    );
+    return 'Ingen kontakt $_temp0';
+  }
+
+  @override
+  String get relationshipRelinkContact => 'Tilknyt en anden kontakt';
+
+  @override
+  String get relationshipSeeAllCheckIns => 'Se alle check-ins';
 
   @override
   String get relationshipsEmptyState =>
@@ -10318,6 +10632,20 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String get relationshipStayingInTouch => 'Holde kontakten';
+
+  @override
+  String get relationshipStayInTouch => 'Hold kontakten';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Fulgt siden $date';
+  }
+
+  @override
+  String get relationshipUpdateFromContact => 'Opdater fra kontakt';
 
   @override
   String get saveButton => 'Gem';
