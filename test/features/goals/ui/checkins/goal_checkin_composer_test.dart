@@ -1,28 +1,43 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:lotti/features/goals/service/goal_checkin_transcription_trigger.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
-
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 
 void main() {
   final now = DateTime(2026, 8, 18, 14, 20);
 
   late List<({String text, String goalEntryId})> saved;
   late List<String> recorded;
+  late List<String> transcribed;
+  late MockAgentService agentService;
   var saveSucceeds = true;
   String? recorderResult;
 
   setUp(() {
     saved = [];
     recorded = [];
+    transcribed = [];
+    agentService = MockAgentService();
+    when(() => agentService.getAgent('agent-1')).thenAnswer(
+      (_) async => makeTestIdentity(
+        agentId: 'agent-1',
+        kind: 'goal_agent',
+        config: const AgentConfig(automaticUpdatesEnabled: true),
+      ),
+    );
     saveSucceeds = true;
     recorderResult = 'audio-1';
   });
@@ -55,6 +70,12 @@ void main() {
           goalCaptureTargetProvider(
             'agent-1',
           ).overrideWith((ref) async => captureTarget),
+          goalCheckInTranscriptionTriggerProvider.overrideWithValue(
+            GoalCheckInTranscriptionTrigger(
+              agentService: agentService,
+              runTranscription: (entryId) async => transcribed.add(entryId),
+            ),
+          ),
         ],
       ),
     ),
@@ -150,6 +171,10 @@ void main() {
 
     // The link is what puts the recording on the timeline.
     expect(recorded, ['goal-1']);
+    // …and the transcription is what puts the user's words in front of the
+    // agent. A saved check-in that never enters the pipeline is the bug this
+    // pins: it played back fine and was never transcribed or compacted.
+    expect(transcribed, ['audio-1']);
     expect(find.byType(GoalCheckInComposer), findsNothing);
   });
 
@@ -162,6 +187,8 @@ void main() {
     await tester.pump();
 
     expect(recorded, ['goal-1']);
+    // Nothing was created, so there is nothing to transcribe.
+    expect(transcribed, isEmpty);
     expect(find.byType(GoalCheckInComposer), findsOneWidget);
   });
 

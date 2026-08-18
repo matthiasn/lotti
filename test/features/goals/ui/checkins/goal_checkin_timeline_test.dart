@@ -327,6 +327,40 @@ void main() {
     expect(find.text('Transcribing…'), findsNothing);
   });
 
+  testWidgets('check-ins open their journal entry, reflections do not', (
+    tester,
+  ) async {
+    await pump(tester, [
+      GoalAudioCheckIn(audio('a1', today, transcript: 'Ran 5k.')),
+      GoalTextCheckIn(
+        JournalEntry(
+          meta: meta('n1', today),
+          entryText: const EntryText(plainText: 'Gym bag is packed.'),
+        ),
+      ),
+      GoalReflectionItem(
+        GoalAssessmentRecord(
+          id: 'r1',
+          day: DateTime.utc(today.year, today.month, today.day),
+          specVersionId: 'spec-1',
+          rating: GoalAssessmentRating.met,
+          createdAt: today,
+          // ignore: avoid_redundant_argument_values
+          dimensionRatings: const {},
+          provenance: GoalAssessmentProvenance.ratedByUser,
+        ),
+      ),
+    ]);
+
+    // The rail shows a clamped transcript and a player; the entry itself is
+    // where the words can be read whole. The chevron is the shared timeline's
+    // contract for "this row opens something" — it is drawn only when both an
+    // entry id and an open handler are present, so two of the three beats
+    // carry it and the agent-side reflection, which is no journal entry,
+    // does not.
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+  });
+
   testWidgets('an older day carries its date, not a relative word', (
     tester,
   ) async {

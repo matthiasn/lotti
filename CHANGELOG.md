@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   beats on the goal's timeline and play where they sit, with their transcript
   beneath; a recording is saved before it is transcribed, so it is never lost
   waiting for words. Daily reflections join the same timeline, and tapping one
-  reopens that day. On a wide window the timeline is a column beside the
+  reopens that day, while tapping a check-in opens the journal entry itself.
+  On a wide window the timeline is a column beside the
   dashboard; on a phone it previews in a card with a full history behind it.
   The reflection sheet's note gained a second way to answer: a voice note,
   kept separate from anything you typed.

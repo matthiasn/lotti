@@ -434,6 +434,21 @@ class ProfileAutomationService {
     return fallbackResult.handled;
   }
 
+  /// Resolves a speech-to-text model with no profile involved, for a run the
+  /// user asked for.
+  ///
+  /// The profile walk is the wrong question for an entry that belongs to no
+  /// task and no category — a goal check-in, a standalone voice note — and
+  /// answering it with "no profile configured" left those recordings
+  /// untranscribable from every surface, including the manual popup. This is
+  /// the same fallback [tryTranscribe] already ends on, exposed so the manual
+  /// path can end on it too.
+  ///
+  /// Unlike [hasDirectTranscriptionFallback] this runs as [_CallIntent.run]:
+  /// it precedes real inference, so its decline belongs in the log.
+  Future<AutomationResult> resolveDirectTranscription() =>
+      _tryDirectTranscriptionFallback(_CallIntent.run);
+
   /// Whether the direct transcription fallback could run at all — some
   /// configured provider owns a usable speech-to-text model.
   ///

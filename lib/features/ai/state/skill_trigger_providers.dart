@@ -12,9 +12,14 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_error_controller.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -199,6 +204,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
           // task's agent / inherited profile; for standalone entries we fall
           // back to the entry category's `defaultProfileId`.
           final resolver = ref.read(profileAutomationResolverProvider);
+          final isTranscription = skill.skillType == SkillType.transcription;
           ResolvedProfile? resolvedProfile;
           if (linkedTaskId != null) {
             resolvedProfile = await resolver.resolveForTask(linkedTaskId);
@@ -207,24 +213,47 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 .read(journalDbProvider)
                 .journalEntityById(params.entityId);
             final categoryId = entity?.categoryId;
-            if (categoryId == null) {
-              loggingService.log(
-                LogDomain.ai,
-                'Skipping ${params.skillId} for ${params.entityId}: '
-                'no linked task and entry has no category',
-                subDomain: 'triggerSkillProvider',
+            if (categoryId != null) {
+              resolvedProfile = await resolver.resolveForCategory(categoryId);
+            } else if (!isTranscription) {
+              await _declineSkill(
+                ref,
+                params: params,
+                skill: skill,
+                reason: 'no linked task and entry has no category',
+                loggingService: loggingService,
               );
               return;
             }
-            resolvedProfile = await resolver.resolveForCategory(categoryId);
+          }
+
+          // Transcription has one more place to go, and it is the one that
+          // matters for an entry belonging to no task and no category — a goal
+          // check-in, a standalone voice note. The direct fallback picks a
+          // configured speech-to-text model without a profile, which is
+          // exactly the situation those recordings are in. Without it the
+          // manual popup, the timeline's Retry and the automatic path all
+          // declined the same recording for the same invisible reason.
+          if (isTranscription &&
+              (resolvedProfile == null ||
+                  resolvedProfile.transcriptionModelId == null)) {
+            final fallback = await ref
+                .read(profileAutomationServiceProvider)
+                .resolveDirectTranscription();
+            if (fallback.handled) {
+              resolvedProfile = fallback.resolvedProfile;
+            }
           }
 
           if (resolvedProfile == null) {
-            loggingService.log(
-              LogDomain.ai,
-              'Skipping ${params.skillId} for ${params.entityId} '
-              '(linkedTaskId=$linkedTaskId): no profile configured',
-              subDomain: 'triggerSkillProvider',
+            await _declineSkill(
+              ref,
+              params: params,
+              skill: skill,
+              reason: isTranscription
+                  ? 'no profile and no speech-to-text model could be resolved'
+                  : 'no profile configured',
+              loggingService: loggingService,
             );
             return;
           }
@@ -303,6 +332,94 @@ final triggerSkillProvider = FutureProvider.autoDispose
         }
       },
     );
+
+/// Records a skill run that never started, where the user can see it.
+///
+/// A decline used to be a log line and nothing else, so the audio beat sat on
+/// "Transcribing…" forever while no job existed anywhere — the retry
+/// affordance the timeline already ships had no way to appear. This writes
+/// both halves of the failed state: the live status the open surface reads,
+/// and a failed attribution so the failure survives a restart and the entry
+/// still offers Retry on the next launch.
+Future<void> _declineSkill(
+  Ref ref, {
+  required TriggerSkillParams params,
+  required AiConfigSkill skill,
+  required String reason,
+  required DomainLogger loggingService,
+}) async {
+  loggingService.log(
+    LogDomain.ai,
+    'Skipping ${skill.id} for ${params.entityId}: $reason',
+    subDomain: 'triggerSkillProvider',
+  );
+
+  final responseType = skill.skillType.toResponseType;
+  ref
+      .read(
+        inferenceErrorControllerProvider((
+          id: params.entityId,
+          aiResponseType: responseType,
+        )).notifier,
+      )
+      .setError(reason);
+  ref
+      .read(
+        inferenceStatusControllerProvider((
+          id: params.entityId,
+          aiResponseType: responseType,
+        )).notifier,
+      )
+      .setStatus(InferenceStatus.error);
+
+  // Only transcription has a durable failed state to restore: it is the one
+  // whose output carrier is the source entry itself, which is what
+  // `getLatestAttributionForArtifact` keys on.
+  if (skill.skillType != SkillType.transcription) return;
+  if (!getIt.isRegistered<AiAttributionService>() ||
+      !getIt.isRegistered<AiAttributionIdentityResolver>()) {
+    return;
+  }
+  try {
+    final attributions = getIt<AiAttributionService>();
+    final session = await attributions.begin(
+      AiAttributionStart(
+        workType: AiWorkType.audioTranscription,
+        initiator: await getIt<AiAttributionIdentityResolver>()
+            .humanInitiator(),
+        trigger: AiTriggerSnapshot(
+          type: AiTriggerType.manual,
+          skillId: skill.id,
+        ),
+        intendedOutputs: [
+          AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: params.entityId,
+          ),
+        ],
+        taskId: params.linkedTaskId,
+      ),
+    );
+    await attributions.finalize(
+      await attributions.prepareCompletion(
+        attributionId: session.id,
+        outputs: const [],
+        status: AiWorkStatus.failed,
+        errorCode: 'transcription_not_configured',
+        errorSummary: reason,
+      ),
+    );
+  } catch (error, stackTrace) {
+    // The failure record is diagnostics, not the operation. Losing it must
+    // not turn a declined transcription into a thrown one.
+    loggingService.error(
+      LogDomain.ai,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'declineSkill',
+    );
+  }
+}
 
 Future<String?> _resolveLinkedTaskId({
   required String entityId,

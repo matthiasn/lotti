@@ -63,22 +63,24 @@ void main() {
       );
     });
 
-    test('a goal is not a snapshot; a snapshot names the goal it belongs to',
-        () {
-      const goal = GoalData(
-        title: 'Blood pressure',
-        statement: 'Average under 130 systolic over a rolling week.',
-        criteria: _criteria,
-        specVersion: 3,
-        specVersionId: 'snapshot-v3',
-      );
-      final snapshot = goal.copyWith(snapshotOf: 'goal-1');
+    test(
+      'a goal is not a snapshot; a snapshot names the goal it belongs to',
+      () {
+        const goal = GoalData(
+          title: 'Blood pressure',
+          statement: 'Average under 130 systolic over a rolling week.',
+          criteria: _criteria,
+          specVersion: 3,
+          specVersionId: 'snapshot-v3',
+        );
+        final snapshot = goal.copyWith(snapshotOf: 'goal-1');
 
-      expect(goal.snapshotOf, isNull);
-      expect(goal.isSpecSnapshot, isFalse);
-      expect(snapshot.isSpecSnapshot, isTrue);
-      expect(snapshot.snapshotOf, 'goal-1');
-    });
+        expect(goal.snapshotOf, isNull);
+        expect(goal.isSpecSnapshot, isFalse);
+        expect(snapshot.isSpecSnapshot, isTrue);
+        expect(snapshot.snapshotOf, 'goal-1');
+      },
+    );
 
     test('a serialized goal still resolves the definitions it references', () {
       // The reason a goal belongs in the journal database at all: its
@@ -87,16 +89,17 @@ void main() {
       // criterion id fails here rather than at evaluation time.
       final restored = GoalData.fromJson(
         jsonDecode(
-          jsonEncode(
-            const GoalData(
-              title: 'Blood pressure',
-              statement: 'Average under 130 systolic over a rolling week.',
-              criteria: _criteria,
-              specVersion: 1,
-              specVersionId: 'snapshot-v1',
-            ),
-          ),
-        ) as Map<String, dynamic>,
+              jsonEncode(
+                const GoalData(
+                  title: 'Blood pressure',
+                  statement: 'Average under 130 systolic over a rolling week.',
+                  criteria: _criteria,
+                  specVersion: 1,
+                  specVersionId: 'snapshot-v1',
+                ),
+              ),
+            )
+            as Map<String, dynamic>,
       );
 
       expect(goalCriterionHabitIds(restored.criteria), {'habit-walk'});
