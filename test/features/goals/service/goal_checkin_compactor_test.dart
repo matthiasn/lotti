@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,6 +11,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/ai_config_factories.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// One model response filling every slot. Held as a constant so the JSON stays
 /// on one logical line — split across adjacent string literals it trips the
@@ -175,6 +179,36 @@ void main() {
 
     expect(summary, isNull);
     expect(prompts, isEmpty);
+  });
+
+  test('compaction is attributed to the goal that paid for it', () async {
+    final attribution = AiInteractionCaptureTestBench.create()..register();
+    addTearDown(attribution.unregister);
+    scripted = ['{"whatHappened":"Walked the long way."}'];
+
+    await compact();
+
+    final start =
+        verify(
+              () => attribution.service.begin(captureAny()),
+            ).captured.single
+            as AiAttributionStart;
+    expect(start.initiator.type, AiActorType.automation);
+    expect(start.initiator.id, 'automation:goal-check-in-compaction');
+
+    final event =
+        verify(
+              () => attribution.service.recordInteraction(
+                attributionId: any(named: 'attributionId'),
+                event: captureAny(named: 'event'),
+              ),
+            ).captured.single
+            as AiConsumptionEvent;
+    // Without the agent id the row lands with a null agent, and the goal's
+    // lifetime cost pills — which total by agent — never show what compaction
+    // actually spent.
+    expect(event.agentId, 'goal-1');
+    expect(event.entryId, 'audio-1');
   });
 
   test('a failing model never throws at the caller', () async {
