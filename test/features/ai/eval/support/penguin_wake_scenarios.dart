@@ -70,6 +70,7 @@ class PenguinWakeScenario {
     required this.expectsProposals,
     required this.expectsReport,
     this.forbiddenToolNames = const {},
+    this.allowedProposalTools = const {},
   });
 
   final PenguinWakeScenarioId id;
@@ -88,6 +89,20 @@ class PenguinWakeScenario {
   /// checked by nothing until 2026-08-18, which made "the report must change"
   /// an expectation the suite stated and never tested.
   final bool expectsReport;
+
+  /// Tools a wake may propose even when it should otherwise propose nothing.
+  ///
+  /// The no-op wake is the case. Its note reports no movement — "still no date
+  /// from the parts store" — and every evaluated model responded by proposing
+  /// the `waiting-on` label. That is supported by the evidence, is not a
+  /// duplicate (the task carries `blocked`, not `waiting-on`), and is not
+  /// speculative, so the contract's "skip no-ops, duplicates, speculative
+  /// changes" does not forbid it. Asserting against it made four models from
+  /// three vendors fail for doing something reasonable.
+  ///
+  /// Everything else stays forbidden, and the label itself is still checked:
+  /// permission to add `waiting-on` is not permission to invent a label.
+  final Set<String> allowedProposalTools;
 
   /// Tools a correct wake must not call, even though it may call others.
   ///
@@ -109,10 +124,11 @@ class PenguinWakeScenario {
     PenguinWakeScenarioId.noOp: PenguinWakeScenario(
       id: PenguinWakeScenarioId.noOp,
       summary:
-          'Nothing materially changed: propose no data changes, do not '
-          'republish the report, and do not invent progress.',
+          'The note reports no movement: do not republish the report and do '
+          'not invent progress. Labelling what the note describes is fine.',
       expectsProposals: false,
       expectsReport: false,
+      allowedProposalTools: {TaskAgentToolNames.assignTaskLabel},
     ),
     PenguinWakeScenarioId.materialChange: PenguinWakeScenario(
       id: PenguinWakeScenarioId.materialChange,
