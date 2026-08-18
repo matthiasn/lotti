@@ -276,14 +276,15 @@ void main() {
 
       verifyNever(() => repo.saveConfig(any()));
 
-      // Backfill, seeding, upgrade, and orphan cleanup each reached their
-      // provider read instead of an earlier failure aborting initialization.
+      // Rename migration, backfill, seeding, upgrade, and orphan cleanup each
+      // reached their provider read instead of an earlier failure aborting
+      // initialization.
       verify(
         () => repo.getConfigsByType(
           AiConfigType.inferenceProvider,
           includeDeleted: any(named: 'includeDeleted'),
         ),
-      ).called(4);
+      ).called(5);
     });
 
     test('completes normally and still seeds profiles when the profile '

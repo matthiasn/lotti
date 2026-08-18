@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, mlx]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
+generated: { by: claude-code/opus-5, at: 2026-08-18T00:00:00Z }
 stale_after: 2026-10-19
 sources:
   - id: router
@@ -23,7 +23,7 @@ sources:
   - id: known-models
     resource: ../../../lib/features/ai/util/known_models.dart
     title: Known model constants and the curated static catalog
-    last_modified: 2026-08-12
+    last_modified: 2026-08-18
   - id: known-models-data
     resource: ../../../lib/features/ai/util/known_models_data.dart
     title: The meliousModels catalog entries
@@ -148,7 +148,7 @@ untouched rather than writing zeros.
 A small curated static catalog exists for immediate setup before live-catalog
 rows are installed: `deepseek-v4-pro`, `glm-5.2`, `gemma-4-26b-a4b`,
 `kimi-k3`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
-`qwen3.5-122b-a10b`, `deepseek-v4-flash`, `flux-2-klein-9b`,
+`qwen3.5-122b-a10b`, `deepseek-v4-flash-0731`, `flux-2-klein-9b`,
 `voxtral-small-24b-2507`, `whisper-large-v3`, `whisper-large-v3-turbo`.
 
 ## Gemini

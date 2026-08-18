@@ -135,7 +135,14 @@ const String meliousGemma426bA4bModelId = 'gemma-4-26b-a4b';
 const String meliousMinimaxM27ModelId = 'minimax-m2.7';
 const String meliousMistralSmall4119BInstructModelId =
     'mistral-small-4-119b-instruct';
-const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
+
+/// The dated snapshot, not the bare `deepseek-v4-flash` alias.
+///
+/// Melious lists both, and the alias is not servable: it returns "The model
+/// provider encountered an error" on every request, consistently, while the
+/// snapshot answers normally. The catalog shipped the alias, so choosing
+/// "DeepSeek V4 Flash" in settings could only ever fail.
+const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash-0731';
 const String meliousQwen35122BA10BModelId = 'qwen3.5-122b-a10b';
 const String meliousKimiK3ModelId = 'kimi-k3';
 const String meliousVoxtralSmall24B2507ModelId = 'voxtral-small-24b-2507';

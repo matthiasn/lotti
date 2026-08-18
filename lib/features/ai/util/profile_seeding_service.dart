@@ -15,6 +15,7 @@ const profileGeminiProId = 'profile-gemini-pro-001';
 const profileOpenAiId = 'profile-openai-001';
 const profileMistralEuId = 'profile-mistral-eu-001';
 const profileMeliousId = 'profile-melious-001';
+const profileMeliousFlashId = 'profile-melious-flash-001';
 const profileAlibabaId = 'profile-alibaba-001';
 const profileAnthropicId = 'profile-anthropic-001';
 const profileLocalId = 'profile-local-001';
@@ -94,6 +95,7 @@ class ProfileSeedingService {
     profileOpenAiId: InferenceProviderType.openAi,
     profileMistralEuId: InferenceProviderType.mistral,
     profileMeliousId: InferenceProviderType.melious,
+    profileMeliousFlashId: InferenceProviderType.melious,
     profileAlibabaId: InferenceProviderType.alibaba,
     profileAnthropicId: InferenceProviderType.anthropic,
     profileLocalId: InferenceProviderType.ollama,
@@ -1143,6 +1145,34 @@ class ProfileSeedingService {
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       seedGeneration: meliousProfileSeedGeneration,
+      createdAt: DateTime(2026),
+    ),
+    // The same Melious stack with the cheap, fast thinking model in front.
+    //
+    // Measured against `Melious.ai`'s GLM 5.2 on the task-agent suite: same
+    // pass rate over three identical runs (17/17 every time, where GLM and
+    // Qwen each dropped a case to run-to-run noise), roughly a third of the
+    // latency, and an order of magnitude less billed credit per wake. The
+    // agent scenarios cannot tell the models apart on quality, so cost and
+    // latency are what is left to choose on, and this is the cheap end.
+    //
+    // Thinking only. DeepSeek V4 Flash is text-in, text-out, so vision stays
+    // on Kimi K3 and the high-end slot keeps it too — a cheaper default is
+    // worth having precisely because the expensive model is still one slot
+    // away when a task needs it.
+    AiConfigInferenceProfile(
+      id: profileMeliousFlashId,
+      name: 'Melious.ai (Flash)',
+      description:
+          'Fast, low-cost Melious profile: DeepSeek V4 Flash for everyday '
+          'thinking, Kimi K3 for high-end reasoning and vision.',
+      thinkingModelId: meliousDeepseekV4FlashModelId,
+      thinkingHighEndModelId: meliousKimiK3ModelId,
+      imageRecognitionModelId: meliousKimiK3ModelId,
+      transcriptionModelId: meliousWhisperLargeV3ModelId,
+      imageGenerationModelId: meliousFlux2Klein9BModelId,
+      skillAssignments: _defaultSkillAssignments,
+      isDefault: true,
       createdAt: DateTime(2026),
     ),
     AiConfigInferenceProfile(

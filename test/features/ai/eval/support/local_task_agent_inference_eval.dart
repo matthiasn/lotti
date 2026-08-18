@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import 'eval_text_matchers.dart';
@@ -2098,6 +2099,7 @@ class LocalTaskAgentEvalCaseResult {
     this.reportEditorAttempts = 0,
     this.reportEditorValidationIssues = const [],
     this.errorMessage,
+    this.consumption = const [],
   });
 
   final LocalTaskAgentEvalProfile profile;
@@ -2116,7 +2118,34 @@ class LocalTaskAgentEvalCaseResult {
   final List<LocalTaskAgentEvalToolCall> toolCalls;
   final LocalTaskAgentEvalFailureCategory failureCategory;
 
+  /// Billing and energy for this case. The Melious non-streaming path fills it
+  /// in; an empty list means nothing was reported, never that nothing was paid.
+  final List<AiConsumptionEvent> consumption;
+
   bool get passed => failureCategory == LocalTaskAgentEvalFailureCategory.none;
+
+  /// Total reported energy for this case in watt-hours, or null when the
+  /// provider sent none.
+  double? get energyWh {
+    final values = consumption
+        .map((event) => event.energyKwh)
+        .whereType<double>()
+        .toList();
+    return values.isEmpty ? null : values.reduce((a, b) => a + b) * 1000;
+  }
+
+  /// Total billed credits for this case, or null when nothing was reported.
+  ///
+  /// Never zero-defaulted: a missing bill is not a free run, and averaging a
+  /// silent zero into a per-model figure understates exactly the models whose
+  /// telemetry is patchy.
+  double? get credits {
+    final values = consumption
+        .map((event) => event.credits)
+        .whereType<double>()
+        .toList();
+    return values.isEmpty ? null : values.reduce((a, b) => a + b);
+  }
 
   LocalTaskAgentEvalToolCall? get reportToolCall {
     for (final call in toolCalls.reversed) {
@@ -2216,6 +2245,8 @@ class LocalTaskAgentEvalCaseResult {
           .map((call) => call.name)
           .toList(),
       'failureCategory': failureCategory.name,
+      'credits': credits,
+      'energyWh': energyWh,
       'qualityChecksPassed': passedQualityCheckCount,
       'qualityCheckCount': qualityCheckCount,
       'qualityScore': qualityScore,
@@ -2312,7 +2343,51 @@ class LocalTaskAgentEvalReport {
       );
     }
 
+    // Observed cost, per model. Deliberately after the pass table and clearly
+    // separated from it: these numbers are what the run was billed, not a
+    // target, and they are the only column that separates models the scenarios
+    // cannot.
+    final modelNames = <String>[
+      for (final profile in profiles) profile.name,
+    ];
     buffer
+      ..writeln()
+      ..writeln('## Cost (observed, not a target)')
+      ..writeln()
+      ..writeln('| Profile | Cases | Billed | Credits | Wh | Credits/case* |')
+      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: |');
+    for (final name in modelNames) {
+      final cases = results.where((r) => r.profile.name == name).toList();
+      final credited = cases
+          .map((result) => result.credits)
+          .whereType<double>()
+          .toList();
+      final energies = cases
+          .map((result) => result.energyWh)
+          .whereType<double>()
+          .toList();
+      final credits = credited.isEmpty
+          ? null
+          : credited.reduce((a, b) => a + b);
+      // Divided by REPORTED cases, never by all of them: missing telemetry has
+      // to widen the uncertainty rather than masquerade as a free case.
+      final perCase = credits == null ? null : credits / credited.length;
+      final energyWh = energies.isEmpty
+          ? null
+          : energies.reduce((a, b) => a + b);
+      buffer.writeln(
+        '| $name | ${cases.length} | ${credited.length} | '
+        '${credits?.toStringAsFixed(6) ?? 'not reported'} | '
+        '${energyWh?.toStringAsFixed(3) ?? 'not reported'} | '
+        '${perCase?.toStringAsFixed(6) ?? 'not reported'} |',
+      );
+    }
+    buffer
+      ..writeln()
+      ..writeln(
+        r'\* over billed cases only. A case the provider did not bill is '
+        'excluded rather than counted as free.',
+      )
       ..writeln()
       ..writeln('## Case Details');
     for (final result in results) {
@@ -2363,6 +2438,17 @@ class LocalTaskAgentEvalReport {
   }
 }
 
+/// Wake-run key for one eval case — the consumption-event join key.
+///
+/// Billing rides on this. `ConversationRepository` records a consumption event
+/// per turn only when an `AiInteractionCapture` is registered, and the Melious
+/// `billing_cost` / `environment_impact` side-channel arrives with it. Without
+/// a key the events cannot be attributed back to the case that paid for them,
+/// which is why every cost figure quoted for this suite before now was
+/// inferred from token counts rather than read from a bill.
+String localTaskAgentEvalWakeRunKey(String profileName, String scenarioId) =>
+    'task-eval:$scenarioId:$profileName';
+
 class LocalTaskAgentInferenceEvalRunner {
   LocalTaskAgentInferenceEvalRunner({
     required this.provider,
@@ -2374,6 +2460,7 @@ class LocalTaskAgentInferenceEvalRunner {
     this.reasoningEffort,
     this.reportEditorModelId,
     this.reportEditorMaxAttempts = 1,
+    this.consumptionForWakeRunKey,
   }) : assert(
          reportEditorMaxAttempts >= 1 && reportEditorMaxAttempts <= 3,
          'reportEditorMaxAttempts must be between 1 and 3.',
@@ -2382,6 +2469,14 @@ class LocalTaskAgentInferenceEvalRunner {
   final AiConfigInferenceProvider provider;
   final ConversationRepository conversationRepository;
   final InferenceRepositoryInterface inferenceRepository;
+
+  /// Consumption events recorded for a case, looked up by its wake-run key.
+  ///
+  /// Injected rather than read here so the runner stays independent of how the
+  /// capture bench is registered, exactly as the goal suite does it. Null in
+  /// offline tests, where nothing is billed.
+  final List<AiConsumptionEvent> Function(String wakeRunKey)?
+  consumptionForWakeRunKey;
   final double temperature;
   final bool forceReportRetry;
   final LocalTaskAgentEvalExecutionMode executionMode;
@@ -2454,6 +2549,7 @@ class LocalTaskAgentInferenceEvalRunner {
   ) async {
     final stopwatch = Stopwatch()..start();
     final strategy = _LocalTaskAgentEvalStrategy(scenario: scenario);
+    final wakeRunKey = localTaskAgentEvalWakeRunKey(profile.name, scenario.id);
     final systemPrompt = _buildEvalSystemPrompt(
       scenario.promptVariant,
       modelId: profile.providerModelId,
@@ -2490,6 +2586,9 @@ class LocalTaskAgentInferenceEvalRunner {
           tools: mutationTools,
           temperature: temperature,
           strategy: strategy,
+          consumptionAgentId: 'task_agent:eval',
+          consumptionWakeRunKey: wakeRunKey,
+          consumptionThreadId: scenario.id,
         );
         var usedForcedReportRetry = false;
         var reportRevisionCompleted = true;
@@ -2521,6 +2620,12 @@ class LocalTaskAgentInferenceEvalRunner {
             model: profile.providerModelId,
             provider: provider,
             inferenceRepo: inferenceRepository,
+            // Same key: a forced retry is part of what the case cost, not a
+            // separate wake. Billing it elsewhere would understate the price
+            // of the models that need the retry most.
+            consumptionAgentId: 'task_agent:eval',
+            consumptionWakeRunKey: wakeRunKey,
+            consumptionThreadId: scenario.id,
             tools: allTools
                 .where(
                   (tool) =>
@@ -2589,6 +2694,7 @@ class LocalTaskAgentInferenceEvalRunner {
                   profile: profile,
                   scenario: scenario,
                   strategy: strategy,
+                  wakeRunKey: wakeRunKey,
                   initialValidationIssues: initialValidationIssues,
                 ),
               );
@@ -2601,6 +2707,7 @@ class LocalTaskAgentInferenceEvalRunner {
               profile: profile,
               scenario: scenario,
               strategy: strategy,
+              wakeRunKey: wakeRunKey,
             ),
           );
         } else if (plannedReportPass ||
@@ -2675,6 +2782,7 @@ class LocalTaskAgentInferenceEvalRunner {
           errorMessage: manager?.lastError,
           toolCalls: strategy.toolCalls,
           failureCategory: failureCategory,
+          consumption: consumptionForWakeRunKey?.call(wakeRunKey) ?? const [],
         );
       } catch (error) {
         stopwatch.stop();
@@ -2695,6 +2803,7 @@ class LocalTaskAgentInferenceEvalRunner {
     required LocalTaskAgentEvalProfile profile,
     required LocalTaskAgentEvalScenario scenario,
     required _LocalTaskAgentEvalStrategy strategy,
+    required String wakeRunKey,
     Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
   }) async {
     final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
@@ -2722,6 +2831,14 @@ class LocalTaskAgentInferenceEvalRunner {
             scenario: scenario,
           ),
           initialValidationIssues: initialValidationIssues,
+          // The editor is billed work this case caused, so it bills to this
+          // case. Without the key its one-to-three calls are recorded
+          // unattributed and filtered out of the cost table, which would
+          // understate exactly the routes that edit — `productionRouting`
+          // always edits Mistral and `reportEditing` always edits everything.
+          consumptionAgentId: 'task_agent:eval',
+          consumptionWakeRunKey: wakeRunKey,
+          consumptionThreadId: scenario.id,
         );
     final revision = result.revision;
     if (revision != null) {

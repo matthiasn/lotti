@@ -140,6 +140,72 @@ class ModelPrepopulationService {
   /// This ensures that when new models are added to `knownModelsByProvider`,
   /// existing users get them without having to re-create their providers.
   /// Safe to call on every startup — skips models that already exist.
+  /// Provider-native model ids that were renamed under the user's feet.
+  ///
+  /// Keyed old -> new, scoped to the provider type that owns them. A rename
+  /// only belongs here when the OLD id is unservable: rewriting a row that
+  /// still works would silently move a user off a model they chose.
+  static const renamedProviderModelIds =
+      <InferenceProviderType, Map<String, String>>{
+        // `deepseek-v4-flash` has been in the curated catalog since the
+        // Melious provider landed, and the provider does not serve it — every
+        // request returns "The model provider encountered an error", while the
+        // dated snapshot answers normally. Both are listed by /v1/models.
+        InferenceProviderType.melious: {
+          'deepseek-v4-flash': meliousDeepseekV4FlashModelId,
+        },
+      };
+
+  /// Rewrites rows whose provider-native id was renamed, in place.
+  ///
+  /// In place matters. Profile slots and direct-model overrides store the
+  /// `AiConfigModel.id`, so editing the row's `providerModelId` repairs every
+  /// reference at once; creating a new row instead would leave each of those
+  /// references pointing at the dead id — which is what changing the catalog
+  /// constant alone does, and it looks fixed while being worse, since the
+  /// backfill then also adds a working row nobody points at.
+  ///
+  /// Runs before [backfillNewModels] so the repaired row already owns the new
+  /// id when the backfill checks whether it needs creating.
+  ///
+  /// Returns the number of rows rewritten.
+  Future<int> migrateRenamedModelIds() async {
+    final providerConfigs = await _repository.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final typeByProviderId = {
+      for (final provider
+          in providerConfigs.whereType<AiConfigInferenceProvider>())
+        provider.id: provider.inferenceProviderType,
+    };
+    // Soft-deleted rows included: a deleted row still carries the dead id, and
+    // leaving it renames nothing while a later undelete would resurrect it.
+    final models = (await _repository.getConfigsByType(
+      AiConfigType.model,
+      includeDeleted: true,
+    )).whereType<AiConfigModel>();
+
+    var migrated = 0;
+    for (final model in models) {
+      final renames =
+          renamedProviderModelIds[typeByProviderId[model.inferenceProviderId]];
+      final replacement = renames?[model.providerModelId];
+      if (replacement == null) continue;
+      await _repository.saveConfig(
+        model.copyWith(providerModelId: replacement),
+      );
+      migrated++;
+    }
+
+    if (migrated > 0) {
+      developer.log(
+        'Rewrote $migrated model row(s) onto renamed provider model ids',
+        name: 'ModelPrepopulationService',
+      );
+    }
+    return migrated;
+  }
+
   Future<void> backfillNewModels() async {
     final allConfigs = await _repository.getConfigsByType(
       AiConfigType.inferenceProvider,
