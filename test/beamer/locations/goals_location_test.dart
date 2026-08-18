@@ -5,6 +5,7 @@ import 'package:lotti/beamer/locations/goals_location.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_timeline_page.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 
 import '../../widget_test_utils.dart';
@@ -38,19 +39,22 @@ void main() {
       );
     }
 
-    test('pathPatterns cover list, create, detail, edit, chat and timeline', () {
-      final location = GoalsLocation(
-        RouteInformation(uri: Uri.parse('/goals')),
-      );
-      expect(location.pathPatterns, [
-        '/goals',
-        '/goals/create',
-        '/goals/details/:agentId',
-        '/goals/details/:agentId/edit',
-        '/goals/details/:agentId/chat',
-        '/goals/details/:agentId/timeline',
-      ]);
-    });
+    test(
+      'pathPatterns cover list, create, detail, edit, chat and timeline',
+      () {
+        final location = GoalsLocation(
+          RouteInformation(uri: Uri.parse('/goals')),
+        );
+        expect(location.pathPatterns, [
+          '/goals',
+          '/goals/create',
+          '/goals/details/:agentId',
+          '/goals/details/:agentId/edit',
+          '/goals/details/:agentId/chat',
+          '/goals/details/:agentId/timeline',
+        ]);
+      },
+    );
 
     testWidgets('the root path builds only the list page, localized', (
       tester,
@@ -82,7 +86,7 @@ void main() {
       expect(pages.last.child, isA<CreateGoalAgentPage>());
     });
 
-    testWidgets('hosts the goal detail, chat and edit pages under '
+    testWidgets('hosts the goal detail, chat, timeline and edit pages under '
         '/goals/details', (tester) async {
       final detail = await pagesFor(
         tester,
@@ -101,6 +105,20 @@ void main() {
       expect(chat.length, 3);
       expect(chat.last.key, const ValueKey('goals-details-goal-1-chat'));
       expect(chat.last.child, isA<GoalAgentChatPage>());
+
+      final timeline = await pagesFor(
+        tester,
+        '/goals/details/goal-1/timeline',
+        {'agentId': 'goal-1'},
+      );
+      // Stacked on the detail page, so back returns to the goal rather than
+      // to the goals list.
+      expect(timeline.length, 3);
+      expect(
+        timeline.last.key,
+        const ValueKey('goals-details-goal-1-timeline'),
+      );
+      expect(timeline.last.child, isA<GoalTimelinePage>());
 
       final edit = await pagesFor(
         tester,

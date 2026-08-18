@@ -309,6 +309,7 @@ class _GoalDayAssessmentSheetState
               SizedBox(height: _bindGap(tokens)),
               GoalReflectionVoiceNotes(
                 agentId: widget.agentId,
+                day: widget.day,
                 enabled: widget.canRecord,
               ),
               SizedBox(height: _sectionGap(tokens)),

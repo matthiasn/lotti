@@ -184,6 +184,26 @@ void main() {
       // Agent → goal: the disposable side points at the durable one.
       expect(link.fromId, 'agent-1');
       expect(link.toId, 'goal-1');
+      // Derived, not minted. `agent_links` is unique on (from_id, to_id,
+      // type) while upsertLink resolves conflicts by id alone, so two devices
+      // that backfilled independently would otherwise hold two ids for the
+      // same natural key and fail the constraint forever on sync.
+      expect(link.id, agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-1'));
+    });
+
+    test('two devices derive the same link id for the same pair', () {
+      expect(
+        agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-1'),
+        agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-1'),
+      );
+      expect(
+        agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-2'),
+        isNot(agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-1')),
+      );
+      expect(
+        agentGoalLinkId(agentId: 'agent-2', goalId: 'goal-1'),
+        isNot(agentGoalLinkId(agentId: 'agent-1', goalId: 'goal-1')),
+      );
     });
 
     test('does not write a second link when one already exists', () async {
@@ -330,6 +350,31 @@ void main() {
           targetDate: any(named: 'targetDate'),
           rationale: any(named: 'rationale'),
           categoryId: any(named: 'categoryId'),
+        ),
+      ).called(1);
+    });
+
+    test('a repository explosion is contained and logged', () async {
+      // The backfill runs on every launch; an unreadable agent store must not
+      // take the launch down, and the failure must be visible in the log
+      // rather than swallowed silently.
+      final logger = MockDomainLogger();
+      final logging = GoalMirrorService(
+        goalRepository: goals,
+        agentRepository: agents,
+        syncService: sync,
+        domainLogger: logger,
+      );
+      when(() => agents.getEntity(any())).thenThrow(Exception('db is gone'));
+
+      expect(await logging.mirrorHead('agent-1'), isNull);
+      verify(
+        () => logger.error(
+          any(),
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
         ),
       ).called(1);
     });

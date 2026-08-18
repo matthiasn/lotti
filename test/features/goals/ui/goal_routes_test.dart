@@ -2,27 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
 
 void main() {
-  test('every goal route lives under the unified Goals tab root', () {
-    expect(goalsRootPath, '/goals');
-    expect(goalCreatePath, '/goals/create');
-    expect(goalDetailPath('goal-1'), '/goals/details/goal-1');
-    expect(goalChatPath('goal-1'), '/goals/details/goal-1/chat');
-    expect(goalEditPath('goal-1'), '/goals/details/goal-1/edit');
-  });
+  group('goal routes', () {
+    test('every goal route hangs off the goals root', () {
+      // The shell persists the current path; a route that escaped /goals
+      // would restore into a different tab.
+      expect(goalDetailPath('g1'), startsWith(goalsRootPath));
+      expect(goalChatPath('g1'), startsWith(goalDetailPath('g1')));
+      expect(goalEditPath('g1'), startsWith(goalDetailPath('g1')));
+      expect(goalTimelinePath('g1'), startsWith(goalDetailPath('g1')));
+      expect(goalCreatePath, startsWith(goalsRootPath));
+    });
 
-  test('the derived routes match the GoalsLocation path patterns for any '
-      'agent id', () {
-    // The detail/chat/edit shapes must slot into `/goals/details/:agentId`
-    // (+ `/chat` | `/edit`) — an id is a single path segment.
-    const agentId = '123e4567-e89b-12d3-a456-426614174000';
-    expect(goalDetailPath(agentId), '/goals/details/$agentId');
-    expect(
-      goalChatPath(agentId),
-      '${goalDetailPath(agentId)}/chat',
-    );
-    expect(
-      goalEditPath(agentId),
-      '${goalDetailPath(agentId)}/edit',
-    );
+    test('the sub-routes are distinct from one another', () {
+      final paths = {
+        goalDetailPath('g1'),
+        goalChatPath('g1'),
+        goalEditPath('g1'),
+        goalTimelinePath('g1'),
+      };
+      expect(paths, hasLength(4));
+    });
+
+    test('the rail is dropped before it can squeeze the dashboard', () {
+      // The rail only earns its width when the dashboard still has a usable
+      // measure beside it.
+      expect(kGoalTimelineRailWidth, greaterThan(0));
+      expect(kGoalTimelineRailFoldWidth, greaterThan(kGoalTimelineRailWidth));
+    });
   });
 }

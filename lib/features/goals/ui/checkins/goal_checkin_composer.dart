@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,22 @@ import 'package:uuid/uuid.dart';
 /// The agent's prepared line is read from what the last wake already authored,
 /// so opening this costs no inference — it is a casual surface and must stay
 /// free to open.
+/// Saves a written check-in. Returns whether it landed.
+typedef GoalCheckInTextSaver =
+    Future<bool> Function({
+      required String text,
+      required String goalEntryId,
+      String? categoryId,
+    });
+
+/// Opens the recorder against a goal.
+typedef GoalCheckInRecorderOpener =
+    Future<void> Function(
+      BuildContext context, {
+      required String goalEntryId,
+      String? categoryId,
+    });
+
 class GoalCheckInComposer extends ConsumerStatefulWidget {
   const GoalCheckInComposer({
     required this.agentId,
@@ -29,8 +46,16 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     this.preparedLine,
     this.personaName,
     this.categoryId,
+    this.saveText = _saveCheckInText,
+    this.openRecorder = _openCheckInRecorder,
     super.key,
   });
+
+  /// Seams for the two side effects, defaulted to the real ones. Injected
+  /// rather than called statically so the composer's save and record paths are
+  /// testable without standing up the journal and audio stacks.
+  final GoalCheckInTextSaver saveText;
+  final GoalCheckInRecorderOpener openRecorder;
 
   final String agentId;
   final String goalTitle;
@@ -81,36 +106,35 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   /// Records straight into the goal. The recorder owns save-versus-discard, so
   /// a discarded recording creates nothing and a saved one is linked the
   /// moment it exists — a dismissed sheet can never orphan audio.
-  Future<void> _record(String goalEntryId) async {
-    await AudioRecordingModal.show(
-      context,
-      linkedId: goalEntryId,
-      categoryId: widget.categoryId,
-      useRootNavigator: false,
-    );
-  }
+  Future<void> _record(String goalEntryId) => widget.openRecorder(
+    context,
+    goalEntryId: goalEntryId,
+    categoryId: widget.categoryId,
+  );
 
   Future<void> _saveText(String goalEntryId) async {
     final text = _text.text.trim();
     if (text.isEmpty || _saving) return;
     setState(() => _saving = true);
-    final created = await JournalRepository.createTextEntry(
-      EntryText(plainText: text),
-      started: DateTime.now(),
-      id: const Uuid().v1(),
-      linkedId: goalEntryId,
+    final created = await widget.saveText(
+      text: text,
+      goalEntryId: goalEntryId,
       categoryId: widget.categoryId,
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    if (created != null) Navigator.of(context).pop();
+    if (created) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final goalEntryId = ref.watch(goalEntryIdProvider(widget.agentId));
+    // The capture target, not the derived id: linking to a row that does not
+    // exist yet saves the recording and silently drops the link.
+    final goalEntryId = ref
+        .watch(goalCaptureTargetProvider(widget.agentId))
+        .value;
 
     return SafeArea(
       child: Padding(
@@ -132,7 +156,7 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
               ),
               SizedBox(height: tokens.spacing.step1),
               Text(
-                DateFormat.yMMMMEEEEd(locale).add_Hm().format(DateTime.now()),
+                DateFormat.yMMMMEEEEd(locale).add_Hm().format(clock.now()),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),
@@ -235,45 +259,57 @@ class _PreparedCard extends StatelessWidget {
   }
 }
 
+/// The composer's primary action.
+///
+/// The design canvas draws a 68px orb here, but the recorder this opens is the
+/// app-wide `AudioRecordingModal` — which owns the real capture UI, the level
+/// meter and the discard rules. A bespoke orb would therefore be a large
+/// button wearing a one-off dimension the design system has no token for, so
+/// this uses the system's own button instead. A dedicated recorder-control
+/// token is the thing to add if the orb is wanted; it needs a decision, not an
+/// invented constant.
 class _RecordButton extends StatelessWidget {
   const _RecordButton({required this.onPressed});
 
   final VoidCallback? onPressed;
 
-  static const double _diameter = 68;
-
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final accent = tokens.colors.interactive.enabled;
-    return Column(
-      children: [
-        Semantics(
-          button: true,
-          label: context.messages.goalCheckInRecordCta,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Container(
-              width: _diameter,
-              height: _diameter,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.16),
-                shape: BoxShape.circle,
-                border: Border.all(color: accent),
-              ),
-              child: Icon(Icons.mic_rounded, size: IconSizes.l, color: accent),
-            ),
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step2),
-        Text(
-          context.messages.goalCheckInRecordCta,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-      ],
+    return DesignSystemButton(
+      key: const ValueKey('goal-checkin-record'),
+      label: context.messages.goalCheckInRecordCta,
+      leadingIcon: Icons.mic_rounded,
+      onPressed: onPressed,
+      fullWidth: true,
+      size: DesignSystemButtonSize.large,
     );
   }
 }
+
+Future<bool> _saveCheckInText({
+  required String text,
+  required String goalEntryId,
+  String? categoryId,
+}) async {
+  final created = await JournalRepository.createTextEntry(
+    EntryText(plainText: text),
+    started: clock.now(),
+    id: const Uuid().v1(),
+    linkedId: goalEntryId,
+    categoryId: categoryId,
+  );
+  return created != null;
+}
+
+Future<void> _openCheckInRecorder(
+  BuildContext context, {
+  required String goalEntryId,
+  String? categoryId,
+}) => AudioRecordingModal.show(
+  context,
+  linkedId: goalEntryId,
+  categoryId: categoryId,
+  // The composer is itself a sheet; the recorder must open inside the same
+  // navigator or it tears the composer down beneath it.
+  useRootNavigator: false,
+);

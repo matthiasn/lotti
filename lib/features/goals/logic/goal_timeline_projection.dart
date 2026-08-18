@@ -15,6 +15,12 @@ import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 /// passed under superseded criteria must not be shown as a judgement of the
 /// current ones.
 ///
+/// A **null** [specVersionId] means the current spec is not known yet, and
+/// withholds reflections entirely rather than showing every version's — the
+/// underlying projection reads null as "no filter", which would flash old
+/// verdicts while providers resolve and leave them standing on a health
+/// error.
+///
 /// Entries that are not check-in kinds are dropped rather than rendered as
 /// something they are not — AI responses and tasks are surfaced elsewhere.
 List<GoalTimelineItem> goalTimelineItems({
@@ -24,11 +30,12 @@ List<GoalTimelineItem> goalTimelineItems({
 }) {
   final items = <GoalTimelineItem>[
     for (final entity in entries) ?_checkIn(entity),
-    for (final record in latestAssessmentsByDay(
-      assessments,
-      specVersionId: specVersionId,
-    ).values)
-      GoalReflectionItem(record),
+    if (specVersionId != null)
+      for (final record in latestAssessmentsByDay(
+        assessments,
+        specVersionId: specVersionId,
+      ).values)
+        GoalReflectionItem(record),
   ];
 
   return items..sort((a, b) {
@@ -39,13 +46,19 @@ List<GoalTimelineItem> goalTimelineItems({
   });
 }
 
-GoalTimelineItem? _checkIn(JournalEntity entity) => switch (entity) {
-  final JournalAudio audio => GoalAudioCheckIn(audio),
-  final JournalEntry entry
-      when (entry.entryText?.plainText.trim() ?? '').isNotEmpty =>
-    GoalTextCheckIn(entry),
-  _ => null,
-};
+GoalTimelineItem? _checkIn(JournalEntity entity) {
+  // A deleted check-in stays linked — the link is not tombstoned with the
+  // entry — so without this the user's deleted words remain visible and
+  // playable here long after they removed them.
+  if (entity.isDeleted) return null;
+  return switch (entity) {
+    final JournalAudio audio => GoalAudioCheckIn(audio),
+    final JournalEntry entry
+        when (entry.entryText?.plainText.trim() ?? '').isNotEmpty =>
+      GoalTextCheckIn(entry),
+    _ => null,
+  };
+}
 
 /// One labelled run of items per local calendar day, in the order [items]
 /// arrived.

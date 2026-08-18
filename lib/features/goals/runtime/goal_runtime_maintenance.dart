@@ -42,6 +42,12 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
 
   @override
   Future<void> restoreSubscriptions() async {
+    // The backfill runs over EVERY goal, including paused and archived ones:
+    // subscriptions are only for active goals, but the durable journal row is
+    // for all of them. Repairing only what is subscribed would permanently
+    // strand the goals a restore is most likely to lose.
+    await _backfillJournalGoals();
+
     final List<AgentIdentityEntity> agents;
     try {
       agents = await _activeGoalAgents();
@@ -61,11 +67,6 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
           identity: identity,
           state: await _repository.getAgentState(identity.agentId),
         );
-        // The backfill: goals that predate the journal-side entity get one,
-        // and any goal whose mirror failed to write gets repaired. Derived ids
-        // make this converge rather than duplicate when several devices run it
-        // against the same synced goal.
-        await _goalMirrorService?.mirrorHead(identity.agentId);
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }
@@ -105,6 +106,33 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     }
   }
 
+  /// Gives every goal — whatever its lifecycle — its journal-side row.
+  ///
+  /// Goals that predate the entity get one, and any goal whose mirror failed
+  /// to write is repaired. The ids are derived, so several devices running
+  /// this against the same synced goal converge on one row rather than each
+  /// minting their own.
+  Future<void> _backfillJournalGoals() async {
+    final mirror = _goalMirrorService;
+    if (mirror == null) return;
+    final List<AgentIdentityEntity> agents;
+    try {
+      agents = (await _agentService.listAgents())
+          .where((agent) => agent.kind == AgentKinds.goalAgent)
+          .toList(growable: false);
+    } catch (error, stackTrace) {
+      _log('backfillJournalGoals', 'listAgents', error, stackTrace);
+      return;
+    }
+    for (final identity in agents) {
+      try {
+        await mirror.mirrorHead(identity.agentId);
+      } catch (error, stackTrace) {
+        _log('backfillJournalGoals', identity.agentId, error, stackTrace);
+      }
+    }
+  }
+
   Future<List<AgentIdentityEntity>> _activeGoalAgents() async {
     final agents = await _agentService.listAgents(
       lifecycle: AgentLifecycle.active,
@@ -123,6 +151,13 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   Future<void> onIdentityReceived(AgentIdentityEntity identity) async {
     if (identity.kind != AgentKinds.goalAgent) return;
     try {
+      // Mirroring comes FIRST, before the lifecycle gate. A paused or
+      // archived goal is still a goal the user wrote, and it is exactly the
+      // one a restore without the agent database would lose — gating the
+      // mirror on "should this be subscribed" would leave those goals with no
+      // durable row until someone happened to reactivate them.
+      await _goalMirrorService?.mirrorHead(identity.agentId);
+
       if (identity.lifecycle != AgentLifecycle.active) {
         _goalAgentService.removeSignalSubscriptions(identity.agentId);
         return;
@@ -133,10 +168,6 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         identity.agentId,
         criteria,
       );
-      // A goal synced from another device arrives as an agent identity; its
-      // journal entry is derived here rather than waited for, so the two
-      // stores converge on the same row from either direction.
-      await _goalMirrorService?.mirrorHead(identity.agentId);
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }

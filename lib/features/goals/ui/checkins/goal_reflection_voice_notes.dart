@@ -1,8 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -20,24 +22,47 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class GoalReflectionVoiceNotes extends ConsumerWidget {
   const GoalReflectionVoiceNotes({
     required this.agentId,
+    required this.day,
     this.enabled = true,
+    this.openRecorder = _openReflectionRecorder,
     super.key,
   });
 
+  /// The recorder, defaulted to the real one and injected for the same reason
+  /// the composer's is: the tap is behaviour worth testing without standing up
+  /// the audio stack.
+  final GoalCheckInRecorderOpener openRecorder;
+
   final String agentId;
+
+  /// The day being reflected on — not necessarily today. Reopening
+  /// yesterday's reflection must show yesterday's voice notes; showing
+  /// today's instead would hide the one the user is looking for and display
+  /// unrelated recordings under it.
+  final DateTime day;
+
   final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final goalEntryId = ref.watch(goalEntryIdProvider(agentId));
-    final today = DateTime.now();
+    final goalEntryId = ref.watch(goalCaptureTargetProvider(agentId)).value;
+    final reflectedDay = day.toLocal();
     final recordings = [
       for (final entity in ref.watch(goalCheckInEntriesProvider(agentId)))
         if (entity is JournalAudio &&
-            DateUtils.isSameDay(entity.meta.dateFrom.toLocal(), today))
+            !entity.isDeleted &&
+            DateUtils.isSameDay(entity.meta.dateFrom.toLocal(), reflectedDay))
           entity,
     ]..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+
+    // Recording always lands on the moment it happens, so offering it under a
+    // past day would file today's words as yesterday's. Past reflections stay
+    // readable; only capture is withheld.
+    final canRecord =
+        enabled &&
+        goalEntryId != null &&
+        DateUtils.isSameDay(reflectedDay, clock.now());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,16 +71,12 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
           AudioPlayerWidget(audio),
           SizedBox(height: tokens.spacing.step2),
         ],
-        if (enabled && goalEntryId != null)
+        if (canRecord)
           Align(
             alignment: Alignment.centerLeft,
             child: InkWell(
               key: const ValueKey('goal-reflection-add-voice-note'),
-              onTap: () => AudioRecordingModal.show(
-                context,
-                linkedId: goalEntryId,
-                useRootNavigator: false,
-              ),
+              onTap: () => openRecorder(context, goalEntryId: goalEntryId),
               borderRadius: BorderRadius.circular(tokens.radii.s),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
@@ -92,3 +113,14 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
     );
   }
 }
+
+Future<void> _openReflectionRecorder(
+  BuildContext context, {
+  required String goalEntryId,
+  String? categoryId,
+}) => AudioRecordingModal.show(
+  context,
+  linkedId: goalEntryId,
+  categoryId: categoryId,
+  useRootNavigator: false,
+);

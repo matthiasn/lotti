@@ -10,8 +10,9 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 /// The journal id of the goal coached by an agent, or null while the journal
 /// stack is unavailable.
 ///
-/// Derived, not looked up, so it resolves synchronously and a surface can
-/// address a goal's check-ins before the goal row itself has been written.
+/// Derived, not looked up, so it resolves synchronously. Safe for READS — a
+/// goal row that does not exist yet simply has no linked entries — but never
+/// use it as a capture target: see [goalCaptureTargetProvider].
 final ProviderFamily<String?, String> goalEntryIdProvider = Provider.autoDispose
     .family<String?, String>(
       (ref, agentId) =>
@@ -44,3 +45,27 @@ final ProviderFamily<List<GoalTimelineItem>, String> goalTimelineItemsProvider =
         specVersionId: health?.spec?.id,
       );
     }, name: 'goalTimelineItemsProvider');
+
+/// The goal row a new check-in may be linked to, or null when there is none.
+///
+/// **Capture must go through this, never through [goalEntryIdProvider].**
+/// `createDbEntity` only creates the link when the parent id actually
+/// resolves, so linking to a derived id whose row has not been written yet
+/// produces an entry that saves successfully, is silently unlinked, and never
+/// appears on the timeline — with no later repair, because the mirror writes
+/// the goal and knows nothing about the orphan.
+///
+/// Repairs as it checks: a goal whose mirror has not run yet (freshly synced,
+/// or a write that failed) gets one here rather than refusing the user's
+/// recording.
+final FutureProviderFamily<String?, String> goalCaptureTargetProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, agentId) async {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      final existing = await repository.getGoalForAgent(agentId);
+      if (existing != null) return existing.meta.id;
+      final mirrored = await ref
+          .watch(goalMirrorServiceProvider)
+          ?.mirrorHead(agentId);
+      return mirrored?.meta.id;
+    }, name: 'goalCaptureTargetProvider');

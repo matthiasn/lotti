@@ -64,6 +64,7 @@ void main() {
             createdAt: day.add(const Duration(hours: 11)),
           ),
         ],
+        specVersionId: 'spec-1',
       );
 
       expect(items.map((i) => i.id), ['n1', 'r1', 'a1']);
@@ -89,6 +90,7 @@ void main() {
             rating: GoalAssessmentRating.met,
           ),
         ],
+        specVersionId: 'spec-1',
       );
 
       expect(items, hasLength(1));
@@ -143,6 +145,62 @@ void main() {
       );
 
       expect(items.map((i) => i.id), ['a1']);
+    });
+
+    test('a deleted check-in disappears from the timeline', () {
+      // The link is not tombstoned with the entry, so the resolved-entry
+      // provider can still hand back deleted content — which would stay
+      // visible and playable long after the user removed it.
+      final deleted = audio('gone', day);
+      final items = goalTimelineItems(
+        entries: [
+          JournalAudio(
+            meta: deleted.meta.copyWith(deletedAt: day),
+            data: deleted.data,
+          ),
+          audio('kept', day),
+        ],
+        assessments: const [],
+      );
+
+      expect(items.map((i) => i.id), ['kept']);
+    });
+
+    test('reflections are withheld until the current spec is known', () {
+      // `latestAssessmentsByDay` reads a null spec as "no filter", which would
+      // flash verdicts from every superseded version while health resolves —
+      // and leave them standing permanently on a health error.
+      final assessments = [
+        reflection(
+          'r1',
+          DateTime.utc(2026, 8, 17),
+          createdAt: day,
+          specVersionId: 'spec-0',
+        ),
+      ];
+
+      expect(
+        goalTimelineItems(entries: const [], assessments: assessments),
+        isEmpty,
+      );
+      expect(
+        goalTimelineItems(
+          entries: const [],
+          assessments: assessments,
+          specVersionId: 'spec-0',
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('check-ins still show while the spec is unknown', () {
+      // Only the REFLECTIONS depend on the spec; a check-in is the user's own
+      // words and is not a judgement of any criteria.
+      final items = goalTimelineItems(
+        entries: [audio('a1', day)],
+        assessments: const [],
+      );
+      expect(items, hasLength(1));
     });
 
     test('a recording with no transcript yet still becomes a beat', () {

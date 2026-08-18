@@ -7,7 +7,14 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:uuid/uuid.dart';
+
+/// Deterministic id for the link binding a goal agent to its journal entry.
+///
+/// Derived from the natural key the database already enforces uniqueness on,
+/// so concurrent backfills on two devices converge on one link instead of
+/// colliding.
+String agentGoalLinkId({required String agentId, required String goalId}) =>
+    'agent_goal_link:$agentId:$goalId';
 
 /// Keeps the journal-side goal in step with the agent-side spec chain.
 ///
@@ -39,8 +46,6 @@ class GoalMirrorService {
   final AgentRepository _agents;
   final AgentSyncService _syncService;
   final DomainLogger? _domainLogger;
-
-  static const _uuid = Uuid();
 
   /// Mirrors [version] — the goal's current definition — into the journal, and
   /// binds the agent to it.
@@ -114,6 +119,13 @@ class GoalMirrorService {
   /// Binds the agent to its goal entry, once. The link is the disposable side
   /// pointing at the durable one, so a missing link is repairable and a missing
   /// goal is not — which is why the goal is written first.
+  ///
+  /// The id is **derived**, not minted. `agent_links` carries a unique index on
+  /// `(from_id, to_id, type)`, while `upsertLink` resolves conflicts by `id`
+  /// alone — so two devices that backfilled before either saw the other's link
+  /// would hold two different ids for the same natural key, and receiving the
+  /// peer's link would fail the uniqueness constraint and retry forever.
+  /// Deriving the id from the pair makes both devices write the same row.
   Future<void> _ensureAgentGoalLink(String agentId, String goalId) async {
     final existing = await _agents.getLinksFrom(
       agentId,
@@ -125,7 +137,7 @@ class GoalMirrorService {
     final now = clock.now();
     await _syncService.upsertLink(
       AgentLink.agentGoal(
-        id: _uuid.v4(),
+        id: agentGoalLinkId(agentId: agentId, goalId: goalId),
         fromId: agentId,
         toId: goalId,
         createdAt: now,

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -71,7 +72,7 @@ class GoalCheckInTimeline extends ConsumerWidget {
   /// Today and yesterday read as words; anything older carries its date, so a
   /// rail spanning months stays navigable.
   String _dayLabel(BuildContext context, DateTime day, String locale) {
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final difference = today.difference(day).inDays;
     if (difference == 0) return context.messages.timelineDayToday.toUpperCase();
