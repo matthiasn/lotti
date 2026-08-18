@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -37,8 +38,10 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../ai_consumption/test_utils.dart';
 
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
@@ -81,6 +84,9 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
+    // The shared registry, not a per-file hand-roll: the decline path drives
+    // the attribution mocks, which need `AiAttributionStart` registered.
+    registerAllFallbackValues();
     registerFallbackValue(FakeAiConfigPrompt());
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(<String, dynamic>{});
@@ -1622,6 +1628,172 @@ void main() {
           ),
           contains('speech-to-text'),
         );
+      },
+    );
+
+    test(
+      'a declined transcription is recorded as failed work, and a broken '
+      'recorder of that failure still declines quietly',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-declined',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        when(
+          () => mockJournalDb.journalEntityById('checkin-fail'),
+        ).thenAnswer((_) async => null);
+
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-fail',
+            skillId: 'skill-declined',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // Durable, not just live: the timeline reads the latest attribution on
+        // the audio entry, which is what makes Retry survive a restart rather
+        // than the beat reverting to "Transcribing…" on the next launch.
+        final recorded =
+            verify(() => bench.service.finalize(captureAny())).captured.single
+                as AiWorkAttribution;
+        expect(recorded.status, AiWorkStatus.failed);
+        expect(recorded.workType, AiWorkType.audioTranscription);
+        expect(recorded.primaryOutput?.type, AiArtifactType.journalAudio);
+        expect(recorded.primaryOutput?.id, 'checkin-fail');
+        expect(recorded.errorCode, 'transcription_not_configured');
+
+        // The failure record is diagnostics. Losing it must not turn a
+        // declined transcription into a thrown one.
+        when(
+          () => bench.service.begin(any()),
+        ).thenThrow(StateError('attribution store is down'));
+        final brokenContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(brokenContainer);
+
+        await brokenContainer.read(
+          triggerSkillProvider((
+            entityId: 'checkin-fail',
+            skillId: 'skill-declined',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        expect(
+          brokenContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'checkin-fail',
+              aiResponseType: AiResponseType.audioTranscription,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+        verifyZeroInteractions(mockRunner);
+      },
+    );
+
+    test(
+      'a category-less entry declines a non-transcription skill without '
+      'inventing a transcription failure for it',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-image-nocat',
+                  name: 'Image analysis',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: [Modality.image],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+        when(
+          () => mockJournalDb.journalEntityById('image-nocat'),
+        ).thenAnswer((_) async => null);
+
+        final bench = AiInteractionCaptureTestBench.create()..register();
+        addTearDown(bench.unregister);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'image-nocat',
+            skillId: 'skill-image-nocat',
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        );
+
+        // The live failed state is shown for its own response type…
+        expect(
+          testContainer.read(
+            inferenceStatusControllerProvider((
+              id: 'image-nocat',
+              aiResponseType: AiResponseType.imageAnalysis,
+            )),
+          ),
+          InferenceStatus.error,
+        );
+        // …but no audio-transcription attribution is written: that record is
+        // keyed on the audio entry, and inventing one here would make an
+        // unrelated recording look like a failed transcription.
+        verifyNever(() => bench.service.finalize(any()));
+        // The fallback belongs to transcription alone.
+        verifyNever(() => mockAutomationService.resolveDirectTranscription());
+        verifyZeroInteractions(mockRunner);
       },
     );
 

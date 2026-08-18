@@ -11,6 +11,7 @@ import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -359,6 +360,17 @@ void main() {
     // carry it and the agent-side reflection, which is no journal entry,
     // does not.
     expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+
+    final routes = <String>[];
+    beamToNamedOverride = routes.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.tap(find.text('Gym bag is packed.'));
+    await tester.pump();
+
+    // The logbook route for that entry, not a goal-local surface that would
+    // then have to reimplement editing and deletion.
+    expect(routes, ['/journal/n1']);
   });
 
   testWidgets('an older day carries its date, not a relative word', (

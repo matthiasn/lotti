@@ -1849,6 +1849,32 @@ void main() {
           );
         },
       );
+
+      test(
+        'the manual path can reach the fallback without a task at all',
+        () async {
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [makeModel()]);
+          when(
+            () => mockAiConfig.getConfigById('provider-mlx'),
+          ).thenAnswer((_) async => makeProvider());
+
+          // A goal check-in belongs to no task and no category, so the walk
+          // that starts from a task id cannot be asked at all — this is the
+          // entry point that lets it transcribe anyway.
+          final result = await service.resolveDirectTranscription();
+
+          expect(result.handled, isTrue);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            mlxAudioQwenAsr17B8BitModelId,
+          );
+          expect(result.skill!.id, skillTranscribeContextId);
+          // No task was involved, so the consent gate was never consulted.
+          verifyNever(() => mockResolver.resolveForTask(any()));
+        },
+      );
     });
 
     glados.Glados(
