@@ -410,14 +410,16 @@ void main() {
       'deepseek-v4-flash-candidate',
       'glm-5.2-reference',
     ]);
-    expect(defaultScenarios, hasLength(14));
+    // 17: the twelve core scenarios, two held-out ones, and the three added
+    // to give the suite cases that summarising well cannot pass.
+    expect(defaultScenarios, hasLength(17));
     expect(
       defaultScenarios.map((scenario) => scenario.promptVariant).toSet(),
       {LocalTaskAgentEvalPromptVariant.production},
     );
     expect(
       scenarios,
-      hasLength(14 * LocalTaskAgentEvalPromptVariant.values.length),
+      hasLength(17 * LocalTaskAgentEvalPromptVariant.values.length),
     );
     expect(
       scenarios.map((scenario) => scenario.promptVariant).toSet(),

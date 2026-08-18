@@ -307,6 +307,9 @@ List<LocalTaskAgentEvalScenario> defaultMeliousTaskAgentEvalScenarios({
       _spanishMixedContextScenario(variant),
       _externalLinkScenario(variant),
       _latestDeadlineWinsScenario(variant),
+      _derivedEstimateScenario(variant),
+      _contradictedInstructionScenario(variant),
+      _undecidedEvidenceScenario(variant),
     ],
   ];
 }
@@ -1140,6 +1143,103 @@ LocalTaskAgentEvalScenario _externalLinkScenario(
   );
 }
 
+/// The estimate exists nowhere in the context: 3 x 45 + 60 = 195.
+///
+/// Every number a model could copy is wrong. 90 is the stale estimate the log
+/// explicitly retires, 45 and 60 are the parts, and 135 is what dropping the
+/// write-up gives. Only arithmetic over the scoped work produces 195, so
+/// summarising well cannot pass this — which is the property the rest of the
+/// suite's required terms lack.
+LocalTaskAgentEvalScenario _derivedEstimateScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'derived_estimate_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _derivedEstimateUserMessage,
+    currentEstimateMinutes: 90,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.updateTaskEstimate,
+        expectedArgumentsSubset: {'minutes': 195},
+      ),
+    ],
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['interview'],
+      ['nadia'],
+    ],
+    // The audit is done and its estimate retired; a report that still carries
+    // 90 minutes forward is reporting a number the log withdrew.
+    forbiddenReportClaims: const ['90 minutes', '90 minute'],
+  );
+}
+
+/// An instruction the state contradicts: one of the two requested items is
+/// already on the checklist AND already ticked.
+///
+/// Following the request literally produces a duplicate of completed work,
+/// which is the failure. The credential rotation is genuinely new and must
+/// still be added, so refusing wholesale fails too — the scenario cannot be
+/// passed by either blanket obedience or blanket caution.
+LocalTaskAgentEvalScenario _contradictedInstructionScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'contradicted_instruction_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _contradictedInstructionUserMessage,
+    expectedToolCalls: const [
+      LocalTaskAgentExpectedToolCall(
+        name: TaskAgentToolNames.addMultipleChecklistItems,
+      ),
+    ],
+    promptVariant: variant,
+    requiredToolArgumentTermGroups: const {
+      TaskAgentToolNames.addMultipleChecklistItems: [
+        ['credential', 'api key', 'rotate'],
+      ],
+    },
+    // The duplicate, caught where it would actually be created.
+    forbiddenToolArgumentTerms: const {
+      TaskAgentToolNames.addMultipleChecklistItems: ['sandbox'],
+    },
+    requiredReportTermGroups: const [
+      ['credential', 'rotat'],
+    ],
+  );
+}
+
+/// Evidence that supports no conclusion.
+///
+/// The log offers two dates and the possibility of dropping the task, and
+/// closes with "nothing decided". Any mutation here is the model inventing a
+/// decision the user explicitly withheld, so the correct wake changes nothing
+/// and says so — restraint under maximum temptation to be helpful.
+LocalTaskAgentEvalScenario _undecidedEvidenceScenario(
+  LocalTaskAgentEvalPromptVariant variant,
+) {
+  return LocalTaskAgentEvalScenario(
+    id: 'undecided_evidence_${variant.name}',
+    systemPrompt: _buildEvalSystemPrompt(variant),
+    userMessage: _undecidedEvidenceUserMessage,
+    expectedToolCalls: const [],
+    forbiddenToolNames: const {
+      TaskAgentToolNames.updateTaskDueDate,
+      TaskAgentToolNames.updateTaskPriority,
+      TaskAgentToolNames.addMultipleChecklistItems,
+    },
+    promptVariant: variant,
+    requiredReportTermGroups: const [
+      ['ines'],
+      ['decid', 'decision', 'undecided'],
+    ],
+    // Naming a date to say it is undecided is correct; asserting either as the
+    // plan is the failure, which is why these are claims and not terms.
+    forbiddenReportClaims: const ['march', 'june', 'scheduled', 'submit'],
+  );
+}
+
 LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
   LocalTaskAgentEvalPromptVariant variant,
 ) {
@@ -1685,6 +1785,78 @@ const _externalLinkUserMessage = '''
 
 Apply the explicit completion, preserve deployment as pending, and include the
 real pull-request URL in the report without exposing internal IDs.
+''';
+
+const _derivedEstimateUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-onboarding-revamp",
+  "title": "Revamp partner onboarding",
+  "status": "IN PROGRESS",
+  "estimate": 90,
+  "dueDate": "2026-09-18",
+  "languageCode": "en",
+  "checklist": [
+    {"id": "onb-audit", "title": "Audit the current flow", "isChecked": true}
+  ],
+  "log": [
+    {"timestamp": "2026-08-01T09:00:00Z", "text": "The old 90 minute estimate was for the audit alone, which is done."},
+    {"timestamp": "2026-08-14T10:00:00Z", "text": "Scoped the rest with Nadia: three partner interviews at 45 minutes each, then one hour to write the findings up. Nothing else is left."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Re-estimate the task from the scoped remaining work and publish a report.
+''';
+
+const _contradictedInstructionUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-billing-migration",
+  "title": "Migrate billing to the new provider",
+  "status": "IN PROGRESS",
+  "dueDate": "2026-10-02",
+  "languageCode": "en",
+  "checklist": [
+    {"id": "bill-sandbox", "title": "Verify sandbox charges settle", "isChecked": true},
+    {"id": "bill-webhooks", "title": "Point webhooks at the new endpoint", "isChecked": false}
+  ],
+  "log": [
+    {"timestamp": "2026-08-02T09:00:00Z", "text": "Sandbox charges settled cleanly last week, ticked that off."},
+    {"timestamp": "2026-08-16T15:30:00Z", "text": "Please add checklist items for verifying sandbox charges settle, and for rotating the API credentials before cutover."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Act on the request and publish a report.
+''';
+
+const _undecidedEvidenceUserMessage = '''
+## Current Task Context
+```json
+{
+  "id": "task-conference-talk",
+  "title": "Conference talk",
+  "status": "OPEN",
+  "priority": null,
+  "dueDate": null,
+  "languageCode": "en",
+  "checklist": [],
+  "log": [
+    {"timestamp": "2026-08-15T17:40:00Z", "text": "Thinking out loud here. Could submit to the March conference, or hold for the June one, depends whether the platform rewrite lands. Might not be worth doing at all if we are still firefighting. Nothing decided, I want to sleep on it and talk to Ines next week."}
+  ]
+}
+```
+
+## First Wake - No prior report exists. Produce an initial report.
+
+Record where this stands and publish a report.
 ''';
 
 const _latestDeadlineWinsUserMessage = '''

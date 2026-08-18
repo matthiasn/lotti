@@ -47,6 +47,13 @@ List<String> _discriminatingChecks(LocalTaskAgentEvalScenario scenario) {
     for (final claim in scenario.forbiddenReportClaims)
       'must not assert "$claim"',
     for (final name in scenario.forbiddenToolNames) 'must not call $name',
+    // Restraint expressed at the argument level rather than the tool level:
+    // "add the credential item but NOT a duplicate of the finished sandbox
+    // one" cannot be said by forbidding the tool, since the tool must be
+    // called. Missing this made the guard reject a scenario whose whole
+    // question was a forbidden argument.
+    for (final entry in scenario.forbiddenToolArgumentTerms.entries)
+      for (final term in entry.value) 'must keep "$term" out of ${entry.key}',
     for (final expected in scenario.expectedToolCalls)
       for (final entry in expected.expectedArgumentsSubset.entries)
         if (!_isEchoable(context, entry.value))
