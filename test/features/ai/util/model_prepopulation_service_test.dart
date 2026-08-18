@@ -525,6 +525,160 @@ void main() {
     });
   });
 
+  group('migrateRenamedModelIds', () {
+    late MockAiConfigRepository mockRepository;
+    late ModelPrepopulationService service;
+
+    AiConfigInferenceProvider meliousProvider() => AiConfigInferenceProvider(
+      id: 'melious-1',
+      baseUrl: 'https://api.melious.ai/v1',
+      apiKey: 'key',
+      name: 'Melious',
+      createdAt: DateTime(2026, 3, 15),
+      inferenceProviderType: InferenceProviderType.melious,
+    );
+
+    AiConfigModel modelRow({
+      required String id,
+      required String providerModelId,
+      String providerId = 'melious-1',
+      DateTime? deletedAt,
+    }) => AiConfigModel(
+      id: id,
+      name: 'DeepSeek V4 Flash',
+      providerModelId: providerModelId,
+      inferenceProviderId: providerId,
+      createdAt: DateTime(2026, 3, 15),
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: true,
+      deletedAt: deletedAt,
+    );
+
+    setUp(() {
+      mockRepository = MockAiConfigRepository();
+      service = ModelPrepopulationService(repository: mockRepository);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
+    });
+
+    void stub({
+      required List<AiConfig> providers,
+      required List<AiConfig> models,
+    }) {
+      when(
+        () => mockRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => providers);
+      when(
+        () => mockRepository.getConfigsByType(
+          AiConfigType.model,
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((_) async => models);
+    }
+
+    test('rewrites the dead id in place, keeping the row id', () async {
+      // The row id is what profile slots and direct-model overrides store, so
+      // preserving it is the whole point: a new row would leave every existing
+      // reference pointing at the unservable model.
+      stub(
+        providers: [meliousProvider()],
+        models: [
+          modelRow(id: 'row-flash', providerModelId: 'deepseek-v4-flash'),
+        ],
+      );
+
+      expect(await service.migrateRenamedModelIds(), 1);
+
+      final saved =
+          verify(() => mockRepository.saveConfig(captureAny())).captured.single
+              as AiConfigModel;
+      expect(saved.id, 'row-flash');
+      expect(saved.providerModelId, meliousDeepseekV4FlashModelId);
+    });
+
+    test('migrates a soft-deleted row too', () async {
+      // Leaving it renames nothing today and resurrects the dead id the moment
+      // the user restores the row.
+      stub(
+        providers: [meliousProvider()],
+        models: [
+          modelRow(
+            id: 'row-deleted',
+            providerModelId: 'deepseek-v4-flash',
+            deletedAt: DateTime(2026, 8),
+          ),
+        ],
+      );
+
+      expect(await service.migrateRenamedModelIds(), 1);
+    });
+
+    test('leaves rows of other providers and other models alone', () async {
+      stub(
+        providers: [
+          meliousProvider(),
+          AiConfigInferenceProvider(
+            id: 'ollama-1',
+            baseUrl: 'http://localhost:11434',
+            apiKey: '',
+            name: 'Ollama',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.ollama,
+          ),
+        ],
+        models: [
+          // Same dead id, wrong provider type — the rename is Melious-scoped.
+          modelRow(
+            id: 'row-other-provider',
+            providerModelId: 'deepseek-v4-flash',
+            providerId: 'ollama-1',
+          ),
+          modelRow(id: 'row-glm', providerModelId: 'glm-5.2'),
+          // Already migrated: must not be rewritten a second time.
+          modelRow(
+            id: 'row-done',
+            providerModelId: meliousDeepseekV4FlashModelId,
+          ),
+        ],
+      );
+
+      expect(await service.migrateRenamedModelIds(), 0);
+      verifyNever(() => mockRepository.saveConfig(any()));
+    });
+
+    test('every rename maps a dead id onto a different, known id', () async {
+      // Guards the table itself: a self-mapping would loop the migration over
+      // its own output, and a target absent from the curated catalog would
+      // rename users onto a model the app does not otherwise offer.
+      ModelPrepopulationService.renamedProviderModelIds.forEach((
+        type,
+        renames,
+      ) {
+        final known = {
+          for (final model
+              in knownModelsByProvider[type] ?? const <KnownModel>[])
+            model.providerModelId,
+        };
+        renames.forEach((from, to) {
+          expect(from, isNot(to), reason: '$type: $from maps to itself');
+          expect(
+            known,
+            contains(to),
+            reason: '$type: $to is not a known model',
+          );
+          expect(
+            known,
+            isNot(contains(from)),
+            reason: '$type: $from is still offered',
+          );
+        });
+      });
+    });
+  });
+
   group('backfillNewModels', () {
     late MockAiConfigRepository mockRepository;
     late ModelPrepopulationService service;

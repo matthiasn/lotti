@@ -2694,6 +2694,7 @@ class LocalTaskAgentInferenceEvalRunner {
                   profile: profile,
                   scenario: scenario,
                   strategy: strategy,
+                  wakeRunKey: wakeRunKey,
                   initialValidationIssues: initialValidationIssues,
                 ),
               );
@@ -2706,6 +2707,7 @@ class LocalTaskAgentInferenceEvalRunner {
               profile: profile,
               scenario: scenario,
               strategy: strategy,
+              wakeRunKey: wakeRunKey,
             ),
           );
         } else if (plannedReportPass ||
@@ -2801,6 +2803,7 @@ class LocalTaskAgentInferenceEvalRunner {
     required LocalTaskAgentEvalProfile profile,
     required LocalTaskAgentEvalScenario scenario,
     required _LocalTaskAgentEvalStrategy strategy,
+    required String wakeRunKey,
     Set<TaskAgentReportRevisionIssue> initialValidationIssues = const {},
   }) async {
     final materialTaskState = buildLocalTaskAgentEvalMaterialTaskState(
@@ -2828,6 +2831,14 @@ class LocalTaskAgentInferenceEvalRunner {
             scenario: scenario,
           ),
           initialValidationIssues: initialValidationIssues,
+          // The editor is billed work this case caused, so it bills to this
+          // case. Without the key its one-to-three calls are recorded
+          // unattributed and filtered out of the cost table, which would
+          // understate exactly the routes that edit — `productionRouting`
+          // always edits Mistral and `reportEditing` always edits everything.
+          consumptionAgentId: 'task_agent:eval',
+          consumptionWakeRunKey: wakeRunKey,
+          consumptionThreadId: scenario.id,
         );
     final revision = result.revision;
     if (revision != null) {

@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-5, at: 2026-08-16T12:00:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-18T00:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -51,11 +51,11 @@ sources:
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-15
+    last_modified: 2026-08-18
   - id: strategy
     resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
     title: GoalAgentStrategy — Phase B conversation and tool dispatch
-    last_modified: 2026-08-14
+    last_modified: 2026-08-18
   - id: facts-renderer
     resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
     title: GoalFactsRenderer — the JSON fence Phase B consumes

@@ -57,6 +57,18 @@ Future<void> aiConfigInitialization(Ref ref) async {
   // Backfill known models before seeding so that new default profiles can
   // resolve their model slots to existing `AiConfigModel` rows right away.
   final modelService = ModelPrepopulationService(repository: aiConfigRepo);
+  // Before the backfill, so a repaired row already owns the new id when the
+  // backfill decides whether that model still needs creating.
+  try {
+    await modelService.migrateRenamedModelIds();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to migrate renamed model ids: $error',
+      name: 'aiConfigInitialization',
+      stackTrace: stackTrace,
+    );
+  }
+
   try {
     await modelService.backfillNewModels();
   } catch (error, stackTrace) {
