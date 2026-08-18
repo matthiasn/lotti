@@ -214,6 +214,10 @@ final goalOutcomeEvalScenarios = <GoalOutcomeEvalScenario>[
       ),
     ],
     expectation: const GoalOutcomeExpectation(
+      // P7 is "retire_goal_ad + update_goal_report", and offTrack → recovering
+      // is a status transition, so the report is mandatory rather than
+      // incidental — the wake must say why the scolding went away.
+      requiresReport: true,
       requiresRetirement: true,
       forbidsNewAd: true,
     ),
@@ -227,7 +231,10 @@ final goalOutcomeEvalScenarios = <GoalOutcomeEvalScenario>[
     statement: _statement,
     criteria: goalOutcomeEvalSteps,
     window: _sparseWindow,
-    priorRegisters: _yesterday(GoalTrackStatus.insufficientData, 0),
+    // Yesterday was fine, the tracker gap is new. A same-status prior would
+    // have made this a no-op wake owing nothing, so the scenario would have
+    // graded restraint while claiming to grade P8.
+    priorRegisters: _yesterday(GoalTrackStatus.onTrack, 1.1),
     expectation: const GoalOutcomeExpectation(
       expectedReportStatus: GoalTrackStatus.insufficientData,
       forbidsNewAd: true,
@@ -264,7 +271,12 @@ final goalOutcomeEvalScenarios = <GoalOutcomeEvalScenario>[
         ],
       ),
     ],
-    expectation: const GoalOutcomeExpectation(requiresRerun: true),
+    // Same evidence as P5, so the same transition, so the same report duty —
+    // only the ad decision differs.
+    expectation: const GoalOutcomeExpectation(
+      requiresReport: true,
+      requiresRerun: true,
+    ),
   ),
 
   // ── P10: dialogue first, and the user must actually get an answer ──────

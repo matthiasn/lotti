@@ -904,7 +904,7 @@ void main() {
       expect(markdown, isNot(contains('13.5')));
       expect(markdown, contains('0.1800'));
       expect(markdown, isNot(contains('0.0900')));
-      expect(markdown, contains('divide by cases that actually reported'));
+      expect(markdown, contains('divides by cases that actually reported'));
     });
 
     test('case json round-trips the consumption events', () {

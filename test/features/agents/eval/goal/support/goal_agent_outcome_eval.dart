@@ -87,12 +87,15 @@ class GoalOutcomeExpectation {
   /// empty is what the user or the next wake can see.
   final bool expectsNoOutcome;
 
+  /// A standing report must land. Implied by [expectedReportStatus], so a
+  /// scenario pinning the status does not need to set both.
   final bool requiresReport;
 
   /// The deterministic tier's status, which the persisted report's
   /// provenance must carry. `GoalAgentStrategy` already rejects a
   /// contradicting claim in-conversation; this proves the rejection held all
-  /// the way to the write.
+  /// the way to the write. Requiring the report is part of the claim: "the
+  /// report must say insufficientData" cannot be satisfied by no report.
   final GoalTrackStatus? expectedReportStatus;
 
   /// A newly authored banner (activation 1). Distinct from [requiresRerun],
@@ -344,12 +347,17 @@ GoalOutcomeFailureCategory classifyGoalAgentOutcome({
     return GoalOutcomeFailureCategory.writesOnNoOp;
   }
 
-  if (expectation.requiresReport && outcome.report == null) {
+  // Pinning the status IMPLIES requiring the report. Checking the status
+  // only when a report exists let a wake that persisted nothing at all pass
+  // a scenario whose whole point was what the report must say — the exact
+  // vacuous pass the testing conventions warn about, and it inflated the
+  // first published tier-2 numbers before review caught it.
+  final expectedStatus = expectation.expectedReportStatus;
+  if ((expectation.requiresReport || expectedStatus != null) &&
+      outcome.report == null) {
     return GoalOutcomeFailureCategory.missingReport;
   }
-  final expectedStatus = expectation.expectedReportStatus;
   if (expectedStatus != null &&
-      outcome.report != null &&
       outcome.report!.provenance['trackStatus'] != expectedStatus.name) {
     return GoalOutcomeFailureCategory.wrongReportStatus;
   }

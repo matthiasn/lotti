@@ -83,7 +83,7 @@ String renderGoalEvalCostTable({
     ..writeln(
       '*Extrapolation assumes $wakesPerDayAssumption LLM wakes '
       'per goal per day — a printed assumption, not a measurement — '
-      'and divide by cases that actually reported the figure: missing '
+      'and divides by cases that actually reported the figure: missing '
       'telemetry widens uncertainty, it is never counted as zero. '
       'Credits and energy are Melious-reported; "not reported" means '
       'the provider sent no data, never that the run was free. Banner '
