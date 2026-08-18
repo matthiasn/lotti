@@ -3483,7 +3483,7 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count u geleden',
+      other: '$count h geleden',
       one: '1 uur geleden',
     );
     return '$_temp0';
@@ -6257,6 +6257,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Praat met $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Praat met de agent';
 
   @override
@@ -6349,6 +6354,9 @@ class AppLocalizationsNl extends AppLocalizations {
   ) {
     return 'Gisteren: $metCount van $dimensionCount dimensies · $requiredCount vereist.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Het hele doel';
 
   @override
   String get goalCreateFailed =>
@@ -6445,7 +6453,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Wat je agent zegt';
+
+  @override
   String get goalDetailSignalsTitle => 'Signalen';
+
+  @override
+  String get goalDetailStatementLabel => 'Jouw doel';
 
   @override
   String get goalDetailThisWeekTitle => 'Deze week';
@@ -6464,6 +6478,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Volgt';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Bijgehouden categorietijd';
@@ -6551,6 +6568,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-daags gemiddelde';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName heeft aandacht nodig';
   }
 
   @override
@@ -7073,6 +7095,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalStatusRecovering => 'Herstellend';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Updates van de gekoppelde bron · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermaand';
 
   @override
@@ -7224,7 +7251,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get habitsFilterPendingLater => 'later';
 
   @override
-  String get habitsGoalLineLabel => 'Streefwaarde';
+  String get habitsGoalLineLabel => 'Doel';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7258,8 +7285,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points punten tot de streefwaarde',
-      one: '1 punt tot de streefwaarde',
+      other: '$points pts to goal',
+      one: '1 pt tot doel',
     );
     return '$_temp0';
   }
@@ -10216,6 +10243,37 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'De briefing draait op $provider. Notities over deze persoon worden daarheen gestuurd voor verwerking.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Doorgaan';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Naar $provider sturen?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Nog geen briefing — Praat me bij maakt er een van je check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing aangevraagd — verschijnt hier zo.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Kon de briefing niet aanvragen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Praat me bij';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10243,6 +10301,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Wekelijks';
+
+  @override
+  String get relationshipChatTooltip => 'Chat over deze persoon';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Nog geen agent — markeer deze persoon eerst als belangrijk.';
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
@@ -10282,6 +10347,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de wijzigingen niet opslaan. Probeer het opnieuw.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Vraagt aandacht';
+
+  @override
+  String get relationshipHealthSteady => 'Stabiel';
+
+  @override
+  String get relationshipHealthStrained => 'Gespannen';
+
+  @override
+  String get relationshipHealthThriving => 'Bloeiend';
+
+  @override
   String get relationshipImportantDescription =>
       'Herinner me eraan contact te houden';
 
@@ -10289,7 +10366,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipImportantLabel => 'Belangrijk';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Gekoppelde taken';
+  String relationshipLastCheckInLabel(String date) {
+    return 'Laatste check-in $date';
+  }
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Taken';
 
   @override
   String get relationshipLinkTaskButton => 'Taak koppelen';
@@ -10335,6 +10417,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Gevolgd sinds $date';
+  }
 
   @override
   String get saveButton => 'Opslaan';

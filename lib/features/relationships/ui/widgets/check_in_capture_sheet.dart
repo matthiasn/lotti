@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -16,10 +17,6 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-
-/// Upper bound on the form's height as a fraction of the viewport — the
-/// create-modal sizing shared with `ProjectCreateForm`.
-const double _modalMaxHeightFraction = 0.9;
 
 /// The localized label for an interaction type — shared by the capture sheet
 /// and the detail page's check-in rows.
@@ -138,7 +135,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
     _avoidController = TextEditingController(text: data?.avoid ?? '');
     _interactionType = data?.interactionType ?? CheckInInteractionType.inPerson;
     _sentiment = data?.sentiment;
-    _interactionTime = initial?.meta.dateFrom ?? DateTime.now();
+    _interactionTime = initial?.meta.dateFrom ?? clock.now();
   }
 
   @override
@@ -157,7 +154,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       .toList();
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = await showDesignSystemDatePicker(
       context: context,
@@ -320,7 +317,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+        maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

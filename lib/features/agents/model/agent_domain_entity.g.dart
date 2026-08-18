@@ -2132,6 +2132,53 @@ Map<String, dynamic> _$RelationshipNudgeEntityToJson(
   'runtimeType': instance.$type,
 };
 
+RelationshipHealthEntity _$RelationshipHealthEntityFromJson(
+  Map<String, dynamic> json,
+) => RelationshipHealthEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  relationshipId: json['relationshipId'] as String,
+  status: $enumDecode(_$RelationshipCadenceStatusEnumMap, json['status']),
+  cadenceDays: (json['cadenceDays'] as num).toInt(),
+  referenceAt: DateTime.parse(json['referenceAt'] as String),
+  dueAt: DateTime.parse(json['dueAt'] as String),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  lastCheckInAt: json['lastCheckInAt'] == null
+      ? null
+      : DateTime.parse(json['lastCheckInAt'] as String),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$RelationshipHealthEntityToJson(
+  RelationshipHealthEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'relationshipId': instance.relationshipId,
+  'status': _$RelationshipCadenceStatusEnumMap[instance.status]!,
+  'cadenceDays': instance.cadenceDays,
+  'referenceAt': instance.referenceAt.toIso8601String(),
+  'dueAt': instance.dueAt.toIso8601String(),
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'lastCheckInAt': instance.lastCheckInAt?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$RelationshipCadenceStatusEnumMap = {
+  RelationshipCadenceStatus.ok: 'ok',
+  RelationshipCadenceStatus.due: 'due',
+};
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,

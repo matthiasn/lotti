@@ -10697,6 +10697,12 @@ abstract class AppLocalizations {
   /// **'{agentName} is replying…'**
   String goalChatResponding(String agentName);
 
+  /// Button that opens a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to {agentName}'**
+  String goalChatTalkTo(String agentName);
+
   /// Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)
   ///
   /// In en, this message translates to:
@@ -10844,6 +10850,12 @@ abstract class AppLocalizations {
     int dimensionCount,
     int requiredCount,
   );
+
+  /// No description provided for @goalCompositeProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole goal'**
+  String get goalCompositeProgressTitle;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///
@@ -10995,11 +11007,23 @@ abstract class AppLocalizations {
   /// **'as of {ago}'**
   String goalDetailReadAsOf(String ago);
 
+  /// No description provided for @goalDetailSayingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What your agent is saying'**
+  String get goalDetailSayingTitle;
+
   /// Section heading over the data-signal dimension cards on goal detail.
   ///
   /// In en, this message translates to:
   /// **'Signals'**
   String get goalDetailSignalsTitle;
+
+  /// Caption above the goal statement on the detail page, marking it as the aspiration rather than current status.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal'**
+  String get goalDetailStatementLabel;
 
   /// Title of the goal detail hero card holding the whole-goal 7-day strip.
   ///
@@ -11030,6 +11054,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
+
+  /// No description provided for @goalDetailWatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching'**
+  String get goalDetailWatchingTitle;
 
   /// No description provided for @goalDimensionCategoryTimeSource.
   ///
@@ -11157,6 +11187,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} · 7-day average'**
   String goalDimensionRollingAverageRow(String name);
+
+  /// No description provided for @goalDominantIssueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimensionName} needs attention'**
+  String goalDominantIssueBadge(Object dimensionName);
 
   /// No description provided for @goalFormAddDimension.
   ///
@@ -11746,7 +11782,7 @@ abstract class AppLocalizations {
   /// **'Timing pattern'**
   String get goalPatternTitle;
 
-  /// Chip on a goal card when a revision proposal is pending review.
+  /// Badge on an agent card when a revision proposal is pending.
   ///
   /// In en, this message translates to:
   /// **'Proposal awaiting review'**
@@ -11961,6 +11997,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recovering'**
   String get goalStatusRecovering;
+
+  /// No description provided for @goalWatchingMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates from its linked source · {windowLabel}'**
+  String goalWatchingMetric(String windowLabel);
 
   /// No description provided for @goalWindowCalendarMonth.
   ///
@@ -12223,7 +12265,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsGoalLineLabel.
   ///
   /// In en, this message translates to:
-  /// **'Target'**
+  /// **'Goal'**
   String get habitsGoalLineLabel;
 
   /// No description provided for @habitsHeatmapEmpty.
@@ -12277,7 +12319,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points, plural, one{1 pt to target} other{{points} pts to target}}'**
+  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
   String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.
@@ -17179,6 +17221,54 @@ abstract class AppLocalizations {
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
 
+  /// Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'The briefing runs on {provider}. Notes about this person will be sent there for processing.'**
+  String relationshipBriefingDisclosureBody(String provider);
+
+  /// No description provided for @relationshipBriefingDisclosureConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get relationshipBriefingDisclosureConfirm;
+
+  /// Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {provider}?'**
+  String relationshipBriefingDisclosureTitle(String provider);
+
+  /// No description provided for @relationshipBriefingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No briefing yet — Brief me prepares one from your check-ins.'**
+  String get relationshipBriefingEmpty;
+
+  /// No description provided for @relationshipBriefingRequested.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing requested — it will appear here shortly.'**
+  String get relationshipBriefingRequested;
+
+  /// No description provided for @relationshipBriefingRequestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not request the briefing.'**
+  String get relationshipBriefingRequestFailed;
+
+  /// No description provided for @relationshipBriefingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing'**
+  String get relationshipBriefingTitle;
+
+  /// No description provided for @relationshipBriefMeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief me'**
+  String get relationshipBriefMeButton;
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -17220,6 +17310,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
+
+  /// No description provided for @relationshipChatTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat about this person'**
+  String get relationshipChatTooltip;
+
+  /// No description provided for @relationshipChatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent yet — mark this person as important first.'**
+  String get relationshipChatUnavailable;
 
   /// No description provided for @relationshipCheckInsLabel.
   ///
@@ -17281,6 +17383,30 @@ abstract class AppLocalizations {
   /// **'Could not save the changes. Please try again.'**
   String get relationshipErrorUpdateFailed;
 
+  /// No description provided for @relationshipHealthNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get relationshipHealthNeedsAttention;
+
+  /// No description provided for @relationshipHealthSteady.
+  ///
+  /// In en, this message translates to:
+  /// **'Steady'**
+  String get relationshipHealthSteady;
+
+  /// No description provided for @relationshipHealthStrained.
+  ///
+  /// In en, this message translates to:
+  /// **'Strained'**
+  String get relationshipHealthStrained;
+
+  /// No description provided for @relationshipHealthThriving.
+  ///
+  /// In en, this message translates to:
+  /// **'Thriving'**
+  String get relationshipHealthThriving;
+
   /// No description provided for @relationshipImportantDescription.
   ///
   /// In en, this message translates to:
@@ -17292,6 +17418,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Important'**
   String get relationshipImportantLabel;
+
+  /// No description provided for @relationshipLastCheckInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last check-in {date}'**
+  String relationshipLastCheckInLabel(String date);
 
   /// No description provided for @relationshipLinkedTasksLabel.
   ///
@@ -17382,6 +17514,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get relationshipStatusFieldLabel;
+
+  /// No description provided for @relationshipTrackingSinceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking since {date}'**
+  String relationshipTrackingSinceLabel(String date);
 
   /// No description provided for @saveButton.
   ///

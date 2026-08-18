@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
@@ -175,17 +176,19 @@ void main() {
     expect(capturedSave().data.sentiment, isNull);
   });
 
-  testWidgets('create mode passes an interaction time to the repository', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildForm());
-    await tester.pumpAndSettle();
+  testWidgets('create mode defaults the interaction time to NOW, to the '
+      'minute — not midnight, not createdAt', (tester) async {
+    final fixedNow = DateTime(2026, 8, 13, 10, 30);
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Save'));
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+    });
 
-    expect(capturedSave().dateFrom, isNotNull);
+    expect(capturedSave().dateFrom, fixedNow);
   });
 
   testWidgets('a refused save keeps the sheet open and reports it', (
@@ -463,6 +466,114 @@ void main() {
       // The day moved; 19:45 survived, because the picker is date-only.
       expect(updated.meta.dateFrom, DateTime(2026, 8, 6, 19, 45));
       expect(updated.meta.dateTo, DateTime(2026, 8, 6, 19, 45));
+    });
+  });
+
+  group('error toasts', () {
+    testWidgets('shows a toast when create returns null', (tester) async {
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the check-in. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when create throws', (tester) async {
+      when(
+        () => mockRepository.createCheckIn(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          dateFrom: any(named: 'dateFrom'),
+        ),
+      ).thenThrow(Exception('db locked'));
+
+      await tester.pumpWidget(buildForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the check-in. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when update returns false', (tester) async {
+      when(() => mockRepository.updateCheckIn(any())).thenAnswer(
+        (_) async => false,
+      );
+
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save'));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not save the check-in. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when delete returns false', (tester) async {
+      when(
+        () => mockRepository.deleteCheckIn('check-1'),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Delete'));
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not delete the check-in. Please try again.'),
+        findsOne,
+      );
+    });
+
+    testWidgets('shows a toast when delete throws', (tester) async {
+      when(
+        () => mockRepository.deleteCheckIn('check-1'),
+      ).thenThrow(Exception('db locked'));
+
+      await tester.pumpWidget(buildEditForm());
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byIcon(Icons.delete_outline_rounded));
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Delete'));
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Could not delete the check-in. Please try again.'),
+        findsOne,
+      );
     });
   });
 }

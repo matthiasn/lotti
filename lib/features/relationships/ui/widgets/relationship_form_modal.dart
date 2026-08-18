@@ -1,22 +1,23 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-
-/// Upper bound on the form's height as a fraction of the viewport — the
-/// create-modal sizing shared with `ProjectCreateForm`.
-const double _modalMaxHeightFraction = 0.9;
 
 /// Cadence presets offered in the form (plan v2 D1: presets over a free
 /// integer field). `null` means no cadence.
@@ -157,6 +158,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late bool _important;
   late int? _cadenceDays;
   late _StatusKind _statusKind;
+  String? _categoryId;
   final List<_ChannelDraft> _channels = [];
   bool _isSaving = false;
 
@@ -171,6 +173,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     _important = data?.important ?? false;
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
+    _categoryId = widget.initial?.meta.categoryId;
     _channels.addAll(
       (data?.contactChannels ?? const []).map(_ChannelDraft.fromChannel),
     );
@@ -192,7 +195,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       _channels.map((draft) => draft.toChannel()).nonNulls.toList();
 
   RelationshipStatus _mintStatus(_StatusKind kind) {
-    final now = DateTime.now();
+    final now = clock.now();
     final id = uuid.v1();
     final utcOffset = now.timeZoneOffset.inMinutes;
     return switch (kind) {
@@ -249,7 +252,23 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           );
         }
         final updated = initial.copyWith(data: data);
-        final success = await repository.updateRelationship(updated);
+        final saved = await repository.updateRelationship(updated);
+        // Category lives on the metadata, not the payload: route the change
+        // through the dedicated journal path, which handles clearing (a
+        // freezed copyWith cannot null a field) plus vector clock and sync.
+        // Its result is part of the save's verdict: a swallowed category
+        // write would otherwise pop the modal on a half-saved person, and
+        // the user would see the old category with nothing to retry.
+        var success = saved;
+        if (saved && _categoryId != initial.meta.categoryId) {
+          success = await ref
+              .read(journalRepositoryProvider)
+              .updateCategoryId(initial.meta.id, categoryId: _categoryId);
+        }
+        // Keyed on the payload write, not the verdict: `important` and the
+        // cadence are already persisted, so the agent must be wired even
+        // when the category leg failed.
+        if (saved) _ensureAgentIfImportant(updated);
         if (!mounted) return;
         if (success) {
           Navigator.of(context).pop(updated);
@@ -269,7 +288,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             contactChannels: _editedChannels,
             status: _mintStatus(_StatusKind.active),
           ),
+          categoryId: _categoryId,
         );
+        if (created != null) _ensureAgentIfImportant(created);
         if (!mounted) return;
         if (created != null) {
           Navigator.of(context).pop(created);
@@ -302,6 +323,29 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     }
   }
 
+  /// The lazy-create trigger (ADR 0059 Decision 2): marking a person
+  /// important is what mints their agent; an existing agent makes this an
+  /// idempotent re-subscribe plus one €0 re-evaluation (so a cadence edit
+  /// takes effect immediately). Fire-and-forget with contained failure —
+  /// agent wiring must never fail the save the user just watched succeed.
+  void _ensureAgentIfImportant(RelationshipEntry relationship) {
+    if (!relationship.data.important) return;
+    unawaited(() async {
+      try {
+        await ref
+            .read(relationshipAgentServiceProvider)
+            .ensureAgentForRelationship(relationship);
+      } catch (e, s) {
+        developer.log(
+          'Failed to ensure relationship agent',
+          name: 'RelationshipForm',
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }());
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
@@ -316,7 +360,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+        maxHeight: MediaQuery.sizeOf(context).height * modalMaxHeightFraction,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -337,6 +381,15 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                     controller: _nicknameController,
                     labelText: messages.relationshipNicknameLabel,
                     textCapitalization: TextCapitalization.words,
+                  ),
+                  SizedBox(height: tokens.spacing.step5),
+                  // Category scoping (the ProjectCreateForm precedent): the
+                  // relationship's category also seeds every check-in
+                  // created under it.
+                  CategoryField(
+                    categoryId: _categoryId,
+                    onSave: (category) =>
+                        setState(() => _categoryId = category?.id),
                   ),
                   SizedBox(height: tokens.spacing.step5),
                   SwitchListTile(

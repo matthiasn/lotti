@@ -6,6 +6,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -372,6 +373,22 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'relationshipHealth (register — updatedAt)',
+    entity: AgentDomainEntity.relationshipHealth(
+      id: 'relationship_health:relationship_agent:person-1',
+      agentId: 'relationship_agent:person-1',
+      relationshipId: 'person-1',
+      status: RelationshipCadenceStatus.ok,
+      cadenceDays: 30,
+      referenceAt: _created,
+      dueAt: _created,
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
     label: 'unknown',
     entity: AgentDomainEntity.unknown(
       id: 'unknown-1',
@@ -398,7 +415,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 38);
+      expect(_cases.length, 39);
     });
   });
 }

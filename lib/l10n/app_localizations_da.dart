@@ -3131,7 +3131,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInInteractionInPerson => 'Personligt';
 
   @override
-  String get checkInInteractionLabel => 'Hvordan havde I kontakt?';
+  String get checkInInteractionLabel => 'Hvordan talte I sammen?';
 
   @override
   String get checkInInteractionMessage => 'Besked';
@@ -3469,7 +3469,7 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count timer siden',
+      other: '$count h ago',
       one: '1 time siden',
     );
     return '$_temp0';
@@ -6237,6 +6237,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Tal med $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Tal med agenten';
 
   @override
@@ -6331,6 +6336,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'Hele målet';
+
+  @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 
   @override
@@ -6423,7 +6431,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Det siger din agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signaler';
+
+  @override
+  String get goalDetailStatementLabel => 'Dit mål';
 
   @override
   String get goalDetailThisWeekTitle => 'Denne uge';
@@ -6442,6 +6456,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Følger';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Sporet kategoritid';
@@ -6529,6 +6546,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7-dages gennemsnit';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName har brug for opmærksomhed';
   }
 
   @override
@@ -7060,6 +7082,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalStatusRecovering => 'På vej tilbage';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Opdateringer fra dens linkede kilde · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendermåned';
 
   @override
@@ -7211,7 +7238,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitsFilterPendingLater => 'Senere';
 
   @override
-  String get habitsGoalLineLabel => 'Målværdi';
+  String get habitsGoalLineLabel => 'Mål';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7245,8 +7272,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points point til målværdien',
-      one: '1 point til målværdien',
+      other: '$points point til mål',
+      one: '1 point til mål',
     );
     return '$_temp0';
   }
@@ -10200,6 +10227,37 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Briefingen kører på $provider. Noter om denne person sendes dertil til behandling.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Fortsæt';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Send til $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Ingen briefing endnu — Opdater mig laver en ud fra dine check-ins.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing bestilt — den vises her om lidt.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Kunne ikke bestille briefingen.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Opdater mig';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10227,6 +10285,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Ugentligt';
+
+  @override
+  String get relationshipChatTooltip => 'Chat om denne person';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Ingen agent endnu — markér først personen som vigtig.';
 
   @override
   String get relationshipCheckInsLabel => 'Check-ins';
@@ -10266,6 +10331,18 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ændringerne kunne ikke gemmes. Prøv igen.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Kræver opmærksomhed';
+
+  @override
+  String get relationshipHealthSteady => 'Stabil';
+
+  @override
+  String get relationshipHealthStrained => 'Anstrengt';
+
+  @override
+  String get relationshipHealthThriving => 'Blomstrer';
+
+  @override
   String get relationshipImportantDescription =>
       'Mind mig om at holde kontakten';
 
@@ -10273,10 +10350,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipImportantLabel => 'Vigtig';
 
   @override
+  String relationshipLastCheckInLabel(String date) {
+    return 'Seneste check-in $date';
+  }
+
+  @override
   String get relationshipLinkedTasksLabel => 'Opgaver';
 
   @override
-  String get relationshipLinkTaskButton => 'Tilknyt opgave';
+  String get relationshipLinkTaskButton => 'Link opgave';
 
   @override
   String get relationshipLogCheckIn => 'Registrér check-in';
@@ -10295,7 +10377,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen check-ins endnu — registrér et efter jeres næste snak.';
 
   @override
-  String get relationshipNoLinkedTasks => 'Ingen opgaver er tilknyttet endnu.';
+  String get relationshipNoLinkedTasks => 'Ingen opgaver linket endnu.';
 
   @override
   String get relationshipNotFound => 'Denne person følges ikke længere.';
@@ -10318,6 +10400,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Status';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Fulgt siden $date';
+  }
 
   @override
   String get saveButton => 'Gem';

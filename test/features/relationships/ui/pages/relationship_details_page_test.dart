@@ -1,6 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -10,9 +10,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -26,6 +26,7 @@ void main() {
   final testDate = DateTime(2026, 8, 13, 10, 30);
 
   late MockRelationshipRepository mockRepository;
+  late MockRelationshipAgentService mockAgentService;
   late MockUpdateNotifications mockNotifications;
 
   Metadata meta(String id) => Metadata(
@@ -102,27 +103,22 @@ void main() {
     when(
       () => mockRepository.getLinkedTasks('rel-1'),
     ).thenAnswer((_) async => []);
+    mockAgentService = MockRelationshipAgentService();
+    when(
+      () => mockAgentService.handleRelationshipDeleted(any()),
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(() async {
     await getIt.unregister<UpdateNotifications>();
   });
 
-  Widget buildPage() => ProviderScope(
+  Widget buildPage() => makeTestableWidgetNoScroll(
+    const RelationshipDetailsPage(relationshipId: 'rel-1'),
     overrides: [
       relationshipRepositoryProvider.overrideWithValue(mockRepository),
+      relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
     ],
-    child: MaterialApp(
-      theme: resolveTestTheme(),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const RelationshipDetailsPage(relationshipId: 'rel-1'),
-    ),
   );
 
   testWidgets(
@@ -273,6 +269,11 @@ void main() {
   testWidgets('edit action opens the form prefilled with the person', (
     tester,
   ) async {
+    // The form's CategoryField resolves the category name through getIt.
+    final cache = MockEntitiesCacheService();
+    when(() => cache.getCategoryById(any())).thenReturn(null);
+    getIt.registerSingleton<EntitiesCacheService>(cache);
+    addTearDown(() => getIt.unregister<EntitiesCacheService>());
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
       (_) async => relationship(cadenceDays: 14),
     );
@@ -330,12 +331,48 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockRepository.deleteRelationship('rel-1')).called(1);
+      // The cascade's agent leg fires exactly once (ADR 0059 Decision 7).
+      verify(
+        () => mockAgentService.handleRelationshipDeleted('rel-1'),
+      ).called(1);
       expect(beamedTo, ['/people']);
     },
   );
 
   testWidgets(
-    'a refused delete keeps the page open and reports the failure',
+    'a failed agent teardown never fails the delete the user watched '
+    'succeed',
+    (tester) async {
+      when(
+        () => mockRepository.getRelationshipById('rel-1'),
+      ).thenAnswer((_) async => relationship());
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockAgentService.handleRelationshipDeleted(any()),
+      ).thenAnswer((_) async => throw StateError('agent db closed'));
+
+      final beamedTo = <String>[];
+      beamToNamedOverride = beamedTo.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      expect(beamedTo, ['/people']);
+    },
+  );
+
+  testWidgets(
+    'delete shows an error toast when the repository returns false',
     (tester) async {
       when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
         (_) async => relationship(),
@@ -353,6 +390,7 @@ void main() {
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
+
       await tester.tap(find.byIcon(Icons.delete_outline_rounded));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete'));
@@ -360,7 +398,7 @@ void main() {
 
       expect(
         find.text('Could not delete this person. Please try again.'),
-        findsOneWidget,
+        findsOne,
       );
       // Crucially: no navigation away from a person who still exists.
       expect(beamedTo, isEmpty);
@@ -368,34 +406,33 @@ void main() {
     },
   );
 
-  testWidgets('a delete that throws reports the failure too', (tester) async {
-    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-      (_) async => relationship(),
-    );
-    when(
-      () => mockRepository.getCheckInsForRelationship('rel-1'),
-    ).thenAnswer((_) async => []);
-    when(
-      () => mockRepository.deleteRelationship('rel-1'),
-    ).thenThrow(Exception('db gone'));
+  testWidgets(
+    'delete shows an error toast when the repository throws',
+    (tester) async {
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.deleteRelationship('rel-1'),
+      ).thenThrow(Exception('db locked'));
 
-    final beamedTo = <String>[];
-    beamToNamedOverride = beamedTo.add;
-    addTearDown(() => beamToNamedOverride = null);
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(buildPage());
-    await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.text('Could not delete this person. Please try again.'),
-      findsOneWidget,
-    );
-    expect(beamedTo, isEmpty);
-  });
+      expect(
+        find.text('Could not delete this person. Please try again.'),
+        findsOne,
+      );
+    },
+  );
 
   testWidgets('the FAB opens the check-in capture sheet for this person', (
     tester,
@@ -448,6 +485,9 @@ void main() {
   testWidgets('each interaction type gets its own glyph on the check-in row', (
     tester,
   ) async {
+    // The check-in log is a lazy sliver: all five rows must fit the
+    // viewport at once for one-pass glyph assertions.
+    setTestSurfaceSize(tester, const Size(1000, 1400));
     const glyphs = {
       CheckInInteractionType.inPerson: Icons.people_rounded,
       CheckInInteractionType.call: Icons.call_rounded,
@@ -856,5 +896,43 @@ void main() {
         findsOne,
       );
     });
+  });
+
+  testWidgets('a notification-triggered reload keeps the rendered detail on '
+      'screen — the no-flash house rule, pinned', (tester) async {
+    final updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    when(
+      () => mockNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
+    var calls = 0;
+    final second = Completer<RelationshipEntry?>();
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((_) {
+      calls++;
+      if (calls == 1) {
+        return Future.value(relationship());
+      }
+      return second.future;
+    });
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => []);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+    expect(find.text('Anna'), findsOneWidget);
+
+    updates.add({'rel-1'});
+    await tester.pump();
+    await tester.pump();
+
+    // Mid-refetch: the rendered detail must stay, with no loading shell.
+    expect(calls, 2, reason: 'the refetch fired');
+    expect(find.text('Anna'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    second.complete(relationship());
+    await tester.pumpAndSettle();
+    expect(find.text('Anna'), findsOneWidget);
   });
 }

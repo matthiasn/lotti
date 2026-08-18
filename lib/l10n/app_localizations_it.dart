@@ -3152,18 +3152,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get checkInDeleteConfirmMessage =>
-      'Eliminare questo check-in? L\'azione non si può annullare.';
+      'Eliminare questo contatto? L\'azione non si può annullare.';
 
   @override
-  String get checkInEditTitle => 'Modifica check-in';
+  String get checkInEditTitle => 'Modifica contatto';
 
   @override
   String get checkInErrorCreateFailed =>
-      'Impossibile salvare il check-in. Riprova.';
+      'Impossibile salvare il contatto. Riprova.';
 
   @override
   String get checkInErrorDeleteFailed =>
-      'Impossibile eliminare il check-in. Riprova.';
+      'Impossibile eliminare il contatto. Riprova.';
 
   @override
   String get checkInInteractionCall => 'Chiamata';
@@ -3172,7 +3172,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get checkInInteractionInPerson => 'Di persona';
 
   @override
-  String get checkInInteractionLabel => 'Come vi siete messi in contatto?';
+  String get checkInInteractionLabel => 'Come avete parlato?';
 
   @override
   String get checkInInteractionMessage => 'Messaggio';
@@ -5971,7 +5971,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get entryTypeLabelAiResponse => 'Risposta dell\'IA';
 
   @override
-  String get entryTypeLabelCheckIn => 'Check-in';
+  String get entryTypeLabelCheckIn => 'Contatto';
 
   @override
   String get entryTypeLabelChecklist => 'Lista di controllo';
@@ -6312,6 +6312,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Parla con $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Parla con l\'agente';
 
   @override
@@ -6412,6 +6417,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCompositeProgressTitle => 'L\'intero obiettivo';
+
+  @override
   String get goalCreateFailed =>
       'Salvataggio dell’obiettivo non riuscito: riprova.';
 
@@ -6507,7 +6515,13 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Cosa dice il tuo agente';
+
+  @override
   String get goalDetailSignalsTitle => 'Segnali';
+
+  @override
+  String get goalDetailStatementLabel => 'Il tuo obiettivo';
 
   @override
   String get goalDetailThisWeekTitle => 'Questa settimana';
@@ -6526,6 +6540,9 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'I segnali elencati sopra si aggiornano in pochi secondi. L’agente vede solo i segnali indicati qui.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Osserva';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Tempo di categoria monitorato';
@@ -6613,6 +6630,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · media su 7 giorni';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName ha bisogno di attenzione';
   }
 
   @override
@@ -7150,6 +7172,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalStatusRecovering => 'In ripresa';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Aggiornamenti dalla fonte collegata · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'mese di calendario';
 
   @override
@@ -7301,7 +7328,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get habitsFilterPendingLater => 'più tardi';
 
   @override
-  String get habitsGoalLineLabel => 'Traguardo';
+  String get habitsGoalLineLabel => 'Gol';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7335,8 +7362,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       points,
       locale: localeName,
-      other: '$points pt al traguardo',
-      one: '1 pt al traguardo',
+      other: '$points pts a gol',
+      one: '1 pt a gol',
     );
     return '$_temp0';
   }
@@ -10339,6 +10366,37 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Il briefing viene generato su $provider. Le note su questa persona verranno inviate lì per l’elaborazione.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Continua';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Inviare a $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Nessun briefing ancora: Aggiornami ne prepara uno dai tuoi check-in.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing richiesto: apparirà qui a breve.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Impossibile richiedere il briefing.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Aggiornami';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10353,7 +10411,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCadenceFortnightly => 'Ogni due settimane';
 
   @override
-  String get relationshipCadenceLabel => 'Ritmo dei check-in';
+  String get relationshipCadenceLabel => 'Ritmo dei contatti';
 
   @override
   String get relationshipCadenceMonthly => 'Ogni mese';
@@ -10368,7 +10426,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipCadenceWeekly => 'Ogni settimana';
 
   @override
-  String get relationshipCheckInsLabel => 'Check-in registrati';
+  String get relationshipChatTooltip => 'Chatta su questa persona';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Nessun agente ancora: prima segna questa persona come importante.';
+
+  @override
+  String get relationshipCheckInsLabel => 'Contatti registrati';
 
   @override
   String get relationshipContactChannelsLabel => 'Recapiti';
@@ -10378,7 +10443,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipDeleteConfirmMessage =>
-      'Verranno eliminati anche tutti i suoi check-in. L\'azione non si può annullare.';
+      'Verranno eliminati anche tutti i contatti registrati. L\'azione non si può annullare.';
 
   @override
   String relationshipDeleteConfirmTitle(String name) {
@@ -10405,6 +10470,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile salvare le modifiche. Riprova.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Serve attenzione';
+
+  @override
+  String get relationshipHealthSteady => 'Stabile';
+
+  @override
+  String get relationshipHealthStrained => 'Tesa';
+
+  @override
+  String get relationshipHealthThriving => 'Fiorente';
+
+  @override
   String get relationshipImportantDescription =>
       'Ricordami di restare in contatto';
 
@@ -10412,13 +10489,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipImportantLabel => 'Importante';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Attività collegate';
+  String relationshipLastCheckInLabel(String date) {
+    return 'Ultimo contatto $date';
+  }
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Attività';
 
   @override
   String get relationshipLinkTaskButton => 'Collega attività';
 
   @override
-  String get relationshipLogCheckIn => 'Registra un check-in';
+  String get relationshipLogCheckIn => 'Registra un contatto';
 
   @override
   String get relationshipNameLabel => 'Nome';
@@ -10431,7 +10513,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipNoCheckIns =>
-      'Nessun check-in registrato — registrane uno dopo la prossima conversazione.';
+      'Nessun contatto registrato — aggiungine uno dopo la prossima conversazione.';
 
   @override
   String get relationshipNoLinkedTasks => 'Nessuna attività collegata.';
@@ -10458,6 +10540,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stato';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Monitoraggio dal $date';
+  }
 
   @override
   String get saveButton => 'Salva';

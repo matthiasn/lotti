@@ -134,6 +134,10 @@ import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
+import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
+import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
@@ -1247,6 +1251,18 @@ class MockProjectRepository extends Mock implements ProjectRepository {}
 
 class MockRelationshipRepository extends Mock
     implements RelationshipRepository {}
+
+class MockRelationshipAgentService extends Mock
+    implements RelationshipAgentService {}
+
+class MockRelationshipAgentPhaseA extends Mock
+    implements RelationshipAgentPhaseA {}
+
+class MockRelationshipAgentWorkflow extends Mock
+    implements RelationshipAgentWorkflow {}
+
+class MockRelationshipChatService extends Mock
+    implements RelationshipChatService {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

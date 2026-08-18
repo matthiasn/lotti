@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -33,32 +34,48 @@ class RelationshipRepository {
     required this._journalDb,
     required this._journalRepository,
     required this._persistenceLogic,
-    required this._updateNotifications,
   });
 
   final JournalDb _journalDb;
   final JournalRepository _journalRepository;
   final PersistenceLogic _persistenceLogic;
-  final UpdateNotifications _updateNotifications;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  /// Returns a relationship by its entity ID, or null.
+  /// The UI's read of a relationship: null when [id] is not a relationship,
+  /// and null for a private one while private entries are hidden.
   ///
-  /// A private relationship resolves to null while private entries are
-  /// hidden. `journalEntityById` deliberately bypasses the private filter
-  /// (it is the single-id read the whole app shares), so the gate lives
-  /// here: without it a stale or hand-typed `/people/<private-id>` route
-  /// would render the person's name, status and cadence even though the
-  /// People list hides them.
+  /// `journalEntityById` deliberately bypasses the private filter (it is the
+  /// single-id read the whole app shares), so the gate lives here: without it
+  /// a stale or hand-typed `/people/<private-id>` route would render the
+  /// person's name, status and cadence even though the People list hides them.
+  ///
+  /// Runtime and cascade callers must use
+  /// [getRelationshipByIdUnfiltered] instead — see its doc for why a display
+  /// preference must never scope them.
   Future<RelationshipEntry?> getRelationshipById(String id) async {
-    final entity = await _journalDb.journalEntityById(id);
-    if (entity is! RelationshipEntry) return null;
+    final entity = await getRelationshipByIdUnfiltered(id);
+    if (entity == null) return null;
     if ((entity.meta.private ?? false) &&
         !await _journalDb.getConfigFlag(privateFlag)) {
       return null;
     }
     return entity;
+  }
+
+  /// The runtime's and the delete cascade's read of a relationship: the
+  /// private-entry *display* preference deliberately does not scope it, for
+  /// the same reason [getAllCheckInsForRelationship] is unfiltered.
+  ///
+  /// Two concrete failures the gate would cause here: a private person's
+  /// agent would derive a different cadence register (or none at all) on
+  /// devices that hide private entries, so peers would never converge; and
+  /// [deleteRelationship] would answer "not found" for a person the user is
+  /// deleting through the generic journal path, leaving the relationship and
+  /// every check-in alive and syncing forever.
+  Future<RelationshipEntry?> getRelationshipByIdUnfiltered(String id) async {
+    final entity = await _journalDb.journalEntityById(id);
+    return entity is RelationshipEntry ? entity : null;
   }
 
   /// Returns all non-deleted relationships with their latest check-in time,
@@ -86,16 +103,26 @@ class RelationshipRepository {
     return _journalDb.getCheckInsForRelationship(relationshipId);
   }
 
+  /// Every non-deleted check-in, private ones included — the agent's view
+  /// (cadence must not depend on the private-display preference, or devices
+  /// with different settings would derive different registers) and the
+  /// delete cascade's view.
+  Future<List<CheckInEntry>> getAllCheckInsForRelationship(
+    String relationshipId,
+  ) {
+    return _journalDb.getAllCheckInsForRelationship(relationshipId);
+  }
+
   /// Tasks linked to the relationship in either direction (ADR 0038 §3 —
   /// "RelationshipLink both ways"): the relationship → task links this
   /// repository writes plus any task → relationship link created from the
   /// task side. Newest task first.
   ///
-  /// Scoped to live, visible `RelationshipLink` rows, so every rendered task
-  /// has a semantic link [unlinkTask] can remove — a task reachable only
-  /// through some other link type would otherwise render with an unlink
-  /// action that always fails. Link tombstones and hidden links are excluded,
-  /// matching the generic linked-entries queries.
+  /// Scoped to `RelationshipLink` rows, so this returns exactly the set
+  /// [unlinkTask] can remove — a task reachable only through some other link
+  /// type would otherwise render with an unlink action that always fails.
+  /// Link tombstones and hidden links are excluded, matching the generic
+  /// linked-entries queries.
   Future<List<Task>> getLinkedTasks(String relationshipId) async {
     final links = await _journalDb.typedLinksForTaskIds(
       {relationshipId},
@@ -126,9 +153,8 @@ class RelationshipRepository {
     required RelationshipData data,
     EntryText? entryText,
     String? categoryId,
-    DateTime? trackingStartedAt,
   }) async {
-    final started = trackingStartedAt ?? DateTime.now();
+    final started = clock.now();
     final meta = await _persistenceLogic.createMetadata(
       dateFrom: started,
       dateTo: started,
@@ -165,7 +191,7 @@ class RelationshipRepository {
     final relationship = await getRelationshipById(data.relationshipId);
     if (relationship == null || relationship.isDeleted) return null;
 
-    final started = dateFrom ?? DateTime.now();
+    final started = dateFrom ?? clock.now();
     final meta = await _persistenceLogic.createMetadata(
       dateFrom: started,
       dateTo: dateTo ?? started,
@@ -250,7 +276,7 @@ class RelationshipRepository {
           ((link.fromId == relationshipId && link.toId == taskId) ||
               (link.fromId == taskId && link.toId == relationshipId)),
     );
-    final deletedAt = DateTime.now();
+    final deletedAt = clock.now();
     var found = false;
     var updated = true;
     for (final link in matchingLinks) {
@@ -268,17 +294,16 @@ class RelationshipRepository {
 
   /// Saves an updated relationship entity. Bumps the vector clock and
   /// enqueues sync via [PersistenceLogic].
+  ///
+  /// No manual notification: `updateDbEntity` already emits the entity's
+  /// `affectedIds`, which carry both the relationship id (the detail
+  /// provider's token) and [relationshipNotification] (the list provider's).
   Future<bool> updateRelationship(RelationshipEntry relationship) async {
     final updatedMeta = await _persistenceLogic.updateMetadata(
       relationship.meta,
     );
     final updated = relationship.copyWith(meta: updatedMeta);
     final result = await _persistenceLogic.updateDbEntity(updated);
-    if (result ?? false) {
-      _updateNotifications.notify({
-        relationshipEntityUpdateNotification(updated.id),
-      });
-    }
     return result ?? false;
   }
 
@@ -286,6 +311,20 @@ class RelationshipRepository {
 
   /// Soft-deletes a relationship and cascades to its check-ins, so no
   /// orphaned data about the person survives (ADR 0037 §5).
+  ///
+  /// The relationship is tombstoned *before* its check-ins: an interruption
+  /// mid-cascade then leaves a few orphaned (but unqueryable from any live
+  /// relationship) check-in rows behind, rather than a live relationship with
+  /// a partially-deleted timeline. The check-ins are resolved via the
+  /// denormalized `subtype` column, not link traversal, so once the
+  /// relationship is gone no list or detail query reaches them.
+  ///
+  /// Both the relationship and its check-ins resolve through the
+  /// *unfiltered* reads: the private-entry display preference must not scope
+  /// a deletion, or a user browsing with private entries hidden would delete
+  /// a person and be told nothing happened — while the relationship and every
+  /// check-in stayed alive and syncing forever. The generic journal delete
+  /// path reaches this method for exactly such a person.
   ///
   /// The `RelationshipLink` rows that bound each check-in to the relationship
   /// are intentionally left untouched: the app's generic delete model leaves
@@ -295,54 +334,53 @@ class RelationshipRepository {
   /// change that introduced a link-only consumer would need to handle the
   /// tombstones explicitly.
   ///
-  /// When the relationship agent lands (plan v2 phases 4–5), this cascade
-  /// must grow to cover the agent identity, its reports and nudges, and any
-  /// pending reminder rows.
+  /// The agent leg of the cascade (ADR 0059 Decision 7 — identity, reports,
+  /// nudges, wake records) is NOT here: it lives in
+  /// `RelationshipAgentService.handleRelationshipDeleted`, invoked
+  /// best-effort by the delete surfaces, because this repository must not
+  /// depend on the agent service. Callers that reach this method through the
+  /// generic journal delete path get the same eventual consistency: a
+  /// deleted relationship's agent goes quiet (Phase A early-returns on the
+  /// tombstone) until its teardown runs.
   ///
-  /// The cascade reads check-ins *unfiltered* by private visibility. The
-  /// browsing query hides private check-ins while private mode is off, and
-  /// cascading over that view would tombstone the person while their private
-  /// check-ins survived — resurfacing as orphans the next time private
-  /// entries are shown.
-  ///
-  /// Deletion is not atomic — the journal has no cross-entity transaction
-  /// here — so it is ordered and idempotent instead: check-ins go first and
-  /// the relationship is only tombstoned once all of them are down. A
-  /// rejected write therefore leaves the person visible and returns false, so
-  /// the caller reports the failure and a retry resumes on the check-ins that
-  /// are still live rather than stranding them under a deleted person.
+  /// Returns whether the *relationship itself* was tombstoned. A check-in
+  /// whose tombstone is rejected is logged and skipped rather than failing
+  /// the call: the relationship is already gone, so no live query reaches it
+  /// and reporting failure would send the caller back to a page that no
+  /// longer resolves.
   Future<bool> deleteRelationship(String relationshipId) async {
-    final relationship = await getRelationshipById(relationshipId);
+    final relationship = await getRelationshipByIdUnfiltered(relationshipId);
     if (relationship == null) return false;
 
     final checkIns = await _journalDb.getAllCheckInsForRelationship(
       relationshipId,
     );
-    final deletedAt = DateTime.now();
-    var cascaded = true;
-    for (final checkIn in checkIns) {
-      cascaded = await _softDelete(checkIn, deletedAt) && cascaded;
-    }
-    final deleted = cascaded && await _softDelete(relationship, deletedAt);
+    final deletedAt = clock.now();
+    // Tombstone the relationship first so a half-finished cascade reads as
+    // "gone" rather than "live with missing check-ins".
+    if (!await _softDelete(relationship, deletedAt)) return false;
 
-    // Notify either way: a partial cascade still changed rows, and the list
-    // and detail views must reflect what actually landed.
-    _updateNotifications.notify({
-      relationshipNotification,
-      relationshipEntityUpdateNotification(relationshipId),
-    });
-    return deleted;
+    for (final checkIn in checkIns) {
+      if (!await _softDelete(checkIn, deletedAt)) {
+        getIt<DomainLogger>().error(
+          LogDomain.persistence,
+          'check-in tombstone rejected for ${checkIn.id}',
+          message: 'orphaned check-in left behind by relationship cascade',
+          subDomain: 'deleteRelationship',
+        );
+      }
+    }
+    return true;
   }
 
   /// Soft-deletes a single check-in. Returns false when [checkInId] does not
-  /// resolve to a live check-in, or when the tombstone write is rejected —
-  /// the caller must not report a delete the database refused. Providers
-  /// reload through the tombstone's `affectedIds`, which carry the
+  /// resolve to a live check-in, or when the tombstone write is rejected.
+  /// Providers reload through the tombstone's `affectedIds`, which carry the
   /// relationship id.
   Future<bool> deleteCheckIn(String checkInId) async {
     final entity = await _journalDb.journalEntityById(checkInId);
     if (entity is! CheckInEntry || entity.isDeleted) return false;
-    return _softDelete(entity, DateTime.now());
+    return _softDelete(entity, clock.now());
   }
 
   /// Writes a tombstone for [entity]. Returns false when the write was
@@ -365,9 +403,11 @@ class RelationshipRepository {
 final relationshipRepositoryProvider = Provider<RelationshipRepository>(
   (ref) => RelationshipRepository(
     journalDb: getIt<JournalDb>(),
-    journalRepository: getIt<JournalRepository>(),
+    // Constructed bare like every other JournalRepository call site — the
+    // class resolves its own dependencies via getIt and is not itself
+    // registered there.
+    journalRepository: JournalRepository(),
     persistenceLogic: getIt<PersistenceLogic>(),
-    updateNotifications: getIt<UpdateNotifications>(),
   ),
   name: 'relationshipRepositoryProvider',
 );

@@ -25,6 +25,9 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/runtime/relationship_runtime_maintenance.dart';
+import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
@@ -463,6 +466,10 @@ void main() {
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+          // Same reasoning for the relationship chain's leaf.
+          relationshipRepositoryProvider.overrideWithValue(
+            MockRelationshipRepository(),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -487,7 +494,7 @@ void main() {
         realContext(),
       ).read(agentRuntimeMaintenanceProvider);
 
-      expect(maintenance, hasLength(2));
+      expect(maintenance, hasLength(3));
       expect(maintenance.first, isA<DailyOsRuntimeMaintenance>());
     });
 
@@ -519,6 +526,34 @@ void main() {
       );
     });
 
+    test('registers the relationship_agent wake runner', () {
+      // Without this a relationship wake silently falls through to the
+      // task-agent workflow (agent_wiring's unregistered-kind fallback) —
+      // the exact trap ADR 0059's regression-test mandate names.
+      final runners = containerFor(
+        realContext(),
+      ).read(agentWakeRunnersProvider);
+
+      expect(runners.keys, contains(AgentKinds.relationshipAgent));
+      expect(runners[AgentKinds.relationshipAgent], isNotNull);
+      // And the merge kept the other kinds intact.
+      expect(runners.keys, contains(AgentKinds.goalAgent));
+      expect(runners.keys, contains(AgentKinds.dayAgent));
+    });
+
+    test('registers relationship runtime maintenance alongside the others', () {
+      // Without this no relationship subscription survives a restart and a
+      // missed cadence re-arm is never healed.
+      final maintenance = containerFor(
+        realContext(),
+      ).read(agentRuntimeMaintenanceProvider);
+
+      expect(
+        maintenance.whereType<RelationshipRuntimeMaintenance>(),
+        hasLength(1),
+      );
+    });
+
     test('registers the goal banner source with the shared dock', () {
       // Without this the kind-agnostic dock has no sources and every goal
       // banner silently disappears from the shell (ADR 0059 Decision 6).
@@ -526,7 +561,10 @@ void main() {
         realContext(),
       ).read(nudgeBannerSourcesProvider);
 
-      expect(sources, [activeGoalNudgesProvider]);
+      expect(sources, [
+        activeGoalNudgesProvider,
+        activeRelationshipNudgesProvider,
+      ]);
     });
 
     test('registers both day prompt-log wrap renderers', () {
@@ -569,9 +607,13 @@ void main() {
 
       expect(
         container.read(agentWakeRunnersProvider).keys,
-        containsAll([AgentKinds.dayAgent, AgentKinds.goalAgent]),
+        containsAll([
+          AgentKinds.dayAgent,
+          AgentKinds.goalAgent,
+          AgentKinds.relationshipAgent,
+        ]),
       );
-      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(2));
+      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(3));
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
     });

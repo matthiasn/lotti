@@ -44,9 +44,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nickname, the add/edit person modal — including manually entered contact
   channels (phone, mobile, email, messaging) on every platform — a
   linked-tasks section that connects tasks to a person in either direction,
-  and a check-in capture sheet that is editable and deletable afterward.
-  Cascade deletion, sync, categories, and the private flag all apply. Contact
-  channels never enter AI context.
+  and a check-in capture sheet that is editable and deletable afterwards.
+  Cascade deletion (removing a relationship removes its check-ins), sync,
+  categories, and the private flag all apply with zero new infrastructure.
+  Contact channels never enter AI context. Cadence nudges and executive
+  briefings ship alongside it — see the relationship-agent entry under
+  Changed.
+- **Relationship-agent evals, before the agent is trusted.** The
+  relationship agent's prompt/tool contract is now validated by an
+  inference eval suite on the goal-agent chassis — 24 scenarios over a
+  17-row policy matrix (restraint, briefings, banner discipline,
+  sentiment-over-prose health bands, dialogue, privacy leakage traps),
+  scored against a live provider with per-case cost capture and tuned for
+  `deepseek-v4-flash`. Unlike the goal tier, every FACTS block is rendered
+  by the production renderer over the real deterministic tier, so the eval
+  cannot drift from what a wake actually sends. Run book in
+  `docs/evaluations/relationship_agent_models/`.
 
 ### Changed
 - **Goal chat now remembers and reliably answers.** Recent exchanges reach the
@@ -64,6 +77,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first-run Goals page explains how to begin, completed goals remain available
   in an archive, phone agent controls take less space, and switching 14/30/90
   day ranges keeps the previous view visible while the new range loads.
+- **Relationship agents brief, nudge and chat.** Marking a person important
+  now quietly creates their dedicated agent (plan v2 phases 4–5, ADR 0059,
+  still behind the People flag). A free daily tick recomputes whether the
+  desired check-in interval has lapsed — a private check-in still counts —
+  and when it lapses, or a new check-in makes the last briefing stale, one
+  AI run writes an executive briefing with a health band (thriving, steady,
+  needs attention, strained) and may post one check-in banner, which
+  appears on the same surfaces as goal banners and taps through to the
+  person. The detail page gains the briefing card with a "Brief me" button
+  — a cloud model is named and confirmed first, per the AI-disclosure
+  rules — and a chat about that person. Dismissing a banner keeps the
+  agent quiet for the rest of the day; contact channels remain structurally
+  invisible to the AI. Deleting a person also retires their agent.
 - **Goal signal charts now show the trend behind the number.** Daily steps use
   bars and weight keeps its filled curve, both with a dashed trailing
   seven-day average overlaid. Legends identify actuals, averages and targets,

@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/relationships_location.dart';
+import 'package:lotti/features/relationships/ui/pages/relationship_chat_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 
@@ -37,7 +38,11 @@ void main() {
       final location = RelationshipsLocation(
         RouteInformation(uri: Uri.parse('/people')),
       );
-      expect(location.pathPatterns, ['/people', '/people/:relationshipId']);
+      expect(location.pathPatterns, [
+        '/people',
+        '/people/:relationshipId',
+        '/people/:relationshipId/chat',
+      ]);
     });
 
     testWidgets('builds a single list page for /people', (tester) async {
@@ -63,6 +68,33 @@ void main() {
       expect(detail, isA<RelationshipDetailsPage>());
       expect((detail as RelationshipDetailsPage).relationshipId, 'rel-1');
       expect(pages[1].key, const ValueKey('people-details-rel-1'));
+    });
+
+    testWidgets('stacks the chat page above the detail for '
+        '/people/<id>/chat', (tester) async {
+      final context = await localizedContext(tester);
+
+      final pages = pagesFor(context, '/people/rel-1/chat');
+
+      expect(pages, hasLength(3));
+      expect(pages[1].child, isA<RelationshipDetailsPage>());
+      final chat = pages[2].child;
+      expect(chat, isA<RelationshipChatPage>());
+      expect((chat as RelationshipChatPage).relationshipId, 'rel-1');
+      expect(pages[2].key, const ValueKey('people-chat-rel-1'));
+    });
+
+    testWidgets('a plain detail path never mounts the chat page', (
+      tester,
+    ) async {
+      final context = await localizedContext(tester);
+
+      final pages = pagesFor(context, '/people/rel-1');
+
+      expect(
+        pages.map((page) => page.child),
+        isNot(contains(isA<RelationshipChatPage>())),
+      );
     });
   });
 }

@@ -247,8 +247,9 @@ void main() {
           title: 'Just related',
         );
         // Relationship/project/rating links are never returned by
-        // getTypedLinksForTaskIds. If one ever is, the mapping must fail
-        // loudly rather than silently bucket a person as a linked task.
+        // getTypedLinksForTaskIds. If one ever is, the controller's
+        // `.map(...)` switch must fail loudly rather than silently bucket a
+        // person as a linked task.
         when(
           () => journalRepository.getTypedLinksForTaskIds(
             {currentTaskId},

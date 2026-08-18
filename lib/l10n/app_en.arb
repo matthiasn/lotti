@@ -3414,6 +3414,15 @@
       }
     }
   },
+  "goalChatTalkTo": "Talk to {agentName}",
+  "@goalChatTalkTo": {
+    "description": "Button that opens a goal-agent conversation.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
   "goalChatTalkToAgent": "Talk to agent",
   "@goalChatTalkToAgent": {
     "description": "Button/tooltip that opens a goal-agent conversation (static label; the goal name is already the page title)"
@@ -3493,6 +3502,7 @@
       }
     }
   },
+  "goalCompositeProgressTitle": "The whole goal",
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
@@ -3598,9 +3608,14 @@
       }
     }
   },
+  "goalDetailSayingTitle": "What your agent is saying",
   "goalDetailSignalsTitle": "Signals",
   "@goalDetailSignalsTitle": {
     "description": "Section heading over the data-signal dimension cards on goal detail."
+  },
+  "goalDetailStatementLabel": "Your goal",
+  "@goalDetailStatementLabel": {
+    "description": "Caption above the goal statement on the detail page, marking it as the aspiration rather than current status."
   },
   "goalDetailThisWeekTitle": "This week",
   "@goalDetailThisWeekTitle": {
@@ -3625,6 +3640,7 @@
     }
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
+  "goalDetailWatchingTitle": "Watching",
   "goalDimensionCategoryTimeSource": "Tracked category time",
   "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",
   "@goalDimensionHabitReading": {
@@ -3713,6 +3729,7 @@
       }
     }
   },
+  "goalDominantIssueBadge": "{dimensionName} needs attention",
   "goalFormAddDimension": "Add dimension",
   "goalFormAddSignal": "Add a signal",
   "@goalFormAddSignal": {
@@ -4020,7 +4037,7 @@
   "goalPatternTitle": "Timing pattern",
   "goalPendingProposalBadge": "Proposal awaiting review",
   "@goalPendingProposalBadge": {
-    "description": "Chip on a goal card when a revision proposal is pending review."
+    "description": "Badge on an agent card when a revision proposal is pending."
   },
   "goalProgressAgesOut": "ages out tonight",
   "goalProgressCompactCaption": "slides at midnight",
@@ -4160,6 +4177,14 @@
   "@goalStatusRecovering": {
     "description": "Goal track status chip: climbing back after being behind."
   },
+  "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
+  "@goalWatchingMetric": {
+    "placeholders": {
+      "windowLabel": {
+        "type": "String"
+      }
+    }
+  },
   "goalWindowCalendarMonth": "calendar month",
   "goalWindowCalendarWeek": "calendar week",
   "goalWindowRollingDays": "rolling {count} days",
@@ -4268,7 +4293,7 @@
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
-  "habitsGoalLineLabel": "Target",
+  "habitsGoalLineLabel": "Goal",
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
@@ -4290,7 +4315,7 @@
   },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "habitsPointsToGoal": "{points, plural, one{1 pt to target} other{{points} pts to target}}",
+  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
@@ -5769,6 +5794,30 @@
       }
     }
   },
+  "relationshipBriefingDisclosureBody": "The briefing runs on {provider}. Notes about this person will be sent there for processing.",
+  "@relationshipBriefingDisclosureBody": {
+    "description": "Confirm dialog body before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingDisclosureConfirm": "Continue",
+  "relationshipBriefingDisclosureTitle": "Send to {provider}?",
+  "@relationshipBriefingDisclosureTitle": {
+    "description": "Confirm dialog title before a cloud-bound briefing; provider is the inference provider name.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingEmpty": "No briefing yet — Brief me prepares one from your check-ins.",
+  "relationshipBriefingRequested": "Briefing requested — it will appear here shortly.",
+  "relationshipBriefingRequestFailed": "Could not request the briefing.",
+  "relationshipBriefingTitle": "Briefing",
+  "relationshipBriefMeButton": "Brief me",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -5783,6 +5832,8 @@
   "relationshipCadenceNone": "No cadence",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipChatTooltip": "Chat about this person",
+  "relationshipChatUnavailable": "No agent yet — mark this person as important first.",
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipContactChannelsLabel": "Contact channels",
   "relationshipCreateTitle": "Add person",
@@ -5800,8 +5851,20 @@
   "relationshipErrorDeleteFailed": "Could not delete this person. Please try again.",
   "relationshipErrorLinkTaskFailed": "Could not link the task. Please try again.",
   "relationshipErrorUpdateFailed": "Could not save the changes. Please try again.",
+  "relationshipHealthNeedsAttention": "Needs attention",
+  "relationshipHealthSteady": "Steady",
+  "relationshipHealthStrained": "Strained",
+  "relationshipHealthThriving": "Thriving",
   "relationshipImportantDescription": "Nudge me to stay in touch",
   "relationshipImportantLabel": "Important",
+  "relationshipLastCheckInLabel": "Last check-in {date}",
+  "@relationshipLastCheckInLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
@@ -5817,6 +5880,14 @@
   "relationshipStatusArchived": "Archived",
   "relationshipStatusDormant": "Dormant",
   "relationshipStatusFieldLabel": "Status",
+  "relationshipTrackingSinceLabel": "Tracking since {date}",
+  "@relationshipTrackingSinceLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveFailedRetry": "That didn't save — please try again.",

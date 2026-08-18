@@ -2,13 +2,13 @@
 
 A personal CRM for a small, deliberately curated set of people. One
 relationship entity per person, with a timeline of **check-ins** — structured
-interaction logs (type, sentiment, topics, narrative) — and, in later phases,
-a dedicated agent that tracks check-in cadence and briefs the user before the
-next conversation.
+interaction logs (type, sentiment, topics, narrative) — and, for people
+marked important, a dedicated agent that tracks check-in cadence and briefs
+the user before the next conversation.
 
 This feature is landing in phases; see the
 [implementation plan](../../../docs/implementation_plans/2026-08-13_relationship_management_v2.md)
-and ADRs 0037–0041. What exists today (phases 1–2, behind the
+and ADRs 0037–0041 plus 0059. What exists today (phases 1–5, behind the
 `enable_relationships` flag):
 
 - **Domain model** in `lib/classes/`: `relationship_data.dart`
@@ -33,10 +33,24 @@ and ADRs 0037–0041. What exists today (phases 1–2, behind the
   cadence presets, status, and the manual contact-channel editor — desktop
   parity per ADR 0041 §2), and the check-in capture sheet (interaction
   type, date, user-set sentiment — never AI-filled, ADR 0038 — topics,
-  narrative, next-time guidance; editable and deletable afterward).
+  narrative, next-time guidance; editable and deletable afterwards).
 
-Not yet built: the banner-channel generalization (phase 3), the relationship
-agent (phases 4–5), voice check-ins (phase 6), OS contact import/linking and
+- `runtime/` + `service/` + `state/` — the **relationship agent's
+  deterministic tier** (plan v2 phase 4, ADR 0059): marking a person
+  important quietly creates their dedicated agent, which tracks the
+  check-in cadence every day at zero AI cost. Deleting a person destroys
+  their agent (the cascade's agent leg).
+- `workflow/` + the rest of `service/`, `state/`, `ui/` — the **LLM tier**
+  (plan v2 phase 5): a lapsed cadence, a check-in newer than the current
+  briefing, a chat message, or an explicit "Brief me" triggers one AI run
+  that writes an executive briefing (with a health band) and at most one
+  check-in banner. The detail page mounts the briefing card ("Brief me"
+  names the cloud provider first, per ADR 0037) and `/people/<id>/chat`
+  opens the per-person agent chat. Banners surface through the
+  kind-agnostic channel (`lib/features/nudges/`), tapping through to the
+  person.
+
+Not yet built: voice check-ins (phase 6), OS contact import/linking and
 call/message quick actions (phase 7), OS reminders (phase 8). Relationships
 and check-ins deliberately do not appear in the main journal timeline; the
 People tab is their home.

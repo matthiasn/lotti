@@ -240,53 +240,54 @@ void main() {
     String content = '# Forced\nrecovered.',
     bool throwOnRetry = false,
   }) {
-    mockConversationRepository.maxDelegateCalls = 2;
-    mockConversationRepository.sendMessageDelegate =
-        ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          toolChoice,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (toolChoice == null) return firstPassUsage;
-          if (throwOnRetry) {
-            throw Exception('forced retry boom');
-          }
-          if (strategy != null) {
-            final manager = mockConversationRepository.getConversation(
-              conversationId,
-            )!;
-            when(
-              () => manager.addToolResponse(
-                toolCallId: any(named: 'toolCallId'),
-                response: any(named: 'response'),
-              ),
-            ).thenReturn(null);
-            await strategy.processToolCalls(
-              toolCalls: [
-                ChatCompletionMessageToolCall(
-                  id: 'call-forced',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: EventAgentToolNames.updateReport,
-                    arguments: jsonEncode({
-                      'oneLiner': oneLiner,
-                      'tldr': tldr,
-                      'content': content,
-                    }),
-                  ),
+    mockConversationRepository
+      ..maxDelegateCalls = 2
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            if (toolChoice == null) return firstPassUsage;
+            if (throwOnRetry) {
+              throw Exception('forced retry boom');
+            }
+            if (strategy != null) {
+              final manager = mockConversationRepository.getConversation(
+                conversationId,
+              )!;
+              when(
+                () => manager.addToolResponse(
+                  toolCallId: any(named: 'toolCallId'),
+                  response: any(named: 'response'),
                 ),
-              ],
-              manager: manager,
-            );
-          }
-          return retryUsage;
-        };
+              ).thenReturn(null);
+              await strategy.processToolCalls(
+                toolCalls: [
+                  ChatCompletionMessageToolCall(
+                    id: 'call-forced',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: EventAgentToolNames.updateReport,
+                      arguments: jsonEncode({
+                        'oneLiner': oneLiner,
+                        'tldr': tldr,
+                        'content': content,
+                      }),
+                    ),
+                  ),
+                ],
+                manager: manager,
+              );
+            }
+            return retryUsage;
+          };
   }
 
   setUp(() async {

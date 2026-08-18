@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -65,9 +66,17 @@ class JournalRepository {
   }
 
   /// Updates only the `categoryId` on a single entity's metadata (pass null to
-  /// clear it). Returns true even on a missing entity or a logged failure; only
-  /// a not-found entity returns false. Callers that need cascading propagation
-  /// to linked entries do that themselves (see `EntryController.updateCategoryId`).
+  /// clear it). Callers that need cascading propagation to linked entries do
+  /// that themselves (see `EntryController.updateCategoryId`).
+  ///
+  /// Returns whether the write actually landed: false for a missing entity, a
+  /// rejected write (`updateDbEntity` answers false when the vector-clock
+  /// comparison loses to a concurrent sync, null when it swallowed an
+  /// exception), and a logged failure. Callers act on this — `EntryController`
+  /// only sweeps project links for entries that really moved, and the
+  /// relationship form only reports a save as successful when it did — so
+  /// answering true for a write that never happened would report success on a
+  /// half-saved entity with nothing left to retry.
   Future<bool> updateCategoryId(
     String journalEntityId, {
     required String? categoryId,
@@ -83,7 +92,7 @@ class JournalRepository {
         return false;
       }
 
-      await persistenceLogic.updateDbEntity(
+      final updated = await persistenceLogic.updateDbEntity(
         journalEntity.copyWith(
           meta: await persistenceLogic.updateMetadata(
             journalEntity.meta,
@@ -92,6 +101,7 @@ class JournalRepository {
           ),
         ),
       );
+      return updated ?? false;
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomain.persistence,
@@ -99,19 +109,18 @@ class JournalRepository {
         stackTrace: stackTrace,
         subDomain: 'updateCategoryId',
       );
+      return false;
     }
-    return true;
   }
 
   /// Soft-deletes an entity by stamping `deletedAt` on its metadata.
   ///
   /// Also handles side effects: when deleting an image used as task cover art
-  /// the references are cleared first, the running timer is stopped if it is
-  /// this entry, and the app badge is refreshed. Returns false only when the
-  /// entity does not exist.
-  Future<bool> deleteJournalEntity(
-    String journalEntityId,
-  ) async {
+  /// the references are cleared first, a relationship cascades to its
+  /// check-ins, the running timer is stopped if it is this entry, and the
+  /// app badge is refreshed. Returns false only when the entity does not
+  /// exist.
+  Future<bool> deleteJournalEntity(String journalEntityId) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
@@ -121,6 +130,18 @@ class JournalRepository {
 
       if (journalEntity == null) {
         return false;
+      }
+
+      // ADR 0037 §5: deleting a person cascades to their check-ins, private
+      // ones included. The invariant is guarded HERE so it holds on every
+      // surface that can reach the generic delete path (a deep link to the
+      // journal detail page included), not only on the People pages.
+      if (journalEntity is RelationshipEntry) {
+        return await RelationshipRepository(
+          journalDb: getIt<JournalDb>(),
+          journalRepository: this,
+          persistenceLogic: persistenceLogic,
+        ).deleteRelationship(journalEntityId);
       }
 
       // If deleting an image that is used as cover art, clear the coverArtId
@@ -323,41 +344,38 @@ class JournalRepository {
     // exists), release the reservation and let the burn handler broadcast
     // an unresolvable hint so peers skip the gap instead of round-tripping
     // via backfill.
-    return getIt<VectorClockService>().withVcScope<bool>(
-      () async {
-        final updated = link.copyWith(
-          updatedAt: DateTime.now(),
-          vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
-        );
+    return getIt<VectorClockService>().withVcScope<bool>(() async {
+      final updated = link.copyWith(
+        updatedAt: DateTime.now(),
+        vectorClock: await getIt<VectorClockService>().getNextVectorClock(),
+      );
 
-        final res = await journalDb.upsertEntryLink(updated);
-        if (res == 0) return false;
-        getIt<UpdateNotifications>().notify({
-          link.fromId,
-          link.toId,
-          linkNotification,
-        });
-        try {
-          await getIt<OutboxService>().enqueueMessage(
-            SyncMessage.entryLink(
-              entryLink: updated,
-              status: SyncEntryStatus.update,
-            ),
-          );
-        } catch (error, stackTrace) {
-          getIt<DomainLogger>().error(
-            LogDomain.sync,
-            error,
-            message:
-                'outbox enqueue failed after updateLink; VC already committed',
-            stackTrace: stackTrace,
-            subDomain: 'updateLink.enqueue',
-          );
-        }
-        return true;
-      },
-      commitWhen: (ok) => ok,
-    );
+      final res = await journalDb.upsertEntryLink(updated);
+      if (res == 0) return false;
+      getIt<UpdateNotifications>().notify({
+        link.fromId,
+        link.toId,
+        linkNotification,
+      });
+      try {
+        await getIt<OutboxService>().enqueueMessage(
+          SyncMessage.entryLink(
+            entryLink: updated,
+            status: SyncEntryStatus.update,
+          ),
+        );
+      } catch (error, stackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          error,
+          message:
+              'outbox enqueue failed after updateLink; VC already committed',
+          stackTrace: stackTrace,
+          subDomain: 'updateLink.enqueue',
+        );
+      }
+      return true;
+    }, commitWhen: (ok) => ok);
   }
 
   bool _hasChange(EntryLink existing, EntryLink incoming) {
@@ -377,10 +395,7 @@ class JournalRepository {
 
   /// Deletes the link from `fromId` to `toId` and notifies both endpoints so
   /// their linked-entries lists refresh.
-  Future<int> removeLink({
-    required String fromId,
-    required String toId,
-  }) async {
+  Future<int> removeLink({required String fromId, required String toId}) async {
     final res = getIt<JournalDb>().deleteLink(fromId, toId);
     getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
     return res;

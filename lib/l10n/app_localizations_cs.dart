@@ -6302,6 +6302,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalChatTalkTo(String agentName) {
+    return 'Promluvit si s agentem $agentName';
+  }
+
+  @override
   String get goalChatTalkToAgent => 'Mluvit s agentem';
 
   @override
@@ -6395,6 +6400,9 @@ class AppLocalizationsCs extends AppLocalizations {
   ) {
     return 'Včera: $metCount z $dimensionCount dimenzí · potřeba: $requiredCount.';
   }
+
+  @override
+  String get goalCompositeProgressTitle => 'Celý cíl';
 
   @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
@@ -6491,7 +6499,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalDetailSayingTitle => 'Co říká tvůj agent';
+
+  @override
   String get goalDetailSignalsTitle => 'Signály';
+
+  @override
+  String get goalDetailStatementLabel => 'Tvůj cíl';
 
   @override
   String get goalDetailThisWeekTitle => 'Tento týden';
@@ -6510,6 +6524,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalDetailWatchingSignals =>
       'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
   String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
@@ -6596,6 +6613,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String goalDimensionRollingAverageRow(String name) {
     return '$name · 7denní průměr';
+  }
+
+  @override
+  String goalDominantIssueBadge(Object dimensionName) {
+    return '$dimensionName vyžaduje pozornost';
   }
 
   @override
@@ -7137,6 +7159,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalStatusRecovering => 'Zotavuje se';
 
   @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Aktualizace z propojeného zdroje · $windowLabel';
+  }
+
+  @override
   String get goalWindowCalendarMonth => 'kalendářní měsíc';
 
   @override
@@ -7290,7 +7317,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsFilterPendingLater => 'později';
 
   @override
-  String get habitsGoalLineLabel => 'Cílová hodnota';
+  String get habitsGoalLineLabel => 'Cíl';
 
   @override
   String get habitsHeatmapEmpty =>
@@ -7321,7 +7348,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points b. k cílové hodnotě';
+    return '$points b. k cíli';
   }
 
   @override
@@ -10344,6 +10371,37 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipBriefingDisclosureBody(String provider) {
+    return 'Briefing běží na $provider. Poznámky o této osobě tam budou odeslány ke zpracování.';
+  }
+
+  @override
+  String get relationshipBriefingDisclosureConfirm => 'Pokračovat';
+
+  @override
+  String relationshipBriefingDisclosureTitle(String provider) {
+    return 'Odeslat do $provider?';
+  }
+
+  @override
+  String get relationshipBriefingEmpty =>
+      'Zatím žádný briefing — Shrň mi to ho připraví z tvých check-inů.';
+
+  @override
+  String get relationshipBriefingRequested =>
+      'Briefing vyžádán — za chvíli se tu objeví.';
+
+  @override
+  String get relationshipBriefingRequestFailed =>
+      'Briefing se nepodařilo vyžádat.';
+
+  @override
+  String get relationshipBriefingTitle => 'Briefing';
+
+  @override
+  String get relationshipBriefMeButton => 'Shrň mi to';
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -10372,6 +10430,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Každý týden';
+
+  @override
+  String get relationshipChatTooltip => 'Chatovat o této osobě';
+
+  @override
+  String get relationshipChatUnavailable =>
+      'Zatím žádný agent — nejprve označ tuto osobu jako důležitou.';
 
   @override
   String get relationshipCheckInsLabel => 'Záznamy kontaktů';
@@ -10411,13 +10476,30 @@ class AppLocalizationsCs extends AppLocalizations {
       'Změny se nepodařilo uložit. Zkus to prosím znovu.';
 
   @override
+  String get relationshipHealthNeedsAttention => 'Vyžaduje pozornost';
+
+  @override
+  String get relationshipHealthSteady => 'Stabilní';
+
+  @override
+  String get relationshipHealthStrained => 'Napjatý';
+
+  @override
+  String get relationshipHealthThriving => 'Vzkvétá';
+
+  @override
   String get relationshipImportantDescription => 'Připomínej mi, ať se ozvu';
 
   @override
   String get relationshipImportantLabel => 'Důležité';
 
   @override
-  String get relationshipLinkedTasksLabel => 'Propojené úkoly';
+  String relationshipLastCheckInLabel(String date) {
+    return 'Poslední záznam $date';
+  }
+
+  @override
+  String get relationshipLinkedTasksLabel => 'Úkoly';
 
   @override
   String get relationshipLinkTaskButton => 'Propojit úkol';
@@ -10462,6 +10544,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipStatusFieldLabel => 'Stav';
+
+  @override
+  String relationshipTrackingSinceLabel(String date) {
+    return 'Sledováno od $date';
+  }
 
   @override
   String get saveButton => 'Uložit';

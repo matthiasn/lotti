@@ -415,7 +415,8 @@ void main() {
     });
 
     test(
-      'ignores a notification for a different relationship',
+      'refetches on a relationship edit, local or synced — every entity write '
+      'emits its own id, so no feature-specific token is needed',
       () async {
         var calls = 0;
         when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer((
@@ -439,15 +440,23 @@ void main() {
           relationshipDetailControllerProvider('rel-1').future,
         );
 
-        updateStreamController.add({
-          'rel-2',
-          relationshipEntityUpdateNotification('rel-2'),
-        });
+        // Exactly what updateDbEntity emits for a RelationshipEntry write.
+        updateStreamController.add({'rel-1', relationshipNotification});
+        await pumpEventQueue();
         await container.read(
           relationshipDetailControllerProvider('rel-1').future,
         );
 
-        expect(calls, 1);
+        expect(calls, 2);
+
+        // Another person's write must not reload this one.
+        updateStreamController.add({'rel-2', relationshipNotification});
+        await pumpEventQueue();
+        await container.read(
+          relationshipDetailControllerProvider('rel-1').future,
+        );
+
+        expect(calls, 2);
         subscription.close();
       },
     );

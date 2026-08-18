@@ -252,9 +252,12 @@ void main() {
     );
 
     test(
-      'getAllCheckInsForRelationship ignores the private filter, so the '
-      'delete cascade cannot leave hidden check-ins behind',
+      'getAllCheckInsForRelationship ignores the private filter — the delete '
+      'cascade must reach every check-in',
       () async {
+        await db!.updateJournalEntity(
+          relationship('rel-a', trackedSince: baseTime),
+        );
         await db!.updateJournalEntity(
           checkIn('check-public', relationshipId: 'rel-a', at: baseTime),
         );
@@ -262,7 +265,7 @@ void main() {
           checkIn(
             'check-private',
             relationshipId: 'rel-a',
-            at: baseTime.add(const Duration(days: 1)),
+            at: baseTime.add(const Duration(hours: 1)),
             private: true,
           ),
         );
@@ -270,14 +273,13 @@ void main() {
           checkIn(
             'check-deleted',
             relationshipId: 'rel-a',
-            at: baseTime.add(const Duration(days: 2)),
-            deletedAt: baseTime.add(const Duration(days: 3)),
+            at: baseTime,
+            deletedAt: baseTime,
           ),
         );
         await db!.updateJournalEntity(
           checkIn('check-other-rel', relationshipId: 'rel-b', at: baseTime),
         );
-
         await db!.upsertConfigFlag(
           const ConfigFlag(
             name: privateFlag,
@@ -286,12 +288,12 @@ void main() {
           ),
         );
 
-        // The browsing query hides the private check-in at this setting…
+        // The display query is scoped by the flag…
         expect(
           (await db!.getCheckInsForRelationship('rel-a')).map((c) => c.id),
           ['check-public'],
         );
-        // …while the cascade query still sees it. Tombstones and other
+        // …the cascade query is not, but still skips tombstones. Other
         // people's check-ins stay out of both.
         expect(
           (await db!.getAllCheckInsForRelationship('rel-a')).map((c) => c.id),
