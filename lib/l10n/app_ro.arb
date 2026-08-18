@@ -3386,6 +3386,22 @@
   "maintenanceRepairScreenshotPaths": "Reparați stocarea capturilor de ecran",
   "maintenanceRepairScreenshotPathsDescription": "Mutați capturile de ecran salvate de versiunile mai vechi în dosarul corect, astfel încât analiza imaginilor cu IA să le poată citi.",
   "maintenanceRepairScreenshotPathsResult": "Repararea capturilor de ecran s-a încheiat: {repaired} reparate, {missing} lipsă, {conflicts} conflicte, {failed} eșuate.",
+  "maintenanceRestoreMissingSleep": "Restaurați somnul lipsă",
+  "maintenanceRestoreMissingSleepDescription": "Reconstituie somnul ușor din nopțile trecute, pe care o versiune mai veche îl omitea din graficul Adormit.",
+  "maintenanceRestoreMissingSleepResult": "Somn restaurat: {created} adăugate din {scanned} verificate, {failed} eșuate.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Istoricul mesajelor",
   "maintenanceReSyncAgentEntities": "Entități agent",
   "maintenanceReSyncAgentLinks": "Legături între agenți",

@@ -13621,4 +13621,20 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Obnovit chybějící spánek';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Doplní lehký spánek z minulých nocí, který starší verze vynechávala z grafu Spánek.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Spánek obnoven: $created doplněno z $scanned zkontrolovaných, $failed selhalo.';
+  }
 }

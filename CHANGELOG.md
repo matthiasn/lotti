@@ -252,6 +252,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the goal wizard now live under the Goals tab.
 
 ### Fixed
+- **Light sleep is back in the Asleep chart.** For over a year an older
+  version failed to count light sleep — the largest part of most nights —
+  towards your total, so the chart showed only deep and REM: roughly 40% of
+  what you actually slept. New nights have been correct since; to repair the
+  older ones, use Settings → Advanced → Maintenance → Restore missing sleep.
+  It only adds what is missing, so running it twice changes nothing.
 - **A night's sleep counts as one night.** Sleep that began before midnight
   used to be split across two dates, so no bar was ever a single night and
   last night always read short by however long you were asleep before

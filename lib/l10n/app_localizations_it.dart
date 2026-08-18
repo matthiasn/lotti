@@ -13641,4 +13641,20 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Ripristina il sonno mancante';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Ricostruisce il sonno leggero delle notti passate, che una versione precedente ometteva dal grafico Addormentato.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sonno ripristinato: $created aggiunte su $scanned controllate, $failed non riuscite.';
+  }
 }

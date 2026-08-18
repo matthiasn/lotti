@@ -188,6 +188,7 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -1218,6 +1219,9 @@ class MockJournalRepository extends Mock implements JournalRepository {}
 
 class MockImagePathMigrationService extends Mock
     implements ImagePathMigrationService {}
+
+class MockSleepAsleepBackfillService extends Mock
+    implements SleepAsleepBackfillService {}
 
 class MockChecklistRepository extends Mock implements ChecklistRepository {}
 

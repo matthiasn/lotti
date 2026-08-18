@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -59,6 +60,7 @@ class MaintenanceBody extends ConsumerStatefulWidget {
 class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
     with HoverDividerIndex<MaintenanceBody> {
   bool _isRepairingScreenshotPaths = false;
+  bool _isRestoringSleep = false;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +219,37 @@ class _MaintenanceBodyState extends ConsumerState<MaintenanceBody>
               }
             },
           ),
+          if (getIt.isRegistered<SleepAsleepBackfillService>())
+            (
+              title: context.messages.maintenanceRestoreMissingSleep,
+              subtitle:
+                  context.messages.maintenanceRestoreMissingSleepDescription,
+              icon: Icons.bedtime_outlined,
+              onTap: () async {
+                if (_isRestoringSleep) return;
+                setState(() => _isRestoringSleep = true);
+                try {
+                  final report = await getIt<SleepAsleepBackfillService>()
+                      .backfill();
+                  if (!context.mounted) return;
+                  context.showToast(
+                    tone: report.failed == 0
+                        ? DesignSystemToastTone.success
+                        : DesignSystemToastTone.warning,
+                    title: context.messages
+                        .maintenanceRestoreMissingSleepResult(
+                          report.created,
+                          report.scanned,
+                          report.failed,
+                        ),
+                  );
+                } finally {
+                  if (mounted) {
+                    setState(() => _isRestoringSleep = false);
+                  }
+                }
+              },
+            ),
           if (getIt.isRegistered<EmbeddingStore>())
             (
               title: context.messages.maintenanceGenerateEmbeddings,

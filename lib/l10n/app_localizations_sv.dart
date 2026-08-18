@@ -13473,4 +13473,20 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get maintenanceRestoreMissingSleep => 'Återställ saknad sömn';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Bygger upp den lätta sömnen från tidigare nätter, som en äldre version utelämnade ur diagrammet Sover.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Sömn återställd: $created tillagda av $scanned kontrollerade, $failed misslyckades.';
+  }
 }

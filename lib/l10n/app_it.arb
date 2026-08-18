@@ -3774,6 +3774,22 @@
   "maintenanceRepairScreenshotPaths": "Ripara l’archivio degli screenshot",
   "maintenanceRepairScreenshotPathsDescription": "Sposta gli screenshot salvati dalle versioni precedenti nella cartella corretta, così l’analisi immagini IA può leggerli.",
   "maintenanceRepairScreenshotPathsResult": "Riparazione degli screenshot completata: {repaired} corretti, {missing} mancanti, {conflicts} conflitti, {failed} non riusciti.",
+  "maintenanceRestoreMissingSleep": "Ripristina il sonno mancante",
+  "maintenanceRestoreMissingSleepDescription": "Ricostruisce il sonno leggero delle notti passate, che una versione precedente ometteva dal grafico Addormentato.",
+  "maintenanceRestoreMissingSleepResult": "Sonno ripristinato: {created} aggiunte su {scanned} controllate, {failed} non riuscite.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Cronologia messaggi",
   "maintenanceReSyncAgentEntities": "entità dell'agente",
   "maintenanceReSyncAgentLinks": "Collegamenti degli agenti",

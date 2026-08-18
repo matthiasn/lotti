@@ -220,6 +220,13 @@ missing, conflicting, and failed entries in a localized toast. The action is
 manual by design: there is no startup migration and no error-triggered write in
 the image display or AI read paths.
 
+**Restore missing sleep** follows the same shape — an idempotent sweep, a
+localized count toast, no startup migration — and differs in one respect: it is
+registered only where health import is, so unlike every other row it is absent
+in a profile that imports no health data. What it restores, and why re-importing
+alone would not have, is in
+[health import](health_import.md#sleep-is-stored-twice-on-purpose).
+
 **One row currently breaks it.** The repaint-rainbow overlay toggle in
 `maintenance_page.dart` hardcodes its title and subtitle in English, the only such
 row in the settings tree — every other row on that page, destructive maintenance

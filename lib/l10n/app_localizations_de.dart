@@ -13553,4 +13553,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get maintenanceRestoreMissingSleep =>
+      'Fehlenden Schlaf wiederherstellen';
+
+  @override
+  String get maintenanceRestoreMissingSleepDescription =>
+      'Ergänzt den Leichtschlaf vergangener Nächte, den eine ältere Version im Diagramm „Schlafend“ weggelassen hat.';
+
+  @override
+  String maintenanceRestoreMissingSleepResult(
+    int created,
+    int scanned,
+    int failed,
+  ) {
+    return 'Schlaf wiederhergestellt: $created von $scanned geprüften ergänzt, $failed fehlgeschlagen.';
+  }
 }

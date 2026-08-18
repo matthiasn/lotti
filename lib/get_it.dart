@@ -76,6 +76,7 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
+import 'package:lotti/logic/sleep_asleep_backfill_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -393,6 +394,15 @@ Future<void> registerSingletons({
         db: getIt<JournalDb>(),
         health: HealthService(Health()),
         deviceInfo: DeviceInfoPlugin(),
+      ),
+    );
+    // Shares the health-import gate: it repairs imported sleep samples, so a
+    // profile that never imports any has nothing for it to do.
+    getIt.registerSingleton<SleepAsleepBackfillService>(
+      SleepAsleepBackfillService(
+        journalDb: getIt<JournalDb>(),
+        persistenceLogic: getIt<PersistenceLogic>(),
+        logger: domainLogger,
       ),
     );
   }

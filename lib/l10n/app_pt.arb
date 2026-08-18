@@ -3773,6 +3773,22 @@
   "maintenanceRepairScreenshotPaths": "Reparar armazenamento de capturas de ecrã",
   "maintenanceRepairScreenshotPathsDescription": "Move as capturas de ecrã guardadas por versões anteriores para a pasta correta, para que a análise de imagens por IA consiga lê-las.",
   "maintenanceRepairScreenshotPathsResult": "Reparação de capturas concluída: {repaired} corrigidas, {missing} em falta, {conflicts} conflitos, {failed} falharam.",
+  "maintenanceRestoreMissingSleep": "Restaurar o sono em falta",
+  "maintenanceRestoreMissingSleepDescription": "Reconstrói o sono leve de noites passadas, que uma versão anterior deixava de fora do gráfico A dormir.",
+  "maintenanceRestoreMissingSleepResult": "Sono restaurado: {created} adicionadas de {scanned} verificadas, {failed} falharam.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Histórico de mensagens",
   "maintenanceReSyncAgentEntities": "Entidades de agente",
   "maintenanceReSyncAgentLinks": "Links de agente",

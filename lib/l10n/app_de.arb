@@ -3386,6 +3386,22 @@
   "maintenanceRepairScreenshotPaths": "Screenshot-Speicher reparieren",
   "maintenanceRepairScreenshotPathsDescription": "Verschiebe Screenshots aus älteren Versionen in den richtigen Ordner, damit die KI-Bildanalyse sie lesen kann.",
   "maintenanceRepairScreenshotPathsResult": "Screenshot-Reparatur abgeschlossen: {repaired} repariert, {missing} fehlen, {conflicts} Konflikte, {failed} fehlgeschlagen.",
+  "maintenanceRestoreMissingSleep": "Fehlenden Schlaf wiederherstellen",
+  "maintenanceRestoreMissingSleepDescription": "Ergänzt den Leichtschlaf vergangener Nächte, den eine ältere Version im Diagramm „Schlafend“ weggelassen hat.",
+  "maintenanceRestoreMissingSleepResult": "Schlaf wiederhergestellt: {created} von {scanned} geprüften ergänzt, {failed} fehlgeschlagen.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Nachrichtenverlauf",
   "maintenanceReSyncAgentEntities": "Agenten-Entitäten",
   "maintenanceReSyncAgentLinks": "Agenten-Verknüpfungen",

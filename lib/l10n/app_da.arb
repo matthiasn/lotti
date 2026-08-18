@@ -3774,6 +3774,22 @@
   "maintenanceRepairScreenshotPaths": "Reparer skærmbilledlager",
   "maintenanceRepairScreenshotPathsDescription": "Flyt skærmbilleder, som ældre versioner gemte, til den korrekte mappe, så AI-billedanalyse kan læse dem.",
   "maintenanceRepairScreenshotPathsResult": "Reparation af skærmbilleder fuldført: {repaired} rettet, {missing} mangler, {conflicts} konflikter, {failed} mislykkedes.",
+  "maintenanceRestoreMissingSleep": "Gendan manglende søvn",
+  "maintenanceRestoreMissingSleepDescription": "Genskaber den lette søvn fra tidligere nætter, som en ældre version udelod fra diagrammet Sover.",
+  "maintenanceRestoreMissingSleepResult": "Søvn gendannet: {created} tilføjet ud af {scanned} kontrolleret, {failed} mislykkedes.",
+  "@maintenanceRestoreMissingSleepResult": {
+    "placeholders": {
+      "created": {
+        "type": "int"
+      },
+      "scanned": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "maintenanceReSync": "Beskedhistorik",
   "maintenanceReSyncAgentEntities": "Agentenheder",
   "maintenanceReSyncAgentLinks": "Agentlinks",
