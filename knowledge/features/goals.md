@@ -438,13 +438,19 @@ flowchart TD
   that source through `AgentMessageMetadata.operationId`. On startup, sync
   arrival and every pre-wake scan, runtime maintenance re-enqueues the oldest
   source turn without a linked reply; the router also checks for one before it
-  dispatches any otherwise unrelated goal wake. That recovery state is durable
-  even though the original waiter and queue were in memory. Legacy reply rows
-  are paired to the nearest preceding unmatched user turn so upgrading does
-  not replay already-answered messages. Update now uses a manual
-  wake in the same report-refresh workspace, supersedes the pending countdown,
-  persists the deterministic register from the prose snapshot, and routes to
-  Phase B immediately even when the coarse status did not change.
+  dispatches any otherwise unrelated goal wake. Recovery scans the complete
+  durable user/reply conversation rather than independently capped kind
+  slices, which cannot omit only one side of an old pair. An explicit queued
+  chat wake rechecks that its selected source remains pending before inference;
+  if an earlier cadence wake answered it, the later wake cannot bill or mutate
+  for the same turn again. That recovery state is durable even though the
+  original waiter and queue were in memory. Only content-bearing reply actions
+  count as answers; payload-less `reply_to_user` tool traces remain internal.
+  Legacy visible reply rows are paired to the nearest preceding unmatched user
+  turn so upgrading does not replay already-answered messages. Update now uses
+  a manual wake in the same report-refresh workspace, supersedes the pending
+  countdown, persists the deterministic register from the prose snapshot, and
+  routes to Phase B immediately even when the coarse status did not change.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
@@ -490,9 +496,10 @@ flowchart TD
   before receiving its initial banner.
   Interactive batches have a stricter publication fence: if any tool call is
   rejected, the wake fails before `persistOutputs`, including when the same
-  model turn also supplied a plausible `reply_to_user`. This keeps the retry
-  state visible and prevents an accepted sentence from claiming that a
-  rejected mutation succeeded.
+  model turn also supplied a plausible `reply_to_user` or a later accepted call
+  to the same tool. A corrected call clears that rejection only in a later
+  conversation turn. This keeps the retry state visible and prevents an
+  accepted sentence from claiming that a rejected mutation succeeded.
 - **Report freshness follows the durable standing head.** Producing report
   material or writing a historical report row is insufficient: the shared
   drain clears the stale watermark only when this wake actually advances the

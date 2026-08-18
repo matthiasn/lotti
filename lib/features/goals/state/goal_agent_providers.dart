@@ -207,11 +207,17 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
           required triggerTokens,
           required threadId,
         }) async {
+          final explicitChatMessageId = goalChatMessageIdFromTriggerTokens(
+            triggerTokens,
+          );
+          final pendingChatMessageIds = await ref
+              .read(goalChatHistoryServiceProvider)
+              .pendingMessageIds(agentIdentity.agentId);
           final chatMessageId =
-              goalChatMessageIdFromTriggerTokens(triggerTokens) ??
-              await ref
-                  .read(goalChatHistoryServiceProvider)
-                  .oldestPendingMessageId(agentIdentity.agentId);
+              explicitChatMessageId != null &&
+                  pendingChatMessageIds.contains(explicitChatMessageId)
+              ? explicitChatMessageId
+              : pendingChatMessageIds.firstOrNull;
           if (chatMessageId != null) {
             return ref
                 .read(goalAgentWorkflowProvider)

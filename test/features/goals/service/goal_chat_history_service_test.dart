@@ -21,6 +21,7 @@ void main() {
     required AgentMessageKind kind,
     required int minute,
     String? operationId,
+    bool hasPayload = true,
   }) =>
       AgentDomainEntity.agentMessage(
             id: id,
@@ -29,7 +30,7 @@ void main() {
             kind: kind,
             createdAt: DateTime.utc(2026, 8, 18, 12, minute),
             vectorClock: null,
-            contentEntryId: '$id:payload',
+            contentEntryId: hasPayload ? '$id:payload' : null,
             metadata: AgentMessageMetadata(
               toolName: kind == AgentMessageKind.action
                   ? AgentConversationToolNames.replyToUser
@@ -48,14 +49,14 @@ void main() {
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.user,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => users);
     when(
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.action,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => replies);
     entities = {
@@ -131,6 +132,129 @@ void main() {
     stubHistory(users: [orphan], replies: [reply]);
 
     expect(await service.oldestPendingMessageId('goal-1'), orphan.id);
+  });
+
+  test('payload-less tool traces never answer an earlier user turn', () async {
+    final earlier = message(
+      id: 'user-earlier',
+      kind: AgentMessageKind.user,
+      minute: 1,
+    );
+    final later = message(
+      id: 'user-later',
+      kind: AgentMessageKind.user,
+      minute: 2,
+    );
+    final internalTrace = message(
+      id: 'reply-tool-trace',
+      kind: AgentMessageKind.action,
+      minute: 3,
+      hasPayload: false,
+    );
+    final visibleReply = message(
+      id: 'reply-visible',
+      kind: AgentMessageKind.action,
+      minute: 4,
+      operationId: later.id,
+    );
+    stubHistory(
+      users: [later, earlier],
+      replies: [visibleReply, internalTrace],
+    );
+
+    expect(await service.pendingMessageIds('goal-1'), [earlier.id]);
+  });
+
+  test('recovery finds an orphan beyond fifty newer user turns', () async {
+    final orphan = message(
+      id: 'user-orphan',
+      kind: AgentMessageKind.user,
+      minute: 0,
+    );
+    final recentUsers = [
+      for (var index = 1; index <= 50; index++)
+        message(
+          id: 'user-$index',
+          kind: AgentMessageKind.user,
+          minute: index,
+        ),
+    ];
+    final recentReplies = [
+      for (var index = 1; index <= 50; index++)
+        message(
+          id: 'reply-$index',
+          kind: AgentMessageKind.action,
+          minute: index + 50,
+          operationId: 'user-$index',
+        ),
+    ];
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((invocation) async {
+      final limit = invocation.namedArguments[#limit] as int?;
+      final newestFirst = [...recentUsers.reversed, orphan];
+      return limit == null ? newestFirst : newestFirst.take(limit).toList();
+    });
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.action,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((invocation) async {
+      final limit = invocation.namedArguments[#limit] as int?;
+      final newestFirst = recentReplies.reversed.toList();
+      return limit == null ? newestFirst : newestFirst.take(limit).toList();
+    });
+
+    expect(await service.oldestPendingMessageId('goal-1'), orphan.id);
+  });
+
+  test('recovery sees a linked reply beyond fifty newer actions', () async {
+    final user = message(
+      id: 'user-old',
+      kind: AgentMessageKind.user,
+      minute: 0,
+    );
+    final linkedReply = message(
+      id: 'reply-old',
+      kind: AgentMessageKind.action,
+      minute: 1,
+      operationId: user.id,
+    );
+    final newerActions = [
+      for (var index = 1; index <= 50; index++)
+        message(
+          id: 'reply-new-$index',
+          kind: AgentMessageKind.action,
+          minute: index + 1,
+          operationId: 'unrelated-$index',
+        ),
+    ];
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => [user]);
+    when(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.action,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((invocation) async {
+      final limit = invocation.namedArguments[#limit] as int?;
+      final newestFirst = [...newerActions.reversed, linkedReply];
+      return limit == null ? newestFirst : newestFirst.take(limit).toList();
+    });
+
+    expect(await service.oldestPendingMessageId('goal-1'), isNull);
   });
 
   test('renders a role-correct bounded tail before the pending turn', () async {

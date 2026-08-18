@@ -359,14 +359,14 @@ void main() {
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.user,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => [orphan]);
     when(
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.action,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -429,14 +429,14 @@ void main() {
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.user,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => [orphan]);
     when(
       () => repository.getMessagesByKind(
         'goal-1',
         AgentMessageKind.action,
-        limit: 50,
+        limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
     when(

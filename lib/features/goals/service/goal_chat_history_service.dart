@@ -35,8 +35,16 @@ class GoalChatHistoryService {
   /// New replies link their source through `operationId`. For replies written
   /// before that link existed, the immediately preceding unmatched user turn
   /// is paired deterministically so an upgrade does not replay old dialogue.
-  Future<String?> oldestPendingMessageId(String agentId) async {
-    final messages = await _visibleMessages(agentId);
+  Future<String?> oldestPendingMessageId(String agentId) async =>
+      (await pendingMessageIds(agentId)).firstOrNull;
+
+  /// Every durable user turn that has not been answered yet, oldest first.
+  ///
+  /// Recovery deliberately reads the complete visible conversation. Applying
+  /// independent limits to user and reply rows can omit only one side of a
+  /// pair, either replaying an answered turn or stranding an older orphan.
+  Future<List<String>> pendingMessageIds(String agentId) async {
+    final messages = await _visibleMessages(agentId, limit: null);
     final answered = <String>{};
     for (final message in messages.where(_isAssistantReply)) {
       final sourceId = message.metadata.operationId;
@@ -58,7 +66,7 @@ class GoalChatHistoryService {
         .where(_isUserTurn)
         .where((message) => !answered.contains(message.id))
         .map((message) => message.id)
-        .firstOrNull;
+        .toList(growable: false);
   }
 
   /// Recent completed dialogue before the source turn selected for this wake.
@@ -69,6 +77,7 @@ class GoalChatHistoryService {
   }) async {
     final messages = (await _visibleMessages(
       agentId,
+      limit: 50,
     )).where((message) => _comesBefore(message, before)).toList();
     final loaded = <GoalChatHistoryEntry>[];
     for (final message in messages) {
@@ -107,16 +116,19 @@ class GoalChatHistoryService {
 
   static Map<String, Object> toJson(GoalChatHistoryEntry entry) => _json(entry);
 
-  Future<List<AgentMessageEntity>> _visibleMessages(String agentId) async {
+  Future<List<AgentMessageEntity>> _visibleMessages(
+    String agentId, {
+    required int? limit,
+  }) async {
     final users = await _repository.getMessagesByKind(
       agentId,
       AgentMessageKind.user,
-      limit: 50,
+      limit: limit,
     );
     final actions = await _repository.getMessagesByKind(
       agentId,
       AgentMessageKind.action,
-      limit: 50,
+      limit: limit,
     );
     return <AgentMessageEntity>[
       ...users.where(_isUserTurn),
@@ -135,7 +147,8 @@ class GoalChatHistoryService {
   static bool _isAssistantReply(AgentMessageEntity message) =>
       message.deletedAt == null &&
       message.kind == AgentMessageKind.action &&
-      message.metadata.toolName == AgentConversationToolNames.replyToUser;
+      message.metadata.toolName == AgentConversationToolNames.replyToUser &&
+      message.contentEntryId != null;
 
   static bool _isLegacyAssistantReply(AgentMessageEntity message) =>
       _isAssistantReply(message) && message.metadata.operationId == null;

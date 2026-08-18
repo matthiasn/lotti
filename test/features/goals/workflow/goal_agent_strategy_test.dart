@@ -1098,6 +1098,84 @@ void main() {
     },
   );
 
+  test('a valid same-tool call cannot hide a rejection in its batch', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            id: 'invalid-snooze',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-11T10:00:00Z',
+              'reason': 'too late',
+            },
+          ),
+          _call(
+            id: 'valid-snooze',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T10:00:00Z',
+              'reason': 'tomorrow',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, hasLength(1));
+    expect(
+      strategy.unresolvedRejectedTools,
+      contains(GoalAgentToolNames.snoozeGoalAd),
+    );
+  });
+
+  test('a corrected tool call in the next turn clears its rejection', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'invalid-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-11T10:00:00Z',
+                'reason': 'too late',
+              },
+            ),
+          ],
+          manager: manager,
+        );
+        await strategy.processToolCalls(
+          toolCalls: [
+            _call(
+              id: 'valid-snooze',
+              name: GoalAgentToolNames.snoozeGoalAd,
+              args: {
+                'adId': 'ad-known',
+                'until': '2026-08-12T10:00:00Z',
+                'reason': 'tomorrow',
+              },
+            ),
+          ],
+          manager: manager,
+        );
+      },
+    );
+
+    expect(
+      strategy.unresolvedRejectedTools,
+      isNot(contains(GoalAgentToolNames.snoozeGoalAd)),
+    );
+  });
+
   test('snooze accepts any requested future instant for a known ad', () async {
     final now = DateTime.utc(2026, 8, 11, 12);
     await withClock(

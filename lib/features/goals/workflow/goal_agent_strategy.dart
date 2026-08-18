@@ -105,6 +105,8 @@ class GoalAgentStrategy extends ConversationStrategy
   final _revisionProposals = <GoalRevisionProposal>[];
   final _observations = <ObservationRecord>[];
   final _unresolvedRejectedTools = <String>{};
+  final _rejectedToolBatchByName = <String, int>{};
+  var _toolCallBatch = 0;
 
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
@@ -152,6 +154,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required List<ChatCompletionMessageToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
+    _toolCallBatch++;
     await recordAssistantMessage();
 
     for (final call in toolCalls) {
@@ -695,7 +698,9 @@ class GoalAgentStrategy extends ConversationStrategy
     ConversationManager manager,
     String response,
   ) async {
-    _unresolvedRejectedTools.remove(call.function.name);
+    if (_rejectedToolBatchByName[call.function.name] != _toolCallBatch) {
+      _unresolvedRejectedTools.remove(call.function.name);
+    }
     manager.addToolResponse(toolCallId: call.id, response: response);
     await recordToolResultMessage(toolName: call.function.name);
   }
@@ -706,6 +711,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required String error,
   }) async {
     _unresolvedRejectedTools.add(call.function.name);
+    _rejectedToolBatchByName[call.function.name] = _toolCallBatch;
     manager.addToolResponse(toolCallId: call.id, response: error);
     await recordToolResultMessage(
       toolName: call.function.name,

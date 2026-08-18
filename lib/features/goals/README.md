@@ -72,15 +72,19 @@ workflow through a throttle-bypassing manual wake: `GoalChatService` persists
 the source turn only after rechecking that the goal identity is active, then
 enqueues it; it reconciles a committed message when a later
 sync-outbox flush reports failure, and the workflow persists a sanitized answer as a
-`reply_to_user` action that the shared bounded chat projection can display
-without exposing thoughts or tool bookkeeping. Each wake also receives a
-token-bounded tail of the recent user/assistant exchange, and reply rows link
-back to their durable source message. Startup maintenance, pre-wake scans, and
-the goal wake router recover the oldest source message that still has no
-reply. Reply rows use stable per-wake ids, so a transaction that commits before
-its deferred outbox flush fails is recognized as complete instead of rerunning
-inference. A mixed interactive tool batch is all-or-nothing: if any mutation is
-rejected, its optimistic reply and sibling mutations are not published. The visible layer ships behind the
+payload-bearing `reply_to_user` action that the shared bounded chat projection
+can display without exposing thoughts or tool bookkeeping. Each wake also
+receives a token-bounded tail of the recent user/assistant exchange, and reply
+rows link back to their durable source message. Startup maintenance, pre-wake
+scans, and the goal wake router recover the oldest source message that still
+has no reply across the complete durable conversation. A queued explicit chat
+wake rechecks that its source remains unanswered before inference, so an
+earlier cadence wake cannot make it process the same turn twice. Reply rows use
+stable per-wake ids, so a transaction that commits before its deferred outbox
+flush fails is recognized as complete instead of rerunning inference. A mixed
+interactive tool batch is all-or-nothing: if any call is rejected, a later
+accepted call to that same tool cannot hide it, and its optimistic reply and
+sibling mutations are not published. The visible layer ships behind the
 `enable_unified_goals` flag: procedural text banners (ADR 0058) on the day
 and habits pages — rendered through the kind-agnostic banner substrate in
 `lib/features/nudges/` since ADR 0059, with `ui/goal_banner_card.dart` as
