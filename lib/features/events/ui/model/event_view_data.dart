@@ -112,6 +112,7 @@ class EventTimelineEntry {
     this.photos = const [],
     this.durationLabel,
     this.endTimeLabel,
+    this.player,
   });
 
   final String timeLabel;
@@ -128,6 +129,13 @@ class EventTimelineEntry {
   final String? text;
   final List<EventPhoto> photos;
   final String? durationLabel;
+
+  /// Playback control for an [EventTimelineKind.audio] beat, built by the
+  /// caller. Injected for the same reason [EventPhoto]'s [ImageProvider] is:
+  /// resolving a recording to a player needs the audio stack, which this
+  /// presentation-only layer deliberately does not depend on. Null renders the
+  /// beat without playback.
+  final Widget? player;
 }
 
 /// A prep/follow-up task linked to the event.

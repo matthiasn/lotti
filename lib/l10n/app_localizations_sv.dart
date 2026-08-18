@@ -13183,6 +13183,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get timeEntryItemStart => 'Start';
 
   @override
+  String get timelineLoadOlder => 'Ladda äldre';
+
+  @override
+  String get timelineRetryTranscription => 'Försök igen';
+
+  @override
+  String get timelineShowLess => 'Visa mindre';
+
+  @override
+  String get timelineShowMore => 'Visa mer';
+
+  @override
+  String get timelineTranscribing => 'Transkriberar…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Transkriberingen misslyckades';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Language: $language';
   }

@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
+import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -85,6 +86,10 @@ class EventDetailPage extends ConsumerWidget {
       imageProviderFor: (image) => FileImage(
         File(getFullImagePath(image, documentsDirectory: documentsDirectory)),
       ),
+      // A voice memo on an event's timeline now plays where it sits, instead
+      // of only naming its duration. The app-wide player means starting one
+      // beat stops any other.
+      audioPlayerFor: AudioPlayerWidget.new,
     );
 
     Future<void> pickCategory() async {

@@ -7126,6 +7126,12 @@
   "timeEntryItemEnd": "End",
   "timeEntryItemRunning": "Running",
   "timeEntryItemStart": "Start",
+  "timelineLoadOlder": "Load older",
+  "timelineRetryTranscription": "Retry",
+  "timelineShowLess": "Show less",
+  "timelineShowMore": "Show more",
+  "timelineTranscribing": "Transcribing…",
+  "timelineTranscriptionFailed": "Transcription failed",
   "transcriptLanguageLabel": "Language: {language}",
   "@transcriptLanguageLabel": {
     "placeholders": {

@@ -13263,6 +13263,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get timeEntryItemStart => 'Start';
 
   @override
+  String get timelineLoadOlder => 'Ältere laden';
+
+  @override
+  String get timelineRetryTranscription => 'Erneut versuchen';
+
+  @override
+  String get timelineShowLess => 'Weniger anzeigen';
+
+  @override
+  String get timelineShowMore => 'Mehr anzeigen';
+
+  @override
+  String get timelineTranscribing => 'Wird transkribiert…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Transkription fehlgeschlagen';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Sprache: $language';
   }

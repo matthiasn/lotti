@@ -13327,6 +13327,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get timeEntryItemStart => 'Začátek';
 
   @override
+  String get timelineLoadOlder => 'Načíst starší';
+
+  @override
+  String get timelineRetryTranscription => 'Zkusit znovu';
+
+  @override
+  String get timelineShowLess => 'Zobrazit méně';
+
+  @override
+  String get timelineShowMore => 'Zobrazit více';
+
+  @override
+  String get timelineTranscribing => 'Přepisuji…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Přepis selhal';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Jazyk: $language';
   }

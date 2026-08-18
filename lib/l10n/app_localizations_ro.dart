@@ -13431,6 +13431,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get timeEntryItemStart => 'Început';
 
   @override
+  String get timelineLoadOlder => 'Încărcați mai vechi';
+
+  @override
+  String get timelineRetryTranscription => 'Reîncercați';
+
+  @override
+  String get timelineShowLess => 'Afișați mai puțin';
+
+  @override
+  String get timelineShowMore => 'Afișați mai mult';
+
+  @override
+  String get timelineTranscribing => 'Se transcrie…';
+
+  @override
+  String get timelineTranscriptionFailed => 'Transcrierea a eșuat';
+
+  @override
   String transcriptLanguageLabel(String language) {
     return 'Limbă: $language';
   }

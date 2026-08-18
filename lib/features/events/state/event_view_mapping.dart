@@ -34,6 +34,7 @@ EventTimelineEntry? eventTimelineEntryFor(
   required String timeLabel,
   required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
+  Widget Function(JournalAudio audio)? audioPlayerFor,
 }) {
   return switch (entity) {
     final JournalImage image => EventTimelineEntry(
@@ -51,6 +52,7 @@ EventTimelineEntry? eventTimelineEntryFor(
         audio.data.dateTo.difference(audio.data.dateFrom),
       ),
       text: _trimmedNote(audio),
+      player: audioPlayerFor?.call(audio),
     ),
     final JournalEntry entry => _journalEntryBeat(entry, timeLabel, formatTime),
     _ => null,
@@ -117,6 +119,7 @@ EventDetailData eventDetailDataFromEntities({
   required String fallbackTitle,
   required String Function(DateTime) formatTime,
   required ImageProvider Function(JournalImage image) imageProviderFor,
+  Widget Function(JournalAudio audio)? audioPlayerFor,
   String? categoryName,
 }) {
   final images = linked.whereType<JournalImage>().toList();
@@ -157,6 +160,7 @@ EventDetailData eventDetailDataFromEntities({
       timeLabel: formatTime(entity.meta.dateFrom.toLocal()),
       formatTime: formatTime,
       imageProviderFor: imageProviderFor,
+      audioPlayerFor: audioPlayerFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);
   }
