@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
@@ -240,6 +241,16 @@ sealed class JournalEntity with _$JournalEntity {
     Geolocation? geolocation,
   }) = CheckInEntry;
 
+  /// A long-term goal the user authored, and the container its check-ins
+  /// hang from. Also the shape of each immutable spec snapshot — see
+  /// [GoalData.snapshotOf].
+  const factory JournalEntity.goal({
+    required Metadata meta,
+    required GoalData data,
+    EntryText? entryText,
+    Geolocation? geolocation,
+  }) = GoalEntry;
+
   factory JournalEntity.fromJson(Map<String, dynamic> json) =>
       _$JournalEntityFromJson(json);
 }
@@ -314,6 +325,14 @@ extension JournalEntityExtension on JournalEntity {
         ids
           ..add(checkIn.data.relationshipId)
           ..add(checkInNotification);
+
+      // A spec snapshot also wakes its goal: the version history is part of
+      // what the goal surface renders, so writing one must refresh the goal
+      // that owns it, not only the snapshot row.
+      case final GoalEntry goal:
+        ids
+          ..addAll([?goal.data.snapshotOf])
+          ..add(goalNotification);
     }
 
     return ids;

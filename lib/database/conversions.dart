@@ -23,6 +23,10 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     // Denormalized so "check-ins for relationship" is a plain indexed
     // type+subtype filter, the habitCompletion/habitId precedent.
     checkIn: (CheckInEntry entry) => entry.data.relationshipId,
+    // Empty on the goal itself, the owning goal id on a spec snapshot, so
+    // "this goal's version history" is an indexed type+subtype lookup and
+    // "every goal" is the rows with no subtype.
+    goal: (GoalEntry entry) => entry.data.snapshotOf ?? '',
     orElse: () => '',
   );
 
@@ -103,6 +107,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
       project: (_) => 'Project',
       relationship: (_) => 'Relationship',
       checkIn: (_) => 'CheckIn',
+      goal: (_) => 'Goal',
     ),
     subtype: subtype,
     serialized: json.encode(entity),
