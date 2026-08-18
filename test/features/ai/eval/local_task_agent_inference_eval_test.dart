@@ -702,8 +702,11 @@ void main() {
       failureCategory: LocalTaskAgentEvalFailureCategory.none,
     );
 
-    expect(result.qualityCheckCount, 11);
-    expect(result.passedQualityCheckCount, 11);
+    // 15, not 11: the scenario gained four premature-completion claims, and
+    // this report earns all of them — it says the steps are CAPTURED, never
+    // that the work is done.
+    expect(result.qualityCheckCount, 15);
+    expect(result.passedQualityCheckCount, 15);
     expect(result.qualityScore, 1);
     expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
   });

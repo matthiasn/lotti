@@ -797,6 +797,22 @@ LocalTaskAgentEvalScenario _germanPlanningScenario(
         ['security', 'sicherheit'],
       ],
     },
+    // Everything above is extraction: the names and nouns are all in the
+    // transcript, so a model that summarises well passes without deciding
+    // anything. The transcript is a PLAN, and reporting a plan as work already
+    // delivered is the failure this scenario should catch — the German form of
+    // the check `implicit_workflow_plan` makes in English.
+    //
+    // Claims rather than forbidden terms, deliberately: "der Prototyp ist noch
+    // nicht abgeschlossen" is a correct sentence, and a bare substring
+    // blacklist would fail it for containing the word. The claim matcher is
+    // negation-aware and reads `noch`/`nicht` as the deferral it is.
+    forbiddenReportClaims: const [
+      'erledigt',
+      'abgeschlossen',
+      'umgesetzt',
+      'fertig',
+    ],
   );
 }
 
