@@ -691,6 +691,68 @@ const List<KnownModel> openRouterModels = [
   ),
 ];
 
+/// OrcaRouter models - multi-vendor gateway models
+///
+/// OrcaRouter is an OpenAI-compatible gateway that routes namespaced model
+/// ids (`vendor/model`) to upstream providers on a single endpoint. The
+/// curated list below mirrors the gateway's live `/v1/models` catalog.
+const List<KnownModel> orcarouterModels = [
+  KnownModel(
+    providerModelId: 'anthropic/claude-opus-5',
+    name: 'Anthropic: Claude Opus 5',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Highest level of intelligence and capability',
+  ),
+  KnownModel(
+    providerModelId: 'anthropic/claude-sonnet-5',
+    name: 'Anthropic: Claude Sonnet 5',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'High intelligence and balanced performance',
+  ),
+  KnownModel(
+    providerModelId: 'openai/gpt-5.5',
+    name: 'OpenAI: GPT-5.5',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'OpenAI GPT-5.5 reasoning model',
+  ),
+  KnownModel(
+    providerModelId: 'google/gemini-3.1-pro-preview',
+    name: 'Google: Gemini 3.1 Pro',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Google Gemini 3.1 Pro preview model',
+  ),
+  KnownModel(
+    providerModelId: 'deepseek/deepseek-v4-pro',
+    name: 'DeepSeek: V4 Pro',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'DeepSeek V4 Pro reasoning model',
+  ),
+  KnownModel(
+    providerModelId: 'qwen/qwen3.7-max',
+    name: 'Qwen: Qwen3.7 Max',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description: 'Qwen3.7 Max multimodal reasoning model',
+  ),
+];
+
 /// Whisper models (running locally)
 const List<KnownModel> whisperModels = [
   KnownModel(

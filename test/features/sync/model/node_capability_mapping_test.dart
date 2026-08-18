@@ -49,6 +49,7 @@ void main() {
         InferenceProviderType.nebiusAiStudio,
         InferenceProviderType.openAi,
         InferenceProviderType.openRouter,
+        InferenceProviderType.orcarouter,
       ];
       for (final t in cloudTypes) {
         expect(nodeCapabilityFromProviderType(t), isNull, reason: 'type=$t');

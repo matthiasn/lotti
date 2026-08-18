@@ -108,6 +108,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.openAi: openaiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
+  InferenceProviderType.orcarouter: orcarouterModels,
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };

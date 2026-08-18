@@ -41,6 +41,7 @@ NodeCapability? nodeCapabilityFromProviderType(
     case InferenceProviderType.nebiusAiStudio:
     case InferenceProviderType.openAi:
     case InferenceProviderType.openRouter:
+    case InferenceProviderType.orcarouter:
       return null;
   }
 }

@@ -3768,6 +3768,12 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderOrcarouterName.
+  ///
+  /// In en, this message translates to:
+  /// **'OrcaRouter'**
+  String get aiProviderOrcarouterName;
+
   /// No description provided for @aiProviderTaglineAlibaba.
   ///
   /// In en, this message translates to:
@@ -3815,6 +3821,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GPT family · vision + reasoning'**
   String get aiProviderTaglineOpenAi;
+
+  /// No description provided for @aiProviderTaglineOrcarouter.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-vendor gateway · one API key'**
+  String get aiProviderTaglineOrcarouter;
 
   /// No description provided for @aiProviderUnknownName.
   ///

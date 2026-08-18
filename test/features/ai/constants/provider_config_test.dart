@@ -21,6 +21,7 @@ void main() {
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
+            InferenceProviderType.orcarouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
           ]),
@@ -73,6 +74,13 @@ void main() {
         );
       });
 
+      test('should have correct URL for orcarouter', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.orcarouter],
+          equals('https://api.orcarouter.ai/v1'),
+        );
+      });
+
       test('should have correct URL for oMLX', () {
         expect(
           ProviderConfig.defaultBaseUrls[InferenceProviderType.omlx],
@@ -98,6 +106,7 @@ void main() {
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
+            InferenceProviderType.orcarouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
           ]),
@@ -139,6 +148,13 @@ void main() {
         expect(
           ProviderConfig.defaultNames[InferenceProviderType.openRouter],
           equals('OpenRouter'),
+        );
+      });
+
+      test('should have correct name for orcarouter', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.orcarouter],
+          equals('OrcaRouter'),
         );
       });
 

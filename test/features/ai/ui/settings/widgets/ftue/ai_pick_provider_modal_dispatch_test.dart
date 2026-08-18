@@ -23,11 +23,12 @@ void main() {
           types.take(AiPickProviderModal.defaultTiles.length),
           AiPickProviderModal.defaultTiles.map((t) => t.providerType),
         );
-        // Remaining four are the advanced types appended alphabetically.
+        // Remaining advanced types are appended alphabetically.
         expect(types.skip(AiPickProviderModal.defaultTiles.length).toList(), [
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
+          InferenceProviderType.orcarouter,
           InferenceProviderType.whisper,
         ]);
         // Every enum value is present exactly once — guard against
@@ -45,6 +46,7 @@ void main() {
           InferenceProviderType.genericOpenAi,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.openRouter,
+          InferenceProviderType.orcarouter,
           InferenceProviderType.whisper,
         };
         for (final spec in AiPickProviderModal.allTypesTiles.where(

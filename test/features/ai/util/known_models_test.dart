@@ -700,6 +700,7 @@ void main() {
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
+            InferenceProviderType.orcarouter,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
             InferenceProviderType.mistral,

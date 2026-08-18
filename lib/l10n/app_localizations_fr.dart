@@ -2227,6 +2227,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderOrcarouterName => 'OrcaRouter';
+
+  @override
   String get aiProviderTaglineAlibaba =>
       'Modèles Qwen · multimodal · contexte long';
 
@@ -2254,6 +2257,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOpenAi => 'Famille GPT · vision + raisonnement';
+
+  @override
+  String get aiProviderTaglineOrcarouter =>
+      'Passerelle multi-fournisseurs · une clé API';
 
   @override
   String get aiProviderUnknownName => 'Fournisseur d\'IA';

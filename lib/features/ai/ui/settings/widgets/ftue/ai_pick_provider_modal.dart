@@ -160,6 +160,7 @@ class AiPickProviderModal extends StatefulWidget {
           providerType: InferenceProviderType.nebiusAiStudio,
         ),
         AiPickProviderTileSpec(providerType: InferenceProviderType.openRouter),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.orcarouter),
         AiPickProviderTileSpec(providerType: InferenceProviderType.whisper),
       ];
 

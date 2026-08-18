@@ -134,6 +134,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',
   InferenceProviderType.ollama: 'ollama',
+  InferenceProviderType.orcarouter: 'orcarouter',
   InferenceProviderType.voxtral: 'voxtral',
   InferenceProviderType.whisper: 'whisper',
 };

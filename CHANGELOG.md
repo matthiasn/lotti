@@ -433,6 +433,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.6]
 ### Added
+- **OrcaRouter is a new AI provider.** A multi-vendor OpenAI-compatible gateway
+  that routes namespaced model ids (`anthropic/claude-sonnet-5`,
+  `openai/gpt-5.5`, `google/gemini-3.1-pro-preview`, …) to upstream providers
+  on a single endpoint. The provider picker, connection check, curated model
+  list and profile wiring all work like any other cloud provider, with the API
+  key obtained from the OrcaRouter console.
 - **Goal agents get their first visible surface (experimental).** Behind the
   new `enable_agents_page` flag, an Agents tab lists every running goal agent
   with its health at a glance — a coarse health chip (Healthy, Behind,
