@@ -811,20 +811,26 @@ than a version boundary — `qwen3.6-27b`, `qwen3.5-9b`, `qwen3.5-122b-a10b`
 and `qwen3.5-397b-a17b` all serve — so a listing is never evidence of
 availability, and the error text points at the request rather than at the
 model. Inside a matrix run this surfaces only as per-case `inferenceError`,
-after the run has been paid for. One curl settles it:
+after the run has been paid for. One curl per model settles it — probe the list
+you are about to run, and keep a known-good model in it as a control, since a
+400 proves nothing unless the same payload succeeds somewhere:
 
 ```bash
-curl -sS -w '\n%{http_code}\n' \
-  https://api.melious.ai/v1/chat/completions \
-  -H "Authorization: Bearer $MELIOUS_API_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"glm-5.2","messages":[{"role":"user","content":"say ready"}],"max_tokens":600}'
+for m in $(echo "${GOAL_AGENT_EVAL_MODELS:-glm-5.2}" | tr ',' ' '); do
+  printf '%s -> ' "$m"
+  curl -sS -w '%{http_code}\n' \
+    https://api.melious.ai/v1/chat/completions \
+    -H "Authorization: Bearer $MELIOUS_API_KEY" \
+    -H 'Content-Type: application/json' \
+    -d "{\"model\":\"$m\",\"messages\":[{\"role\":\"user\",\"content\":\"say ready\"}],\"max_tokens\":600}"
+done
 ```
 
 Give the probe at least ~600 `max_tokens`. These are thinking models: at 32
 the reasoning consumes the whole budget, so a *working* model returns empty
-content with `finish_reason: length` and looks exactly like a broken one. A
-401 here is an expired key, not throttling.
+content with `finish_reason: length` and looks exactly like a broken one. A 401
+here is an authentication failure — missing, invalid, revoked or (the case
+seen so far) expired — and never throttling, which arrives as a 429.
 
 Single model, all scenarios:
 
@@ -908,8 +914,8 @@ anyway.
 
 ## Known gaps
 
-What the runs surfaced and did not close. Each carries a tracker id, but the
-reasoning lives here — the id is the task, this is why it matters.
+What the runs surfaced and did not close. Where there is a tracker id the
+reasoning still lives here — the id is the task, this is why it matters.
 
 **A report the parser rejects skips most of the guard** (`lotti3-ozt0`, P1).
 `GoalStructuredReport.tryParse` is all-or-nothing over roughly ten shape
@@ -927,19 +933,18 @@ the parse path. Automated review raised it on the batching PR; it merged
 without a ruling.
 
 **The aggregate check proves appearance, not binding** (`lotti3-lf68`, P2).
-Expanded from the "Still open" note two sections up, because it is the
-structural end of that story rather than a footnote to it: a report naming 95
-as the target while stating 94 as the average passes, and on a multi-criterion
-goal one criterion's aggregate can satisfy a sentence about another. The whole
-mechanism is a model echoing a number into prose and a regex recovering it —
-which is what needed repairing once already. Typed per-series fields the app
-renders would delete the class rather than patch it.
+Stated in full under "The report loss was a matcher bug" → Still open, where it
+belongs as the end of that story; listed here so the open set is complete in one
+place.
 
-**`snooze_goal_ad` is never exercised** (`lotti3-uc9n`, P3). The only assertion
-anywhere is that the tool name appears in the system prompt. Create, re-run and
-retire are each scored at both tiers; snooze is the one ad verb whose misuse is
-invisible to the matrix, and also the one the user feels least visibly — a
-wrongly snoozed banner is silent by definition.
+**`snooze_goal_ad` has only negative coverage** (`lotti3-uc9n`, P3). An
+unsolicited snooze *is* caught: the runner rejects any tool a scenario did not
+expect, and `gp_noop` forbids all eight tools by name. What no scenario does is
+*require* one — so the verb is scored for restraint and never for judgement,
+while create, re-run and retire are each scored both ways at both tiers. The
+asymmetry matters because a wrongly snoozed banner is silent by definition: the
+board simply stays quiet, and nothing in the matrix distinguishes that from
+correct restraint.
 
 **The batched-rejection table was never re-measured.** Its pass columns were
 scored by the classifier defect corrected the same day, and the matcher fix
