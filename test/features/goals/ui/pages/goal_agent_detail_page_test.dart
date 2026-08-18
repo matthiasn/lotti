@@ -1305,6 +1305,21 @@ void main() {
           enabled: false,
         ),
       ).called(2);
+
+      when(
+        () => goalService.updateAutomaticUpdates(
+          agentId: 'goal-1',
+          enabled: false,
+        ),
+      ).thenThrow(StateError('write failed'));
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text('Automatic updates').last,
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text("That didn't save — please try again."), findsOneWidget);
     });
   });
 
@@ -3459,6 +3474,8 @@ void main() {
     final today = DateTime.utc(2026, 8, 11);
     final progress30 = Completer<GoalProgressView?>();
     final progress90 = Completer<GoalProgressView?>();
+    final progressV2 = Completer<GoalProgressView?>();
+    var currentSpec = spec;
     GoalProgressView progressFor(int targetCount) => GoalProgressView(
       today: today,
       habits: [
@@ -3498,7 +3515,7 @@ void main() {
               attainment: 1.0,
               reportOneLiner: 'Two walks landed.',
               pendingProposals: 0,
-              spec: spec,
+              spec: currentSpec,
               direction: null,
               deficit: null,
               buffer: null,
@@ -3511,7 +3528,11 @@ void main() {
           goalAgentProgressViewForSpanProvider((
             agentId: 'goal-1',
             historyDays: 30,
-          )).overrideWith((ref) => progress30.future),
+          )).overrideWith(
+            (ref) => currentSpec.id == 'goal-1:spec-v2'
+                ? progressV2.future
+                : progress30.future,
+          ),
           goalAgentProgressViewForSpanProvider((
             agentId: 'goal-1',
             historyDays: 90,
@@ -3621,6 +3642,30 @@ void main() {
           .habitIds,
       {'walk'},
     );
+
+    currentSpec = spec.copyWith(id: 'goal-1:spec-v2', version: 2);
+    ProviderScope.containerOf(
+        tester.element(find.byType(GoalAgentDetailPage)),
+        listen: false,
+      )
+      ..invalidate(goalAgentHealthProvider('goal-1'))
+      ..invalidate(
+        goalAgentProgressViewForSpanProvider((
+          agentId: 'goal-1',
+          historyDays: 30,
+        )),
+      );
+    await tester.pump();
+    await tester.pump();
+
+    // A same-family-key reload after the active spec changes must not promote
+    // the previous spec's AsyncValue as though it belonged to the new spec.
+    expect(find.textContaining('5× per 7 days'), findsNothing);
+    expect(find.byKey(const ValueKey('goal-habit-plot-walk')), findsNothing);
+
+    progressV2.complete(progressFor(7));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('7× per 7 days'), findsOneWidget);
   });
 
   testWidgets("the read's age ticks across its bucket boundary without any "

@@ -762,7 +762,7 @@ flowchart TD
   percentage; the one-liner is the agent's own prose, so keeping percentages
   out of it is a matter for the agent's instructions, not widget-level
   filtering. Below the one-liner a rolling-window habit goal shows a
-  deterministic hint — successful days needed to recover when behind
+  deterministic hint — successful days needed to recover when At risk or Behind
   (`deficit`), explicitly phrased as effort rather than a countdown, or the buffer
   before the oldest success ages out when exactly at rate (`buffer`; surplus
   completions do not receive an aging warning) — lifted from the
@@ -818,7 +818,9 @@ flowchart TD
   flashes back to a loading shell. If the replacement span fails, the picker
   returns to the last settled span and the shared-controller chart stays hidden
   until that rollback lands; old evidence is never relabelled as the failed
-  range. A day track FITS before it scrolls:
+  range. The retained snapshot is scoped to the active spec version and only
+  promoted from a settled provider value, so a spec reload cannot relabel
+  prior-spec evidence. A day track FITS before it scrolls:
   `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
   caption inside it, down to a one-letter form — until the whole span fits the
   width it was given, and only a span that overflows even at the legibility

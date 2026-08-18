@@ -390,6 +390,44 @@ void main() {
       }
     });
 
+    testWidgets('semantics omit unavailable seek actions at both bounds', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await _pumpScrubber(
+          tester,
+          amplitudes: List<double>.filled(32, 0.5),
+          total: const Duration(seconds: 40),
+        );
+
+        var data = tester
+            .getSemantics(find.bySemanticsLabel('Audio waveform'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isFalse);
+        expect(data.increasedValue, '00:05 of 00:40');
+        expect(data.decreasedValue, isEmpty);
+
+        await _pumpScrubber(
+          tester,
+          amplitudes: List<double>.filled(32, 0.5),
+          progress: const Duration(seconds: 40),
+          total: const Duration(seconds: 40),
+        );
+
+        data = tester
+            .getSemantics(find.bySemanticsLabel('Audio waveform'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isFalse);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
+        expect(data.increasedValue, isEmpty);
+        expect(data.decreasedValue, '00:35 of 00:40');
+      } finally {
+        handle.dispose();
+      }
+    });
+
     testWidgets('handles empty amplitudes safely', (tester) async {
       final seeks = <Duration>[];
       await _pumpScrubber(

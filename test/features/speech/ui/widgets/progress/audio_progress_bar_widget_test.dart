@@ -295,6 +295,42 @@ void main() {
       }
     });
 
+    testWidgets('omits unavailable semantic seek actions at both bounds', (
+      WidgetTester tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await pumpProgressBar(
+          tester,
+          total: const Duration(seconds: 40),
+        );
+
+        var data = tester
+            .getSemantics(find.bySemanticsLabel('Audio timeline'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isFalse);
+        expect(data.increasedValue, '00:05 of 00:40');
+        expect(data.decreasedValue, isEmpty);
+
+        await pumpProgressBar(
+          tester,
+          progress: const Duration(seconds: 40),
+          total: const Duration(seconds: 40),
+        );
+
+        data = tester
+            .getSemantics(find.bySemanticsLabel('Audio timeline'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isFalse);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
+        expect(data.increasedValue, isEmpty);
+        expect(data.decreasedValue, '00:35 of 00:40');
+      } finally {
+        handle.dispose();
+      }
+    });
+
     test('semantic seek targets clamp at both ends', () {
       expect(
         audioSemanticSeekTarget(

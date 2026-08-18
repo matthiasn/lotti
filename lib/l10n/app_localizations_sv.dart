@@ -2657,7 +2657,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Släng inspelningen?';
 
   @override
-  String get audioRecordingLive => 'Inspelning startad';
+  String get audioRecordingLive => 'Inspelning pågår';
 
   @override
   String get audioRecordingPause => 'Pausa';
@@ -7199,7 +7199,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get habitsDoneTodayLabel => 'Vanor gjorda idag';
+  String get habitsDoneTodayLabel => 'Slutförda vanor i dag';
 
   @override
   String get habitSectionOptionsTitle => 'Alternativ';

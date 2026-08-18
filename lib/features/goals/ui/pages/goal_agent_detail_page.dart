@@ -355,15 +355,21 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
               historyDays: timeSpanDays,
             )),
           );
-    if (spec == null || _lastProgressSpecId != spec.id) {
+    final progressSettled =
+        progressAsync != null &&
+        progressAsync.hasValue &&
+        !progressAsync.isLoading &&
+        !progressAsync.hasError;
+    if (spec == null) {
       _lastProgress = null;
-      _lastProgressSpecId = spec?.id;
+      _lastProgressSpecId = null;
       _lastProgressSpanDays = null;
-    }
-    if (progressAsync?.hasValue ?? false) {
-      _lastProgress = progressAsync?.value;
+    } else if (progressSettled) {
+      _lastProgress = progressAsync.value;
+      _lastProgressSpecId = spec.id;
       _lastProgressSpanDays = timeSpanDays;
     }
+    final cacheMatchesSpec = spec != null && _lastProgressSpecId == spec.id;
     // A range change selects a different provider-family key. Keep the last
     // settled projection in place while that key loads so 14d → 30d → 90d
     // behaves as stale-while-revalidate instead of blanking the dashboard. If
@@ -372,7 +378,7 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     final rangeFailed =
         (progressAsync?.hasError ?? false) &&
         !(progressAsync?.hasValue ?? false);
-    final fallbackSpanDays = _lastProgressSpanDays;
+    final fallbackSpanDays = cacheMatchesSpec ? _lastProgressSpanDays : null;
     if (rangeFailed &&
         fallbackSpanDays != null &&
         fallbackSpanDays != timeSpanDays &&
@@ -387,7 +393,11 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
     } else if (!rangeFailed) {
       _rangeRecoveryRequestedFor = null;
     }
-    final progress = progressAsync?.value ?? _lastProgress;
+    final progress = progressSettled
+        ? progressAsync.value
+        : cacheMatchesSpec
+        ? _lastProgress
+        : null;
     final renderedTimeSpanDays = rangeFailed && fallbackSpanDays != null
         ? fallbackSpanDays
         : timeSpanDays;
@@ -1895,7 +1905,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
     final danger = tokens.colors.alert.error.ink;
     return PopupMenuButton<_GoalDetailMenuAction>(
       icon: const Icon(Icons.more_vert_rounded),
-      onSelected: (action) {
+      onSelected: (action) async {
         switch (action) {
           case _GoalDetailMenuAction.edit:
             beamToNamed(goalEditPath(agentId));
@@ -1904,14 +1914,21 @@ class _GoalActionsMenuButton extends ConsumerWidget {
           case _GoalDetailMenuAction.automaticUpdates:
             final enabled = automaticUpdatesEnabled;
             if (enabled != null) {
-              unawaited(
-                ref
+              try {
+                await ref
                     .read(goalAgentServiceProvider)
                     .updateAutomaticUpdates(
                       agentId: agentId,
                       enabled: !enabled,
-                    ),
-              );
+                    );
+              } catch (_) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.maybeOf(context)
+                  ?..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(content: Text(context.messages.saveFailedRetry)),
+                  );
+              }
             }
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
@@ -1922,7 +1939,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
               ),
             );
           case _GoalDetailMenuAction.delete:
-            _confirmAndDelete(context, ref);
+            await _confirmAndDelete(context, ref);
         }
       },
       itemBuilder: (context) => [

@@ -5743,7 +5743,7 @@
   "timelineTranscribing": "A transcrever…",
   "timelineTranscriptionFailed": "A transcrição falhou",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Objetivo arquivado · 1} other{Objetivos arquivados · {count}}}",
-  "unifiedGoalsEmptyInvitation": "Cria um objetivo para reunir aqui hábitos, sinais e a orientação do teu agente.",
+  "unifiedGoalsEmptyInvitation": "Cria uma meta para reunir aqui hábitos, sinais e a orientação do teu agente de meta.",
   "unifiedGoalStatusAtRisk": "Em risco",
   "unifiedGoalStatusNoData": "Sem dados",
   "unifiedGoalSummaryAllOnTrack": "{count, plural, one{O teu hábito está no bom caminho — hoje não é preciso nada.} other{Todos os {count} hábitos estão no bom caminho — hoje não é preciso nada.}}",

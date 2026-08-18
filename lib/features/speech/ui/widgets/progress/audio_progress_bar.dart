@@ -278,16 +278,18 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
           total: widget.total,
           forward: false,
         );
+        final canIncrease = widget.progress < widget.total;
+        final canDecrease = widget.progress > Duration.zero;
 
         return Semantics(
           slider: true,
           label: widget.semanticLabel ?? context.messages.audioPlayerTimeline,
           value: positionLabel(widget.progress),
           hint: context.messages.audioPlayerSeekHint,
-          increasedValue: positionLabel(increased),
-          decreasedValue: positionLabel(decreased),
-          onIncrease: () => widget.onSeek(increased),
-          onDecrease: () => widget.onSeek(decreased),
+          increasedValue: canIncrease ? positionLabel(increased) : null,
+          decreasedValue: canDecrease ? positionLabel(decreased) : null,
+          onIncrease: canIncrease ? () => widget.onSeek(increased) : null,
+          onDecrease: canDecrease ? () => widget.onSeek(decreased) : null,
           child: ExcludeSemantics(
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,

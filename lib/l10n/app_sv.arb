@@ -1384,7 +1384,7 @@
   "audioRecordingDiscardDialogCancel": "Fortsätt spela in",
   "audioRecordingDiscardDialogConfirm": "Kasta bort",
   "audioRecordingDiscardDialogTitle": "Släng inspelningen?",
-  "audioRecordingLive": "Inspelning startad",
+  "audioRecordingLive": "Inspelning pågår",
   "audioRecordingPause": "Pausa",
   "audioRecordingRecord": "Spela in",
   "audioRecordingResume": "Återuppta",
@@ -3171,7 +3171,7 @@
       }
     }
   },
-  "habitsDoneTodayLabel": "Vanor gjorda idag",
+  "habitsDoneTodayLabel": "Slutförda vanor i dag",
   "habitSectionOptionsTitle": "Alternativ",
   "habitSectionScheduleTitle": "Schema",
   "habitsFilterAll": "alla",

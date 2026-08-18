@@ -158,6 +158,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
       total: widget.total,
       forward: false,
     );
+    final canIncrease = widget.progress < widget.total;
+    final canDecrease = widget.progress > Duration.zero;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -170,10 +172,10 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
           label: context.messages.audioPlayerWaveform,
           value: positionLabel(widget.progress),
           hint: context.messages.audioPlayerSeekHint,
-          increasedValue: positionLabel(increased),
-          decreasedValue: positionLabel(decreased),
-          onIncrease: () => widget.onSeek(increased),
-          onDecrease: () => widget.onSeek(decreased),
+          increasedValue: canIncrease ? positionLabel(increased) : null,
+          decreasedValue: canDecrease ? positionLabel(decreased) : null,
+          onIncrease: canIncrease ? () => widget.onSeek(increased) : null,
+          onDecrease: canDecrease ? () => widget.onSeek(decreased) : null,
           child: ExcludeSemantics(
             child: GestureDetector(
               onTapDown: (TapDownDetails details) =>

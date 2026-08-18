@@ -87,7 +87,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Juno'), findsOneWidget);
-    // The header subtitle is current STATE (coarse health), never the
+    // The header subtitle is the current unified goal-status label, never the
     // aspiration statement — a null status reads as the data-gap label.
     expect(find.text('No data'), findsOneWidget);
     expect(

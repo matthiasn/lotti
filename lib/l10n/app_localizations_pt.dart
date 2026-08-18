@@ -13413,7 +13413,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get unifiedGoalsEmptyInvitation =>
-      'Cria um objetivo para reunir aqui hábitos, sinais e a orientação do teu agente.';
+      'Cria uma meta para reunir aqui hábitos, sinais e a orientação do teu agente de meta.';
 
   @override
   String get unifiedGoalStatusAtRisk => 'Em risco';

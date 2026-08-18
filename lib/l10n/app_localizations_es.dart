@@ -2676,7 +2676,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => '¿Descartar grabación?';
 
   @override
-  String get audioRecordingLive => 'Grabación iniciada';
+  String get audioRecordingLive => 'Grabación en curso';
 
   @override
   String get audioRecordingPause => 'Pausar';
@@ -6461,8 +6461,9 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Necesitas $count días logrados para volver a encarrilarte',
-      one: 'Necesitas 1 día logrado para volver a encarrilarte',
+      other:
+          'Necesitas $count días completados con éxito para volver a encarrilarte',
+      one: 'Necesitas 1 día completado con éxito para volver a encarrilarte',
     );
     return '$_temp0';
   }

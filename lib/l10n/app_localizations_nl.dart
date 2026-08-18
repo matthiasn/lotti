@@ -2660,7 +2660,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Opname weggooien?';
 
   @override
-  String get audioRecordingLive => 'Opname gestart';
+  String get audioRecordingLive => 'Opname bezig';
 
   @override
   String get audioRecordingPause => 'Pauzeren';
@@ -6395,8 +6395,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count geslaagde dagen nodig om te herstellen',
-      one: '1 geslaagde dag nodig om te herstellen',
+      other: '$count succesvolle dagen nodig om te herstellen',
+      one: '1 succesvolle dag nodig om te herstellen',
     );
     return '$_temp0';
   }

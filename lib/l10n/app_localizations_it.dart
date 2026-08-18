@@ -2656,7 +2656,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get audioPlayerSeekHint =>
-      'Scorri in alto o in basso per avanzare o tornare indietro; tocca o trascina per scorrere.';
+      'Scorri verso l’alto o il basso per avanzare o tornare indietro; tocca o trascina per cambiare la posizione di riproduzione.';
 
   @override
   String audioPlayerSpeed(String speed) {
@@ -6455,8 +6455,8 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Servono $count giorni riusciti per recuperare',
-      one: 'Serve 1 giorno riuscito per recuperare',
+      other: 'Servono $count giorni completati con successo per recuperare',
+      one: 'Serve 1 giorno completato con successo per recuperare',
     );
     return '$_temp0';
   }

@@ -2606,7 +2606,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get apiKeyShowTooltip => 'Vis API-nøgle';
 
   @override
-  String get audioPlayerPause => 'Sæt lyd på pause';
+  String get audioPlayerPause => 'Sæt lyden på pause';
 
   @override
   String get audioPlayerPlay => 'Afspil lyd';
@@ -2618,7 +2618,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get audioPlayerSeekHint =>
-      'Stryg op eller ned for at søge; tryk eller træk for at spole.';
+      'Stryg op eller ned for at spole frem eller tilbage; tryk eller træk for at flytte afspilningspositionen.';
 
   @override
   String audioPlayerSpeed(String speed) {
