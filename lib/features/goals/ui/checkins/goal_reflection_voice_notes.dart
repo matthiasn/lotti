@@ -24,7 +24,7 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
     required this.agentId,
     required this.day,
     this.enabled = true,
-    this.openRecorder = _openReflectionRecorder,
+    this.openRecorder = openReflectionRecorder,
     super.key,
   });
 
@@ -114,7 +114,10 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
   }
 }
 
-Future<void> _openReflectionRecorder(
+/// The real recorder opener, exposed for test for the same reason the
+/// composer's is.
+@visibleForTesting
+Future<void> openReflectionRecorder(
   BuildContext context, {
   required String goalEntryId,
   String? categoryId,

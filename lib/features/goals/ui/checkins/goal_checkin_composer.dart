@@ -46,8 +46,8 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
     this.preparedLine,
     this.personaName,
     this.categoryId,
-    this.saveText = _saveCheckInText,
-    this.openRecorder = _openCheckInRecorder,
+    this.saveText = saveCheckInText,
+    this.openRecorder = openCheckInRecorder,
     super.key,
   });
 
@@ -296,7 +296,11 @@ class _RecordButton extends StatelessWidget {
   }
 }
 
-Future<bool> _saveCheckInText({
+/// The real saver. Exposed for test because it is the one place the static
+/// `JournalRepository.createTextEntry` is called from — the seam exists so the
+/// composer is testable, and this keeps the adapter itself honest too.
+@visibleForTesting
+Future<bool> saveCheckInText({
   required String text,
   required String goalEntryId,
   String? categoryId,
@@ -311,7 +315,9 @@ Future<bool> _saveCheckInText({
   return created != null;
 }
 
-Future<void> _openCheckInRecorder(
+/// The real recorder opener. Exposed for the same reason as [saveCheckInText].
+@visibleForTesting
+Future<void> openCheckInRecorder(
   BuildContext context, {
   required String goalEntryId,
   String? categoryId,

@@ -6,6 +6,10 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
+
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -52,6 +56,22 @@ void main() {
       ),
     ),
   );
+
+  group('the real adapters behind the seams', () {
+    tearDown(getIt.reset);
+
+    test('saveCheckInText reports failure rather than throwing', () async {
+      // No journal stack registered: the static path logs and returns null,
+      // and the adapter must translate that into "not saved" rather than
+      // letting the composer think it succeeded.
+      getIt.registerSingleton<DomainLogger>(MockDomainLogger());
+
+      expect(
+        await saveCheckInText(text: 'Walked.', goalEntryId: 'goal-1'),
+        isFalse,
+      );
+    });
+  });
 
   testWidgets('names the goal and the moment', (tester) async {
     await pump(tester);
