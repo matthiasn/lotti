@@ -295,6 +295,17 @@ class _EntryCardContent extends StatelessWidget {
         ),
         secondary: _contentRemainder(context, c.entryText),
       ),
+      // A goal is a container, not a journal moment: its home is the Goals
+      // tab, and its own detail surface is far richer than a list row. It is
+      // rendered here only so the switch stays exhaustive — the goal list
+      // query excludes spec snapshots, and goals themselves are not offered by
+      // the journal's entry-type filter.
+      final GoalEntry g => _scaffold(
+        context,
+        icon: Icons.flag_rounded,
+        iconColor: _categoryColor(context, item),
+        title: _titleText(context, g.data.title),
+      ),
     };
   }
 

@@ -446,6 +446,7 @@ void main() {
         project: (_) => throw StateError('unexpected variant'),
         relationship: (_) => throw StateError('unexpected variant'),
         checkIn: (_) => throw StateError('unexpected variant'),
+        goal: (_) => throw StateError('unexpected variant'),
       );
     }
 

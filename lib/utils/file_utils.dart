@@ -34,6 +34,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     project: (_) => 'projects',
     relationship: (_) => 'relationships',
     checkIn: (_) => 'check_ins',
+    goal: (_) => 'goals',
   );
 }
 
@@ -57,6 +58,7 @@ String typeSuffix(JournalEntity journalEntity) {
     project: (_) => 'project',
     relationship: (_) => 'relationship',
     checkIn: (_) => 'check_in',
+    goal: (_) => 'goal',
   );
 }
 

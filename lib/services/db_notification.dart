@@ -115,6 +115,7 @@ const ratingNotification = 'RATING';
 const projectNotification = 'PROJECT';
 const relationshipNotification = 'RELATIONSHIP';
 const checkInNotification = 'CHECK_IN';
+const goalNotification = 'GOAL';
 const categoriesNotification = 'CATEGORIES_CHANGED';
 const habitsNotification = 'HABITS_CHANGED';
 const dashboardsNotification = 'DASHBOARDS_CHANGED';
