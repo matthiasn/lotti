@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -22,10 +23,12 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
+import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/ui/goal_routes.dart';
@@ -37,6 +40,8 @@ import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart'
     show UpdateNotifications, agentNotification;
@@ -77,6 +82,38 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
   name: 'goalAgentPhaseAProvider',
 );
 
+/// Journal-side goal persistence, or null where the journal stack is not
+/// registered.
+///
+/// Nullable on purpose. The agent tier is authoritative for evaluation and
+/// must not acquire a hard dependency on journal infrastructure — a goal whose
+/// mirror is unavailable is still a working goal, and the startup backfill
+/// repairs it. Making this non-null turned every agent-tier test into one that
+/// had to stand up `PersistenceLogic` to construct a provider it never used.
+final goalRepositoryProvider = Provider<GoalRepository?>((ref) {
+  if (!getIt.isRegistered<JournalDb>() ||
+      !getIt.isRegistered<PersistenceLogic>() ||
+      !getIt.isRegistered<MetadataService>()) {
+    return null;
+  }
+  return GoalRepository(
+    journalDb: getIt<JournalDb>(),
+    persistenceLogic: getIt<PersistenceLogic>(),
+    metadataService: getIt<MetadataService>(),
+  );
+}, name: 'goalRepositoryProvider');
+
+final goalMirrorServiceProvider = Provider<GoalMirrorService?>((ref) {
+  final repository = ref.watch(goalRepositoryProvider);
+  if (repository == null) return null;
+  return GoalMirrorService(
+    goalRepository: repository,
+    agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
+}, name: 'goalMirrorServiceProvider');
+
 final goalAgentServiceProvider = Provider<GoalAgentService>(
   (ref) => GoalAgentService(
     agentService: ref.watch(agentServiceProvider),
@@ -84,6 +121,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     updateNotifications: getIt<UpdateNotifications>(),
+    goalMirrorService: ref.watch(goalMirrorServiceProvider),
   ),
   name: 'goalAgentServiceProvider',
 );
@@ -171,6 +209,7 @@ final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     goalAgentService: ref.watch(goalAgentServiceProvider),
+    goalMirrorService: ref.watch(goalMirrorServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalRuntimeMaintenanceProvider',
@@ -210,6 +249,7 @@ final goalSpecRevisionServiceProvider = Provider<GoalSpecRevisionService>(
   (ref) => GoalSpecRevisionService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
+    goalMirrorService: ref.watch(goalMirrorServiceProvider),
   ),
   name: 'goalSpecRevisionServiceProvider',
 );

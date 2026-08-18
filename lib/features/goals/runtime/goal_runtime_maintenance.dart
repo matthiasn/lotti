@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Startup and pre-scan maintenance for goal agents (the
@@ -25,6 +26,7 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
     required this._repository,
     required this._syncService,
     required this._goalAgentService,
+    this._goalMirrorService,
     this._domainLogger,
   });
 
@@ -32,6 +34,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   final GoalAgentService _goalAgentService;
+
+  /// Repairs the journal-side goal on every launch. Optional so the runtime
+  /// keeps working without it.
+  final GoalMirrorService? _goalMirrorService;
   final DomainLogger? _domainLogger;
 
   @override
@@ -55,6 +61,11 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
           identity: identity,
           state: await _repository.getAgentState(identity.agentId),
         );
+        // The backfill: goals that predate the journal-side entity get one,
+        // and any goal whose mirror failed to write gets repaired. Derived ids
+        // make this converge rather than duplicate when several devices run it
+        // against the same synced goal.
+        await _goalMirrorService?.mirrorHead(identity.agentId);
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }
@@ -122,6 +133,10 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         identity.agentId,
         criteria,
       );
+      // A goal synced from another device arrives as an agent identity; its
+      // journal entry is derived here rather than waited for, so the two
+      // stores converge on the same row from either direction.
+      await _goalMirrorService?.mirrorHead(identity.agentId);
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }

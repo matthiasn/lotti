@@ -127,7 +127,11 @@ void main() {
 
       expect(created, isNotNull);
       expect(created!.data.title, 'Walk more');
-      expect(created.data.snapshotOf, isNull, reason: 'a goal is not a snapshot');
+      expect(
+        created.data.snapshotOf,
+        isNull,
+        reason: 'a goal is not a snapshot',
+      );
       verify(() => mockPersistence.createDbEntity(any())).called(1);
       verifyNever(() => mockPersistence.updateDbEntity(any()));
     });
