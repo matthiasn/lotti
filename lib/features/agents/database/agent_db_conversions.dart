@@ -213,6 +213,7 @@ class AgentDbConversions {
       improverTarget: (l) => l.deletedAt,
       agentProject: (l) => l.deletedAt,
       agentEvent: (l) => l.deletedAt,
+      agentGoal: (l) => l.deletedAt,
       agentDay: (l) => l.deletedAt,
       soulAssignment: (l) => l.deletedAt,
     );
@@ -447,6 +448,7 @@ class AgentDbConversions {
       improverTarget: (_) => AgentLinkTypes.improverTarget,
       agentProject: (_) => AgentLinkTypes.agentProject,
       agentEvent: (_) => AgentLinkTypes.agentEvent,
+      agentGoal: (_) => AgentLinkTypes.agentGoal,
       agentDay: (_) => AgentLinkTypes.agentDay,
       soulAssignment: (_) => AgentLinkTypes.soulAssignment,
     );

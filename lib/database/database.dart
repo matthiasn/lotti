@@ -28,6 +28,7 @@ part 'database_config_flags.dart';
 part 'database_data_queries.dart';
 part 'database_definitions.dart';
 part 'database_entity_ops.dart';
+part 'database_goal_queries.dart';
 part 'database_insights_queries.dart';
 part 'database_journal_queries.dart';
 part 'database_links_ratings.dart';
@@ -118,6 +119,7 @@ class JournalDb extends _$JournalDb
         _JournalDbTaskQueries,
         _JournalDbTaskDueQueries,
         _JournalDbProjectQueries,
+        _JournalDbGoalQueries,
         _JournalDbRelationshipQueries,
         _JournalDbLinksRatings,
         _JournalDbDataQueries,

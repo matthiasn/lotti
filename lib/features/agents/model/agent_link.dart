@@ -197,6 +197,23 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = AgentEventLink;
 
+  /// Links a goal agent to the goal it coaches.
+  /// [fromId] = agent ID, [toId] = goal entry ID.
+  ///
+  /// The goal itself is a `JournalEntity.goal` in the journal database — the
+  /// store the backup catalog marks required — so this link points from the
+  /// disposable side at durable, user-authored content. Losing the agent
+  /// database costs the user their coach, never their goal or its check-ins.
+  const factory AgentLink.agentGoal({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentGoalLink;
+
   /// Links a day agent to the day it plans.
   /// [fromId] = agent ID, [toId] = day ID. Lets `slots.activeDayId` be derived
   /// from the synced log like the other active-slot links (State-as-Projection).
@@ -281,6 +298,7 @@ extension AgentLinkSoftDelete on AgentLink {
     improverTarget: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentProject: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentEvent: (l) => l.copyWith(deletedAt: at, updatedAt: at),
+    agentGoal: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     agentDay: (l) => l.copyWith(deletedAt: at, updatedAt: at),
     soulAssignment: (l) => l.copyWith(deletedAt: at, updatedAt: at),
   );

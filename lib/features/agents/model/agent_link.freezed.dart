@@ -75,6 +75,10 @@ AgentLink _$AgentLinkFromJson(
           return AgentEventLink.fromJson(
             json
           );
+                case 'agentGoal':
+          return AgentGoalLink.fromJson(
+            json
+          );
                 case 'agentDay':
           return AgentDayLink.fromJson(
             json
@@ -175,7 +179,7 @@ extension AgentLinkPatterns on AgentLink {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicAgentLink value)?  basic,TResult Function( AgentStateLink value)?  agentState,TResult Function( MessagePrevLink value)?  messagePrev,TResult Function( MessagePayloadLink value)?  messagePayload,TResult Function( ToolEffectLink value)?  toolEffect,TResult Function( AgentTaskLink value)?  agentTask,TResult Function( CaptureToParsedItemLink value)?  captureToParsedItem,TResult Function( ParsedItemToTaskLink value)?  parsedItemToTask,TResult Function( CaptureToPlanLink value)?  captureToPlan,TResult Function( AttentionRequestEvidenceLink value)?  attentionRequestEvidence,TResult Function( AttentionAwardRequestLink value)?  attentionAwardRequest,TResult Function( AttentionAwardPlanLink value)?  attentionAwardPlan,TResult Function( TemplateAssignmentLink value)?  templateAssignment,TResult Function( ImproverTargetLink value)?  improverTarget,TResult Function( AgentProjectLink value)?  agentProject,TResult Function( AgentEventLink value)?  agentEvent,TResult Function( AgentDayLink value)?  agentDay,TResult Function( SoulAssignmentLink value)?  soulAssignment,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicAgentLink value)?  basic,TResult Function( AgentStateLink value)?  agentState,TResult Function( MessagePrevLink value)?  messagePrev,TResult Function( MessagePayloadLink value)?  messagePayload,TResult Function( ToolEffectLink value)?  toolEffect,TResult Function( AgentTaskLink value)?  agentTask,TResult Function( CaptureToParsedItemLink value)?  captureToParsedItem,TResult Function( ParsedItemToTaskLink value)?  parsedItemToTask,TResult Function( CaptureToPlanLink value)?  captureToPlan,TResult Function( AttentionRequestEvidenceLink value)?  attentionRequestEvidence,TResult Function( AttentionAwardRequestLink value)?  attentionAwardRequest,TResult Function( AttentionAwardPlanLink value)?  attentionAwardPlan,TResult Function( TemplateAssignmentLink value)?  templateAssignment,TResult Function( ImproverTargetLink value)?  improverTarget,TResult Function( AgentProjectLink value)?  agentProject,TResult Function( AgentEventLink value)?  agentEvent,TResult Function( AgentGoalLink value)?  agentGoal,TResult Function( AgentDayLink value)?  agentDay,TResult Function( SoulAssignmentLink value)?  soulAssignment,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case BasicAgentLink() when basic != null:
@@ -194,7 +198,8 @@ return attentionAwardPlan(_that);case TemplateAssignmentLink() when templateAssi
 return templateAssignment(_that);case ImproverTargetLink() when improverTarget != null:
 return improverTarget(_that);case AgentProjectLink() when agentProject != null:
 return agentProject(_that);case AgentEventLink() when agentEvent != null:
-return agentEvent(_that);case AgentDayLink() when agentDay != null:
+return agentEvent(_that);case AgentGoalLink() when agentGoal != null:
+return agentGoal(_that);case AgentDayLink() when agentDay != null:
 return agentDay(_that);case SoulAssignmentLink() when soulAssignment != null:
 return soulAssignment(_that);case _:
   return orElse();
@@ -214,7 +219,7 @@ return soulAssignment(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicAgentLink value)  basic,required TResult Function( AgentStateLink value)  agentState,required TResult Function( MessagePrevLink value)  messagePrev,required TResult Function( MessagePayloadLink value)  messagePayload,required TResult Function( ToolEffectLink value)  toolEffect,required TResult Function( AgentTaskLink value)  agentTask,required TResult Function( CaptureToParsedItemLink value)  captureToParsedItem,required TResult Function( ParsedItemToTaskLink value)  parsedItemToTask,required TResult Function( CaptureToPlanLink value)  captureToPlan,required TResult Function( AttentionRequestEvidenceLink value)  attentionRequestEvidence,required TResult Function( AttentionAwardRequestLink value)  attentionAwardRequest,required TResult Function( AttentionAwardPlanLink value)  attentionAwardPlan,required TResult Function( TemplateAssignmentLink value)  templateAssignment,required TResult Function( ImproverTargetLink value)  improverTarget,required TResult Function( AgentProjectLink value)  agentProject,required TResult Function( AgentEventLink value)  agentEvent,required TResult Function( AgentDayLink value)  agentDay,required TResult Function( SoulAssignmentLink value)  soulAssignment,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicAgentLink value)  basic,required TResult Function( AgentStateLink value)  agentState,required TResult Function( MessagePrevLink value)  messagePrev,required TResult Function( MessagePayloadLink value)  messagePayload,required TResult Function( ToolEffectLink value)  toolEffect,required TResult Function( AgentTaskLink value)  agentTask,required TResult Function( CaptureToParsedItemLink value)  captureToParsedItem,required TResult Function( ParsedItemToTaskLink value)  parsedItemToTask,required TResult Function( CaptureToPlanLink value)  captureToPlan,required TResult Function( AttentionRequestEvidenceLink value)  attentionRequestEvidence,required TResult Function( AttentionAwardRequestLink value)  attentionAwardRequest,required TResult Function( AttentionAwardPlanLink value)  attentionAwardPlan,required TResult Function( TemplateAssignmentLink value)  templateAssignment,required TResult Function( ImproverTargetLink value)  improverTarget,required TResult Function( AgentProjectLink value)  agentProject,required TResult Function( AgentEventLink value)  agentEvent,required TResult Function( AgentGoalLink value)  agentGoal,required TResult Function( AgentDayLink value)  agentDay,required TResult Function( SoulAssignmentLink value)  soulAssignment,}){
 final _that = this;
 switch (_that) {
 case BasicAgentLink():
@@ -233,7 +238,8 @@ return attentionAwardPlan(_that);case TemplateAssignmentLink():
 return templateAssignment(_that);case ImproverTargetLink():
 return improverTarget(_that);case AgentProjectLink():
 return agentProject(_that);case AgentEventLink():
-return agentEvent(_that);case AgentDayLink():
+return agentEvent(_that);case AgentGoalLink():
+return agentGoal(_that);case AgentDayLink():
 return agentDay(_that);case SoulAssignmentLink():
 return soulAssignment(_that);case _:
   throw StateError('Unexpected subclass');
@@ -252,7 +258,7 @@ return soulAssignment(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicAgentLink value)?  basic,TResult? Function( AgentStateLink value)?  agentState,TResult? Function( MessagePrevLink value)?  messagePrev,TResult? Function( MessagePayloadLink value)?  messagePayload,TResult? Function( ToolEffectLink value)?  toolEffect,TResult? Function( AgentTaskLink value)?  agentTask,TResult? Function( CaptureToParsedItemLink value)?  captureToParsedItem,TResult? Function( ParsedItemToTaskLink value)?  parsedItemToTask,TResult? Function( CaptureToPlanLink value)?  captureToPlan,TResult? Function( AttentionRequestEvidenceLink value)?  attentionRequestEvidence,TResult? Function( AttentionAwardRequestLink value)?  attentionAwardRequest,TResult? Function( AttentionAwardPlanLink value)?  attentionAwardPlan,TResult? Function( TemplateAssignmentLink value)?  templateAssignment,TResult? Function( ImproverTargetLink value)?  improverTarget,TResult? Function( AgentProjectLink value)?  agentProject,TResult? Function( AgentEventLink value)?  agentEvent,TResult? Function( AgentDayLink value)?  agentDay,TResult? Function( SoulAssignmentLink value)?  soulAssignment,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicAgentLink value)?  basic,TResult? Function( AgentStateLink value)?  agentState,TResult? Function( MessagePrevLink value)?  messagePrev,TResult? Function( MessagePayloadLink value)?  messagePayload,TResult? Function( ToolEffectLink value)?  toolEffect,TResult? Function( AgentTaskLink value)?  agentTask,TResult? Function( CaptureToParsedItemLink value)?  captureToParsedItem,TResult? Function( ParsedItemToTaskLink value)?  parsedItemToTask,TResult? Function( CaptureToPlanLink value)?  captureToPlan,TResult? Function( AttentionRequestEvidenceLink value)?  attentionRequestEvidence,TResult? Function( AttentionAwardRequestLink value)?  attentionAwardRequest,TResult? Function( AttentionAwardPlanLink value)?  attentionAwardPlan,TResult? Function( TemplateAssignmentLink value)?  templateAssignment,TResult? Function( ImproverTargetLink value)?  improverTarget,TResult? Function( AgentProjectLink value)?  agentProject,TResult? Function( AgentEventLink value)?  agentEvent,TResult? Function( AgentGoalLink value)?  agentGoal,TResult? Function( AgentDayLink value)?  agentDay,TResult? Function( SoulAssignmentLink value)?  soulAssignment,}){
 final _that = this;
 switch (_that) {
 case BasicAgentLink() when basic != null:
@@ -271,7 +277,8 @@ return attentionAwardPlan(_that);case TemplateAssignmentLink() when templateAssi
 return templateAssignment(_that);case ImproverTargetLink() when improverTarget != null:
 return improverTarget(_that);case AgentProjectLink() when agentProject != null:
 return agentProject(_that);case AgentEventLink() when agentEvent != null:
-return agentEvent(_that);case AgentDayLink() when agentDay != null:
+return agentEvent(_that);case AgentGoalLink() when agentGoal != null:
+return agentGoal(_that);case AgentDayLink() when agentDay != null:
 return agentDay(_that);case SoulAssignmentLink() when soulAssignment != null:
 return soulAssignment(_that);case _:
   return null;
@@ -290,7 +297,7 @@ return soulAssignment(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentState,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  messagePrev,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)?  messagePayload,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  toolEffect,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTask,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToParsedItem,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  parsedItemToTask,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToPlan,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionRequestEvidence,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardRequest,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardPlan,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  templateAssignment,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  improverTarget,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentProject,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentEvent,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentDay,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulAssignment,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentState,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  messagePrev,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)?  messagePayload,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  toolEffect,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTask,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToParsedItem,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  parsedItemToTask,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToPlan,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionRequestEvidence,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardRequest,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardPlan,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  templateAssignment,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  improverTarget,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentProject,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentEvent,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentGoal,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentDay,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulAssignment,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case BasicAgentLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentStateLink() when agentState != null:
@@ -308,7 +315,8 @@ return attentionAwardPlan(_that.id,_that.fromId,_that.toId,_that.createdAt,_that
 return templateAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case ImproverTargetLink() when improverTarget != null:
 return improverTarget(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentProjectLink() when agentProject != null:
 return agentProject(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentEventLink() when agentEvent != null:
-return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink() when agentDay != null:
+return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentGoalLink() when agentGoal != null:
+return agentGoal(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink() when agentDay != null:
 return agentDay(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulAssignmentLink() when soulAssignment != null:
 return soulAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case _:
   return orElse();
@@ -328,7 +336,7 @@ return soulAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.upd
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentState,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  messagePrev,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)  messagePayload,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  toolEffect,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentTask,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  captureToParsedItem,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  parsedItemToTask,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  captureToPlan,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionRequestEvidence,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionAwardRequest,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionAwardPlan,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  templateAssignment,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  improverTarget,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentProject,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentEvent,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentDay,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  soulAssignment,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentState,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  messagePrev,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)  messagePayload,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  toolEffect,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentTask,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  captureToParsedItem,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  parsedItemToTask,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  captureToPlan,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionRequestEvidence,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionAwardRequest,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  attentionAwardPlan,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  templateAssignment,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  improverTarget,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentProject,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentEvent,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentGoal,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  agentDay,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)  soulAssignment,}) {final _that = this;
 switch (_that) {
 case BasicAgentLink():
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentStateLink():
@@ -346,7 +354,8 @@ return attentionAwardPlan(_that.id,_that.fromId,_that.toId,_that.createdAt,_that
 return templateAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case ImproverTargetLink():
 return improverTarget(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentProjectLink():
 return agentProject(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentEventLink():
-return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink():
+return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentGoalLink():
+return agentGoal(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink():
 return agentDay(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulAssignmentLink():
 return soulAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
@@ -365,7 +374,7 @@ return soulAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.upd
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentState,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  messagePrev,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)?  messagePayload,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  toolEffect,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTask,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToParsedItem,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  parsedItemToTask,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToPlan,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionRequestEvidence,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardRequest,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardPlan,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  templateAssignment,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  improverTarget,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentProject,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentEvent,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentDay,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulAssignment,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentState,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  messagePrev,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  String? contentEntryId,  DateTime? sourceCreatedAt,  DateTime? deletedAt)?  messagePayload,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  toolEffect,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentTask,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToParsedItem,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  parsedItemToTask,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  captureToPlan,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionRequestEvidence,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardRequest,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  attentionAwardPlan,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  templateAssignment,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  improverTarget,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentProject,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentEvent,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentGoal,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  agentDay,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  DateTime? deletedAt)?  soulAssignment,}) {final _that = this;
 switch (_that) {
 case BasicAgentLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentStateLink() when agentState != null:
@@ -383,7 +392,8 @@ return attentionAwardPlan(_that.id,_that.fromId,_that.toId,_that.createdAt,_that
 return templateAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case ImproverTargetLink() when improverTarget != null:
 return improverTarget(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentProjectLink() when agentProject != null:
 return agentProject(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentEventLink() when agentEvent != null:
-return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink() when agentDay != null:
+return agentEvent(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentGoalLink() when agentGoal != null:
+return agentGoal(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case AgentDayLink() when agentDay != null:
 return agentDay(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case SoulAssignmentLink() when soulAssignment != null:
 return soulAssignment(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.deletedAt);case _:
   return null;
@@ -1743,6 +1753,91 @@ class _$AgentEventLinkCopyWithImpl<$Res>
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,}) {
   return _then(AgentEventLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class AgentGoalLink implements AgentLink {
+  const AgentGoalLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.deletedAt, final  String? $type}): $type = $type ?? 'agentGoal';
+  factory AgentGoalLink.fromJson(Map<String, dynamic> json) => _$AgentGoalLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of AgentLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AgentGoalLinkCopyWith<AgentGoalLink> get copyWith => _$AgentGoalLinkCopyWithImpl<AgentGoalLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AgentGoalLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AgentGoalLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,deletedAt);
+
+@override
+String toString() {
+  return 'AgentLink.agentGoal(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AgentGoalLinkCopyWith<$Res> implements $AgentLinkCopyWith<$Res> {
+  factory $AgentGoalLinkCopyWith(AgentGoalLink value, $Res Function(AgentGoalLink) _then) = _$AgentGoalLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$AgentGoalLinkCopyWithImpl<$Res>
+    implements $AgentGoalLinkCopyWith<$Res> {
+  _$AgentGoalLinkCopyWithImpl(this._self, this._then);
+
+  final AgentGoalLink _self;
+  final $Res Function(AgentGoalLink) _then;
+
+/// Create a copy of AgentLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? deletedAt = freezed,}) {
+  return _then(AgentGoalLink(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
 as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
