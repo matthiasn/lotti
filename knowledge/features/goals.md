@@ -437,7 +437,12 @@ flowchart TD
   latest change, coverage, and actions as separate required slots; the strategy
   parses the same complete shape used by the eval classifier and assembles the
   localized model-authored sentences without injecting English headings.
-  Evaluated-period and rolling-standing slots must be non-empty. Structured
+  Evaluated-period and rolling-standing slots must be non-empty. Completeness
+  is judged strictly, but the *rules* read a lenient view
+  (`GoalStructuredReport.lenient`) so a report the parser refused is still
+  checked for status tokens in prose and for quoting the deterministic
+  aggregates — a wake gets one forced report retry, and a rejection naming
+  only the shape would let those rules ambush it. Structured
   current actions carry a criterion id and survive only when deterministic
   `healthLoggingNeededCriterionIds` authorizes that id, so a lagging rolling
   habit cannot create a current action item; delayed overdue evaluations expose

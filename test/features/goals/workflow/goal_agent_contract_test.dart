@@ -260,5 +260,77 @@ void main() {
         expect(GoalStructuredReport.tryParse(value), isNull, reason: '$value');
       }
     });
+
+    group('lenient', () {
+      test('reads the same fields as tryParse on a complete report', () {
+        // The guard runs the same rules whichever view it gets, so a valid
+        // report has to look identical through both.
+        final strict = GoalStructuredReport.tryParse(validReport())!;
+        final loose = GoalStructuredReport.lenient(validReport())!;
+        expect(loose.tldr, strict.tldr);
+        expect(loose.currentPeriod, strict.currentPeriod);
+        expect(loose.rollingWindow, strict.rollingWindow);
+        expect(loose.latestChange, strict.latestChange);
+        expect(loose.coverage, strict.coverage);
+        expect(
+          loose.now.map((a) => '${a.criterionId}:${a.action}'),
+          strict.now.map((a) => '${a.criterionId}:${a.action}'),
+        );
+        expect(loose.later, strict.later);
+      });
+
+      test('recovers the text present in a report tryParse refused', () {
+        // The point of the whole method: `latestChange` is gone, so strict
+        // parsing yields nothing at all, while the standing the aggregate
+        // rule has to read is sitting right there.
+        final value = validReport()..remove('latestChange');
+        expect(GoalStructuredReport.tryParse(value), isNull);
+
+        final loose = GoalStructuredReport.lenient(value)!;
+        expect(loose.rollingWindow, isNotEmpty);
+        expect(loose.rollingWindow, validReport()['rollingWindow']);
+        expect(loose.latestChange, isEmpty);
+      });
+
+      test('degrades every malformed slot to empty rather than failing', () {
+        final loose = GoalStructuredReport.lenient({
+          'tldr': 7,
+          'rollingWindow': '  Averaging 6000 steps.  ',
+          'nextActions': {
+            'now': [
+              {'criterionId': 'steps'},
+              'not an action map',
+            ],
+            'later': ['Keep walking.', 12],
+          },
+        })!;
+        // Mistyped and absent slots read the same: empty, never a throw.
+        expect(loose.tldr, isEmpty);
+        expect(loose.currentPeriod, isEmpty);
+        expect(loose.coverage, isEmpty);
+        // Trimmed exactly as the strict reader trims.
+        expect(loose.rollingWindow, 'Averaging 6000 steps.');
+        // A map missing `action` survives with an empty one; a non-map is
+        // dropped, since there is no field to recover from it.
+        expect(loose.now, hasLength(1));
+        expect(loose.now.single.criterionId, 'steps');
+        expect(loose.now.single.action, isEmpty);
+        // Non-strings in `later` are dropped for the same reason.
+        expect(loose.later, ['Keep walking.']);
+      });
+
+      test('returns null only when there is no report map at all', () {
+        for (final value in <Object?>[null, 'report', 7, <Object?>[]]) {
+          expect(GoalStructuredReport.lenient(value), isNull, reason: '$value');
+        }
+        // `nextActions` of the wrong type costs the actions, not the report.
+        final loose = GoalStructuredReport.lenient(
+          validReport()..['nextActions'] = 'later',
+        )!;
+        expect(loose.now, isEmpty);
+        expect(loose.later, isEmpty);
+        expect(loose.rollingWindow, isNotEmpty);
+      });
+    });
   });
 }

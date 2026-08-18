@@ -184,6 +184,57 @@ class GoalStructuredReport {
     );
   }
 
+  /// A best-effort view of a report [tryParse] refused, for the guard only.
+  ///
+  /// [tryParse] is all-or-nothing: one absent slot — including `latestChange`
+  /// or `coverage`, which may be empty but must be *present* — makes every
+  /// other field unavailable. The rules that read those fields then stop
+  /// applying silently, so the model is told its report was incomplete and
+  /// nothing else, fixes the shape, and meets those rules for the first time
+  /// on the single forced retry a wake gets. That is the sequential-rejection
+  /// failure batching was meant to end, reached through the parse path.
+  ///
+  /// This recovers whatever text is actually there so one rejection can carry
+  /// the shape error and the rule violations together. Missing slots come back
+  /// empty, which is precisely what the strict parser exists to refuse — so
+  /// never persist the result, and never let it decide completeness.
+  static GoalStructuredReport? lenient(Object? value) {
+    if (value is! Map<String, dynamic>) return null;
+    final actions = value[GoalReportSectionKeys.nextActions];
+    final rawNow = actions is Map<String, dynamic>
+        ? actions[GoalReportActionKeys.now]
+        : null;
+    final rawLater = actions is Map<String, dynamic>
+        ? actions[GoalReportActionKeys.later]
+        : null;
+    return GoalStructuredReport(
+      tldr: _optionalReportString(value[GoalReportSectionKeys.tldr]) ?? '',
+      currentPeriod:
+          _optionalReportString(value[GoalReportSectionKeys.currentPeriod]) ??
+          '',
+      rollingWindow:
+          _optionalReportString(value[GoalReportSectionKeys.rollingWindow]) ??
+          '',
+      latestChange:
+          _optionalReportString(value[GoalReportSectionKeys.latestChange]) ??
+          '',
+      coverage:
+          _optionalReportString(value[GoalReportSectionKeys.coverage]) ?? '',
+      now: [
+        for (final item in rawNow is List<dynamic> ? rawNow : const [])
+          if (item is Map<String, dynamic>)
+            GoalReportCurrentAction(
+              criterionId: _optionalReportString(item['criterionId']) ?? '',
+              action: _optionalReportString(item['action']) ?? '',
+            ),
+      ],
+      later: [
+        for (final item in rawLater is List<dynamic> ? rawLater : const [])
+          ?_optionalReportString(item),
+      ],
+    );
+  }
+
   /// Composes the **expanded** report body from model-authored localized
   /// sentences, without injecting English headings. [tldr] is deliberately
   /// absent: it is the collapsed view shown above this, and repeating it as
