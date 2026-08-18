@@ -74,7 +74,10 @@ void main() {
     expect(find.text('3× per 7 days · slides at midnight'), findsOneWidget);
     expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Gym'), findsOneWidget);
-    expect(find.text('1 day to healthy'), findsOneWidget);
+    expect(
+      find.text('1 successful day needed to recover'),
+      findsOneWidget,
+    );
     expect(find.text('4 / 6 weeks'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
     expect(find.text('done · target met'), findsOneWidget);

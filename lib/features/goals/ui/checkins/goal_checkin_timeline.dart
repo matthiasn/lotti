@@ -1,7 +1,14 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
@@ -20,7 +27,7 @@ import 'package:lotti/widgets/timeline/timeline_view.dart';
 /// into the shared timeline's vocabulary. Every beat kind here rides the shared
 /// component's escape hatch or its built-in audio shape, so adding one never
 /// means editing `lib/widgets/timeline/`.
-class GoalCheckInTimeline extends ConsumerWidget {
+class GoalCheckInTimeline extends ConsumerStatefulWidget {
   const GoalCheckInTimeline({
     required this.agentId,
     this.maxBeats,
@@ -42,12 +49,30 @@ class GoalCheckInTimeline extends ConsumerWidget {
   final Widget? emptyAction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(goalTimelineItemsProvider(agentId));
-    final cap = maxBeats;
-    final visible = cap == null || items.length <= cap
-        ? items
-        : items.sublist(0, cap);
+  ConsumerState<GoalCheckInTimeline> createState() =>
+      _GoalCheckInTimelineState();
+}
+
+class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
+  static const _pageSize = 20;
+
+  int _visibleCount = _pageSize;
+
+  @override
+  void didUpdateWidget(covariant GoalCheckInTimeline oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.agentId != widget.agentId ||
+        oldWidget.maxBeats != widget.maxBeats) {
+      _visibleCount = _pageSize;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
+    final cap = widget.maxBeats ?? _visibleCount;
+    final visible = items.length <= cap ? items : items.sublist(0, cap);
+    final hasOlder = widget.maxBeats == null && visible.length < items.length;
 
     final locale = Localizations.localeOf(context).toLanguageTag();
     final groups = groupGoalItemsByDay(
@@ -65,7 +90,27 @@ class GoalCheckInTimeline extends ConsumerWidget {
             ],
           ),
       ],
-      empty: _Empty(action: emptyAction),
+      onLoadOlder: hasOlder
+          ? () => setState(
+              () => _visibleCount = math.min(
+                items.length,
+                _visibleCount + _pageSize,
+              ),
+            )
+          : null,
+      onRetryTranscript: (entryId) => unawaited(
+        ref.read(
+          triggerSkillProvider((
+            entityId: entryId,
+            skillId: skillTranscribeContextId,
+            linkedTaskId: null,
+            referenceImages: null,
+            overrideModelId: null,
+            geminiThinkingMode: null,
+          )).future,
+        ),
+      ),
+      empty: _Empty(action: widget.emptyAction),
     );
   }
 
@@ -92,8 +137,23 @@ class GoalCheckInTimeline extends ConsumerWidget {
 
     switch (item) {
       case final GoalAudioCheckIn checkIn:
+        final inferenceStatus = ref.watch(
+          inferenceStatusControllerProvider((
+            id: checkIn.id,
+            aiResponseType: AiResponseType.audioTranscription,
+          )),
+        );
+        final durableFailure =
+            checkIn.transcript == null &&
+            (ref
+                    .watch(
+                      goalAudioTranscriptionFailedProvider(checkIn.id),
+                    )
+                    .value ??
+                false);
         return TimelineBeat(
           id: checkIn.id,
+          entryId: checkIn.id,
           timeLabel: timeLabel,
           kindLabel: context.messages.goalCheckInKindVoice,
           glyph: Icons.mic_rounded,
@@ -103,9 +163,13 @@ class GoalCheckInTimeline extends ConsumerWidget {
             transcript: checkIn.transcript,
             // Absent words are normal, not an error: the recording is saved
             // first and transcribed after.
-            transcriptStatus: checkIn.transcript == null
+            transcriptStatus: checkIn.transcript != null
+                ? TimelineTranscriptStatus.none
+                : inferenceStatus == InferenceStatus.running
                 ? TimelineTranscriptStatus.pending
-                : TimelineTranscriptStatus.none,
+                : inferenceStatus == InferenceStatus.error || durableFailure
+                ? TimelineTranscriptStatus.failed
+                : TimelineTranscriptStatus.pending,
           ),
         );
 
@@ -132,7 +196,7 @@ class GoalCheckInTimeline extends ConsumerWidget {
           content: TimelineBeatContent.custom(
             _ReflectionBody(
               record: reflection.record,
-              onOpen: onOpenReflection,
+              onOpen: widget.onOpenReflection,
             ),
           ),
         );

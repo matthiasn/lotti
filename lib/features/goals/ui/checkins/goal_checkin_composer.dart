@@ -31,9 +31,10 @@ typedef GoalCheckInTextSaver =
       String? categoryId,
     });
 
-/// Opens the recorder against a goal.
+/// Opens the recorder against a goal. Resolves with the created audio
+/// entry's id, or null when the recording was discarded.
 typedef GoalCheckInRecorderOpener =
-    Future<void> Function(
+    Future<String?> Function(
       BuildContext context, {
       required String goalEntryId,
       String? categoryId,
@@ -106,11 +107,19 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   /// Records straight into the goal. The recorder owns save-versus-discard, so
   /// a discarded recording creates nothing and a saved one is linked the
   /// moment it exists — a dismissed sheet can never orphan audio.
-  Future<void> _record(String goalEntryId) => widget.openRecorder(
-    context,
-    goalEntryId: goalEntryId,
-    categoryId: widget.categoryId,
-  );
+  ///
+  /// When the recorder saved something the composer's job is done, so it
+  /// closes itself instead of leaving a sheet whose only remaining action is
+  /// dismissal. A discarded recording returns to the sheet — the user may
+  /// still want to write instead.
+  Future<void> _record(String goalEntryId) async {
+    final createdId = await widget.openRecorder(
+      context,
+      goalEntryId: goalEntryId,
+      categoryId: widget.categoryId,
+    );
+    if (createdId != null && mounted) Navigator.of(context).pop();
+  }
 
   Future<void> _saveText(String goalEntryId) async {
     final text = _text.text.trim();
@@ -199,23 +208,27 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
                   ),
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
-                    child: DesignSystemButton(
-                      label: context.messages.goalCheckInDone,
-                      isLoading: _saving,
-                      // Never pop while there is unsaved text: with no
-                      // capture target resolved, popping discarded what the
-                      // user had just typed without a word — the same silent
-                      // drop the capture gate exists to prevent for audio.
-                      onPressed: _writing && goalEntryId == null
-                          ? null
-                          : () {
-                              if (_writing) {
-                                _saveText(goalEntryId!);
-                              } else {
-                                Navigator.of(context).pop();
-                              }
-                            },
-                    ),
+                    // One label, one meaning: in write mode the sole primary
+                    // commits; in record mode the hero record button is the
+                    // only primary and this slot is a plain dismissal.
+                    child: _writing
+                        ? DesignSystemButton(
+                            label: context.messages.goalCheckInSave,
+                            isLoading: _saving,
+                            // Never save without a capture target: with none
+                            // resolved, popping discarded what the user had
+                            // just typed without a word — the same silent
+                            // drop the capture gate exists to prevent for
+                            // audio.
+                            onPressed: goalEntryId == null
+                                ? null
+                                : () => _saveText(goalEntryId),
+                          )
+                        : DesignSystemButton(
+                            label: context.messages.goalCheckInClose,
+                            variant: DesignSystemButtonVariant.tertiary,
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
                   ),
                 ],
               ),
@@ -323,7 +336,7 @@ Future<bool> saveCheckInText({
 /// decides, so it is excluded rather than covered by a test that proves
 /// nothing.
 // coverage:ignore-start
-Future<void> openCheckInRecorder(
+Future<String?> openCheckInRecorder(
   BuildContext context, {
   required String goalEntryId,
   String? categoryId,

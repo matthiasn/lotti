@@ -1,11 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+
+/// Whether the latest durable transcription attempt for `entryId` failed.
+///
+/// The live inference controller is intentionally short-lived. This lookup is
+/// the restart-safe half of the timeline state: failed logical work retains
+/// the audio entry as its intended output even though no transcript carrier
+/// was produced.
+final FutureProviderFamily<bool, String> goalAudioTranscriptionFailedProvider =
+    FutureProvider.autoDispose.family<bool, String>((ref, entryId) async {
+      final attribution = await ref
+          .watch(consumptionRepositoryProvider)
+          .getLatestAttributionForArtifact(
+            type: AiArtifactType.journalAudio,
+            id: entryId,
+          );
+      return attribution?.workType == AiWorkType.audioTranscription &&
+          attribution?.status == AiWorkStatus.failed;
+    }, name: 'goalAudioTranscriptionFailedProvider');
 
 /// The journal id of the goal coached by an agent, or null while the journal
 /// stack is unavailable.

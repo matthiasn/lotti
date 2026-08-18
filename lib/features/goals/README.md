@@ -229,9 +229,9 @@ offer durably. Recorded entries retain their source-message decision and agent
 provenance, and the progress card marks them with a quill.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
-beside active banners, and lifetime AI consumption plus compute time use the
-same governance pills as Task Details; compute time is withheld when legacy
-calls carry no recorded duration. Banner visibility is snooze-first: the
+beside active banners, and lifetime AI consumption uses the same governance
+pill as Task Details. Invocation duration remains in attribution detail rather
+than competing with goal status in the card footer. Banner visibility is snooze-first: the
 prominent action offers 1, 3, 6, or 8 hours in context, while Dismiss for today
 is the tertiary final choice and there is no direct X or swipe dismissal. Both
 choices persist on the nudge, and provider deadlines plus app-resume checks

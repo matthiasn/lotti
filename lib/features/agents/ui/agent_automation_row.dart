@@ -69,8 +69,15 @@ class AgentAutomationRow extends StatefulWidget {
     required this.onRunNow,
     required this.onSkipScheduledUpdate,
     required this.onCountdownExpired,
+    this.compact = false,
     super.key,
   });
+
+  /// Renders only the first question — the freshness word and the manual
+  /// trigger on one line — for surfaces whose hero card cannot afford the
+  /// full band. The automatic-updates switch moves to that surface's overflow
+  /// menu; the next scheduled update remains available on wider layouts.
+  final bool compact;
 
   final bool automaticUpdatesEnabled;
   final bool automationBusy;
@@ -185,6 +192,40 @@ class _AgentAutomationRowState extends State<AgentAutomationRow> {
               ? messages.taskAgentStatusOutOfDate
               : messages.taskAgentStatusUpToDate)
         : null;
+    if (widget.compact) {
+      final freshness = _FreshnessCluster(
+        label: freshnessLabel,
+        tooltip: widget.hasReportContent
+            ? (widget.isStale
+                  ? messages.taskAgentReportOutdatedTitle
+                  : messages.taskAgentReportUpToDate)
+            : null,
+        isStale: widget.isStale,
+      );
+      final trigger = _UpdateNowButton(
+        isRunning: widget.isRunning,
+        onRunNow: widget.inferenceAvailable ? widget.onRunNow : null,
+      );
+      return Row(
+        key: const ValueKey('agentAutomationRowCompact'),
+        mainAxisAlignment: freshnessLabel == null
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.spaceBetween,
+        children: [
+          if (freshnessLabel != null)
+            Flexible(
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                  end: tokens.spacing.cardItemSpacing,
+                ),
+                child: freshness,
+              ),
+            ),
+          trigger,
+        ],
+      );
+    }
+
     final anchorLabels = _scheduleLabels(context, _widthAnchorSeconds);
     final metrics = _AutomationMetrics.measure(
       context,

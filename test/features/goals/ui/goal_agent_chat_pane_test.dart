@@ -86,7 +86,7 @@ void main() {
     expect(find.text('Juno'), findsOneWidget);
     // The subtitle is current STATE, not the aspiration statement — the
     // statement next to a Behind chip elsewhere read as a status claim.
-    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('On track'), findsOneWidget);
     expect(find.text('Not enough data'), findsNothing);
     expect(
       find.text('Show up for three workouts each week.'),
@@ -139,6 +139,6 @@ void main() {
 
     expect(find.text('Juno'), findsOneWidget);
     expect(find.text('Not enough data'), findsNothing);
-    expect(find.text('Healthy'), findsNothing);
+    expect(find.text('On track'), findsNothing);
   });
 }

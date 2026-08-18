@@ -117,7 +117,7 @@ class GoalReflectionVoiceNotes extends ConsumerWidget {
 /// The real recorder opener — pure delegation, excluded for the same reason as
 /// the composer's.
 // coverage:ignore-start
-Future<void> openReflectionRecorder(
+Future<String?> openReflectionRecorder(
   BuildContext context, {
   required String goalEntryId,
   String? categoryId,

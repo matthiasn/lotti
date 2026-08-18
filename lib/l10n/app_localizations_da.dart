@@ -2606,6 +2606,32 @@ class AppLocalizationsDa extends AppLocalizations {
   String get apiKeyShowTooltip => 'Vis API-nøgle';
 
   @override
+  String get audioPlayerPause => 'Sæt lyden på pause';
+
+  @override
+  String get audioPlayerPlay => 'Afspil lyd';
+
+  @override
+  String audioPlayerPosition(String current, String total) {
+    return '$current af $total';
+  }
+
+  @override
+  String get audioPlayerSeekHint =>
+      'Stryg op eller ned for at spole frem eller tilbage; tryk eller træk for at flytte afspilningspositionen.';
+
+  @override
+  String audioPlayerSpeed(String speed) {
+    return 'Afspilningshastighed, $speed';
+  }
+
+  @override
+  String get audioPlayerTimeline => 'Lydtidslinje';
+
+  @override
+  String get audioPlayerWaveform => 'Lydbølgeform';
+
+  @override
   String get audioRecordingCancel => 'Annuller';
 
   @override
@@ -2622,7 +2648,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingDiscardDialogTitle => 'Kassere optagelse?';
 
   @override
+  String get audioRecordingLive => 'Optagelse startet';
+
+  @override
   String get audioRecordingPause => 'Pause';
+
+  @override
+  String get audioRecordingRecord => 'Optag';
 
   @override
   String get audioRecordingResume => 'Genoptag';
@@ -6071,16 +6103,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opret billede ud fra stemmebeskrivelse';
 
   @override
-  String goalAgentLifetimeTimePill(String duration) {
-    return '$duration tænketid';
-  }
-
-  @override
-  String goalAgentLifetimeTimeTooltip(String calls) {
-    return 'Den samlede tid, denne agents model har arbejdet, over $calls kald.';
-  }
-
-  @override
   String get goalAssessmentHistoryTitle => 'Daglige refleksioner';
 
   @override
@@ -6229,15 +6251,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCheckInAddVoiceNote => 'Tilføj en stemmenote';
 
   @override
+  String get goalCheckInClose => 'Luk';
+
+  @override
   String get goalCheckInComposerTitle => 'Check-in';
 
   @override
   String goalCheckInDimensionsRated(int count) {
-    return '$count dimensioner vurderet';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dimensioner vurderet',
+      one: '1 dimension vurderet',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get goalCheckInDone => 'Færdig';
 
   @override
   String get goalCheckInKindNote => 'NOTE';
@@ -6259,6 +6287,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalCheckInRecordCta => 'Optag et check-in';
+
+  @override
+  String get goalCheckInSave => 'Gem check-in';
 
   @override
   String get goalCheckInsEmptyInvitation =>
@@ -6285,13 +6316,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCoarseHealthBehind => 'Bagud';
 
   @override
-  String get goalCoarseHealthHealthy => 'Sund';
-
-  @override
   String get goalCoarseHealthNotEnoughData => 'For få data';
-
-  @override
-  String get goalCoarseHealthRestarting => 'Starter forfra';
 
   @override
   String get goalCompositeLastSevenDays => 'Seneste 7 dage';
@@ -6348,8 +6373,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dage til at komme på ret køl',
-      one: '1 dag til at komme på ret køl',
+      other: '$count vellykkede dage kræves for at komme på ret køl',
+      one: '1 vellykket dag kræves for at komme på ret køl',
     );
     return '$_temp0';
   }
@@ -6907,17 +6932,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String goalProgressDaysToHealthy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dage til sund',
-      one: '1 dag til sund',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get goalProgressDone => 'gjort · mål nået';
 
   @override
@@ -7176,7 +7190,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get habitsDoneTodayLabel => 'Udført i dag';
+  String get habitsDoneTodayLabel => 'Vaner udført i dag';
 
   @override
   String get habitSectionOptionsTitle => 'Muligheder';
@@ -13259,6 +13273,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String unifiedGoalsArchivedTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Arkiverede mål · $count',
+      one: 'Arkiveret mål · 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unifiedGoalsEmptyInvitation =>
+      'Opret et mål for at samle vaner, signaler og vejledning fra din agent her.';
 
   @override
   String get unifiedGoalStatusAtRisk => 'I farezonen';

@@ -85,7 +85,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 | `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
 | `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
-| `ConsumptionDatabase` | `ai_consumption.sqlite` | 2 | AI token usage and the interaction ledger |
+| `ConsumptionDatabase` | `ai_consumption.sqlite` | 4 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |
 | `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |

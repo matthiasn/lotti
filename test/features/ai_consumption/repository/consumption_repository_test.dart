@@ -113,6 +113,51 @@ void main() {
       },
     );
 
+    test('resolves the latest attempt for a parent artifact', () async {
+      final olderFailure =
+          makeAiWorkAttribution(
+            attributionId: 'failed-attempt',
+            output: const AiArtifactReference(
+              type: AiArtifactType.journalAudio,
+              id: 'audio-1',
+              subId: 'transcript-1',
+            ),
+          ).copyWith(
+            workType: AiWorkType.audioTranscription,
+            status: AiWorkStatus.failed,
+            completedAt: DateTime(2026, 3, 15, 12),
+          );
+      final newerSuccess =
+          makeAiWorkAttribution(
+            attributionId: 'successful-retry',
+            output: const AiArtifactReference(
+              type: AiArtifactType.journalAudio,
+              id: 'audio-1',
+              subId: 'transcript-2',
+            ),
+          ).copyWith(
+            workType: AiWorkType.audioTranscription,
+            completedAt: DateTime(2026, 3, 15, 12, 5),
+          );
+      await repo.upsertAttribution(olderFailure);
+      await repo.upsertAttribution(newerSuccess);
+
+      expect(
+        await repo.getLatestAttributionForArtifact(
+          type: AiArtifactType.journalAudio,
+          id: 'audio-1',
+        ),
+        newerSuccess,
+      );
+      expect(
+        await repo.getLatestAttributionForArtifact(
+          type: AiArtifactType.journalAudio,
+          id: 'missing',
+        ),
+        isNull,
+      );
+    });
+
     test('returns linked interactions in creation order', () async {
       await repo.upsertEvent(
         makeConsumptionEvent(

@@ -108,6 +108,13 @@ CREATE INDEX idx_attribution_output
     primary_output_id,
     primary_output_sub_id
   );
+CREATE INDEX idx_attribution_output_latest
+  ON ai_work_attributions(
+    primary_output_type,
+    primary_output_id,
+    completed_at DESC,
+    id DESC
+  );
 CREATE INDEX idx_attribution_task_created
   ON ai_work_attributions(task_id, completed_at)
   WHERE task_id IS NOT NULL;

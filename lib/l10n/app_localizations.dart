@@ -4458,6 +4458,48 @@ abstract class AppLocalizations {
   /// **'Show API Key'**
   String get apiKeyShowTooltip;
 
+  /// No description provided for @audioPlayerPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause audio'**
+  String get audioPlayerPause;
+
+  /// No description provided for @audioPlayerPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play audio'**
+  String get audioPlayerPlay;
+
+  /// No description provided for @audioPlayerPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String audioPlayerPosition(String current, String total);
+
+  /// No description provided for @audioPlayerSeekHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe up or down to seek; tap or drag to scrub.'**
+  String get audioPlayerSeekHint;
+
+  /// No description provided for @audioPlayerSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback speed, {speed}'**
+  String audioPlayerSpeed(String speed);
+
+  /// No description provided for @audioPlayerTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio timeline'**
+  String get audioPlayerTimeline;
+
+  /// No description provided for @audioPlayerWaveform.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio waveform'**
+  String get audioPlayerWaveform;
+
   /// No description provided for @audioRecordingCancel.
   ///
   /// In en, this message translates to:
@@ -4488,11 +4530,23 @@ abstract class AppLocalizations {
   /// **'Discard recording?'**
   String get audioRecordingDiscardDialogTitle;
 
+  /// No description provided for @audioRecordingLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording started'**
+  String get audioRecordingLive;
+
   /// No description provided for @audioRecordingPause.
   ///
   /// In en, this message translates to:
   /// **'Pause'**
   String get audioRecordingPause;
+
+  /// No description provided for @audioRecordingRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get audioRecordingRecord;
 
   /// No description provided for @audioRecordingResume.
   ///
@@ -10445,18 +10499,6 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
-  /// Top-level pill containing a goal agent's lifetime model compute duration.
-  ///
-  /// In en, this message translates to:
-  /// **'{duration} thinking'**
-  String goalAgentLifetimeTimePill(String duration);
-
-  /// Tooltip for a goal agent's lifetime model compute duration.
-  ///
-  /// In en, this message translates to:
-  /// **'Total time this agent\'s model spent working, across {calls} calls.'**
-  String goalAgentLifetimeTimeTooltip(String calls);
-
   /// No description provided for @goalAssessmentHistoryTitle.
   ///
   /// In en, this message translates to:
@@ -10679,6 +10721,12 @@ abstract class AppLocalizations {
   /// **'Add a voice note'**
   String get goalCheckInAddVoiceNote;
 
+  /// No description provided for @goalCheckInClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get goalCheckInClose;
+
   /// No description provided for @goalCheckInComposerTitle.
   ///
   /// In en, this message translates to:
@@ -10688,14 +10736,8 @@ abstract class AppLocalizations {
   /// No description provided for @goalCheckInDimensionsRated.
   ///
   /// In en, this message translates to:
-  /// **'{count} dimensions rated'**
+  /// **'{count, plural, =1{1 dimension rated} other{{count} dimensions rated}}'**
   String goalCheckInDimensionsRated(int count);
-
-  /// No description provided for @goalCheckInDone.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get goalCheckInDone;
 
   /// No description provided for @goalCheckInKindNote.
   ///
@@ -10732,6 +10774,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Record a check-in'**
   String get goalCheckInRecordCta;
+
+  /// No description provided for @goalCheckInSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save check-in'**
+  String get goalCheckInSave;
 
   /// No description provided for @goalCheckInsEmptyInvitation.
   ///
@@ -10775,23 +10823,11 @@ abstract class AppLocalizations {
   /// **'Behind'**
   String get goalCoarseHealthBehind;
 
-  /// Coarse goal-health chip label: keeping up or better
-  ///
-  /// In en, this message translates to:
-  /// **'Healthy'**
-  String get goalCoarseHealthHealthy;
-
   /// Coarse goal-health chip label: too little signal to judge
   ///
   /// In en, this message translates to:
   /// **'Not enough data'**
   String get goalCoarseHealthNotEnoughData;
-
-  /// Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)
-  ///
-  /// In en, this message translates to:
-  /// **'Restarting'**
-  String get goalCoarseHealthRestarting;
 
   /// Time-frame caption above the composite seven-day strip.
   ///
@@ -10884,7 +10920,7 @@ abstract class AppLocalizations {
   /// Rolling-window goal behind target: days-to-recovery (creditable days needed).
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 day to recover} other{{count} days to recover}}'**
+  /// **'{count, plural, =1{1 successful day needed to recover} other{{count} successful days needed to recover}}'**
   String goalDaysToRecover(int count);
 
   /// Confirm button in the delete-goal confirmation dialog.
@@ -11734,12 +11770,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}'**
   String goalProgressCompactSemantics(int count);
 
-  /// Habit progress row note: creditable days needed to reach the healthy state.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 day to healthy} other{{count} days to healthy}}'**
-  String goalProgressDaysToHealthy(int count);
-
   /// No description provided for @goalProgressDone.
   ///
   /// In en, this message translates to:
@@ -12151,7 +12181,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsDoneTodayLabel.
   ///
   /// In en, this message translates to:
-  /// **'Done today'**
+  /// **'Habits done today'**
   String get habitsDoneTodayLabel;
 
   /// No description provided for @habitSectionOptionsTitle.
@@ -22398,6 +22428,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model: {provider}, {model}'**
   String transcriptModelLabel(String provider, String model);
+
+  /// No description provided for @unifiedGoalsArchivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Archived goal · 1} other{Archived goals · {count}}}'**
+  String unifiedGoalsArchivedTitle(int count);
+
+  /// No description provided for @unifiedGoalsEmptyInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a goal to bring habits, signals, and your agent\'s guidance together here.'**
+  String get unifiedGoalsEmptyInvitation;
 
   /// Unified goal status pill: the goal is at risk of falling behind.
   ///

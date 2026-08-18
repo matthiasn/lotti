@@ -22,6 +22,7 @@ void main() {
     DateTime? nextWakeAt,
     bool hasReportContent = false,
     bool isStale = false,
+    bool compact = false,
     ValueChanged<bool>? onAutomaticUpdatesChanged,
     VoidCallback? onRunNow,
     VoidCallback? onSkipScheduledUpdate,
@@ -36,6 +37,7 @@ void main() {
       nextWakeAt: nextWakeAt,
       hasReportContent: hasReportContent,
       isStale: isStale,
+      compact: compact,
       onAutomaticUpdatesChanged: onAutomaticUpdatesChanged ?? (_) {},
       onRunNow: onRunNow,
       onSkipScheduledUpdate: onSkipScheduledUpdate ?? () {},
@@ -77,6 +79,30 @@ void main() {
 
   DsTokens tokensOf(WidgetTester tester) =>
       tester.element(find.byType(AgentAutomationRow)).designTokens;
+
+  testWidgets('compact mode keeps freshness and the manual action only', (
+    tester,
+  ) async {
+    await pumpRow(
+      tester,
+      subject(
+        compact: true,
+        automaticUpdatesEnabled: true,
+        showCountdown: true,
+        nextWakeAt: now.add(const Duration(hours: 1)),
+        hasReportContent: true,
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('agentAutomationRowCompact')),
+      findsOneWidget,
+    );
+    expect(find.text('Up to date'), findsOneWidget);
+    expect(find.text('Update now'), findsOneWidget);
+    expect(toggle(), findsNothing);
+    expect(scheduleLabel(), findsNothing);
+  });
 
   group('manual trigger', () {
     testWidgets('is labelled, glyphed and fires the callback', (tester) async {

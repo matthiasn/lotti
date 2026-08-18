@@ -18,11 +18,13 @@ void main() {
   late List<({String text, String goalEntryId})> saved;
   late List<String> recorded;
   var saveSucceeds = true;
+  String? recorderResult;
 
   setUp(() {
     saved = [];
     recorded = [];
     saveSucceeds = true;
+    recorderResult = 'audio-1';
   });
 
   Future<void> pump(
@@ -46,6 +48,7 @@ void main() {
           },
           openRecorder: (context, {required goalEntryId, categoryId}) async {
             recorded.add(goalEntryId);
+            return recorderResult;
           },
         ),
         overrides: [
@@ -143,10 +146,23 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     // The link is what puts the recording on the timeline.
     expect(recorded, ['goal-1']);
+    expect(find.byType(GoalCheckInComposer), findsNothing);
+  });
+
+  testWidgets('discarding a recording returns to the composer', (tester) async {
+    recorderResult = null;
+    await pump(tester);
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
+    await tester.pump();
+
+    expect(recorded, ['goal-1']);
+    expect(find.byType(GoalCheckInComposer), findsOneWidget);
   });
 
   testWidgets('a written check-in saves its text against the goal', (
@@ -161,7 +177,7 @@ void main() {
       find.byType(DesignSystemTextarea),
       '  Gym bag is packed.  ',
     );
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pump();
 
     expect(saved, hasLength(1));
@@ -178,7 +194,7 @@ void main() {
     await tester.pump();
 
     await tester.enterText(find.byType(DesignSystemTextarea), '   ');
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pump();
 
     expect(saved, isEmpty);
@@ -194,7 +210,7 @@ void main() {
     await tester.pump();
 
     await tester.enterText(find.byType(DesignSystemTextarea), 'Walked.');
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.text('Save check-in'));
     await tester.pumpAndSettle();
 
     // Closing on failure would discard what the user just wrote.
@@ -202,16 +218,17 @@ void main() {
     expect(find.text('Walked.'), findsOneWidget);
   });
 
-  testWidgets('Done closes the composer when nothing was typed', (
+  testWidgets('Close dismisses record mode without implying a save', (
     tester,
   ) async {
     await pump(tester);
     await tester.pump();
 
-    await tester.tap(find.text('Done'));
+    expect(find.text('Save check-in'), findsNothing);
+    await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
 
-    // The recording was already saved by the recorder; Done just dismisses.
+    // Record mode has one primary CTA; Close is an unambiguous dismissal.
     expect(saved, isEmpty);
     expect(find.byType(GoalCheckInComposer), findsNothing);
   });

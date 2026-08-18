@@ -10,7 +10,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
-import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
+import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
@@ -184,7 +184,10 @@ void main() {
 
     expect(find.text('Fitness'), findsOneWidget);
     // Behind pill with the deterministic recovery door folded in.
-    expect(find.text('Behind · 2 days to recover'), findsOneWidget);
+    expect(
+      find.text('Behind · 2 successful days needed to recover'),
+      findsOneWidget,
+    );
     // The summary is TEMPLATED from live state — the agent's one-liner does
     // not reach the list level for habit goals.
     expect(find.text('1 of 2 habits on track'), findsOneWidget);

@@ -37,9 +37,9 @@ void main() {
         unifiedGoalStatusOf(GoalTrackStatus.atRisk),
         UnifiedGoalStatus.atRisk,
       );
-      // `recovering` deliberately reads as At risk here (not the coarse
-      // vocabulary's "Restarting") — the recovery hint carries the
-      // fresh-start framing on the unified surface.
+      // `recovering` deliberately reads as At risk everywhere; the recovery
+      // hint carries the fresh-start framing without inventing another
+      // dialect for chat or detail surfaces.
       expect(
         unifiedGoalStatusOf(GoalTrackStatus.recovering),
         UnifiedGoalStatus.atRisk,
@@ -53,6 +53,33 @@ void main() {
         UnifiedGoalStatus.noData,
       );
       expect(unifiedGoalStatusOf(null), UnifiedGoalStatus.noData);
+    });
+  });
+
+  group('unifiedGoalStatusChip', () {
+    test('hides no-data only when a standing assessment already judges', () {
+      expect(
+        unifiedGoalStatusChip(
+          GoalTrackStatus.insufficientData,
+          hasStandingAssessment: true,
+        ),
+        isNull,
+      );
+      expect(
+        unifiedGoalStatusChip(null, hasStandingAssessment: false),
+        UnifiedGoalStatus.noData,
+      );
+    });
+
+    test('preserves every judged status beside a standing assessment', () {
+      for (final status in GoalTrackStatus.values) {
+        if (status == GoalTrackStatus.insufficientData) continue;
+        expect(
+          unifiedGoalStatusChip(status, hasStandingAssessment: true),
+          unifiedGoalStatusOf(status),
+          reason: status.name,
+        );
+      }
     });
   });
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -146,6 +145,7 @@ void main() {
     double width = 420,
     Brightness brightness = Brightness.light,
     AudioWaveformData? waveformData,
+    Locale? locale,
   }) async {
     controller = _FakeAudioPlayerController(state);
 
@@ -157,23 +157,20 @@ void main() {
     ).thenAnswer((_) async => waveformData);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          audioPlayerControllerProvider.overrideWith(() => controller),
-        ],
-        child: MaterialApp(
-          theme: resolveTestTheme(
-            ThemeData(useMaterial3: true, brightness: brightness),
-          ),
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: width,
-                child: AudioPlayerWidget(journalAudio),
-              ),
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: width,
+              child: AudioPlayerWidget(journalAudio),
             ),
           ),
         ),
+        overrides: [
+          audioPlayerControllerProvider.overrideWith(() => controller),
+        ],
+        theme: ThemeData(useMaterial3: true, brightness: brightness),
+        locale: locale,
       ),
     );
 
@@ -218,6 +215,32 @@ void main() {
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
     expect(find.bySemanticsLabel('Play audio'), findsOneWidget);
+  });
+
+  testWidgets('localizes player controls for assistive technology', (
+    tester,
+  ) async {
+    final journalAudio = buildJournalAudio();
+    final state = buildState(
+      status: AudioPlayerStatus.stopped,
+      totalDuration: journalAudio.data.duration,
+      progress: Duration.zero,
+      pausedAt: Duration.zero,
+      speed: 1,
+    );
+
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: state,
+      locale: const Locale('de'),
+    );
+
+    expect(find.bySemanticsLabel('Audio abspielen'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Wiedergabegeschwindigkeit, 1x'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('layouts correctly below 320px width', (

@@ -363,8 +363,66 @@ void main() {
         final node = tester.getSemantics(semanticsFinder);
         final data = node.getSemanticsData();
         expect(data.value, '00:15 of 00:45');
-        expect(data.hint, 'Tap to seek, drag to scrub');
-        expect(data.hasAction(SemanticsAction.tap), isTrue);
+        expect(data.hint, 'Swipe up or down to seek; tap or drag to scrub.');
+        expect(data.flagsCollection.isSlider, isTrue);
+        expect(data.increasedValue, '00:20 of 00:45');
+        expect(data.decreasedValue, '00:10 of 00:45');
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
+
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node.id,
+          SemanticsAction.increase,
+        );
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node.id,
+          SemanticsAction.decrease,
+        );
+        await tester.pump();
+        expect(seeks, const [
+          Duration(seconds: 20),
+          Duration(seconds: 10),
+        ]);
+      } finally {
+        handle.dispose();
+      }
+    });
+
+    testWidgets('semantics omit unavailable seek actions at both bounds', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      try {
+        await _pumpScrubber(
+          tester,
+          amplitudes: List<double>.filled(32, 0.5),
+          total: const Duration(seconds: 40),
+        );
+
+        var data = tester
+            .getSemantics(find.bySemanticsLabel('Audio waveform'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isTrue);
+        expect(data.hasAction(SemanticsAction.decrease), isFalse);
+        expect(data.increasedValue, '00:05 of 00:40');
+        expect(data.decreasedValue, isEmpty);
+
+        await _pumpScrubber(
+          tester,
+          amplitudes: List<double>.filled(32, 0.5),
+          progress: const Duration(seconds: 40),
+          total: const Duration(seconds: 40),
+        );
+
+        data = tester
+            .getSemantics(find.bySemanticsLabel('Audio waveform'))
+            .getSemanticsData();
+        expect(data.hasAction(SemanticsAction.increase), isFalse);
+        expect(data.hasAction(SemanticsAction.decrease), isTrue);
+        expect(data.increasedValue, isEmpty);
+        expect(data.decreasedValue, '00:35 of 00:40');
       } finally {
         handle.dispose();
       }

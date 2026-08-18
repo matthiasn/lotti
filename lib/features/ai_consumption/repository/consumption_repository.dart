@@ -65,6 +65,35 @@ class ConsumptionRepository {
         : AttributionDbConversions.attributionFromRow(row);
   }
 
+  /// Latest logical work targeting an artifact, regardless of sub-artifact.
+  ///
+  /// Transcription attempts mint a new transcript id before provider work
+  /// starts. A failed attempt therefore has no transcript carrier from which
+  /// the caller could learn that id, but its attribution still durably names
+  /// the parent audio entry. Ordering by completion makes a later successful
+  /// retry supersede an earlier failure.
+  Future<AiWorkAttribution?> getLatestAttributionForArtifact({
+    required AiArtifactType type,
+    required String id,
+  }) async {
+    final row =
+        await (_db.select(_db.aiWorkAttributions)
+              ..where(
+                (table) =>
+                    table.primaryOutputType.equals(type.name) &
+                    table.primaryOutputId.equals(id),
+              )
+              ..orderBy([
+                (table) => OrderingTerm.desc(table.completedAt),
+                (table) => OrderingTerm.desc(table.id),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    return row == null
+        ? null
+        : AttributionDbConversions.attributionFromRow(row);
+  }
+
   /// Ordered backend interactions used to produce one logical work item.
   Future<List<AiConsumptionEvent>> interactionsForAttribution(
     String attributionId,

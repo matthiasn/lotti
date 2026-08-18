@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -109,6 +111,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     final state = ref.watch(habitsControllerProvider);
     final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
     final agents = ref.watch(activeGoalAgentsProvider);
+    final archivedAgents = ref.watch(dormantGoalAgentsProvider);
     // Stale-while-revalidate: background wakes reload the provider
     // constantly; an established list must never flash away. Before the
     // first value the goal section renders nothing — unless that first load
@@ -116,6 +119,7 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     // ungrouped habit (the agents list's own rule).
     final identities = agents.value ?? const [];
     final failedFirstLoad = agents.value == null && agents.hasError;
+    final archivedIdentities = archivedAgents.value ?? const [];
 
     // A quick-complete on any row writes through the shared habit
     // persistence path; the habits controller refetches on the completion
@@ -334,6 +338,16 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                                 ),
                           ),
                         ),
+                      // The page's own first run gets the same designed
+                      // invitation its sub-states already have: a blank
+                      // stretch of chrome with an unexplained FAB is not an
+                      // empty state. Gated on a RESOLVED first load — the
+                      // no-flash rule: while loading, render nothing here.
+                      if (agents.hasValue &&
+                          identities.isEmpty &&
+                          archivedIdentities.isEmpty &&
+                          !failedFirstLoad)
+                        const _NoGoalsYet(),
                       for (final identity in identities) ...[
                         UnifiedGoalCard(
                           key: Key('unified-goal-card-${identity.agentId}'),
@@ -343,6 +357,14 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                           visibleHabitIds: visibleHabitIds,
                         ),
                         SizedBox(height: tokens.spacing.cardItemSpacing),
+                      ],
+                      if (archivedIdentities.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.step3),
+                        _ArchivedGoalsSection(
+                          identities: archivedIdentities,
+                          successToday: successToday,
+                          streaksByHabit: streaks,
+                        ),
                       ],
                       if (orphanHabits.isNotEmpty) ...[
                         HabitsSectionHeader(
@@ -364,6 +386,98 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// An invitation, not an apology (the check-in rail's own empty-state
+/// pattern): says what a goal is for and offers the one action that starts
+/// one, so the page's first run is as designed as its mid-life.
+class _NoGoalsYet extends StatelessWidget {
+  const _NoGoalsYet();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.sectionGap),
+      child: Column(
+        children: [
+          Icon(
+            Icons.flag_outlined,
+            size: IconSizes.l,
+            color: tokens.colors.text.lowEmphasis,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.unifiedGoalsEmptyInvitation,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          DesignSystemButton(
+            key: const ValueKey('unified-goals-empty-cta'),
+            label: context.messages.agentsCreateGoal,
+            leadingIcon: Icons.add_rounded,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () => beamToNamed(goalCreatePath),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArchivedGoalsSection extends StatelessWidget {
+  const _ArchivedGoalsSection({
+    required this.identities,
+    required this.successToday,
+    required this.streaksByHabit,
+  });
+
+  final List<AgentIdentityEntity> identities;
+  final Set<String> successToday;
+  final Map<String, int> streaksByHabit;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: tokens.colors.surface.enabled,
+      borderRadius: BorderRadius.circular(tokens.radii.l),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        key: const ValueKey('unified-goals-archive'),
+        title: Text(
+          context.messages.unifiedGoalsArchivedTitle(identities.length),
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        childrenPadding: EdgeInsets.fromLTRB(
+          tokens.spacing.cardPadding,
+          0,
+          tokens.spacing.cardPadding,
+          tokens.spacing.cardPadding,
+        ),
+        children: [
+          for (final identity in identities) ...[
+            UnifiedGoalCard(
+              key: Key('unified-archived-goal-card-${identity.agentId}'),
+              identity: identity,
+              successToday: successToday,
+              streaksByHabit: streaksByHabit,
+              // Dormant goals are history, not a second place to record a
+              // habit. Their detail pages remain readable from the card.
+              visibleHabitIds: const {},
+            ),
+            if (identity != identities.last)
+              SizedBox(height: tokens.spacing.cardItemSpacing),
+          ],
+        ],
       ),
     );
   }

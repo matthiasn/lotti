@@ -41,6 +41,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channels never enter AI context.
 
 ### Changed
+- **Goals now use one trustworthy status language everywhere.** The Goals list,
+  detail page, and agent chat agree on On track, At risk, Behind, and No data;
+  recovery hints say how many successful days are needed instead of reading
+  like a countdown. Goal check-ins have distinct Close and Save actions,
+  transcription failures can be retried, long histories load in pages, and
+  voice recording and playback expose localized screen-reader controls. The
+  first-run Goals page explains how to begin, completed goals remain available
+  in an archive, phone agent controls take less space, and switching 14/30/90
+  day ranges keeps the previous view visible while the new range loads.
 - **Goal signal charts now show the trend behind the number.** Daily steps use
   bars and weight keeps its filled curve, both with a dashed trailing
   seven-day average overlaid. Legends identify actuals, averages and targets,

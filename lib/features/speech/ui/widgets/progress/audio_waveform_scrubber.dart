@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Target bar width and spacing for the rendered waveform. Shared with the
 /// bucket-count estimator in `_WaveformArea` (`audio_player.dart`) so the
@@ -142,11 +143,23 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
       _throttleTimer = null;
     }
 
-    final valueLabel =
-        '${formatAudioDuration(widget.progress)} of ${formatAudioDuration(widget.total)}';
-    final hintLabel = widget.enabled
-        ? 'Tap to seek, drag to scrub'
-        : 'Playback disabled';
+    String positionLabel(Duration progress) =>
+        context.messages.audioPlayerPosition(
+          formatAudioDuration(progress),
+          formatAudioDuration(widget.total),
+        );
+    final increased = audioSemanticSeekTarget(
+      progress: widget.progress,
+      total: widget.total,
+      forward: true,
+    );
+    final decreased = audioSemanticSeekTarget(
+      progress: widget.progress,
+      total: widget.total,
+      forward: false,
+    );
+    final canIncrease = widget.progress < widget.total;
+    final canDecrease = widget.progress > Duration.zero;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -155,18 +168,25 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             : MediaQuery.sizeOf(context).width;
 
         return Semantics(
-          label: 'Audio waveform',
-          value: valueLabel,
-          hint: hintLabel,
-          child: GestureDetector(
-            onTapDown: (TapDownDetails details) =>
-                handleImmediate(details.localPosition, width),
-            onHorizontalDragStart: (_) => _cancelThrottle(),
-            onHorizontalDragUpdate: (DragUpdateDetails details) =>
-                handleThrottled(details.localPosition, width),
-            onHorizontalDragEnd: (_) => handleDragEnd(),
-            onHorizontalDragCancel: handleDragEnd,
-            child: waveform,
+          slider: true,
+          label: context.messages.audioPlayerWaveform,
+          value: positionLabel(widget.progress),
+          hint: context.messages.audioPlayerSeekHint,
+          increasedValue: canIncrease ? positionLabel(increased) : null,
+          decreasedValue: canDecrease ? positionLabel(decreased) : null,
+          onIncrease: canIncrease ? () => widget.onSeek(increased) : null,
+          onDecrease: canDecrease ? () => widget.onSeek(decreased) : null,
+          child: ExcludeSemantics(
+            child: GestureDetector(
+              onTapDown: (TapDownDetails details) =>
+                  handleImmediate(details.localPosition, width),
+              onHorizontalDragStart: (_) => _cancelThrottle(),
+              onHorizontalDragUpdate: (DragUpdateDetails details) =>
+                  handleThrottled(details.localPosition, width),
+              onHorizontalDragEnd: (_) => handleDragEnd(),
+              onHorizontalDragCancel: handleDragEnd,
+              child: waveform,
+            ),
           ),
         );
       },

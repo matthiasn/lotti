@@ -33,8 +33,9 @@ Lifetime projections stay ledger-derived rather than introducing summary rows.
 aggregate every retained event for the owner id with no rolling-window cutoff,
 including calls, tokens, provider-reported credits, energy, carbon, water and
 invocation duration. Task Details and Goal Agent Details render the same
-`ConsumptionSummaryPill`; goal agents add a separate compute-time pill from the
-summed duration. Providers without measured impact fall back to token display,
+`ConsumptionSummaryPill`. Goal-agent invocation duration remains available in
+the ledger and attribution detail, but is not repeated as a second user-facing
+lifetime pill. Providers without measured impact fall back to token display,
 and no pricing lookup fabricates cost.
 
 # Why the carrier is authoritative
@@ -47,6 +48,11 @@ performance problem rather than a data-loss one.
 `ConsumptionSyncService` replicates events as their own sequence-tracked
 [sync message family](sync/message-model.md), so per-device AI spend converges
 without a separate reconciliation pass.
+
+The attribution projection indexes both exact output references and the latest
+attempt for an output artifact. The latter follows `(output type, output id,
+completed at DESC, id DESC)`, matching the durable transcription-failure lookup
+without a temporary sort.
 
 See [AI work attribution](ai/attribution.md) for the producing side and
 [agent persistence](agents/persistence-and-sync.md) for how a wake groups its

@@ -748,11 +748,9 @@ flowchart TD
   `spacing.step2` above the fixed-height action header, preventing the rating
   and snooze tap targets from creating a visually double-padded top edge.
 - **The goal detail surface** (hosted by the unified Goals tab under
-  `/goals/details/:agentId`): per-goal health at a glance — a coarse-health
-  chip
-  (`coarseHealthOf` collapses the runtime `GoalTrackStatus` into Healthy /
-  Behind / Restarting / Not enough data; `recovering` reads Restarting, never
-  a failure), the report one-liner, a pending-proposal badge and a trend
+  `/goals/details/:agentId`): per-goal health at a glance — the same four-state
+  chip used by the Goals list and chat (On track / At risk / Behind / No data;
+  `recovering` reads At risk), the report one-liner, a pending-proposal badge and a trend
   arrow (`GoalHealthDirection`, computed in `goalAgentHealthProvider` from the
   two most-recent non-deleted registers for the ACTIVE spec version with a
   0.02 deadband — withheld when either register is insufficient-data, and only
@@ -760,11 +758,12 @@ flowchart TD
   period and a consecutive-register delta there is a boundary reset, not a
   decline). The detail header surfaces that independent direction as a second
   semantic pill, allowing combinations such as Behind + Trending up and
-  Healthy + Trending down. The row shows a coarse chip rather than a raw attainment
+  On track + Trending down. The row shows a status chip rather than a raw attainment
   percentage; the one-liner is the agent's own prose, so keeping percentages
   out of it is a matter for the agent's instructions, not widget-level
   filtering. Below the one-liner a rolling-window habit goal shows a
-  deterministic hint — days-to-recovery when behind (`deficit`) or the buffer
+  deterministic hint — successful days needed to recover when At risk or Behind
+  (`deficit`), explicitly phrased as effort rather than a countdown, or the buffer
   before the oldest success ages out when exactly at rate (`buffer`; surplus
   completions do not receive an aging warning) — lifted from the
   root leaf to `GoalEvaluation`, persisted on the `goalProgress` register, and
@@ -792,7 +791,7 @@ flowchart TD
   "intelligence" panel as the task agent section on Task Details — the
   shared `aiCardDecoration` chrome and `TldrHeader`, the shared
   `AgentAutomationRow` reload affordances, and the goal's cumulative
-  inference cost pills (`GoalAgentLifetimePills`) in its footer — one
+  inference-impact pill (`GoalAgentLifetimePills`) in its footer — one
   panel language, changed in one place for both. A refresh that DIES
   (provider out of credits, network down, the executor timeout) says so on
   the card: it watches `goalReportWakeOutcomeProvider` — report-refresh and
@@ -807,12 +806,21 @@ flowchart TD
   local or synced) or a displayed report published later — a timed-out
   executor is allowed to finish late, and its report must not sit beside
   its own stale timeout error. Fourteen silent 429s once read
-  as a dead button. The page has ONE time
+  as a dead button. On phones the footer collapses to freshness plus Update
+  now, while the set-once automatic-update preference moves into the overflow;
+  desktop keeps the full one-row footer. The page has ONE time
   range: a picker on the first evidence heading (Habits, or Signals for a
   signal-only goal; backed by the habits controller's shared
   `timeSpanDays`) keys `goalAgentProgressViewForSpanProvider`, which
   renders the whole-goal strip and every habit and signal day track over
-  the same span ending today. A day track FITS before it scrolls:
+  the same span ending today. Switching ranges preserves the last rendered
+  progress while the replacement span loads, so established content never
+  flashes back to a loading shell. If the replacement span fails, the picker
+  returns to the last settled span and the shared-controller chart stays hidden
+  until that rollback lands; old evidence is never relabelled as the failed
+  range. The retained snapshot is scoped to the active spec version and only
+  promoted from a settled provider value, so a spec reload cannot relabel
+  prior-spec evidence. A day track FITS before it scrolls:
   `goalDayTrackMetrics` narrows the column pitch — and the square and weekday
   caption inside it, down to a one-letter form — until the whole span fits the
   width it was given, and only a span that overflows even at the legibility
@@ -890,7 +898,7 @@ flowchart TD
   is green when `dayMark` holds, and a habit-composite cell when the authored
   `allOf`, `anyOf`, or `atLeastCount` tree folds
   to true over that day's habit completions. A fully completed routine day can
-  therefore be green while the current goal remains Behind or Restarting.
+  therefore be green while the current goal remains Behind or At risk.
   Numeric leaves still respect `atLeast` versus `atMost` direction, and missing
   samples never count as successful days. Both the compact strip and the
   detail day cells are tri-state (`GoalCompactDayState`): the
@@ -899,10 +907,10 @@ flowchart TD
   full-strength inner dot — the non-color cue — for a partial success (the
   routine was kept while the window target was still building), and neutral
   otherwise. Day states never wear the interactive teal: data-that-happened
-  and things-you-tap are different greens, `recovering` chips read in the
-  info hue rather than a second green, the ages-out ring is a quiet
+  and things-you-tap are different greens, `recovering` uses the same warning
+  treatment as At risk everywhere, the ages-out ring is a quiet
   `text.lowEmphasis` outline (never warning orange on an on-track row), and
-  the deterministic days-to-healthy countdown is neutral prose — the
+  the deterministic successful-days-needed-to-recover effort is neutral prose — the
   header's verdict caption alone carries warning ink. ONE day-cell key renders
   per page, inside the FIRST habit card — where a reader meets the squares it
   explains rather than four cards past them — and it is truthful: the today
@@ -1180,11 +1188,9 @@ flowchart TD
   by `agentId` over the full recorded lifetime. The shared consumption pill is
   the same component used by Task Details: provider-reported Melious credits,
   energy and carbon when available, otherwise tokens, with water and the full
-  breakdown and localized compute duration in the tooltip. A second pill sums
-  recorded invocation duration as lifetime compute time, including a localized
-  sub-minute threshold. The compute-time pill is withheld when legacy usage has
-  no positive recorded duration. No model price table or invented monetary
-  estimate is involved.
+  breakdown and localized compute duration in the tooltip. Recorded invocation
+  duration stays in attribution detail rather than becoming a second lifetime
+  pill. No model price table or invented monetary estimate is involved.
 - **Agent Internals attributes only actual inference.** Conversation wake rows
   resolve their model from persisted token usage first, then the wake-run
   snapshot. A source-only user-message thread has no model label: it did not run
@@ -1205,7 +1211,10 @@ flowchart TD
   No data, collapsed from `GoalTrackStatus`; `recovering` reads as At
   risk with the deterministic recovery hint folded into the pill), a
   templated summary computed locally (never generated prose — it cannot
-  go stale), and the shared `HabitActionRow` per habit dimension. Row
+  go stale), and the shared `HabitActionRow` per habit dimension. The summary
+  names the counted unit (for example, habits done today), the first-run state
+  explains Goals and offers the sole creation CTA, and completed/dormant goals
+  remain reachable through a collapsed archive section. Row
   done-state uses **success-only** completions (`successfulByDay[today]`,
   not `successfulToday`, which also counts skips) because goal criteria
   credit only real successes; the page reads the category-UNFILTERED
@@ -1308,7 +1317,8 @@ Key pieces:
 - `lib/features/goals/logic/goal_timeline_projection.dart` — pure merge of
   linked journal entries and standing reflections, newest first, spec-scoped
   so a verdict passed on superseded criteria is not shown as a judgement of
-  the current goal.
+  the current goal. Full history renders in bounded pages instead of eagerly
+  mounting every audio player; the inline card remains a short preview.
 - `lib/features/goals/service/goal_checkin_compactor.dart` — one structured
   summary per check-in, keyed `(agentId, entryId)` so retries and second
   devices converge instead of appending.
@@ -1330,6 +1340,11 @@ Invariants worth not breaking:
   not the moment the summary was written.
 - **Compaction is non-fatal.** A check-in that fails to compact is absent from
   that wake and retried by the next; it never fails the wake or the recording.
+- **Transcription failure is visible and recoverable.** A failed timeline item
+  stops showing progress, announces the failure, and retries the built-in
+  transcription skill on request. The timeline combines the live inference
+  state with the latest durable audio-transcription attribution, so the failure
+  and Retry action survive provider disposal and app restart.
 
 ## Gotchas
 

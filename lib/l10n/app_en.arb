@@ -1682,12 +1682,38 @@
   "apiKeyProviderTypeHint": "Select a provider type",
   "apiKeyProviderTypeLabel": "Provider Type",
   "apiKeyShowTooltip": "Show API Key",
+  "audioPlayerPause": "Pause audio",
+  "audioPlayerPlay": "Play audio",
+  "audioPlayerPosition": "{current} of {total}",
+  "@audioPlayerPosition": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "audioPlayerSeekHint": "Swipe up or down to seek; tap or drag to scrub.",
+  "audioPlayerSpeed": "Playback speed, {speed}",
+  "@audioPlayerSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "audioPlayerTimeline": "Audio timeline",
+  "audioPlayerWaveform": "Audio waveform",
   "audioRecordingCancel": "Cancel",
   "audioRecordingDiscardDialogBody": "This recording will be deleted. No audio entry, transcript, or task summary will be created.",
   "audioRecordingDiscardDialogCancel": "Keep recording",
   "audioRecordingDiscardDialogConfirm": "Discard",
   "audioRecordingDiscardDialogTitle": "Discard recording?",
+  "audioRecordingLive": "Recording started",
   "audioRecordingPause": "Pause",
+  "audioRecordingRecord": "Record",
   "audioRecordingResume": "Resume",
   "audioRecordings": "Audio Recordings",
   "audioRecordingStop": "Stop",
@@ -3253,24 +3279,6 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
-  "goalAgentLifetimeTimePill": "{duration} thinking",
-  "@goalAgentLifetimeTimePill": {
-    "description": "Top-level pill containing a goal agent's lifetime model compute duration.",
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "goalAgentLifetimeTimeTooltip": "Total time this agent's model spent working, across {calls} calls.",
-  "@goalAgentLifetimeTimeTooltip": {
-    "description": "Tooltip for a goal agent's lifetime model compute duration.",
-    "placeholders": {
-      "calls": {
-        "type": "String"
-      }
-    }
-  },
   "goalAssessmentHistoryTitle": "Daily reflections",
   "goalAssessmentImproving": "Improving",
   "goalAssessmentMeasuredReadOnly": "Measured by Lotti — this part isn’t editable.",
@@ -3422,8 +3430,9 @@
   },
   "goalChatYou": "You",
   "goalCheckInAddVoiceNote": "Add a voice note",
+  "goalCheckInClose": "Close",
   "goalCheckInComposerTitle": "Check in",
-  "goalCheckInDimensionsRated": "{count} dimensions rated",
+  "goalCheckInDimensionsRated": "{count, plural, =1{1 dimension rated} other{{count} dimensions rated}}",
   "@goalCheckInDimensionsRated": {
     "placeholders": {
       "count": {
@@ -3431,7 +3440,6 @@
       }
     }
   },
-  "goalCheckInDone": "Done",
   "goalCheckInKindNote": "NOTE",
   "goalCheckInKindReflection": "DAILY REFLECTION",
   "goalCheckInKindVoice": "VOICE CHECK-IN",
@@ -3445,6 +3453,7 @@
     }
   },
   "goalCheckInRecordCta": "Record a check-in",
+  "goalCheckInSave": "Save check-in",
   "goalCheckInsEmptyInvitation": "Tell your agent what is actually going on — thirty seconds, in your own words, whenever it is worth saying.",
   "goalCheckInsSeeAll": "See all check-ins",
   "goalCheckInsTitle": "Check-ins",
@@ -3462,17 +3471,9 @@
   "@goalCoarseHealthBehind": {
     "description": "Coarse goal-health chip label: behind and every remaining day matters"
   },
-  "goalCoarseHealthHealthy": "Healthy",
-  "@goalCoarseHealthHealthy": {
-    "description": "Coarse goal-health chip label: keeping up or better"
-  },
   "goalCoarseHealthNotEnoughData": "Not enough data",
   "@goalCoarseHealthNotEnoughData": {
     "description": "Coarse goal-health chip label: too little signal to judge"
-  },
-  "goalCoarseHealthRestarting": "Restarting",
-  "@goalCoarseHealthRestarting": {
-    "description": "Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)"
   },
   "goalCompositeLastSevenDays": "Last 7 days",
   "@goalCompositeLastSevenDays": {
@@ -3534,7 +3535,7 @@
   "@goalCreateValidationMissing": {
     "description": "Validation message on the goal creation form."
   },
-  "goalDaysToRecover": "{count, plural, =1{1 day to recover} other{{count} days to recover}}",
+  "goalDaysToRecover": "{count, plural, =1{1 successful day needed to recover} other{{count} successful days needed to recover}}",
   "@goalDaysToRecover": {
     "description": "Rolling-window goal behind target: days-to-recovery (creditable days needed).",
     "placeholders": {
@@ -4032,15 +4033,6 @@
       }
     }
   },
-  "goalProgressDaysToHealthy": "{count, plural, =1{1 day to healthy} other{{count} days to healthy}}",
-  "@goalProgressDaysToHealthy": {
-    "description": "Habit progress row note: creditable days needed to reach the healthy state.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "goalProgressDone": "done · target met",
   "goalProgressHabitDayNoEntry": "No entry",
   "goalProgressHabitDaySemantics": "{date}: {outcome}",
@@ -4269,7 +4261,7 @@
       }
     }
   },
-  "habitsDoneTodayLabel": "Done today",
+  "habitsDoneTodayLabel": "Habits done today",
   "habitSectionOptionsTitle": "Options",
   "habitSectionScheduleTitle": "Schedule",
   "habitsFilterAll": "all",
@@ -7190,6 +7182,15 @@
       }
     }
   },
+  "unifiedGoalsArchivedTitle": "{count, plural, =1{Archived goal · 1} other{Archived goals · {count}}}",
+  "@unifiedGoalsArchivedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unifiedGoalsEmptyInvitation": "Create a goal to bring habits, signals, and your agent's guidance together here.",
   "unifiedGoalStatusAtRisk": "At risk",
   "@unifiedGoalStatusAtRisk": {
     "description": "Unified goal status pill: the goal is at risk of falling behind."

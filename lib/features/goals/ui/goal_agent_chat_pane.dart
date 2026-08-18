@@ -11,8 +11,8 @@ import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
-import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -49,16 +49,13 @@ class GoalAgentChatPane extends ConsumerWidget {
     // published assessment, "Not enough data" is the app disagreeing with
     // itself in one viewport. On desktop this pane sits directly next to that
     // header, which is where the contradiction was most visible.
-    final coarse = healthAsync.hasValue
-        ? coarseHealthChip(
+    final status = healthAsync.hasValue
+        ? unifiedGoalStatusChip(
             health?.trackStatus,
             hasStandingAssessment:
                 health?.reportOneLiner?.trim().isNotEmpty ?? false,
           )
         : null;
-    final coarseHealthLabel = coarse == null
-        ? null
-        : goalCoarseHealthLabel(context.messages, coarse);
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final now = clock.now();
@@ -147,15 +144,18 @@ class GoalAgentChatPane extends ConsumerWidget {
                                 color: tokens.colors.text.highEmphasis,
                               ),
                         ),
-                        if (coarseHealthLabel != null)
-                          Text(
-                            coarseHealthLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                ),
+                        // The same pill the list rows and the detail header
+                        // wear — word AND hue — so this header can never
+                        // disagree with the surfaces beside it.
+                        if (status != null)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: tokens.spacing.step1,
+                            ),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: UnifiedGoalStatusPill(status: status),
+                            ),
                           ),
                       ],
                     ),

@@ -7,6 +7,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 const List<double> _speedSequence = <double>[
@@ -337,27 +338,31 @@ class _PlayButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: isPlaying ? 'Pause audio' : 'Play audio',
+      label: isPlaying
+          ? context.messages.audioPlayerPause
+          : context.messages.audioPlayerPlay,
       onTap: onPressed,
-      child: SizedBox(
-        width: diameter,
-        height: diameter,
-        child: Material(
-          key: const Key('audio_player_play_button_surface'),
-          color: surfaceColor,
-          // A visible accent ring makes the play control the focal point and
-          // gives the button SHAPE a >=3:1 boundary (WCAG 1.4.11) — the bare
-          // low-contrast fill alone read as nearly invisible chrome.
-          shape: CircleBorder(
-            side: BorderSide(
-              color: tokens?.colors.interactive.enabled ?? scheme.primary,
-              width: 1.5,
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: diameter,
+          height: diameter,
+          child: Material(
+            key: const Key('audio_player_play_button_surface'),
+            color: surfaceColor,
+            // A visible accent ring makes the play control the focal point and
+            // gives the button SHAPE a >=3:1 boundary (WCAG 1.4.11) — the bare
+            // low-contrast fill alone read as nearly invisible chrome.
+            shape: CircleBorder(
+              side: BorderSide(
+                color: tokens?.colors.interactive.enabled ?? scheme.primary,
+                width: 1.5,
+              ),
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed,
-            child: Center(child: icon),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              child: Center(child: icon),
+            ),
           ),
         ),
       ),
@@ -413,24 +418,26 @@ class _SpeedButton extends StatelessWidget {
       child: Text(label, style: speedTextStyle),
     );
 
-    if (!isActive) {
-      // Not tappable until playback is active, but kept at full contrast (not a
-      // dimmed ghost) so it always reads as a real control in the resting card.
-      return child;
-    }
-
     return Semantics(
-      button: true,
-      label: 'Playback speed',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          splashColor: scheme.primary.withValues(alpha: 0.08),
-          highlightColor: scheme.primary.withValues(alpha: 0.04),
-          onTap: () => controller.setSpeed(nextSpeed),
-          child: child,
-        ),
+      button: isActive,
+      enabled: isActive,
+      label: context.messages.audioPlayerSpeed(label),
+      onTap: isActive ? () => controller.setSpeed(nextSpeed) : null,
+      child: ExcludeSemantics(
+        child: isActive
+            ? Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  splashColor: scheme.primary.withValues(alpha: 0.08),
+                  highlightColor: scheme.primary.withValues(alpha: 0.04),
+                  onTap: () => controller.setSpeed(nextSpeed),
+                  child: child,
+                ),
+              )
+            // Not tappable until playback is active, but kept at full
+            // contrast so it still reads as the pending speed control.
+            : child,
       ),
     );
   }

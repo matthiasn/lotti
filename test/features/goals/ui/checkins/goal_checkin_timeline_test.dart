@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
@@ -43,17 +47,39 @@ void main() {
     List<GoalTimelineItem> items, {
     ValueChanged<DateTime>? onOpenReflection,
     int? maxBeats,
+    String? failedAudioId,
+    String? durableFailedAudioId,
+    ValueChanged<TriggerSkillParams>? onTrigger,
   }) => withClock(
     Clock.fixed(today.add(const Duration(hours: 3))),
     () => tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        GoalCheckInTimeline(
-          agentId: 'goal-1',
-          maxBeats: maxBeats,
-          onOpenReflection: onOpenReflection,
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: GoalCheckInTimeline(
+              agentId: 'goal-1',
+              maxBeats: maxBeats,
+              onOpenReflection: onOpenReflection,
+            ),
+          ),
         ),
         overrides: [
           goalTimelineItemsProvider('goal-1').overrideWithValue(items),
+          for (final item in items.whereType<GoalAudioCheckIn>())
+            goalAudioTranscriptionFailedProvider(item.id).overrideWith(
+              (ref) async => item.id == durableFailedAudioId,
+            ),
+          if (failedAudioId != null)
+            inferenceStatusControllerProvider((
+              id: failedAudioId,
+              aiResponseType: AiResponseType.audioTranscription,
+            )).overrideWith(
+              () => _TestInferenceStatusController(InferenceStatus.error),
+            ),
+          if (onTrigger != null)
+            triggerSkillProvider.overrideWith((ref, params) async {
+              onTrigger(params);
+            }),
         ],
       ),
     ),
@@ -88,6 +114,43 @@ void main() {
     ]);
 
     expect(find.text('Skipped the walk.'), findsOneWidget);
+    expect(find.text('Transcribing…'), findsNothing);
+  });
+
+  testWidgets('a failed transcription is visible and retryable', (
+    tester,
+  ) async {
+    TriggerSkillParams? triggered;
+    await pump(
+      tester,
+      [GoalAudioCheckIn(audio('a1', today))],
+      failedAudioId: 'a1',
+      onTrigger: (params) => triggered = params,
+    );
+
+    expect(find.text('Transcription failed'), findsOneWidget);
+    expect(find.text('Transcribing…'), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+
+    expect(triggered?.entityId, 'a1');
+    expect(triggered?.skillId, skillTranscribeContextId);
+  });
+
+  testWidgets('a persisted transcription failure survives transient state', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      [GoalAudioCheckIn(audio('a1', today))],
+      durableFailedAudioId: 'a1',
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Transcription failed'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
     expect(find.text('Transcribing…'), findsNothing);
   });
 
@@ -155,6 +218,97 @@ void main() {
     expect(find.text('n3'), findsNothing);
   });
 
+  testWidgets('the full timeline pages older beats twenty at a time', (
+    tester,
+  ) async {
+    await pump(tester, [
+      for (var i = 0; i < 21; i++)
+        GoalAudioCheckIn(
+          audio(
+            'a$i',
+            today.subtract(Duration(minutes: i)),
+            transcript: 'note $i',
+          ),
+        ),
+    ]);
+
+    expect(find.text('note 19'), findsOneWidget);
+    expect(find.text('note 20'), findsNothing);
+    final loadOlder = find.text('Load older');
+    expect(loadOlder, findsOneWidget);
+
+    await tester.ensureVisible(loadOlder);
+    await tester.tap(loadOlder);
+    await tester.pump();
+
+    expect(find.text('note 20'), findsOneWidget);
+    expect(find.text('Load older'), findsNothing);
+  });
+
+  testWidgets('switching goals resets full-timeline paging', (tester) async {
+    final firstItems = [
+      for (var i = 0; i < 21; i++)
+        GoalAudioCheckIn(
+          audio(
+            'first-$i',
+            today.subtract(Duration(minutes: i)),
+            transcript: 'first note $i',
+          ),
+        ),
+    ];
+    final secondItems = [
+      for (var i = 0; i < 21; i++)
+        GoalAudioCheckIn(
+          audio(
+            'second-$i',
+            today.subtract(Duration(minutes: i)),
+            transcript: 'second note $i',
+          ),
+        ),
+    ];
+    var agentId = 'goal-1';
+    late StateSetter updateHost;
+
+    await withClock(
+      Clock.fixed(today.add(const Duration(hours: 3))),
+      () => tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  updateHost = setState;
+                  return GoalCheckInTimeline(agentId: agentId);
+                },
+              ),
+            ),
+          ),
+          overrides: [
+            goalTimelineItemsProvider(
+              'goal-1',
+            ).overrideWithValue(firstItems),
+            goalTimelineItemsProvider(
+              'goal-2',
+            ).overrideWithValue(secondItems),
+          ],
+        ),
+      ),
+    );
+
+    await tester.ensureVisible(find.text('Load older'));
+    await tester.tap(find.text('Load older'));
+    await tester.pump();
+    expect(find.text('first note 20'), findsOneWidget);
+
+    updateHost(() => agentId = 'goal-2');
+    await tester.pump();
+
+    expect(find.text('first note 20'), findsNothing);
+    expect(find.text('second note 19'), findsOneWidget);
+    expect(find.text('second note 20'), findsNothing);
+    expect(find.text('Load older'), findsOneWidget);
+  });
+
   testWidgets('a written check-in shows its words under a NOTE label', (
     tester,
   ) async {
@@ -208,4 +362,13 @@ void main() {
     expect(find.text('TODAY'), findsOneWidget);
     expect(find.text('YESTERDAY'), findsOneWidget);
   });
+}
+
+class _TestInferenceStatusController extends InferenceStatusController {
+  _TestInferenceStatusController(this.initial);
+
+  final InferenceStatus initial;
+
+  @override
+  InferenceStatus build() => initial;
 }

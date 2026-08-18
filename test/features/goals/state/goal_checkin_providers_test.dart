@@ -5,6 +5,8 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -161,6 +163,93 @@ void main() {
           goalCheckInEntriesProvider('agent-1'),
         ),
         isEmpty,
+      );
+    });
+  });
+
+  group('goalAudioTranscriptionFailedProvider', () {
+    test('restores a durable failure after transient state is gone', () async {
+      final consumption = MockConsumptionRepository();
+      final failed = AiWorkAttribution(
+        id: 'attempt-1',
+        workType: AiWorkType.audioTranscription,
+        status: AiWorkStatus.failed,
+        initiator: const AiActorSnapshot(
+          type: AiActorType.human,
+          id: 'user-1',
+          displayName: 'User',
+        ),
+        trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+        startedAt: at,
+        completedAt: at.add(const Duration(seconds: 1)),
+        vectorClock: null,
+        primaryOutput: const AiArtifactReference(
+          type: AiArtifactType.journalAudio,
+          id: 'audio-1',
+          subId: 'transcript-1',
+        ),
+      );
+      when(
+        () => consumption.getLatestAttributionForArtifact(
+          type: AiArtifactType.journalAudio,
+          id: 'audio-1',
+        ),
+      ).thenAnswer((_) async => failed);
+      final c = ProviderContainer(
+        overrides: [
+          consumptionRepositoryProvider.overrideWithValue(consumption),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      expect(
+        await c.read(
+          goalAudioTranscriptionFailedProvider('audio-1').future,
+        ),
+        isTrue,
+      );
+    });
+
+    test('a later successful retry clears durable failure', () async {
+      final consumption = MockConsumptionRepository();
+      when(
+        () => consumption.getLatestAttributionForArtifact(
+          type: AiArtifactType.journalAudio,
+          id: 'audio-1',
+        ),
+      ).thenAnswer(
+        (_) async => AiWorkAttribution(
+          id: 'attempt-2',
+          workType: AiWorkType.audioTranscription,
+          status: AiWorkStatus.succeeded,
+          initiator: const AiActorSnapshot(
+            type: AiActorType.human,
+            id: 'user-1',
+            displayName: 'User',
+          ),
+          trigger: const AiTriggerSnapshot(type: AiTriggerType.manual),
+          startedAt: at,
+          completedAt: at.add(const Duration(seconds: 1)),
+          vectorClock: null,
+          primaryOutput: const AiArtifactReference(
+            type: AiArtifactType.journalAudio,
+            id: 'audio-1',
+            subId: 'transcript-2',
+          ),
+        ),
+      );
+      final c = ProviderContainer(
+        overrides: [
+          consumptionRepositoryProvider.overrideWithValue(consumption),
+        ],
+      );
+      addTearDown(c.dispose);
+
+      expect(
+        await c.read(
+          goalAudioTranscriptionFailedProvider('audio-1').future,
+        ),
+        isFalse,
       );
     });
   });

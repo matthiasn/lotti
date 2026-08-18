@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Top-level lifetime governance for one goal agent.
 ///
@@ -26,9 +23,6 @@ class GoalAgentLifetimePills extends ConsumerWidget {
     }
     final tokens = context.designTokens;
     final foreground = tokens.colors.text.mediumEmphasis;
-    final duration = totals.durationMs > 0
-        ? formatConsumptionDuration(context, totals.durationMs)
-        : null;
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
@@ -41,23 +35,6 @@ class GoalAgentLifetimePills extends ConsumerWidget {
             totals: totals,
             foregroundColor: foreground,
           ),
-          if (duration != null)
-            Tooltip(
-              message: context.messages.goalAgentLifetimeTimeTooltip(
-                formatCallCount(totals.callCount),
-              ),
-              child: DsPill(
-                variant: DsPillVariant.filled,
-                bordered: true,
-                label: context.messages.goalAgentLifetimeTimePill(duration),
-                labelColor: foreground,
-                leading: Icon(
-                  Icons.schedule_rounded,
-                  size: IconSizes.xs,
-                  color: foreground,
-                ),
-              ),
-            ),
         ],
       ),
     );

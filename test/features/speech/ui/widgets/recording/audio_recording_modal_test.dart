@@ -519,6 +519,7 @@ void main() {
       String? linkedId,
       List<Override> extraOverrides = const [],
       ThemeData? theme,
+      Locale? locale,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -530,6 +531,7 @@ void main() {
             theme: theme ?? resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            locale: locale,
             home: Scaffold(
               body: AudioRecordingModalContent(
                 categoryId: categoryId,
@@ -753,6 +755,38 @@ void main() {
     });
 
     group('Stop Button Rendering and _isRecording Coverage', () {
+      testWidgets('announces when the microphone becomes live', (tester) async {
+        stubCategory();
+        final handle = tester.ensureSemantics();
+        try {
+          final recordingState = AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: const Duration(seconds: 5),
+            vu: 80,
+            dBFS: -20,
+            showIndicator: false,
+            modalVisible: true,
+          );
+
+          await pumpModalContent(
+            tester,
+            extraOverrides: [
+              audioRecorderControllerProvider.overrideWith(
+                () => TestAudioRecorderController(recordingState),
+              ),
+            ],
+          );
+          await tester.pump();
+
+          final semantics = tester.getSemantics(
+            find.bySemanticsLabel('Recording started'),
+          );
+          expect(semantics.flagsCollection.isLiveRegion, isTrue);
+        } finally {
+          handle.dispose();
+        }
+      });
+
       testWidgets(
         'should render stop button UI when _isRecording returns true '
         '(recording state)',
@@ -860,6 +894,15 @@ void main() {
         verify(
           () => mockAudioRecorderRepository.startRecording(),
         ).called(1);
+      });
+
+      testWidgets('localizes the record action', (tester) async {
+        stubCategory();
+
+        await pumpModalContent(tester, locale: const Locale('de'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('AUFNEHMEN'), findsOneWidget);
       });
     });
 
