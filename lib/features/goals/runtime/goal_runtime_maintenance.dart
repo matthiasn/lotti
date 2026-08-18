@@ -72,14 +72,15 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         await _goalChatService.restoreOldestPendingMessage(identity.agentId);
         final criteria = await _headCriteria(identity.agentId);
         if (criteria == null) continue;
-        _goalAgentService..registerSignalSubscription(
-          identity.agentId,
-          criteria,
-        )
-        ..restorePendingReportRefresh(
-          identity: identity,
-          state: await _repository.getAgentState(identity.agentId),
-        );
+        _goalAgentService
+          ..registerSignalSubscription(
+            identity.agentId,
+            criteria,
+          )
+          ..restorePendingReportRefresh(
+            identity: identity,
+            state: await _repository.getAgentState(identity.agentId),
+          );
       } catch (error, stackTrace) {
         _log('restoreSubscriptions', identity.agentId, error, stackTrace);
       }

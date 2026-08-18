@@ -78,10 +78,12 @@ void main() {
         workspaceKey: any(named: 'workspaceKey'),
       ),
     ).thenAnswer((_) async => 'run-deferred');
-    when(() => updateNotifications.syncUpdateStream)
-        .thenAnswer((_) => syncStream.stream);
-    when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-        .thenAnswer((_) async => []);
+    when(
+      () => updateNotifications.syncUpdateStream,
+    ).thenAnswer((_) => syncStream.stream);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     when(
       () => repository.getEntitiesByAgentId(
@@ -106,14 +108,16 @@ void main() {
     ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
-    when(() => aiConfigRepository.getConfigsByType(AiConfigType.model))
-        .thenAnswer((_) async => []);
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
         // The banner provider is gated on the unified-Goals rollout flag.
-        configFlagProvider(enableUnifiedGoalsFlag)
-            .overrideWith((ref) => Stream.value(true)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
+        ).overrideWith((ref) => Stream.value(true)),
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
@@ -131,20 +135,22 @@ void main() {
   });
   tearDown(tearDownTestGetIt);
 
-  AgentIdentityEntity goalIdentity(String id) => AgentDomainEntity.agent(
-    id: id,
-    agentId: id,
-    kind: AgentKinds.goalAgent,
-    displayName: id,
-    lifecycle: AgentLifecycle.active,
-    mode: AgentInteractionMode.autonomous,
-    allowedCategoryIds: const {},
-    currentStateId: '$id:state',
-    config: const AgentConfig(),
-    createdAt: DateTime(2026),
-    updatedAt: DateTime(2026),
-    vectorClock: null,
-  ) as AgentIdentityEntity;
+  AgentIdentityEntity goalIdentity(String id) =>
+      AgentDomainEntity.agent(
+            id: id,
+            agentId: id,
+            kind: AgentKinds.goalAgent,
+            displayName: id,
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: '$id:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
 
   test('every goal provider constructs against the shared agent runtime', () {
     expect(container.read(goalSignalReaderProvider), isA<GoalSignalReader>());
@@ -168,20 +174,22 @@ void main() {
     // Invoking the closure exercises the wiring end to end: a goal agent
     // without a spec head is Phase A's clean no-op.
     final result = await runners[AgentKinds.goalAgent]!(
-      agentIdentity: AgentDomainEntity.agent(
-        id: 'goal-x',
-        agentId: 'goal-x',
-        kind: AgentKinds.goalAgent,
-        displayName: 'x',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'goal-x:state',
-        config: const AgentConfig(),
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-        vectorClock: null,
-      ) as AgentIdentityEntity,
+      agentIdentity:
+          AgentDomainEntity.agent(
+                id: 'goal-x',
+                agentId: 'goal-x',
+                kind: AgentKinds.goalAgent,
+                displayName: 'x',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: 'goal-x:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
       runKey: 'run-1',
       triggerTokens: const {},
       threadId: 'thread-1',
@@ -345,8 +353,9 @@ void main() {
         rangeEnd: any(named: 'rangeEnd'),
       ),
     ).thenAnswer((_) async => []);
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => []);
     when(
       () => repository.getMessagesByKind(
         agentId,
@@ -385,10 +394,12 @@ void main() {
 
     // The same wake without the escalation token stays on the €0 tier and
     // succeeds without any inference plumbing.
-    when(() => repository.getDueScheduledWakeRecords(any()))
-        .thenAnswer((_) async => []);
-    when(() => repository.getDueScheduledAgentStates(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
     final phaseA = await runner(
       agentIdentity: goalIdentity(agentId),
       runKey: 'run-a',
@@ -429,8 +440,9 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(() => repository.getEntity(agentId))
-        .thenAnswer((_) async => goalIdentity(agentId));
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     when(
       () => journalDb.getHabitCompletionsByHabitId(
         habitId: any(named: 'habitId'),
@@ -440,29 +452,33 @@ void main() {
     ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     // The nudged manager runs one scan pass; an empty due list ends it.
-    when(() => repository.getDueScheduledWakeRecords(any()))
-        .thenAnswer((_) async => []);
-    when(() => repository.getDueScheduledAgentStates(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
 
     final runner = container.read(
       goalAgentWakeRunnersProvider,
     )[AgentKinds.goalAgent]!;
     final result = await runner(
-      agentIdentity: AgentDomainEntity.agent(
-        id: agentId,
-        agentId: agentId,
-        kind: AgentKinds.goalAgent,
-        displayName: 'Gym',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: '$agentId:state',
-        config: const AgentConfig(),
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-        vectorClock: null,
-      ) as AgentIdentityEntity,
+      agentIdentity:
+          AgentDomainEntity.agent(
+                id: agentId,
+                agentId: agentId,
+                kind: AgentKinds.goalAgent,
+                displayName: 'Gym',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: '$agentId:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
       runKey: 'run-esc',
       triggerTokens: const {'gym-habit'},
       threadId: 'thread-esc',
@@ -496,11 +512,12 @@ void main() {
     'the sync listener starts on construction and feeds the dispatcher',
     () async {
       final listed = Completer<void>();
-      when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-          .thenAnswer((_) async {
-            if (!listed.isCompleted) listed.complete();
-            return [];
-          });
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async {
+        if (!listed.isCompleted) listed.complete();
+        return [];
+      });
       container.read(goalSignalSyncListenerProvider);
       syncStream.add({'anything'});
       // Deterministic: resolves exactly when the provider-wired dispatcher
@@ -513,8 +530,9 @@ void main() {
       'the evaluated agent — the health projections have no other way to '
       'learn about it', () async {
     const agentId = 'goal-sync';
-    when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-        .thenAnswer((_) async => [goalIdentity(agentId)]);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity(agentId)]);
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -550,8 +568,9 @@ void main() {
         rangeEnd: any(named: 'rangeEnd'),
       ),
     ).thenAnswer((_) async => []);
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => []);
     when(
       () => repository.getMessagesByKind(
         agentId,
@@ -560,10 +579,12 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
-    when(() => repository.getDueScheduledWakeRecords(any()))
-        .thenAnswer((_) async => []);
-    when(() => repository.getDueScheduledAgentStates(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
 
     final dispatcher = container.read(goalSignalSyncDispatcherProvider);
     await dispatcher.dispatchBatch({'gym-habit'});
@@ -575,28 +596,31 @@ void main() {
       'minted, head moved, and the signal subscription re-registered from '
       'the NEW criteria', () async {
     const agentId = 'goal-rev';
-    when(() => repository.getEntity(agentId))
-        .thenAnswer((_) async => goalIdentity(agentId));
-    final changeSet = AgentDomainEntity.changeSet(
-      id: 'cs-1',
-      agentId: agentId,
-      taskId: agentId,
-      threadId: 'thread-1',
-      runKey: 'run-1',
-      status: ChangeSetStatus.pending,
-      items: const [
-        ChangeItem(
-          toolName: GoalAgentToolNames.proposeGoalRevision,
-          args: {
-            'changes': {'targetValue': 8000},
-            'rationale': 'ease off',
-          },
-          humanSummary: 'Lower the target to 8000',
-        ),
-      ],
-      createdAt: DateTime(2026, 8, 10),
-      vectorClock: null,
-    ) as ChangeSetEntity;
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: 'cs-1',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: GoalAgentToolNames.proposeGoalRevision,
+                  args: {
+                    'changes': {'targetValue': 8000},
+                    'rationale': 'ease off',
+                  },
+                  humanSummary: 'Lower the target to 8000',
+                ),
+              ],
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
 
     final upserted = <AgentDomainEntity>[];
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -613,13 +637,15 @@ void main() {
       ),
     ).thenReturn('run-revision');
 
-    final headV1 = AgentDomainEntity.goalSpecHead(
-      id: goalSpecHeadId(agentId),
-      agentId: agentId,
-      versionId: '$agentId:spec-v1',
-      updatedAt: DateTime(2026, 8),
-      vectorClock: null,
-    ) as GoalSpecHeadEntity;
+    final headV1 =
+        AgentDomainEntity.goalSpecHead(
+              id: goalSpecHeadId(agentId),
+              agentId: agentId,
+              versionId: '$agentId:spec-v1',
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecHeadEntity;
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       // The confirmation hook re-reads the head AFTER the mint: serve the
       // freshest head that has been written, v1 before.
@@ -645,13 +671,14 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(() => repository.getEntity(any(that: startsWith('$agentId:spec-v2'))))
-        .thenAnswer(
-          (invocation) async => upserted
-              .whereType<GoalSpecVersionEntity>()
-              .where((v) => v.id == invocation.positionalArguments.first)
-              .lastOrNull,
-        );
+    when(
+      () => repository.getEntity(any(that: startsWith('$agentId:spec-v2'))),
+    ).thenAnswer(
+      (invocation) async => upserted
+          .whereType<GoalSpecVersionEntity>()
+          .where((v) => v.id == invocation.positionalArguments.first)
+          .lastOrNull,
+    );
     when(() => repository.getEntity('cs-1')).thenAnswer((_) async => changeSet);
 
     final service = container.read(goalChangeSetConfirmationServiceProvider);
@@ -670,8 +697,9 @@ void main() {
         ),
       ],
     );
-    when(() => repository.getEntity('cs-1'))
-        .thenAnswer((_) async => applicable);
+    when(
+      () => repository.getEntity('cs-1'),
+    ).thenAnswer((_) async => applicable);
 
     final result = await service.confirmItem(applicable, 0);
     expect(result.success, isTrue, reason: result.errorMessage ?? '');
@@ -707,8 +735,9 @@ void main() {
   test('a confirmed revision whose spec cannot be read back logs the '
       'skipped re-registration instead of failing silently', () async {
     const agentId = 'goal-gone';
-    when(() => repository.getEntity(agentId))
-        .thenAnswer((_) async => goalIdentity(agentId));
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     final logger = container.read(domainLoggerProvider) as MockDomainLogger;
     when(
       () => logger.error(
@@ -728,18 +757,19 @@ void main() {
     // The head is readable for the mint, then gone for the hook's
     // read-back (e.g. clobbered by a concurrent sync apply).
     var headReads = 0;
-    when(() => repository.getEntity(goalSpecHeadId(agentId)))
-        .thenAnswer((_) async {
-          headReads++;
-          if (headReads > 1) return null;
-          return AgentDomainEntity.goalSpecHead(
-            id: goalSpecHeadId(agentId),
-            agentId: agentId,
-            versionId: '$agentId:spec-v1',
-            updatedAt: DateTime(2026, 8),
-            vectorClock: null,
-          );
-        });
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+      _,
+    ) async {
+      headReads++;
+      if (headReads > 1) return null;
+      return AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      );
+    });
     when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecVersion(
         id: '$agentId:spec-v1',
@@ -760,27 +790,29 @@ void main() {
       ),
     );
 
-    final changeSet = AgentDomainEntity.changeSet(
-      id: 'cs-2',
-      agentId: agentId,
-      taskId: agentId,
-      threadId: 'thread-1',
-      runKey: 'run-1',
-      status: ChangeSetStatus.pending,
-      items: const [
-        ChangeItem(
-          toolName: GoalAgentToolNames.proposeGoalRevision,
-          args: {
-            'baseVersionId': '$agentId:spec-v1',
-            'changes': {'cadence': 4},
-            'rationale': 'step it up',
-          },
-          humanSummary: 'Raise the cadence to 4',
-        ),
-      ],
-      createdAt: DateTime(2026, 8, 10),
-      vectorClock: null,
-    ) as ChangeSetEntity;
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: 'cs-2',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: GoalAgentToolNames.proposeGoalRevision,
+                  args: {
+                    'baseVersionId': '$agentId:spec-v1',
+                    'changes': {'cadence': 4},
+                    'rationale': 'step it up',
+                  },
+                  humanSummary: 'Raise the cadence to 4',
+                ),
+              ],
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
     when(() => repository.getEntity('cs-2')).thenAnswer((_) async => changeSet);
 
     final orchestrator =
@@ -811,27 +843,30 @@ void main() {
       String id,
       NudgeStatus status,
       DateTime activatedAt,
-    ) => AgentDomainEntity.goalNudge(
-      id: id,
-      agentId: 'goal-a',
-      status: status,
-      brief: const NudgeBrief(
-        headline: 'h',
-        tone: NudgeTone.nudge,
-        animation: NudgeBannerAnimation.steady,
-      ),
-      briefDigest: 'd-$id',
-      createdAt: DateTime(2026, 8),
-      updatedAt: DateTime(2026, 8),
-      vectorClock: null,
-      activatedAt: activatedAt,
-    ) as GoalNudgeEntity;
+    ) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-a',
+              status: status,
+              brief: const NudgeBrief(
+                headline: 'h',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: activatedAt,
+            )
+            as GoalNudgeEntity;
 
-    when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-        .thenAnswer(
-          (_) async => [
-            goalIdentity('goal-a'),
-            AgentDomainEntity.agent(
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
               id: 'task-1',
               agentId: 'task-1',
               kind: AgentKinds.taskAgent,
@@ -844,24 +879,26 @@ void main() {
               createdAt: DateTime(2026),
               updatedAt: DateTime(2026),
               vectorClock: null,
-            ) as AgentIdentityEntity,
-          ],
-        );
-    when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-        .thenAnswer(
-          (_) async => [
-            nudgeRow('ad-old', NudgeStatus.active, DateTime(2026, 8, 8)),
-            nudgeRow('ad-new', NudgeStatus.active, DateTime(2026, 8, 10)),
-            nudgeRow(
-              'ad-snoozed',
-              NudgeStatus.active,
-              DateTime(2026, 8, 11),
-            ).copyWith(
-              provenance: const {'snoozedUntil': '2099-08-11T12:00:00.000Z'},
-            ),
-            nudgeRow('ad-gone', NudgeStatus.dismissed, DateTime(2026, 8, 9)),
-          ],
-        );
+            )
+            as AgentIdentityEntity,
+      ],
+    );
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-old', NudgeStatus.active, DateTime(2026, 8, 8)),
+        nudgeRow('ad-new', NudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow(
+          'ad-snoozed',
+          NudgeStatus.active,
+          DateTime(2026, 8, 11),
+        ).copyWith(
+          provenance: const {'snoozedUntil': '2099-08-11T12:00:00.000Z'},
+        ),
+        nudgeRow('ad-gone', NudgeStatus.dismissed, DateTime(2026, 8, 9)),
+      ],
+    );
     when(() => repository.getEntity(goalSpecHeadId('goal-a'))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId('goal-a'),
@@ -913,16 +950,17 @@ void main() {
     expect(entries.first.subjectTitle, 'Walk daily');
 
     // An ad past its staleAt stops rendering even while still `active`.
-    when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-        .thenAnswer(
-          (_) async => [
-            nudgeRow(
-              'ad-stale',
-              NudgeStatus.active,
-              DateTime(2026, 8),
-            ).copyWith(staleAt: DateTime(2026, 8, 2)),
-          ],
-        );
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow(
+          'ad-stale',
+          NudgeStatus.active,
+          DateTime(2026, 8),
+        ).copyWith(staleAt: DateTime(2026, 8, 2)),
+      ],
+    );
     container.invalidate(activeGoalNudgesProvider);
     expect(await container.read(activeGoalNudgesProvider.future), isEmpty);
   });
@@ -964,46 +1002,52 @@ void main() {
       double attainment, {
       int? deficit,
       int? buffer,
-    }) => AgentDomainEntity.goalProgress(
-      id: goalProgressId(agentId, period),
-      agentId: agentId,
-      periodKey: period,
-      trackStatus: attainment >= 0.8
-          ? GoalTrackStatus.onTrack
-          : GoalTrackStatus.atRisk,
-      attainment: attainment,
-      dataCoverage: 1,
-      satisfied: attainment >= 1,
-      specVersionId: '$agentId:spec-v1',
-      createdAt: DateTime(2026, 8, 9),
-      updatedAt: DateTime(2026, 8, 9),
-      vectorClock: null,
-      deficit: deficit,
-      buffer: buffer,
-    ) as GoalProgressEntity;
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'))
-        .thenAnswer(
-          (_) async => [
-            register('2026-08-08', 1),
-            // The latest register carries the rolling-window deficit/buffer.
-            register('2026-08-09', 0.64, deficit: 2),
-          ],
-        );
-    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
-      (_) async => AgentDomainEntity.agentReport(
-        id: 'r1',
-        agentId: agentId,
-        scope: 'current',
-        createdAt: DateTime(2026, 8, 9),
-        vectorClock: null,
-        content: 'body',
-        oneLiner: 'Averaging 6.4k of 10k.',
-      ) as AgentReportEntity,
+    }) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: attainment >= 0.8
+                  ? GoalTrackStatus.onTrack
+                  : GoalTrackStatus.atRisk,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: attainment >= 1,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              deficit: deficit,
+              buffer: buffer,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [
+        register('2026-08-08', 1),
+        // The latest register carries the rolling-window deficit/buffer.
+        register('2026-08-09', 0.64, deficit: 2),
+      ],
     );
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer(
-          (_) async => [
-            AgentDomainEntity.changeSet(
+    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r1',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Averaging 6.4k of 10k.',
+              )
+              as AgentReportEntity,
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.changeSet(
               id: 'cs',
               agentId: agentId,
               taskId: agentId,
@@ -1013,9 +1057,10 @@ void main() {
               items: const [],
               createdAt: DateTime(2026, 8, 9),
               vectorClock: null,
-            ) as ChangeSetEntity,
-          ],
-        );
+            )
+            as ChangeSetEntity,
+      ],
+    );
 
     final health = await container.read(
       goalAgentHealthProvider(agentId).future,
@@ -1070,26 +1115,30 @@ void main() {
     );
     GoalProgressEntity register(String period, double attainment) =>
         AgentDomainEntity.goalProgress(
-          id: goalProgressId(agentId, period),
-          agentId: agentId,
-          periodKey: period,
-          trackStatus: GoalTrackStatus.onTrack,
-          attainment: attainment,
-          dataCoverage: 1,
-          satisfied: true,
-          specVersionId: '$agentId:spec-v1',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-        ) as GoalProgressEntity;
-    when(() => repository.getLatestReport(agentId, 'current'))
-        .thenAnswer((_) async => null);
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer((_) async => []);
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
 
     // One register: no comparison, no arrow.
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'))
-        .thenAnswer((_) async => [register('2026-08-09', 0.9)]);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer((_) async => [register('2026-08-09', 0.9)]);
     var health = await container.read(goalAgentHealthProvider(agentId).future);
     expect(health.direction, isNull);
 
@@ -1142,34 +1191,41 @@ void main() {
         String period,
         double attainment,
         GoalTrackStatus status,
-      ) => AgentDomainEntity.goalProgress(
-        id: goalProgressId(agentId, period),
-        agentId: agentId,
-        periodKey: period,
-        trackStatus: status,
-        attainment: attainment,
-        dataCoverage: status == GoalTrackStatus.insufficientData ? 0.1 : 1,
-        satisfied: false,
-        specVersionId: '$agentId:spec-v1',
-        createdAt: DateTime(2026, 8, 9),
-        updatedAt: DateTime(2026, 8, 9),
-        vectorClock: null,
-      ) as GoalProgressEntity;
-      when(() => repository.getLatestReport(agentId, 'current'))
-          .thenAnswer((_) async => null);
-      when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-          .thenAnswer((_) async => []);
+      ) =>
+          AgentDomainEntity.goalProgress(
+                id: goalProgressId(agentId, period),
+                agentId: agentId,
+                periodKey: period,
+                trackStatus: status,
+                attainment: attainment,
+                dataCoverage: status == GoalTrackStatus.insufficientData
+                    ? 0.1
+                    : 1,
+                satisfied: false,
+                specVersionId: '$agentId:spec-v1',
+                createdAt: DateTime(2026, 8, 9),
+                updatedAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+              )
+              as GoalProgressEntity;
+      when(
+        () => repository.getLatestReport(agentId, 'current'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repository.getPendingChangeSets(agentId, taskId: agentId),
+      ).thenAnswer((_) async => []);
 
       // Latest register is insufficient-data. Even though its attainment is a
       // full point below the prior register — which WOULD read as a steep
       // decline — no arrow is emitted: the gap must not be judged.
-      when(() => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'))
-          .thenAnswer(
-            (_) async => [
-              register('2026-08-09', 0, GoalTrackStatus.insufficientData),
-              register('2026-08-08', 1, GoalTrackStatus.onTrack),
-            ],
-          );
+      when(
+        () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+      ).thenAnswer(
+        (_) async => [
+          register('2026-08-09', 0, GoalTrackStatus.insufficientData),
+          register('2026-08-08', 1, GoalTrackStatus.onTrack),
+        ],
+      );
       final health = await container.read(
         goalAgentHealthProvider(agentId).future,
       );
@@ -1212,29 +1268,33 @@ void main() {
     );
     GoalProgressEntity register(String period, double attainment) =>
         AgentDomainEntity.goalProgress(
-          id: goalProgressId(agentId, period),
-          agentId: agentId,
-          periodKey: period,
-          trackStatus: GoalTrackStatus.onTrack,
-          attainment: attainment,
-          dataCoverage: 1,
-          satisfied: attainment >= 1,
-          specVersionId: '$agentId:spec-v1',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-        ) as GoalProgressEntity;
-    when(() => repository.getLatestReport(agentId, 'current'))
-        .thenAnswer((_) async => null);
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer((_) async => []);
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: attainment >= 1,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
 
     // Last week finished at 1.0; this week is on pace with one of three at
     // 0.33. Raw subtraction would read "down" — but it is a fresh period.
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'))
-        .thenAnswer(
-          (_) async => [register('2026-W33', 0.33), register('2026-W32', 1)],
-        );
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-W33', 0.33), register('2026-W32', 1)],
+    );
     final health = await container.read(
       goalAgentHealthProvider(agentId).future,
     );
@@ -1255,22 +1315,25 @@ void main() {
     );
     GoalProgressEntity register(String period, double attainment) =>
         AgentDomainEntity.goalProgress(
-          id: goalProgressId(agentId, period),
-          agentId: agentId,
-          periodKey: period,
-          trackStatus: GoalTrackStatus.onTrack,
-          attainment: attainment,
-          dataCoverage: 1,
-          satisfied: true,
-          specVersionId: '$agentId:spec-v1',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-        ) as GoalProgressEntity;
-    when(() => repository.getLatestReport(agentId, 'current'))
-        .thenAnswer((_) async => null);
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer((_) async => []);
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
     when(
       () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
     ).thenAnswer(
@@ -1355,8 +1418,9 @@ void main() {
 
   test('a failing exposure flush is contained and logged — never an '
       'uncaught async error from a disposed banner', () async {
-    when(() => repository.getEntity('ad-err'))
-        .thenAnswer((_) async => throw StateError('db closed mid-dispose'));
+    when(
+      () => repository.getEntity('ad-err'),
+    ).thenAnswer((_) async => throw StateError('db closed mid-dispose'));
     final logger = container.read(domainLoggerProvider) as MockDomainLogger;
     when(
       () => logger.error(
@@ -1403,12 +1467,15 @@ void main() {
 
   test('health for a goal without a spec head reports nulls instead of '
       'throwing', () async {
-    when(() => repository.getEntitiesByAgentId('goal-z', type: 'goalProgress'))
-        .thenAnswer((_) async => []);
-    when(() => repository.getLatestReport('goal-z', 'current'))
-        .thenAnswer((_) async => null);
-    when(() => repository.getPendingChangeSets('goal-z', taskId: 'goal-z'))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId('goal-z', type: 'goalProgress'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getLatestReport('goal-z', 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets('goal-z', taskId: 'goal-z'),
+    ).thenAnswer((_) async => []);
     final health = await container.read(
       goalAgentHealthProvider('goal-z').future,
     );
@@ -1450,18 +1517,21 @@ void main() {
       ),
     );
     when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
-      (_) async => AgentDomainEntity.agentReport(
-        id: 'r-old',
-        agentId: agentId,
-        scope: 'current',
-        createdAt: DateTime(2026, 8, 9),
-        vectorClock: null,
-        content: 'body',
-        oneLiner: 'Chasing 10k — two days behind.',
-      ) as AgentReportEntity,
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-old',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Chasing 10k — two days behind.',
+              )
+              as AgentReportEntity,
     );
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer((_) async => []);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
 
     final health = await container.read(
       goalAgentHealthProvider(agentId).future,
@@ -1475,16 +1545,18 @@ void main() {
     // Spec-version provenance outranks the timestamp: a v2 report with a
     // skewed EARLIER clock still shows.
     when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
-      (_) async => AgentDomainEntity.agentReport(
-        id: 'r-v2-skewed',
-        agentId: agentId,
-        scope: 'current',
-        createdAt: DateTime(2026, 8, 8),
-        vectorClock: null,
-        content: 'body',
-        oneLiner: 'Fresh verdict, slow clock.',
-        provenance: const {'specVersionId': '$agentId:spec-v2'},
-      ) as AgentReportEntity,
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-v2-skewed',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 8),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Fresh verdict, slow clock.',
+                provenance: const {'specVersionId': '$agentId:spec-v2'},
+              )
+              as AgentReportEntity,
     );
     container.invalidate(goalAgentHealthProvider(agentId));
     final skewed = await container.read(
@@ -1530,42 +1602,47 @@ void main() {
       required String specVersionId,
       required double attainment,
       required GoalTrackStatus trackStatus,
-    }) => AgentDomainEntity.goalProgress(
-      id: goalProgressId(agentId, period),
-      agentId: agentId,
-      periodKey: period,
-      trackStatus: trackStatus,
-      attainment: attainment,
-      dataCoverage: 1,
-      satisfied: false,
-      specVersionId: specVersionId,
-      createdAt: DateTime(2026, 8, 10),
-      updatedAt: DateTime(2026, 8, 10),
-      vectorClock: null,
-    ) as GoalProgressEntity;
-    when(() => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'))
-        .thenAnswer(
-          (_) async => [
-            // The OLD goal's verdict has the newest period key — without the
-            // spec-version filter it would win and misreport the revised goal.
-            register(
-              period: '2026-08-10',
-              specVersionId: '$agentId:spec-v1',
-              attainment: 0.2,
-              trackStatus: GoalTrackStatus.offTrack,
-            ),
-            register(
-              period: '2026-08-09',
-              specVersionId: '$agentId:spec-v2',
-              attainment: 0.9,
-              trackStatus: GoalTrackStatus.onTrack,
-            ),
-          ],
-        );
-    when(() => repository.getLatestReport(agentId, 'current'))
-        .thenAnswer((_) async => null);
-    when(() => repository.getPendingChangeSets(agentId, taskId: agentId))
-        .thenAnswer((_) async => []);
+    }) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: trackStatus,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: specVersionId,
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [
+        // The OLD goal's verdict has the newest period key — without the
+        // spec-version filter it would win and misreport the revised goal.
+        register(
+          period: '2026-08-10',
+          specVersionId: '$agentId:spec-v1',
+          attainment: 0.2,
+          trackStatus: GoalTrackStatus.offTrack,
+        ),
+        register(
+          period: '2026-08-09',
+          specVersionId: '$agentId:spec-v2',
+          attainment: 0.9,
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+      ],
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
 
     final health = await container.read(
       goalAgentHealthProvider(agentId).future,
@@ -1580,12 +1657,14 @@ void main() {
     final start = DateTime(2026, 8, 10, 12);
     fakeAsync((async) {
       withClock(Clock(() => start.add(async.elapsed)), () {
-        when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-            .thenAnswer((_) async => [goalIdentity('goal-a')]);
-        when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-            .thenAnswer(
-              (_) async => [
-                AgentDomainEntity.goalNudge(
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
                   id: 'ad-deadline',
                   agentId: 'goal-a',
                   status: NudgeStatus.active,
@@ -1599,9 +1678,10 @@ void main() {
                   updatedAt: start,
                   vectorClock: null,
                   staleAt: start.add(const Duration(hours: 1)),
-                ) as GoalNudgeEntity,
-              ],
-            );
+                )
+                as GoalNudgeEntity,
+          ],
+        );
 
         // Keep the flag and the banner provider alive: the deadline timer
         // dies with the provider on autodispose.
@@ -1688,12 +1768,14 @@ void main() {
     final start = DateTime.utc(2026, 8, 10, 12);
     fakeAsync((async) {
       withClock(Clock(() => start.add(async.elapsed)), () {
-        when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-            .thenAnswer((_) async => [goalIdentity('goal-a')]);
-        when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-            .thenAnswer(
-              (_) async => [
-                AgentDomainEntity.goalNudge(
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
                   id: 'ad-snoozed',
                   agentId: 'goal-a',
                   status: NudgeStatus.active,
@@ -1712,9 +1794,10 @@ void main() {
                         .add(const Duration(hours: 1))
                         .toIso8601String(),
                   },
-                ) as GoalNudgeEntity,
-              ],
-            );
+                )
+                as GoalNudgeEntity,
+          ],
+        );
 
         final flagSub = container.listen(
           configFlagProvider(enableUnifiedGoalsFlag),
@@ -1764,12 +1847,14 @@ void main() {
     final start = DateTime(2026, 8, 10, 23, 30);
     fakeAsync((async) {
       withClock(Clock(() => start.add(async.elapsed)), () {
-        when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-            .thenAnswer((_) async => [goalIdentity('goal-a')]);
-        when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-            .thenAnswer(
-              (_) async => [
-                AgentDomainEntity.goalNudge(
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
                   id: 'ad-dismissed-today',
                   agentId: 'goal-a',
                   status: NudgeStatus.active,
@@ -1784,9 +1869,10 @@ void main() {
                   vectorClock: null,
                   staleAt: start.add(const Duration(days: 1)),
                   dismissedForDayAt: start.toUtc(),
-                ) as GoalNudgeEntity,
-              ],
-            );
+                )
+                as GoalNudgeEntity,
+          ],
+        );
 
         final flagSub = container.listen(
           configFlagProvider(enableUnifiedGoalsFlag),
@@ -1831,8 +1917,9 @@ void main() {
 
   test('a late-synced banner from a superseded spec version is fenced by '
       'its own provenance', () async {
-    when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-        .thenAnswer((_) async => [goalIdentity('goal-a')]);
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-a')]);
     when(() => repository.getEntity(goalSpecHeadId('goal-a'))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId('goal-a'),
@@ -1865,28 +1952,30 @@ void main() {
     );
     GoalNudgeEntity row(String id, Map<String, String> provenance) =>
         AgentDomainEntity.goalNudge(
-          id: id,
-          agentId: 'goal-a',
-          status: NudgeStatus.active,
-          brief: const NudgeBrief(
-            headline: 'h',
-            tone: NudgeTone.nudge,
-            animation: NudgeBannerAnimation.steady,
-          ),
-          briefDigest: 'd-$id',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-          provenance: provenance,
-        ) as GoalNudgeEntity;
-    when(() => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'))
-        .thenAnswer(
-          (_) async => [
-            row('ad-old-spec', {'specVersionId': 'goal-a:spec-v1'}),
-            row('ad-current', {'specVersionId': 'goal-a:spec-v2-aa'}),
-            row('ad-legacy', const {}),
-          ],
-        );
+              id: id,
+              agentId: 'goal-a',
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'h',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              provenance: provenance,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-old-spec', {'specVersionId': 'goal-a:spec-v1'}),
+        row('ad-current', {'specVersionId': 'goal-a:spec-v2-aa'}),
+        row('ad-legacy', const {}),
+      ],
+    );
 
     final flagSub = container.listen(
       configFlagProvider(enableUnifiedGoalsFlag),
@@ -1905,8 +1994,9 @@ void main() {
 
     // With NO live head, tagged banners have nothing to validate against
     // and are hidden; only the untagged legacy row remains.
-    when(() => repository.getEntity(goalSpecHeadId('goal-a')))
-        .thenAnswer((_) async => null);
+    when(
+      () => repository.getEntity(goalSpecHeadId('goal-a')),
+    ).thenAnswer((_) async => null);
     container.invalidate(activeGoalNudgesProvider);
     final headless = await container.read(activeGoalNudgesProvider.future);
     expect({for (final e in headless) e.nudge.id}, {'ad-legacy'});
@@ -1916,29 +2006,31 @@ void main() {
       'first — pipeline rows and failures stay internal', () async {
     GoalNudgeEntity row(String id, NudgeStatus status, int day) =>
         AgentDomainEntity.goalNudge(
-          id: id,
-          agentId: 'goal-h',
-          status: status,
-          brief: const NudgeBrief(
-            headline: 'h',
-            tone: NudgeTone.nudge,
-            animation: NudgeBannerAnimation.steady,
-          ),
-          briefDigest: 'd-$id',
-          createdAt: DateTime(2026, 8, day),
-          updatedAt: DateTime(2026, 8, day),
-          vectorClock: null,
-        ) as GoalNudgeEntity;
-    when(() => repository.getEntitiesByAgentId('goal-h', type: 'goalNudge'))
-        .thenAnswer(
-          (_) async => [
-            row('ad-dismissed', NudgeStatus.dismissed, 3),
-            row('ad-retired', NudgeStatus.retired, 5),
-            row('ad-active', NudgeStatus.active, 6),
-            row('ad-draft', NudgeStatus.draft, 7),
-            row('ad-failed', NudgeStatus.failed, 8),
-          ],
-        );
+              id: id,
+              agentId: 'goal-h',
+              status: status,
+              brief: const NudgeBrief(
+                headline: 'h',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, day),
+              updatedAt: DateTime(2026, 8, day),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-h', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-dismissed', NudgeStatus.dismissed, 3),
+        row('ad-retired', NudgeStatus.retired, 5),
+        row('ad-active', NudgeStatus.active, 6),
+        row('ad-draft', NudgeStatus.draft, 7),
+        row('ad-failed', NudgeStatus.failed, 8),
+      ],
+    );
     final history = await container.read(
       goalNudgeHistoryProvider('goal-h').future,
     );
@@ -1954,57 +2046,60 @@ void main() {
       required DateTime updatedAt,
       DateTime? expiredAt,
       DateTime? supersededAt,
-    }) => AgentDomainEntity.goalNudge(
-      id: id,
-      agentId: 'goal-h2',
-      status: status,
-      brief: const NudgeBrief(
-        headline: 'h',
-        tone: NudgeTone.nudge,
-        animation: NudgeBannerAnimation.steady,
-      ),
-      briefDigest: 'd-$id',
-      createdAt: DateTime(2026, 8),
-      updatedAt: updatedAt,
-      vectorClock: null,
-      expiredAt: expiredAt,
-      supersededAt: supersededAt,
-    ) as GoalNudgeEntity;
+    }) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-h2',
+              status: status,
+              brief: const NudgeBrief(
+                headline: 'h',
+                tone: NudgeTone.nudge,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: updatedAt,
+              vectorClock: null,
+              expiredAt: expiredAt,
+              supersededAt: supersededAt,
+            )
+            as GoalNudgeEntity;
 
-    when(() => repository.getEntitiesByAgentId('goal-h2', type: 'goalNudge'))
-        .thenAnswer(
-          (_) async => [
-            // expiredAt PRESENT but far in the past — updatedAt (bumped by a
-            // later exposure flush) must NOT leak in; the expiredAt arm wins.
-            row(
-              id: 'ad-expired-stamped',
-              status: NudgeStatus.expired,
-              updatedAt: DateTime(2026, 8, 20),
-              expiredAt: DateTime(2026, 8, 5),
-            ),
-            // expiredAt MISSING — falls back to updatedAt, landing it ahead of
-            // the stamped row above.
-            row(
-              id: 'ad-expired-fallback',
-              status: NudgeStatus.expired,
-              updatedAt: DateTime(2026, 8, 12),
-            ),
-            // supersededAt PRESENT, older than its updatedAt.
-            row(
-              id: 'ad-superseded-stamped',
-              status: NudgeStatus.superseded,
-              updatedAt: DateTime(2026, 8, 18),
-              supersededAt: DateTime(2026, 8, 3),
-            ),
-            // supersededAt MISSING — falls back to updatedAt, the newest of
-            // all four.
-            row(
-              id: 'ad-superseded-fallback',
-              status: NudgeStatus.superseded,
-              updatedAt: DateTime(2026, 8, 25),
-            ),
-          ],
-        );
+    when(
+      () => repository.getEntitiesByAgentId('goal-h2', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        // expiredAt PRESENT but far in the past — updatedAt (bumped by a
+        // later exposure flush) must NOT leak in; the expiredAt arm wins.
+        row(
+          id: 'ad-expired-stamped',
+          status: NudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 20),
+          expiredAt: DateTime(2026, 8, 5),
+        ),
+        // expiredAt MISSING — falls back to updatedAt, landing it ahead of
+        // the stamped row above.
+        row(
+          id: 'ad-expired-fallback',
+          status: NudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 12),
+        ),
+        // supersededAt PRESENT, older than its updatedAt.
+        row(
+          id: 'ad-superseded-stamped',
+          status: NudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 18),
+          supersededAt: DateTime(2026, 8, 3),
+        ),
+        // supersededAt MISSING — falls back to updatedAt, the newest of
+        // all four.
+        row(
+          id: 'ad-superseded-fallback',
+          status: NudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 25),
+        ),
+      ],
+    );
 
     final history = await container.read(
       goalNudgeHistoryProvider('goal-h2').future,
@@ -2026,11 +2121,12 @@ void main() {
   });
 
   test('activeGoalAgentsProvider lists only goal-kind identities', () async {
-    when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-        .thenAnswer(
-          (_) async => [
-            goalIdentity('goal-a'),
-            AgentDomainEntity.agent(
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
               id: 'task-1',
               agentId: 'task-1',
               kind: AgentKinds.taskAgent,
@@ -2043,9 +2139,10 @@ void main() {
               createdAt: DateTime(2026),
               updatedAt: DateTime(2026),
               vectorClock: null,
-            ) as AgentIdentityEntity,
-          ],
-        );
+            )
+            as AgentIdentityEntity,
+      ],
+    );
     final agents = await container.read(activeGoalAgentsProvider.future);
     expect([for (final a in agents) a.agentId], ['goal-a']);
   });
@@ -2088,8 +2185,9 @@ void main() {
       'is off', () async {
     final gated = ProviderContainer(
       overrides: [
-        configFlagProvider(enableUnifiedGoalsFlag)
-            .overrideWith((ref) => Stream.value(false)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
+        ).overrideWith((ref) => Stream.value(false)),
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
       ],
@@ -2108,12 +2206,14 @@ void main() {
   });
 
   test('the unified Goals flag opens the banner gate', () async {
-    when(() => agentService.listAgents(lifecycle: any(named: 'lifecycle')))
-        .thenAnswer((_) async => []);
+    when(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    ).thenAnswer((_) async => []);
     final gated = ProviderContainer(
       overrides: [
-        configFlagProvider(enableUnifiedGoalsFlag)
-            .overrideWith((ref) => Stream.value(true)),
+        configFlagProvider(
+          enableUnifiedGoalsFlag,
+        ).overrideWith((ref) => Stream.value(true)),
         agentServiceProvider.overrideWithValue(agentService),
         agentRepositoryProvider.overrideWithValue(repository),
       ],
@@ -2126,18 +2226,20 @@ void main() {
     addTearDown(unifiedSub.close);
     await gated.read(configFlagProvider(enableUnifiedGoalsFlag).future);
     expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
-    verify(() => agentService.listAgents(lifecycle: any(named: 'lifecycle')))
-        .called(1);
+    verify(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    ).called(1);
   });
 
   test(
     'goalHabitMembershipsProvider joins habit ids to every active goal '
     'claiming them, with the identity name as the blank-title fallback',
     () async {
-      when(() => agentService.listAgents(lifecycle: AgentLifecycle.active))
-          .thenAnswer(
-            (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
-          );
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer(
+        (_) async => [goalIdentity('goal-a'), goalIdentity('goal-b')],
+      );
       AgentDomainEntity head(String agentId) => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
         agentId: agentId,
@@ -2223,8 +2325,9 @@ void main() {
       'ticks cannot clear a refresh failure', () async {
     final completions = StreamController<WakeRunCompletion>.broadcast();
     addTearDown(completions.close);
-    when(() => wakeOrchestrator.runCompletions)
-        .thenAnswer((_) => completions.stream);
+    when(
+      () => wakeOrchestrator.runCompletions,
+    ).thenAnswer((_) => completions.stream);
 
     final seen = <WakeRunCompletion>[];
     container.listen(goalReportWakeOutcomeProvider('goal-1'), (_, next) {

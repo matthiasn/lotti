@@ -118,10 +118,11 @@ locallySnoozedNudgeDeadlinesProvider =
 
 /// Fire-and-forget exposure flush, captured by the banner's tracker
 /// while its element is live and safe to call from `dispose`.
-typedef NudgeInteractionsFlush = void Function(
-  String nudgeId,
-  Duration visibleFor,
-);
+typedef NudgeInteractionsFlush =
+    void Function(
+      String nudgeId,
+      Duration visibleFor,
+    );
 
 final nudgeExposureFlushProvider = Provider<NudgeInteractionsFlush>((ref) {
   final interactions = ref.watch(nudgeInteractionsProvider);

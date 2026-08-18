@@ -249,8 +249,7 @@ void main() {
               executedRunKeys.add(runKey);
               return null;
             }
-
-          ..start(controller.stream);
+            ..start(controller.stream);
 
           // Emit a notification to enqueue a subscription job
           emitTokens(async, controller, {'entity-1'});
