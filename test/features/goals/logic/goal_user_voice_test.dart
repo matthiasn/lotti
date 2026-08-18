@@ -40,9 +40,13 @@ void main() {
       summary('a', base, committed: 'walk after lunch'),
     ]);
 
-    // "You said on Tuesday you would walk after lunch" is only sayable if
-    // both of these survive compaction.
-    expect(entries.single['recordedAtLocal'], isNotNull);
+    // "You said on Tuesday you would walk after lunch" is only sayable if both
+    // of these survive compaction — and `isNotNull` would pass for a wrong
+    // field or a changed format, which is exactly what would break the quote.
+    expect(
+      entries.single['recordedAtLocal'],
+      base.toLocal().toIso8601String(),
+    );
     expect(entries.single['committedTo'], 'walk after lunch');
   });
 

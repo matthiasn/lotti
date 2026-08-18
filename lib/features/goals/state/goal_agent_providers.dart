@@ -139,9 +139,14 @@ final goalChatServiceProvider = Provider<GoalChatService>(
   name: 'goalChatServiceProvider',
 );
 
-/// Distills check-ins for the agent. Null where the AI stack is unavailable.
-final Provider<GoalCheckInCompactor?> goalCheckInCompactorProvider =
-    Provider<GoalCheckInCompactor?>(
+/// Distills check-ins for the agent.
+///
+/// Non-null unlike its journal-side siblings: it needs only the inference
+/// repository and the agent sync service, both of which are always available
+/// where the agent runtime is. Declaring it nullable made every consumer carry
+/// an unreachable branch.
+final Provider<GoalCheckInCompactor> goalCheckInCompactorProvider =
+    Provider<GoalCheckInCompactor>(
       (ref) => GoalCheckInCompactor(
         inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
         syncService: ref.watch(agentSyncServiceProvider),

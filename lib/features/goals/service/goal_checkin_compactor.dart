@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -16,6 +18,14 @@ import 'package:openai_dart/openai_dart.dart';
 
 /// Tool name marking a stored check-in summary in the agent log.
 const goalCheckInSummaryToolName = 'goal_compact_check_in';
+
+/// Fingerprint of the words a summary was distilled from.
+///
+/// Cheap and stable: it only has to change when the text does, so a
+/// re-transcription or an edit is recognised as new words rather than as the
+/// same check-in already handled.
+String goalCheckInSourceDigest(String text) =>
+    sha256.convert(utf8.encode(text.trim())).toString();
 
 /// Deterministic id for the summary of one check-in.
 ///
@@ -101,6 +111,7 @@ class GoalCheckInCompactor {
         blockers: decoded.blockers,
         mood: decoded.mood,
         asks: decoded.asks,
+        sourceDigest: goalCheckInSourceDigest(text),
       );
       await _persist(agentId: agentId, summary: summary);
       return summary;

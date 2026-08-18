@@ -176,8 +176,7 @@ flowchart TD
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
     REFREG --> PB
-    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> STALE[mark report stale\nGoalCheckInNotifier — never a wake]
-    STALE --> ROUTE
+    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — never a wake,\nconsumed by the next cadence tick]
     PB --> COMPACT[compact pending check-ins\nwake's own model, ≤500 tokens,\nkeyed by agentId+entryId, non-fatal]
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nuserVoice — token-bounded, never transcripts]
     FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 8-tool contract]

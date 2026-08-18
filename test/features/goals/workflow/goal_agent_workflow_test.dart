@@ -856,6 +856,9 @@ void main() {
           'recordedAt': '2026-08-10T09:00:00.000Z',
           'whatHappened': 'Walked the long way home.',
           'committedTo': 'walk after lunch tomorrow',
+          // Matching digest: the words have not changed, so this summary is
+          // reused rather than paid for again.
+          'sourceDigest': goalCheckInSourceDigest('Walked the long way home.'),
         },
       ),
     );
@@ -910,8 +913,8 @@ void main() {
       threadId: 'thread-compaction',
     );
 
-    // Only the un-summarised entry is compacted: the keyed summary makes a
-    // re-run converge rather than pay for the same words twice.
+    // Only the un-summarised entry is compacted: an unchanged check-in whose
+    // digest still matches is reused rather than paid for again.
     expect(compacted, ['audio-1']);
     expect(sentFacts, isNotNull);
     // The transcript itself never reaches the prompt; the compacted record
@@ -919,6 +922,136 @@ void main() {
     expect(sentFacts, isNot(contains('Skipped the lunch walk.')));
     expect(sentFacts, contains('userVoice'));
     expect(sentFacts, contains('walk after lunch tomorrow'));
+  });
+
+  test('a check-in whose words changed is recompacted, and a deleted one '
+      'stops reaching the agent', () async {
+    stubSpec();
+    stubGlmResolution();
+    _stubBadPrior(repository, agentId, now);
+
+    final compactor = MockGoalCheckInCompactor();
+    final compacted = <String>[];
+    when(
+      () => compactor.compact(
+        agentId: any(named: 'agentId'),
+        entryId: any(named: 'entryId'),
+        recordedAt: any(named: 'recordedAt'),
+        transcript: any(named: 'transcript'),
+        goalStatement: any(named: 'goalStatement'),
+        model: any(named: 'model'),
+        provider: any(named: 'provider'),
+      ),
+    ).thenAnswer((invocation) async {
+      compacted.add(invocation.namedArguments[#entryId] as String);
+      return null;
+    });
+
+    AgentDomainEntity summaryMessage(String id, String entryId) =>
+        AgentDomainEntity.agentMessage(
+          id: id,
+          agentId: agentId,
+          threadId: id,
+          kind: AgentMessageKind.action,
+          createdAt: DateTime.utc(2026, 8, 10, 9),
+          vectorClock: null,
+          metadata: const AgentMessageMetadata(
+            toolName: goalCheckInSummaryToolName,
+          ),
+          contentEntryId: '$id:payload',
+        );
+
+    when(
+      () => repository.getEntitiesByAgentIdAndSubtype(
+        agentId,
+        type: any(named: 'type'),
+        subtype: any(named: 'subtype'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        summaryMessage('summary-edited', 'audio-edited'),
+        summaryMessage('summary-gone', 'audio-gone'),
+      ],
+    );
+    Future<AgentDomainEntity?> payload(
+      String id,
+      String entryId,
+      String text,
+    ) async => AgentDomainEntity.agentMessagePayload(
+      id: '$id:payload',
+      agentId: agentId,
+      createdAt: DateTime.utc(2026, 8, 10, 9),
+      vectorClock: null,
+      content: <String, Object?>{
+        'sourceEntryId': entryId,
+        'recordedAt': '2026-08-10T09:00:00.000Z',
+        'whatHappened': 'Old reading of $entryId.',
+        'sourceDigest': goalCheckInSourceDigest(text),
+        // A malformed optional slot from a peer on another build: it must
+        // be ignored, not throw away every summary in this wake.
+        'committedTo': 42,
+      },
+    );
+    when(
+      () => repository.getEntity('summary-edited:payload'),
+    ).thenAnswer(
+      (_) => payload('summary-edited', 'audio-edited', 'the OLD words'),
+    );
+    when(
+      () => repository.getEntity('summary-gone:payload'),
+    ).thenAnswer((_) => payload('summary-gone', 'audio-gone', 'deleted words'));
+
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      checkInCompactor: compactor,
+      // `audio-gone` is no longer linked — deleted or unlinked by the user.
+      checkInSourceReader: (agentId) async => [
+        GoalCheckInSource(
+          entryId: 'audio-edited',
+          recordedAt: DateTime.utc(2026, 8, 10, 9),
+          text: 'the NEW words after a re-transcription',
+        ),
+      ],
+    );
+
+    String? sentFacts;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          sentFacts ??= message;
+          return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+        };
+
+    await workflow.execute(
+      agentIdentity: identity,
+      runKey: 'run-reconcile',
+      triggerTokens: const {'goal-escalation:2026-08-11'},
+      threadId: 'thread-reconcile',
+    );
+
+    // Changed words are distilled again rather than left standing.
+    expect(compacted, ['audio-edited']);
+    // And the summary of a check-in the user removed no longer reaches the
+    // agent — the timeline already hides it, and the two must not disagree.
+    expect(sentFacts, isNot(contains('Old reading of audio-gone.')));
   });
 
   test('a full wake persists FACTS, report + head, the new ad, and token '
