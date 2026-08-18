@@ -224,6 +224,70 @@ void main() {
     expect(find.text('Load older'), findsNothing);
   });
 
+  testWidgets('switching goals resets full-timeline paging', (tester) async {
+    final firstItems = [
+      for (var i = 0; i < 21; i++)
+        GoalAudioCheckIn(
+          audio(
+            'first-$i',
+            today.subtract(Duration(minutes: i)),
+            transcript: 'first note $i',
+          ),
+        ),
+    ];
+    final secondItems = [
+      for (var i = 0; i < 21; i++)
+        GoalAudioCheckIn(
+          audio(
+            'second-$i',
+            today.subtract(Duration(minutes: i)),
+            transcript: 'second note $i',
+          ),
+        ),
+    ];
+    var agentId = 'goal-1';
+    late StateSetter updateHost;
+
+    await withClock(
+      Clock.fixed(today.add(const Duration(hours: 3))),
+      () => tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  updateHost = setState;
+                  return GoalCheckInTimeline(agentId: agentId);
+                },
+              ),
+            ),
+          ),
+          overrides: [
+            goalTimelineItemsProvider(
+              'goal-1',
+            ).overrideWithValue(firstItems),
+            goalTimelineItemsProvider(
+              'goal-2',
+            ).overrideWithValue(secondItems),
+          ],
+        ),
+      ),
+    );
+
+    await tester.ensureVisible(find.text('Load older'));
+    await tester.tap(find.text('Load older'));
+    await tester.pump();
+    expect(find.text('first note 20'), findsOneWidget);
+
+    updateHost(() => agentId = 'goal-2');
+    await tester.pump();
+
+    expect(find.text('first note 20'), findsNothing);
+    expect(find.text('second note 19'), findsOneWidget);
+    expect(find.text('second note 20'), findsNothing);
+    expect(find.text('Load older'), findsOneWidget);
+  });
+
   testWidgets('a written check-in shows its words under a NOTE label', (
     tester,
   ) async {

@@ -1291,12 +1291,20 @@ void main() {
         find.byKey(const Key('taskAgentAutomaticUpdatesCheckbox')),
       );
       await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text('Automatic updates').last,
+        warnIfMissed: false,
+      );
+      await tester.pump();
       verify(
         () => goalService.updateAutomaticUpdates(
           agentId: 'goal-1',
           enabled: false,
         ),
-      ).called(1);
+      ).called(2);
     });
   });
 

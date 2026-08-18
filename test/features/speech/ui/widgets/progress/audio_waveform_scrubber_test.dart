@@ -369,6 +369,22 @@ void main() {
         expect(data.decreasedValue, '00:10 of 00:45');
         expect(data.hasAction(SemanticsAction.increase), isTrue);
         expect(data.hasAction(SemanticsAction.decrease), isTrue);
+
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node.id,
+          SemanticsAction.increase,
+        );
+        // ignore: deprecated_member_use
+        tester.binding.pipelineOwner.semanticsOwner!.performAction(
+          node.id,
+          SemanticsAction.decrease,
+        );
+        await tester.pump();
+        expect(seeks, const [
+          Duration(seconds: 20),
+          Duration(seconds: 10),
+        ]);
       } finally {
         handle.dispose();
       }
