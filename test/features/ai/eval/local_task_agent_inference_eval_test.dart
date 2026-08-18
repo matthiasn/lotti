@@ -1644,6 +1644,87 @@ void main() {
     );
   });
 
+  test('runner fails a report asserting work that did not happen', () async {
+    // `user_completed_item_resurfaced` expects NO tool calls, so "did the
+    // model claim the fix was verified?" is the only question it really asks.
+    // Those claims were counted in `qualityScore` and never gated, which made
+    // the scenario pass on the strength of its incidental checks alone.
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Sync issue reappeared',
+                'tldr': 'The sync item resurfaced and needs investigation.',
+                // Every other check is satisfied: the required terms are all
+                // present, no internal id leaks, no forbidden tool. The only
+                // thing wrong is the claim — and it sits in its own sentence,
+                // after one carrying an unrelated negation cue.
+                'content':
+                    'The root cause is not yet known. The sync fix was '
+                    'verified in staging and is applied to production.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.forbiddenReportClaim,
+    );
+  });
+
+  test('runner accepts the same report when the claim is negated', () async {
+    // The other half of the rule, and the reason the matcher is negation-aware
+    // at all: naming unfinished work in order to rule it out is exactly what
+    // this scenario wants, and must not be scored as an overclaim.
+    final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+      (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
+    );
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: _QueuedInferenceRepository([
+        [
+          _toolCalls([
+            (
+              name: TaskAgentToolNames.updateReport,
+              argumentsJson: jsonEncode({
+                'oneLiner': 'Sync issue reappeared',
+                'tldr': 'The sync item resurfaced and needs investigation.',
+                'content':
+                    'The fix has not been verified and is not yet applied; '
+                    'the root cause is still under investigation.',
+              }),
+            ),
+          ]),
+        ],
+      ]),
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      LocalTaskAgentEvalFailureCategory.none,
+    );
+  });
+
   test(
     'runner rewards a no-op note and rejects unnecessary report churn',
     () async {

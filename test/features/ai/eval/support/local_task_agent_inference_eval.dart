@@ -1770,6 +1770,7 @@ enum LocalTaskAgentEvalFailureCategory {
   missingReport,
   missingRequiredContent,
   forbiddenReportContent,
+  forbiddenReportClaim,
   missingReportRevision,
   invalidReportRevision,
   inferenceFailed,
@@ -1968,8 +1969,16 @@ class LocalTaskAgentEvalCaseResult {
     return passed;
   }
 
-  double get qualityScore =>
-      qualityCheckCount == 0 ? 1 : passedQualityCheckCount / qualityCheckCount;
+  /// Null when the scenario declares no quality checks at all.
+  ///
+  /// This used to be 1, which reads in a report exactly like a scenario that
+  /// passed everything it was asked — the vacuous pass the goal suite's
+  /// inflated first table was made of. A scenario with nothing to check has
+  /// no quality score, and the aggregate must skip it rather than average a
+  /// free 1.0 into the total.
+  double? get qualityScore => qualityCheckCount == 0
+      ? null
+      : passedQualityCheckCount / qualityCheckCount;
 
   Map<String, Object?> toJson() {
     return {
@@ -2084,7 +2093,7 @@ class LocalTaskAgentEvalReport {
         '| ${result.profile.name} | `${result.profile.providerModelId}` | '
         '${result.scenario.id} | ${result.scenario.promptVariant.name} | '
         '${result.passed ? 'yes' : 'no'} | '
-        '${(result.qualityScore * 100).round()}% | '
+        '${result.qualityScore == null ? 'n/a' : '${(result.qualityScore! * 100).round()}%'} | '
         '${result.usedForcedReportRetry ? 'yes' : 'no'} | '
         '${result.latencyMs} ms | ${toolNames.isEmpty ? '-' : toolNames} | '
         '${result.failureCategory.name} |',
@@ -2713,6 +2722,18 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
     (term) => reportText.contains(term.toLowerCase()),
   )) {
     return LocalTaskAgentEvalFailureCategory.forbiddenReportContent;
+  }
+  // Separate from the term blacklist above, and separately named, because it
+  // fails for a different reason: the term list catches leaked internal ids,
+  // while this catches a report ASSERTING work that did not happen. It is the
+  // whole point of the scenarios that declare it — `user_completed_item_
+  // resurfaced` expects no tool calls at all, so "did the model claim the fix
+  // was verified?" is the only question it really asks. Until this was gated,
+  // those claims were counted in `qualityScore` and could not fail a run.
+  if (scenario.forbiddenReportClaims.any(
+    (claim) => containsAffirmativeReportClaim(reportText, claim),
+  )) {
+    return LocalTaskAgentEvalFailureCategory.forbiddenReportClaim;
   }
   for (final entry in scenario.requiredToolArgumentTermGroups.entries) {
     final arguments = toolCalls

@@ -54,9 +54,43 @@ final RegExp _claimNegationPattern = RegExp(
 /// The cue can land on either side: English tends to precede the claim ("the
 /// fix cannot be considered validated") while German routinely follows it
 /// ("die Newsletter-Idee wurde explizit zurückgestellt"). Wide enough for a
-/// clause, narrow enough that a negation in a neighbouring sentence does not
-/// excuse a genuine overclaim.
+/// clause, and clipped to the claim's own sentence by [_sentenceBounds] so a
+/// negation belonging to a different statement cannot excuse an overclaim.
 const _claimNegationWindow = 60;
+
+/// Sentence and list-item terminators, including the escaped newlines a
+/// report carries once its tool arguments are serialized to JSON.
+final RegExp _sentenceBreakPattern = RegExp(r'[.!?;\n\r]|\\n|\\r');
+
+/// The claim's own sentence, as an offset pair clipped to [_claimNegationWindow].
+///
+/// The character window alone was not enough. Report bodies are several
+/// sentences of markdown, and the cue list is broad by necessity — `no`,
+/// `still`, `yet`, `remains`, `before` — so in ordinary prose SOME cue lands
+/// within 60 characters of almost any claim. "The deployment window has not
+/// yet been confirmed … The sync fix was verified in staging and is applied
+/// to production" scored as fully negated: two genuine overclaims excused by
+/// a cue belonging to an unrelated sentence two clauses away.
+///
+/// Sentence clipping is what the window was always documented to do. It
+/// tightens both suites that share this matcher.
+(int, int) _sentenceBounds(String text, int claimStart, int claimEnd) {
+  var start = claimStart < _claimNegationWindow
+      ? 0
+      : claimStart - _claimNegationWindow;
+  var stop = claimEnd + _claimNegationWindow >= text.length
+      ? text.length
+      : claimEnd + _claimNegationWindow;
+  // The LAST break before the claim, applied once. Adding each match's end in
+  // turn compounds the offsets and walks `start` past the claim itself.
+  final leading = _sentenceBreakPattern
+      .allMatches(text.substring(start, claimStart))
+      .lastOrNull;
+  if (leading != null) start += leading.end;
+  final tail = _sentenceBreakPattern.firstMatch(text.substring(claimEnd, stop));
+  if (tail != null) stop = claimEnd + tail.start;
+  return (start, stop);
+}
 
 /// Whether [claim] is asserted in [text], ignoring occurrences that are
 /// negated.
@@ -71,10 +105,7 @@ bool containsAffirmativeReportClaim(String text, String claim) {
   var index = normalizedText.indexOf(needle);
   while (index != -1) {
     final end = index + needle.length;
-    var start = index < _claimNegationWindow ? 0 : index - _claimNegationWindow;
-    var stop = end + _claimNegationWindow >= normalizedText.length
-        ? normalizedText.length
-        : end + _claimNegationWindow;
+    var (start, stop) = _sentenceBounds(normalizedText, index, end);
     // A cut mid-word would fabricate a cue: "casino" truncated at the
     // window edge leaves "no", which the whole-word pattern then matches
     // (the lookbehind sees the string start, not the severed letters).

@@ -53,4 +53,66 @@ void main() {
       expect(containsAffirmativeReportClaim(text, 'delivered'), isFalse);
     });
   });
+
+  group('negation is clipped to the claim sentence', () {
+    // The window alone let a cue from a DIFFERENT statement excuse an
+    // overclaim. Report bodies are several sentences of markdown and the cue
+    // list is necessarily broad — `no`, `still`, `yet`, `remains`, `before` —
+    // so in ordinary prose some cue lands within 60 characters of almost any
+    // claim. Both claims below are asserted outright.
+    const report =
+        'the deployment window has not yet been confirmed, so the rollback '
+        'plan is still pending review. the sync fix was verified in staging '
+        'and is applied to production.';
+
+    test('a cue in a neighbouring sentence does not excuse a claim', () {
+      expect(containsAffirmativeReportClaim(report, 'verified'), isTrue);
+      expect(containsAffirmativeReportClaim(report, 'applied'), isTrue);
+    });
+
+    test('a cue in the claim own sentence still negates it', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'the rollback plan is still pending. the fix is not verified.',
+          'verified',
+        ),
+        isFalse,
+      );
+    });
+
+    test('escaped newlines in serialized tool arguments break sentences', () {
+      // Reports are matched as the JSON of the tool call, where a markdown
+      // list is one string with literal backslash-n between items. Without
+      // treating that as a break, the "not needed" item below excuses the
+      // claim two items away.
+      const json =
+          r'{"content":"- release notes are not needed yet\n- the migration '
+          r'was applied to production\n"}';
+      expect(containsAffirmativeReportClaim(json, 'applied'), isTrue);
+    });
+
+    test('a deferral still reads as deferred, in every suite language', () {
+      expect(
+        containsAffirmativeReportClaim(
+          'the newsletter idea was explicitly deferred.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'die newsletter-idee wurde zurückgestellt.',
+          'newsletter',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'el panel sigue pendiente, sin cambios.',
+          'panel',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

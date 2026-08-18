@@ -325,9 +325,16 @@ def _write_markdown(path: Path, judged: dict) -> None:
     ]
     for case in judged["results"]:
         score = case["judge"].get("overall", 0)
+        # None when the scenario declares no deterministic checks. Rendering it
+        # as 0% would read as a total failure and as 100% as a clean sweep;
+        # both are claims the run never made.
+        deterministic = case["deterministicScore"]
+        deterministic_cell = (
+            "n/a" if deterministic is None else f"{deterministic * 100:.0f}%"
+        )
         lines.append(
             f"| {case['profileName']} | {case['scenarioId']} | {case['promptVariant']} | "
-            f"{case['deterministicScore'] * 100:.0f}% | {score:.1f}/4 | "
+            f"{deterministic_cell} | {score:.1f}/4 | "
             f"{case['judge'].get('verdict', 'parse_error')} |"
         )
     lines += ["", "## Findings"]
