@@ -315,6 +315,34 @@ void main() {
           reason: 'the report should still describe the standing blocker',
         );
       }
+      // ---- The report the scenario expects ------------------------------
+      // Declared by every scenario since the suite was written and checked by
+      // nothing, which left "the report must change" stated and untested. It
+      // matters most for the case below: every fix for no-op churn pushes a
+      // model toward doing less, and without this a model that has gone silent
+      // on real news reads exactly like one that is correctly restrained.
+      if (scenario.expectsReport) {
+        expect(
+          agentReport,
+          isNotNull,
+          reason:
+              'MISSED: the wake published no report at all. '
+              '${scenario.summary} $where',
+        );
+        if (scenario.id != PenguinWakeScenarioId.requalification) {
+          // A follow-up wake starts from the seeded prior report, so leaving
+          // the standing one byte-identical means the news never reached the
+          // user.
+          expect(
+            agentReport?.oneLiner,
+            isNot(penguinWakePriorReportOneLiner),
+            reason:
+                'MISSED: the situation changed and the standing report was '
+                'left untouched. ${scenario.summary} $where',
+          );
+        }
+      }
+
       // ---- Proposals already awaiting the user --------------------------
       // Re-proposing a queued change puts the same decision in front of the
       // user twice. The pending list is in the context precisely so the agent
